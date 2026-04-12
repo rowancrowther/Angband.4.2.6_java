@@ -38,25 +38,25 @@ line returns[Random rand, String route] : LINE_START random {$rand = $random.ran
 //    - offset plus_int_dice_int
 random returns[Random randomDice, String route]
      : offset {
-        $randomDice = new Random($offset.base, 1, 1, 0);
+        $randomDice = new Random($offset.base, 1, 1, 0, $offset.negate);
         $route = "offset"; }
      | int_dice_int {
-        $randomDice = new Random(0, 1, $int_dice_int.dice, $int_dice_int.sides);
+        $randomDice = new Random(0, 1, $int_dice_int.dice, $int_dice_int.sides, false);
         $route = "int_dice_int"; }
      | mult dice_int {
-        $randomDice = new Random(0, $mult.mBonus, $mult.dice, $dice_int.sides);
+        $randomDice = new Random(0, $mult.mBonus, $mult.dice, $dice_int.sides, false);
         $route = "mult dice_int"; }
      | offset mult dice_int {
-        $randomDice = new Random($offset.base, $mult.mBonus, $mult.dice, $dice_int.sides);
+        $randomDice = new Random($offset.base, $mult.mBonus, $mult.dice, $dice_int.sides, $offset.negate);
         $route = "offset mult dice_int"; }
      | dice_int {
-        $randomDice = new Random(0, 1, 1, $dice_int.sides);
+        $randomDice = new Random(0, 1, 1, $dice_int.sides, false);
         $route = "dice_int"; }
      | offset plus_dice_int {
-        $randomDice = new Random($offset.base, 1, 1, $plus_dice_int.sides);
+        $randomDice = new Random($offset.base, 1, 1, $plus_dice_int.sides, $offset.negate);
         $route = "offset plus_dice_int"; }
      | offset plus_int_dice_int {
-        $randomDice = new Random($offset.base, 1, $plus_int_dice_int.dice, $plus_int_dice_int.sides);
+        $randomDice = new Random($offset.base, 1, $plus_int_dice_int.dice, $plus_int_dice_int.sides, $offset.negate);
         $route = "offset plus_int_dice_int"; };
 
 LINE_START   : 'd' 'i' 'c' 'e' ':'           ;

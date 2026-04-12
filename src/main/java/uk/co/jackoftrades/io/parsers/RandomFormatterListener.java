@@ -1,6 +1,6 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/io/parsers/grammars/RandomFormatter.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.io.parsers.grammars;
-import uk.co.jackoftrades.background.random.Random;
+package uk.co.jackoftrades.io.parsers;
+
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 
 /**

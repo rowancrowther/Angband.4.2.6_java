@@ -3,6 +3,7 @@ package uk.co.jackoftrades.io.enums;
 /**
  * Specifies what type a file is when writing. Used in fileOpen()
  */
+@SuppressWarnings("SpellCheckingInspection")
 public enum FileTypeEnum {
     /**
      * A text file
@@ -20,7 +21,7 @@ public enum FileTypeEnum {
     FTYPE_RAW,
 
     /**
-     * A HTML file
+     * An HTML file
      */
     FTYPE_HTML,
 

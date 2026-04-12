@@ -20,11 +20,11 @@ class FileHandlerTest {
     FileHandler handler;
     final char fileSeparator = File.separatorChar;
     final String homeDirectory = System.getProperty("user.home");
-    String path = homeDirectory + fileSeparator + "Test.txt";
-    String movedPath = homeDirectory + fileSeparator + "Moved.txt";
-    int inputByte = 27;
-    int outputByte = 27;
-    Logger logger = LogManager.getLogger();
+    final String path = homeDirectory + fileSeparator + "Test.txt";
+    final String movedPath = homeDirectory + fileSeparator + "Moved.txt";
+    final int inputByte = 27;
+    final int outputByte = 27;
+    final Logger logger = LogManager.getLogger();
 
 //    private void open(FileModeEnum mode) {
 //        handler = new FileHandler(path);
@@ -101,7 +101,7 @@ class FileHandlerTest {
      */
     @Test
     void fileGetSavefile() {
-        assertEquals("Filesave.sav", handler.fileGetSavefile("Filesave", "sav"));
+        assertEquals("File.sav", handler.fileGetSavefile("File", "sav"));
     }
 
     @Test
@@ -118,8 +118,8 @@ class FileHandlerTest {
 
         try {
             newerFile.delete();
-        } catch (Exception e) {
-            logger.error("An error has occurred: " + e.getMessage(), e);
+        } catch (Exception ex) {
+            logger.error("An error has occurred: " + ex.getMessage(), ex);
         }
     }
 

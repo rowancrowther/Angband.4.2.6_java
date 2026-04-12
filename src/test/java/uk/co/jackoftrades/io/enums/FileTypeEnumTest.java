@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SuppressWarnings({"GrazieInspectionRunner", "SpellCheckingInspection"})
 class FileTypeEnumTest {
     private final FileTypeEnum text  = FileTypeEnum.FTYPE_TEXT;
     private final FileTypeEnum save  = FileTypeEnum.FTYPE_SAVE;

@@ -16,11 +16,12 @@ import java.nio.file.attribute.FileTime;
  * The interface class between the file system and
  * Angband. This should be system neutral.
  */
+@SuppressWarnings("ALL")
 public class FileHandler {
     private Path filePath;
     private FileInputStream inputStream;
     private FileOutputStream outputStream;
-    private StandardOpenOption option;
+    private final StandardOpenOption option;
     private final Logger logger = LogManager.getRootLogger();
 
     /**
@@ -267,7 +268,7 @@ public class FileHandler {
     }
 
     /**
-     * Write a character input as a integer to the outputStream
+     * Write a character input as an integer to the outputStream
      * @param c the character to write
      * @return true if the character was written and no exception occurred, false otherwise
      */

@@ -1,6 +1,6 @@
 grammar RandomFormatter;
 
-@header {import uk.co.jackoftrades.background.random.Random;}
+@header {import uk.co.jackoftrades.background.Random;}
 
 // offset = '-'?INT
 offset returns[boolean negate, int base] : (MINUS { $negate = $MINUS == null ? false : true; })? INT { $base = $INT.int;

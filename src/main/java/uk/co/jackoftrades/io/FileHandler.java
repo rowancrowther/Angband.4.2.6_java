@@ -21,7 +21,7 @@ public class FileHandler {
     private FileInputStream inputStream;
     private FileOutputStream outputStream;
     private StandardOpenOption option;
-    private Logger logger = LogManager.getRootLogger();
+    private final Logger logger = LogManager.getRootLogger();
 
     /**
      * Creates a new FileHandler from a string path
@@ -90,12 +90,12 @@ public class FileHandler {
         return filePath.toFile().exists();
     }
 
-    /**
-     * Closes down any old file and reopens as a new one. This includes
-     * closing down all open streams
-     * Not used - use move instead
-     * @param newFileName The new file name
-     */
+//    /**
+//     * Closes down any old file and reopens as a new one. This includes
+//     * closing down all open streams
+//     * Not used - use move instead
+//     * @param newFileName The new file name
+//     */
 //    public void setFileName(String newFileName) {
 //        try {
 //            if (inputStream != null) inputStream.close();

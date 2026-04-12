@@ -16,7 +16,7 @@ public class Random {
      * Constructor: four integer parameters
      * <br><br>
      * Creates a non negated dice of the form:
-     * base + mBonus * dice 'd'' dice
+     * base + mBonus * dice 'd' dice
      * <br><br>
      * Once this has been created then the dice is negated to deal with negative base values.
      * @param base the base or minimum value that the die can roll. If this is negative then

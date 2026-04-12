@@ -18,18 +18,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class FileHandlerTest {
     FileHandler handler;
-    private char fileSeparator = File.separatorChar;
-    private String homeDirectory = System.getProperty("user.home");
+    private char final fileSeparator = File.separatorChar;
+    private String final homeDirectory = System.getProperty("user.home");
     String path = homeDirectory + fileSeparator + "Test.txt";
     String movedPath = homeDirectory + fileSeparator + "Moved.txt";
     int inputByte = 27;
     int outputByte = 27;
     Logger logger = LogManager.getLogger();
 
-    private void open(FileModeEnum mode) {
-        handler = new FileHandler(path);
-        handler.open(mode);
-    }
+//    private void open(FileModeEnum mode) {
+//        handler = new FileHandler(path);
+//        handler.open(mode);
+//    }
 
     @BeforeEach
     void setUp() {

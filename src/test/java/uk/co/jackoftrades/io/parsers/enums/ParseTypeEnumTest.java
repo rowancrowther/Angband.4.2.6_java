@@ -47,7 +47,7 @@ class ParseTypeEnumTest {
                 () -> assertEquals(none, ParseTypeEnum.valueOf("PARSE_T_NONE")),
                 () -> assertEquals(pint, ParseTypeEnum.valueOf("PARSE_T_INT")),
                 () -> assertEquals(sym,  ParseTypeEnum.valueOf("PARSE_T_SYM")),
-                () -> assertEquals(str,  ParseTypeEnum.valueOf("PARSE_T)STR")),
+                () -> assertEquals(str,  ParseTypeEnum.valueOf("PARSE_T_STR")),
                 () -> assertEquals(rand, ParseTypeEnum.valueOf("PARSE_T_RAND")),
                 () -> assertEquals(uint, ParseTypeEnum.valueOf("PARSE_T_UINT")),
                 () -> assertEquals(pchr, ParseTypeEnum.valueOf("PARSE_T_CHAR")),

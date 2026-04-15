@@ -12,7 +12,7 @@ import java.util.ArrayList;
 public class ParserValue {
     private ArrayList<ParserSpec> parserSpecs;
     private ParserValueUnion value;
-    private Logger logger = LogManager.getLogger();
+    private final Logger logger = LogManager.getLogger();
 
     public Object getValue() {
         if (null == value) {

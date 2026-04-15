@@ -10,7 +10,6 @@ public class ParserValueInt extends ParserValueUnion {
      *
      * @param obj the value to set this union to. Note, this can be one of class
      *            char, int, uint, string, random or null.
-     * @return
      * @throws IllegalArgumentException when value in is not of the correct type.
      */
     @Override

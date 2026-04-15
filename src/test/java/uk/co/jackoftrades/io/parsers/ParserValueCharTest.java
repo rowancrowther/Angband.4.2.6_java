@@ -16,6 +16,7 @@ class ParserValueCharTest {
         worked = true;
         failed = false;
         parser = new ParserValueChar();
+        value = 'a';
     }
 
     @Test

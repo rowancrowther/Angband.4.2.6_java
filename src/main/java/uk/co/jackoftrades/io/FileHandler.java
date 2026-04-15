@@ -91,6 +91,18 @@ public class FileHandler {
         return filePath.toFile().exists();
     }
 
+    public boolean createFile() {
+        if (!Files.exists(filePath)){
+            try {
+                Files.createFile(filePath);
+            } catch (IOException e) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 //    /**
 //     * Closes down any old file and reopens as a new one. This includes
 //     * closing down all open streams

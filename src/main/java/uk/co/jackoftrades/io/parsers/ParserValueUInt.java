@@ -24,9 +24,6 @@ public class ParserValueUInt extends ParserValueUnion {
             value = -1L;
             if (obj == null) {
                 logger.error("Illegal argument. Expected unsigned int (long) but received null.");
-                if (obj instanceof Long) {;
-                    this.value = (long) obj;
-                }
             } else {
                 logger.error("Illegal argument. Expected unsigned int (long) but received " + obj.getClass());
                 throw new IllegalArgumentException("Illegal argument. Expected unsigned int (long) but received " + obj.getClass());

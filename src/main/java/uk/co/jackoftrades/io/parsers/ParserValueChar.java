@@ -8,7 +8,7 @@ import org.apache.logging.log4j.Logger;
  */
 public class ParserValueChar extends ParserValueUnion {
     private char value;
-    private Logger logger = LogManager.getLogger();
+    private final Logger logger = LogManager.getLogger();
 
     /**
      * Set the character value for this ParserValueUnion

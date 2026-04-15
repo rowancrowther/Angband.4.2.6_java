@@ -11,7 +11,7 @@ import java.util.ArrayList;
  */
 public class ParserValue {
     private ArrayList<ParserSpec> parserSpecs;
-    private ParserValueUnion value;
+    private ParserUnionValue value;
     private final Logger logger = LogManager.getLogger();
 
     public Object getValue() {
@@ -54,7 +54,11 @@ public class ParserValue {
             return;
         }
 
-        logger.error("Illegal argument. Expected " + this.value.getValue().getClass() + " but received " + value.getClass());
+        if (this.value == null || this.value.getValue() == null) {
+            logger.error("Illegal argument. Expected null but received " + value.getClass());
+        } else {
+            logger.error("Illegal argument. Expected " + this.value.getValue().getClass() + " but received " + value.getClass());
+        }
         throw new IllegalArgumentException("Illegal argument. Expected " + this.value.getValue().getClass() + " but received " + value.getClass());
     }
 

@@ -6,7 +6,7 @@ import uk.co.jackoftrades.background.Random;
 /**
  * A concrete ParserValueUnion object of type Random.
  */
-public class ParserValueRandom extends ParserValueUnion {
+public class ParserValueRandom implements ParserUnionValue {
     private Random value;
 
     /**
@@ -15,7 +15,6 @@ public class ParserValueRandom extends ParserValueUnion {
      * @param value the value to set this union to.
      * @throws IllegalArgumentException when value in is not of the correct type.
      */
-    @Override
     public void setValue(Object value) throws IllegalArgumentException {
         if (value instanceof Random)
             this.value = (Random) value;
@@ -32,7 +31,6 @@ public class ParserValueRandom extends ParserValueUnion {
      *
      * @return the value of this Union instance as an object
      */
-    @Override
     public Object getValue() {
         return value;
     }

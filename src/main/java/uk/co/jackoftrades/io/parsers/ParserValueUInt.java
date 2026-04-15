@@ -6,7 +6,7 @@ import org.apache.logging.log4j.Logger;
 /**
  * A concrete ParserValueUnion object of type uint (long).
  */
-public class ParserValueUInt extends ParserValueUnion {
+public class ParserValueUInt implements ParserUnionValue {
     private long value;
     Logger logger = LogManager.getLogger();
 
@@ -15,7 +15,6 @@ public class ParserValueUInt extends ParserValueUnion {
      * @param obj the value to set this union to.
      * @throws IllegalArgumentException when value in is not of the correct type.
      */
-    @Override
     public void setValue(Object obj) throws IllegalArgumentException {
         if (obj instanceof Long)
         {
@@ -35,7 +34,6 @@ public class ParserValueUInt extends ParserValueUnion {
      * Return the value of this instance as an object
      * @return the value of this instance as an object
      */
-    @Override
     public Object getValue() {
         return value;
     }

@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 
 public class StringUtils {
-    private static Logger logger = LogManager.getLogger();
+    private final static Logger logger = LogManager.getLogger();
 
     /**
      * This is a class solely used for string utilities, and as such should never be instantiated.

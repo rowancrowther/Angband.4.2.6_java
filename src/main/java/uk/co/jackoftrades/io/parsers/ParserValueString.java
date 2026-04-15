@@ -3,7 +3,7 @@ package uk.co.jackoftrades.io.parsers;
 /**
  * A concrete ParserValueUnion object of type String.
  */
-public class ParserValueString extends ParserValueUnion {
+public class ParserValueString implements ParserUnionValue {
     private String value;
 
     /**
@@ -13,7 +13,6 @@ public class ParserValueString extends ParserValueUnion {
      *              char, int, uint, string, random or null.
      * @throws IllegalArgumentException when value in is not of the correct type.
      */
-    @Override
     public void setValue(Object value) throws IllegalArgumentException {
         if (value instanceof String)
             this.value = (String) value;

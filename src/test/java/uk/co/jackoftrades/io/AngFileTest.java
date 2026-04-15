@@ -20,7 +20,6 @@ class AngFileTest {
     private final String homeDirectory = System.getProperty("user.home");
     private final char pathSeparator = File.separatorChar;
     private final String mainFile = homeDirectory + pathSeparator + "test.txt";
-    private final FileHandler mainFH = new FileHandler(mainFile);
     private final Logger logger = LogManager.getLogger();
 
     @AfterEach
@@ -88,7 +87,7 @@ class AngFileTest {
         angFile = new AngFile(mainFile, FileModeEnum.MODE_WRITE);
 
         angFile.open(FileTypeEnum.FTYPE_TEXT);
-        boolean writeResult = angFile.writeChar((int)charToWrite);
+        boolean writeResult = angFile.writeChar(charToWrite);
         angFile.close();
         angFile = new AngFile(mainFile, FileModeEnum.MODE_READ);
 
@@ -171,7 +170,7 @@ class AngFileTest {
     @Test
     void dirExists() {
         angFile = new AngFile(mainFile, FileModeEnum.MODE_WRITE);
-        String fakeDirectory = homeDirectory + pathSeparator + UUID.randomUUID().toString();
+        String fakeDirectory = homeDirectory + pathSeparator + UUID.randomUUID();
 
         assertAll(
                 () -> assertTrue(angFile.dirExists(homeDirectory)),
@@ -182,7 +181,7 @@ class AngFileTest {
     @Test
     void dirCreate() {
         angFile = new AngFile(mainFile, FileModeEnum.MODE_READ);
-        String fakeDirectory = homeDirectory + pathSeparator + UUID.randomUUID().toString();
+        String fakeDirectory = homeDirectory + pathSeparator + UUID.randomUUID();
         boolean result = angFile.dirCreate(fakeDirectory);
 
         boolean actualResult = Files.exists(Paths.get(fakeDirectory));

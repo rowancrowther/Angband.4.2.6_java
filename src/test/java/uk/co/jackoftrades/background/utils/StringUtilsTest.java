@@ -74,7 +74,7 @@ class StringUtilsTest {
 
         assertAll(
                 () -> assertEquals(singular, StringUtils.verbAgreement(1, singular, plural)),
-                () -> assertEquals(plural,   StringUtils.verbAgreement(2, singular, plural))
+                () -> assertEquals(plural, StringUtils.verbAgreement(2, singular, plural))
         );
     }
 
@@ -102,13 +102,12 @@ class StringUtilsTest {
 
     @Test
     void isPrint() {
-        char nullCharacter = '\0';
         char isPrintable = 'a';
         char isNotPrintable = (char) 10;
 
         assertAll(
-                () -> assertEquals(nullCharacter, StringUtils.isPrint(isNotPrintable)),
-                () -> assertEquals(isPrintable, StringUtils.isPrint(isPrintable))
+                () -> assertFalse(StringUtils.isPrint(isNotPrintable)),
+                () -> assertTrue(StringUtils.isPrint(isPrintable))
         );
     }
 
@@ -128,5 +127,165 @@ class StringUtilsTest {
     void stringLength() {
         String string = "12345";
         assertEquals(string.length(), StringUtils.stringLength(string));
+    }
+
+    @Test
+    void strICmp() {
+        String first = "ABc";
+        String second = "aBd";
+
+        assertAll(
+                () -> assertEquals(-1, StringUtils.strICmp(first, second)),
+                () -> assertEquals(0, StringUtils.strICmp(first, first)),
+                () -> assertEquals(1, StringUtils.strICmp(second, first))
+        );
+    }
+
+    @Test
+    void strNICmp() {
+        String first = "aBC";
+        String second = "ab";
+        String third = "AC";
+        int number = 2;
+
+        assertAll(
+                () -> assertEquals(0, StringUtils.strNICmp(first, second, number)),
+                () -> assertEquals(-1, StringUtils.strNICmp(second, third, number)),
+                () -> assertEquals(1, StringUtils.strNICmp(third, first, number)),
+                () -> assertEquals(0, StringUtils.strNICmp(first, second, 10))
+        );
+    }
+
+    @Test
+    void strIStr() {
+        String toSearch = "Have fUn with StrinGs!";
+        String toFind = "FuN";
+        String toNotFind = "Count";
+        String resultFound = "fUn with StrinGs!";
+        String resultNotFound = "Count";
+
+        assertAll(
+                () -> assertEquals(resultFound, StringUtils.strIStr(toSearch, toFind)),
+                () -> assertEquals(resultNotFound, StringUtils.strIStr(toSearch, toNotFind))
+        );
+    }
+
+    @Test
+    void strCpy() {
+        String source = "abcd";
+        String result1 = "ab";
+        String result2 = "";
+
+        assertAll(
+                () -> assertEquals(result1, StringUtils.strCpy(source, 2)),
+                () -> assertEquals(result2, StringUtils.strCpy(source, 0)),
+                () -> assertEquals(source, StringUtils.strCpy(source, 6)),
+                () -> assertEquals(result2, StringUtils.strCpy(source, -1))
+        );
+    }
+
+    @Test
+    void strCat() {
+        String start = "ab";
+        String finish = "cd";
+        int length1 = 4;
+        String result1 = "abcd";
+        int length2 = 3;
+        String result2 = "abc";
+        int length3 = 1;
+        String result3 = "a";
+        int length4 = -1;
+        String result4 = "";
+        int length5 = 5;
+        String result5 = "abcd";
+
+        assertAll(
+                () -> assertEquals(result1, StringUtils.strCat(start, finish, length1)),
+                () -> assertEquals(result2, StringUtils.strCat(start, finish, length2)),
+                () -> assertEquals(result3, StringUtils.strCat(start, finish, length3)),
+                () -> assertEquals(result4, StringUtils.strCat(start, finish, length4)),
+                () -> assertEquals(result5, StringUtils.strCat(start, finish, length5))
+        );
+    }
+
+    @Test
+    void strCap() {
+        String string1 = "capital";
+        String string2 = "Capital";
+        String string3 = "";
+
+        assertAll(
+                () -> assertEquals(string2, StringUtils.strCap(string1)),
+                () -> assertEquals(string2, StringUtils.strCap(string2)),
+                () -> assertEquals(string3, StringUtils.strCap(string3))
+        );
+    }
+
+    @Test
+    void suffix() {
+        String string = "Concatenate";
+        String emptyString = "";
+        String suffix = "ate";
+        String wrongSuffix = "eight";
+        String suffixTooLong = "Concatenated";
+        String notSuffix = "nat";
+
+        assertAll(
+                () -> assertTrue(StringUtils.suffix(string, emptyString)),
+                () -> assertTrue(StringUtils.suffix(string, suffix)),
+                () -> assertFalse(StringUtils.suffix(string, wrongSuffix)),
+                () -> assertFalse(StringUtils.suffix(string, notSuffix)),
+                () -> assertFalse(StringUtils.suffix(string, suffixTooLong))
+        );
+    }
+
+    @Test
+    void suffixI() {
+        String string = "ConcatenaTe";
+        String emptyString = "";
+        String suffix = "ate";
+        String wrongSuffix = "eight";
+        String suffixTooLong = "Concatenated";
+        String notSuffix = "nat";
+
+        assertAll(
+                () -> assertTrue(StringUtils.suffixI(string, emptyString)),
+                () -> assertTrue(StringUtils.suffixI(string, suffix)),
+                () -> assertFalse(StringUtils.suffixI(string, wrongSuffix)),
+                () -> assertFalse(StringUtils.suffixI(string, notSuffix)),
+                () -> assertFalse(StringUtils.suffixI(string, suffixTooLong))
+        );
+    }
+
+    @Test
+    void prefix() {
+        String string = "Foxes eat dogs";
+        String rightPrefix = "Fox";
+        String emptyPrefix = "";
+        String caseSensitivePrefix = "f";
+        String wrongPrefix = "Cats";
+
+        assertAll(
+                () -> assertTrue(StringUtils.prefix(string, rightPrefix)),
+                () -> assertTrue(StringUtils.prefix(string, emptyPrefix)),
+                () -> assertFalse(StringUtils.prefix(string, caseSensitivePrefix)),
+                () -> assertFalse(StringUtils.prefix(string, wrongPrefix))
+        );
+    }
+
+    @Test
+    void prefixI() {
+        String string = "Foxes eat dogs";
+        String rightPrefix = "Fox";
+        String emptyPrefix = "";
+        String caseSensitivePrefix = "f";
+        String wrongPrefix = "Cats";
+
+        assertAll(
+                () -> assertTrue(StringUtils.prefixI(string, rightPrefix)),
+                () -> assertTrue(StringUtils.prefixI(string, emptyPrefix)),
+                () -> assertTrue(StringUtils.prefixI(string, caseSensitivePrefix)),
+                () -> assertFalse(StringUtils.prefixI(string, wrongPrefix))
+        );
     }
 }

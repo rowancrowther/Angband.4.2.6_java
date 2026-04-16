@@ -173,4 +173,134 @@ public class StringUtils {
     public static int stringLength(@NonNull String string) {
         return string.length();
     }
+
+    /**
+     * Compare two strings case insensitively
+     * @param string1 The first string to compare
+     * @param string2 The second string to compare
+     * @return -1 if string1 is before string2 alphabetically ignoring case<br>
+     *          1 if string1 is after string2 alphabetically ignoring case<br>
+     *          0 if they are identical ignoring case
+     */
+    @Contract(pure = true)
+    public static int strICmp(@NonNull String string1, @NotNull String string2) {
+        return string1.compareToIgnoreCase(string2);
+    }
+
+    /**
+     * Compare the first n characters case insensitively of two different strings
+     * @param string1 The first string
+     * @param string2 The second string
+     * @param n The number of characters to compare
+     * @return -1 if string1's first n characters are before string2's first n characters alphabetically ignoring case<br>
+     *          1 if string1's first n characters are after string2's first n characters alphabetically ignoring case<br>
+     *          0 if the first n characters of both strings are identical ignoring case
+     */
+    public static int strNICmp(@NonNull String string1, @NonNull String string2, int n) {
+        int maxLength = string1.length();
+        if (string2.length() < maxLength) maxLength = string2.length();
+        if (n < maxLength) maxLength = n;
+        String a = string1.substring(0, maxLength);
+        String b = string2.substring(0, maxLength);
+
+        return strICmp(a, b);
+    }
+
+    /**
+     * Search a given string for a substring, and return the substring and all subsequent characters from the search
+     * string. This comparison is case-insensitive.
+     * @param toSearch The string to search through
+     * @param toFind The string to search for
+     * @return If the string toFind is found in the string toSearch, then the return the substring of toSearch starting
+     * at the first point the toFind string is found, otherwise return the toFind string.
+     */
+    public static @NonNull String strIStr(@NonNull String toSearch, @NotNull String toFind) {
+        int foundAt = toSearch.toLowerCase().indexOf(toFind.toLowerCase());
+        return foundAt == -1 ? toFind : toSearch.substring(foundAt);
+    }
+
+    /**
+     * Copy a source string of size length to a target string, and then return that target string
+     * @param source The source string to copy
+     * @param length The number of characters to copy
+     * @return A string of length length consisting of the first length characters of the source string.
+     */
+    @Contract(pure = true)
+    public static @NonNull String strCpy(@NonNull String source, @NotNull int length) {
+        if (length > source.length()) length = source.length();
+        if (length < 0) length = 0;
+        return source.substring(0, length);
+    }
+
+    /**
+     * Concatenates two strings together and returns the resultant concatenated string of a specified size.
+     * @param toConcatenateTo The first string to concatenate
+     * @param source The second string to concatenate
+     * @param size The length of the returned string
+     * @return A substring of length size of the concatenation of the two strings
+     */
+    @Contract(pure = true)
+    public static @NonNull String strCat(@NotNull String toConcatenateTo, @NotNull String source, @NotNull int size) {
+        String result = toConcatenateTo + source;
+        if (size < 0) size = 0;
+        if (size > result.length()) size = result.length();
+        return result.substring(0, size);
+    }
+
+    /**
+     * Return a string with a capitalised first character
+     * @param toCapitalise The string to capitalise
+     * @return The incoming string with a capital first letter
+     */
+    public static @NonNull String strCap(@NonNull String toCapitalise) {
+        return toCapitalise.isEmpty() ? "" : Character.toUpperCase(toCapitalise.charAt(0)) + toCapitalise.substring(1);
+    }
+
+    /**
+     * Determines whether a string has a particular suffix.
+     * @param string The string to check
+     * @param suffix The suffix to check the string for
+     * @return true if the suffix is the end of the string, false otherwise. Note, if the length of the string is less
+     * than the length of the suffix or the string is empty then false will be returned; if the suffix is empty then
+     * true will be returned.
+     */
+    public static boolean suffix(@NonNull String string, @NonNull String suffix) {
+        if (string.length() < suffix.length()) return false;
+        if (string.isEmpty()) return false;
+        if (suffix.isEmpty()) return true;
+        return (suffix.equals(string.substring(string.length() - suffix.length())));
+    }
+
+    /**
+     * Determines whether a string has a particular suffix case-insensitive.
+     * @param string The string to check
+     * @param suffix The suffix to check the string for
+     * @return true if the suffix is the end of the string case-insensitive, false otherwise. Note, if the length of the
+     * string is less than the length of the suffix or the string is empty then false will be returned; if the suffix is
+     * empty then true will be returned.
+     */
+    public static boolean suffixI(@NonNull String string, @NonNull String suffix) {
+        if (suffix.isEmpty()) return true;
+        return suffix(string.toUpperCase(), suffix.toUpperCase());
+    }
+
+    /**
+     * Determines whether a string is a prefix of another string
+     * @param string The string to see if prefix is a prefix of
+     * @param prefix The potential prefix
+     * @return True if prefix is a prefix of string, false otherwise
+     */
+    public static boolean prefix(@NonNull String string, @NonNull String prefix) {
+        return (prefix.equals(string.substring(0, prefix.length())));
+    }
+
+    /**
+     * Determines whether a string is a prefix of another string case insensitive
+     * @param string The string to see if prefix is a prefix of
+     * @param prefix The potential prefix
+     * @return True if prefix is a prefix of string, false otherwise
+     */
+    public static boolean prefixI(@NotNull String string, @NotNull String prefix) {
+        return prefix(string.toUpperCase(), prefix.toUpperCase());
+    }
 }

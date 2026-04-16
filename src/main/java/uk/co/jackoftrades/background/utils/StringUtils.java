@@ -3,10 +3,12 @@ package uk.co.jackoftrades.background.utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
 public class StringUtils {
     private final static Logger logger = LogManager.getLogger();
+    public static String programmeName;
 
     /**
      * This is a class solely used for string utilities, and as such should never be instantiated.
@@ -66,7 +68,7 @@ public class StringUtils {
      * @return A formatted string
      */
     @Contract(pure = true)
-    public static @NonNull String format(String format, Object... objects) {
+    public static @NonNull String format(@NotNull String format, Object... objects) {
         return String.format(format, objects);
     }
 
@@ -74,7 +76,7 @@ public class StringUtils {
      * Log a formatted string with no objects (a straight string) at level INFO
      * @param string the string to log
      */
-    public static void plogFmt(String string) {
+    public static void plogFmt(@NotNull String string) {
         logger.info(string);
     }
 
@@ -83,18 +85,92 @@ public class StringUtils {
      * @param format The string to format
      * @param objects The objects to format it with
      */
-    public static void plogFmt(String format, Object... objects) {
+    public static void plogFmt(@NotNull String format, Object... objects) {
         logger.info(format, objects);
     }
 
     /**
      * Quit the program using a formatted quit string
-     *
      * TODO: Implement the quit function from the z-util.c file
      * @param toFormat The string to format
      * @param objects The objects used to format this string
      */
     public static void quitFmt(String toFormat, Object... objects) {
 //        quit(String.format(toFormat, objects));
+    }
+
+    /**
+     * Pluralise a verb based on the number of them
+     * @param number The number of items we are pluralising
+     * @return nothing in number is one, the string "s" if it is more than that
+     */
+    public static String plural(int number) {
+        return (number == 1) ? "" : "s";
+    }
+
+    /**
+     * Get the singular or plural of a word based on the number of items
+     * we are dealing with
+     * @param number The number of items we are dealing with
+     * @param singular The result if it is a single item we are dealing with
+     * @param plural The result if it is more than one item we are dealing with
+     * @return singular if there is only one item (number == 1), plural otherwise
+     */
+    public static String verbAgreement(int number, @NotNull String singular, @NotNull String plural) {
+        return (number == 1) ? singular : plural;
+    }
+
+    /**
+     * Perform a substring of the first number characters of string
+     * @param string the string to substring
+     * @param number the number of characters to return
+     * @return THe first number characters of string
+     */
+    public static String clipTo(@NonNull String string, @NotNull int number) {
+        return string.substring(0, number);
+    }
+
+    /**
+     * Determine whether two strings are equal
+     * @param s one of the strings to determine if it is equal to the other (t)
+     * @param t one of the strings to determine if it is equal to the other (s)
+     * @return true if s.equals(t), false otherwise
+     */
+    @Contract(value = "_, null -> false", pure = true)
+    public static boolean streq(@NonNull String s, @NotNull String t) {
+        return s.equals(t);
+    }
+
+    /**
+     * Determines if a character is printable or not return a character
+     * @param c THe character we are testing
+     * @return the character if it is printable, '\0' if it is not
+     */
+    public static boolean isPrint(@NotNull char c) {
+        String s = String.valueOf(c);
+        String stripped = s.replaceAll("[^\\x20-\\x7E]", "");
+        return (!stripped.isEmpty());
+    }
+
+    /**
+     * Returns whether a particular string contains a given character
+     * @param string The string to search
+     * @param ch The character to look for
+     * @return true if it is found in the string, false otherwise
+     */
+    @Contract(pure = true)
+    public static boolean textSchr(@NonNull String string, @NotNull char ch) {
+        return string.indexOf(ch) >= 0;
+    }
+
+    /**
+     * Util to return the length of a string
+     * TODO: Change all of these to string.length() as we find them.
+     * @param string The string we are looking at
+     * @return The number of characters in this string
+     */
+    @Contract(pure = true)
+    public static int stringLength(@NonNull String string) {
+        return string.length();
     }
 }

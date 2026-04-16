@@ -2,7 +2,7 @@ package uk.co.jackoftrades.background.utils;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class StringUtilsTest {
     private String result;
@@ -54,5 +54,79 @@ class StringUtilsTest {
     void quitFmt() {
         // This cannot be tested at the moment
         // TODO: Test this once we have implemented quit(String)
+    }
+
+    @Test
+    void plural() {
+        String expectedSingular = "";
+        String expectedPlural = "s";
+
+        assertAll(
+                () -> assertEquals(expectedSingular, StringUtils.plural(1)),
+                () -> assertEquals(expectedPlural, StringUtils.plural(2))
+        );
+    }
+
+    @Test
+    void verbAgreement() {
+        String singular = "item";
+        String plural = "items";
+
+        assertAll(
+                () -> assertEquals(singular, StringUtils.verbAgreement(1, singular, plural)),
+                () -> assertEquals(plural,   StringUtils.verbAgreement(2, singular, plural))
+        );
+    }
+
+    @Test
+    void clipTo() {
+        String toClip = "Clip me.";
+        int amount = 4;
+        String expected = "Clip";
+
+        assertEquals(expected, StringUtils.clipTo(toClip, amount));
+    }
+
+    @Test
+    void streq() {
+        String same = "This is the same.";
+        String alsoSame = "This is the same.";
+        String different = "This is different.";
+
+        assertAll(
+                () -> assertTrue(StringUtils.streq(same, same)),
+                () -> assertTrue(StringUtils.streq(same, alsoSame)),
+                () -> assertFalse(StringUtils.streq(same, different))
+        );
+    }
+
+    @Test
+    void isPrint() {
+        char nullCharacter = '\0';
+        char isPrintable = 'a';
+        char isNotPrintable = (char) 10;
+
+        assertAll(
+                () -> assertEquals(nullCharacter, StringUtils.isPrint(isNotPrintable)),
+                () -> assertEquals(isPrintable, StringUtils.isPrint(isPrintable))
+        );
+    }
+
+    @Test
+    void textSchr() {
+        String findCharacter = "abcdefg";
+        String notFindCharacter = "abdefg";
+        char charToFind = 'c';
+
+        assertAll(
+                () -> assertTrue(StringUtils.textSchr(findCharacter, charToFind)),
+                () -> assertFalse(StringUtils.textSchr(notFindCharacter, charToFind))
+        );
+    }
+
+    @Test
+    void stringLength() {
+        String string = "12345";
+        assertEquals(string.length(), StringUtils.stringLength(string));
     }
 }

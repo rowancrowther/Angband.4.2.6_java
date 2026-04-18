@@ -43,8 +43,6 @@ public class ControlUtils {
 
     /**
      * Quit the program using a formatted quit string
-     * @param toFormat The string to format
-     * @param objects The objects used to format this string
      */
     public static void quit() {
         Quit q = new Quit();

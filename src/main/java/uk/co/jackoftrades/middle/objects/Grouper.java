@@ -1,4 +1,6 @@
-package uk.co.jackoftrades.background.objects.enums;
+package uk.co.jackoftrades.middle.objects;
+
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 public class Grouper {
     private final TValue tValue;

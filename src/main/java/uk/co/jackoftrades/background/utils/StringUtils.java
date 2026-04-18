@@ -9,14 +9,9 @@ import org.jspecify.annotations.NonNull;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class StringUtils {
+public abstract class StringUtils {
     private final static Logger logger = LogManager.getLogger();
     public static String programmeName;
-
-    /**
-     * This is a class solely used for string utilities, and as such should never be instantiated.
-     */
-    private StringUtils() {}
 
     /**
      * concatenate a string with a formated string

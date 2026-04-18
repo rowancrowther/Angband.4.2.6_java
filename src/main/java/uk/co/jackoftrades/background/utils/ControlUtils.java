@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.background.utils.quit.Quit;
 
-public class ControlUtils {
+public abstract class ControlUtils {
     private static Logger logger = LogManager.getLogger();
 
     /**

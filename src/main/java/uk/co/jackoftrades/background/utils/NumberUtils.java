@@ -9,7 +9,7 @@ import uk.co.jackoftrades.background.Rational;
 
 import java.util.ArrayList;
 
-public class NumberUtils {
+public abstract class NumberUtils {
     private static final Logger logger = LogManager.getLogger();
 
     private NumberUtils() {};

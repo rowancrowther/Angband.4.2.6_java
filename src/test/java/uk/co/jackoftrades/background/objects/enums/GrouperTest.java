@@ -1,6 +1,8 @@
 package uk.co.jackoftrades.background.objects.enums;
 
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.middle.objects.Grouper;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;

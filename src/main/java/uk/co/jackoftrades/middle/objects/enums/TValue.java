@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background.objects.enums;
+package uk.co.jackoftrades.middle.objects.enums;
 
 public enum TValue {
     /**

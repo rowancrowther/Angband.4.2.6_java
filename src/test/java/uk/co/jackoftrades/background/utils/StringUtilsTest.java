@@ -1,6 +1,7 @@
 package uk.co.jackoftrades.background.utils;
 
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.background.utils.quit.Quit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -41,19 +42,9 @@ class StringUtilsTest {
     }
 
     @Test
-    void plogFmt() {
-        // This cannot be tested
-    }
-
-    @Test
-    void testPlogFmt() {
-        // This cannot be tested
-    }
-
-    @Test
     void quitFmt() {
-        // This cannot be tested at the moment
-        // TODO: Test this once we have implemented quit(String)
+        Quit q = new Quit();
+        q.quit(String.format("This %s a message", "is"));
     }
 
     @Test
@@ -286,6 +277,68 @@ class StringUtilsTest {
                 () -> assertTrue(StringUtils.prefixI(string, emptyPrefix)),
                 () -> assertTrue(StringUtils.prefixI(string, caseSensitivePrefix)),
                 () -> assertFalse(StringUtils.prefixI(string, wrongPrefix))
+        );
+    }
+
+    @Test
+    void strSkip() {
+        String toCheck = "This String should remove all the e's not preceeded by d.";
+        String expectedResult = "This String should rmov all th 's not prcded by d.";
+        assertEquals(expectedResult, StringUtils.strSkip(toCheck, 'e', 'd'));
+    }
+
+    @Test
+    void strEscape() {
+    }
+
+    @Test
+    void hexCharToInt() {
+        char one = '1';
+        char a = 'a';
+        char A = 'A';
+        char x = 'x';
+
+        assertAll(
+                () -> assertEquals(1, StringUtils.hexCharToInt(one)),
+                () -> assertEquals(10, StringUtils.hexCharToInt(a)),
+                () -> assertEquals(10, StringUtils.hexCharToInt(A)),
+                () -> assertEquals(-1, StringUtils.hexCharToInt(x))
+        );
+    }
+
+    @Test
+    void hexStrToInt() {
+        String one = "1";
+        String sixteen = "10";
+        String twenty = "14";
+        String error1 = "z";
+        String error2 = "za";
+        String error3 = "az";
+
+        assertAll(
+                () -> assertEquals(1, StringUtils.hexStrToInt(one)),
+                () -> assertEquals(16, StringUtils.hexStrToInt(sixteen)),
+                () -> assertEquals(20, StringUtils.hexStrToInt(twenty)),
+                () -> assertEquals(-1, StringUtils.hexStrToInt(error1)),
+                () -> assertEquals(-1, StringUtils.hexStrToInt(error2)),
+                () -> assertEquals(-1, StringUtils.hexStrToInt(error3))
+                );
+    }
+
+    @Test
+    void containsOnlySpaces() {
+        assertAll(
+                () -> assertTrue(StringUtils.containsOnlySpaces(" \t \n ")),
+                () -> assertFalse(StringUtils.containsOnlySpaces("aa"))
+        );
+    }
+
+    @Test
+    void isVowel() {
+        assertAll(
+                () -> assertTrue(StringUtils.isVowel('A')),
+                () -> assertTrue(StringUtils.isVowel('e')),
+                () -> assertFalse(StringUtils.isVowel('x'))
         );
     }
 }

@@ -6,6 +6,9 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 public class StringUtils {
     private final static Logger logger = LogManager.getLogger();
     public static String programmeName;
@@ -73,38 +76,12 @@ public class StringUtils {
     }
 
     /**
-     * Log a formatted string with no objects (a straight string) at level INFO
-     * @param string the string to log
-     */
-    public static void plogFmt(@NotNull String string) {
-        logger.info(string);
-    }
-
-    /**
-     * Log a formatted string at level INFO
-     * @param format The string to format
-     * @param objects The objects to format it with
-     */
-    public static void plogFmt(@NotNull String format, Object... objects) {
-        logger.info(format, objects);
-    }
-
-    /**
-     * Quit the program using a formatted quit string
-     * TODO: Implement the quit function from the z-util.c file
-     * @param toFormat The string to format
-     * @param objects The objects used to format this string
-     */
-    public static void quitFmt(String toFormat, Object... objects) {
-//        quit(String.format(toFormat, objects));
-    }
-
-    /**
      * Pluralise a verb based on the number of them
      * @param number The number of items we are pluralising
      * @return nothing in number is one, the string "s" if it is more than that
      */
-    public static String plural(int number) {
+    @Contract(pure = true)
+    public static @NonNull String plural(int number) {
         return (number == 1) ? "" : "s";
     }
 
@@ -126,7 +103,8 @@ public class StringUtils {
      * @param number the number of characters to return
      * @return THe first number characters of string
      */
-    public static String clipTo(@NonNull String string, @NotNull int number) {
+    @Contract(pure = true)
+    public static @NonNull String clipTo(@NonNull String string, @NotNull int number) {
         return string.substring(0, number);
     }
 
@@ -136,7 +114,7 @@ public class StringUtils {
      * @param t one of the strings to determine if it is equal to the other (s)
      * @return true if s.equals(t), false otherwise
      */
-    @Contract(value = "_, null -> false", pure = true)
+    @Contract(pure = true)
     public static boolean streq(@NonNull String s, @NotNull String t) {
         return s.equals(t);
     }
@@ -302,5 +280,80 @@ public class StringUtils {
      */
     public static boolean prefixI(@NotNull String string, @NotNull String prefix) {
         return prefix(string.toUpperCase(), prefix.toUpperCase());
+    }
+
+  /**
+   * Remove all the characters c in a string, except where they are preceded by escapeChar
+   * @param start The string to replace
+   * @param removeChar The character to remove
+     * @param escapeChar The character to mark as not to remove
+     * @return A string where all the characters removeChar NOT preceeded by a character escapeChar have been removed.
+     */
+      public static @NonNull String strSkip(@NonNull String start, char removeChar, char escapeChar) {
+          Pattern pattern = Pattern.compile("(^|[^" + escapeChar + "])" + removeChar +"+");
+          Matcher matcher = pattern.matcher(start);
+          if (!matcher.find()) return start;
+          return matcher.replaceAll("$1");
+      }
+
+    /**
+     * Remove all the characters of a particular type in a string, leaving one where two existed
+     * @param string The string to strip of the character
+     * @param escapeChar The character to strip from the string
+     * @return A string with all entries of the character removed, except for the case where there were two adjacent
+     * characters, in which case one remains.
+     */
+    public static String strEscape(String string, char escapeChar) {
+        // TODO: Write this
+        String regex = "(^|[^" + escapeChar + "])[[e][e]]";
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(string);
+        return matcher.replaceAll("$1");
+    }
+
+    /**
+     * Returns a decimal integer value of a single hexidecimal character
+     * @param ch The character to convert to a hex value, i.e. 0-9, A-F
+     * @return the integer between 0 and 15 if the conversion worked, or -1 if there was an error.
+     */
+    public static int hexCharToInt(char ch) {
+        if (ch >= '0' && ch <= '9') return ch - '0';
+        if (ch >= 'A' && ch <= 'F') return ch - 'A' + 10;
+        if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
+        return -1;
+    }
+
+    /**
+     * Return a decimal value of a hexidecimal string
+     * @param string the string to convert from hex characters to an int
+     * @return the integer calculated from the string, or -1 if an error occurred
+     */
+    public static int hexStrToInt(@NonNull String string) {
+        int result = 0;
+        for (int index = 0; index < string.length(); index++) {
+            int current = hexCharToInt(string.charAt(index));
+            if (current == -1) return -1;
+            result = result * 16 + current;
+        }
+
+        return result;
+    }
+
+    /**
+     * Returns true if the string only contains white space
+     * @param string The string to check
+     * @return true if string is blank, false otherwise
+     */
+    public static boolean containsOnlySpaces(@NonNull String string) { return string.isBlank(); }
+
+    /**
+     * Check to see if a character is a vowel
+     * @param ch The character to check
+     * @return true if ch is one of (AEIOUaeiou), false otherwise
+     */
+    public static boolean isVowel(char ch) {
+        ch = Character.toLowerCase(ch);
+
+        return ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u';
     }
 }

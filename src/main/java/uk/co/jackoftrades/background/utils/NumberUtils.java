@@ -109,24 +109,18 @@ public class NumberUtils {
      * size of the ArrayList numbers, then it is changed to be the size of the list.
      */
     @Contract("_, _ -> new")
-    public static @NonNull Rational mean(@NotNull ArrayList<Integer> numbers, int size, boolean divisible) {
+    public static @NonNull Rational mean(@NotNull ArrayList<Integer> numbers, int size) {
         if (size == 0) {
-            return new Rational(0, 1);
+            return Rational.zero;
         }
-
         if (size > numbers.size()) size = numbers.size();
 
-        int numerator = 0;
+        Rational result = Rational.zero;
+
         for (int index = 0; index < size; index++)
-            numerator = numerator + numbers.get(index);
+            result = result.add(new Rational(numbers.get(index)));
 
-        if (divisible) {
-            numerator = numerator % size;
-            // if (result > 0) numerator = numerator - (size - result);
-        }
-
-        // multiply it by 1 to force simplification
-        return new Rational(numerator, size).multi(Rational.one);
+        return result.div(new Rational(size));
     }
 
     @Contract("_, _, _, _ -> new")
@@ -140,7 +134,7 @@ public class NumberUtils {
 
         Rational sumNums = Rational.zero;
 
-        Rational mean = mean(numbers, size, false);
+        Rational mean = mean(numbers, size);
         // mean to subtract
         Rational minusMean = mean.multi(new Rational(-1));
 

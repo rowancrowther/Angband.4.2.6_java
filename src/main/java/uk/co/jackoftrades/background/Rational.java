@@ -106,9 +106,24 @@ public class Rational {
      */
     public int getIntegerPart()
     {
-        return numerator / denominator;
+        return getIntegerPart(1);
     }
 
+    /**
+     * Return the integer part of this Rational scaled up by an integer
+     * @param scale The integer to scale this rational by
+     * @return THe integer part of this rational, once it has been scaled
+     */
+    public int getIntegerPart(int scale) {
+        Rational scaled = new Rational(numerator * scale, denominator, true);
+        return scaled.getNumerator() / scaled.getDenominator();
+    }
+
+    /**
+     * Subtract one rational from this rational
+     * @param other The rational to subtract
+     * @return A new Rational consisting of this - other
+     */
     public Rational sub(Rational other) {
         return this.add(other.multi(new Rational(-1)));
     }

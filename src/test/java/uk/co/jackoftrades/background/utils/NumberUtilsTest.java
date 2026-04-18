@@ -87,13 +87,14 @@ class NumberUtilsTest {
         Rational r1 = new Rational(3);
         Rational r6 = new Rational(29, 4);
 
+        Rational resf2 = NumberUtils.mean(list,2);
+
         assertAll(
-                () -> assertNull(NumberUtils.mean(list, 0, true)),
-                () -> assertTrue(rt2.equals(NumberUtils.mean(list, 2, true))),
-                () -> assertTrue(rf2.equals(NumberUtils.mean(list, 2, false))),
-                () -> assertTrue(r3.equals(NumberUtils.mean(list, 3, true))),
-                () -> assertTrue(r1.equals(NumberUtils.mean(list, 1, true))),
-                () -> assertTrue(r6.equals(NumberUtils.mean(list, 6, false)))
+                () -> assertTrue(Rational.zero.equals(NumberUtils.mean(list, 0))),
+                () -> assertTrue(rf2.equals(resf2)),
+                () -> assertTrue(r3.equals(NumberUtils.mean(list, 3))),
+                () -> assertTrue(r1.equals(NumberUtils.mean(list, 1))),
+                () -> assertTrue(r6.equals(NumberUtils.mean(list, 6)))
         );
     }
 

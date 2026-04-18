@@ -104,4 +104,21 @@ class RationalTest {
                 () -> assertTrue(Rational.zero.equals(r0.getRemainder()))
         );
     }
+
+    @Test
+    void testGetIntegerPart() {
+        int scale = 4;
+        Rational rational = new Rational(2, 3, false);
+        int expected = 2;
+
+        assertEquals(expected, rational.getIntegerPart(scale));
+    }
+
+    @Test
+    void testGetIntegerPart1() {
+        Rational rational = new Rational(4, 3, false);
+        int expected = 1;
+
+        assertEquals(expected, rational.getIntegerPart());
+    }
 }

@@ -37,7 +37,8 @@ public class ControlUtils {
      * @param objects The objects used to format this string
      */
     public static void quitFmt(String toFormat, Object... objects) {
-        quit(String.format(String.format(toFormat, objects)));
+        Quit q = new Quit();
+        q.quit(String.format(toFormat, objects));
     }
 
     /**
@@ -45,8 +46,9 @@ public class ControlUtils {
      * @param toFormat The string to format
      * @param objects The objects used to format this string
      */
-    public static void quit(String toFormat, Object... objects) {
-        quit(String.format(String.format(toFormat, objects)));
+    public static void quit() {
+        Quit q = new Quit();
+        q.quit("");
     }
 
     /**

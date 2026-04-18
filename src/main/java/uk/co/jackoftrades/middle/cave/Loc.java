@@ -1,6 +1,7 @@
 package uk.co.jackoftrades.middle.cave;
 
 import org.jspecify.annotations.NonNull;
+import uk.co.jackoftrades.background.utils.RandomValueUtils;
 
 public class Loc {
     private int x;
@@ -20,6 +21,24 @@ public class Loc {
     public Loc(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    /**
+     * Getter for y
+     *
+     * @return the current value of y
+     */
+    public int getY() {
+        return y;
+    }
+
+    /**
+     * Getter for x
+     *
+     * @return the current value of x
+     */
+    public int getX() {
+        return x;
     }
 
     /**
@@ -61,5 +80,26 @@ public class Loc {
         return new Loc(this.x - other.x, this.y - other.y);
     }
 
+    /**
+     * Create a random location with the given spread variables on x and y
+     *
+     * @param xSpread The x spread value - new value should be between this.x - xSpread and this.x + xSpread
+     * @param ySpread The y spread value - new value should be between this.y - ySpread and this.y + ySpread
+     * @return A random location where new.x is between this.x - xSpread and this.x + xSpread
+     * and new.y is between this.y - ySpread and this.y + ySpread
+     */
+    public Loc randLoc(int xSpread, int ySpread) {
+        return new Loc(RandomValueUtils.randSpread(x, xSpread), RandomValueUtils.randSpread(y, ySpread));
+    }
 
+    /**
+     * Returns a new location offset from this location by dx and dy
+     *
+     * @param dx The amount that the x coordinate is offset
+     * @param dy The amount that the y coordinate is offset
+     * @return A new location of the form (x + dx, y + dy)
+     */
+    public Loc locOffset(int dx, int dy) {
+        return new Loc(x + dx, y + dy);
+    }
 }

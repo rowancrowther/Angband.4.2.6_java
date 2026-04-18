@@ -2,6 +2,7 @@ package uk.co.jackoftrades.middle.cave;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LocTest {
@@ -36,5 +37,26 @@ class LocTest {
         Loc diff = a.diff(b);
 
         assertTrue(diff.equals(new Loc(25, 14)));
+    }
+
+    @Test
+    void randLoc() {
+        Loc start = new Loc(10, 15);
+        Loc result = start.randLoc(10, 5);
+
+        assertAll(
+                () -> assertTrue(result.getX() < 20),
+                () -> assertTrue(result.getX() >= 0),
+                () -> assertTrue(result.getY() < 20),
+                () -> assertTrue(result.getY() >= 10)
+        );
+    }
+
+    @Test
+    void locOffset() {
+        Loc start = new Loc(10, 15);
+        Loc expected = new Loc(13, 13);
+
+        assertTrue(expected.equals(start.locOffset(3, -2)));
     }
 }

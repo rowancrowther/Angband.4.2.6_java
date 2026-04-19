@@ -2,9 +2,9 @@ package uk.co.jackoftrades.background;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.background.enums.DamageAspect;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class RandomTest {
     // private final Logger logger = AngbandLogger.getRootLogger();
@@ -144,5 +144,20 @@ class RandomTest {
         String expected = "Base: " + base + "\nMBonus: " + mBonus + "\nDice: " + dice + "\nSides: " + sides;
 
         assertEquals(expected, random.toString());
+    }
+
+    // 3, 2, 2, 6
+    @Test
+    void randCalc() {
+        int result = random.randCalc(1, DamageAspect.RANDOMIZE);
+
+        assertAll(
+                () -> assertEquals(17, random.randCalc(1, DamageAspect.MAXIMIZE)),
+                () -> assertEquals(17, random.randCalc(1, DamageAspect.EXTREMIFY)),
+                () -> assertEquals(5, random.randCalc(1, DamageAspect.MINIMIZE)),
+                () -> assertEquals(10, random.randCalc(1, DamageAspect.AVERAGE)),
+                () -> assertTrue(result <= 17),
+                () -> assertTrue(result >= 5)
+        );
     }
 }

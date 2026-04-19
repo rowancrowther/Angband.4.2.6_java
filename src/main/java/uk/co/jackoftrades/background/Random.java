@@ -2,6 +2,8 @@ package uk.co.jackoftrades.background;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.background.enums.DamageAspect;
+import uk.co.jackoftrades.background.utils.RandomValueUtils;
 
 public class Random {
     private int base;
@@ -148,5 +150,25 @@ public class Random {
     @Override
     public String toString() {
         return "Base: " + base + "\nMBonus: " + mBonus + "\nDice: " + dice + "\nSides: " + sides;
+    }
+
+    /**
+     * Calculates a random value based on the level we are on and a damage aspect
+     *
+     * @param level  The level we are on
+     * @param aspect The damage aspect to use
+     * @return A random number created by rolling this Random
+     */
+    public int randCalc(int level, DamageAspect aspect) {
+        if (aspect == DamageAspect.EXTREMIFY) {
+            int min = randCalc(level, DamageAspect.MINIMIZE);
+            int max = randCalc(level, DamageAspect.MAXIMIZE);
+
+            return Math.abs(min) > Math.abs(max) ? min : max;
+        }
+
+        int damage = RandomValueUtils.damCalc(dice, sides, aspect);
+        int bonus = RandomValueUtils.mBonusCalc(mBonus, level, aspect);
+        return base + damage + bonus;
     }
 }

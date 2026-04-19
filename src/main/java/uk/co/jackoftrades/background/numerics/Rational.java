@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background;
+package uk.co.jackoftrades.background.numerics;
 
 import org.jspecify.annotations.NonNull;
 
@@ -13,16 +13,8 @@ public class Rational {
         return numerator;
     }
 
-    private void setNumerator(int numerator) {
-        this.numerator = numerator;
-    }
-
     public int getDenominator() {
         return denominator;
-    }
-
-    private void setDenominator(int denominator) {
-        this.denominator = denominator;
     }
 
     public Rational(int numerator) {
@@ -70,8 +62,7 @@ public class Rational {
 
     public boolean equals(@NonNull Rational other) {
         if (denominator == 0 && other.denominator == 0) return true;
-        if (denominator != 0 && other.denominator == 0) return false;
-        if (denominator == 0 && other.denominator != 0) return false;
+        if (other.denominator == 0 || denominator == 0) return false;
 
         this.simplify();
         other.simplify();
@@ -95,8 +86,8 @@ public class Rational {
 
         // Flip any negative sign to the numerator
         if (denominator < 0 && numerator > 0) {
-            numerator = 0 - numerator;
-            denominator = 0 - denominator;
+            numerator = -numerator;
+            denominator = -denominator;
         }
     }
 
@@ -139,5 +130,15 @@ public class Rational {
     @Override
     public String toString() {
         return numerator + " / " + denominator;
+    }
+
+    /**
+     * Returns the integer value of the rational multiplied by scale (a) where (a*c+b) = as an integer
+     *
+     * @param scale The integer to scale the rational by
+     * @return the integer value of the rational times the scale
+     */
+    public int toUint(int scale) {
+        return multi(new Rational(scale)).getIntegerPart();
     }
 }

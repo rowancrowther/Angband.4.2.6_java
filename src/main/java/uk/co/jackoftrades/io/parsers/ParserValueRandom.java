@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.io.parsers;
 
 
-import uk.co.jackoftrades.background.Random;
+import uk.co.jackoftrades.background.numerics.Random;
 
 /**
  * A concrete ParserValueUnion object of type Random.

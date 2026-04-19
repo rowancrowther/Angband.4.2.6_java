@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background;
+package uk.co.jackoftrades.background.numerics;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

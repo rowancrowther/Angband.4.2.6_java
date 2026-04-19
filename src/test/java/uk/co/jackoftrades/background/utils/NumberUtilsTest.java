@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.background.utils;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.Rational;
+import uk.co.jackoftrades.background.numerics.Rational;
 
 import java.util.ArrayList;
 

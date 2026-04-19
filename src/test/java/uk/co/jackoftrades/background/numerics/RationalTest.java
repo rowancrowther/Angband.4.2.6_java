@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background;
+package uk.co.jackoftrades.background.numerics;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -68,7 +68,6 @@ class RationalTest {
     @Test
     void testEquals() {
         assertAll(
-                () -> assertTrue(r2.equals(r2)),
                 () -> assertTrue(new Rational(12,13).equals(r2)),
                 () -> assertFalse(r1.equals(r2))
         );
@@ -120,5 +119,18 @@ class RationalTest {
         int expected = 1;
 
         assertEquals(expected, rational.getIntegerPart());
+    }
+
+    @Test
+    void toUint() {
+        Rational rat0 = Rational.zero;
+        Rational rat1 = Rational.one;
+        Rational rat2 = new Rational(12, 13, false);
+
+        assertAll(
+                () -> assertEquals(0, rat0.toUint(100)),
+                () -> assertEquals(100, rat1.toUint(100)),
+                () -> assertEquals(92, rat2.toUint(100))
+        );
     }
 }

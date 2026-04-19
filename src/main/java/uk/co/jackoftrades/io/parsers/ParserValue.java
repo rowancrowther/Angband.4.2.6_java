@@ -2,7 +2,7 @@ package uk.co.jackoftrades.io.parsers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.background.Random;
+import uk.co.jackoftrades.background.numerics.Random;
 
 import java.util.ArrayList;
 

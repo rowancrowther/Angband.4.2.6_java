@@ -5,7 +5,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jspecify.annotations.NonNull;
-import uk.co.jackoftrades.background.Rational;
+import uk.co.jackoftrades.background.numerics.Rational;
 
 import java.util.ArrayList;
 
@@ -102,7 +102,6 @@ public abstract class NumberUtils {
      * numerator is divisible by the denominator, or not.
      * @param numbers The ArrayList of numbers to sum to calculate the mean
      * @param size The number of integers in the array numbers to calculate the mean of
-     * @param divisible whether to return a 'whole number' as a Rational or not
      * @return The mean of the first size numbers in the ArrayList numbers as a Rational. If divisible is true then the
      * return value will be one where the numerator is divisible by the denominator, i.e. 4 / 2. If it is false then
      * this requirement will not be there. If size is 0 then a null value is returned. If the size is greater than the
@@ -123,6 +122,15 @@ public abstract class NumberUtils {
         return result.div(new Rational(size));
     }
 
+    /**
+     * Calculates the variance of a set of integers as a rational number
+     *
+     * @param numbers  a list of integers
+     * @param size     the first n numbers in the list to work out the variance of
+     * @param unbiased whether the result is divided by size or size - 1
+     * @param ofMean   whether we are dividing by a further size or not
+     * @return the variance of the first size numbers in a list
+     */
     @Contract("_, _, _, _ -> new")
     public static @NonNull Rational variance(ArrayList<Integer> numbers, int size, boolean unbiased, boolean ofMean)
     {
@@ -159,15 +167,5 @@ public abstract class NumberUtils {
             result = result.div(new Rational(size));
 
         return result;
-    }
-
-    /**
-     * Returns the integer value of the rational multiplied by scale (a) where (a*c+b) = as an integer
-     * @param rational The rational to get the integer out of
-     * @param scale The integer to scale the rational by
-     * @return the integer value of the rational times the scale
-     */
-    public int rationalToUint(Rational rational, int scale) {
-        return rational.multi(new Rational(scale)).getIntegerPart();
     }
 }

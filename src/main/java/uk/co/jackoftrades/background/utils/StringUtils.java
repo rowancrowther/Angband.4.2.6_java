@@ -351,4 +351,24 @@ public abstract class StringUtils {
 
         return ch == 'a' || ch == 'e' || ch == 'i' || ch == 'o' || ch == 'u';
     }
+
+    /**
+     * Given a "formatted" chunk of text (i.e. one including tags like {red}{/})
+     * in 'source', with starting point 'init', this finds the next section of
+     * text and any tag that goes with it, return true if it finds something to
+     * print.
+     *
+     * If it returns true, then it also fills 'text' with a pointer to the start
+     * of the next printable section of text, and 'len' with the length of that
+     * text, and 'end' with a pointer to the start of the next section.  This
+     * may differ from "text + len" because of the presence of tags.  If a tag
+     * applies to the section of text, it returns a pointer to the start of that
+     * tag in 'tag' and the length in 'taglen'.  Otherwise, 'tag' is filled with
+     * NULL.
+     *
+     * See text_out_e for an example of its use.
+     */
+    //static bool next_section(const char *source, size_t init, const char **text,
+    //                         size_t *len, const char **tag, size_t *taglen,
+    //					 const char **end)
 }

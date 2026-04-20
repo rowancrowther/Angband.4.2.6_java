@@ -6,8 +6,8 @@ import uk.co.jackoftrades.background.utils.RandomValueUtils;
  * A class representing a random chance of success, such as 12 in 13
  */
 public class RandomChance {
-    private int numerator;
-    private int denominator;
+    private final int numerator;
+    private final int denominator;
 
     /**
      * Constructor

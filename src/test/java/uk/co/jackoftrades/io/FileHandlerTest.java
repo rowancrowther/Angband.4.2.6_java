@@ -5,7 +5,8 @@ import org.apache.logging.log4j.Logger;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.io.enums.FileModeEnum;
+import uk.co.jackoftrades.background.io.FileHandler;
+import uk.co.jackoftrades.background.io.enums.FileModeEnum;
 
 import java.io.*;
 import java.nio.file.Files;

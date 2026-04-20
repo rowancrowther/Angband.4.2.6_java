@@ -2,6 +2,7 @@ package uk.co.jackoftrades.io.parsers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.background.io.parsers.ParserValueUInt;
 
 import static org.junit.jupiter.api.Assertions.*;
 

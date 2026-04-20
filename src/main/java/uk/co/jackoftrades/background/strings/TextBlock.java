@@ -24,6 +24,15 @@ public class TextBlock {
         textAndAttributes = new ArrayList<>();
     }
 
+    private String convertToString() {
+        StringBuilder output = new StringBuilder("");
+        for (AngbandDisplayCharacter adc : textAndAttributes) {
+            output.append(adc.getCharacter());
+        }
+
+        return output.toString();
+    }
+
     /**
      * Add a character/colour combination to the end of the text block
      *
@@ -131,34 +140,51 @@ public class TextBlock {
      * @return An array of TextBlocks
      */
     public List<TextBlock> calculateLines(int width) {
-        int index = 0;
-        int currentTokenStart = 0;
-        int currentWSStart = 0;
+        String valueToWrap = convertToString();
+        String[] tokens = valueToWrap.split("\\s");
+        int currentLength = 0;
+        int tokenLength;
+        List<TextBlock> output = new ArrayList<>();
         TextBlock currentLine = new TextBlock();
-        int currentLineLength = 0;
-        ArrayList<TextBlock> output = new ArrayList<>();
+        boolean splitWord = false;
 
-        while (index < textAndAttributes.size()) {
-            index = skipWhiteSpace(index);
-            currentTokenStart = index;
-            index = skipNonWhiteSpace(index);
-            currentWSStart = index;
+        for (String token : tokens) {
+            splitWord = false;
+            tokenLength = token.length();
+            if (currentLength + tokenLength + 1 > width) {
+                if (tokenLength > width) {
+                    if (currentLine.length() != 0) output.add(currentLine);
 
-            // at this point we have indices flanking the token - strip out the token and associated colours and append
-            // them to the current line.
-            for (int i = currentTokenStart; i < currentWSStart; i++) {
-                currentLineLength = currentLine.length();
-                if (currentLineLength + currentWSStart - currentTokenStart > width) {
+                    while (token.length() > 0) {
+                        currentLine = new TextBlock();
+                        currentLine.append(token.substring(0, Math.min(width, token.length())));
+                        if (token.length() > width) {
+                            output.add(currentLine);
+                        }
+                        token = token.substring(Math.min(width, token.length()));
+                        splitWord = true;
+                    }
+                    if (token.length() >= 0) currentLine.append(token + " ");
+
+                    if (currentLine.length() >= 0 && !splitWord) {
+                        output.add(currentLine);
+                        currentLine = new TextBlock();
+                    }
+
+                } else {
                     output.add(currentLine);
                     currentLine = new TextBlock();
+                    currentLength = 0;
                 }
-                currentLine.append(textAndAttributes.get(i));
-                currentLine.append(' ', AttributeColour.COLOUR_WHITE);
+            }
+
+            if (!splitWord) {
+                currentLength += tokenLength + 1;
+                currentLine.append(token + " ");
             }
         }
 
-        if (currentLine.length() > 0)
-            output.add(currentLine);
+        if (currentLine.length() != 0) output.add(currentLine);
 
         return output;
     }

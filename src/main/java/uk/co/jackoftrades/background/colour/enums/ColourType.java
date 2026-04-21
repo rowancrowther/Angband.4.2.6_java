@@ -162,3 +162,4 @@ public enum ColourType {
     public static AttributeColour getColourType(char ch) {
         return getColourType(ch, 0);
     }
+}

@@ -1,12 +1,9 @@
-package uk.co.jackoftrades.background.strings.enums;
+package uk.co.jackoftrades.background.colour.enums;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.colour.enums.AttributeColour;
-import uk.co.jackoftrades.background.colour.enums.ColourType;
 
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -40,7 +37,7 @@ class ColourTypeTest {
     private final ColourType blueSlate = ColourType.COLOUR_TYPE_BLUE_SLATE;
     private final ColourType deepLightBlue = ColourType.COLOUR_TYPE_DEEP_LIGHT_BLUE;
 
-    private List<ColourType> allValues;
+    private ArrayList<ColourType> allValues;
 
     @BeforeEach
     void setUp() {
@@ -111,75 +108,54 @@ class ColourTypeTest {
     }
 
     @Test
-    void getColourName() {
-        assertAll(
-                () -> assertEquals("Dark", dark.getColourName()),
-                () -> assertEquals("White", white.getColourName()),
-                () -> assertEquals("Slate", slate.getColourName()),
-                () -> assertEquals("Orange", orange.getColourName()),
-                () -> assertEquals("Red", red.getColourName()),
-                () -> assertEquals("Green", green.getColourName()),
-                () -> assertEquals("Blue", blue.getColourName()),
-                () -> assertEquals("Umber", umber.getColourName()),
-                () -> assertEquals("Light Dark", lightDark.getColourName()),
-                () -> assertEquals("Light Slate", lightSlate.getColourName()),
-                () -> assertEquals("Light Purple", lightPurple.getColourName()),
-                () -> assertEquals("Yellow", yellow.getColourName()),
-                () -> assertEquals("Light Red", lightRed.getColourName()),
-                () -> assertEquals("Light Green", lightGreen.getColourName()),
-                () -> assertEquals("Light Blue", lightBlue.getColourName()),
-                () -> assertEquals("Light Umber", lightUmber.getColourName()),
-                () -> assertEquals("Purple", purple.getColourName()),
-                () -> assertEquals("Violet", violet.getColourName()),
-                () -> assertEquals("Teal", teal.getColourName()),
-                () -> assertEquals("Mud", mud.getColourName()),
-                () -> assertEquals("Light Yellow", lightYellow.getColourName()),
-                () -> assertEquals("Magenta-Pink", magentaPink.getColourName()),
-                () -> assertEquals("Light Teal", lightTeal.getColourName()),
-                () -> assertEquals("Light Violet", lightViolet.getColourName()),
-                () -> assertEquals("Light Pink", lightPink.getColourName()),
-                () -> assertEquals("Mustard", mustard.getColourName()),
-                () -> assertEquals("Blue Slate", blueSlate.getColourName()),
-                () -> assertEquals("Deep Light Blue", deepLightBlue.getColourName())
-        );
-    }
-
-    @Test
     void colourAttribute() {
-        AttributeColour colour = AttributeColour.COLOUR_WHITE;
-
-        // check that the second value is always white for everything other than COLOUR_TYPE_DARK
-        for (ColourType colourType : ColourType.values()) {
-            if (colourType == ColourType.COLOUR_TYPE_DARK)
-                assertEquals(AttributeColour.COLOUR_DARK, colourType.colourAttribute(1));
-            else
-                assertEquals(colour, colourType.colourAttribute(1));
-        }
-
-        // Now do some at random, total coverage would be too hard
         assertAll(
-                () -> assertEquals(AttributeColour.COLOUR_DEEP_L_BLUE, ColourType.COLOUR_TYPE_BLUE_SLATE.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_MAGENTA, ColourType.COLOUR_TYPE_LIGHT_PINK.colourAttribute(5)),
-                () -> assertEquals(AttributeColour.COLOUR_TEAL, ColourType.COLOUR_TYPE_LIGHT_TEAL.colourAttribute(5)),
-                () -> assertEquals(AttributeColour.COLOUR_MUSTARD, ColourType.COLOUR_TYPE_MUD.colourAttribute(4)),
-                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.COLOUR_TYPE_PURPLE.colourAttribute(3)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, ColourType.COLOUR_TYPE_LIGHT_GREEN.colourAttribute(7))
+                () -> assertEquals(AttributeColour.COLOUR_L_DARK, dark.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, white.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_WHITE, slate.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, orange.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_RED, red.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_GREEN, green.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, blue.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, umber.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, lightDark.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightSlate.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPurple.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, yellow.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightRed.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightGreen.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightBlue.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightUmber.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, purple.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, violet.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_TEAL, teal.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_MUSTARD, mud.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightYellow.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PINK, magentaPink.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightTeal.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightViolet.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPink.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, mustard.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_DEEP_L_BLUE, blueSlate.colourAttribute(6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, deepLightBlue.colourAttribute(6))
         );
     }
 
     @Test
     void getColourType() {
-        // Only do a sample of these
         assertAll(
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('w')),
-                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, ColourType.getColourType('P')),
-                () -> assertEquals(AttributeColour.COLOUR_BLUE_SLATE, ColourType.getColourType('z')),
-                () -> assertEquals(AttributeColour.COLOUR_DEEP_L_BLUE, ColourType.getColourType('Z')),
-                () -> assertEquals(AttributeColour.COLOUR_L_RED, ColourType.getColourType('R')),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('R', 1)),
-                () -> assertEquals(AttributeColour.COLOUR_L_RED, ColourType.getColourType('R', 0)),
-                () -> assertEquals(AttributeColour.COLOUR_L_GREEN, ColourType.getColourType('g', 4)),
-                () -> assertEquals(AttributeColour.COLOUR_UMBER, ColourType.getColourType('u', 8))
+                () -> assertEquals(AttributeColour.COLOUR_DARK, ColourType.getColourType('d')),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('w', 1)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getColourType('s', 3)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, ColourType.getColourType('o', 4)),
+                () -> assertEquals(AttributeColour.COLOUR_L_RED, ColourType.getColourType('r', 4)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getColourType('g', 5)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, ColourType.getColourType('b', 6)),
+                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, ColourType.getColourType('u', 7)),
+                () -> assertEquals(AttributeColour.COLOUR_L_DARK, ColourType.getColourType('D', 8)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('X')),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('X', 7)),
+                () -> assertEquals(AttributeColour.COLOUR_UMBER, ColourType.getColourType('u', 19))
         );
     }
 
@@ -187,7 +163,7 @@ class ColourTypeTest {
     void values() {
         for (ColourType colourType : ColourType.values()) {
             if (!allValues.contains(colourType))
-                fail("ColourType " + colourType.name() + " not found in manually created array");
+                fail("Colour type " + colourType.getColourName() + " not found in manually created list.");
         }
     }
 

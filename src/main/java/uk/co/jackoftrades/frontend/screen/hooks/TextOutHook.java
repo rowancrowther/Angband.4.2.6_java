@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.frontend.screen.hooks;
 
-import uk.co.jackoftrades.background.strings.enums.AttributeColour;
+import uk.co.jackoftrades.background.colour.enums.AttributeColour;
 
 public interface TextOutHook {
     void output(AttributeColour attribute, String string);

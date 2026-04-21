@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background.strings.enums;
+package uk.co.jackoftrades.background.colour.enums;
 
 public enum AttributeColour {
     COLOUR_DARK, // 0

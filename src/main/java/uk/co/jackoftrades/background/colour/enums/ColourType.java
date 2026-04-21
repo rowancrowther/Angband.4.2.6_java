@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.background.strings.enums;
+package uk.co.jackoftrades.background.colour.enums;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -119,13 +119,13 @@ public enum ColourType {
 
     private final char colourCharacter;
     private final String colourName;
-    private final AttributeColour[] colourTable;
-    private final Logger logger = LogManager.getLogger();
+    private final AttributeColour[] colourTranslate;
+    private static final Logger logger = LogManager.getLogger();
 
     ColourType(char c, String name, AttributeColour[] table) {
         colourCharacter = c;
         colourName = name;
-        colourTable = table;
+        colourTranslate = table;
     }
 
     public char getColourCharacter() {
@@ -137,19 +137,23 @@ public enum ColourType {
     }
 
     public AttributeColour colourAttribute(int index) {
-        if (index < 0 || index >= colourTable.length) {
-            String message = "Colour index out of bounds, should be between 0 and " + colourTable.length + ", was " + index;
+        if (index < 0 || index >= colourTranslate.length) {
+            String message = "Colour index out of bounds, should be between 0 and " + colourTranslate.length + ", was " + index;
             logger.error(message);
             throw new IndexOutOfBoundsException(message);
         }
 
-        return colourTable[index];
+        return colourTranslate[index];
     }
 
     public static AttributeColour getColourType(char ch, int index) {
         for (ColourType c : ColourType.values()) {
-            if (c.getColourCharacter() == ch)
+            if (c.getColourCharacter() == ch) {
+                if (index < 0 || index > 8)
+                    index = 0;
+
                 return c.colourAttribute(index);
+            }
         }
 
         return AttributeColour.COLOUR_WHITE;
@@ -158,4 +162,3 @@ public enum ColourType {
     public static AttributeColour getColourType(char ch) {
         return getColourType(ch, 0);
     }
-}

@@ -2,7 +2,7 @@ package uk.co.jackoftrades.background.strings;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.strings.enums.AttributeColour;
+import uk.co.jackoftrades.background.colour.enums.AttributeColour;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;

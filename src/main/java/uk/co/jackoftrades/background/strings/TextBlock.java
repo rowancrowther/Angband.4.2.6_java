@@ -3,9 +3,9 @@ package uk.co.jackoftrades.background.strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.NonNull;
+import uk.co.jackoftrades.background.colour.enums.AttributeColour;
 import uk.co.jackoftrades.background.io.AngFile;
 import uk.co.jackoftrades.background.io.enums.FileTypeEnum;
-import uk.co.jackoftrades.background.strings.enums.AttributeColour;
 
 import java.util.ArrayList;
 import java.util.List;

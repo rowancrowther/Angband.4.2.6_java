@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.background.strings;
 
-import uk.co.jackoftrades.background.strings.enums.AttributeColour;
+import uk.co.jackoftrades.background.colour.enums.AttributeColour;
 
 /**
  * Class to hold a single character of a particular colour

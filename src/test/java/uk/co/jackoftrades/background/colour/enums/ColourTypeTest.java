@@ -110,52 +110,52 @@ class ColourTypeTest {
     @Test
     void colourAttribute() {
         assertAll(
-                () -> assertEquals(AttributeColour.COLOUR_L_DARK, dark.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, white.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_WHITE, slate.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, orange.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_RED, red.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_GREEN, green.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, blue.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, umber.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_SLATE, lightDark.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightSlate.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPurple.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, yellow.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightRed.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightGreen.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightBlue.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightUmber.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, purple.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, violet.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_TEAL, teal.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_MUSTARD, mud.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightYellow.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_PINK, magentaPink.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightTeal.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightViolet.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPink.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, mustard.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_DEEP_L_BLUE, blueSlate.colourAttribute(6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, deepLightBlue.colourAttribute(6))
+                () -> assertEquals(AttributeColour.COLOUR_L_DARK, dark.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, white.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_WHITE, slate.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, orange.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_RED, red.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_GREEN, green.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, blue.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, umber.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, lightDark.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightSlate.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPurple.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, yellow.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightRed.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightGreen.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightBlue.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightUmber.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, purple.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PURPLE, violet.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_TEAL, teal.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_MUSTARD, mud.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, lightYellow.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_PINK, magentaPink.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightTeal.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightViolet.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, lightPink.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, mustard.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_DEEP_L_BLUE, blueSlate.colourAttribute(ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, deepLightBlue.colourAttribute(ColourTranslation.ATTR_HIGH))
         );
     }
 
     @Test
-    void getColourType() {
+    void getAttributeColour() {
         assertAll(
-                () -> assertEquals(AttributeColour.COLOUR_DARK, ColourType.getColourType('d')),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('w', 1)),
-                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getColourType('s', 3)),
-                () -> assertEquals(AttributeColour.COLOUR_YELLOW, ColourType.getColourType('o', 4)),
-                () -> assertEquals(AttributeColour.COLOUR_L_RED, ColourType.getColourType('r', 4)),
-                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getColourType('g', 5)),
-                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, ColourType.getColourType('b', 6)),
-                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, ColourType.getColourType('u', 7)),
-                () -> assertEquals(AttributeColour.COLOUR_L_DARK, ColourType.getColourType('D', 8)),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('X')),
-                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getColourType('X', 7)),
-                () -> assertEquals(AttributeColour.COLOUR_UMBER, ColourType.getColourType('u', 19))
+                () -> assertEquals(AttributeColour.COLOUR_DARK, ColourType.getAttributeColour('d')),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getAttributeColour('w', ColourTranslation.ATTR_MONO)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getAttributeColour('s', ColourTranslation.ATTR_BLIND)),
+                () -> assertEquals(AttributeColour.COLOUR_YELLOW, ColourType.getAttributeColour('o', ColourTranslation.ATTR_LIGHT)),
+                () -> assertEquals(AttributeColour.COLOUR_L_RED, ColourType.getAttributeColour('r', ColourTranslation.ATTR_LIGHT)),
+                () -> assertEquals(AttributeColour.COLOUR_SLATE, ColourType.getAttributeColour('g', ColourTranslation.ATTR_DARK)),
+                () -> assertEquals(AttributeColour.COLOUR_L_BLUE, ColourType.getAttributeColour('b', ColourTranslation.ATTR_HIGH)),
+                () -> assertEquals(AttributeColour.COLOUR_L_UMBER, ColourType.getAttributeColour('u', ColourTranslation.ATTR_METAL)),
+                () -> assertEquals(AttributeColour.COLOUR_L_DARK, ColourType.getAttributeColour('D', ColourTranslation.ATTR_MISC)),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getAttributeColour('X')),
+                () -> assertEquals(AttributeColour.COLOUR_WHITE, ColourType.getAttributeColour('X', ColourTranslation.ATTR_METAL)),
+                () -> assertEquals(AttributeColour.COLOUR_UMBER, ColourType.getAttributeColour('u', ColourTranslation.ATTR_MAX))
         );
     }
 
@@ -199,5 +199,30 @@ class ColourTypeTest {
                 () -> assertEquals(blueSlate, ColourType.valueOf("COLOUR_TYPE_BLUE_SLATE")),
                 () -> assertEquals(deepLightBlue, ColourType.valueOf("COLOUR_TYPE_DEEP_LIGHT_BLUE"))
         );
+    }
+
+    @Test
+    void attributeToString() {
+        AttributeColour dark = AttributeColour.COLOUR_DARK;
+        AttributeColour mud = AttributeColour.COLOUR_MUD;
+        AttributeColour deepLightBlue = AttributeColour.COLOUR_DEEP_L_BLUE;
+
+        assertAll(
+                () -> assertEquals("Dark", ColourType.attributeToString(dark)),
+                () -> assertEquals("Mud", ColourType.attributeToString(mud)),
+                () -> assertEquals("Deep Light Blue", ColourType.attributeToString(deepLightBlue))
+        );
+    }
+
+    @Test
+    void getColourType() {
+        ColourTranslation translation = ColourTranslation.ATTR_METAL;
+        AttributeColour colour = AttributeColour.COLOUR_GREEN;
+        int numTranslations = 3;
+
+        ColourType result = ColourType.getColourType(colour, translation, numTranslations);
+        ColourType expected = ColourType.COLOUR_TYPE_WHITE;
+
+        assertEquals(expected, result);
     }
 }

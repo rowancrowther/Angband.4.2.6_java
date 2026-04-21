@@ -2,6 +2,7 @@ package uk.co.jackoftrades.background.colour.enums;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Contract;
 
 public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
@@ -128,38 +129,118 @@ public enum ColourType {
         colourTranslate = table;
     }
 
+    /**
+     * Gets the colour character for this ColourType
+     *
+     * @return a character representing this colour
+     */
+    @Contract(pure = true)
     public char getColourCharacter() {
         return colourCharacter;
     }
 
+    /**
+     * Gets the colour name for this ColourType
+     *
+     * @return the colour name for this colour
+     */
+    @Contract(pure = true)
     public String getColourName() {
         return colourName;
     }
 
-    public AttributeColour colourAttribute(int index) {
-        if (index < 0 || index >= colourTranslate.length) {
-            String message = "Colour index out of bounds, should be between 0 and " + colourTranslate.length + ", was " + index;
+    public AttributeColour colourAttribute(ColourTranslation index) {
+        if (index == ColourTranslation.ATTR_MAX) {
+            String message = "Colour index out of bounds, should be between 0 and " +
+                    ColourTranslation.ATTR_MAX.getValue() + ", was " + index.getValue();
             logger.error(message);
             throw new IndexOutOfBoundsException(message);
         }
 
-        return colourTranslate[index];
+        return colourTranslate[index.getValue()];
     }
 
-    public static AttributeColour getColourType(char ch, int index) {
+    /**
+     * Get the AttributeColour for a given colour character and translation
+     *
+     * @param ch          The character colour
+     * @param translation The type of area we are looking at this object in, i.e. Light, Dark, Metal, etc.
+     * @return The attribute colour that this object should be displayed in
+     */
+    public static AttributeColour getAttributeColour(char ch, ColourTranslation translation) {
         for (ColourType c : ColourType.values()) {
             if (c.getColourCharacter() == ch) {
-                if (index < 0 || index > 8)
-                    index = 0;
+                if (translation == ColourTranslation.ATTR_MAX)
+                    translation = ColourTranslation.ATTR_FULL;
 
-                return c.colourAttribute(index);
+                return c.colourAttribute(translation);
             }
         }
 
         return AttributeColour.COLOUR_WHITE;
     }
 
-    public static AttributeColour getColourType(char ch) {
-        return getColourType(ch, 0);
+    /**
+     * Given an AttributeColour, return the string name stored in this enum.
+     * <br><br>
+     * This is used here as we want AttributeColour to handle the actual colours only, and this enum class to handle
+     * everything else.
+     * <br><br>
+     * This function loops through the colours in the values return and finds the one where the ATTR_FULL translation is
+     * the same as the incoming colour, and then return the name of that
+     *
+     * @param colour The attribute colour
+     * @return The name of that colour
+     */
+    public static String attributeToString(AttributeColour colour) {
+        for (ColourType colourType : ColourType.values()) {
+            if (colourType.colourTranslate[ColourTranslation.ATTR_FULL.getValue()] == colour)
+                return colourType.getColourName();
+        }
+
+        return "Icky";
+    }
+
+    /**
+     * Returns the ATTR_FULL colour translation from a colour defined by its character
+     *
+     * @param ch The character to use
+     * @return the result of getAttributeColour where the colour translation is set to ATTR_FULL
+     */
+    public static AttributeColour getAttributeColour(char ch) {
+        return getAttributeColour(ch, ColourTranslation.ATTR_FULL);
+    }
+
+    /**
+     * Move through a number of translations on a given AttributeColour to get a new colour
+     *
+     * @param startColour       The initial colour we are looking at (as an Attribute Colour)
+     * @param translation       The translation we are going to loop through
+     * @param numOfTranslations The number of times we are looping through the translation
+     * @return A ColourType (NOT AttributeColour) consisting of the value of the ColourType with the resultant
+     * AttributeColour.ColourTable[startColour] n times
+     * TODO: Rewrite this. It currently makes no sense, and the code, while simple, needs a bit of explaining
+     */
+    public static ColourType getColourType(AttributeColour startColour,
+                                           ColourTranslation translation,
+                                           int numOfTranslations) {
+        if (translation == ColourTranslation.ATTR_DARK || translation == ColourTranslation.ATTR_MAX)
+            return findColourType(startColour);
+
+        while (numOfTranslations > 0) {
+            startColour = findColourType(startColour).colourAttribute(translation);
+            numOfTranslations--;
+        }
+
+        return findColourType(startColour);
+    }
+
+    @Contract(pure = true)
+    private static ColourType findColourType(AttributeColour colour) {
+        for (ColourType colourType : ColourType.values())
+            if (colourType.colourTranslate[0] == colour)
+                return colourType;
+
+        return COLOUR_TYPE_DARK;
     }
 }

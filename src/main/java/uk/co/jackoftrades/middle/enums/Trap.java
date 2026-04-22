@@ -81,7 +81,7 @@ public enum Trap {
      */
     TRF_WEB("Is a web");
 
-    private String description;
+    private final String description;
 
     @Contract(pure = true)
     Trap(String description) {

@@ -3,6 +3,7 @@ package uk.co.jackoftrades.background.utils;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 
+import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -303,6 +304,7 @@ public class Flag<E extends Enum<E>> {
      * @param flags The flags to test the value of
      * @return true if ALL the flags are set, false otherwise
      */
+    @SafeVarargs
     @Contract(pure = true)
     public final boolean testAll(E @NonNull ... flags) {
         for (E flag : flags) {
@@ -335,6 +337,7 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
      */
+    @SafeVarargs
     public final boolean clear(E @NonNull ... flags) {
         boolean changesMade = false;
 
@@ -373,7 +376,8 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
      */
-    public boolean set(E @NonNull ... flags) {
+    @SafeVarargs
+    public final boolean set(E @NonNull ... flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
@@ -407,21 +411,18 @@ public class Flag<E extends Enum<E>> {
 
     /**
      * Clear this set and then set a number of flags in a variable argument list to be on
-     *
-     * @param flags
+     * @param flags The set of flags to initialise the cleared Flag to
      */
-    public void init(E @NonNull ... flags) {
+    @SafeVarargs
+    public final void init(E @NonNull ... flags) {
         set = EnumSet.noneOf(eClass);
 
-        for (E flag : flags) {
-            set.add(flag);
-        }
+        set.addAll(Arrays.stream(flags).toList());
     }
 
     /**
      * Clear this set and then set a number of flags in a list to be on
-     *
-     * @param flags
+     * @param flags The set of flags to initialise the cleared Flag to
      */
     public void init(@NonNull List<E> flags) {
         set = EnumSet.noneOf(eClass);

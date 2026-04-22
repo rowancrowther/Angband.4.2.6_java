@@ -138,14 +138,16 @@ class FlagTest {
     void union() {
         Flag<ColourTranslation> other = empty.copy();
         other.on(ColourTranslation.ATTR_FULL);
-        flagSet.union(other);
+
+        boolean changes = flagSet.union(other);
 
         assertAll(
                 () -> assertTrue(flagSet.has(ColourTranslation.ATTR_DARK)),
                 () -> assertTrue(flagSet.has(ColourTranslation.ATTR_HIGH)),
                 () -> assertTrue(flagSet.has(ColourTranslation.ATTR_BLIND)),
                 () -> assertTrue(flagSet.has(ColourTranslation.ATTR_FULL)),
-                () -> assertFalse(flagSet.has(ColourTranslation.ATTR_MAX))
+                () -> assertFalse(flagSet.has(ColourTranslation.ATTR_MAX)),
+                () -> assertTrue(changes)
         );
     }
 
@@ -210,9 +212,6 @@ class FlagTest {
         list1.add(flag2);
         list1.add(flag3);
 
-        ArrayList<ColourTranslation> list2 = new ArrayList<>();
-        list2.add(flag4);
-
         assertAll(
                 () -> assertTrue(flagSet.test(list1)),
                 () -> assertFalse(flagSet.test(flag4))
@@ -261,7 +260,6 @@ class FlagTest {
     @Test
     void clear() {
         ColourTranslation flag1 = ColourTranslation.ATTR_BLIND;
-        ColourTranslation flag2 = ColourTranslation.ATTR_HIGH;
         ColourTranslation flag3 = ColourTranslation.ATTR_FULL;
         ColourTranslation flag4 = ColourTranslation.ATTR_LIGHT;
 
@@ -276,7 +274,6 @@ class FlagTest {
     @Test
     void testClear() {
         ColourTranslation flag1 = ColourTranslation.ATTR_BLIND;
-        ColourTranslation flag2 = ColourTranslation.ATTR_HIGH;
         ColourTranslation flag3 = ColourTranslation.ATTR_FULL;
         ColourTranslation flag4 = ColourTranslation.ATTR_LIGHT;
 

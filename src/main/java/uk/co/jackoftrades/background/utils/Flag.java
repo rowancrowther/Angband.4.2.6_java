@@ -3,10 +3,7 @@ package uk.co.jackoftrades.background.utils;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class Flag<E extends Enum<E>> {
     private EnumSet<E> set;
@@ -427,9 +424,7 @@ public class Flag<E extends Enum<E>> {
     public void init(@NonNull List<E> flags) {
         set = EnumSet.noneOf(eClass);
 
-        for (E flag : flags) {
-            set.add(flag);
-        }
+        Collections.addAll(flags);
     }
 
     /**
@@ -440,8 +435,9 @@ public class Flag<E extends Enum<E>> {
      *              the compliment and this
      * @return true if any changes were made, false otherwise.
      */
-    public boolean mask(E @NonNull ... flags) {
-        Flag<E> mask = new Flag<E>(eClass);
+    @SafeVarargs
+    public final boolean mask(E @NonNull ... flags) {
+        Flag<E> mask = new Flag<>(eClass);
         mask.init(flags);
 
         return inter(mask);
@@ -456,9 +452,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if any changes were made, false otherwise.
      */
     public boolean mask(@NonNull List<E> flags) {
-        boolean changesMade = false;
-
-        Flag<E> mask = new Flag<E>(eClass);
+        Flag<E> mask = new Flag<>(eClass);
         mask.init(flags);
 
         return inter(mask);

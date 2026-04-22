@@ -3,7 +3,7 @@ package uk.co.jackoftrades.middle.enums;
 /**
  * TODO: Comment this
  */
-public enum EffectInfo {
+public enum EffectInfoEnum {
     EFINFO_NONE,
     EFINFO_DICE,
     EFINFO_HEAL,

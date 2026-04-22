@@ -372,11 +372,6 @@ class FlagTest {
         ColourTranslation bFlag1 = ColourTranslation.ATTR_DARK;
 
         ArrayList<ColourTranslation> newList = new ArrayList<>();
-        ArrayList<ColourTranslation> oldList = new ArrayList<>();
-
-        oldList.add(flag1);
-        oldList.add(flag2);
-        oldList.add(bFlag1);
 
         newList.add(flag1);
         newList.add(flag2);

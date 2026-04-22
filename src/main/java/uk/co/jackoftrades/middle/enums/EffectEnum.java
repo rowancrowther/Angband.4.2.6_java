@@ -1,7 +1,6 @@
 package uk.co.jackoftrades.middle.enums;
 
 import org.jetbrains.annotations.Contract;
-import org.jspecify.annotations.NonNull;
 
 /**
  * TODO: Comment and test this
@@ -130,7 +129,12 @@ public enum EffectEnum {
     private final String menuFormat;
 
     @Contract(pure = true)
-    Effect(boolean aim, String infoLabel, int arguments, EffectInfoEnum @NonNull effectInfoEnum, String text, String menuText) {
+    EffectEnum(boolean aim,
+               String infoLabel,
+               int arguments,
+               EffectInfoEnum effectInfoEnum,
+               String text,
+               String menuText) {
         requiresAiming = aim;
         this.infoLabel = infoLabel;
         numberOfArguments = arguments;

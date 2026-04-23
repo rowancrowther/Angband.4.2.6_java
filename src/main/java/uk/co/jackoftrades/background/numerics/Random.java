@@ -78,17 +78,17 @@ public class Random {
         this.mBonus = mBonus;
     }
 
-    /**
-     * Sets this random to be negatable. This should only be called by the test.
-     * TODO: Remove this once testing of whole project is complete.
-     * @param toNegate whether this random should be negated or not.
-     */
-    public void setToNegate(boolean toNegate) {
-        if (negated)
-            this.toNegate = false;
-        else
-            this.toNegate = toNegate;
-    }
+//    /**
+//     * Sets this random to be negatable. This should only be called by the test.
+//     * TODO: Remove this once testing of whole project is complete.
+//     * @param toNegate whether this random should be negated or not.
+//     */
+//    public void setToNegate(boolean toNegate) {
+//        if (negated)
+//            this.toNegate = false;
+//        else
+//            this.toNegate = toNegate;
+//    }
 
     /**
      * Returns the base of this die
@@ -190,5 +190,41 @@ public class Random {
      */
     public boolean varies() {
         return randCalc(0, DamageAspect.MINIMIZE) != randCalc(0, DamageAspect.MAXIMIZE);
+    }
+
+    /**
+     * Determine whether this random has a base or not
+     *
+     * @return True if the value of base is not zero, false otherwise
+     */
+    public boolean hasBase() {
+        return base != 0;
+    }
+
+    /**
+     * Determine whether this random has a die value or not
+     *
+     * @return true if the value of dice is not zero, false otherwise - note, this should always return true
+     */
+    public boolean hasDice() {
+        return dice != 0;
+    }
+
+    /**
+     * Determine whether this random has a die side value or not
+     *
+     * @return true if the count of dice side is not zero, false otherwise - note, this should always return true
+     */
+    public boolean hasSides() {
+        return sides != 0;
+    }
+
+    /**
+     * Determine whether this random has a bonus value or not
+     *
+     * @return true if the value of dice is not one, false otherwise
+     */
+    public boolean hasBonus() {
+        return mBonus != 1;
     }
 }

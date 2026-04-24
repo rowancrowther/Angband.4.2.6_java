@@ -29,15 +29,6 @@ public class Main {
             System.out.println(summon.toString());
         }
 
-/*        CharStream stream = CharStreams.fromString("-1+2*3d4");
-        RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        RandomFormatterParser parser = new RandomFormatterParser(tokens);
-        RandomFormatterParser.RandomContext result = parser.random();
-        Random resultDice = result.randomDice;
-*/
-        ;
-
         for (int i = 1; i <= 5; i++) {
             //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
             // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.

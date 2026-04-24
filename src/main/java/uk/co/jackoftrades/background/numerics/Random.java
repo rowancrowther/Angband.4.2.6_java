@@ -2,6 +2,7 @@ package uk.co.jackoftrades.background.numerics;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.background.enums.DamageAspect;
 import uk.co.jackoftrades.background.utils.RandomValueUtils;
 
@@ -78,17 +79,18 @@ public class Random {
         this.mBonus = mBonus;
     }
 
-//    /**
-//     * Sets this random to be negatable. This should only be called by the test.
-//     * TODO: Remove this once testing of whole project is complete.
-//     * @param toNegate whether this random should be negated or not.
-//     */
-//    public void setToNegate(boolean toNegate) {
-//        if (negated)
-//            this.toNegate = false;
-//        else
-//            this.toNegate = toNegate;
-//    }
+    /**
+     * Sets this random to be negatable. This should only be called by the test
+     *
+     * @param toNegate whether this random should be negated or not.
+     */
+    @TestOnly
+    public void setToNegate(boolean toNegate) {
+        if (negated)
+            this.toNegate = false;
+        else
+            this.toNegate = toNegate;
+    }
 
     /**
      * Returns the base of this die
@@ -143,10 +145,10 @@ public class Random {
 
     /**
      * Returns a readable string format - put in for debug purposes
-     * TODO: Remove this once testing of whole project is complete
      * @return A string consisting of all the four integers preceded by their
      * variable names.
      */
+    @TestOnly
     @Override
     public String toString() {
         return "Base: " + base + "\nMBonus: " + mBonus + "\nDice: " + dice + "\nSides: " + sides;

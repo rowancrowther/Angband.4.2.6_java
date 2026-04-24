@@ -59,7 +59,7 @@ file        returns[ArrayList<Summon> summons]
             @init {
                 $summons = new ArrayList<>();
             }
-            : summon { $summons.add($summon.smn); } (EOL+ summon { $summons.add($summon.smn); })* EOL* EOF
+            : summ1=summon { $summons.add($summ1.smn); } (EOL+ summ2=summon { $summons.add($summ2.smn); })* EOL* EOF
             ;
 
 COMMENT :   '#' (~'\n')* '\n'+ -> skip;

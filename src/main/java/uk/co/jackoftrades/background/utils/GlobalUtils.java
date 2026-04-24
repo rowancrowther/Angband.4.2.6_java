@@ -3,10 +3,13 @@ package uk.co.jackoftrades.background.utils;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
+import uk.co.jackoftrades.background.io.imports.Constant;
 import uk.co.jackoftrades.background.utils.globalvalues.DungeonGeneration;
 import uk.co.jackoftrades.background.utils.globalvalues.LevelMax;
 import uk.co.jackoftrades.background.utils.globalvalues.MonsterGameplay;
 import uk.co.jackoftrades.background.utils.globalvalues.MonsterGeneration;
+
+import java.util.ArrayList;
 
 public class GlobalUtils {
     /**
@@ -23,20 +26,28 @@ public class GlobalUtils {
     }
 
     @Contract(pure = true)
-    public static void setValue(@NonNull String section,
-                                @NonNull String value) {
-        switch (section) {
-            case "level-max":
-                LevelMax.setValue(value);
-                return;
+    public static void setConstantsValue(@NonNull ArrayList<Constant> constants) {
+        for (Constant constant : constants) {
+            String section = constant.getSection();
+            String value = constant.getValue();
 
-            case "mon-gen":
-                MonsterGeneration.setValue(value);
-                return;
+            switch (section) {
+                case "level-max":
+                    LevelMax.setValue(value);
+                    return;
 
-            case "mon-play":
-                MonsterGameplay.setValue(value);
-                return;
+                case "mon-gen":
+                    MonsterGeneration.setValue(value);
+                    return;
+
+                case "mon-play":
+                    MonsterGameplay.setValue(value);
+                    return;
+
+                case "dun-gen":
+                    DungeonGeneration.setValue(value);
+                    return;
+            }
         }
     }
 

@@ -6,6 +6,10 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import uk.co.jackoftrades.background.io.parsers.antlr.parsers.randomformatter.RandomFormatterLexer;
 import uk.co.jackoftrades.background.io.parsers.antlr.parsers.randomformatter.RandomFormatterParser;
 
+/**
+ * STUB CLASS: TODO Code, comment and test this
+ */
+
 public class Dice {
     private final Random dice;
     private final String diceString;

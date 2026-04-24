@@ -1,5 +1,8 @@
 package uk.co.jackoftrades.middle.monsters;
 
+/**
+ * STUB CLASS: TODO Code, comment and test this
+ */
 public class MonsterBase {
     private String name;
 

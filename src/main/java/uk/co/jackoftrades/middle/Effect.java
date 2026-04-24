@@ -5,6 +5,10 @@ import uk.co.jackoftrades.background.numerics.Dice;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
 
+/**
+ * STUB CLASS: TODO Code, comment and test this
+ */
+
 public class Effect {
     private EffectEnum index;
     private Dice dice;

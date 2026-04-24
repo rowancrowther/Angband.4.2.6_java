@@ -35,7 +35,6 @@ public class MonsterGameplay {
                 setGlyphHardness(val);
                 break;
 
-            //noinspection SpellCheckingInspection
             case "mult-rate":
                 setReproMonsterRate(val);
                 break;

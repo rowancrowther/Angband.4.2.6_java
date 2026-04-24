@@ -1,5 +1,9 @@
 package uk.co.jackoftrades.background.io.imports;
 
+/**
+ * STUB CLASS: TODO Code, comment and test this
+ */
+
 public class Constant {
     private String section;
     private String value;

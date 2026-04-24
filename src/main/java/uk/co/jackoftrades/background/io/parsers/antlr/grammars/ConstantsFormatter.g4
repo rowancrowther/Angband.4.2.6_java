@@ -27,7 +27,7 @@ multiValue
             COLON val2=VALUE
             COLON val3=VALUE
             COLON FURTHER {
-                $multi = $val1.getText() + ":" + $val2.getText() + ":" + $val3.getText() + ":" + $FURTHER.getText():
+                $multi = $val1.getText() + ":" + $val2.getText() + ":" + $val3.getText() + ":" + $FURTHER.getText();
             }
         ;
 

@@ -40,7 +40,7 @@ public class LevelMax {
         String name = results[0];
         int val = Integer.parseInt(results[1]);
 
-        /**
+        /*
          * Left as switch statement to allow increase of inputs
          */
         switch (name) {

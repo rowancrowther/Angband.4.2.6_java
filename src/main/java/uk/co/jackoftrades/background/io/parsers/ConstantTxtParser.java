@@ -52,7 +52,12 @@ public class ConstantTxtParser {
                     break;
 
                 case "store":
+                    StoreConstants.setValue(values.get(value));
+                    break;
 
+                case "obj-make":
+                    ObjectConstants.setValue(values.get(value));
+                    break;
 
                 default:
                     String message = "Fatal error: Unable to recognise incoming tokens in constants.txt file. Tokens received: " + value + ":" + values.get(value);

@@ -41,7 +41,11 @@ public class LevelMaxConstants {
         int val = 0;
 
         // Check for correct string type
-        if (results.length < 2)
+        if (results.length != 2) {
+            String message = "Invalid number of arguments found in incoming value. Value was: " + constantsTag + ":" + value;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        } else {
             try {
                 val = Integer.parseInt(results[1]);
             } catch (NumberFormatException e) {
@@ -49,6 +53,7 @@ public class LevelMaxConstants {
                 logger.error(message);
                 throw new InvalidTokenFoundDuringParse(message);
             }
+        }
 
         String name = results[0];
 

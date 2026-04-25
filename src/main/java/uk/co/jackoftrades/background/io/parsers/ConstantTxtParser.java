@@ -59,6 +59,14 @@ public class ConstantTxtParser {
                     ObjectConstants.setValue(values.get(value));
                     break;
 
+                case "melee-critical":
+                    MeleeCriticalConstants.setValue(values.get(value));
+                    break;
+
+                case "melee-critical-level":
+                    CriticalLevelConstants.setValue(values.get(value));
+                    break;
+
                 default:
                     String message = "Fatal error: Unable to recognise incoming tokens in constants.txt file. Tokens received: " + value + ":" + values.get(value);
                     logger.fatal(message);

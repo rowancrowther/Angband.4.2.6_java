@@ -1,13 +1,13 @@
 grammar ConstantsFormatter;
 
-@header     {   import java.util.ArrayList;
+@header     {   import java.util.HashMap;
             }
 
 section returns[String sect, String value]
         :   token1=TOKEN { $sect = $token1.getText(); }
             COLON token2=TOKEN
-                         { $value = $token2.getText() }
-            COLON VALUE  { $value = $value + ":" + $VALUE.getText()); }
+                         { $value = $token2.getText(); }
+            COLON VALUE  { $value = $value + ":" + $VALUE.getText(); }
         ;
 
 furtherValue
@@ -16,13 +16,13 @@ furtherValue
             COLON val1=VALUE
             COLON val2=VALUE
             COLON FURTHER {
-                $further = $val1.getText() + ":" + val2.getText() + ":" + $FURTHER.getText();
+                $further = $val1.getText() + ":" + $val2.getText() + ":" + $FURTHER.getText();
             }
         ;
 
 multiValue
         returns[String sect, String multi]
-        :   TOKEN {$sect = TOKEN.getText(); }
+        :   TOKEN {$sect = $TOKEN.getText(); }
             COLON val1=VALUE
             COLON val2=VALUE
             COLON val3=VALUE
@@ -46,20 +46,16 @@ line    returns[String sect, String val]
         }
         ;
 
-file    returns[ArrayList<String> constants]
+file    returns[HashMap<String, String> keyValues]
         @init {
-            $constants = new ArrayList<String>();
+            $keyValues = new HashMap<>();
         }
-        :   l1=line {   Constant constant = new Constant();
-                        constant.setSection($l1.sect);
-                        constant.setValue($l1.val);
-                        $constants.add(constant);
-            }
-            (l2=line {   Constant constant = new Constant();
-                             constant.setSection($l2.sect);
-                             constant.setValue($l2.val);
-                             $constants.add(constant);
-            })*
+        :   l1=line {
+                        $keyValues.put($l1.sect, $l1.val);
+                    }
+            (l2=line {
+                        $keyValues.put($l2.sect, $l2.val);
+                     })*
             EOL* EOF
         ;
 

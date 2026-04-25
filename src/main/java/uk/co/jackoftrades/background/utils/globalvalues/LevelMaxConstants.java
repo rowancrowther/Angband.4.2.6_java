@@ -5,8 +5,9 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
+import uk.co.jackoftrades.background.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
-public class LevelMax {
+public class LevelMaxConstants {
     private final static String constantsTag = "level-max";
     private static int monsters;
     private static final Logger logger = LogManager.getLogger();
@@ -15,7 +16,7 @@ public class LevelMax {
      * Private constructor - only has static variables on it
      */
     @Contract(pure = true)
-    private LevelMax() {
+    private LevelMaxConstants() {
     }
 
     /**
@@ -35,10 +36,21 @@ public class LevelMax {
      *
      * @param value a string of the format name:value
      */
-    public static void setValue(@NonNull String value) throws IllegalArgumentException {
+    public static void setValue(@NonNull String value) throws InvalidTokenFoundDuringParse {
         String[] results = value.split(":");
+        int val = 0;
+
+        // Check for correct string type
+        if (results.length < 2)
+            try {
+                val = Integer.parseInt(results[1]);
+            } catch (NumberFormatException e) {
+                String message = "Poorly formatted integer in incoming token. Token was " + constantsTag + ":" + value;
+                logger.error(message);
+                throw new InvalidTokenFoundDuringParse(message);
+            }
+
         String name = results[0];
-        int val = Integer.parseInt(results[1]);
 
         /*
          * Left as switch statement to allow increase of inputs
@@ -51,18 +63,18 @@ public class LevelMax {
             default:
                 String msg = "Invalid switch found in constants.txt file. Input was " + constantsTag + ":" + name + ":" + val;
                 logger.error(msg);
-                throw new IllegalArgumentException(msg);
+                throw new InvalidTokenFoundDuringParse(msg);
         }
     }
 
-    @Contract(pure = true)
-    private static void setMonsters(int monsters) throws IllegalArgumentException {
+    @Contract(pure = false)
+    private static void setMonsters(int monsters) throws InvalidTokenFoundDuringParse {
         if (monsters <= 0) {
             String message = "Invalid value for max monsters on a given level. Incoming value is " + monsters
                     + ". Should be greater than 0";
             logger.error(message);
-            throw new IllegalArgumentException(message);
+            throw new InvalidTokenFoundDuringParse(message);
         }
-        LevelMax.monsters = monsters;
+        LevelMaxConstants.monsters = monsters;
     }
 }

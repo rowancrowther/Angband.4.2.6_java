@@ -64,7 +64,15 @@ public class ConstantTxtParser {
                     break;
 
                 case "melee-critical-level":
-                    CriticalLevelConstants.setValue(values.get(value));
+                    CriticalLevelConstants.setValue(values.get(value), CriticalLevelConstants.CriticalType.MELEE);
+                    break;
+
+                case "ranged-critical":
+                    RangedCriticalConstants.setValue(values.get(value));
+                    break;
+
+                case "ranged-critical-level":
+                    CriticalLevelConstants.setValue(values.get(value), CriticalLevelConstants.CriticalType.RANGED);
                     break;
 
                 default:

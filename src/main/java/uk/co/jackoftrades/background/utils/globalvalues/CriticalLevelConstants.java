@@ -12,14 +12,23 @@ import java.util.ArrayList;
 
 public class CriticalLevelConstants {
     private static final String tag = "melee-critical-level";
-    private static final ArrayList<CriticalLevel> levels = new ArrayList<>();
+    private static final ArrayList<CriticalLevel> meleeLevels = new ArrayList<>();
+    private static final ArrayList<CriticalLevel> rangedLevels = new ArrayList<>();
     private static final Logger logger = LogManager.getLogger();
 
     @Contract(pure = true)
     private CriticalLevelConstants() {
     }
 
-    public static void setValue(@NonNull String value) throws InvalidTokenFoundDuringParse {
+    /**
+     * Get a string value, CriticalType pair and pull the values from the incoming value parameter and create a new
+     * CriticalLevel instance and put it in the correct ArrayList based on the CriticalType
+     *
+     * @param value The string containing the tokens for the critical value
+     * @param type  whether this is a mêlée or ranged hit
+     * @throws InvalidTokenFoundDuringParse A token was invalid or found incorrectly
+     */
+    public static void setValue(@NonNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
 
         if (values.length != 4) {
@@ -73,6 +82,58 @@ public class CriticalLevelConstants {
 
         CriticalLevel criticalLevel = new CriticalLevel(currentCutoff, damageMult, amountAdded, hitType);
 
-        levels.add(criticalLevel);
+        if (type == CriticalType.MELEE)
+            meleeLevels.add(criticalLevel);
+        else
+            rangedLevels.add(criticalLevel);
+    }
+
+    /**
+     * Get the relevant critical level based on the type of combat, and the power of this hit.<br><br>
+     * <strong>Note:</strong> this assumes that the values in the two array lists are read in, in the correct order from
+     * constants.txt. If they are out of order in that file, then errors will occur. These errors are not checked for
+     * here.
+     *
+     * @param power The power of this hit
+     * @param type  The type of combat we are dealing with
+     * @return The critical level for this type of combat where the previous level's power was less than the power of
+     * the hit, and this level's power is greater than or equal to it.
+     */
+    @Contract(pure = true)
+    public static CriticalLevel getCriticalLevel(int power, CriticalType type) {
+        CriticalLevel last = null;
+
+        if (type == CriticalType.MELEE) {
+            for (CriticalLevel level : meleeLevels) {
+                if (level.getCutOff() > power)
+                    return level;
+
+                last = level;
+            }
+        } else {
+            for (CriticalLevel level : rangedLevels) {
+                if (level.getCutOff() > power)
+                    return level;
+
+                last = level;
+            }
+        }
+
+        return last;
+    }
+
+    /**
+     * Enum for which type of critical we are looking, melee or ranged.
+     */
+    public enum CriticalType {
+        /**
+         * Mêlée combat, combat with anything but magic & thrown/ranged
+         */
+        MELEE,
+
+        /**
+         * Ranged combat, combat with slings, bows, etc.
+         */
+        RANGED
     }
 }

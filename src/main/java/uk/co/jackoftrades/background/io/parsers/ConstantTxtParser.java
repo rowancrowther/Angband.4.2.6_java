@@ -17,7 +17,7 @@ public class ConstantTxtParser {
     private static final Logger logger = LogManager.getLogger();
 
     public void parse() throws IOException, InvalidTokenFoundDuringParse {
-        CharStream stream = CharStreams.fromFileName("C:\\Users\\rowan\\OneDrive\\Documents\\Desktop\\Angband-4.2.6\\lib\\gamedata\\constants.txt");
+        CharStream stream = CharStreams.fromFileName("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\constants.txt");
         ConstantsFormatterLexer lexer = new ConstantsFormatterLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         ConstantsFormatterParser parser = new ConstantsFormatterParser(tokens);

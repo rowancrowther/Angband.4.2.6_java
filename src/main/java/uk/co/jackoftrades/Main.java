@@ -1,7 +1,6 @@
 package uk.co.jackoftrades;
 
 import uk.co.jackoftrades.background.utils.GlobalUtils;
-import uk.co.jackoftrades.background.utils.globalvalues.DungeonGenerationConstants;
 
 import java.io.IOException;
 
@@ -14,8 +13,6 @@ public class Main {
         System.out.println("Hello and welcome!\n");
 
         GlobalUtils.loadConstantsValue();
-
-        System.out.println(DungeonGenerationConstants.getCentMax() + "\n");
 
         for (int i = 1; i <= 5; i++) {
             //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint

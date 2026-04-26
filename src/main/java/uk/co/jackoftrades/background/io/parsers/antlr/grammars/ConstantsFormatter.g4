@@ -56,7 +56,7 @@ file    returns[HashMap<String, String> keyValues]
             (l2=line {
                         $keyValues.put($l2.sect, $l2.val);
                      })*
-            EOL* EOF
+            EOF
         ;
 
 TOKEN   :   ('a'..'z'|'-')+
@@ -74,5 +74,5 @@ COLON   :   ':'
 VALUE   :   '-'? ('0'..'9')+
         ;
 
-EOL     :   '\r'? '\n'
+EOL     :   '\r'? '\n' -> skip
         ;

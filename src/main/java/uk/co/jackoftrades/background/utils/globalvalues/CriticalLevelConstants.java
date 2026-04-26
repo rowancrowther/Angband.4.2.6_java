@@ -11,7 +11,8 @@ import uk.co.jackoftrades.middle.combat.enums.HitType;
 import java.util.ArrayList;
 
 public class CriticalLevelConstants {
-    private static final String tag = "melee-critical-level";
+    private static final String meleeTag = "melee-critical-level";
+    private static final String rangedTag = "ranged-critical-level";
     private static final ArrayList<CriticalLevel> meleeLevels = new ArrayList<>();
     private static final ArrayList<CriticalLevel> rangedLevels = new ArrayList<>();
     private static final Logger logger = LogManager.getLogger();
@@ -29,6 +30,8 @@ public class CriticalLevelConstants {
      * @throws InvalidTokenFoundDuringParse A token was invalid or found incorrectly
      */
     public static void setValue(@NonNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
+        String tag = type == CriticalType.MELEE ? meleeTag : rangedTag;
+
         String[] values = value.split(":");
 
         if (values.length != 4) {

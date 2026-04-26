@@ -75,6 +75,22 @@ public class ConstantTxtParser {
                     CriticalLevelConstants.setValue(values.get(value), CriticalLevelConstants.CriticalType.RANGED);
                     break;
 
+                case "o-melee-critical":
+                    O_MeleeCriticalConstants.setValue(values.get(value));
+                    break;
+
+                case "o-melee-critical-level":
+                    O_CriticalLevelConstants.setValue(values.get(value), O_CriticalLevelConstants.CriticalType.MELEE);
+                    break;
+
+                case "o-ranged-critical":
+                    O_RangedCriticalConstants.setValue(values.get(value));
+                    break;
+
+                case "o-ranged-critical-level":
+                    O_CriticalLevelConstants.setValue(values.get(value), O_CriticalLevelConstants.CriticalType.RANGED);
+                    break;
+
                 default:
                     String message = "Fatal error: Unable to recognise incoming tokens in constants.txt file. Tokens received: " + value + ":" + values.get(value);
                     logger.fatal(message);

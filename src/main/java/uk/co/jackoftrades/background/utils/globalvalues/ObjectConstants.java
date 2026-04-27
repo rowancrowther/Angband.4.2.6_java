@@ -43,7 +43,7 @@ public class ObjectConstants {
         }
 
         switch (name) {
-            case "make-depth":
+            case "max-depth":
                 setMaxDepth(val, name);
                 break;
 

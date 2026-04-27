@@ -16,7 +16,7 @@ public class PlayerConstants {
 
     private final static Logger logger = LogManager.getLogger();
 
-    public static void get(String value) throws InvalidTokenFoundDuringParse {
+    public static void setValue(String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
 
         if (values.length != 2) {

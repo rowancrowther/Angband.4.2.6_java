@@ -30,13 +30,13 @@ public class O_CriticalLevelConstants {
      */
     public static void setValue(@NotNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
         String tag = type == CriticalType.MELEE ? meleeTag : rangedTag;
-        String token = tag + ":" + value;
+        // String token = tag + ":" + value;
 
         // check we have three tokens
-        String[] tokens = token.split(":");
+        String[] tokens = value.split(":");
 
         if (tokens.length != 3) {
-            String message = "Invalid number of tokens found during parsing. Token was: " + token + ":" + tag + ":" + value;
+            String message = "Invalid number of tokens found during parsing. Token was: " + tag + ":" + value;
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
@@ -45,7 +45,7 @@ public class O_CriticalLevelConstants {
         try {
             chance = Integer.parseInt(tokens[0]);
         } catch (NumberFormatException e) {
-            String message = "Invalid integer format in chance found while parsing constants.txt. Token was: " + token + ":" + tag + ":" + value
+            String message = "Invalid integer format in chance found while parsing constants.txt. Token was: " + tag + ":" + value
                     + "\n\n" + e.getMessage();
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
@@ -53,7 +53,7 @@ public class O_CriticalLevelConstants {
 
         if (chance <= 0) {
             String message = "Invalid value of chance found while parsing constants.txt; should be positive."
-                    + " Token was: " + token + ":" + tag + ":" + value;
+                    + " Token was: " + tag + ":" + value;
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
@@ -62,15 +62,15 @@ public class O_CriticalLevelConstants {
         try {
             dice = Integer.parseInt(tokens[1]);
         } catch (NumberFormatException e) {
-            String message = "Invalid integer format in dice found while parsing constants.txt. Token was: " + token
-                    + ":" + tag + ":" + value
+            String message = "Invalid integer format in dice found while parsing constants.txt. Token was: "
+                    + tag + ":" + value
                     + "\n\n" + e.getMessage();
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
 
         if (dice < 0) {
-            String message = "Invalid number of dice found while parsing constants.txt. Token was: " + token + ":" + tag + ":" + value;
+            String message = "Invalid number of dice found while parsing constants.txt. Token was: " + tag + ":" + value;
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
@@ -79,8 +79,8 @@ public class O_CriticalLevelConstants {
         try {
             msgt = HitType.valueOf(tokens[2]);
         } catch (IllegalArgumentException e) {
-            String message = "Invalid value of type found while parsing constants.txt. Token was: " + token
-                    + ":" + tag + ":" + value
+            String message = "Invalid value of type found while parsing constants.txt. Token was: "
+                    + tag + ":" + value
                     + "\n\n" + e.getMessage();
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);

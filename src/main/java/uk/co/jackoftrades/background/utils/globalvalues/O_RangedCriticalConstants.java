@@ -29,7 +29,7 @@ public class O_RangedCriticalConstants {
      */
     public static void setValue(String tokens) {
         // check we only have two tokens.
-        String[] allTokens = tokens.split(",");
+        String[] allTokens = tokens.split(":");
 
         if (allTokens.length != 2) {
             String message = "Invalid number of tokens when parsing constants.txt. Token was: " + tag + ":" + tokens;
@@ -50,7 +50,7 @@ public class O_RangedCriticalConstants {
         }
 
         switch (name) {
-            case "debuf-toh":
+            case "debuff-toh":
                 setDebufToh(value);
                 break;
 
@@ -83,7 +83,8 @@ public class O_RangedCriticalConstants {
                 break;
 
             default:
-                String message = "Unknown token found while parsing constants.txt. Token was: " + tag + ":" + value;
+                String message = "Unknown token found while parsing constants.txt. Token was: " + tag + ":"
+                        + name + ":" + value;
                 logger.error(message);
                 throw new IllegalArgumentException(message);
         }

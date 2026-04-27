@@ -28,7 +28,7 @@ public class ConstantTxtParser {
         // Loop through the file and pull out the various requirements
         for (HashMap<String, String> map : values) {
             String[] keys = map.keySet().toArray(new String[0]);
-            String value = map.get(keys[0]);
+            String value = keys[0];
             String set = map.get(value);
             switch (value) {
                 case "level-max":
@@ -61,6 +61,10 @@ public class ConstantTxtParser {
 
                 case "obj-make":
                     ObjectConstants.setValue(set);
+                    break;
+
+                case "player":
+                    PlayerConstants.setValue(set);
                     break;
 
                 case "melee-critical":

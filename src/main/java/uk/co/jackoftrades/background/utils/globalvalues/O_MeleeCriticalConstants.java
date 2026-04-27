@@ -49,7 +49,7 @@ public class O_MeleeCriticalConstants {
         }
 
         switch (name) {
-            case "debuf-toh":
+            case "debuff-toh":
                 setDebuffToh(value);
                 break;
 

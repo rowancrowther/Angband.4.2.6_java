@@ -61,7 +61,7 @@ public class MeleeCriticalConstants {
         }
 
         switch (name) {
-            case "debuf-toh":
+            case "debuff-toh":
                 setDebuffToh(val);
                 break;
 

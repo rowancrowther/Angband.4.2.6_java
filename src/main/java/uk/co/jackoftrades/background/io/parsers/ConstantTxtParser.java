@@ -11,6 +11,7 @@ import uk.co.jackoftrades.background.io.parsers.antlr.parsers.constantformatter.
 import uk.co.jackoftrades.background.utils.globalvalues.*;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class ConstantTxtParser {
@@ -22,77 +23,81 @@ public class ConstantTxtParser {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         ConstantsFormatterParser parser = new ConstantsFormatterParser(tokens);
         ConstantsFormatterParser.FileContext result = parser.file();
-        HashMap<String, String> values = result.keyValues;
+        ArrayList<HashMap<String, String>> values = result.results;
 
         // Loop through the file and pull out the various requirements
-        for (String value : values.keySet()) {
+        for (HashMap<String, String> map : values) {
+            String[] keys = map.keySet().toArray(new String[0]);
+            String value = map.get(keys[0]);
+            String set = map.get(value);
             switch (value) {
                 case "level-max":
-                    LevelMaxConstants.setValue(values.get(value));
+                    LevelMaxConstants.setValue(set);
                     break;
 
                 case "mon-gen":
-                    MonsterGenerationConstants.setValue(values.get(value));
+                    MonsterGenerationConstants.setValue(set);
                     break;
 
                 case "mon-play":
-                    MonsterGameplayConstants.setValue(values.get(value));
+                    MonsterGameplayConstants.setValue(set);
                     break;
 
                 case "dun-gen":
-                    DungeonGenerationConstants.setValue(values.get(value));
+                    DungeonGenerationConstants.setValue(set);
                     break;
 
                 case "world":
-                    GameWorldConstants.setValue(values.get(value));
+                    GameWorldConstants.setValue(set);
                     break;
 
                 case "carry-cap":
-                    CarryCapacityConstants.setValue(values.get(value));
+                    CarryCapacityConstants.setValue(set);
                     break;
 
                 case "store":
-                    StoreConstants.setValue(values.get(value));
+                    StoreConstants.setValue(set);
                     break;
 
                 case "obj-make":
-                    ObjectConstants.setValue(values.get(value));
+                    ObjectConstants.setValue(set);
                     break;
 
                 case "melee-critical":
-                    MeleeCriticalConstants.setValue(values.get(value));
+                    MeleeCriticalConstants.setValue(set);
                     break;
 
                 case "melee-critical-level":
-                    CriticalLevelConstants.setValue(values.get(value), CriticalLevelConstants.CriticalType.MELEE);
+                    CriticalLevelConstants.setValue(set, CriticalLevelConstants.CriticalType.MELEE);
                     break;
 
                 case "ranged-critical":
-                    RangedCriticalConstants.setValue(values.get(value));
+                    RangedCriticalConstants.setValue(set);
                     break;
 
                 case "ranged-critical-level":
-                    CriticalLevelConstants.setValue(values.get(value), CriticalLevelConstants.CriticalType.RANGED);
+                    CriticalLevelConstants.setValue(set, CriticalLevelConstants.CriticalType.RANGED);
                     break;
 
                 case "o-melee-critical":
-                    O_MeleeCriticalConstants.setValue(values.get(value));
+                    O_MeleeCriticalConstants.setValue(set);
                     break;
 
                 case "o-melee-critical-level":
-                    O_CriticalLevelConstants.setValue(values.get(value), O_CriticalLevelConstants.CriticalType.MELEE);
+                    O_CriticalLevelConstants.setValue(set, O_CriticalLevelConstants.CriticalType.MELEE);
                     break;
 
                 case "o-ranged-critical":
-                    O_RangedCriticalConstants.setValue(values.get(value));
+                    O_RangedCriticalConstants.setValue(set);
                     break;
 
                 case "o-ranged-critical-level":
-                    O_CriticalLevelConstants.setValue(values.get(value), O_CriticalLevelConstants.CriticalType.RANGED);
+                    O_CriticalLevelConstants.setValue(set, O_CriticalLevelConstants.CriticalType.RANGED);
                     break;
 
                 default:
-                    String message = "Fatal error: Unable to recognise incoming tokens in constants.txt file. Tokens received: " + value + ":" + values.get(value);
+                    String message = "Fatal error: Unable to recognise incoming tokens in constants.txt file. " +
+                            "Tokens received: " + value + ":" + set;
                     logger.fatal(message);
                     throw new InvalidTokenFoundDuringParse(message);
             }

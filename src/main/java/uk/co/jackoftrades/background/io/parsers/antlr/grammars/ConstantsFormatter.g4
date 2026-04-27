@@ -1,6 +1,7 @@
 grammar ConstantsFormatter;
 
-@header     {   import java.util.HashMap;
+@header     {   import java.util.ArrayList;
+                import java.util.HashMap;
             }
 
 section returns[String sect, String value]
@@ -32,30 +33,29 @@ multiValue
         ;
 
 line    returns[String sect, String val]
-        :   section EOL* {
+        :   section {
                 $sect = $section.sect;
                 $val  = $section.value;
         }
-        |   furtherValue EOL* {
+        |   furtherValue {
                 $sect = $furtherValue.sect;
                 $val  = $furtherValue.further;
         }
-        |   multiValue EOL* {
+        |   multiValue {
                 $sect = $multiValue.sect;
                 $val  = $multiValue.multi;
         }
         ;
 
-file    returns[HashMap<String, String> keyValues]
+file    returns[ArrayList<HashMap<String, String>> results]
         @init {
-            $keyValues = new HashMap<>();
+            $results = new ArrayList<>();
         }
-        :   l1=line {
-                        $keyValues.put($l1.sect, $l1.val);
-                    }
-            (l2=line {
-                        $keyValues.put($l2.sect, $l2.val);
-                     })*
+        :   (line {
+                        HashMap<String, String> keyValues = new HashMap<>();
+                        keyValues.put($line.sect, $line.val);
+                        $results.add(keyValues);
+                  })*
             EOF
         ;
 

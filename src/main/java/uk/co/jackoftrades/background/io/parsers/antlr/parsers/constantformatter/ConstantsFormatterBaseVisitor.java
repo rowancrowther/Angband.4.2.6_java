@@ -23,7 +23,6 @@ public class ConstantsFormatterBaseVisitor<T> extends AbstractParseTreeVisitor<T
 	public T visitSection(ConstantsFormatterParser.SectionContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -34,7 +33,6 @@ public class ConstantsFormatterBaseVisitor<T> extends AbstractParseTreeVisitor<T
 	public T visitFurtherValue(ConstantsFormatterParser.FurtherValueContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -45,7 +43,6 @@ public class ConstantsFormatterBaseVisitor<T> extends AbstractParseTreeVisitor<T
 	public T visitMultiValue(ConstantsFormatterParser.MultiValueContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -56,7 +53,6 @@ public class ConstantsFormatterBaseVisitor<T> extends AbstractParseTreeVisitor<T
 	public T visitLine(ConstantsFormatterParser.LineContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

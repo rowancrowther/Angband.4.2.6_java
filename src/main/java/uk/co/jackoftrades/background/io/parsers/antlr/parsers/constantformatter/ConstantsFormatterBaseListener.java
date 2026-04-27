@@ -21,7 +21,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterSection(ConstantsFormatterParser.SectionContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -30,7 +29,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void exitSection(ConstantsFormatterParser.SectionContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -39,7 +37,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterFurtherValue(ConstantsFormatterParser.FurtherValueContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -48,7 +45,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void exitFurtherValue(ConstantsFormatterParser.FurtherValueContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -57,7 +53,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterMultiValue(ConstantsFormatterParser.MultiValueContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -66,7 +61,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void exitMultiValue(ConstantsFormatterParser.MultiValueContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -75,7 +69,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterLine(ConstantsFormatterParser.LineContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -84,7 +77,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void exitLine(ConstantsFormatterParser.LineContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -93,7 +85,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterFile(ConstantsFormatterParser.FileContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -111,7 +102,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void enterEveryRule(ParserRuleContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -120,7 +110,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void exitEveryRule(ParserRuleContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -129,7 +118,6 @@ public class ConstantsFormatterBaseListener implements ConstantsFormatterListene
 	@Override
 	public void visitTerminal(TerminalNode node) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

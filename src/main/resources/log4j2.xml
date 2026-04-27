@@ -14,11 +14,22 @@
         <File name="TRACE_LOG" fileName="logs/trace.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
+        <File name="ERROR" fileName="logs/trace.log">
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
+        </File>
+        <File name="WARN" fileName="logs/trace.log">
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
+        </File>
+        <File name="FATAL" fileName="logs/trace.log">
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
+        </File>
     </Appenders>
     <Loggers>
         <Root level="all">
+            <AppenderRef ref="ERROR" level="ERROR"/>
+            <AppenderRef ref="FATAL" level="FATAL"/>
             <AppenderRef ref="TRACE_LOG" level="TRACE"/>
-            <AppenderRef ref="CONSOLE"   level="WARN"/>
+            <AppenderRef ref="WARN" level="WARN"/>
             <AppenderRef ref="DEBUG_LOG" level="DEBUG"/>
         </Root>
     </Loggers>

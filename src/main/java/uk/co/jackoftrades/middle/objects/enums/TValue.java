@@ -179,7 +179,12 @@ public enum TValue {
     /**
      * Gold, gold, gold, gold, Gold, gold, gold, gold (repeat ad nauseam)
      */
-    TV_GOLD("gold");
+    TV_GOLD("gold"),
+
+    /**
+     * Marker for the largest TValue (probably not needed)
+     */
+    TV_MAX("");
 
     private final String name;
 

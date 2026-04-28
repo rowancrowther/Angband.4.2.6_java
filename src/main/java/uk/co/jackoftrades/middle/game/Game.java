@@ -38,6 +38,10 @@ public class Game {
         loadWorld();
     }
 
+    private void loadProjection() {
+
+    }
+
     private void loadWorld() {
         world = new LinkedList<>();
 
@@ -46,7 +50,7 @@ public class Game {
         HashMap<Integer, ArrayList<String>> worlds = new HashMap<>();
 
         try {
-            worlds = worldParser.parse();
+            worlds = worldParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\world.txt");
         } catch (IOException e) {
             logger.error("Error while loading world", e);
         }

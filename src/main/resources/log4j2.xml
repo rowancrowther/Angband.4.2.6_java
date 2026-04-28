@@ -8,19 +8,22 @@
         <Console name="CONSOLE">
             <PatternLayout pattern="%p - %m%n"/>
         </Console>
-        <File name="DEBUG_LOG" fileName="logs/debug.log">
+        <File name="DEBUG" fileName="logs/debug.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
-        <File name="TRACE_LOG" fileName="logs/trace.log">
+        <File name="TRACE" fileName="logs/trace.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
-        <File name="ERROR" fileName="logs/trace.log">
+        <File name="ERROR" fileName="logs/error.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
-        <File name="WARN" fileName="logs/trace.log">
+        <File name="WARN" fileName="logs/warn.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
-        <File name="FATAL" fileName="logs/trace.log">
+        <File name="FATAL" fileName="logs/fatal.log">
+            <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
+        </File>
+        <File name="INFO" fileName="logs/info.log">
             <PatternLayout pattern="%d{HH:mm:ss} [%t] %p{length=5} %l %n%m%n%n"/>
         </File>
     </Appenders>
@@ -28,9 +31,10 @@
         <Root level="all">
             <AppenderRef ref="ERROR" level="ERROR"/>
             <AppenderRef ref="FATAL" level="FATAL"/>
-            <AppenderRef ref="TRACE_LOG" level="TRACE"/>
+            <AppenderRef ref="INFO" level="INFO"/>
+            <AppenderRef ref="TRACE" level="TRACE"/>
             <AppenderRef ref="WARN" level="WARN"/>
-            <AppenderRef ref="DEBUG_LOG" level="DEBUG"/>
+            <AppenderRef ref="DEBUG" level="DEBUG"/>
         </Root>
     </Loggers>
 </Configuration>

@@ -1,6 +1,6 @@
 package uk.co.jackoftrades;
 
-import uk.co.jackoftrades.background.utils.GlobalUtils;
+import uk.co.jackoftrades.middle.game.Game;
 
 import java.io.IOException;
 
@@ -12,8 +12,8 @@ public class Main {
         // to see how IntelliJ IDEA suggests fixing it.
         System.out.println("Hello and welcome!\n");
 
-        GlobalUtils.loadConstantsValue();
-        GlobalUtils.loadObjectBases();
+        Game game = new Game();
+        game.init();
 
         for (int i = 1; i <= 5; i++) {
             //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint

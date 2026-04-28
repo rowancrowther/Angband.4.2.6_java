@@ -25,5 +25,6 @@ public enum ElementEnum {
     ELEM_MISSILE,
     ELEM_MANA,
     ELEM_HOLY_ORB,
-    ELEM_ARROW
+    ELEM_ARROW,
+    ELEM_MAX
 }

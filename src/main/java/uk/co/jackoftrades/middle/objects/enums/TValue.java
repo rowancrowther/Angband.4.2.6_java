@@ -195,4 +195,21 @@ public enum TValue {
     public String getName() {
         return name;
     }
+
+    /**
+     * Value of for the name string as opposed to the name
+     *
+     * @param name The name that we are searching for
+     * @return the TValue of the given name, or null if it wasn't
+     * found
+     */
+    public static TValue fromName(String name) {
+        for (TValue value : TValue.values()) {
+            if (value.name.equals(name)) {
+                return value;
+            }
+        }
+
+        return null;
+    }
 }

@@ -149,6 +149,24 @@ public enum ColourType {
         return colourName;
     }
 
+    /**
+     * Get the colour type based on the name of the colour. Note, the name of the colour can come in in any case, so we
+     * need to match it in the upper (or lower) case to confirm a match, so Umber matched umber and vice versa.
+     *
+     * @param colourName The colour name we are looking for
+     * @return The Colour Type which has colourName for a name, or COLOUR_TYPE_DARK if there is no matching colour type
+     */
+    public static ColourType getColourType(String colourName) {
+        String upperColourName = colourName.toUpperCase();
+        for (ColourType colourType : ColourType.values()) {
+            if (colourName.equals(colourType.getColourName().toUpperCase())) {
+                return colourType;
+            }
+        }
+
+        return COLOUR_TYPE_DARK;
+    }
+
     public AttributeColour colourAttribute(ColourTranslation index) {
         if (index == ColourTranslation.ATTR_MAX) {
             String message = "Colour index out of bounds, should be between 0 and " +

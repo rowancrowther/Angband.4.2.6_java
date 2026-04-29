@@ -26,7 +26,8 @@ public class O_CriticalLevelConstants {
      *
      * @param value The string containing the three tokens needed to create a o-critical-level
      * @param type  The type of this level, either MELEE or RANGED
-     * @throws InvalidTokenFoundDuringParse
+     * @throws InvalidTokenFoundDuringParse Either there were the wrong number of tokens sent through, or
+     *
      */
     public static void setValue(@NotNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
         String tag = type == CriticalType.MELEE ? meleeTag : rangedTag;

@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.middle;
 
-/**
+/*
  * STUB CLASS: TODO Code, comment and test this
  */
 

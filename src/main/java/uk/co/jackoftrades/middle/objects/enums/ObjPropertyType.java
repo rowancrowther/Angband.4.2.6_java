@@ -9,5 +9,5 @@ public enum ObjPropertyType {
     OBJ_PROPERTY_RESIST,
     OBJ_PROPERTY_VULN,
     OBJ_PROPERTY_IMM,
-    OBJ_PROPERTY_MAX;
+    OBJ_PROPERTY_MAX
 }

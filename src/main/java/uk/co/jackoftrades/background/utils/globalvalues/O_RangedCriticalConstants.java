@@ -239,6 +239,8 @@ public class O_RangedCriticalConstants {
         if (chanceAddDenominator == 0) {
             String message = "Invalid zero value found in denominator while parsing constants.txt. Token was: "
                     + tag + ":" + name + ":" + chanceAddDenominator;
+            logger.error(message);
+            throw new IllegalArgumentException(message);
         }
 
         O_RangedCriticalConstants.chanceAddDenominator = chanceAddDenominator;

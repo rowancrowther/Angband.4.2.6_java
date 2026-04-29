@@ -11,5 +11,5 @@ public enum ObjectFlagType {
     OFT_DIG,
     OFT_THROW,
     OFT_CURSE_ONLY,
-    OFT_MAX;
+    OFT_MAX
 }

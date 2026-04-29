@@ -17,5 +17,5 @@ public enum ObjectModifier {
     OBJ_MOD_LIGHT,
     OBJ_MOD_DAM_RED,
     OBJ_MOD_MOVES,
-    OBJ_MOD_MAX;
+    OBJ_MOD_MAX
 }

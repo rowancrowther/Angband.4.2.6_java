@@ -4,5 +4,5 @@ public enum ObjectFlagID {
     OFID_NONE,
     OFID_NORMAL,
     OFID_TIMED,
-    OFID_WIELD;
+    OFID_WIELD
 }

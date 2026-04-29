@@ -1,0 +1,11 @@
+11:19:12 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadProjection(Game.java:53) 
+Error while loading projections
+
+java.lang.NullPointerException: Cannot invoke "org.antlr.v4.runtime.Token.getText()" because "_localctx.UCASE" is null
+	at uk.co.jackoftrades.background.io.parsers.antlr.parsers.projectionreader.ProjectionReaderParser.colour(ProjectionReaderParser.java:984)
+	at uk.co.jackoftrades.background.io.parsers.antlr.parsers.projectionreader.ProjectionReaderParser.projection(ProjectionReaderParser.java:1194)
+	at uk.co.jackoftrades.background.io.parsers.antlr.parsers.projectionreader.ProjectionReaderParser.file(ProjectionReaderParser.java:1297)
+	at uk.co.jackoftrades.background.io.parsers.ProjectionParser.parse(ProjectionParser.java:20)
+	at uk.co.jackoftrades.middle.game.Game.loadProjection(Game.java:51)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:41)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

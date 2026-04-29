@@ -2,7 +2,10 @@ package uk.co.jackoftrades.middle.game;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.background.io.parsers.ProjectionParser;
+import uk.co.jackoftrades.background.io.parsers.UIEntryRendParser;
 import uk.co.jackoftrades.background.io.parsers.WorldParser;
+import uk.co.jackoftrades.frontend.screen.UIEntry;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -10,7 +13,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Game {
-    private static Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * The deepest level the dungeon can reach. Used in object and monster creations. Must be greater than 100. Setting
@@ -30,26 +33,61 @@ public class Game {
      * 127.
      */
     private static LinkedList<World> world;
+    private static ArrayList<Projection> projections;
+    private static ArrayList<UIEntry> uiEntries;
 
     /**
      * Initialise the game objects in the correct order
      */
     public void init() {
         loadWorld();
+        loadProjection();
+        loadUIEntryRenderer();
+    }
+
+    private void loadUIEntryRenderer() {
+        uiEntries = new ArrayList<>();
+
+        UIEntryRendParser renderer = new UIEntryRendParser();
+
+        try {
+            // TODO - move this string from being hard coded to being calculated from the run location
+            uiEntries = renderer.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_renderer.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading UI Entry Renderers", e);
+        }
+
+        for (UIEntry uiEntry : uiEntries) {
+            logger.info(uiEntry.toString());
+        }
     }
 
     private void loadProjection() {
+        projections = new ArrayList<>();
 
+        ProjectionParser projectionParser = new ProjectionParser();
+
+        try {
+            // TODO - move this string from being hard coded to being calculated from the run location
+            projections = projectionParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\projection.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading projections", e);
+        }
+
+        /* logger.info("Loaded " + projections.size() + " projections");
+        for (Projection projection : projections) {
+            logger.info(projection.toString());
+        } */
     }
 
     private void loadWorld() {
         world = new LinkedList<>();
 
         WorldParser worldParser = new WorldParser();
-
         HashMap<Integer, ArrayList<String>> worlds = new HashMap<>();
 
         try {
+            // TODO - move this string from being hard coded to being calculated from the run location
             worlds = worldParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\world.txt");
         } catch (IOException e) {
             logger.error("Error while loading world", e);

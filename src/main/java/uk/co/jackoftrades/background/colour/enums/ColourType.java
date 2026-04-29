@@ -254,10 +254,20 @@ public enum ColourType {
     }
 
     @Contract(pure = true)
-    private static ColourType findColourType(AttributeColour colour) {
+    public static ColourType findColourType(AttributeColour colour) {
         for (ColourType colourType : ColourType.values())
             if (colourType.colourTranslate[0] == colour)
                 return colourType;
+
+        return COLOUR_TYPE_DARK;
+    }
+
+    @Contract(pure = true)
+    public static ColourType findColourType(String colourName) {
+        for (ColourType colourType : ColourType.values()) {
+            if (colourType.colourName.toLowerCase().equals(colourName))
+                return colourType;
+        }
 
         return COLOUR_TYPE_DARK;
     }

@@ -4,8 +4,8 @@ import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.jetbrains.annotations.CheckReturnValue;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.world.WorldReaderLexer;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.world.WorldReaderParser;
+import uk.co.jackoftrades.background.io.parsers.antlr.world.WorldReaderLexer;
+import uk.co.jackoftrades.background.io.parsers.antlr.world.WorldReaderParser;
 
 import java.io.IOException;
 import java.util.ArrayList;

@@ -3,8 +3,8 @@ package uk.co.jackoftrades.background.numerics;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.randomformatter.RandomFormatterLexer;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.randomformatter.RandomFormatterParser;
+import uk.co.jackoftrades.background.io.parsers.antlr.randomformatter.RandomFormatterLexer;
+import uk.co.jackoftrades.background.io.parsers.antlr.randomformatter.RandomFormatterParser;
 
 /**
  * STUB CLASS: TODO Code, comment and test this

@@ -6,8 +6,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.objectbaseformatter.ObjectBaseFormatterLexer;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.objectbaseformatter.ObjectBaseFormatterParser;
+import uk.co.jackoftrades.background.io.parsers.antlr.objectbaseformatter.ObjectBaseFormatterLexer;
+import uk.co.jackoftrades.background.io.parsers.antlr.objectbaseformatter.ObjectBaseFormatterParser;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 
 import java.io.IOException;

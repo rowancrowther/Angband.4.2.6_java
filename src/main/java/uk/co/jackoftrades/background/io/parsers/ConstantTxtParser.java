@@ -6,8 +6,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.background.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.constantformatter.ConstantsFormatterLexer;
-import uk.co.jackoftrades.background.io.parsers.antlr.parsers.constantformatter.ConstantsFormatterParser;
+import uk.co.jackoftrades.background.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
+import uk.co.jackoftrades.background.io.parsers.antlr.constantformatter.ConstantsFormatterParser;
 import uk.co.jackoftrades.background.utils.globalvalues.*;
 
 import java.io.IOException;

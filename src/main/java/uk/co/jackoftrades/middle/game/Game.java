@@ -2,10 +2,13 @@ package uk.co.jackoftrades.middle.game;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jspecify.annotations.Nullable;
 import uk.co.jackoftrades.background.io.parsers.ProjectionParser;
+import uk.co.jackoftrades.background.io.parsers.UIEntryBaseParser;
 import uk.co.jackoftrades.background.io.parsers.UIEntryRendParser;
 import uk.co.jackoftrades.background.io.parsers.WorldParser;
-import uk.co.jackoftrades.frontend.screen.UIEntry;
+import uk.co.jackoftrades.frontend.screen.UIEntryBase;
+import uk.co.jackoftrades.frontend.screen.UIEntryRenderer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,12 +24,6 @@ public class Game {
      */
     private final static int maxRandDepth = 128;
 
-    /*
-     * The various holders for the \lib\gamedata files. All of these are static as they hold the main data files.
-     * They have to be read in carefully, in the order that they appear here, so running the static method init() will
-     * pull them all in and log a message to the trace log that they have been read in correctly.
-     */
-
     /**
      * World is simply a string in a linked list. It starts and ends with null (instead of the C "none" tag). There
      * should be exactly 128 levels, as outlined in the maxRandDepth, and should be from the town (level 0) to Angband
@@ -34,7 +31,20 @@ public class Game {
      */
     private static LinkedList<World> world;
     private static ArrayList<Projection> projections;
-    private static ArrayList<UIEntry> uiEntries;
+    private static ArrayList<UIEntryRenderer> uiEntries;
+    private static ArrayList<UIEntryBase> uiBases;
+
+    public static @Nullable UIEntryRenderer getUIEntry(String name) {
+        if (uiEntries == null) return null;
+
+        for (UIEntryRenderer entry : uiEntries) {
+            if (entry.getName().equals(name)) {
+                return entry;
+            }
+        }
+
+        return null;
+    }
 
     /**
      * Initialise the game objects in the correct order
@@ -43,6 +53,24 @@ public class Game {
         loadWorld();
         loadProjection();
         loadUIEntryRenderer();
+        loadUIEntryBase();
+    }
+
+    private void loadUIEntryBase() {
+        uiBases = new ArrayList<>();
+
+        UIEntryBaseParser parser = new UIEntryBaseParser();
+
+        try {
+            // TODO - move this string from being hard coded to being calculated from the run location
+            uiBases = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_base.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading UI entry base.", e);
+        }
+
+        for (UIEntryBase entry : uiBases) {
+            logger.info(entry.toString());
+        }
     }
 
     private void loadUIEntryRenderer() {
@@ -57,9 +85,10 @@ public class Game {
             logger.error("Error while loading UI Entry Renderers", e);
         }
 
-        for (UIEntry uiEntry : uiEntries) {
-            logger.info(uiEntry.toString());
-        }
+        /*
+        for (UIEntryRenderer uiEntryRenderer : uiEntries) {
+            logger.info(uiEntryRenderer.toString());
+        }*/
     }
 
     private void loadProjection() {

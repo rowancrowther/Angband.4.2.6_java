@@ -1,5 +1,5 @@
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryRenderer.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.background.io.parsers.antlr.uiEntryRenderer;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryRendererEnum.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.background.io.parsers.antlr.uientryrenderer;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATN;
@@ -10,9 +10,9 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.frontend.screen.UIEntry;
+import uk.co.jackoftrades.frontend.screen.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.enums.UIEntryEnum;
-import uk.co.jackoftrades.frontend.screen.enums.UIEntryRenderer;
+import uk.co.jackoftrades.frontend.screen.enums.UIEntryRendererEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -95,7 +95,7 @@ public class UIEntryRendererParser extends Parser {
 
     @Override
     public String getGrammarFileName() {
-        return "UIEntryRenderer.g4";
+        return "UIEntryRendererEnum.g4";
     }
 
     @Override
@@ -184,7 +184,7 @@ public class UIEntryRendererParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class CodeContext extends ParserRuleContext {
-        public UIEntryRenderer flag;
+        public UIEntryRendererEnum flag;
         public Token UCASE;
 
         public TerminalNode CODE() {
@@ -234,7 +234,7 @@ public class UIEntryRendererParser extends Parser {
                 ((CodeContext) _localctx).UCASE = match(UCASE);
 
                 String flagString = "UI_ENTRY_RENDERER_" + ((CodeContext) _localctx).UCASE.getText();
-                ((CodeContext) _localctx).flag = UIEntryRenderer.valueOf(flagString);
+                ((CodeContext) _localctx).flag = UIEntryRendererEnum.valueOf(flagString);
 
             }
         } catch (RecognitionException re) {
@@ -571,7 +571,7 @@ public class UIEntryRendererParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class EntryContext extends ParserRuleContext {
-        public UIEntry uiEntry;
+        public UIEntryRenderer uiEntryRenderer;
         public NameContext name;
         public CodeContext code;
         public ColoursContext colours;
@@ -674,7 +674,7 @@ public class UIEntryRendererParser extends Parser {
 
 
                 String initName = ((EntryContext) _localctx).name.uiName;
-                UIEntryRenderer initCode = ((EntryContext) _localctx).code.flag;
+                UIEntryRendererEnum initCode = ((EntryContext) _localctx).code.flag;
                 String initColour = ((EntryContext) _localctx).colours.colourString;
                 String initLColour = ((EntryContext) _localctx).labelColours.labelColourString;
                 String initSymbols = ((EntryContext) _localctx).symbols.symbolString;
@@ -689,7 +689,7 @@ public class UIEntryRendererParser extends Parser {
                 else
                     initSign = ((EntryContext) _localctx).sign.entryEnum;
 
-                ((EntryContext) _localctx).uiEntry = new UIEntry(initName,
+                ((EntryContext) _localctx).uiEntryRenderer = new UIEntryRenderer(initName,
                         initCode,
                         initColour,
                         initLColour,
@@ -710,7 +710,7 @@ public class UIEntryRendererParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class EntriesContext extends ParserRuleContext {
-        public ArrayList<UIEntry> allEntries;
+        public ArrayList<UIEntryRenderer> allEntries;
         public EntryContext entry;
 
         public TerminalNode EOF() {
@@ -771,7 +771,7 @@ public class UIEntryRendererParser extends Parser {
                             setState(59);
                             ((EntriesContext) _localctx).entry = entry();
 
-                            _localctx.allEntries.add(((EntriesContext) _localctx).entry.uiEntry);
+                            _localctx.allEntries.add(((EntriesContext) _localctx).entry.uiEntryRenderer);
 
                         }
                     }

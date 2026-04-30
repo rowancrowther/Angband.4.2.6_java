@@ -4,9 +4,9 @@ grammar UIEntryRenderer;
         {
             import java.util.ArrayList;
 
-            import uk.co.jackoftrades.frontend.screen.enums.UIEntryRenderer;
+            import uk.co.jackoftrades.frontend.screen.enums.UIEntryRendererEnum;
             import uk.co.jackoftrades.frontend.screen.enums.UIEntryEnum;
-            import uk.co.jackoftrades.frontend.screen.UIEntry;
+            import uk.co.jackoftrades.frontend.screen.UIEntryRenderer;
         }
 
 name
@@ -66,7 +66,7 @@ sign
         ;
 
 entry
-        returns[UIEntry uiEntry]
+        returns[UIEntry uiEntryRenderer]
         :   name
             code
             colours
@@ -91,7 +91,7 @@ entry
                 else
                     initSign = $sign.entryEnum;
 
-                $uiEntry = new UIEntry(initName,
+                $uiEntryRenderer = new UIEntry(initName,
                                        initCode,
                                        initColour,
                                        initLColour,
@@ -109,7 +109,7 @@ entries
         }
         :   (entry
             {
-                $allEntries.add($entry.uiEntry);
+                $allEntries.add($entry.uiEntryRenderer);
             })+
             EOF
         ;

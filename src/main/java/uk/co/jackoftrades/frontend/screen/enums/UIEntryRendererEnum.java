@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.frontend.screen.enums;
 
-public enum UIEntryRenderer {
+public enum UIEntryRendererEnum {
     UI_ENTRY_RENDERER_COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX(CombinerName.RESIST_0,
             "wwwwwwGGGrrGGGwGrGwwrwWWWWWWGGGrrGGGWGrGWWrW",
             "swBrgwBrwBwBr", "?..+-*!^.=.%%%~!=%~+=~", 0, UIEntryEnum.UI_ENTRY_NO_SIGN),
@@ -17,7 +17,7 @@ public enum UIEntryRenderer {
     private final int defaultDigits;
     private final UIEntryEnum entry;
 
-    UIEntryRenderer(CombinerName combiner, String defaultColours, String defaultLabelColours, String defaultSymbols, int defaultDigits, UIEntryEnum entry) {
+    UIEntryRendererEnum(CombinerName combiner, String defaultColours, String defaultLabelColours, String defaultSymbols, int defaultDigits, UIEntryEnum entry) {
         this.combiner = combiner;
         this.defaultColours = defaultColours;
         this.defaultLabelColours = defaultLabelColours;

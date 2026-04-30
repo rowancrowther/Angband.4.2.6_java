@@ -5,9 +5,9 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.background.io.parsers.antlr.uiEntryRenderer.UIEntryRendererLexer;
-import uk.co.jackoftrades.background.io.parsers.antlr.uiEntryRenderer.UIEntryRendererParser;
-import uk.co.jackoftrades.frontend.screen.UIEntry;
+import uk.co.jackoftrades.background.io.parsers.antlr.uientryrenderer.UIEntryRendererLexer;
+import uk.co.jackoftrades.background.io.parsers.antlr.uientryrenderer.UIEntryRendererParser;
+import uk.co.jackoftrades.frontend.screen.UIEntryRenderer;
 
 import java.util.ArrayList;
 
@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class UIEntryRendParser {
     private static final Logger logger = LogManager.getLogger();
 
-    public ArrayList<UIEntry> parse(String filename) {
+    public ArrayList<UIEntryRenderer> parse(String filename) {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
             UIEntryRendererLexer lexer = new UIEntryRendererLexer(stream);

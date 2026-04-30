@@ -9,3 +9,13 @@ java.lang.NullPointerException: Cannot invoke "org.antlr.v4.runtime.Token.getTex
 	at uk.co.jackoftrades.middle.game.Game.loadProjection(Game.java:51)
 	at uk.co.jackoftrades.middle.game.Game.init(Game.java:41)
 	at uk.co.jackoftrades.Main.main(Main.java:16)
+21:43:15 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadUIEntryBase(Game.java:68) 
+Error while loading UI entry base.
+
+java.lang.NullPointerException: Cannot invoke "java.lang.StringBuilder.toString()" because "_localctx.desc.description" is null
+	at uk.co.jackoftrades.background.io.parsers.antlr.uientrybase.UIEntryBaseParser.base(UIEntryBaseParser.java:535)
+	at uk.co.jackoftrades.background.io.parsers.antlr.uientrybase.UIEntryBaseParser.bases(UIEntryBaseParser.java:601)
+	at uk.co.jackoftrades.background.io.parsers.UIEntryBaseParser.parse(UIEntryBaseParser.java:19)
+	at uk.co.jackoftrades.middle.game.Game.loadUIEntryBase(Game.java:66)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:56)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

@@ -1,5 +1,5 @@
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryRenderer.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.background.io.parsers.antlr.uiEntryRenderer;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryRendererEnum.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.background.io.parsers.antlr.uientryrenderer;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;

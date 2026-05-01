@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.middle.game;
 
-import uk.co.jackoftrades.background.colour.enums.ColourType;
-import uk.co.jackoftrades.background.numerics.Random;
+import uk.co.jackoftrades.backend.colour.enums.ColourType;
+import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.enums.MessageEnum;

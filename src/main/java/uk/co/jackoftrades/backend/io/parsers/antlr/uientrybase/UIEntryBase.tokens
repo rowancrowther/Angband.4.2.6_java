@@ -1,0 +1,16 @@
+COMMENT=1
+EOL=2
+NAME=3
+RENDERER=4
+COMBINE=5
+CATEGORY=6
+FLAGS=7
+DESC=8
+UCASE=9
+TEXT=10
+LCASE=11
+'name:'=3
+'renderer:'=4
+'combine:'=5
+'flags:'=7
+'desc:'=8

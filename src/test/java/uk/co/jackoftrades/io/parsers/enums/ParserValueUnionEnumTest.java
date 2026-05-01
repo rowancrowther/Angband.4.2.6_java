@@ -2,11 +2,12 @@ package uk.co.jackoftrades.io.parsers.enums;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.io.parsers.enums.ParserValueUnionEnum;
+import uk.co.jackoftrades.backend.io.parsers.enums.ParserValueUnionEnum;
 
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class ParserValueUnionEnumTest {
     ParserValueUnionEnum sint = ParserValueUnionEnum.PARSER_VALUE_UNION_INT;

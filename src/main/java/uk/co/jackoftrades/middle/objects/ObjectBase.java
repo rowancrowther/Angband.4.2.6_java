@@ -1,8 +1,8 @@
 package uk.co.jackoftrades.middle.objects;
 
 import org.jspecify.annotations.NonNull;
-import uk.co.jackoftrades.background.colour.enums.ColourType;
-import uk.co.jackoftrades.background.utils.Flag;
+import uk.co.jackoftrades.backend.colour.enums.ColourType;
+import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;

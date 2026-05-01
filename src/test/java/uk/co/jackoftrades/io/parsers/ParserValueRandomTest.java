@@ -2,10 +2,11 @@ package uk.co.jackoftrades.io.parsers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.io.parsers.ParserValueRandom;
-import uk.co.jackoftrades.background.numerics.Random;
+import uk.co.jackoftrades.backend.io.parsers.ParserValueRandom;
+import uk.co.jackoftrades.backend.numerics.Random;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ParserValueRandomTest {
     private ParserValueRandom random;

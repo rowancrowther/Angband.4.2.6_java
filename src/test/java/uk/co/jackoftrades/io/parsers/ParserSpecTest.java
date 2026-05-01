@@ -2,9 +2,7 @@ package uk.co.jackoftrades.io.parsers;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.io.parsers.ParserSpec;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import uk.co.jackoftrades.backend.io.parsers.ParserSpec;
 
 class ParserSpecTest {
     private ParserSpec spec;

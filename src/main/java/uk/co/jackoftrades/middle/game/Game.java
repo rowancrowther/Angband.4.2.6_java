@@ -3,12 +3,10 @@ package uk.co.jackoftrades.middle.game;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.Nullable;
-import uk.co.jackoftrades.background.io.parsers.ProjectionParser;
-import uk.co.jackoftrades.background.io.parsers.UIEntryBaseParser;
-import uk.co.jackoftrades.background.io.parsers.UIEntryRendParser;
-import uk.co.jackoftrades.background.io.parsers.WorldParser;
-import uk.co.jackoftrades.frontend.screen.UIEntryBase;
-import uk.co.jackoftrades.frontend.screen.UIEntryRenderer;
+import uk.co.jackoftrades.backend.io.parsers.*;
+import uk.co.jackoftrades.frontend.entries.UIEntry;
+import uk.co.jackoftrades.frontend.entries.UIEntryBase;
+import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,13 +29,14 @@ public class Game {
      */
     private static LinkedList<World> world;
     private static ArrayList<Projection> projections;
-    private static ArrayList<UIEntryRenderer> uiEntries;
+    private static ArrayList<UIEntryRenderer> uiEntryRenderers;
     private static ArrayList<UIEntryBase> uiBases;
+    private static ArrayList<UIEntry> uiEntries;
 
-    public static @Nullable UIEntryRenderer getUIEntry(String name) {
-        if (uiEntries == null) return null;
+    public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
+        if (uiEntryRenderers == null) return null;
 
-        for (UIEntryRenderer entry : uiEntries) {
+        for (UIEntryRenderer entry : uiEntryRenderers) {
             if (entry.getName().equals(name)) {
                 return entry;
             }
@@ -51,12 +50,30 @@ public class Game {
      */
     public void init() {
         loadWorld();
-        loadProjection();
-        loadUIEntryRenderer();
-        loadUIEntryBase();
+        loadProjections();
+        loadUIEntryRenderers();
+        loadUIEntryBases();
+        loadUIEntries();
     }
 
-    private void loadUIEntryBase() {
+    private void loadUIEntries() {
+        uiEntries = new ArrayList<>();
+
+        UIEntryParser parser = new UIEntryParser();
+
+        try {
+            // TODO - move and change this string from being hard-coded
+            uiEntries = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading UI entries!", e);
+        }
+
+        for (UIEntry entry : uiEntries) {
+            logger.info(entry.toString());
+        }
+    }
+
+    private void loadUIEntryBases() {
         uiBases = new ArrayList<>();
 
         UIEntryBaseParser parser = new UIEntryBaseParser();
@@ -73,14 +90,14 @@ public class Game {
         }
     }
 
-    private void loadUIEntryRenderer() {
-        uiEntries = new ArrayList<>();
+    private void loadUIEntryRenderers() {
+        uiEntryRenderers = new ArrayList<>();
 
         UIEntryRendParser renderer = new UIEntryRendParser();
 
         try {
             // TODO - move this string from being hard coded to being calculated from the run location
-            uiEntries = renderer.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_renderer.txt");
+            uiEntryRenderers = renderer.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_renderer.txt");
         } catch (Exception e) {
             logger.error("Error while loading UI Entry Renderers", e);
         }
@@ -91,7 +108,7 @@ public class Game {
         }*/
     }
 
-    private void loadProjection() {
+    private void loadProjections() {
         projections = new ArrayList<>();
 
         ProjectionParser projectionParser = new ProjectionParser();

@@ -2,7 +2,7 @@ package uk.co.jackoftrades.io.enums;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.background.io.enums.FileModeEnum;
+import uk.co.jackoftrades.backend.io.enums.FileModeEnum;
 
 import java.util.ArrayList;
 

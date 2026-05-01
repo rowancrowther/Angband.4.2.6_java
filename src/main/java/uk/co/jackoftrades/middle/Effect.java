@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.middle;
 
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.background.numerics.Dice;
+import uk.co.jackoftrades.backend.numerics.Dice;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
 

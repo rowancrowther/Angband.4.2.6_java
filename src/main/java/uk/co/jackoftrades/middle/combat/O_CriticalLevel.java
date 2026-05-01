@@ -3,7 +3,7 @@ package uk.co.jackoftrades.middle.combat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.background.io.bespokeexceptions.InvalidTokenFoundDuringParse;
+import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.enums.HitType;
 
 public class O_CriticalLevel {

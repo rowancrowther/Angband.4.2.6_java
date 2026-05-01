@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.middle.cave;
 
 import org.jspecify.annotations.NonNull;
-import uk.co.jackoftrades.background.utils.RandomValueUtils;
+import uk.co.jackoftrades.backend.utils.RandomValueUtils;
 
 public class Loc {
     private int x;

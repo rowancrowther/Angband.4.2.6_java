@@ -53,6 +53,10 @@ public class UIEntry {
         this.template = template;
     }
 
+    public String getName() {
+        return name;
+    }
+
     public enum StatElemType {
         STAT,
         ELEMENT

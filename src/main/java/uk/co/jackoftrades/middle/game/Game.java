@@ -7,6 +7,7 @@ import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftrades.middle.player.PlayerProperty;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,11 +33,23 @@ public class Game {
     private static ArrayList<UIEntryRenderer> uiEntryRenderers;
     private static ArrayList<UIEntryBase> uiBases;
     private static ArrayList<UIEntry> uiEntries;
+    private static ArrayList<PlayerProperty> playerProperties;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
 
         for (UIEntryRenderer entry : uiEntryRenderers) {
+            if (entry.getName().equals(name)) {
+                return entry;
+            }
+        }
+
+        return null;
+    }
+
+    public static @Nullable UIEntry getUIEntry(String name) {
+        if (uiEntries == null) return null;
+        for (UIEntry entry : uiEntries) {
             if (entry.getName().equals(name)) {
                 return entry;
             }
@@ -54,6 +67,23 @@ public class Game {
         loadUIEntryRenderers();
         loadUIEntryBases();
         loadUIEntries();
+        loadPlayerProperties();
+    }
+
+    private void loadPlayerProperties() {
+        playerProperties = new ArrayList<>();
+        PlayerPropertyReader parser = new PlayerPropertyReader();
+
+        try {
+            // TODO - move and change this string from being hard-coded
+            playerProperties = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\player_property.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading player properties!", e);
+        }
+
+        /* for (PlayerProperty property : playerProperties) {
+            logger.info(property.toString());
+        } */
     }
 
     private void loadUIEntries() {
@@ -68,9 +98,9 @@ public class Game {
             logger.error("Error while loading UI entries!", e);
         }
 
-        for (UIEntry entry : uiEntries) {
+        /* for (UIEntry entry : uiEntries) {
             logger.info(entry.toString());
-        }
+        } */
     }
 
     private void loadUIEntryBases() {
@@ -85,9 +115,9 @@ public class Game {
             logger.error("Error while loading UI entry base.", e);
         }
 
-        for (UIEntryBase entry : uiBases) {
+        /* for (UIEntryBase entry : uiBases) {
             logger.info(entry.toString());
-        }
+        } */
     }
 
     private void loadUIEntryRenderers() {

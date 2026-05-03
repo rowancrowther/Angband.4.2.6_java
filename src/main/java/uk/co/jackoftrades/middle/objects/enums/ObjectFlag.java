@@ -3,6 +3,7 @@ package uk.co.jackoftrades.middle.objects.enums;
 import org.jetbrains.annotations.Contract;
 
 public enum ObjectFlag {
+    OF_NONE(""),
     OF_SUST_STR(" sStr"),
     OF_SUST_INT(" sInt"),
     OF_SUST_WIS(" sWis"),

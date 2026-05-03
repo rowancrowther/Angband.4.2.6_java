@@ -28,3 +28,82 @@ No enum constant uk.co.jackoftrades.frontend.entries.UIEntry.StatElemType.stat
 13:08:54 [main] ERROR uk.co.jackoftrades.backend.io.parsers.UIEntryParser.parse(UIEntryParser.java:27) 
 No enum constant uk.co.jackoftrades.frontend.screen.enums.EntryFlag.TIMED_AS_AUX
 
+14:52:58 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.NullPointerException: Cannot read field "uiEntry" because "_localctx.bindui" is null
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:639)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:720)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+19:39:26 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.NullPointerException: Cannot read field "val" because "_localctx.value" is null
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:651)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:720)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+19:40:57 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.player.enums.PlayerFlag.PF_SUST_STR
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.player.enums.PlayerFlag.valueOf(PlayerFlag.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.code(PlayerPropertyParser.java:194)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:597)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:720)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+19:46:21 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.player.enums.PlayerFlag.PF_SUST_STR
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.player.enums.PlayerFlag.valueOf(PlayerFlag.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.code(PlayerPropertyParser.java:194)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:628)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:763)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+19:55:25 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.objects.enums.ObjectFlag.OF_ROCK
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.objects.enums.ObjectFlag.valueOf(ObjectFlag.java:5)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.code(PlayerPropertyParser.java:194)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:628)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:763)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+20:13:11 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.NullPointerException: Cannot read field "objectFlag" because "_localctx.code" is null
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:691)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:785)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+20:13:25 [main] ERROR uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:81) 
+Error while loading player properties!
+
+java.lang.NullPointerException: Cannot read field "objectFlag" because "_localctx.code" is null
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperty(PlayerPropertyParser.java:691)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter.PlayerPropertyParser.playerProperties(PlayerPropertyParser.java:785)
+	at uk.co.jackoftrades.backend.io.parsers.PlayerPropertyReader.parse(PlayerPropertyReader.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

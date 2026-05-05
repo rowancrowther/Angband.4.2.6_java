@@ -8,6 +8,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
@@ -40,6 +41,7 @@ public class Game {
     private static ArrayList<TerrainFeature> terrainFeatures;
     private static ArrayList<ObjectBase> objectBases;
     private static ArrayList<Slay> slays;
+    private static ArrayList<Brand> brands;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -77,6 +79,22 @@ public class Game {
         loadTerrainFeatures();
         loadObjectBases();
         loadSlays();
+        loadBrands();
+    }
+
+    private void loadBrands() {
+        brands = new ArrayList<>();
+        BrandParser brandParser = new BrandParser();
+
+        try {
+            brands = brandParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\brand.txt");
+        } catch (Exception e) {
+            logger.error("Exception while parsing brands.txt", e);
+        }
+
+        for (Brand brand : brands) {
+            logger.info(brand.toString());
+        }
     }
 
     private void loadSlays() {

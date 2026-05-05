@@ -1,0 +1,30 @@
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='ACID_3', name='acid', verb='dissolve', resistFlag=RF_IM_ACID, vulnerableFlag=RF_NONE, multiplier=3, oMultiplier=25, power=161}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='ELEC_3', name='lightning', verb='shock', resistFlag=RF_IM_ELEC, vulnerableFlag=RF_NONE, multiplier=3, oMultiplier=25, power=116}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='FIRE_3', name='fire', verb='burn', resistFlag=RF_IM_FIRE, vulnerableFlag=RF_HURT_FIRE, multiplier=3, oMultiplier=25, power=113}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='COLD_3', name='cold', verb='freeze', resistFlag=RF_IM_COLD, vulnerableFlag=RF_HURT_COLD, multiplier=3, oMultiplier=25, power=119}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='POIS_3', name='poison', verb='poison', resistFlag=RF_IM_POIS, vulnerableFlag=RF_NONE, multiplier=3, oMultiplier=25, power=122}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='ACID_2', name='acid', verb='corrode', resistFlag=RF_IM_ACID, vulnerableFlag=RF_NONE, multiplier=2, oMultiplier=15, power=130}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='ELEC_2', name='lightning', verb='zap', resistFlag=RF_IM_ELEC, vulnerableFlag=RF_NONE, multiplier=2, oMultiplier=15, power=108}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='FIRE_2', name='fire', verb='singe', resistFlag=RF_IM_FIRE, vulnerableFlag=RF_HURT_FIRE, multiplier=2, oMultiplier=15, power=107}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='COLD_2', name='cold', verb='chill', resistFlag=RF_IM_COLD, vulnerableFlag=RF_HURT_COLD, multiplier=2, oMultiplier=15, power=109}
+
+17:49:19 [main] INFO uk.co.jackoftrades.middle.game.Game.loadBrands(Game.java:96) 
+Brand{code='POIS_2', name='poison', verb='sicken', resistFlag=RF_IM_POIS, vulnerableFlag=RF_NONE, multiplier=2, oMultiplier=15, power=111}
+

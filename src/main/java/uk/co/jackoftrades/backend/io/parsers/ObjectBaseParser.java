@@ -20,8 +20,8 @@ public class ObjectBaseParser {
     private int defaultBreakPerc;
     private int defaultMaxStack;
 
-    public void parse() throws IOException {
-        CharStream stream = CharStreams.fromFileName("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\object_base.txt");
+    public ArrayList<ObjectBase> parse(String filename) throws IOException {
+        CharStream stream = CharStreams.fromFileName(filename);
         ObjectBaseFormatterLexer lexer = new ObjectBaseFormatterLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         ObjectBaseFormatterParser parser = new ObjectBaseFormatterParser(tokens);
@@ -39,7 +39,7 @@ public class ObjectBaseParser {
                 base.setMaxStack(defaultMaxStack);
         }
 
-        System.out.println(objectBases.size());
+        return objectBases;
     }
 
     @Contract(pure = true)

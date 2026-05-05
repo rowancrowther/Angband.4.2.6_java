@@ -1,0 +1,102 @@
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Chest~', tVal=TV_CHEST, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@68e965f5, hatesEl=uk.co.jackoftrades.backend.utils.Flag@6f27a732, kindFlags=uk.co.jackoftrades.backend.utils.Flag@6c779568, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Shot~', tVal=TV_SHOT, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@59af0466, hatesEl=uk.co.jackoftrades.backend.utils.Flag@3e6ef8ad, kindFlags=uk.co.jackoftrades.backend.utils.Flag@346d61be, breakPerc=0, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Arrow~', tVal=TV_ARROW, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@55536d9e, hatesEl=uk.co.jackoftrades.backend.utils.Flag@747edf66, kindFlags=uk.co.jackoftrades.backend.utils.Flag@3d1cfad4, breakPerc=35, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Bolt~', tVal=TV_BOLT, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@62230c58, hatesEl=uk.co.jackoftrades.backend.utils.Flag@2cd2a21f, kindFlags=uk.co.jackoftrades.backend.utils.Flag@2e55dd0c, breakPerc=20, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Bow~', tVal=TV_BOW, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@74455848, hatesEl=uk.co.jackoftrades.backend.utils.Flag@e7edb54, kindFlags=uk.co.jackoftrades.backend.utils.Flag@378542de, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Digger~', tVal=TV_DIGGING, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@3738449f, hatesEl=uk.co.jackoftrades.backend.utils.Flag@69e1dd28, kindFlags=uk.co.jackoftrades.backend.utils.Flag@11bd0f3b, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Hafted weapon~', tVal=TV_HAFTED, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@c333c60, hatesEl=uk.co.jackoftrades.backend.utils.Flag@79da8dc5, kindFlags=uk.co.jackoftrades.backend.utils.Flag@1eb5174b, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Polearm~', tVal=TV_POLEARM, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@67080771, hatesEl=uk.co.jackoftrades.backend.utils.Flag@72cde7cc, kindFlags=uk.co.jackoftrades.backend.utils.Flag@5fd4f8f5, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Bladed weapon~', tVal=TV_SWORD, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@696da30b, hatesEl=uk.co.jackoftrades.backend.utils.Flag@4e7912d8, kindFlags=uk.co.jackoftrades.backend.utils.Flag@53976f5c, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Boot~', tVal=TV_BOOTS, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@2bfc268b, hatesEl=uk.co.jackoftrades.backend.utils.Flag@2f8dad04, kindFlags=uk.co.jackoftrades.backend.utils.Flag@29e495ff, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Glove~', tVal=TV_GLOVES, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@41e1e210, hatesEl=uk.co.jackoftrades.backend.utils.Flag@be35cd9, kindFlags=uk.co.jackoftrades.backend.utils.Flag@4944252c, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Helm~', tVal=TV_HELM, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@44821a96, hatesEl=uk.co.jackoftrades.backend.utils.Flag@a3d8174, kindFlags=uk.co.jackoftrades.backend.utils.Flag@1ba9117e, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Crown~', tVal=TV_CROWN, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@732c2a62, hatesEl=uk.co.jackoftrades.backend.utils.Flag@272ed83b, kindFlags=uk.co.jackoftrades.backend.utils.Flag@41fecb8b, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Shield~', tVal=TV_SHIELD, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@120f102b, hatesEl=uk.co.jackoftrades.backend.utils.Flag@625732, kindFlags=uk.co.jackoftrades.backend.utils.Flag@51dcb805, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Cloak~', tVal=TV_CLOAK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@66498326, hatesEl=uk.co.jackoftrades.backend.utils.Flag@cad498c, kindFlags=uk.co.jackoftrades.backend.utils.Flag@1e6454ec, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Soft Armor~', tVal=null, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@2accdbb5, hatesEl=uk.co.jackoftrades.backend.utils.Flag@b62d79, kindFlags=uk.co.jackoftrades.backend.utils.Flag@6631f5ca, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Hard Armor~', tVal=null, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@5ace1ed4, hatesEl=uk.co.jackoftrades.backend.utils.Flag@1613674b, kindFlags=uk.co.jackoftrades.backend.utils.Flag@27ff5d15, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Dragon Armor~', tVal=null, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@4e096385, hatesEl=uk.co.jackoftrades.backend.utils.Flag@649bec2e, kindFlags=uk.co.jackoftrades.backend.utils.Flag@693fe6c9, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Light~', tVal=TV_LIGHT, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@34f5090e, hatesEl=uk.co.jackoftrades.backend.utils.Flag@31e5415e, kindFlags=uk.co.jackoftrades.backend.utils.Flag@a2431d0, breakPerc=50, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Amulet~', tVal=TV_AMULET, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@1cbb87f3, hatesEl=uk.co.jackoftrades.backend.utils.Flag@1a4013, kindFlags=uk.co.jackoftrades.backend.utils.Flag@1b6e1eff, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Ring~', tVal=TV_RING, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@306f16f3, hatesEl=uk.co.jackoftrades.backend.utils.Flag@702b8b12, kindFlags=uk.co.jackoftrades.backend.utils.Flag@22e357dc, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Staff~', tVal=TV_STAFF, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@49912c99, hatesEl=uk.co.jackoftrades.backend.utils.Flag@10163d6, kindFlags=uk.co.jackoftrades.backend.utils.Flag@2dde1bff, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Wand~', tVal=TV_WAND, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@15bbf42f, hatesEl=uk.co.jackoftrades.backend.utils.Flag@550ee7e5, kindFlags=uk.co.jackoftrades.backend.utils.Flag@5f9b2141, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Rod~', tVal=TV_ROD, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@247d8ae, hatesEl=uk.co.jackoftrades.backend.utils.Flag@48974e45, kindFlags=uk.co.jackoftrades.backend.utils.Flag@6a84a97d, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Scroll~', tVal=TV_SCROLL, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@6c130c45, hatesEl=uk.co.jackoftrades.backend.utils.Flag@50ad3bc1, kindFlags=uk.co.jackoftrades.backend.utils.Flag@223aa2f7, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Potion~', tVal=TV_POTION, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@6d3a388c, hatesEl=uk.co.jackoftrades.backend.utils.Flag@193f604a, kindFlags=uk.co.jackoftrades.backend.utils.Flag@20f5239f, breakPerc=100, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Flask~', tVal=TV_FLASK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@57af006c, hatesEl=uk.co.jackoftrades.backend.utils.Flag@6bedbc4d, kindFlags=uk.co.jackoftrades.backend.utils.Flag@932bc4a, breakPerc=100, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Food', tVal=TV_FOOD, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@d29f28, hatesEl=uk.co.jackoftrades.backend.utils.Flag@2fd1433e, kindFlags=uk.co.jackoftrades.backend.utils.Flag@29d89d5d, breakPerc=100, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Mushroom~', tVal=TV_MUSHROOM, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@3514a4c0, hatesEl=uk.co.jackoftrades.backend.utils.Flag@212b5695, kindFlags=uk.co.jackoftrades.backend.utils.Flag@446293d, breakPerc=100, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Magic Book~', tVal=TV_MAGIC_BOOK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@69997e9d, hatesEl=uk.co.jackoftrades.backend.utils.Flag@793be5ca, kindFlags=uk.co.jackoftrades.backend.utils.Flag@2df9b86, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Prayer Book~', tVal=TV_PRAYER_BOOK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@37654521, hatesEl=uk.co.jackoftrades.backend.utils.Flag@15aab8c6, kindFlags=uk.co.jackoftrades.backend.utils.Flag@33990a0c, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Nature Book~', tVal=TV_NATURE_BOOK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@4de4b452, hatesEl=uk.co.jackoftrades.backend.utils.Flag@50b5ac82, kindFlags=uk.co.jackoftrades.backend.utils.Flag@101952da, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='Shadow Book~', tVal=TV_SHADOW_BOOK, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@6babf3bf, hatesEl=uk.co.jackoftrades.backend.utils.Flag@3059cbc, kindFlags=uk.co.jackoftrades.backend.utils.Flag@7ea9e1e2, breakPerc=10, maxStack=40, numSvals=0}
+
+14:09:31 [main] INFO uk.co.jackoftrades.middle.game.Game.loadObjectBases(Game.java:90) 
+ObjectBase{name='null', tVal=TV_GOLD, attr=COLOUR_TYPE_DARK, flags=uk.co.jackoftrades.backend.utils.Flag@24fcf36f, hatesEl=uk.co.jackoftrades.backend.utils.Flag@10feca44, kindFlags=uk.co.jackoftrades.backend.utils.Flag@3fb1549b, breakPerc=10, maxStack=40, numSvals=0}
+

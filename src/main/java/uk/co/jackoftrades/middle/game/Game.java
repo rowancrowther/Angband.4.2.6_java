@@ -8,6 +8,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 
 import java.io.IOException;
@@ -36,6 +37,7 @@ public class Game {
     private static ArrayList<UIEntry> uiEntries;
     private static ArrayList<PlayerProperty> playerProperties;
     private static ArrayList<TerrainFeature> terrainFeatures;
+    private static ArrayList<ObjectBase> objectBases;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -71,6 +73,22 @@ public class Game {
         loadUIEntries();
         loadPlayerProperties();
         loadTerrainFeatures();
+        loadObjectBases();
+    }
+
+    private void loadObjectBases() {
+        objectBases = new ArrayList<>();
+        ObjectBaseParser objectBaseParser = new ObjectBaseParser();
+
+        try {
+            objectBases = objectBaseParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\object_base.txt");
+        } catch (IOException e) {
+            logger.error("Error while loading object_base.txt file", e);
+        }
+
+        for (ObjectBase objectBase : objectBases) {
+            logger.info(objectBase.toString());
+        }
     }
 
     private void loadTerrainFeatures() {

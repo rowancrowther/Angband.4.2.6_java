@@ -94,4 +94,19 @@ public class ObjectBase {
     public int getMaxStack() {
         return maxStack;
     }
+
+    @Override
+    public String toString() {
+        return "ObjectBase{" +
+                "name='" + name + '\'' +
+                ", tVal=" + tVal +
+                ", attr=" + attr +
+                ", flags=" + flags +
+                ", hatesEl=" + hatesEl +
+                ", kindFlags=" + kindFlags +
+                ", breakPerc=" + breakPerc +
+                ", maxStack=" + maxStack +
+                ", numSvals=" + numSvals +
+                '}';
+    }
 }

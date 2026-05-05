@@ -3,10 +3,6 @@ package uk.co.jackoftrades.backend.utils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.io.parsers.ConstantTxtParser;
-import uk.co.jackoftrades.backend.io.parsers.ObjectBaseParser;
-import uk.co.jackoftrades.middle.objects.ObjectBase;
-
-import java.util.ArrayList;
 
 public class GlobalUtils {
     /**
@@ -16,7 +12,6 @@ public class GlobalUtils {
     public final static int maxRandDepth = 128;
 
     private static final Logger logger = LogManager.getLogger();
-    public static ArrayList<ObjectBase> bases;
 
     /**
      * private constructor to ensure that there is no access to this class apart from by its static methods
@@ -31,19 +26,5 @@ public class GlobalUtils {
         } catch (Exception exception) {
             logger.error(exception.getMessage(), exception);
         }
-    }
-
-    /**
-     * Loads the file object_base.txt and stores its array list in this class
-     */
-    public static void loadObjectBases() {
-        ObjectBaseParser parser = new ObjectBaseParser();
-        try {
-            parser.parse();
-        } catch (Exception exception) {
-            logger.error(exception.getMessage(), exception);
-        }
-
-        ArrayList<ObjectBase> bases = parser.getBases();
     }
 }

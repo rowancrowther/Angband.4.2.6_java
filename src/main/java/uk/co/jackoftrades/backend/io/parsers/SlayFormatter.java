@@ -6,27 +6,27 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
-import uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainLexer;
-import uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser;
-import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarLexer;
+import uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser;
+import uk.co.jackoftrades.middle.objects.Slay;
 
 import java.util.ArrayList;
 
-public class TerrainFeatureReader {
+public class SlayFormatter {
     private static final Logger logger = LogManager.getLogger();
 
     @CheckReturnValue
-    public ArrayList<TerrainFeature> parse(String filename) {
+    public ArrayList<Slay> parse(String filename) {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            TerrainLexer lexer = new TerrainLexer(stream);
+            SlayGrammarLexer lexer = new SlayGrammarLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            TerrainParser parser = new TerrainParser(tokens);
-            TerrainParser.FeaturesContext result = parser.features();
+            SlayGrammarParser parser = new SlayGrammarParser(tokens);
+            SlayGrammarParser.SlaysContext result = parser.slays();
 
-            return result.terrainFeatures;
+            return result.slayList;
         } catch (Exception e) {
-            logger.error("Exception thrown during parsing of Terrain Features.", e);
+            logger.error("Exception thrown during parsing of slay.txt", e);
         }
 
         return null;

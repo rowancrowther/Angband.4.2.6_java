@@ -9,6 +9,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
+import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 
 import java.io.IOException;
@@ -38,6 +39,7 @@ public class Game {
     private static ArrayList<PlayerProperty> playerProperties;
     private static ArrayList<TerrainFeature> terrainFeatures;
     private static ArrayList<ObjectBase> objectBases;
+    private static ArrayList<Slay> slays;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -74,6 +76,22 @@ public class Game {
         loadPlayerProperties();
         loadTerrainFeatures();
         loadObjectBases();
+        loadSlays();
+    }
+
+    private void loadSlays() {
+        slays = new ArrayList<>();
+        SlayFormatter slayFormatter = new SlayFormatter();
+
+        try {
+            slays = slayFormatter.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\slay.txt");
+        } catch (Exception e) {
+            logger.error("Exception thrown during loading Slays.", e);
+        }
+
+/*        for (Slay slay : slays) {
+            logger.info(slay.toString());
+        } */
     }
 
     private void loadObjectBases() {
@@ -86,9 +104,9 @@ public class Game {
             logger.error("Error while loading object_base.txt file", e);
         }
 
-        for (ObjectBase objectBase : objectBases) {
+        /* for (ObjectBase objectBase : objectBases) {
             logger.info(objectBase.toString());
-        }
+        } */
     }
 
     private void loadTerrainFeatures() {
@@ -212,7 +230,7 @@ public class Game {
             int prev = i - 1;
             int next = i < maxRandDepth - 1 ? i + 1 : -1;
 
-            World thisWorld = new World(i, readWorld.get(0), prev, next);
+            World thisWorld = new World(i, readWorld.getFirst(), prev, next);
             world.add(thisWorld);
         }
 

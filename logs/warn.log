@@ -159,3 +159,153 @@ java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.c
 	at uk.co.jackoftrades.middle.game.Game.loadTerrainFeatures(Game.java:82)
 	at uk.co.jackoftrades.middle.game.Game.init(Game.java:73)
 	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:37:41 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.nio.file.NoSuchFileException: C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\lib\gamedata\slay.txt
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:104)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:109)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:52)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:195)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1706)
+	at java.base/java.nio.file.Files.size(Files.java:2246)
+	at org.antlr.v4.runtime.CharStreams.fromPath(CharStreams.java:86)
+	at org.antlr.v4.runtime.CharStreams.fromFileName(CharStreams.java:105)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:41:13 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.nio.file.NoSuchFileException: C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\lib\gamedata\slay.txt
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:104)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:109)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:52)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:195)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1706)
+	at java.base/java.nio.file.Files.size(Files.java:2246)
+	at org.antlr.v4.runtime.CharStreams.fromPath(CharStreams.java:86)
+	at org.antlr.v4.runtime.CharStreams.fromFileName(CharStreams.java:105)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:41:17 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.nio.file.NoSuchFileException: C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\lib\gamedata\slay.txt
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:104)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:109)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:52)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:195)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1706)
+	at java.base/java.nio.file.Files.size(Files.java:2246)
+	at org.antlr.v4.runtime.CharStreams.fromPath(CharStreams.java:86)
+	at org.antlr.v4.runtime.CharStreams.fromFileName(CharStreams.java:105)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:42:42 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.nio.file.NoSuchFileException: C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\lib\gamedata\slay.txt
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:104)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:109)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:52)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:195)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1706)
+	at java.base/java.nio.file.Files.size(Files.java:2246)
+	at org.antlr.v4.runtime.CharStreams.fromPath(CharStreams.java:86)
+	at org.antlr.v4.runtime.CharStreams.fromFileName(CharStreams.java:105)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:21)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:44:13 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.RFEVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.raceFlag(SlayGrammarParser.java:240)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:575)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:652)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:44:15 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.EVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.middle.objects.Slay.<init>(Slay.java:23)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:587)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:652)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:45:58 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.EVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.middle.objects.Slay.<init>(Slay.java:23)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:587)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:652)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:49:23 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.EVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.middle.objects.Slay.<init>(Slay.java:23)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:586)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:651)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:54:54 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.EVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.middle.objects.Slay.<init>(Slay.java:23)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:594)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:659)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+16:56:50 [main] ERROR uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:29) 
+Exception thrown during parsing of slay.txt
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.EVIL
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag.valueOf(MonsterRaceFlag.java:3)
+	at uk.co.jackoftrades.middle.objects.Slay.<init>(Slay.java:23)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slay(SlayGrammarParser.java:594)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.slayreader.SlayGrammarParser.slays(SlayGrammarParser.java:659)
+	at uk.co.jackoftrades.backend.io.parsers.SlayFormatter.parse(SlayFormatter.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.frontend.entries;
 
-import uk.co.jackoftrades.frontend.screen.enums.UIEntryEnum;
-import uk.co.jackoftrades.frontend.screen.enums.UIEntryRendererEnum;
+import uk.co.jackoftrades.frontend.entries.enums.UIEntryEnum;
+import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
 
 public class UIEntryRenderer {
     private String name;

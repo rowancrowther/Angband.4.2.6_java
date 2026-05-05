@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.frontend.screen.enums;
+package uk.co.jackoftrades.frontend.entries.enums;
 
 public enum UIEntryEnum {
     UI_ENTRY_NO_SIGN,

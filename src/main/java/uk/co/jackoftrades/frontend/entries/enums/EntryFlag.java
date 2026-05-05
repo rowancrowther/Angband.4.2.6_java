@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.frontend.screen.enums;
+package uk.co.jackoftrades.frontend.entries.enums;
 
 public enum EntryFlag {
     ENTRY_FLAG_TIMED_AS_AUX,

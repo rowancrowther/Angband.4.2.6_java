@@ -7,6 +7,7 @@ import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftrades.middle.cave.TerrainFeature;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 
 import java.io.IOException;
@@ -34,6 +35,7 @@ public class Game {
     private static ArrayList<UIEntryBase> uiBases;
     private static ArrayList<UIEntry> uiEntries;
     private static ArrayList<PlayerProperty> playerProperties;
+    private static ArrayList<TerrainFeature> terrainFeatures;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -68,6 +70,23 @@ public class Game {
         loadUIEntryBases();
         loadUIEntries();
         loadPlayerProperties();
+        loadTerrainFeatures();
+    }
+
+    private void loadTerrainFeatures() {
+        terrainFeatures = new ArrayList<>();
+        TerrainFeatureReader parser = new TerrainFeatureReader();
+
+        try {
+            // TODO - move and change this string from being hard-coded
+            terrainFeatures = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\terrain.txt");
+        } catch (Exception e) {
+            logger.error("Error while loading terrain properties!", e);
+        }
+
+        /* for (TerrainFeature terrainFeature : terrainFeatures) {
+            logger.info(terrainFeature.toString());
+        } */
     }
 
     private void loadPlayerProperties() {

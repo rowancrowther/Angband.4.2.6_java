@@ -107,3 +107,55 @@ java.lang.NullPointerException: Cannot read field "objectFlag" because "_localct
 	at uk.co.jackoftrades.middle.game.Game.loadPlayerProperties(Game.java:79)
 	at uk.co.jackoftrades.middle.game.Game.init(Game.java:70)
 	at uk.co.jackoftrades.Main.main(Main.java:16)
+13:31:31 [main] ERROR uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:29) 
+Exception thrown duing parsing of Terrain Features.
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.TF_LOS 
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.valueOf(TerrainFeatureFlags.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.flags(TerrainParser.java:440)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.feature(TerrainParser.java:1171)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.features(TerrainParser.java:1385)
+	at uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadTerrainFeatures(Game.java:82)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:73)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+13:32:40 [main] ERROR uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:29) 
+Exception thrown duing parsing of Terrain Features.
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.TF_LOS 
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.valueOf(TerrainFeatureFlags.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.flags(TerrainParser.java:440)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.feature(TerrainParser.java:1171)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.features(TerrainParser.java:1385)
+	at uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadTerrainFeatures(Game.java:82)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:73)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+13:33:10 [main] ERROR uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:29) 
+Exception thrown duing parsing of Terrain Features.
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.TF_LOS 
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.valueOf(TerrainFeatureFlags.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.flags(TerrainParser.java:440)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.feature(TerrainParser.java:1171)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.features(TerrainParser.java:1385)
+	at uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadTerrainFeatures(Game.java:82)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:73)
+	at uk.co.jackoftrades.Main.main(Main.java:16)
+13:40:40 [main] ERROR uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:29) 
+Exception thrown duing parsing of Terrain Features.
+
+java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.TF_DOOR
+	at java.base/java.lang.Enum.valueOf(Enum.java:293)
+	at uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags.valueOf(TerrainFeatureFlags.java:3)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.flags(TerrainParser.java:440)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.feature(TerrainParser.java:1171)
+	at uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature.TerrainParser.features(TerrainParser.java:1385)
+	at uk.co.jackoftrades.backend.io.parsers.TerrainFeatureReader.parse(TerrainFeatureReader.java:25)
+	at uk.co.jackoftrades.middle.game.Game.loadTerrainFeatures(Game.java:82)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:73)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

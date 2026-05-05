@@ -1,4 +1,6 @@
-package uk.co.jackoftrades.frontend.screen.enums;
+package uk.co.jackoftrades.frontend.entries.enums;
+
+import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 
 public enum UIEntryRendererEnum {
     UI_ENTRY_RENDERER_COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX(CombinerName.RESIST_0,

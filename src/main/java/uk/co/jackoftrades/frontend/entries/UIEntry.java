@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.frontend.entries;
 
+import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.frontend.screen.enums.EntryFlag;
 import uk.co.jackoftrades.middle.enums.StatElementEnum;
 
 import java.util.ArrayList;

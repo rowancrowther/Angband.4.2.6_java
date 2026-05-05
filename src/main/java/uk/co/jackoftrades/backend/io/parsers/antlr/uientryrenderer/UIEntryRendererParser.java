@@ -11,8 +11,8 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.frontend.screen.enums.UIEntryEnum;
-import uk.co.jackoftrades.frontend.screen.enums.UIEntryRendererEnum;
+import uk.co.jackoftrades.frontend.entries.enums.UIEntryEnum;
+import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
 
 import java.util.ArrayList;
 import java.util.List;

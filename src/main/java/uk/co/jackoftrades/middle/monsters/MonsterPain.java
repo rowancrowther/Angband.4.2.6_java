@@ -26,4 +26,8 @@ public class MonsterPain {
 
         return result.toString();
     }
+
+    public int getPainIndex() {
+        return painIndex;
+    }
 }

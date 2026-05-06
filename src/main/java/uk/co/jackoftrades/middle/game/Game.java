@@ -3,11 +3,13 @@ package uk.co.jackoftrades.middle.game;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.Nullable;
+
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
@@ -44,6 +46,17 @@ public class Game {
     private static ArrayList<Slay> slays;
     private static ArrayList<Brand> brands;
     private static ArrayList<MonsterPain> monsterPains;
+    private static ArrayList<MonsterBase> monsterBases;
+
+    public static @Nullable MonsterPain getPainFromIndex(int index) {
+        for (MonsterPain monsterPain : monsterPains) {
+            if (monsterPain.getPainIndex() == index) {
+                return monsterPain;
+            }
+        }
+
+        return null;
+    }
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -83,6 +96,21 @@ public class Game {
         loadSlays();
         loadBrands();
         loadPain();
+        loadMonsterBases();
+    }
+
+    private void loadMonsterBases() {
+        MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
+
+        try {
+            monsterBases = monsterBaseParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\monster_base.txt");
+        } catch (Exception e) {
+            logger.error("Error while parsing MonsterBase", e);
+        }
+
+        for (MonsterBase monsterBase : monsterBases) {
+            logger.info(monsterBase.toString());
+        }
     }
 
     private void loadPain() {
@@ -95,9 +123,9 @@ public class Game {
             logger.error("Exception while parsing pain.txt", e);
         }
 
-        for (MonsterPain monsterPain : monsterPains) {
+/*        for (MonsterPain monsterPain : monsterPains) {
             logger.info(monsterPain.toString());
-        }
+        }*/
     }
 
     private void loadBrands() {

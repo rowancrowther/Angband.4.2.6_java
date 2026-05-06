@@ -1,5 +1,9 @@
 package uk.co.jackoftrades.middle.monsters;
 
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+
+import java.util.ArrayList;
+
 /**
  * STUB CLASS
  * TODO: Code, comment and test this
@@ -8,12 +12,12 @@ public class Summon {
     private String name;
     private String messageType;
     private boolean uniquesAllowed;
-    private MonsterBases bases;
-    private String raceFlag;
+    private ArrayList<MonsterBase> bases;
+    private MonsterRaceFlag raceFlag;
     private String fallback;
     private String description;
 
-    public Summon(String name, String messageType, boolean uniquesAllowed, MonsterBases bases, String raceFlag, String fallback, String description) {
+    public Summon(String name, String messageType, boolean uniquesAllowed, ArrayList<MonsterBase> bases, MonsterRaceFlag raceFlag, String fallback, String description) {
         this.name = name;
         this.messageType = messageType;
         this.uniquesAllowed = uniquesAllowed;
@@ -35,15 +39,11 @@ public class Summon {
         return uniquesAllowed;
     }
 
-    public MonsterBases getBases() {
+    public ArrayList<MonsterBase> getBases() {
         return bases;
     }
 
-    public void addBase(MonsterBase base) {
-        bases.put(base);
-    }
-
-    public String getRaceFlag() {
+    public MonsterRaceFlag getRaceFlag() {
         return raceFlag;
     }
 
@@ -57,10 +57,8 @@ public class Summon {
 
     @Override
     public String toString() {
-        StringBuilder result = new StringBuilder(name + " " + messageType + " ");
-        result.append(uniquesAllowed ? "unique " : "");
-        result.append(bases.size() > 0 ? "has bases " : "");
-        result.append(raceFlag + " " + fallback + " " + description);
-        return result.toString();
+        return name + " " + messageType + " " + (uniquesAllowed ? "unique " : "") +
+                (!bases.isEmpty() ? "has bases " : "") +
+                raceFlag + " " + fallback + " " + description;
     }
 }

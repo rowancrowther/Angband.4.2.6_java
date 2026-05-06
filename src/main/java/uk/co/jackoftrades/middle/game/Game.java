@@ -11,6 +11,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
+import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.Slay;
@@ -47,6 +48,17 @@ public class Game {
     private static ArrayList<Brand> brands;
     private static ArrayList<MonsterPain> monsterPains;
     private static ArrayList<MonsterBase> monsterBases;
+    private static ArrayList<Summon> summons;
+
+    public static MonsterBase getBaseFromName(String name) {
+        for (MonsterBase monsterBase : monsterBases) {
+            if (monsterBase.getCodeName().equals(name)) {
+                return monsterBase;
+            }
+        }
+
+        return null;
+    }
 
     public static @Nullable MonsterPain getPainFromIndex(int index) {
         for (MonsterPain monsterPain : monsterPains) {
@@ -97,6 +109,21 @@ public class Game {
         loadBrands();
         loadPain();
         loadMonsterBases();
+        loadSummons();
+    }
+
+    private void loadSummons() {
+        SummonParser parser = new SummonParser();
+
+        try {
+            summons = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\summon.txt");
+        } catch (Exception e) {
+            logger.error("Error while parsing summons file!", e);
+        }
+
+//        for (Summon summon : summons) {
+//            logger.info(summon.toString());
+//        }
     }
 
     private void loadMonsterBases() {
@@ -108,13 +135,12 @@ public class Game {
             logger.error("Error while parsing MonsterBase", e);
         }
 
-        for (MonsterBase monsterBase : monsterBases) {
+        /* for (MonsterBase monsterBase : monsterBases) {
             logger.info(monsterBase.toString());
-        }
+        } */
     }
 
     private void loadPain() {
-        monsterPains = new ArrayList<>();
         MonsterPainParser parser = new MonsterPainParser();
 
         try {
@@ -129,7 +155,6 @@ public class Game {
     }
 
     private void loadBrands() {
-        brands = new ArrayList<>();
         BrandParser brandParser = new BrandParser();
 
         try {
@@ -144,7 +169,6 @@ public class Game {
     }
 
     private void loadSlays() {
-        slays = new ArrayList<>();
         SlayFormatter slayFormatter = new SlayFormatter();
 
         try {

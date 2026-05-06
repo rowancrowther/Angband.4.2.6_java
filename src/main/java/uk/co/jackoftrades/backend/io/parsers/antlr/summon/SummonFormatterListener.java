@@ -1,4 +1,4 @@
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/SummonFormatter.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/SummonFormatter.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.io.parsers.antlr.summon;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -8,73 +8,129 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link SummonFormatterParser}.
  */
 public interface SummonFormatterListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link SummonFormatterParser#word}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterWord(SummonFormatterParser.WordContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterName(SummonFormatterParser.NameContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link SummonFormatterParser#word}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitWord(SummonFormatterParser.WordContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitName(SummonFormatterParser.NameContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link SummonFormatterParser#tagText}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTagText(SummonFormatterParser.TagTextContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#msgt}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterMsgt(SummonFormatterParser.MsgtContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link SummonFormatterParser#tagText}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTagText(SummonFormatterParser.TagTextContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#msgt}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitMsgt(SummonFormatterParser.MsgtContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link SummonFormatterParser#one_or_zero}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterOne_or_zero(SummonFormatterParser.One_or_zeroContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#uniques}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterUniques(SummonFormatterParser.UniquesContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link SummonFormatterParser#one_or_zero}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitOne_or_zero(SummonFormatterParser.One_or_zeroContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#uniques}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitUniques(SummonFormatterParser.UniquesContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link SummonFormatterParser#summon}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSummon(SummonFormatterParser.SummonContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#base}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterBase(SummonFormatterParser.BaseContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link SummonFormatterParser#summon}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSummon(SummonFormatterParser.SummonContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#base}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitBase(SummonFormatterParser.BaseContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link SummonFormatterParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(SummonFormatterParser.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#raceFlag}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterRaceFlag(SummonFormatterParser.RaceFlagContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link SummonFormatterParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(SummonFormatterParser.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#raceFlag}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitRaceFlag(SummonFormatterParser.RaceFlagContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#fallback}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFallback(SummonFormatterParser.FallbackContext ctx);
+
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#fallback}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFallback(SummonFormatterParser.FallbackContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterDesc(SummonFormatterParser.DescContext ctx);
+
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitDesc(SummonFormatterParser.DescContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#summon}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterSummon(SummonFormatterParser.SummonContext ctx);
+
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#summon}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitSummon(SummonFormatterParser.SummonContext ctx);
+
+	/**
+	 * Enter a parse tree produced by {@link SummonFormatterParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFile(SummonFormatterParser.FileContext ctx);
+
+	/**
+	 * Exit a parse tree produced by {@link SummonFormatterParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFile(SummonFormatterParser.FileContext ctx);
 }

@@ -1,87 +1,130 @@
 grammar SummonFormatter;
 
-@header     {   import uk.co.jackoftrades.middle.monsters.Summon;
+@header     {   import uk.co.jackoftrades.backend.io.parsers.antlr.summon.*;
+                import uk.co.jackoftrades.middle.game.Game;
+                import uk.co.jackoftrades.middle.monsters.Summon;
                 import uk.co.jackoftrades.middle.monsters.MonsterBase;
                 import uk.co.jackoftrades.middle.monsters.MonsterBases;
+                import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
                 import java.util.ArrayList;
             }
 
-word        returns[String wrd] : WORD
-            { $wrd = $WORD.toString();
-            }
-            ;
+name
+        returns[String nameStr]
+        :   NAME WORD {
+            $nameStr = $WORD.getText();
+        };
 
-tagText     returns[String txt]
-            @init {
-                StringBuilder sb = new StringBuilder();
-            }
-            : word1=WORD { sb.append($word1.getText());
-            }
-            (SPACE word2=WORD
-            { sb.append(" ").append($word2.getText());
-            })?
-            { $txt = sb.toString(); }
-            ;
+msgt
+        returns[String msgtStr]
+        :   MSGTAG WORD {
+            $msgtStr = $WORD.getText();
+        };
 
-one_or_zero returns[boolean unique]: BOOLEAN
-            { $unique = (Integer.parseInt($BOOLEAN.getText()) == 1);
-            }
-            ;
+uniques
+        returns[boolean unique]
+        :   UNIQUES BOOLEAN {
+            $unique = $BOOLEAN.getText().equals("1");
+        };
+
+base
+        returns[MonsterBase mBase]
+        :   BASE WORD {
+            String baseWord = $WORD.getText();
+            $mBase = Game.getBaseFromName(baseWord);
+        };
+
+raceFlag
+        returns[MonsterRaceFlag mrFlag]
+        :   RACE_FLAG WORD {
+            String flag = "RF_" + $WORD.getText().trim();
+            $mrFlag = MonsterRaceFlag.valueOf(flag);
+        };
+
+fallback
+        returns[String fallBackName]
+        :   FALLBACK WORD {
+            $fallBackName = $WORD.getText();
+        };
+
+desc
+        returns[String description]
+        : DESC WORD {
+            $description = $WORD.getText();
+        };
 
 summon      returns[Summon smn]
             @init {
                 String nameTag = "";
                 String msgTag = "";
                 boolean unique = false;
-                MonsterBases mb = new MonsterBases();
-                String raceFlag = "";
+                ArrayList<MonsterBase> mb = new ArrayList<>();
+                MonsterRaceFlag raceFlg = MonsterRaceFlag.RF_NONE;
                 String fallBack = "";
-                String desc = "";
+                String descStr = "";
             }
             @after {
-                $smn = new Summon(nameTag, msgTag, unique, mb, raceFlag, fallBack, desc);
+                $smn = new Summon(nameTag, msgTag, unique, mb, raceFlg, fallBack, descStr);
             }
-            : NAMETAG word { nameTag = $word.wrd; } EOL
-              MSGTTAG word { msgTag = $word.wrd; } EOL
-              UNIQUESTAG one_or_zero { unique = $one_or_zero.unique; } EOL
-              (BASETAG tagText {
-                    String baseTag = $tagText.txt;
-                    MonsterBase base = new MonsterBase(baseTag);
-                    mb.put(base);
-              } EOL)*
-              (RACEFLAG word { raceFlag = $word.wrd; } EOL)?
-              (FALLBACKTAG word { fallBack = $word.wrd; } EOL)?
-              DESCTAG tagText { desc = $tagText.txt; }
+            :   name        { nameTag  = $name.nameStr; }
+                msgt        { msgTag   = $msgt.msgtStr; }
+                uniques     { unique   = $uniques.unique; }
+                (base       { mb.add($base.mBase); })*
+                (raceFlag   { raceFlg  = $raceFlag.mrFlag; })?
+                (fallback   { fallBack = $fallback.fallBackName; })?
+                desc        { descStr  = $desc.description; }
             ;
 
 file        returns[ArrayList<Summon> summons]
             @init {
                 $summons = new ArrayList<>();
             }
-            : summ1=summon { $summons.add($summ1.smn); } (EOL+ summ2=summon { $summons.add($summ2.smn); })* EOL* EOF
+            :   (summon {
+                $summons.add($summon.smn);
+            })+ EOF
             ;
 
-COMMENT :   '#' (~'\n')* '\n'+ -> skip;
+COMMENT
+        :   '#' (~'\n')* '\n'+ -> skip
+        ;
 
-WORD    :   ('A'..'Z' | 'a'..'z' | '_')+ ;
+EOL
+        :   '\r'* '\n' ' '* -> skip
+        ;
 
-SPACE   :   ' '     ;
+NAME
+        :   'name:'
+        ;
 
-EOL     :   '\r'?'\n'    ;
+MSGTAG
+        :   'msgt:'
+        ;
 
-NAMETAG :   'n' 'a' 'm' 'e' ':' ;
+UNIQUES
+        :   'uniques:'
+        ;
 
-MSGTTAG :   'm' 's' 'g' 't' ':' ;
+BASE
+        :   'base:'
+        ;
 
-UNIQUESTAG : 'u' 'n' 'i' 'q' 'u' 'e' 's' ':' ;
+RACE_FLAG
+        :   'race-flag:'
+        ;
 
-BASETAG :   'b' 'a' 's' 'e' ':' ;
+FALLBACK
+        :   'fallback:'
+        ;
 
-RACEFLAG : 'r' 'a' 'c' 'e' '-' 'f' 'l' 'a' 'g' ':' ;
+DESC
+        :   'desc:'
+        ;
 
-FALLBACKTAG : 'f' 'a' 'l' 'l' 'b' 'a' 'c' 'k' ':' ;
+WORD
+        :   [a-zA-Z_ ]+
+        ;
 
-DESCTAG : 'd' 'e' 's' 'c' ':' ;
-
-BOOLEAN : ('1' | '0') ;
+BOOLEAN
+        :   ('1' | '0')
+        ;

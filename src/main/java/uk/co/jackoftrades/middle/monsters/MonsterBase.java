@@ -47,4 +47,8 @@ public class MonsterBase {
                 ", pain=" + pain +
                 '}';
     }
+
+    public String getCodeName() {
+        return codeName;
+    }
 }

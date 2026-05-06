@@ -8,6 +8,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.Slay;
@@ -42,6 +43,7 @@ public class Game {
     private static ArrayList<ObjectBase> objectBases;
     private static ArrayList<Slay> slays;
     private static ArrayList<Brand> brands;
+    private static ArrayList<MonsterPain> monsterPains;
 
     public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
         if (uiEntryRenderers == null) return null;
@@ -80,6 +82,22 @@ public class Game {
         loadObjectBases();
         loadSlays();
         loadBrands();
+        loadPain();
+    }
+
+    private void loadPain() {
+        monsterPains = new ArrayList<>();
+        MonsterPainParser parser = new MonsterPainParser();
+
+        try {
+            monsterPains = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\pain.txt");
+        } catch (Exception e) {
+            logger.error("Exception while parsing pain.txt", e);
+        }
+
+        for (MonsterPain monsterPain : monsterPains) {
+            logger.info(monsterPain.toString());
+        }
     }
 
     private void loadBrands() {
@@ -92,9 +110,9 @@ public class Game {
             logger.error("Exception while parsing brands.txt", e);
         }
 
-        for (Brand brand : brands) {
+        /* for (Brand brand : brands) {
             logger.info(brand.toString());
-        }
+        } */
     }
 
     private void loadSlays() {

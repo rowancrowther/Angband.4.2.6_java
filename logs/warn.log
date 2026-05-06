@@ -309,3 +309,21 @@ java.lang.IllegalArgumentException: No enum constant uk.co.jackoftrades.middle.m
 	at uk.co.jackoftrades.middle.game.Game.loadSlays(Game.java:87)
 	at uk.co.jackoftrades.middle.game.Game.init(Game.java:79)
 	at uk.co.jackoftrades.Main.main(Main.java:16)
+15:41:17 [main] ERROR uk.co.jackoftrades.backend.io.parsers.MonsterPainParser.parse(MonsterPainParser.java:27) 
+Error occurred while parsing monster pain file
+
+java.nio.file.NoSuchFileException: C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\lib\gamedata\pain.txt
+	at java.base/sun.nio.fs.WindowsException.translateToIOException(WindowsException.java:85)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:104)
+	at java.base/sun.nio.fs.WindowsException.rethrowAsIOException(WindowsException.java:109)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:52)
+	at java.base/sun.nio.fs.WindowsFileAttributeViews$Basic.readAttributes(WindowsFileAttributeViews.java:38)
+	at java.base/sun.nio.fs.WindowsFileSystemProvider.readAttributes(WindowsFileSystemProvider.java:195)
+	at java.base/java.nio.file.Files.readAttributes(Files.java:1706)
+	at java.base/java.nio.file.Files.size(Files.java:2246)
+	at org.antlr.v4.runtime.CharStreams.fromPath(CharStreams.java:86)
+	at org.antlr.v4.runtime.CharStreams.fromFileName(CharStreams.java:105)
+	at uk.co.jackoftrades.backend.io.parsers.MonsterPainParser.parse(MonsterPainParser.java:19)
+	at uk.co.jackoftrades.middle.game.Game.loadPain(Game.java:93)
+	at uk.co.jackoftrades.middle.game.Game.init(Game.java:85)
+	at uk.co.jackoftrades.Main.main(Main.java:16)

@@ -1,0 +1,8 @@
+COMMENT=1
+EOL=2
+TYPE=3
+MESSAGE=4
+TEXT=5
+NUMBER=6
+'type:'=3
+'message:'=4

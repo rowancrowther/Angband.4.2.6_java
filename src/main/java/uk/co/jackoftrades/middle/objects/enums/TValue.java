@@ -82,19 +82,19 @@ public enum TValue {
     TV_CLOAK("cloak"),
 
     /**
-     * Soft armour, such as cloth or leather
+     * Soft armor, such as cloth or leather
      */
-    TV_SOFT_ARMOUR("soft armour"),
+    TV_SOFT_ARMOR("soft armor"),
 
     /**
-     * Hard armour, such as chain or plate
+     * Hard armor, such as chain or plate
      */
-    TV_HARD_ARMOUR("hard armour"),
+    TV_HARD_ARMOR("hard armor"),
 
     /**
-     * Armour fashioned from dragon scale
+     * Amor fashioned from dragon scale
      */
-    TV_DRAG_ARMOUR("dragon armour"),
+    TV_DRAG_ARMOR("dragon armor"),
 
     /**
      * A form of light, such as torches or an oil lamp

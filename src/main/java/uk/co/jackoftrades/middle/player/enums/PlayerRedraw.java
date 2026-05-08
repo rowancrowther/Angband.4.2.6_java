@@ -1,0 +1,30 @@
+package uk.co.jackoftrades.middle.player.enums;
+
+public enum PlayerRedraw {
+    PR_MISC,
+    PR_TITLE,
+    PR_LEV,
+    PR_EXP,
+    PR_STATS,
+    PR_ARMOR,
+    PR_HP,
+    PR_MANA,
+    PR_GOLD,
+    PR_HEALTH,
+    PR_SPEED,
+    PR_STUDY,
+    PR_DEPTH,
+    PR_STATUS,
+    PR_DTRAP,
+    PR_STATE,
+    PR_MAP,
+    PR_INVEN,
+    PR_EQUIP,
+    PR_MESSAGE,
+    PR_MONSTER,
+    PR_OBJECT,
+    PR_MONLIST,
+    PR_ITEMLIST,
+    PR_FEELING,
+    PR_LIGHT
+}

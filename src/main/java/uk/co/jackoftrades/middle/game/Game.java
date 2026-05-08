@@ -13,8 +13,10 @@ import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.objects.Brand;
+import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.Slay;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 
 import java.io.IOException;
@@ -49,8 +51,19 @@ public class Game {
     private static ArrayList<MonsterPain> monsterPains;
     private static ArrayList<MonsterBase> monsterBases;
     private static ArrayList<Summon> summons;
+    private static ArrayList<Curse> curses;
 
-    public static MonsterBase getBaseFromName(String name) {
+    public static @Nullable ObjectBase getBaseFromTVal(TValue tVal) {
+        for (ObjectBase base : objectBases) {
+            if (base.gettVal() == tVal) {
+                return base;
+            }
+        }
+
+        return null;
+    }
+
+    public static @Nullable MonsterBase getBaseFromName(String name) {
         for (MonsterBase monsterBase : monsterBases) {
             if (monsterBase.getCodeName().equals(name)) {
                 return monsterBase;
@@ -110,6 +123,21 @@ public class Game {
         loadPain();
         loadMonsterBases();
         loadSummons();
+        loadCurses();
+    }
+
+    private void loadCurses() {
+        CurseReader curseReader = new CurseReader();
+
+        try {
+            curses = curseReader.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\curse.txt");
+        } catch (Exception e) {
+            logger.error("Error while parsing curses file", e);
+        }
+
+//        for (Curse curse : curses) {
+//            logger.info(curse.toString());
+//        }
     }
 
     private void loadSummons() {
@@ -192,7 +220,7 @@ public class Game {
             logger.error("Error while loading object_base.txt file", e);
         }
 
-        /* for (ObjectBase objectBase : objectBases) {
+/*        for (ObjectBase objectBase : objectBases) {
             logger.info(objectBase.toString());
         } */
     }

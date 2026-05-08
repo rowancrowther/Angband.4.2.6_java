@@ -64,7 +64,7 @@ public class FileHandler {
      * @return true if the movement occurred, false otherwise
      */
     public boolean fileMove(Path newFile) {
-        logger.traceEntry("fileMove: New filename = {}", newFile.toString());
+        //logger.traceEntry("fileMove: New filename = {}", newFile.toString());
         if (newFile.toFile().exists())
             return false;
 
@@ -145,7 +145,7 @@ public class FileHandler {
      * the second one, and false if they are the same, or greater
      */
     public boolean fileNewer(String firstFiLeName, String secondFileName) {
-        logger.traceEntry("Entered fileNewer first: {} second: {}", firstFiLeName, secondFileName);
+        //logger.traceEntry("Entered fileNewer first: {} second: {}", firstFiLeName, secondFileName);
 
         Path firstFilePath = Paths.get(firstFiLeName);
         Path secondFilePath = Paths.get(secondFileName);

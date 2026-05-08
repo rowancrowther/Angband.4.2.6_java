@@ -27,9 +27,9 @@ class TValueTest {
     private final TValue tcrown = TValue.TV_CROWN;
     private final TValue tshield = TValue.TV_SHIELD;
     private final TValue tcloak = TValue.TV_CLOAK;
-    private final TValue tsoft = TValue.TV_SOFT_ARMOUR;
-    private final TValue thard = TValue.TV_HARD_ARMOUR;
-    private final TValue tdragon = TValue.TV_DRAG_ARMOUR;
+    private final TValue tsoft = TValue.TV_SOFT_ARMOR;
+    private final TValue thard = TValue.TV_HARD_ARMOR;
+    private final TValue tdragon = TValue.TV_DRAG_ARMOR;
     private final TValue tlight = TValue.TV_LIGHT;
     private final TValue tamulet = TValue.TV_AMULET;
     private final TValue tring = TValue.TV_RING;

@@ -30,7 +30,7 @@ public class Random {
      * @param mBonus the multiplier of the die roll
      */
     public Random(int base, int mBonus, int dice, int sides, boolean toNegate) {
-        if (debug) logger.traceEntry("Random.constructor with values base: {} mBonus: {} dice: {} sides: {} toNegate: {}", base, mBonus, dice, sides, toNegate);
+        //if (debug) logger.traceEntry("Random.constructor with values base: {} mBonus: {} dice: {} sides: {} toNegate: {}", base, mBonus, dice, sides, toNegate);
         this.base = base;
         this.dice = dice;
         this.sides = sides;
@@ -130,7 +130,7 @@ public class Random {
      * on the entire value rolled being negated
      */
     public void negate() {
-        if (debug) logger.traceEntry("Random.negate() oldBase: {}", base);
+        //if (debug) logger.traceEntry("Random.negate() oldBase: {}", base);
 
         if (toNegate && !negated) {
             int min = base + mBonus * dice;
@@ -140,7 +140,7 @@ public class Random {
             negated = true;
         }
 
-        if (debug) logger.traceExit("Random.negate() newBase: {}", base);
+        // if (debug) logger.traceExit("Random.negate() newBase: {}", base);
     }
 
     /**

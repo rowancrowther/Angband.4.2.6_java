@@ -8,6 +8,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
@@ -132,21 +133,21 @@ public class Game {
         PlayerShapeParser parser = new PlayerShapeParser();
 
         try {
-            playerShapes = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\shape.txt");
+            playerShapes = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "shape.txt");
         } catch (Exception e) {
             logger.error("Error while parsing shape file", e);
         }
 
-        for (PlayerShape shape : playerShapes) {
-            logger.info(shape.toString());
-        }
+//        for (PlayerShape shape : playerShapes) {
+//                logger.info(shape.toString());
+//        }
     }
 
     private void loadCurses() {
         CurseReader curseReader = new CurseReader();
 
         try {
-            curses = curseReader.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\curse.txt");
+            curses = curseReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "curse.txt");
         } catch (Exception e) {
             logger.error("Error while parsing curses file", e);
         }
@@ -160,7 +161,7 @@ public class Game {
         SummonParser parser = new SummonParser();
 
         try {
-            summons = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\summon.txt");
+            summons = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "summon.txt");
         } catch (Exception e) {
             logger.error("Error while parsing summons file!", e);
         }
@@ -174,7 +175,7 @@ public class Game {
         MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
 
         try {
-            monsterBases = monsterBaseParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\monster_base.txt");
+            monsterBases = monsterBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "monster_base.txt");
         } catch (Exception e) {
             logger.error("Error while parsing MonsterBase", e);
         }
@@ -188,7 +189,7 @@ public class Game {
         MonsterPainParser parser = new MonsterPainParser();
 
         try {
-            monsterPains = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\pain.txt");
+            monsterPains = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "pain.txt");
         } catch (Exception e) {
             logger.error("Exception while parsing pain.txt", e);
         }
@@ -202,7 +203,7 @@ public class Game {
         BrandParser brandParser = new BrandParser();
 
         try {
-            brands = brandParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\brand.txt");
+            brands = brandParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "brand.txt");
         } catch (Exception e) {
             logger.error("Exception while parsing brands.txt", e);
         }
@@ -216,7 +217,7 @@ public class Game {
         SlayFormatter slayFormatter = new SlayFormatter();
 
         try {
-            slays = slayFormatter.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\slay.txt");
+            slays = slayFormatter.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "slay.txt");
         } catch (Exception e) {
             logger.error("Exception thrown during loading Slays.", e);
         }
@@ -231,7 +232,7 @@ public class Game {
         ObjectBaseParser objectBaseParser = new ObjectBaseParser();
 
         try {
-            objectBases = objectBaseParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\object_base.txt");
+            objectBases = objectBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "object_base.txt");
         } catch (IOException e) {
             logger.error("Error while loading object_base.txt file", e);
         }
@@ -247,7 +248,7 @@ public class Game {
 
         try {
             // TODO - move and change this string from being hard-coded
-            terrainFeatures = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\terrain.txt");
+            terrainFeatures = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "terrain.txt");
         } catch (Exception e) {
             logger.error("Error while loading terrain properties!", e);
         }
@@ -262,8 +263,7 @@ public class Game {
         PlayerPropertyReader parser = new PlayerPropertyReader();
 
         try {
-            // TODO - move and change this string from being hard-coded
-            playerProperties = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\player_property.txt");
+            playerProperties = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "player_property.txt");
         } catch (Exception e) {
             logger.error("Error while loading player properties!", e);
         }
@@ -279,8 +279,7 @@ public class Game {
         UIEntryParser parser = new UIEntryParser();
 
         try {
-            // TODO - move and change this string from being hard-coded
-            uiEntries = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry.txt");
+            uiEntries = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry.txt");
         } catch (Exception e) {
             logger.error("Error while loading UI entries!", e);
         }
@@ -296,8 +295,7 @@ public class Game {
         UIEntryBaseParser parser = new UIEntryBaseParser();
 
         try {
-            // TODO - move this string from being hard coded to being calculated from the run location
-            uiBases = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_base.txt");
+            uiBases = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry_base.txt");
         } catch (Exception e) {
             logger.error("Error while loading UI entry base.", e);
         }
@@ -313,8 +311,7 @@ public class Game {
         UIEntryRendParser renderer = new UIEntryRendParser();
 
         try {
-            // TODO - move this string from being hard coded to being calculated from the run location
-            uiEntryRenderers = renderer.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\ui_entry_renderer.txt");
+            uiEntryRenderers = renderer.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt");
         } catch (Exception e) {
             logger.error("Error while loading UI Entry Renderers", e);
         }
@@ -331,8 +328,7 @@ public class Game {
         ProjectionParser projectionParser = new ProjectionParser();
 
         try {
-            // TODO - move this string from being hard coded to being calculated from the run location
-            projections = projectionParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\projection.txt");
+            projections = projectionParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "projection.txt");
         } catch (Exception e) {
             logger.error("Error while loading projections", e);
         }
@@ -350,8 +346,7 @@ public class Game {
         HashMap<Integer, ArrayList<String>> worlds = new HashMap<>();
 
         try {
-            // TODO - move this string from being hard coded to being calculated from the run location
-            worlds = worldParser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\world.txt");
+            worlds = worldParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "world.txt");
         } catch (IOException e) {
             logger.error("Error while loading world", e);
         }

@@ -13,7 +13,7 @@ public enum EffectEnum {
     EF_HEAL_HP(false, "heal", 2, EffectInfoEnum.EFINFO_HEAL, "heals %s hitpoints%s", "heal self"),
     EF_MON_HEAL_HP(false, "", 0, EffectInfoEnum.EFINFO_NONE, "heals monster hitpoints", ""),
     EF_MON_HEAL_KIN(false, "", 0, EffectInfoEnum.EFINFO_NONE, "heals fellow monster hitpoints", ""),
-    EF_NOURISH(false, "", 3, EffectInfoEnum.EFINFO_FOOD, "%s for %s turns _%s percent),", "%s %s"),
+    EF_0(false, "", 3, EffectInfoEnum.EFINFO_FOOD, "%s for %s turns _%s percent),", "%s %s"),
     EF_CRUNCH(false, "", 0, EffectInfoEnum.EFINFO_NONE, "crunches", ""),
     EF_CURE(false, "", 1, EffectInfoEnum.EFINFO_CURE, "cures %s", "cure %s"),
     EF_TIMED_SET(false, "", 2, EffectInfoEnum.EFINFO_TIMED, "administers %s for %s turns", "administer %s"),

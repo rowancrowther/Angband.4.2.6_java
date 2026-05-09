@@ -1,11 +1,11 @@
 package uk.co.jackoftrades.middle.objects.enums;
 
 public enum ObjectModifier {
-    OBJ_MOD_STR,
-    OBJ_MOD_INT,
-    OBJ_MOD_WIS,
-    OBJ_MOD_DEX,
-    OBJ_MOD_CON,
+    STAT_STR,
+    STAT_INT,
+    STAT_WIS,
+    STAT_DEX,
+    STAT_CON,
     OBJ_MOD_STEALTH,
     OBJ_MOD_SEARCH,
     OBJ_MOD_INFRA,

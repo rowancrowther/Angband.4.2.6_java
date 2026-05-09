@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.middle;
 
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.backend.numerics.Dice;
+import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
 
@@ -11,12 +11,12 @@ import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
 
 public class Effect {
     private EffectEnum index;
-    private Dice dice;
+    private Random dice;
     private int y;
     private int x;
     private EffectSubTypeEnum subType;
     private int radius;
-    private Object other;
+    private Object otherParameter;
     private String msg;
 
     /**
@@ -67,5 +67,21 @@ public class Effect {
         return index.getDescription();
     }
 
-
+    public Effect(EffectEnum index,
+                  String dice,
+                  int y,
+                  int x,
+                  EffectSubTypeEnum subType,
+                  int radius,
+                  Object otherParameter,
+                  String msg) {
+        this.index = index;
+        this.dice = null;// Random.parseRandom(dice);
+        this.y = y;
+        this.x = x;
+        this.subType = subType;
+        this.radius = radius;
+        this.otherParameter = otherParameter;
+        this.msg = msg;
+    }
 }

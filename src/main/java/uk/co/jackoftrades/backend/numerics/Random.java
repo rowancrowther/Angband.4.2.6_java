@@ -1,9 +1,14 @@
 package uk.co.jackoftrades.backend.numerics;
 
+import org.antlr.v4.runtime.CharStream;
+import org.antlr.v4.runtime.CharStreams;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
+import uk.co.jackoftrades.backend.io.parsers.antlr.randomformatter.RandomFormatterLexer;
+import uk.co.jackoftrades.backend.io.parsers.antlr.randomformatter.RandomFormatterParser;
 import uk.co.jackoftrades.backend.utils.RandomValueUtils;
 
 public class Random {
@@ -228,5 +233,15 @@ public class Random {
      */
     public boolean hasBonus() {
         return mBonus != 1;
+    }
+
+    public static Random parseRandom(String string) {
+        CharStream stream = CharStreams.fromString(string);
+        RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
+        CommonTokenStream tokens = new CommonTokenStream(lexer);
+        RandomFormatterParser parser = new RandomFormatterParser(tokens);
+        RandomFormatterParser.RandomContext result = parser.random();
+
+        return result.randomDice;
     }
 }

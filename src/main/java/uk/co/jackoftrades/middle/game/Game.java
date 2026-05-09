@@ -3,7 +3,6 @@ package uk.co.jackoftrades.middle.game;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jspecify.annotations.Nullable;
-
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
@@ -18,6 +17,7 @@ import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
+import uk.co.jackoftrades.middle.player.PlayerShape;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -52,6 +52,7 @@ public class Game {
     private static ArrayList<MonsterBase> monsterBases;
     private static ArrayList<Summon> summons;
     private static ArrayList<Curse> curses;
+    private static ArrayList<PlayerShape> playerShapes;
 
     public static @Nullable ObjectBase getBaseFromTVal(TValue tVal) {
         for (ObjectBase base : objectBases) {
@@ -124,6 +125,21 @@ public class Game {
         loadMonsterBases();
         loadSummons();
         loadCurses();
+        loadPlayerShapes();
+    }
+
+    private void loadPlayerShapes() {
+        PlayerShapeParser parser = new PlayerShapeParser();
+
+        try {
+            playerShapes = parser.parse("C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\lib\\gamedata\\shape.txt");
+        } catch (Exception e) {
+            logger.error("Error while parsing shape file", e);
+        }
+
+        for (PlayerShape shape : playerShapes) {
+            logger.info(shape.toString());
+        }
     }
 
     private void loadCurses() {

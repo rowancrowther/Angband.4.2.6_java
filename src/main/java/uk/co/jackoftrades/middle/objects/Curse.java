@@ -2,10 +2,12 @@ package uk.co.jackoftrades.middle.objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.backend.io.parsers.Parser;
 import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.Expression;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.objects.enums.CurseValues;
+import uk.co.jackoftrades.middle.enums.ValueEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
@@ -22,6 +24,8 @@ public class Curse {
     private ArrayList<ObjectFlag> flags;
     private ArrayList<ObjectFlag> conflictFlags;
     private Random dice;
+    private Expression diceExpression;
+    private ArrayList<TimedEffect> timedEffects;
     private Random time;
     private String description;
     private EffectEnum effect;
@@ -30,7 +34,7 @@ public class Curse {
     private int combatDam;
     private int combatAC;
     private Expression expression;
-    private HashMap<CurseValues, Integer> valueCollection;
+    private HashMap<ValueEnum, Integer> valueCollection;
     private String message;
 
     public Curse(String name,
@@ -50,7 +54,7 @@ public class Curse {
                  char expressionChar,
                  EffectBaseType expressionEffect,
                  String expressionOperation,
-                 HashMap<CurseValues, Integer> valueCollection,
+                 HashMap<ValueEnum, Integer> valueCollection,
                  String message) {
         this.name = name;
         this.poss = poss;
@@ -58,8 +62,20 @@ public class Curse {
         this.flags = flags;
         this.conflict = conflict;
         this.conflictFlags = conflictFlags;
-        this.dice = parseDiceString(dice);
-        this.time = parseDiceString(time);
+        if (dice.isBlank()) {
+            this.dice = null;
+            this.diceExpression = null;
+        } else if (!dice.startsWith("$")) {
+            this.dice = Parser.parseDiceString(dice);
+            this.diceExpression = null;
+        } else {
+            this.dice = null;
+            this.diceExpression = new Expression(dice.substring(1).charAt(0), expressionEffect, expressionOperation);
+        }
+        if (time.isBlank())
+            this.time = null;
+        else
+            this.time = Parser.parseDiceString(time);
         this.description = description;
         this.effect = effect;
         this.timedEffect = timedEffect;
@@ -69,10 +85,6 @@ public class Curse {
         this.expression = new Expression(expressionChar, expressionEffect, expressionOperation);
         this.valueCollection = valueCollection;
         this.message = message;
-    }
-
-    private Random parseDiceString(String dice) {
-        return null;
     }
 
     @Override
@@ -96,17 +108,5 @@ public class Curse {
                 ", valueCollection=" + valueCollection +
                 ", message='" + message + '\'' +
                 '}';
-    }
-
-    private class Expression {
-        private char codeLetter;
-        private EffectBaseType baseType;
-        private String operations;
-
-        public Expression(char codeLetter, EffectBaseType baseType, String operations) {
-            this.codeLetter = codeLetter;
-            this.baseType = baseType;
-            this.operations = operations;
-        }
     }
 }

@@ -7,10 +7,10 @@ grammar CurseReader;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
     import uk.co.jackoftrades.middle.game.Game;
+    import uk.co.jackoftrades.middle.enums.ValueEnum;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
     import uk.co.jackoftrades.middle.objects.Curse;
     import uk.co.jackoftrades.middle.objects.ObjectBase;
-    import uk.co.jackoftrades.middle.objects.enums.CurseValues;
     import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
     import uk.co.jackoftrades.middle.objects.enums.TValue;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
@@ -107,20 +107,20 @@ flags
         })*;
 
 values
-        returns[HashMap<CurseValues, Integer> valueCollection]
+        returns[HashMap<ValueEnum, Integer> valueCollection]
         @init {
             $valueCollection = new HashMap<>();
         }
         :   VALUES tag1=TEXT val1=VALUE {
             String cv1String = $tag1.getText();
             String val1String = $val1.getText();
-            CurseValues cv1 = CurseValues.valueOf("CV_" + cv1String.trim());
+            ValueEnum cv1 = ValueEnum.valueOf("CV_" + cv1String.trim());
             int int1 = Integer.parseInt(val1String.substring(1, val1String.length() - 1));
             $valueCollection.put(cv1, int1);
         } (OR tag2=TEXT val2=VALUE{
             String cv2String = $tag2.getText();
             String val2String = $val2.getText();
-            CurseValues cv2 = CurseValues.valueOf("CV_" + cv2String.trim());
+            ValueEnum cv2 = ValueEnum.valueOf("CV_" + cv2String.trim());
             int int2 = Integer.parseInt(val2String.substring(1, val2String.length() - 1));
             $valueCollection.put(cv2, int2);
         })*;
@@ -179,7 +179,7 @@ curse
             char curseExpressionChar = '\0';
             EffectBaseType curseEFB = EffectBaseType.EFB_NULL;
             String expressionOperation = "";
-            HashMap<CurseValues, Integer> curseValueCollection = new HashMap<>();
+            HashMap<ValueEnum, Integer> curseValueCollection = new HashMap<>();
             String curseMessage = "";
         }
         @after{
@@ -225,8 +225,13 @@ curse
                 for (ObjectFlag flag : $flags.flagArray)
                     curseFlags.add(flag);
             })? (values {
-
-            })?) | (values? (flags {
+                for (ValueEnum value : $values.valueCollection.keySet()) {
+                    curseValueCollection.put(value, $values.valueCollection.get(value));
+                }
+            })?) | ((values {
+                for (ValueEnum value : $values.valueCollection.keySet()) {
+                    curseValueCollection.put(value, $values.valueCollection.get(value));
+            }})? (flags {
                 for (ObjectFlag flag : $flags.flagArray)
                     curseFlags.add(flag);
             })))

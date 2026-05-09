@@ -1,0 +1,25 @@
+package uk.co.jackoftrades.middle.enums;
+
+public enum ValueEnum {
+    CV_INT,
+    CV_WIS,
+    CV_STR,
+    CV_DEX,
+    CV_CON,
+    CV_SPEED,
+    CV_STEALTH,
+    CV_RES_FIRE,
+    CV_RES_COLD,
+    CV_RES_ELEC,
+    CV_RES_SHARD,
+    CV_RES_POIS,
+    CV_SEARCH,
+    CV_INFRA,
+    CV_TUNNEL,
+    CV_BLOWS,
+    CV_SHOTS,
+    CV_MIGHT,
+    CV_LIGHT,
+    CV_DAM_RED,
+    CV_MOVES,
+}

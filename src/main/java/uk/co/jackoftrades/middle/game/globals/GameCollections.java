@@ -2,6 +2,7 @@ package uk.co.jackoftrades.middle.game.globals;
 
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
+import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.Trap;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -27,6 +28,10 @@ public class GameCollections {
     private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
     private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
 
+    // O melee and ranged criticals
+    private static final ArrayList<O_CriticalLevel> mOCriticalLevels = new ArrayList<>();
+    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
+
     private GameCollections() {
     }
 
@@ -40,5 +45,13 @@ public class GameCollections {
 
     static void addRCriticalLevel(CriticalLevel criticalLevel) {
         rCriticalLevels.add(criticalLevel);
+    }
+
+    static void addMOCriticalLevel(O_CriticalLevel oCritLevel) {
+        mOCriticalLevels.add(oCritLevel);
+    }
+
+    static void addROCritLevel(O_CriticalLevel oCritLevel) {
+        rOCriticalLevels.add(oCritLevel);
     }
 }

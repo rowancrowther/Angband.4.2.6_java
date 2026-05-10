@@ -11,6 +11,10 @@ import org.jspecify.annotations.NonNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterParser;
+import uk.co.jackoftrades.backend.numerics.Rational;
+import uk.co.jackoftrades.middle.combat.CriticalLevel;
+import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
+import uk.co.jackoftrades.middle.enums.MessageEnum;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -18,6 +22,9 @@ import java.util.HashMap;
 
 public class GameConstants {
     private static final Logger logger = LogManager.getLogger();
+
+    private record NameValuePair(String name, Integer value) {
+    }
 
     // The directory structure of Angband - OS neutral.
     // Note, if the user wants to save on a custom area, then we will have to amend the function getLibDir()
@@ -42,7 +49,6 @@ public class GameConstants {
 
     @Contract(pure = true)
     private static String getLibDir() {
-        System.out.println(System.getProperty("user.dir"));
         return System.getProperty("user.dir");
     }
 
@@ -134,7 +140,7 @@ public class GameConstants {
     private static int storeShuffle;
     private static int storeMagicLevel;
 
-    // Object creation consants
+    // Object creation constants
     private static int maxObjDepth;
     private static int greatObj;
     private static int greatEgo;
@@ -159,10 +165,49 @@ public class GameConstants {
     private static int mCritPowerWeightScl;
     private static int mCritPowerRandom;
 
+    // non-O ranged critical calculations
+    private static int rCritDebuffToh;
+    private static int rCritChanceWeightScl;
+    private static int rCritChanceTohScl;
+    private static int rCritChanceLevelScl;
+    private static int rCritChanceLaunchedTohSkillScl;
+    private static int rCritChanceThrownTohSkillScl;
+    private static int rCritChanceOffset;
+    private static int rCritChanceRange;
+    private static int rCritPowerWeightScl;
+    private static int rCritPowerRandom;
+
+    // O melee critical calculations
+    private static int oMCritDebuffToh;
+    private static int oMCritPowerTohSclNum;
+    private static int oMCritPowerTohSclDen;
+    private static int oMCritChancePowerSclNum;
+    private static int oMCritChancePowerSclDen;
+    private static int oMCritChanceAddDen;
+
+    private static Rational oMeleeMaxAdded;
+
+    // O ranged critical calculations
+    private static int oRCritDebuffToh;
+    private static int oRCritPowerLaunchedTohSclNum;
+    private static int oRCritPowerLaunchedTohSclDen;
+    private static int oRCritPowerThrownTohSclNum;
+    private static int oRCritPowerThrownTohSclDen;
+    private static int oRCritChancePowerSclNum;
+    private static int oRCritChancePowerSclDen;
+    private static int oRCritChanceAddDen;
+
+    private static Rational oRangedMaxAdded;
+
+    @Contract(pure = true)
     private GameConstants() {
     }
 
     public static void init() {
+        loadGameConstants();
+    }
+
+    private static void loadGameConstants() {
         ConstantsFormatterParser.FileContext fileContext = null;
         try {
             CharStream stream = CharStreams.fromFileName(ANGBAND_DIR_GAMEDATA + File.separator + "constants.txt");
@@ -222,6 +267,34 @@ public class GameConstants {
                         setNonOMeleeCrits(set, value);
                         break;
 
+                    case "melee-critical-level":
+                        setNonOMeleeCriticalLevels(set, value);
+                        break;
+
+                    case "ranged-critical":
+                        setNonORangedCrits(set, value);
+                        break;
+
+                    case "ranged-critical-level":
+                        setNonORangedCriticalLevels(set, value);
+                        break;
+
+                    case "o-melee-critical":
+                        setOMeleeCrits(set, value);
+                        break;
+
+                    case "o-melee-critical-level":
+                        setOMeleeCriticalLevels(set, value);
+                        break;
+
+                    case "o-ranged-critical":
+                        setORangedCrits(set, value);
+                        break;
+
+                    case "o-ranged-critical-level":
+                        setORangedCriticalLevels(set, value);
+                        break;
+
                     default:
                         String message = "Invalid token found. Tokens were: " + value + ":" + set;
                         logger.error(message);
@@ -231,26 +304,285 @@ public class GameConstants {
         }
     }
 
-    private static void setNonOMeleeCrits(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
+    private static void setORangedCriticalLevels(String set, String tag) {
         tag = tag + ":";
-        String[] results = set.split(":");
 
-        if (results.length != 2) {
+        String[] values = set.split(":");
+
+        if (values.length != 3) {
             String message = "Invalid number of tokens found. Tokens were: " + tag + set;
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
 
-        String name = results[0];
-        int val = 0;
+        int chance;
+        int dice;
+        MessageEnum message;
 
         try {
-            val = Integer.parseInt(results[1]);
+            chance = Integer.parseInt(values[0]);
+            dice = Integer.parseInt(values[1]);
+            message = MessageEnum.valueOf("MSG_" + values[2]);
+        } catch (NumberFormatException e) {
+            String errorMessage = "Invalid number format found. Tokens were: " + tag + set;
+            logger.error(errorMessage);
+            throw new InvalidTokenFoundDuringParse(errorMessage);
+        } catch (IllegalArgumentException e) {
+            String errorMessage = "Invalid message found. Tokens were: " + tag + set;
+            logger.error(errorMessage);
+            throw new InvalidTokenFoundDuringParse(errorMessage);
+        }
+
+        GameCollections.addROCritLevel(new O_CriticalLevel(chance, dice, message));
+    }
+
+    private static void setORangedCrits(String set, String tag) {
+        NameValuePair pair = getValues(set, tag);
+
+        String name = pair.name();
+        int val = pair.value();
+
+        switch (name) {
+            case "debuff-toh":
+                oRCritDebuffToh = val;
+                break;
+
+            case "power-launched-toh-scale-numerator":
+                oRCritPowerLaunchedTohSclNum = val;
+                break;
+
+            case "power-launched-toh-scale-denominator":
+                oRCritPowerLaunchedTohSclDen = val;
+                break;
+
+            case "power-thrown-toh-scale-numerator":
+                oRCritPowerThrownTohSclNum = val;
+                break;
+
+            case "power-thrown-toh-scale-denominator":
+                oRCritPowerThrownTohSclDen = val;
+                break;
+
+            case "chance-power-scale-numerator":
+                oRCritChancePowerSclNum = val;
+                break;
+
+            case "chance-power-scale-denominator":
+                oRCritChancePowerSclDen = val;
+                break;
+
+            case "chance-add-denominator":
+                oRCritChanceAddDen = val;
+                break;
+
+            default:
+                String message = "Invalid token found. Tokens were: " + tag + set;
+                logger.error(message);
+                throw new InvalidTokenFoundDuringParse(message);
+        }
+    }
+
+    private static void setOMeleeCriticalLevels(String set, String tag) {
+        tag = tag + ":";
+        String[] values = set.split(":");
+
+        if (values.length != 3) {
+            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        int chance;
+        int dice;
+        MessageEnum messageName;
+
+        try {
+            chance = Integer.parseInt(values[0]);
+            dice = Integer.parseInt(values[1]);
+            messageName = MessageEnum.valueOf("MSG_" + values[2]);
+        } catch (NumberFormatException e) {
+            String message = "Invalid number format found. Tokens were: " + tag + set;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        } catch (IllegalArgumentException e) {
+            String message = "Message flag not found. Tokens were: " + tag + set;
+            logger.error(message, e);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        O_CriticalLevel criticalLevel = new O_CriticalLevel(chance, dice, messageName);
+        GameCollections.addMOCriticalLevel(criticalLevel);
+    }
+
+    private static void setOMeleeCrits(String set, String tag) {
+        NameValuePair pair = getValues(set, tag);
+
+        String name = pair.name();
+        int val = pair.value();
+
+        switch (name) {
+            case "debuff-toh":
+                oMCritDebuffToh = val;
+                break;
+
+            case "power-toh-scale-numerator":
+                oMCritPowerTohSclNum = val;
+                break;
+
+            case "power-toh-scale-denominator":
+                oMCritPowerTohSclDen = val;
+                break;
+
+            case "chance-power-scale-numerator":
+                oMCritChancePowerSclNum = val;
+                break;
+
+            case "chance-power-scale-denominator":
+                oMCritChancePowerSclDen = val;
+                break;
+
+            case "chance-add-denominator":
+                oMCritChanceAddDen = val;
+                break;
+
+            default:
+                String message = "Invalid token found. Tokens were: " + tag + set;
+                logger.error(message);
+                throw new InvalidTokenFoundDuringParse(message);
+        }
+    }
+
+    private static void setNonORangedCriticalLevels(@NonNull String set, @NotNull String tag) {
+        tag = tag + ":";
+        String[] results = set.split(":");
+
+        if (results.length != 4) {
+            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        int cutoffPower = 0;
+        int damageMult = 0;
+        int amountAdded = 0;
+        MessageEnum messageEnum = MessageEnum.MSG_NONE;
+        String messageEnumString = "";
+
+        try {
+            cutoffPower = Integer.parseInt(results[0]);
+            damageMult = Integer.parseInt(results[1]);
+            amountAdded = Integer.parseInt(results[2]);
+            messageEnumString = results[3];
+            messageEnum = MessageEnum.valueOf("MSG_" + messageEnumString);
         } catch (NumberFormatException e) {
             String message = "Invalid number found. Tokens were: " + tag + set;
             logger.error(message, e);
             throw new InvalidTokenFoundDuringParse(message);
+        } catch (IllegalArgumentException e) {
+            String message = "Message flag not found. Tokens were: " + tag + set;
+            logger.error(message, e);
+            throw new InvalidTokenFoundDuringParse(message);
         }
+
+        CriticalLevel level = new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum);
+        GameCollections.addRCriticalLevel(level);
+    }
+
+    private static void setNonORangedCrits(@NotNull String set, @NotNull String tag) {
+        NameValuePair pair = getValues(set, tag);
+
+        String name = pair.name();
+        int val = pair.value();
+
+        switch (name) {
+            case "debuff-toh":
+                rCritDebuffToh = val;
+                break;
+
+            case "chance-weight-scale":
+                rCritChanceWeightScl = val;
+                break;
+
+            case "chance-toh-scale":
+                rCritChanceTohScl = val;
+                break;
+
+            case "chance-level-scale":
+                rCritChanceLevelScl = val;
+                break;
+
+            case "chance-launched-toh-skill-scale":
+                rCritChanceLaunchedTohSkillScl = val;
+                break;
+
+            case "chance-thrown-toh-skill-scale":
+                rCritChanceThrownTohSkillScl = val;
+                break;
+
+            case "chance-offset":
+                rCritChanceOffset = val;
+                break;
+
+            case "chance-range":
+                rCritChanceRange = val;
+                break;
+
+            case "power-weight-scale":
+                rCritPowerWeightScl = val;
+                break;
+
+            case "power-random":
+                rCritPowerRandom = val;
+                break;
+
+            default:
+                String message = "Invalid token found. Tokens were: " + tag + set;
+                logger.error(message);
+                throw new InvalidTokenFoundDuringParse(message);
+        }
+    }
+
+    private static void setNonOMeleeCriticalLevels(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
+        tag = tag + ":";
+        String[] results = set.split(":");
+
+        if (results.length != 4) {
+            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        int cutoffPower = 0;
+        int damageMult = 0;
+        int amountAdded = 0;
+        MessageEnum messageEnum = MessageEnum.MSG_NONE;
+        String messageEnumString = "";
+
+        try {
+            cutoffPower = Integer.parseInt(results[0]);
+            damageMult = Integer.parseInt(results[1]);
+            amountAdded = Integer.parseInt(results[2]);
+            messageEnumString = results[3];
+            messageEnum = MessageEnum.valueOf("MSG_" + messageEnumString);
+        } catch (NumberFormatException e) {
+            String message = "Invalid number found. Tokens were: " + tag + set;
+            logger.error(message, e);
+            throw new InvalidTokenFoundDuringParse(message);
+        } catch (IllegalArgumentException e) {
+            String message = "Message flag not found. Tokens were: " + tag + set;
+            logger.error(message, e);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        CriticalLevel level = new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum);
+        GameCollections.addMCriticalLevel(level);
+    }
+
+    private static void setNonOMeleeCrits(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
+        NameValuePair pair = getValues(set, tag);
+
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "debuff-toh":
@@ -297,25 +629,10 @@ public class GameConstants {
     }
 
     private static void setPlayerConstants(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "max-sight":
@@ -343,29 +660,14 @@ public class GameConstants {
     }
 
     private static void setObjectCreation(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse, NumberFormatException {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "max-depth":
-                maxDepth = val;
+                maxObjDepth = val;
                 break;
 
             case "great-obj":
@@ -396,25 +698,10 @@ public class GameConstants {
     }
 
     private static void setStoreParameters(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "inven-max":
@@ -441,25 +728,10 @@ public class GameConstants {
     }
 
     private static void setCarryCap(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "pack-size":
@@ -490,25 +762,10 @@ public class GameConstants {
     }
 
     private static void setWorld(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "max-depth":
@@ -559,25 +816,10 @@ public class GameConstants {
     }
 
     private static void setDunGen(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length == 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "cent-max":
@@ -620,25 +862,10 @@ public class GameConstants {
     }
 
     private static void setMonPlay(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were :" + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "break-glyph":
@@ -669,25 +896,10 @@ public class GameConstants {
     }
 
     private static void setMonGen(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        String name = results[0];
-        int val = 0;
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + set;
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         switch (name) {
             case "chance":
@@ -734,23 +946,10 @@ public class GameConstants {
     }
 
     private static void setLevelMax(@NonNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
-        tag = tag + ":";
-        String[] results = set.split(":");
-        String name = results[0];
-        int val = 0;
+        NameValuePair pair = getValues(set, tag);
 
-        if (results.length != 2) {
-            String message = "Invalid number of arguments found in incoming line from constants.txt. Line was " + tag + set;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        try {
-            val = Integer.parseInt(results[1]);
-        } catch (NumberFormatException e) {
-            String message = "Poorly formatted integer in incoming token. Token was " + tag + set;
-            logger.error(message);
-        }
+        String name = pair.name();
+        int val = pair.value();
 
         if (name.equals("monsters")) {
             levelMonsterMax = val;
@@ -759,5 +958,473 @@ public class GameConstants {
             logger.error(message);
             throw new InvalidTokenFoundDuringParse(message);
         }
+    }
+
+    @Contract("_, _ -> new")
+    private static @NonNull NameValuePair getValues(@NotNull String set, @NotNull String tag) {
+        tag = tag + ":";
+        String[] results = set.split(":");
+
+        if (results.length != 2) {
+            String message = "Invalid number of arguments found in incoming line from constants.txt. Line was " + tag + set;
+            logger.error(message);
+            throw new InvalidTokenFoundDuringParse(message);
+        }
+
+        String name = results[0];
+        int val = 0;
+
+        try {
+            val = Integer.parseInt(results[1]);
+        } catch (NumberFormatException e) {
+            String message = "Poorly formatted integer in incoming token. Token was " + tag + set;
+            logger.error(message);
+        }
+
+        return new NameValuePair(name, val);
+    }
+
+    public static int getStoreMax() {
+        return storeMax;
+    }
+
+    public static int getTrapMax() {
+        return trapMax;
+    }
+
+    public static int getObjectBaseKindMax() {
+        return objectBaseKindMax;
+    }
+
+    public static int getArtifactKindMax() {
+        return artifactKindMax;
+    }
+
+    public static int getEgoItemKindMax() {
+        return egoItemKindMax;
+    }
+
+    public static int getMonsterRaceMax() {
+        return monsterRaceMax;
+    }
+
+    public static int getMonsterPainMsgMax() {
+        return monsterPainMsgMax;
+    }
+
+    public static int getMagicSpellMax() {
+        return magicSpellMax;
+    }
+
+    public static int getMonsterPitTypeMax() {
+        return monsterPitTypeMax;
+    }
+
+    public static int getRandartActivationsMax() {
+        return randartActivationsMax;
+    }
+
+    public static int getCurseMax() {
+        return curseMax;
+    }
+
+    public static int getSlayMax() {
+        return slayMax;
+    }
+
+    public static int getBrandMax() {
+        return brandMax;
+    }
+
+    public static int getMonsterBlowsMax() {
+        return monsterBlowsMax;
+    }
+
+    public static int getMonsterBlowsMethodsMax() {
+        return monsterBlowsMethodsMax;
+    }
+
+    public static int getMonsterBlowsEffectsMax() {
+        return monsterBlowsEffectsMax;
+    }
+
+    public static int getPlayerEquipmentSlotsMax() {
+        return playerEquipmentSlotsMax;
+    }
+
+    public static int getCaveProfileMax() {
+        return caveProfileMax;
+    }
+
+    public static int getQuestMax() {
+        return questMax;
+    }
+
+    public static int getProjectionTypeMax() {
+        return projectionTypeMax;
+    }
+
+    public static int getObjectPowerCalculationMax() {
+        return objectPowerCalculationMax;
+    }
+
+    public static int getObjectPropertyMax() {
+        return objectPropertyMax;
+    }
+
+    public static int getObjectsInObject_txt() {
+        return objectsInObject_txt;
+    }
+
+    public static int getPlayerShapeMax() {
+        return playerShapeMax;
+    }
+
+    public static int getLevelMonsterMax() {
+        return levelMonsterMax;
+    }
+
+    public static int getAllocMonsterChance() {
+        return allocMonsterChance;
+    }
+
+    public static int getLevelMonsterMin() {
+        return levelMonsterMin;
+    }
+
+    public static int getTownMonstersDay() {
+        return townMonstersDay;
+    }
+
+    public static int getTownMonstersNight() {
+        return townMonstersNight;
+    }
+
+    public static int getReproMonstersNight() {
+        return reproMonstersNight;
+    }
+
+    public static int getOodMonsterChance() {
+        return oodMonsterChance;
+    }
+
+    public static int getOodMonsterAmount() {
+        return oodMonsterAmount;
+    }
+
+    public static int getMonsterGroupMax() {
+        return monsterGroupMax;
+    }
+
+    public static int getMonsterGroupDist() {
+        return monsterGroupDist;
+    }
+
+    public static int getGlyphHardness() {
+        return glyphHardness;
+    }
+
+    public static int getReproMonsterRate() {
+        return reproMonsterRate;
+    }
+
+    public static int getLifeDrainPercent() {
+        return lifeDrainPercent;
+    }
+
+    public static int getFleeRange() {
+        return fleeRange;
+    }
+
+    public static int getTurnRange() {
+        return turnRange;
+    }
+
+    public static int getLevelRoomMax() {
+        return levelRoomMax;
+    }
+
+    public static int getLevelDoorMax() {
+        return levelDoorMax;
+    }
+
+    public static int getWallPierceMax() {
+        return wallPierceMax;
+    }
+
+    public static int getTunnGridMax() {
+        return tunnGridMax;
+    }
+
+    public static int getRoomItemAv() {
+        return roomItemAv;
+    }
+
+    public static int getBothItemAv() {
+        return bothItemAv;
+    }
+
+    public static int getBothGoldAv() {
+        return bothGoldAv;
+    }
+
+    public static int getLevelPitMax() {
+        return levelPitMax;
+    }
+
+    public static int getMaxDepth() {
+        return maxDepth;
+    }
+
+    public static int getDayLength() {
+        return dayLength;
+    }
+
+    public static int getDungeonHeight() {
+        return dungeonHeight;
+    }
+
+    public static int getDungeonWidth() {
+        return dungeonWidth;
+    }
+
+    public static int getTownHeight() {
+        return townHeight;
+    }
+
+    public static int getTownWidth() {
+        return townWidth;
+    }
+
+    public static int getFeelingTotal() {
+        return feelingTotal;
+    }
+
+    public static int getFeelingNeed() {
+        return feelingNeed;
+    }
+
+    public static int getStairSkip() {
+        return stairSkip;
+    }
+
+    public static int getMoveEnergy() {
+        return moveEnergy;
+    }
+
+    public static int getPackSize() {
+        return packSize;
+    }
+
+    public static int getQuiverSize() {
+        return quiverSize;
+    }
+
+    public static int getQuiverSlotSize() {
+        return quiverSlotSize;
+    }
+
+    public static int getThrownQuiverMult() {
+        return thrownQuiverMult;
+    }
+
+    public static int getFloorSize() {
+        return floorSize;
+    }
+
+    public static int getStoreInvenMax() {
+        return storeInvenMax;
+    }
+
+    public static int getStoreTurns() {
+        return storeTurns;
+    }
+
+    public static int getStoreShuffle() {
+        return storeShuffle;
+    }
+
+    public static int getStoreMagicLevel() {
+        return storeMagicLevel;
+    }
+
+    public static int getMaxObjDepth() {
+        return maxObjDepth;
+    }
+
+    public static int getGreatObj() {
+        return greatObj;
+    }
+
+    public static int getGreatEgo() {
+        return greatEgo;
+    }
+
+    public static int getFuelTorch() {
+        return fuelTorch;
+    }
+
+    public static int getFuelLamp() {
+        return fuelLamp;
+    }
+
+    public static int getDefaultLamp() {
+        return defaultLamp;
+    }
+
+    public static int getMaxSight() {
+        return maxSight;
+    }
+
+    public static int getMaxRange() {
+        return maxRange;
+    }
+
+    public static int getStartGold() {
+        return startGold;
+    }
+
+    public static int getFoodValue() {
+        return foodValue;
+    }
+
+    public static int getmCritDebuffToh() {
+        return mCritDebuffToh;
+    }
+
+    public static int getmCritChanceWeightScl() {
+        return mCritChanceWeightScl;
+    }
+
+    public static int getmCritChanceTohScl() {
+        return mCritChanceTohScl;
+    }
+
+    public static int getmCritChanceLevelScl() {
+        return mCritChanceLevelScl;
+    }
+
+    public static int getmCritChanceTohSkillScl() {
+        return mCritChanceTohSkillScl;
+    }
+
+    public static int getmCritChanceOffset() {
+        return mCritChanceOffset;
+    }
+
+    public static int getmCritChanceRange() {
+        return mCritChanceRange;
+    }
+
+    public static int getmCritPowerWeightScl() {
+        return mCritPowerWeightScl;
+    }
+
+    public static int getmCritPowerRandom() {
+        return mCritPowerRandom;
+    }
+
+    public static int getrCritDebuffToh() {
+        return rCritDebuffToh;
+    }
+
+    public static int getrCritChanceWeightScl() {
+        return rCritChanceWeightScl;
+    }
+
+    public static int getrCritChanceTohScl() {
+        return rCritChanceTohScl;
+    }
+
+    public static int getrCritChanceLevelScl() {
+        return rCritChanceLevelScl;
+    }
+
+    public static int getrCritChanceLaunchedTohSkillScl() {
+        return rCritChanceLaunchedTohSkillScl;
+    }
+
+    public static int getrCritChanceThrownTohSkillScl() {
+        return rCritChanceThrownTohSkillScl;
+    }
+
+    public static int getrCritChanceOffset() {
+        return rCritChanceOffset;
+    }
+
+    public static int getrCritChanceRange() {
+        return rCritChanceRange;
+    }
+
+    public static int getrCritPowerWeightScl() {
+        return rCritPowerWeightScl;
+    }
+
+    public static int getrCritPowerRandom() {
+        return rCritPowerRandom;
+    }
+
+    public static int getoMCritDebuffToh() {
+        return oMCritDebuffToh;
+    }
+
+    public static int getoMCritPowerTohSclNum() {
+        return oMCritPowerTohSclNum;
+    }
+
+    public static int getoMCritPowerTohSclDen() {
+        return oMCritPowerTohSclDen;
+    }
+
+    public static int getoMCritChancePowerSclNum() {
+        return oMCritChancePowerSclNum;
+    }
+
+    public static int getoMCritChancePowerSclDen() {
+        return oMCritChancePowerSclDen;
+    }
+
+    public static int getoMCritChanceAddDen() {
+        return oMCritChanceAddDen;
+    }
+
+    public static Rational getoMeleeMaxAdded() {
+        return oMeleeMaxAdded;
+    }
+
+    public static int getoRCritDebuffToh() {
+        return oRCritDebuffToh;
+    }
+
+    public static int getoRCritPowerLaunchedTohSclNum() {
+        return oRCritPowerLaunchedTohSclNum;
+    }
+
+    public static int getoRCritPowerLaunchedTohSclDen() {
+        return oRCritPowerLaunchedTohSclDen;
+    }
+
+    public static int getoRCritPowerThrownTohSclNum() {
+        return oRCritPowerThrownTohSclNum;
+    }
+
+    public static int getoRCritPowerThrownTohSclDen() {
+        return oRCritPowerThrownTohSclDen;
+    }
+
+    public static int getoRCritChancePowerSclNum() {
+        return oRCritChancePowerSclNum;
+    }
+
+    public static int getoRCritChancePowerSclDen() {
+        return oRCritChancePowerSclDen;
+    }
+
+    public static int getoRCritChanceAddDen() {
+        return oRCritChanceAddDen;
+    }
+
+    public static Rational getoRangedMaxAdded() {
+        return oRangedMaxAdded;
     }
 }

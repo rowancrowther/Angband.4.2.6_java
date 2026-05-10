@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
-import uk.co.jackoftrades.middle.combat.enums.HitType;
+import uk.co.jackoftrades.middle.enums.MessageEnum;
 
 import java.util.ArrayList;
 
@@ -76,9 +76,9 @@ public class O_CriticalLevelConstants {
             throw new InvalidTokenFoundDuringParse(message);
         }
 
-        HitType msgt;
+        MessageEnum msgt;
         try {
-            msgt = HitType.valueOf(tokens[2]);
+            msgt = MessageEnum.valueOf(tokens[2]);
         } catch (IllegalArgumentException e) {
             String message = "Invalid value of type found while parsing constants.txt. Token was: "
                     + tag + ":" + value

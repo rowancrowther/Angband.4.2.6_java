@@ -1,6 +1,7 @@
 package uk.co.jackoftrades.middle.enums;
 
 public enum MessageEnum {
+    MSG_NONE(""),
     MSG_GENERIC(""),
     MSG_BIRTH(""),
     MSG_HIT("hit"),

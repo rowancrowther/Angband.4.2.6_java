@@ -2,15 +2,16 @@ package uk.co.jackoftrades.middle.combat;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftrades.middle.combat.enums.HitType;
+import uk.co.jackoftrades.middle.enums.MessageEnum;
 
 public class O_CriticalLevel {
     private final static String tag = "o-melee-critical-level";
     private int chance;
     private int addedDice;
-    private HitType msgt;
+    private MessageEnum msgt;
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -23,7 +24,8 @@ public class O_CriticalLevel {
      * @param msgt      The message to use (from the list-messages.h), stored in a HitType enum to ensure that it is pulled
      *                  in correctly.
      */
-    public O_CriticalLevel(int chance, int addedDice, HitType msgt) throws InvalidTokenFoundDuringParse {
+    @CheckReturnValue
+    public O_CriticalLevel(int chance, int addedDice, MessageEnum msgt) throws InvalidTokenFoundDuringParse {
         if (chance <= 0) {
             String message = "Invalid value of chance in parsing of a constants.txt line. Token was: "
                     + tag + ":" + chance + ":" + addedDice + ":" + msgt.name();
@@ -71,7 +73,7 @@ public class O_CriticalLevel {
      * @return hit type of this critical
      */
     @Contract(pure = true)
-    public HitType getMsgt() {
+    public MessageEnum getMsgt() {
         return msgt;
     }
 }

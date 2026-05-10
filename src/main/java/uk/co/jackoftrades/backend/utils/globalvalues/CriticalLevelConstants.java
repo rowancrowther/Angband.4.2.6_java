@@ -6,7 +6,7 @@ import org.jetbrains.annotations.Contract;
 import org.jspecify.annotations.NonNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
-import uk.co.jackoftrades.middle.combat.enums.HitType;
+import uk.co.jackoftrades.middle.enums.MessageEnum;
 
 import java.util.ArrayList;
 
@@ -49,10 +49,10 @@ public class CriticalLevelConstants {
         int damageMult;
         int amountAdded;
         String hitTypeString = values[3];
-        HitType hitType;
+        MessageEnum hitType;
 
         try {
-            hitType = HitType.valueOf(hitTypeString);
+            hitType = MessageEnum.valueOf("MSG_" + hitTypeString);
         } catch (IllegalArgumentException e) {
             String message = "Unknown Hit Type message in token. Token was: " + tag + ":" + value;
             logger.error(message);

@@ -12,9 +12,17 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterParser;
 import uk.co.jackoftrades.backend.numerics.Rational;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.Trap;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -46,6 +54,8 @@ public class GameConstants {
     public static final String ANGBAND_DIR_SCORES = getLibDir() + userPath + "scores";
     public static final String ANGBAND_DIR_SAVE = getLibDir() + userPath + "save";
     public static final String ANGBAND_DIR_PANIC = getLibDir() + userPath + "panic";
+
+    public static final String ANGBAND_SYS = "xxx";
 
     @Contract(pure = true)
     private static String getLibDir() {
@@ -199,6 +209,23 @@ public class GameConstants {
 
     private static Rational oRangedMaxAdded;
 
+    private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
+    private static final HashMap<ObjectFlagName, Object> flags = new HashMap<>();
+    private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
+    private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
+    private static final HashMap<Trap, Object> traps = new HashMap<>();
+    private static final HashMap<TerrainFeatureFlags, Object> terrainFlags = new HashMap<>();
+    private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
+    private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
+
+    // non-O melee and ranged criticals
+    private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
+    private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
+
+    // O melee and ranged criticals
+    private static final ArrayList<O_CriticalLevel> mOCriticalLevels = new ArrayList<>();
+    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
+
     @Contract(pure = true)
     private GameConstants() {
     }
@@ -333,7 +360,7 @@ public class GameConstants {
             throw new InvalidTokenFoundDuringParse(errorMessage);
         }
 
-        GameCollections.addROCritLevel(new O_CriticalLevel(chance, dice, message));
+        rOCriticalLevels.add(new O_CriticalLevel(chance, dice, message));
     }
 
     private static void setORangedCrits(String set, String tag) {
@@ -382,7 +409,7 @@ public class GameConstants {
         }
     }
 
-    private static void setOMeleeCriticalLevels(String set, String tag) {
+    private static void setOMeleeCriticalLevels(@NonNull String set, @NotNull String tag) {
         tag = tag + ":";
         String[] values = set.split(":");
 
@@ -410,8 +437,7 @@ public class GameConstants {
             throw new InvalidTokenFoundDuringParse(message);
         }
 
-        O_CriticalLevel criticalLevel = new O_CriticalLevel(chance, dice, messageName);
-        GameCollections.addMOCriticalLevel(criticalLevel);
+        mOCriticalLevels.add(new O_CriticalLevel(chance, dice, messageName));
     }
 
     private static void setOMeleeCrits(String set, String tag) {
@@ -484,8 +510,7 @@ public class GameConstants {
             throw new InvalidTokenFoundDuringParse(message);
         }
 
-        CriticalLevel level = new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum);
-        GameCollections.addRCriticalLevel(level);
+        rCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
     }
 
     private static void setNonORangedCrits(@NotNull String set, @NotNull String tag) {
@@ -574,8 +599,7 @@ public class GameConstants {
             throw new InvalidTokenFoundDuringParse(message);
         }
 
-        CriticalLevel level = new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum);
-        GameCollections.addMCriticalLevel(level);
+        mCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
     }
 
     private static void setNonOMeleeCrits(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {

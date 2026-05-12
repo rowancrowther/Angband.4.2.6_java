@@ -1,7 +1,7 @@
 package uk.co.jackoftrades.backend.utils;
 
 import org.jetbrains.annotations.Contract;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.*;
 
@@ -100,7 +100,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the set we are comparing against
      * @return true if at least one flag is set in both this.set and other.set
      */
-    public boolean isInter(@NonNull Flag<E> other) {
+    public boolean isInter(@NotNull Flag<E> other) {
         for (E flag : other.set) {
             if (set.contains(flag))
                 return true;
@@ -115,7 +115,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the other set to compare
      * @return False if there exists one flag set in other which is not set in this, true otherwise
      */
-    public boolean isSubset(@NonNull Flag<E> other) {
+    public boolean isSubset(@NotNull Flag<E> other) {
         for (E flag : other.set)
             if (!set.contains(flag))
                 return false;
@@ -130,7 +130,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the set we are comparing
      * @return True if both this and other have exactly the same pattern of flags set.
      */
-    public boolean isEqual(@NonNull Flag<E> other) {
+    public boolean isEqual(@NotNull Flag<E> other) {
         return other.isSubset(this) && isSubset(other);
     }
 
@@ -209,7 +209,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the set to make this set the union of
      * @return true if any changes were made, false otherwise
      */
-    public boolean union(@NonNull Flag<E> other) {
+    public boolean union(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
         for (E flag : other.set) {
@@ -228,7 +228,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the set to make this an intersection of
      * @return true if any changes were made, false otherwise
      */
-    public boolean inter(@NonNull Flag<E> other) {
+    public boolean inter(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
         Flag<E> copy = other.copy();
@@ -250,7 +250,7 @@ public class Flag<E extends Enum<E>> {
      * @param other the other flag set to compare to this
      * @return true if any changes were made, false otherwise
      */
-    public boolean diff(@NonNull Flag<E> other) {
+    public boolean diff(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
         for (E flag : other.set) {
@@ -270,7 +270,7 @@ public class Flag<E extends Enum<E>> {
      */
     @Contract(pure = true)
     @SafeVarargs
-    public final boolean test(E @NonNull ... flags) {
+    public final boolean test(E @NotNull ... flags) {
         for (E flag : flags) {
             if (set.contains(flag))
                 return true;
@@ -286,7 +286,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if any one of the flags in the list is set in this, false otherwise
      */
     @Contract(pure = true)
-    public final boolean test(@NonNull List<E> flags) {
+    public final boolean test(@NotNull List<E> flags) {
         for (E flag : flags) {
             if (set.contains(flag))
                 return true;
@@ -303,7 +303,7 @@ public class Flag<E extends Enum<E>> {
      */
     @SafeVarargs
     @Contract(pure = true)
-    public final boolean testAll(E @NonNull ... flags) {
+    public final boolean testAll(E @NotNull ... flags) {
         for (E flag : flags) {
             if (!set.contains(flag))
                 return false;
@@ -319,7 +319,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if ALL the flags are set, false otherwise
      */
     @Contract(pure = true)
-    public final boolean testAll(@NonNull List<E> flags) {
+    public final boolean testAll(@NotNull List<E> flags) {
         for (E flag : flags) {
             if (!set.contains(flag))
                 return false;
@@ -335,7 +335,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if any of the flags were set before this was called, false otherwise
      */
     @SafeVarargs
-    public final boolean clear(E @NonNull ... flags) {
+    public final boolean clear(E @NotNull ... flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
@@ -354,7 +354,7 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
      */
-    public final boolean clear(@NonNull List<E> flags) {
+    public final boolean clear(@NotNull List<E> flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
@@ -374,7 +374,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
      */
     @SafeVarargs
-    public final boolean set(E @NonNull ... flags) {
+    public final boolean set(E @NotNull ... flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
@@ -393,7 +393,7 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
      */
-    public boolean set(@NonNull List<E> flags) {
+    public boolean set(@NotNull List<E> flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
@@ -411,7 +411,7 @@ public class Flag<E extends Enum<E>> {
      * @param flags The set of flags to initialise the cleared Flag to
      */
     @SafeVarargs
-    public final void init(E @NonNull ... flags) {
+    public final void init(E @NotNull ... flags) {
         set = EnumSet.noneOf(eClass);
 
         set.addAll(Arrays.stream(flags).toList());
@@ -421,7 +421,7 @@ public class Flag<E extends Enum<E>> {
      * Clear this set and then set a number of flags in a list to be on
      * @param flags The set of flags to initialise the cleared Flag to
      */
-    public void init(@NonNull List<E> flags) {
+    public void init(@NotNull List<E> flags) {
         set = EnumSet.noneOf(eClass);
 
         Collections.addAll(flags);
@@ -436,7 +436,7 @@ public class Flag<E extends Enum<E>> {
      * @return true if any changes were made, false otherwise.
      */
     @SafeVarargs
-    public final boolean mask(E @NonNull ... flags) {
+    public final boolean mask(E @NotNull ... flags) {
         Flag<E> mask = new Flag<>(eClass);
         mask.init(flags);
 
@@ -451,7 +451,7 @@ public class Flag<E extends Enum<E>> {
      *              the compliment and this
      * @return true if any changes were made, false otherwise.
      */
-    public boolean mask(@NonNull List<E> flags) {
+    public boolean mask(@NotNull List<E> flags) {
         Flag<E> mask = new Flag<>(eClass);
         mask.init(flags);
 

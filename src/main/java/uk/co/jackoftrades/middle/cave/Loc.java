@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.middle.cave;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.RandomValueUtils;
 
 public class Loc {
@@ -47,7 +47,7 @@ public class Loc {
      * @param other the incoming location to compare with this one
      * @return true if these two locations are equivalent, false otherwise
      */
-    public boolean equals(@NonNull Loc other) {
+    public boolean equals(@NotNull Loc other) {
         return this.x == other.x && this.y == other.y;
     }
 
@@ -66,7 +66,7 @@ public class Loc {
      * @param other The location to sum with this one
      * @return A location which consists of (x1 + x2, y1 + y2)
      */
-    public Loc sum(@NonNull Loc other) {
+    public Loc sum(@NotNull Loc other) {
         return new Loc(x + other.x, y + other.y);
     }
 
@@ -76,7 +76,7 @@ public class Loc {
      * @param other the other point to work out the difference from this point
      * @return A new location (x1 - x2, y1 - y2).
      */
-    public Loc diff(@NonNull Loc other) {
+    public Loc diff(@NotNull Loc other) {
         return new Loc(this.x - other.x, this.y - other.y);
     }
 

@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
 public class DungeonGenerationConstants {
@@ -25,7 +25,7 @@ public class DungeonGenerationConstants {
      * @param value the text to parse down into a string and value, and store the value in the correct field as denoted
      *              by the string
      */
-    public static void setValue(@NonNull String value) throws InvalidTokenFoundDuringParse {
+    public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] results = value.split(":");
         int val;
 

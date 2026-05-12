@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.middle.game.event;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
@@ -21,6 +21,10 @@ public class EventsHandler {
         for (GameEventType eventType : GameEventType.values()) {
             handlers.put(eventType, new ArrayList<>());
         }
+    }
+
+    public static void initialise() {
+        if (instance == null) instance = new EventsHandler();
     }
 
     /**
@@ -86,7 +90,7 @@ public class EventsHandler {
      *
      * @param eventType The event type we are removing the handlers of
      */
-    public void eventRemoveHandlerType(GameEventType eventType) {
+    public static void eventRemoveHandlerType(GameEventType eventType) {
         ArrayList<EventHandlerInterface> newList = new ArrayList<>();
         handlers.put(eventType, newList);
     }
@@ -94,7 +98,7 @@ public class EventsHandler {
     /**
      * Clear down all event handlers
      */
-    public void eventRemoveAllHandlers() {
+    public static void eventRemoveAllHandlers() {
         for (GameEventType eventType : GameEventType.values()) {
             eventRemoveHandlerType(eventType);
         }
@@ -107,7 +111,7 @@ public class EventsHandler {
      * @param records   An ArrayList of EventHandlerInterfaces
      * @param user      NOT USED - TODO: Find out if we need to use this
      */
-    public void eventAddHandlerSet(GameEventType eventType, @NonNull ArrayList<EventHandlerInterface> records, EventUser user) {
+    public static void eventAddHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records, EventUser user) {
         for (EventHandlerInterface record : records) {
             eventAddHandler(eventType, record);
         }
@@ -120,7 +124,7 @@ public class EventsHandler {
      * @param records   An ArrayList of EventHandlerInterfaces
      * @param user      NOT USED - TODO: Find out if we need to use this
      */
-    public void eventRemoveHandlerSet(GameEventType eventType, @NonNull ArrayList<EventHandlerInterface> records, EventUser user) {
+    public static void eventRemoveHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records, EventUser user) {
         for (EventHandlerInterface record : records) {
             eventRemoveHandler(eventType, record);
         }
@@ -131,7 +135,7 @@ public class EventsHandler {
      *
      * @param eventType The event type we are signalling
      */
-    public void eventSignal(GameEventType eventType) {
+    public static void eventSignal(GameEventType eventType) {
         gameEventDispatch(eventType, null);
     }
 
@@ -141,7 +145,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param flag      The boolean value we are sending
      */
-    public void eventSignalFLag(GameEventType eventType, boolean flag) {
+    public static void eventSignalFLag(GameEventType eventType, boolean flag) {
         gameEventDispatch(eventType, new EventDataBoolean(flag));
     }
 
@@ -153,7 +157,7 @@ public class EventsHandler {
      * @param x         The x coordinate of the Loc
      * @param y         The y coordinate of the Loc
      */
-    public void eventSignalPoint(GameEventType eventType, int x, int y) {
+    public static void eventSignalPoint(GameEventType eventType, int x, int y) {
         gameEventDispatch(eventType, new EventDataPoint(x, y));
     }
 
@@ -163,7 +167,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param point     The Loc we are using to signal the event
      */
-    public void eventSignalPoint(GameEventType eventType, Loc point) {
+    public static void eventSignalPoint(GameEventType eventType, Loc point) {
         gameEventDispatch(eventType, new EventDataPoint(point));
     }
 
@@ -173,7 +177,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param string    The String we are using in signalling the event
      */
-    private void eventSignalString(GameEventType eventType, String string) {
+    public static void eventSignalString(GameEventType eventType, String string) {
         gameEventDispatch(eventType, new EventDataString(string));
     }
 
@@ -183,7 +187,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param message   The Message we are using in signalling the event
      */
-    private void eventSignalMessage(GameEventType eventType, int type, String message) {
+    public static void eventSignalMessage(GameEventType eventType, int type, String message) {
         gameEventDispatch(eventType, new EventDataMessage(type, message));
     }
 
@@ -196,7 +200,7 @@ public class EventsHandler {
      *                  stat
      * @param remaining The remaining number of points to spend
      */
-    private void eventSignalBirthpoints(GameEventType eventType,
+    public static void eventSignalBirthpoints(GameEventType eventType,
                                         HashMap<Stats, Integer> stats,
                                         HashMap<Stats, Integer> incPoints,
                                         int remaining) {
@@ -215,7 +219,7 @@ public class EventsHandler {
      * @param blastGrid      The grids we are blasting with this explosion
      * @param centre         The centre of the explosion
      */
-    private void eventSignalBlast(GameEventType eventType,
+    public static void eventSignalBlast(GameEventType eventType,
                                   int projType,
                                   int numGrids,
                                   ArrayList<Integer> distanceToGrid,
@@ -240,7 +244,7 @@ public class EventsHandler {
      * @param y         The target-Y of the bolt?
      * @param x         The target-X of the bolt
      */
-    private void eventSignalBolt(GameEventType eventType,
+    public static void eventSignalBolt(GameEventType eventType,
                                  int projType,
                                  boolean drawing,
                                  boolean seen,
@@ -261,7 +265,7 @@ public class EventsHandler {
      * @param y          The y location of the missile (start/end/current)?
      * @param x          The x location of the missile (start/end/current)?
      */
-    private void eventSignalMissile(GameEventType eventType,
+    public static void eventSignalMissile(GameEventType eventType,
                                     ItemObject itemObject,
                                     boolean seen,
                                     int y,
@@ -276,7 +280,7 @@ public class EventsHandler {
      * @param height    The height of the area/size
      * @param width     The width of the area/size
      */
-    private void eventSignalSize(GameEventType eventType, int height, int width) {
+    public static void eventSignalSize(GameEventType eventType, int height, int width) {
         gameEventDispatch(eventType, new EventDataSize(height, width));
     }
 
@@ -291,7 +295,7 @@ public class EventsHandler {
      * @param dEnd      The city block distance to the goal of the tunnel
      * @param early     Whether the tunnelling has been stopped early
      */
-    private void eventSignalTunnel(GameEventType eventType, int nStep, int nPierce, int nDug,
+    public static void eventSignalTunnel(GameEventType eventType, int nStep, int nPierce, int nDug,
                                    int dStart, int dEnd, boolean early) {
         gameEventDispatch(eventType, new EventDataTunnel(nStep, nPierce, nDug, dStart, dEnd, early));
     }

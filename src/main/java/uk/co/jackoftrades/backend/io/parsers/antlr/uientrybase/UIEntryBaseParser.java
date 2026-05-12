@@ -13,7 +13,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -233,7 +233,7 @@ public class UIEntryBaseParser extends Parser {
                 setState(21);
                 ((RendererContext) _localctx).LCASE = match(LCASE);
 
-                ((RendererContext) _localctx).rend = Game.getUIEntryRenderer(((RendererContext) _localctx).LCASE.getText());
+                ((RendererContext) _localctx).rend = GameConstants.getUIEntryRenderer(((RendererContext) _localctx).LCASE.getText());
 
             }
         } catch (RecognitionException re) {

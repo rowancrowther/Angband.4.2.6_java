@@ -17,7 +17,7 @@ import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 import uk.co.jackoftrades.middle.enums.StatElementEnum;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -338,7 +338,7 @@ public class UIEntryGramParser extends Parser {
                 ((RendererContext) _localctx).TEXT = match(TEXT);
 
                 String rendName = ((RendererContext) _localctx).TEXT.getText();
-                ((RendererContext) _localctx).rend = Game.getUIEntryRenderer(rendName);
+                ((RendererContext) _localctx).rend = GameConstants.getUIEntryRenderer(rendName);
 
             }
         } catch (RecognitionException re) {

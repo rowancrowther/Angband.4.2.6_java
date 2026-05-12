@@ -13,7 +13,7 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.ValueEnum;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
@@ -248,7 +248,7 @@ public class CurseReaderParser extends Parser {
 
 				String tValName = ((TypeContext) _localctx).TEXT.getText();
 				TValue tVal = TValue.fromName(tValName);
-				((TypeContext) _localctx).typeBase = Game.getBaseFromTVal(tVal);
+				((TypeContext) _localctx).typeBase = GameConstants.getBaseFromTVal(tVal);
 
 			}
 		} catch (RecognitionException re) {

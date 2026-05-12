@@ -7,8 +7,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
-import org.jspecify.annotations.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
@@ -329,7 +328,7 @@ public class GameConstants {
     /**
      * Initialise the game objects in the correct order
      */
-    public void init() {
+    public static void init() {
         loadGameConstants();
         loadWorld();
         loadProjections();
@@ -348,7 +347,7 @@ public class GameConstants {
         loadPlayerShapes();
     }
 
-    private void loadPlayerShapes() {
+    private static void loadPlayerShapes() {
         PlayerShapeParser parser = new PlayerShapeParser();
 
         try {
@@ -362,7 +361,7 @@ public class GameConstants {
 //        }
     }
 
-    private void loadCurses() {
+    private static void loadCurses() {
         CurseReader curseReader = new CurseReader();
 
         try {
@@ -376,7 +375,7 @@ public class GameConstants {
 //        }
     }
 
-    private void loadSummons() {
+    private static void loadSummons() {
         SummonParser parser = new SummonParser();
 
         try {
@@ -390,7 +389,7 @@ public class GameConstants {
 //        }
     }
 
-    private void loadMonsterBases() {
+    private static void loadMonsterBases() {
         MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
 
         try {
@@ -404,7 +403,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadPain() {
+    private static void loadPain() {
         MonsterPainParser parser = new MonsterPainParser();
 
         try {
@@ -418,7 +417,7 @@ public class GameConstants {
         }*/
     }
 
-    private void loadBrands() {
+    private static void loadBrands() {
         BrandParser brandParser = new BrandParser();
 
         try {
@@ -432,7 +431,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadSlays() {
+    private static void loadSlays() {
         SlayFormatter slayFormatter = new SlayFormatter();
 
         try {
@@ -446,7 +445,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadObjectBases() {
+    private static void loadObjectBases() {
         objectBases = new ArrayList<>();
         ObjectBaseParser objectBaseParser = new ObjectBaseParser();
 
@@ -461,7 +460,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadTerrainFeatures() {
+    private static void loadTerrainFeatures() {
         terrainFeatures = new ArrayList<>();
         TerrainFeatureReader parser = new TerrainFeatureReader();
 
@@ -477,7 +476,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadPlayerProperties() {
+    private static void loadPlayerProperties() {
         playerProperties = new ArrayList<>();
         PlayerPropertyReader parser = new PlayerPropertyReader();
 
@@ -492,7 +491,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadUIEntries() {
+    private static void loadUIEntries() {
         uiEntries = new ArrayList<>();
 
         UIEntryParser parser = new UIEntryParser();
@@ -508,7 +507,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadUIEntryBases() {
+    private static void loadUIEntryBases() {
         uiBases = new ArrayList<>();
 
         UIEntryBaseParser parser = new UIEntryBaseParser();
@@ -524,7 +523,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadUIEntryRenderers() {
+    private static void loadUIEntryRenderers() {
         uiEntryRenderers = new ArrayList<>();
 
         UIEntryRendParser renderer = new UIEntryRendParser();
@@ -541,7 +540,7 @@ public class GameConstants {
         }*/
     }
 
-    private void loadProjections() {
+    private static void loadProjections() {
         projections = new ArrayList<>();
 
         ProjectionParser projectionParser = new ProjectionParser();
@@ -558,7 +557,7 @@ public class GameConstants {
         } */
     }
 
-    private void loadWorld() {
+    private static void loadWorld() {
         world = new LinkedList<>();
 
         WorldParser worldParser = new WorldParser();
@@ -768,7 +767,7 @@ public class GameConstants {
         }
     }
 
-    private static void setOMeleeCriticalLevels(@NonNull String set, @NotNull String tag) {
+    private static void setOMeleeCriticalLevels(@NotNull String set, @NotNull String tag) {
         tag = tag + ":";
         String[] values = set.split(":");
 
@@ -837,7 +836,7 @@ public class GameConstants {
         }
     }
 
-    private static void setNonORangedCriticalLevels(@NonNull String set, @NotNull String tag) {
+    private static void setNonORangedCriticalLevels(@NotNull String set, @NotNull String tag) {
         tag = tag + ":";
         String[] results = set.split(":");
 
@@ -1328,7 +1327,7 @@ public class GameConstants {
         }
     }
 
-    private static void setLevelMax(@NonNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
+    private static void setLevelMax(@NotNull String set, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         NameValuePair pair = getValues(set, tag);
 
         String name = pair.name();
@@ -1344,7 +1343,7 @@ public class GameConstants {
     }
 
     @Contract("_, _ -> new")
-    private static @NonNull NameValuePair getValues(@NotNull String set, @NotNull String tag) {
+    private static @NotNull NameValuePair getValues(@NotNull String set, @NotNull String tag) {
         tag = tag + ":";
         String[] results = set.split(":");
 

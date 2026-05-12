@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.middle.objects;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.colour.enums.ColourType;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -32,7 +32,7 @@ public class ObjectBase {
         maxStack = -1;
     }
 
-    public void setFlags(@NonNull ArrayList<String> flagStrings) {
+    public void setFlags(@NotNull ArrayList<String> flagStrings) {
         for (String flagString : flagStrings) {
             if (flagString.startsWith("HATES_")) {
                 ElementEnum hate = ElementEnum.valueOf("ELEM_" + flagString.substring(6));

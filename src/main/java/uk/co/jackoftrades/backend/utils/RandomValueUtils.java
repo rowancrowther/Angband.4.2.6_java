@@ -2,7 +2,7 @@ package uk.co.jackoftrades.backend.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 
 import java.util.Random;
@@ -176,7 +176,7 @@ public abstract class RandomValueUtils {
      * @param aspect the aspect of this roll
      * @return a random die roll
      */
-    public static int damCalc(int number, int sides, @NonNull DamageAspect aspect) {
+    public static int damCalc(int number, int sides, @NotNull DamageAspect aspect) {
         return switch (aspect) {
             case MAXIMIZE -> number * sides;
             case EXTREMIFY -> number * sides;
@@ -246,7 +246,7 @@ public abstract class RandomValueUtils {
      * @param aspect the level aspect
      * @return a random number based on a normal distribution dependent on the aspect
      */
-    public static int mBonusCalc(int max, int level, @NonNull DamageAspect aspect) {
+    public static int mBonusCalc(int max, int level, @NotNull DamageAspect aspect) {
         return switch (aspect) {
             case EXTREMIFY, MAXIMIZE -> max;
             case RANDOMIZE -> mBonus(max, level);

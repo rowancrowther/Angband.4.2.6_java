@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -22,7 +21,7 @@ public abstract class StringUtils {
      *         with the objects passed in.
      */
     @Contract(pure = true)
-    public static @NonNull String strnfcat(String string, String format, Object... objects) {
+    public static @NotNull String strnfcat(String string, String format, Object... objects) {
         return string + String.format(format, objects);
     }
 
@@ -33,7 +32,7 @@ public abstract class StringUtils {
      * @param objects the objects to use to format the string
      * @return A formatted string of length max
      */
-    public static @NonNull String vstrnfmt(int max, String format, Object... objects) {
+    public static @NotNull String vstrnfmt(int max, String format, Object... objects) {
         return String.format(format, objects).substring(0, max - 1);
     }
 
@@ -44,7 +43,7 @@ public abstract class StringUtils {
      * @return A formatted string
      */
     @Contract(pure = true)
-    public static @NonNull String vformat(String stringToFormat, Object... objects) {
+    public static @NotNull String vformat(String stringToFormat, Object... objects) {
         return String.format(stringToFormat, objects);
     }
 
@@ -55,7 +54,7 @@ public abstract class StringUtils {
      * @param objects The objects to use in formatting the string
      * @return A formatted string of size max
      */
-    public static @NonNull String strnfmt(String stringToFormat, int max, Object... objects){
+    public static @NotNull String strnfmt(String stringToFormat, int max, Object... objects) {
         return String.format(stringToFormat, objects).substring(0, max - 1);
     }
 
@@ -66,7 +65,7 @@ public abstract class StringUtils {
      * @return A formatted string
      */
     @Contract(pure = true)
-    public static @NonNull String format(@NotNull String format, Object... objects) {
+    public static @NotNull String format(@NotNull String format, Object... objects) {
         return String.format(format, objects);
     }
 
@@ -76,7 +75,7 @@ public abstract class StringUtils {
      * @return nothing in number is one, the string "s" if it is more than that
      */
     @Contract(pure = true)
-    public static @NonNull String plural(int number) {
+    public static @NotNull String plural(int number) {
         return (number == 1) ? "" : "s";
     }
 
@@ -99,7 +98,7 @@ public abstract class StringUtils {
      * @return THe first number characters of string
      */
     @Contract(pure = true)
-    public static @NonNull String clipTo(@NonNull String string, @NotNull int number) {
+    public static @NotNull String clipTo(@NotNull String string, @NotNull int number) {
         return string.substring(0, number);
     }
 
@@ -110,7 +109,7 @@ public abstract class StringUtils {
      * @return true if s.equals(t), false otherwise
      */
     @Contract(pure = true)
-    public static boolean streq(@NonNull String s, @NotNull String t) {
+    public static boolean streq(@NotNull String s, @NotNull String t) {
         return s.equals(t);
     }
 
@@ -132,7 +131,7 @@ public abstract class StringUtils {
      * @return true if it is found in the string, false otherwise
      */
     @Contract(pure = true)
-    public static boolean textSchr(@NonNull String string, @NotNull char ch) {
+    public static boolean textSchr(@NotNull String string, @NotNull char ch) {
         return string.indexOf(ch) >= 0;
     }
 
@@ -143,7 +142,7 @@ public abstract class StringUtils {
      * @return The number of characters in this string
      */
     @Contract(pure = true)
-    public static int stringLength(@NonNull String string) {
+    public static int stringLength(@NotNull String string) {
         return string.length();
     }
 
@@ -156,7 +155,7 @@ public abstract class StringUtils {
      *          0 if they are identical ignoring case
      */
     @Contract(pure = true)
-    public static int strICmp(@NonNull String string1, @NotNull String string2) {
+    public static int strICmp(@NotNull String string1, @NotNull String string2) {
         return string1.compareToIgnoreCase(string2);
     }
 
@@ -169,7 +168,7 @@ public abstract class StringUtils {
      *          1 if string1's first n characters are after string2's first n characters alphabetically ignoring case<br>
      *          0 if the first n characters of both strings are identical ignoring case
      */
-    public static int strNICmp(@NonNull String string1, @NonNull String string2, int n) {
+    public static int strNICmp(@NotNull String string1, @NotNull String string2, int n) {
         int maxLength = string1.length();
         if (string2.length() < maxLength) maxLength = string2.length();
         if (n < maxLength) maxLength = n;
@@ -187,7 +186,7 @@ public abstract class StringUtils {
      * @return If the string toFind is found in the string toSearch, then the return the substring of toSearch starting
      * at the first point the toFind string is found, otherwise return the toFind string.
      */
-    public static @NonNull String strIStr(@NonNull String toSearch, @NotNull String toFind) {
+    public static @NotNull String strIStr(@NotNull String toSearch, @NotNull String toFind) {
         int foundAt = toSearch.toLowerCase().indexOf(toFind.toLowerCase());
         return foundAt == -1 ? toFind : toSearch.substring(foundAt);
     }
@@ -199,7 +198,7 @@ public abstract class StringUtils {
      * @return A string of length length consisting of the first length characters of the source string.
      */
     @Contract(pure = true)
-    public static @NonNull String strCpy(@NonNull String source, @NotNull int length) {
+    public static @NotNull String strCpy(@NotNull String source, @NotNull int length) {
         if (length > source.length()) length = source.length();
         if (length < 0) length = 0;
         return source.substring(0, length);
@@ -213,7 +212,7 @@ public abstract class StringUtils {
      * @return A substring of length size of the concatenation of the two strings
      */
     @Contract(pure = true)
-    public static @NonNull String strCat(@NotNull String toConcatenateTo, @NotNull String source, @NotNull int size) {
+    public static @NotNull String strCat(@NotNull String toConcatenateTo, @NotNull String source, @NotNull int size) {
         String result = toConcatenateTo + source;
         if (size < 0) size = 0;
         if (size > result.length()) size = result.length();
@@ -225,7 +224,7 @@ public abstract class StringUtils {
      * @param toCapitalise The string to capitalise
      * @return The incoming string with a capital first letter
      */
-    public static @NonNull String strCap(@NonNull String toCapitalise) {
+    public static @NotNull String strCap(@NotNull String toCapitalise) {
         return toCapitalise.isEmpty() ? "" : Character.toUpperCase(toCapitalise.charAt(0)) + toCapitalise.substring(1);
     }
 
@@ -237,7 +236,7 @@ public abstract class StringUtils {
      * than the length of the suffix or the string is empty then false will be returned; if the suffix is empty then
      * true will be returned.
      */
-    public static boolean suffix(@NonNull String string, @NonNull String suffix) {
+    public static boolean suffix(@NotNull String string, @NotNull String suffix) {
         if (string.length() < suffix.length()) return false;
         if (string.isEmpty()) return false;
         if (suffix.isEmpty()) return true;
@@ -252,7 +251,7 @@ public abstract class StringUtils {
      * string is less than the length of the suffix or the string is empty then false will be returned; if the suffix is
      * empty then true will be returned.
      */
-    public static boolean suffixI(@NonNull String string, @NonNull String suffix) {
+    public static boolean suffixI(@NotNull String string, @NotNull String suffix) {
         if (suffix.isEmpty()) return true;
         return suffix(string.toUpperCase(), suffix.toUpperCase());
     }
@@ -263,7 +262,7 @@ public abstract class StringUtils {
      * @param prefix The potential prefix
      * @return True if prefix is a prefix of string, false otherwise
      */
-    public static boolean prefix(@NonNull String string, @NonNull String prefix) {
+    public static boolean prefix(@NotNull String string, @NotNull String prefix) {
         return (prefix.equals(string.substring(0, prefix.length())));
     }
 
@@ -284,7 +283,7 @@ public abstract class StringUtils {
      * @param escapeChar The character to mark as not to remove
      * @return A string where all the characters removeChar NOT preceeded by a character escapeChar have been removed.
      */
-      public static @NonNull String strSkip(@NonNull String start, char removeChar, char escapeChar) {
+  public static @NotNull String strSkip(@NotNull String start, char removeChar, char escapeChar) {
           Pattern pattern = Pattern.compile("(^|[^" + escapeChar + "])" + removeChar +"+");
           Matcher matcher = pattern.matcher(start);
           if (!matcher.find()) return start;
@@ -323,7 +322,7 @@ public abstract class StringUtils {
      * @param string the string to convert from hex characters to an int
      * @return the integer calculated from the string, or -1 if an error occurred
      */
-    public static int hexStrToInt(@NonNull String string) {
+    public static int hexStrToInt(@NotNull String string) {
         int result = 0;
         for (int index = 0; index < string.length(); index++) {
             int current = hexCharToInt(string.charAt(index));
@@ -339,7 +338,9 @@ public abstract class StringUtils {
      * @param string The string to check
      * @return true if string is blank, false otherwise
      */
-    public static boolean containsOnlySpaces(@NonNull String string) { return string.isBlank(); }
+    public static boolean containsOnlySpaces(@NotNull String string) {
+        return string.isBlank();
+    }
 
     /**
      * Check to see if a character is a vowel

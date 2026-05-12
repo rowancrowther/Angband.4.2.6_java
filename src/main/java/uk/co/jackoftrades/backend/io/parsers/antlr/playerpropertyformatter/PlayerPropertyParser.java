@@ -12,7 +12,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.middle.enums.StatElementEnum;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.PlayerProperty.PlayerPropertyType;
@@ -405,7 +405,7 @@ public class PlayerPropertyParser extends Parser {
                 }
 
                 String uiEntryName = ((BinduiContext) _localctx).STRING.getText();
-                ((BinduiContext) _localctx).uiEntry = Game.getUIEntry(uiEntryName);
+                ((BinduiContext) _localctx).uiEntry = GameConstants.getUIEntry(uiEntryName);
 
                 if (((BinduiContext) _localctx).uiEntryTAG != null) {
                     String tag = ((BinduiContext) _localctx).uiEntryTAG.getText().toUpperCase();

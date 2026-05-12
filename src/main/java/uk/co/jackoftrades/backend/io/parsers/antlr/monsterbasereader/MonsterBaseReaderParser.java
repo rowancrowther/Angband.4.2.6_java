@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -299,7 +299,7 @@ public class MonsterBaseReaderParser extends Parser {
                 ((PainContext) _localctx).NUMBER = match(NUMBER);
 
                 int index = Integer.parseInt(((PainContext) _localctx).NUMBER.getText());
-                ((PainContext) _localctx).painIndex = Game.getPainFromIndex(index);
+                ((PainContext) _localctx).painIndex = GameConstants.getPainFromIndex(index);
 
             }
         } catch (RecognitionException re) {

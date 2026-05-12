@@ -2,7 +2,7 @@ package uk.co.jackoftrades.backend.strings;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.colour.enums.AttributeColour;
 import uk.co.jackoftrades.backend.io.AngFile;
 import uk.co.jackoftrades.backend.io.enums.FileTypeEnum;
@@ -58,7 +58,7 @@ public class TextBlock {
      *
      * @param toAppend the text block we wish to append to this one.
      */
-    public void append(@NonNull TextBlock toAppend) {
+    public void append(@NotNull TextBlock toAppend) {
 
         for (AngbandDisplayCharacter textAndAttribute : toAppend.textAndAttributes) {
             append(textAndAttribute);
@@ -71,7 +71,7 @@ public class TextBlock {
      * @param fmt     the string to format and then append
      * @param objects the objects to format the string with
      */
-    public void append(@NonNull String fmt, Object... objects) {
+    public void append(@NotNull String fmt, Object... objects) {
         append(AttributeColour.COLOUR_WHITE, fmt, objects);
     }
 
@@ -82,7 +82,7 @@ public class TextBlock {
      * @param fmt     the string to format
      * @param objects the objects to format the string with
      */
-    public void append(@NonNull AttributeColour col, @NonNull String fmt, Object... objects) {
+    public void append(@NotNull AttributeColour col, @NotNull String fmt, Object... objects) {
         String formattedString = fmt.formatted(objects);
         for (char ch : formattedString.toCharArray()) {
             append(ch, col);
@@ -195,7 +195,7 @@ public class TextBlock {
      * @param string  The string we are appending to this text block
      * @param colours The colours we are using to append, linked to the characters in the string
      */
-    public void append(@NonNull String string, @NonNull List<AttributeColour> colours) {
+    public void append(@NotNull String string, @NotNull List<AttributeColour> colours) {
         if (string.length() != colours.size()) {
             logger.error("Invalid string/list input to TextBlock creator. String was of length " + string.length() +
                     " and colours array was of length " + colours.size());

@@ -4,7 +4,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 import uk.co.jackoftrades.backend.numerics.Rational;
 
 import java.util.ArrayList;
@@ -108,7 +107,7 @@ public abstract class NumberUtils {
      * size of the ArrayList numbers, then it is changed to be the size of the list.
      */
     @Contract("_, _ -> new")
-    public static @NonNull Rational mean(@NotNull ArrayList<Integer> numbers, int size) {
+    public static @NotNull Rational mean(@NotNull ArrayList<Integer> numbers, int size) {
         if (size == 0) {
             return Rational.zero;
         }
@@ -132,7 +131,7 @@ public abstract class NumberUtils {
      * @return the variance of the first size numbers in a list
      */
     @Contract("_, _, _, _ -> new")
-    public static @NonNull Rational variance(ArrayList<Integer> numbers, int size, boolean unbiased, boolean ofMean)
+    public static @NotNull Rational variance(ArrayList<Integer> numbers, int size, boolean unbiased, boolean ofMean)
     {
         // Deal with division by zero errors
         if (size <= 1) return Rational.zero;

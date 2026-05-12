@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.backend.numerics;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public class Rational {
     private int denominator;
@@ -22,7 +22,7 @@ public class Rational {
         denominator = 1;
     }
 
-    public Rational multi(@NonNull Rational rational) {
+    public Rational multi(@NotNull Rational rational) {
         if (this.denominator == 0 || rational.denominator == 0)
             return new Rational(0, 1);
 
@@ -31,14 +31,14 @@ public class Rational {
         return result;
     }
 
-    public Rational div(@NonNull Rational other) {
+    public Rational div(@NotNull Rational other) {
         Rational flipped = new Rational(other.getDenominator(), other.getNumerator());
         Rational result = this.multi(flipped);
         result.simplify();
         return result;
     }
 
-    public Rational add(@NonNull Rational rational) {
+    public Rational add(@NotNull Rational rational) {
         int otherNumerator = rational.getNumerator();
         int otherDenominator = rational.getDenominator();
 
@@ -60,7 +60,7 @@ public class Rational {
         if (simplify) this.simplify();
     }
 
-    public boolean equals(@NonNull Rational other) {
+    public boolean equals(@NotNull Rational other) {
         if (denominator == 0 && other.denominator == 0) return true;
         if (other.denominator == 0 || denominator == 0) return false;
 

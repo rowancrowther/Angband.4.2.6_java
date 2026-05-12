@@ -10,7 +10,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -363,7 +363,7 @@ public class SummonFormatterParser extends Parser {
 				((BaseContext) _localctx).WORD = match(WORD);
 
 				String baseWord = ((BaseContext) _localctx).WORD.getText();
-				((BaseContext) _localctx).mBase = Game.getBaseFromName(baseWord);
+				((BaseContext) _localctx).mBase = GameConstants.getBaseFromName(baseWord);
 
 			}
 		} catch (RecognitionException re) {

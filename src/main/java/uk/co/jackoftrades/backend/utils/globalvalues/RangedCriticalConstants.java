@@ -4,7 +4,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
 public class RangedCriticalConstants {
@@ -23,7 +23,7 @@ public class RangedCriticalConstants {
 
     private static final Logger logger = LogManager.getLogger();
 
-    public static void setValue(@NonNull String value) throws InvalidTokenFoundDuringParse {
+    public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String name;
         int val;
 

@@ -3,7 +3,7 @@ package uk.co.jackoftrades.backend.utils.globalvalues;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.enums.MessageEnum;
@@ -29,7 +29,7 @@ public class CriticalLevelConstants {
      * @param type  whether this is a mêlée or ranged hit
      * @throws InvalidTokenFoundDuringParse A token was invalid or found incorrectly
      */
-    public static void setValue(@NonNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
+    public static void setValue(@NotNull String value, CriticalType type) throws InvalidTokenFoundDuringParse {
         String tag = type == CriticalType.MELEE ? meleeTag : rangedTag;
 
         String[] values = value.split(":");

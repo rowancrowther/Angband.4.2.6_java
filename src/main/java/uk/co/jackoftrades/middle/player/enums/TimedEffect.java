@@ -1,6 +1,6 @@
 package uk.co.jackoftrades.middle.player.enums;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 
 public enum TimedEffect {
@@ -62,7 +62,7 @@ public enum TimedEffect {
     private final Flag<PlayerRedraw> redrawFlags;
     private final Flag<PlayerUpkeep> upkeepFlags;
 
-    private TimedEffect(PlayerRedraw @NonNull [] redrawFlags, PlayerUpkeep @NonNull [] upkeepFlags) {
+    private TimedEffect(PlayerRedraw @NotNull [] redrawFlags, PlayerUpkeep @NotNull [] upkeepFlags) {
         this.redrawFlags = new Flag<PlayerRedraw>(PlayerRedraw.class);
         this.upkeepFlags = new Flag<PlayerUpkeep>(PlayerUpkeep.class);
 

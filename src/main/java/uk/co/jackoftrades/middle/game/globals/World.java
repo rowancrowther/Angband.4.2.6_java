@@ -1,4 +1,4 @@
-package uk.co.jackoftrades.middle.game;
+package uk.co.jackoftrades.middle.game.globals;
 
 class World {
     private int level;

@@ -28,6 +28,8 @@ public class Main extends Application {
     @Override
     public void start(Stage stage) throws Exception {
         Screen screen = new Screen(stage);
+
+        Game game = Game.getGame(screen.getStatusLabel());
     }
 
     public static void main(String[] args) throws IOException {
@@ -36,8 +38,6 @@ public class Main extends Application {
         //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
         // to see how IntelliJ IDEA suggests fixing it.
         System.out.println("Hello and welcome!\n");
-
-        Game game = Game.getGame();
 
         for (int i = 1; i <= 5; i++) {
             //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint

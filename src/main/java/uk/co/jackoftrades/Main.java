@@ -2,7 +2,6 @@ package uk.co.jackoftrades;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.game.Game;
 
 import java.io.IOException;
@@ -27,9 +26,7 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage stage) throws Exception {
-        Screen screen = new Screen(stage);
-
-        Game game = Game.getGame(screen.getStatusLabel());
+        Game game = Game.getGame(stage);
     }
 
     public static void main(String[] args) throws IOException {

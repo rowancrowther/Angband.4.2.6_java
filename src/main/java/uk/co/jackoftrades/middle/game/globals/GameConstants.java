@@ -66,19 +66,19 @@ public class GameConstants {
     private static final String libPath = File.separator + "lib" + File.separator;
     private static final String configPath = File.separator + "config" + File.separator;
     private static final String userPath = File.separator + "user" + File.separator;
-    public static final String ANGBAND_DIR_GAMEDATA = getLibDir() + libPath + "gamedata";
-    public static final String ANGBAND_DIR_CUSTOMIZE = getLibDir() + configPath + "customize";
-    public static final String ANGBAND_DIR_HELP = getLibDir() + libPath + "help";
-    public static final String ANGBAND_DIR_SCREENS = getLibDir() + libPath + "screens";
-    public static final String ANGBAND_DIR_FONTS = getLibDir() + libPath + "fonts";
-    public static final String ANGBAND_DIR_TILES = getLibDir() + libPath + "tiles";
-    public static final String ANGBAND_DIR_SOUNDS = getLibDir() + libPath + "sounds";
-    public static final String ANGBAND_DIR_ICONS = getLibDir() + libPath + "icons";
-    public static final String ANGBAND_DIR_USER = getLibDir() + File.separator + "user";
-    public static final String ANGBAND_DIR_ARCHIVE = getLibDir() + userPath + "archives";
-    public static final String ANGBAND_DIR_SCORES = getLibDir() + userPath + "scores";
-    public static final String ANGBAND_DIR_SAVE = getLibDir() + userPath + "save";
-    public static final String ANGBAND_DIR_PANIC = getLibDir() + userPath + "panic";
+    public static final String ANGBAND_DIR_GAMEDATA = getLibDir() + libPath + "gamedata" + File.separator;
+    public static final String ANGBAND_DIR_CUSTOMIZE = getLibDir() + configPath + "customize" + File.separator;
+    public static final String ANGBAND_DIR_HELP = getLibDir() + libPath + "help" + File.separator;
+    public static final String ANGBAND_DIR_SCREENS = getLibDir() + libPath + "screens" + File.separator;
+    public static final String ANGBAND_DIR_FONTS = getLibDir() + libPath + "fonts" + File.separator;
+    public static final String ANGBAND_DIR_TILES = getLibDir() + libPath + "tiles" + File.separator;
+    public static final String ANGBAND_DIR_SOUNDS = getLibDir() + libPath + "sounds" + File.separator;
+    public static final String ANGBAND_DIR_ICONS = getLibDir() + libPath + "icons" + File.separator;
+    public static final String ANGBAND_DIR_USER = getLibDir() + File.separator + "user" + File.separator;
+    public static final String ANGBAND_DIR_ARCHIVE = getLibDir() + userPath + "archives" + File.separator;
+    public static final String ANGBAND_DIR_SCORES = getLibDir() + userPath + "scores" + File.separator;
+    public static final String ANGBAND_DIR_SAVE = getLibDir() + userPath + "save" + File.separator;
+    public static final String ANGBAND_DIR_PANIC = getLibDir() + userPath + "panic" + File.separator;
 
     public static final String ANGBAND_SYS = "xxx";
 

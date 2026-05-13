@@ -23,7 +23,7 @@ public class EventsHandler {
         }
     }
 
-    public static void initialise() {
+    private static void initialise() {
         if (instance == null) instance = new EventsHandler();
     }
 

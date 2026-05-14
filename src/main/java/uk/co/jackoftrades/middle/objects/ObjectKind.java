@@ -15,7 +15,7 @@
  *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
  */
 
-package uk.co.jackoftrades.frontend;
+package uk.co.jackoftrades.middle.objects;
 
-public class SoundInterface {
+public class ObjectKind {
 }

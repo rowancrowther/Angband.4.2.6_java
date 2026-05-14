@@ -25,6 +25,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
@@ -60,7 +61,6 @@ import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -78,10 +78,10 @@ public class GameConstants {
     private final static int maxRandDepth = 128;
 
     // The directory structure of Angband - OS neutral.
-    // Note, if the user wants to save on a custom area, then we will have to amend the function getLibDir()
+    // Note, if the user wants to save on a custom area, then we will have to amend the function BASE_DIR
     // to return that value. That's a future issue
-    // TODO Amend getLibDir() to return a potential user specific path
-    private static final String BASE_DIR = Paths.get("").toAbsolutePath().toString();
+    private static final String BASE_DIR = System.getProperty("user.dir");
+
     private static final String libPath = File.separator + "lib" + File.separator;
     private static final String configPath = File.separator + "config" + File.separator;
     private static final String userPath = File.separator + "user" + File.separator;
@@ -93,11 +93,13 @@ public class GameConstants {
     public static final String ANGBAND_DIR_TILES = BASE_DIR + libPath + "tiles" + File.separator;
     public static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
     public static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
-    public static final String ANGBAND_DIR_USER = BASE_DIR + "user" + File.separator;
+    public static final String ANGBAND_DIR_USER = BASE_DIR + File.separator + "user" + File.separator;
     public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
     public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
     public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
     public static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
+
+    public static final String ANGBAND_INI = BASE_DIR + "angband.ini";
 
     public static final String ANGBAND_SYS = "xxx";
 
@@ -111,11 +113,6 @@ public class GameConstants {
 
     public boolean canUseGraphics = false;
     public boolean changeTileSize = false;
-
-    @Contract(pure = true)
-    private static String getLibDir() {
-        return Paths.get("").toAbsolutePath().toString();
-    }
 
     /*
      * Array bounds from C Not sure that these are still needed as most of the 'things' are stored in ArrayLists. Need to set

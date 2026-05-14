@@ -15,7 +15,12 @@
  *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
  */
 
-package uk.co.jackoftrades.frontend;
+package uk.co.jackoftrades.middle;
 
-public class SoundInterface {
+public class AllocEntry {
+    private int Index;
+    private int level;
+    private int prob1;
+    private int prob2;
+    private int prob3;
 }

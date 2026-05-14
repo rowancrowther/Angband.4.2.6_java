@@ -15,7 +15,18 @@
  *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
  */
 
-package uk.co.jackoftrades.frontend;
+package uk.co.jackoftrades.middle.cave;
 
-public class SoundInterface {
+import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.monsters.Monster;
+import uk.co.jackoftrades.middle.objects.ObjectKind;
+
+import java.util.ArrayList;
+
+
+public class GridData {
+    private Monster monster;
+    private TerrainFlags terrainFlag;
+    private ArrayList<ObjectKind> objectKindList;
+
 }

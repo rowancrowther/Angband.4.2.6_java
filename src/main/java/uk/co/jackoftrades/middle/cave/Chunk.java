@@ -37,4 +37,18 @@ public class Chunk {
     /* How many feeling squares the player has visited */
     private int feelingSquares;
     private HashMap<TerrainFlags, Integer> featCount;
+
+    private Square[][] squares;
+
+    public Square getSquare(Loc grid) {
+        return squares[grid.getX()][grid.getY()];
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
 }

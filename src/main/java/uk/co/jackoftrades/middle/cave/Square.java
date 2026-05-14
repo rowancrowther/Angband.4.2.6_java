@@ -234,21 +234,94 @@ public class Square {
         return (monster != 0);
     }
 
-    public boolean isKnown(Chunk chunk, Loc grid) {
+    /**
+     * Tests if this square is known by the player
+     *
+     * @param c    The chunk we are examining, should be the owning chunk of this square
+     * @param grid The location in that chunk of this square
+     * @return True if the information known about this square is also known by the player
+     */
+    public boolean isKnown(Chunk c, Loc grid) {
         Chunk mainCave = GameConstants.cave;
         Player mainPlayer = GameConstants.mainPlayer;
-        if (!chunk.equals(mainCave) && (!chunk.equals(mainPlayer.getCave())))
+        if (!c.equals(mainCave) && (!c.equals(mainPlayer.getCave())))
             return false;
 
         if (mainPlayer.getCave() == null)
             return false;
 
-        // TODO: Add in this value of the if fork
-        return true;
+        return !mainPlayer.getCave().getSquare(grid).feat.isNoFeat();
     }
 
-    public boolean isMemoryBad() {
-        return true;
-        // TODO: Add in the correct values of this fork
+    /**
+     * Tests to see if the player's memory of this square has failed
+     *
+     * @param c    The chunk we are examining
+     * @param grid the grid in that chunk which points to this square in the other grids
+     * @return true if there is a difference between the features of this square and the players chunk square
+     */
+    public boolean isMemoryBad(Chunk c, Loc grid) {
+        Chunk cave = GameConstants.cave;
+        Player mainPlayer = GameConstants.mainPlayer;
+
+        return !isKnown(c, grid) || !(mainPlayer.getCave().getSquare(grid).feat.equals(cave.getSquare(grid).feat));
+    }
+
+    /*
+     * Square predicates
+     */
+
+    /**
+     * Tests to see if this square is marked
+     *
+     * @return true if this square is marked
+     */
+    public boolean isMark() {
+        return info.has(SquareEnum.SQUARE_MARK);
+    }
+
+    /**
+     * Tests for illumination
+     *
+     * @return true if the square is lit
+     */
+    public boolean isLit() {
+        return info.has(SquareEnum.SQUARE_GLOW);
+    }
+
+    /**
+     * Tests to see if this room is part of a vault, not the role it plays in that vault
+     *
+     * @return true if the square is part of a vault
+     */
+    public boolean isVault() {
+        return info.has(SquareEnum.SQUARE_VAULT);
+    }
+
+    /**
+     * Tests to see if this is part of a room
+     *
+     * @return true if it is part of a room
+     */
+    public boolean isRoom() {
+        return info.has(SquareEnum.SQUARE_ROOM);
+    }
+
+    /**
+     * Tests whether the player has seen this square
+     *
+     * @return true if the player has seen this square
+     */
+    public boolean isSeen() {
+        return info.has(SquareEnum.SQUARE_SEEN);
+    }
+
+    /**
+     * Tests to see whether the player can currently see this square
+     *
+     * @return true if this square is in view
+     */
+    public boolean isView() {
+        return info.has(SquareEnum.SQUARE_VIEW);
     }
 }

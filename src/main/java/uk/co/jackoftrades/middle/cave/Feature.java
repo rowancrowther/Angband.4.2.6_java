@@ -23,6 +23,8 @@ import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
+import java.util.Objects;
+
 public class Feature {
     private TerrainFlags code;
     private String name;
@@ -375,5 +377,36 @@ public class Feature {
                 ", lookInPreposition='" + lookInPreposition + '\'' +
                 ", resistFlag=" + resistFlag +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        Feature feature = (Feature) o;
+        return featureIndex == feature.featureIndex && priority == feature.priority && shopNum == feature.shopNum && dig == feature.dig && code == feature.code && Objects.equals(getName(), feature.getName()) && Objects.equals(description, feature.description) && mimic == feature.mimic && Objects.equals(flags, feature.flags) && Objects.equals(displayCharacter, feature.displayCharacter) && Objects.equals(walkMsg, feature.walkMsg) && Objects.equals(runMsg, feature.runMsg) && Objects.equals(hurtMsg, feature.hurtMsg) && Objects.equals(dieMsg, feature.dieMsg) && Objects.equals(confusedMsg, feature.confusedMsg) && Objects.equals(lookPrefix, feature.lookPrefix) && Objects.equals(lookInPreposition, feature.lookInPreposition) && resistFlag == feature.resistFlag;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(code);
+        result = 31 * result + Objects.hashCode(getName());
+        result = 31 * result + Objects.hashCode(description);
+        result = 31 * result + featureIndex;
+        result = 31 * result + Objects.hashCode(mimic);
+        result = 31 * result + priority;
+        result = 31 * result + shopNum;
+        result = 31 * result + dig;
+        result = 31 * result + Objects.hashCode(flags);
+        result = 31 * result + Objects.hashCode(displayCharacter);
+        result = 31 * result + Objects.hashCode(walkMsg);
+        result = 31 * result + Objects.hashCode(runMsg);
+        result = 31 * result + Objects.hashCode(hurtMsg);
+        result = 31 * result + Objects.hashCode(dieMsg);
+        result = 31 * result + Objects.hashCode(confusedMsg);
+        result = 31 * result + Objects.hashCode(lookPrefix);
+        result = 31 * result + Objects.hashCode(lookInPreposition);
+        result = 31 * result + Objects.hashCode(resistFlag);
+        return result;
     }
 }

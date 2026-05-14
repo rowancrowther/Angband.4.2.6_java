@@ -52,4 +52,19 @@ public class AngbandDisplayCharacter {
     public AttributeColour getAttributeColour() {
         return attributeColour;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        AngbandDisplayCharacter that = (AngbandDisplayCharacter) o;
+        return getCharacter() == that.getCharacter() && getAttributeColour() == that.getAttributeColour();
+    }
+
+    @Override
+    public int hashCode() {
+        int result = getCharacter();
+        result = 31 * result + getAttributeColour().hashCode();
+        return result;
+    }
 }

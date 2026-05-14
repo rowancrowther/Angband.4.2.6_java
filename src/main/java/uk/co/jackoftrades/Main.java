@@ -1,8 +1,25 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ */
+
 package uk.co.jackoftrades;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import uk.co.jackoftrades.middle.game.Game;
+import uk.co.jackoftrades.middle.game.GameEngine;
 
 import java.io.IOException;
 
@@ -26,7 +43,7 @@ public class Main extends Application {
      */
     @Override
     public void start(Stage stage) throws Exception {
-        Game game = Game.getGame(stage);
+        GameEngine gameEngine = GameEngine.getGame(stage);
     }
 
     public static void main(String[] args) throws IOException {

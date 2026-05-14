@@ -1,5 +1,23 @@
-package uk.co.jackoftrades.backend.colour.enums;
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ */
 
+package uk.co.jackoftrades.frontend.colour.enums;
+
+import javafx.scene.paint.Color;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
@@ -8,125 +26,165 @@ public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
             new AttributeColour[]{AttributeColour.COLOUR_DARK, AttributeColour.COLOUR_DARK, AttributeColour.COLOUR_DARK,
                     AttributeColour.COLOUR_DARK, AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_DARK,
-                    AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_DARK}),
+                    AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_DARK},
+            Color.rgb(0, 0, 0)),
     COLOUR_TYPE_WHITE('w', "White",
             new AttributeColour[]{AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE,
                     AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_WHITE,
-                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_WHITE}),
+                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_WHITE},
+            Color.rgb(255, 255, 255)),
     COLOUR_TYPE_SLATE('s', "Slate",
             new AttributeColour[]{AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_SLATE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_L_DARK,
-                    AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_SLATE}),
+                    AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_SLATE},
+            Color.rgb(128, 128, 128)),
     COLOUR_TYPE_ORANGE('o', "Orange",
             new AttributeColour[]{AttributeColour.COLOUR_ORANGE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_ORANGE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_ORANGE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_ORANGE},
+            Color.rgb(255, 128, 0)),
     COLOUR_TYPE_RED('r', "Red",
             new AttributeColour[]{AttributeColour.COLOUR_RED, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_RED,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_RED}),
+                    AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_RED},
+            Color.rgb(192, 0, 0)),
     COLOUR_TYPE_GREEN('g', "Green",
             new AttributeColour[]{AttributeColour.COLOUR_GREEN, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_GREEN,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_GREEN}),
+                    AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_GREEN},
+            Color.rgb(0, 128, 64)),
     COLOUR_TYPE_BLUE('b', "Blue",
             new AttributeColour[]{AttributeColour.COLOUR_BLUE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_BLUE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_BLUE}),
+                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_BLUE},
+            Color.rgb(0, 64, 255)),
     COLOUR_TYPE_UMBER('u', "Umber",
             new AttributeColour[]{AttributeColour.COLOUR_UMBER, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_UMBER,
                     AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_L_DARK,
-                    AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_UMBER}),
+                    AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_UMBER},
+            Color.rgb(128, 64, 0)),
     COLOUR_TYPE_LIGHT_DARK('D', "Light Dark",
             new AttributeColour[]{AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_DARK,
                     AttributeColour.COLOUR_L_DARK, AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_DARK,
-                    AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_DARK}),
+                    AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_DARK},
+            Color.rgb(96, 96, 96)),
     COLOUR_TYPE_LIGHT_SLATE('W', "Light Slate",
             new AttributeColour[]{AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_WHITE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_SLATE}),
+                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_SLATE},
+            Color.rgb(192, 192, 192)),
     COLOUR_TYPE_LIGHT_PURPLE('P', "Light Purple",
             new AttributeColour[]{AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_PURPLE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_PURPLE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_PURPLE},
+            Color.rgb(255, 0, 255)),
     COLOUR_TYPE_YELLOW('y', "Yellow",
             new AttributeColour[]{AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_L_YELLOW, AttributeColour.COLOUR_L_WHITE,
-                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW}),
+                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW},
+            Color.rgb(255, 255, 0)),
     COLOUR_TYPE_LIGHT_RED('R', "Light Red",
             new AttributeColour[]{AttributeColour.COLOUR_L_RED, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_RED,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_RED,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_RED}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_RED},
+            Color.rgb(255, 64, 64)),
     COLOUR_TYPE_LIGHT_GREEN('G', "Light Green",
             new AttributeColour[]{AttributeColour.COLOUR_L_GREEN, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_GREEN,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_GREEN,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_GREEN}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_GREEN},
+            Color.rgb(0, 255, 0)),
     COLOUR_TYPE_LIGHT_BLUE('B', "Light Blue",
             new AttributeColour[]{AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_BLUE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_BLUE,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE},
+            Color.rgb(0, 255, 255)),
     COLOUR_TYPE_LIGHT_UMBER('U', "Light Umber",
             new AttributeColour[]{AttributeColour.COLOUR_L_UMBER, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_UMBER,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_UMBER,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_UMBER}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_UMBER},
+            Color.rgb(192, 128, 64)),
     COLOUR_TYPE_PURPLE('p', "Purple",
             new AttributeColour[]{AttributeColour.COLOUR_PURPLE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_PURPLE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE}),
+                    AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE},
+            Color.rgb(144, 0, 144)),
     COLOUR_TYPE_VIOLET('v', "Violet",
             new AttributeColour[]{AttributeColour.COLOUR_VIOLET, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_PURPLE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE}),
+                    AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE, AttributeColour.COLOUR_L_PURPLE},
+            Color.rgb(144, 32, 288)),
     COLOUR_TYPE_TEAL('t', "Teal",
             new AttributeColour[]{AttributeColour.COLOUR_TEAL, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_BLUE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_L_BLUE}),
+                    AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_L_BLUE},
+            Color.rgb(0, 160, 160)),
     COLOUR_TYPE_MUD('m', "Mud",
             new AttributeColour[]{AttributeColour.COLOUR_MUD, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_GREEN,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_UMBER}),
+                    AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_UMBER},
+            Color.rgb(108, 108, 48)),
     COLOUR_TYPE_LIGHT_YELLOW('Y', "Light Yellow",
             new AttributeColour[]{AttributeColour.COLOUR_L_YELLOW, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW,
                     AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW,
-                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_YELLOW}),
+                    AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_YELLOW},
+            Color.rgb(255, 255, 144)),
     COLOUR_TYPE_MAGENTA_PINK('i', "Magenta-Pink",
             new AttributeColour[]{AttributeColour.COLOUR_MAGENTA, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_RED,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_RED,
-                    AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_L_PURPLE}),
+                    AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_L_PURPLE},
+            Color.rgb(255, 0, 160)),
     COLOUR_TYPE_LIGHT_TEAL('T', "Light Teal",
             new AttributeColour[]{AttributeColour.COLOUR_L_TEAL, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_BLUE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_TEAL,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE},
+            Color.rgb(32, 255, 220)),
     COLOUR_TYPE_LIGHT_VIOLET('V', "Light Violet",
             new AttributeColour[]{AttributeColour.COLOUR_L_VIOLET, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_PURPLE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_VIOLET,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_BLUE},
+            Color.rgb(184, 168, 255)),
     COLOUR_TYPE_LIGHT_PINK('I', "Light Pink",
             new AttributeColour[]{AttributeColour.COLOUR_L_PINK, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_RED,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_MAGENTA,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_PURPLE}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_L_PURPLE},
+            Color.rgb(255, 128, 128)),
     COLOUR_TYPE_MUSTARD('M', "Mustard",
             new AttributeColour[]{AttributeColour.COLOUR_MUSTARD, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_YELLOW,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW}),
+                    AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW, AttributeColour.COLOUR_YELLOW},
+            Color.rgb(180, 180, 0)),
     COLOUR_TYPE_BLUE_SLATE('z', "Blue Slate",
             new AttributeColour[]{AttributeColour.COLOUR_BLUE_SLATE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_WHITE,
                     AttributeColour.COLOUR_SLATE, AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_SLATE,
-                    AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_WHITE}),
+                    AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_WHITE},
+            Color.rgb(160, 192, 208)),
     COLOUR_TYPE_DEEP_LIGHT_BLUE('Z', "Deep Light Blue",
             new AttributeColour[]{AttributeColour.COLOUR_DEEP_L_BLUE, AttributeColour.COLOUR_WHITE, AttributeColour.COLOUR_L_BLUE,
                     AttributeColour.COLOUR_L_WHITE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_BLUE_SLATE,
-                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE});
+                    AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE, AttributeColour.COLOUR_L_BLUE},
+            Color.rgb(0, 176, 255)),
+    COLOUR_TYPE_SHADE(' ', "Shade",
+            new AttributeColour[]{AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE,
+                    AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE,
+                    AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE},
+            Color.rgb(40, 40, 40));
 
     private final char colourCharacter;
     private final String colourName;
     private final AttributeColour[] colourTranslate;
+    private final Color colour;
+
     private static final Logger logger = LogManager.getLogger();
 
-    ColourType(char c, String name, AttributeColour[] table) {
+    ColourType(char c, String name, AttributeColour[] table, Color colour) {
         colourCharacter = c;
         colourName = name;
         colourTranslate = table;
+        this.colour = colour;
+    }
+
+    public Color getColour() {
+        return colour;
     }
 
     /**

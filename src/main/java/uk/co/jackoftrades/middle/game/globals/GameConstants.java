@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ */
+
 package uk.co.jackoftrades.middle.game.globals;
 
 import org.antlr.v4.runtime.CharStream;
@@ -8,7 +25,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
@@ -17,6 +33,7 @@ import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
@@ -43,6 +60,7 @@ import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -63,28 +81,40 @@ public class GameConstants {
     // Note, if the user wants to save on a custom area, then we will have to amend the function getLibDir()
     // to return that value. That's a future issue
     // TODO Amend getLibDir() to return a potential user specific path
+    private static final String BASE_DIR = Paths.get("").toAbsolutePath().toString();
     private static final String libPath = File.separator + "lib" + File.separator;
     private static final String configPath = File.separator + "config" + File.separator;
     private static final String userPath = File.separator + "user" + File.separator;
-    public static final String ANGBAND_DIR_GAMEDATA = getLibDir() + libPath + "gamedata" + File.separator;
-    public static final String ANGBAND_DIR_CUSTOMIZE = getLibDir() + configPath + "customize" + File.separator;
-    public static final String ANGBAND_DIR_HELP = getLibDir() + libPath + "help" + File.separator;
-    public static final String ANGBAND_DIR_SCREENS = getLibDir() + libPath + "screens" + File.separator;
-    public static final String ANGBAND_DIR_FONTS = getLibDir() + libPath + "fonts" + File.separator;
-    public static final String ANGBAND_DIR_TILES = getLibDir() + libPath + "tiles" + File.separator;
-    public static final String ANGBAND_DIR_SOUNDS = getLibDir() + libPath + "sounds" + File.separator;
-    public static final String ANGBAND_DIR_ICONS = getLibDir() + libPath + "icons" + File.separator;
-    public static final String ANGBAND_DIR_USER = getLibDir() + File.separator + "user" + File.separator;
-    public static final String ANGBAND_DIR_ARCHIVE = getLibDir() + userPath + "archives" + File.separator;
-    public static final String ANGBAND_DIR_SCORES = getLibDir() + userPath + "scores" + File.separator;
-    public static final String ANGBAND_DIR_SAVE = getLibDir() + userPath + "save" + File.separator;
-    public static final String ANGBAND_DIR_PANIC = getLibDir() + userPath + "panic" + File.separator;
+    public static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
+    public static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + configPath + "customize" + File.separator;
+    public static final String ANGBAND_DIR_HELP = BASE_DIR + libPath + "help" + File.separator;
+    public static final String ANGBAND_DIR_SCREENS = BASE_DIR + libPath + "screens" + File.separator;
+    public static final String ANGBAND_DIR_FONTS = BASE_DIR + libPath + "fonts" + File.separator;
+    public static final String ANGBAND_DIR_TILES = BASE_DIR + libPath + "tiles" + File.separator;
+    public static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
+    public static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
+    public static final String ANGBAND_DIR_USER = BASE_DIR + "user" + File.separator;
+    public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
+    public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
+    public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
+    public static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
 
     public static final String ANGBAND_SYS = "xxx";
 
+    public static final String iniFile = BASE_DIR + "angband.ini";
+
+    public static final HashMap<Integer, Screen> AngbandScreens = new HashMap<>();
+
+    public boolean gameInProgress = false;
+    public boolean initialised = false;
+    public boolean screensaverActive = false;
+
+    public boolean canUseGraphics = false;
+    public boolean changeTileSize = false;
+
     @Contract(pure = true)
     private static String getLibDir() {
-        return System.getProperty("user.dir");
+        return Paths.get("").toAbsolutePath().toString();
     }
 
     /*

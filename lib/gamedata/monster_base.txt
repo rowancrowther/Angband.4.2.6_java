@@ -18,7 +18,7 @@
 # 'flags' indicates the flags that every monster inherits from this template.
 #
 # 'desc' indicates the textual description of this template that is used by
-# the '/' command in-game.
+# the '/' command in-gameEngine.
 #
 # Note that these templates have references in other data files. Changing
 # characteristics of monster bases is fine, but the names are referenced in
@@ -232,7 +232,7 @@ flags:ANIMAL | WEIRD_MIND
 flags:BASH_DOOR
 desc:Killer Beetle
 
-# Early-game equivalents of things like orcs and trolls
+# Early-gameEngine equivalents of things like orcs and trolls
 name:kobold
 glyph:k
 pain:1

@@ -4,7 +4,7 @@ grammar UIEntryGram;
     import uk.co.jackoftrades.middle.enums.StatElementEnum;
     import uk.co.jackoftrades.middle.enums.Stats;
     import uk.co.jackoftrades.middle.enums.ElementNames;
-    import uk.co.jackoftrades.middle.game.Game;
+    import uk.co.jackoftrades.middle.game.GameEnginee.Game;
     import uk.co.jackoftrades.frontend.entries.UIEntry;
     import uk.co.jackoftrades.frontend.entries.UIEntry.StatElemType;
     import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;

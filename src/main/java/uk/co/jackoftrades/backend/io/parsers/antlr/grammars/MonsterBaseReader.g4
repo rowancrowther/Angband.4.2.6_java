@@ -4,7 +4,7 @@ grammar MonsterBaseReader;
     import java.util.ArrayList;
 
     import uk.co.jackoftrades.backend.utils.Flag;
-    import uk.co.jackoftrades.middle.game.Game;
+    import uk.co.jackoftrades.middle.game.GameEnginee.Game;
     import uk.co.jackoftrades.middle.monsters.MonsterBase;
     import uk.co.jackoftrades.middle.monsters.MonsterPain;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;

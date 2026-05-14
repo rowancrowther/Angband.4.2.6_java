@@ -1,7 +1,7 @@
 # File: constants.txt
 
 
-# This file is used to initialize game constants for Angband.
+# This file is used to initialize gameEngine constants for Angband.
 
 #---------------------------------------------------------------------
 # Level Maxima

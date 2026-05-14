@@ -2,7 +2,7 @@
 
 
 # This file is used to initialize the "terrain feature" information for
-# the Angband game.
+# the Angband gameEngine.
 
 # Do not modify this file unless you know exactly what you are doing,
 # unless you wish to risk possible system crashes and broken savefiles.
@@ -16,8 +16,8 @@
 #   features to this file will by itself have no effect.
 
 #   2. Changing the properties (especially flags but also mimicry, digging,
-#   and resist flag) can significantly change game behavior, and any changes
-#   will likely mess up a game which was started before the changes took place
+#   and resist flag) can significantly change gameEngine behavior, and any changes
+#   will likely mess up a gameEngine which was started before the changes took place
 #   and is reloaded when the changes are in effect.
 
 # You may more freely alter the graphics, names, messages, and descriptions.

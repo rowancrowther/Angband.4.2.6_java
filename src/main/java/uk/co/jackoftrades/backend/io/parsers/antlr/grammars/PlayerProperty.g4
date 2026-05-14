@@ -2,7 +2,7 @@ grammar PlayerProperty;
 
 @header
         {
-            import uk.co.jackoftrades.middle.game.Game;
+            import uk.co.jackoftrades.middle.game.GameEnginee.Game;
             import uk.co.jackoftrades.middle.enums.StatElementEnum;
             import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
             import uk.co.jackoftrades.middle.player.enums.PlayerFlag;

@@ -1,7 +1,7 @@
 grammar SummonFormatter;
 
 @header     {   import uk.co.jackoftrades.backend.io.parsers.antlr.summon.*;
-                import uk.co.jackoftrades.middle.game.Game;
+                import uk.co.jackoftrades.middle.game.GameEnginee.Game;
                 import uk.co.jackoftrades.middle.monsters.Summon;
                 import uk.co.jackoftrades.middle.monsters.MonsterBase;
                 import uk.co.jackoftrades.middle.monsters.MonsterBases;

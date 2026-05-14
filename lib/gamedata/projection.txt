@@ -8,7 +8,7 @@
 # reductions due to resistance and whether the projection wakes will have
 # implications for balance.
 # Changing the codes or their ordering has to be done with care and in
-# conjunction with recompiling the game.  The projections of type element
+# conjunction with recompiling the gameEngine.  The projections of type element
 # have to appear first in the same order and with the same codes as the
 # listing of elements in list-elements.h.  The projections of other types
 # have to appear after those of type element and in the same order as they
@@ -33,7 +33,7 @@
 # wake: 0/1
 # color: color
 
-# 'code' is the computer code for this projection used by the game.  For
+# 'code' is the computer code for this projection used by the gameEngine.  For
 # projections of type element, the code must match the argument to one of the
 # ELEM() macros in list-elements.h, and those projections must appear first
 # and in the order they are listed in list-elements.h.  For projections of

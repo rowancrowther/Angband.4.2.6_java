@@ -1,6 +1,25 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ */
+
 package uk.co.jackoftrades.frontend.screen;
 
 import javafx.scene.text.Font;
+import uk.co.jackoftrades.frontend.screen.hooks.TermEventHook;
+import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
 
 public class TermData {
     private Screen screen;
@@ -72,5 +91,38 @@ public class TermData {
 
     public int getSizeOW1() {
         return sizeOW1;
+    }
+
+    public void termDataLink(Term term) {
+        if (term == null) {
+            t = new Term();
+        } else {
+            t = term;
+        }
+
+        t.termInit(cols, rows, keys);
+
+        t.setSoftCursor(true);
+        t.setComplexInput(true);
+        t.setHigherPict(true);
+
+        TermEventHook hook = new TermXtraWin();
+        TermXtraWin win = new TermXtraWin();
+
+        t.setXtraHook(win);
+        t.setCursHook(hook);
+        t.setBigcursHook(hook);
+        t.setWipeHook(hook);
+        t.setTextHook(hook);
+        t.setPictHook(hook);
+        t.setDblhHook(hook);
+        t.setViewMapHook(hook);
+
+        t.setData(this);
+    }
+
+    public Term getTerm() {
+
+        return t;
     }
 }

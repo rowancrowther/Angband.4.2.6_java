@@ -6,7 +6,7 @@ grammar ProjectionReader;
             import uk.co.jackoftrades.backend.numerics.Random;
             import uk.co.jackoftrades.middle.enums.MessageEnum;
             import uk.co.jackoftrades.backend.colour.enums.ColourType;
-            import uk.co.jackoftrades.middle.game.Projection;
+            import uk.co.jackoftrades.middle.gameEngine.Projection;
 
             import java.util.ArrayList;
         }

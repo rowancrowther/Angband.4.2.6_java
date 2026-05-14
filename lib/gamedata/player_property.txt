@@ -5,9 +5,9 @@
 # Player properties
 
 # Descriptions and names can be edited without bad effects.
-# Changing the code, or type will severely disrupt the game, and should only
+# Changing the code, or type will severely disrupt the gameEngine, and should only
 # be done when the associated list-*.h files (and other code) are also
-# being changed, and the game recompiled.
+# being changed, and the gameEngine recompiled.
 # Adding new entries will have no effect without further datafile and code
 # changes
 
@@ -16,7 +16,7 @@
 #    player  - special player flag from list-player-flags.h
 #    object  - object flag from list-object-flags.h
 #    element - resistance, immunity or vulnerability to an element
-# code - the property name used by the game. Element codes are templates, and
+# code - the property name used by the gameEngine. Element codes are templates, and
 #        one is made for each element
 # bindui - Binds the property to a user interface element in ui_entry.txt.
 #          When binding an element property, the name will be parameterized

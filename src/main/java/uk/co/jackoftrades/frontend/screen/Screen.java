@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ */
+
 package uk.co.jackoftrades.frontend.screen;
 
 import javafx.geometry.Pos;
@@ -12,14 +29,19 @@ import javafx.scene.text.Font;
 import javafx.stage.Stage;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.frontend.screen.enums.TermXtraEventEnum;
+import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
 
 public class Screen {
     private Scene mainScene;
     private final Label statusLabel = new Label("Initialising game...");
     private final Label welcomeLabel = new Label("Welcome to Java Angband v4.2.6");
-    private final TermData termData = new TermData();
+    private final Term term;
     private int tileWidth = 1;
     private int tileHeight = 1;
+
+    private boolean paletted = false;
+    private boolean colours16 = false;
 
     private final GraphicsContext graphicsContext;
     private final Canvas canvas;
@@ -31,7 +53,26 @@ public class Screen {
         canvas = new Canvas(800, 600);
         graphicsContext = canvas.getGraphicsContext2D();
 
+        term = new Term();
+        term.termInit(800, 600, 0);
+        TermData termData = new TermData();
+        termData.termDataLink(term);
+
         redraw();
+    }
+
+    public void clear() {
+        Canvas canvas = new Canvas(800, 600);
+        GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
+        graphicsContext.setFill(Color.BLACK);
+        graphicsContext.fillRect(0, 0, 800, 600);
+
+        VBox vBox = new VBox(menuBar, canvas);
+        vBox.setAlignment(Pos.TOP_LEFT);
+        vBox.setPrefSize(800, 600);
+
+        mainScene = new Scene(vBox, 800, 600);
+        stage.setScene(mainScene);
     }
 
     public void redraw() {
@@ -106,8 +147,10 @@ public class Screen {
 
     @CheckReturnValue
     private @NotNull MenuItem newGameMenuItem() {
-        MenuItem newGameMenuItem = new MenuItem("New Game");
+        MenuItem newGameMenuItem = new MenuItem("New GameEngine");
         newGameMenuItem.setOnAction(e -> {
+            TermXtraWin win = new TermXtraWin();
+            win.doSomething(TermXtraEventEnum.TERM_XTRA_CLEAR, 0);
         });
         return newGameMenuItem;
     }
@@ -126,17 +169,17 @@ public class Screen {
         int tileWid;
         int tileHgt;
 
-        if (termData.isMapActive()) {
+        if (term.getTermData().isMapActive()) {
             cursWin(x, y);
             return;
         } else {
-            tileWid = termData.getTileWidth();
-            tileHgt = termData.getTileHeight();
+            tileWid = term.getTermData().getTileWidth();
+            tileHgt = term.getTermData().getTileHeight();
         }
 
-        long left = x * tileWid + termData.getSizeOW1();
+        long left = x * tileWid + term.getTermData().getSizeOW1();
         long right = left + tileWid * tileWidth;
-        long top = y * tileHgt + termData.getSizeOH1();
+        long top = y * tileHgt + term.getTermData().getSizeOH1();
         long bottom = top + tileHgt * tileHeight;
 
         rect = new Rect(left, top, right, bottom);

@@ -6,7 +6,7 @@ grammar CurseReader;
 
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
-    import uk.co.jackoftrades.middle.game.Game;
+    import uk.co.jackoftrades.middle.game.GameEnginee.Game;
     import uk.co.jackoftrades.middle.enums.ValueEnum;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
     import uk.co.jackoftrades.middle.objects.Curse;

@@ -48,3 +48,4 @@ bin/
 /logs/warn.log
 /logs/error.log
 /logs/fatal.log
+/lib/sounds/

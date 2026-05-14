@@ -2,7 +2,7 @@ grammar UIEntryBase;
 
 @header
         {
-            import uk.co.jackoftrades.middle.game.Game;
+            import uk.co.jackoftrades.middle.game.GameEnginee.Game;
             import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
             import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
             import uk.co.jackoftrades.frontend.entries.UIEntryBase;

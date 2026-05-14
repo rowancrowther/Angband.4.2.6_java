@@ -15,7 +15,7 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-ftrades.middle.objects;
+package uk.co.jackoftrades.middle.objects;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;

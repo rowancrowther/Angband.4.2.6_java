@@ -1,0 +1,379 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
+package uk.co.jackoftrades.middle.cave;
+
+import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+
+public class Feature {
+    private TerrainFlags code;
+    private String name;
+    private String description;
+    private int featureIndex;
+
+    private TerrainFlags mimic;
+    private int priority;
+
+    private int shopNum;
+    private int dig;
+
+    Flag<TerrainFeatureFlags> flags;
+
+    private AngbandDisplayCharacter displayCharacter;
+
+    private String walkMsg;
+    private String runMsg;
+    private String hurtMsg;
+    private String dieMsg;
+    private String confusedMsg;
+    private String lookPrefix;
+    private String lookInPreposition;
+    private MonsterRaceFlag resistFlag;
+
+    public Feature(TerrainFlags code,
+                   String name,
+                   String description,
+                   TerrainFlags mimic,
+                   int priority,
+                   int shopNum,
+                   int dig,
+                   Flag<TerrainFeatureFlags> flags,
+                   AngbandDisplayCharacter displayCharacter,
+                   String walkMsg,
+                   String runMsg,
+                   String hurtMsg,
+                   String dieMsg,
+                   String confusedMsg,
+                   String lookPrefix,
+                   String lookInPreposition,
+                   MonsterRaceFlag resistFlag) {
+        this.code = code;
+        this.name = name;
+        this.description = description;
+        this.mimic = mimic;
+        this.priority = priority;
+        this.shopNum = shopNum;
+        this.dig = dig;
+        this.flags = flags;
+        this.displayCharacter = displayCharacter;
+        this.walkMsg = walkMsg;
+        this.runMsg = runMsg;
+        this.hurtMsg = hurtMsg;
+        this.dieMsg = dieMsg;
+        this.confusedMsg = confusedMsg;
+        this.lookPrefix = lookPrefix;
+        this.lookInPreposition = lookInPreposition;
+        this.resistFlag = resistFlag;
+    }
+
+    /*
+     *   Feature predicates
+     */
+
+    /**
+     * Tests for Magma
+     *
+     * @return true if feature is magma
+     */
+    public boolean isMagma() {
+        return flags.has(TerrainFeatureFlags.TF_MAGMA);
+    }
+
+    /**
+     * Tests for Quartz
+     *
+     * @return true if feature is quartz
+     */
+    public boolean isQuartz() {
+        return flags.has(TerrainFeatureFlags.TF_QUARTZ);
+    }
+
+    /**
+     * Test for Granite
+     *
+     * @return true if feature is granite
+     */
+    public boolean isGranite() {
+        return flags.has(TerrainFeatureFlags.TF_GRANITE);
+    }
+
+    /**
+     * Test for mineral wall with treasure
+     *
+     * @return true if feature is mineral (magma/quartz) with gold
+     */
+    public boolean isTreasure() {
+        return flags.has(TerrainFeatureFlags.TF_GOLD);
+    }
+
+    /**
+     * Test if the feature is a solid wall (not rubble)
+     *
+     * @return true if the feature is a solid wall
+     */
+    public boolean isWall() {
+        return flags.has(TerrainFeatureFlags.TF_WALL);
+    }
+
+    /**
+     * Test for whether the feature is a floor
+     *
+     * @return true if the feature is floor
+     */
+    public boolean isFloor() {
+        return flags.has(TerrainFeatureFlags.TF_FLOOR);
+    }
+
+    /**
+     * Test if the feature can hold a trap
+     *
+     * @return true if the feature can hold a trap
+     */
+    public boolean isTrapHolding() {
+        return flags.has(TerrainFeatureFlags.TF_TRAP);
+    }
+
+    /**
+     * Test to see if this feature can hold an object
+     *
+     * @return true if the feature can hold a trap
+     */
+    public boolean isObjectHolding() {
+        return flags.has(TerrainFeatureFlags.TF_OBJECT);
+    }
+
+    /**
+     * Test to see if monsters can walk through this feature
+     *
+     * @return true if this feature is passable
+     */
+    public boolean isMonsterWalkable() {
+        return flags.has(TerrainFeatureFlags.TF_PASSABLE);
+    }
+
+    /**
+     * Test to see if the feature is a shop
+     *
+     * @return true if the feature is a shop entrance
+     */
+    public boolean isShop() {
+        return flags.has(TerrainFeatureFlags.TF_SHOP);
+    }
+
+    /**
+     * Test line of sight
+     *
+     * @return true if the feature allows line of sight
+     */
+    public boolean isLos() {
+        return flags.has(TerrainFeatureFlags.TF_LOS);
+    }
+
+    /**
+     * Test player passability
+     *
+     * @return true if the player can pass through this feature
+     */
+    public boolean isPassable() {
+        return flags.has(TerrainFeatureFlags.TF_PASSABLE);
+    }
+
+    /**
+     * Test projection passibility
+     *
+     * @return true if the feature allows projectables through it
+     */
+    public boolean isProjectable() {
+        return flags.has(TerrainFeatureFlags.TF_PROJECT);
+    }
+
+    /**
+     * Tests whether a feature can be lit by light sources
+     *
+     * @return true if this feature can be lit by light sources
+     */
+    public boolean isTorch() {
+        return flags.has(TerrainFeatureFlags.TF_TORCH);
+    }
+
+    /**
+     * Test for internally lit features
+     *
+     * @return true if this feature is bright
+     */
+    public boolean isBright() {
+        return flags.has(TerrainFeatureFlags.TF_BRIGHT);
+    }
+
+    /**
+     * Test for internally lit features
+     *
+     * @return true if this feature if fiery
+     */
+    public boolean isFiery() {
+        return flags.has(TerrainFeatureFlags.TF_FIERY);
+    }
+
+    /**
+     * Test for whether the feature carries monster flow information
+     *
+     * @return true if the feature DOESN'T carry monster flow information
+     */
+    public boolean isNoFlow() {
+        return flags.has(TerrainFeatureFlags.TF_NO_FLOW);
+    }
+
+    /**
+     * Test for whether this feature carries player scent
+     *
+     * @return true if the feature DOESN'T carry player scent
+     */
+    public boolean noScent() {
+        return flags.has(TerrainFeatureFlags.TF_NO_SCENT);
+    }
+
+    /**
+     * Test whether the feature should have smooth boundaries (for dungeon generation)
+     *
+     * @return true if the feature should have smooth boundaries
+     */
+    public boolean isSmooth() {
+        return flags.has(TerrainFeatureFlags.TF_SMOOTH);
+    }
+
+    /**
+     * Test to see if there is any door in this feature
+     *
+     * @return true if this feature is any door type
+     */
+    public boolean hasAnyDoor() {
+        return flags.has(TerrainFeatureFlags.TF_DOOR_ANY);
+    }
+
+    /**
+     * Test for whether a feature is that of a permanent wall
+     *
+     * @return true if this is a permanent wall
+     */
+    public boolean isPermanent() {
+        return flags.has(TerrainFeatureFlags.TF_PERMANENT);
+    }
+
+    /**
+     * Tests to see if the feature is rock
+     *
+     * @return true if the feature is rock
+     */
+    public boolean isRock() {
+        return flags.has(TerrainFeatureFlags.TF_ROCK);
+    }
+
+    /**
+     * Tests to see if the feature is an open door
+     *
+     * @return true for open doors
+     */
+    public boolean isOpenDoor() {
+        return flags.has(TerrainFeatureFlags.TF_CLOSABLE);
+    }
+
+    /**
+     * Tests to see if this feature is a closed door
+     *
+     * @return true for closed doors
+     */
+    public boolean isClosedDoor() {
+        return flags.has(TerrainFeatureFlags.TF_DOOR_CLOSED);
+    }
+
+    /**
+     * Tests to see whether the feature is a door which can be closed
+     *
+     * @return true for closeable doors
+     */
+    public boolean isCloseable() {
+        return flags.has(TerrainFeatureFlags.TF_CLOSABLE);
+    }
+
+    /**
+     * Tests for the presence of any staricase
+     *
+     * @return true for any staircase
+     */
+    public boolean isStair() {
+        return flags.has(TerrainFeatureFlags.TF_STAIR);
+    }
+
+    /**
+     * Test for the presence of an up staircase
+     *
+     * @return true if this is an up staircase
+     */
+    public boolean isUpStair() {
+        return flags.has(TerrainFeatureFlags.TF_UPSTAIR);
+    }
+
+    /**
+     * Tests for presence of a down staircase
+     *
+     * @return true if this is a down staircase
+     */
+    public boolean isDownStair() {
+        return flags.has(TerrainFeatureFlags.TF_DOWNSTAIR);
+    }
+
+    /**
+     * Tests to see whether anything is known about this feature
+     *
+     * @return true if NOTHING is known about this feature
+     */
+    public boolean isNoFeat() {
+        return flags.has(TerrainFeatureFlags.TF_NONE);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    @Override
+    public String toString() {
+        return "Feature{" +
+                "code=" + code +
+                ", name='" + name + '\'' +
+                ", description='" + description + '\'' +
+                ", featureIndex=" + featureIndex +
+                ", mimic=" + mimic +
+                ", priority=" + priority +
+                ", shopNum=" + shopNum +
+                ", dig=" + dig +
+                ", flags=" + flags +
+                ", displayCharacter=" + displayCharacter +
+                ", walkMsg='" + walkMsg + '\'' +
+                ", runMsg='" + runMsg + '\'' +
+                ", hurtMsg='" + hurtMsg + '\'' +
+                ", dieMsg='" + dieMsg + '\'' +
+                ", confusedMsg='" + confusedMsg + '\'' +
+                ", lookPrefix='" + lookPrefix + '\'' +
+                ", lookInPreposition='" + lookInPreposition + '\'' +
+                ", resistFlag=" + resistFlag +
+                '}';
+    }
+}

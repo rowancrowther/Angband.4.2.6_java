@@ -35,7 +35,8 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.Screen;
-import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
@@ -56,6 +57,7 @@ import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
+import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.PlayerShape;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -291,7 +293,7 @@ public class GameConstants {
     private static ArrayList<UIEntryBase> uiBases;
     private static ArrayList<UIEntry> uiEntries;
     private static ArrayList<PlayerProperty> playerProperties;
-    private static ArrayList<TerrainFeature> terrainFeatures;
+    private static ArrayList<Feature> features;
     private static ArrayList<ObjectBase> objectBases;
     private static ArrayList<Slay> slays;
     private static ArrayList<Brand> brands;
@@ -302,6 +304,9 @@ public class GameConstants {
     private static ArrayList<PlayerShape> playerShapes;
 
     private static final ArrayList<TrapKind> trapInfo = new ArrayList<>();
+
+    public static final Chunk cave = new Chunk();
+    public static final Player mainPlayer = new Player();
 
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
@@ -512,17 +517,17 @@ public class GameConstants {
     }
 
     private static void loadTerrainFeatures() {
-        terrainFeatures = new ArrayList<>();
+        features = new ArrayList<>();
         TerrainFeatureReader parser = new TerrainFeatureReader();
 
         try {
             // TODO - move and change this string from being hard-coded
-            terrainFeatures = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "terrain.txt");
+            features = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "terrain.txt");
         } catch (Exception e) {
             logger.error("Error while loading terrain properties!", e);
         }
 
-        /* for (TerrainFeature terrainFeature : terrainFeatures) {
+        /* for (Feature terrainFeature : features) {
             logger.info(terrainFeature.toString());
         } */
     }

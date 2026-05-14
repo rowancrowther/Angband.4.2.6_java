@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ *    Java code copyright (c) Rowan Crowther 2026
  */
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/ProjectionReader.g4 by ANTLR 4.13.2

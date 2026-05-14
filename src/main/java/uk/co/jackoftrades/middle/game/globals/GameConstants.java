@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ *    Java code copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.globals;
@@ -22,10 +22,10 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.io.parsers.antlr.constantformatter.ConstantsFormatterLexer;
@@ -36,12 +36,13 @@ import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.cave.TerrainFeature;
+import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.MessageEnum;
-import uk.co.jackoftrades.middle.enums.Trap;
+import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
@@ -265,7 +266,7 @@ public class GameConstants {
     private static final HashMap<ObjectFlagName, Object> flags = new HashMap<>();
     private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
     private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
-    private static final HashMap<Trap, Object> traps = new HashMap<>();
+    private static final HashMap<TrapEnum, Object> traps = new HashMap<>();
     private static final HashMap<TerrainFeatureFlags, Object> terrainFlags = new HashMap<>();
     private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
     private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
@@ -284,6 +285,7 @@ public class GameConstants {
      * 127.
      */
     private static LinkedList<World> world;
+
     private static ArrayList<Projection> projections;
     private static ArrayList<UIEntryRenderer> uiEntryRenderers;
     private static ArrayList<UIEntryBase> uiBases;
@@ -298,6 +300,28 @@ public class GameConstants {
     private static ArrayList<Summon> summons;
     private static ArrayList<Curse> curses;
     private static ArrayList<PlayerShape> playerShapes;
+
+    private static final ArrayList<TrapKind> trapInfo = new ArrayList<>();
+
+    @CheckReturnValue
+    public static @Nullable TrapKind lookupTrap(@NotNull String description) {
+        for (TrapKind trap : trapInfo) {
+            if (trap.getDescription().equals(description)) {
+                return trap;
+            }
+        }
+
+        // check for a close match as we can't find an exact one. Close matches are ones where the cases don't match
+        // but the characters do.
+        for (TrapKind trap : trapInfo) {
+            if (trap.getDescription().equalsIgnoreCase(description)) {
+                return trap;
+            }
+        }
+
+        // not found - return null
+        return null;
+    }
 
     public static @Nullable ObjectBase getBaseFromTVal(TValue tVal) {
         for (ObjectBase base : objectBases) {

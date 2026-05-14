@@ -15,7 +15,19 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.objects;
+package uk.co.jackoftrades.middle.cave;
 
-public class ObjectKind {
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.enums.TrapEnum;
+
+public class Trap {
+    private int trapIndex;      // Probably not needed as we will be pointing directly to traps or using arrays
+    private TrapKind kind;
+
+    private Loc grid;
+
+    private int power;
+    private int timeout;
+
+    private Flag<TrapEnum> flags;
 }

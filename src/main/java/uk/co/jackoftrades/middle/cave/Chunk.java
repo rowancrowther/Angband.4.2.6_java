@@ -15,7 +15,26 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.objects;
+package uk.co.jackoftrades.middle.cave;
 
-public class ObjectKind {
+import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+
+import java.util.HashMap;
+
+public class Chunk {
+    private String name;
+    private int turn;
+    private int depth;
+
+    private int feeling;
+    private int objectRating;
+    private int monsterRating;
+    private boolean goodItem;
+
+    private int height;
+    private int width;
+
+    /* How many feeling squares the player has visited */
+    private int feelingSquares;
+    private HashMap<TerrainFlags, Integer> featCount;
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ *    Java code copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game;
@@ -21,6 +21,7 @@ import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
+import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
@@ -40,6 +41,9 @@ public class GameEngine {
     }
 
     private void initGame() {
+        // Initialise the Java classes
+        Colour.init();
+
         screen.setStatusLabelText("Initializing events handler...");
         EventsHandler handler = EventsHandler.getInstance();
         screen.setStatusLabelText("Initialized game constants...");

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *  Java code copyright (c) 2026 Rowan Crowther, Jack of Trades Ltd.
+ *    Java code copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -26,16 +26,19 @@ public class Colour {
     public final static int maxColours = 32;
     public final static int basicColours = 29;
 
-    private static HashMap<ColourType, Color> originalColours;
-    private static HashMap<ColourType, Color> currentColours;
+    private static HashMap<Integer, Color> originalColours = new HashMap<>();
+    private static HashMap<Integer, Color> currentColours = new HashMap<>();
 
     private Colour() {
-        originalColours = new HashMap<>();
-        currentColours = new HashMap<>();
+    }
+
+    public static void init() {
+        int index = 0;
 
         for (ColourType colourType : ColourType.values()) {
-            originalColours.put(colourType, colourType.getColour());
-            currentColours.put(colourType, colourType.getColour());
+            originalColours.put(index, colourType.getColour());
+            currentColours.put(index, colourType.getColour());
+            index++;
         }
     }
 }

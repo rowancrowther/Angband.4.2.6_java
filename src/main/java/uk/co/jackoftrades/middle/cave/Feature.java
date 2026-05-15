@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
@@ -95,6 +97,8 @@ public class Feature {
      *
      * @return true if feature is magma
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isMagma() {
         return flags.has(TerrainFeatureFlags.TF_MAGMA);
     }
@@ -104,6 +108,8 @@ public class Feature {
      *
      * @return true if feature is quartz
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isQuartz() {
         return flags.has(TerrainFeatureFlags.TF_QUARTZ);
     }
@@ -113,6 +119,8 @@ public class Feature {
      *
      * @return true if feature is granite
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isGranite() {
         return flags.has(TerrainFeatureFlags.TF_GRANITE);
     }
@@ -122,6 +130,8 @@ public class Feature {
      *
      * @return true if feature is mineral (magma/quartz) with gold
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isTreasure() {
         return flags.has(TerrainFeatureFlags.TF_GOLD);
     }
@@ -131,6 +141,8 @@ public class Feature {
      *
      * @return true if the feature is a solid wall
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isWall() {
         return flags.has(TerrainFeatureFlags.TF_WALL);
     }
@@ -140,6 +152,8 @@ public class Feature {
      *
      * @return true if the feature is floor
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isFloor() {
         return flags.has(TerrainFeatureFlags.TF_FLOOR);
     }
@@ -149,6 +163,8 @@ public class Feature {
      *
      * @return true if the feature can hold a trap
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isTrapHolding() {
         return flags.has(TerrainFeatureFlags.TF_TRAP);
     }
@@ -158,6 +174,8 @@ public class Feature {
      *
      * @return true if the feature can hold a trap
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isObjectHolding() {
         return flags.has(TerrainFeatureFlags.TF_OBJECT);
     }
@@ -167,6 +185,8 @@ public class Feature {
      *
      * @return true if this feature is passable
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isMonsterWalkable() {
         return flags.has(TerrainFeatureFlags.TF_PASSABLE);
     }
@@ -176,6 +196,8 @@ public class Feature {
      *
      * @return true if the feature is a shop entrance
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isShop() {
         return flags.has(TerrainFeatureFlags.TF_SHOP);
     }
@@ -185,6 +207,8 @@ public class Feature {
      *
      * @return true if the feature allows line of sight
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isLos() {
         return flags.has(TerrainFeatureFlags.TF_LOS);
     }
@@ -194,6 +218,8 @@ public class Feature {
      *
      * @return true if the player can pass through this feature
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isPassable() {
         return flags.has(TerrainFeatureFlags.TF_PASSABLE);
     }
@@ -203,6 +229,8 @@ public class Feature {
      *
      * @return true if the feature allows projectables through it
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isProjectable() {
         return flags.has(TerrainFeatureFlags.TF_PROJECT);
     }
@@ -212,6 +240,8 @@ public class Feature {
      *
      * @return true if this feature can be lit by light sources
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isTorch() {
         return flags.has(TerrainFeatureFlags.TF_TORCH);
     }
@@ -221,6 +251,8 @@ public class Feature {
      *
      * @return true if this feature is bright
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isBright() {
         return flags.has(TerrainFeatureFlags.TF_BRIGHT);
     }
@@ -230,6 +262,8 @@ public class Feature {
      *
      * @return true if this feature if fiery
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isFiery() {
         return flags.has(TerrainFeatureFlags.TF_FIERY);
     }
@@ -239,6 +273,8 @@ public class Feature {
      *
      * @return true if the feature DOESN'T carry monster flow information
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isNoFlow() {
         return flags.has(TerrainFeatureFlags.TF_NO_FLOW);
     }
@@ -248,6 +284,8 @@ public class Feature {
      *
      * @return true if the feature DOESN'T carry player scent information
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isNoScent() {
         return flags.has(TerrainFeatureFlags.TF_NO_SCENT);
     }
@@ -257,6 +295,8 @@ public class Feature {
      *
      * @return true if the feature DOESN'T carry player scent
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean noScent() {
         return flags.has(TerrainFeatureFlags.TF_NO_SCENT);
     }
@@ -266,6 +306,8 @@ public class Feature {
      *
      * @return true if the feature should have smooth boundaries
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isSmooth() {
         return flags.has(TerrainFeatureFlags.TF_SMOOTH);
     }
@@ -275,6 +317,8 @@ public class Feature {
      *
      * @return true if this feature is any door type
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean hasAnyDoor() {
         return flags.has(TerrainFeatureFlags.TF_DOOR_ANY);
     }
@@ -284,6 +328,8 @@ public class Feature {
      *
      * @return true if this is a permanent wall
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isPermanent() {
         return flags.has(TerrainFeatureFlags.TF_PERMANENT);
     }
@@ -293,6 +339,8 @@ public class Feature {
      *
      * @return true if the feature is rock
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isRock() {
         return flags.has(TerrainFeatureFlags.TF_ROCK);
     }
@@ -302,6 +350,8 @@ public class Feature {
      *
      * @return true for open doors
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isOpenDoor() {
         return flags.has(TerrainFeatureFlags.TF_CLOSABLE);
     }
@@ -311,6 +361,8 @@ public class Feature {
      *
      * @return true for closed doors
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isClosedDoor() {
         return flags.has(TerrainFeatureFlags.TF_DOOR_CLOSED);
     }
@@ -320,6 +372,8 @@ public class Feature {
      *
      * @return true for closeable doors
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isCloseable() {
         return flags.has(TerrainFeatureFlags.TF_CLOSABLE);
     }
@@ -329,6 +383,8 @@ public class Feature {
      *
      * @return true for any staircase
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isStair() {
         return flags.has(TerrainFeatureFlags.TF_STAIR);
     }
@@ -338,6 +394,8 @@ public class Feature {
      *
      * @return true if this is an up staircase
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isUpStair() {
         return flags.has(TerrainFeatureFlags.TF_UPSTAIR);
     }
@@ -347,6 +405,8 @@ public class Feature {
      *
      * @return true if this is a down staircase
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isDownStair() {
         return flags.has(TerrainFeatureFlags.TF_DOWNSTAIR);
     }
@@ -356,10 +416,26 @@ public class Feature {
      *
      * @return true if NOTHING is known about this feature
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public boolean isNoFeat() {
         return flags.has(TerrainFeatureFlags.TF_NONE);
     }
 
+    /**
+     * Test whether this feature is interesting or not
+     *
+     * @return
+     */
+    public boolean isInteresting() {
+        return flags.has(TerrainFeatureFlags.TF_INTERESTING);
+    }
+
+    /**
+     * Get the name of this square
+     *
+     * @return the name of this square
+     */
     public String getName() {
         return name;
     }

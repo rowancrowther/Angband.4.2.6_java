@@ -58,6 +58,19 @@ public class Chunk {
     }
 
     /**
+     * Test to see if the grid location is fully inside the bounds of this chunk
+     *
+     * @param grid the Loc to test
+     * @return true if grid is wholly in the bounds of this chunk
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean inBoundsFully(@NotNull Loc grid) {
+        return grid.getX() > 0 && grid.getX() < width - 1
+                && grid.getY() > 0 && grid.getY() < height - 1;
+    }
+
+    /**
      * Tests to see if the square is marked
      *
      * @param grid The Loc of the square
@@ -199,6 +212,67 @@ public class Chunk {
     @CheckReturnValue
     private boolean squareIsInvis(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isInvis();
+    }
+
+    /**
+     * Tests to see if there is a visible trap on a square
+     *
+     * @param grid the Loc of the square
+     * @return true if the square has a visible trap on it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsVisibleTrap(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isVisibleTrap();
+    }
+
+    /**
+     * Tests for an unknown player trap
+     *
+     * @param grid the Loc of the square
+     * @return true if the square at grid contains an unknown player trap
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsSecretTrap(@NotNull Loc grid) {
+        return !squareIsVisibleTrap(grid) && squareIsPlayerTrap(grid);
+    }
+
+    /**
+     * Checks for the location of a known disabled player trap
+     *
+     * @param grid the Loc of the square
+     * @return true if the square contains a visible disabled player trap
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsDisabledTrap(@NotNull Loc grid) {
+        return inBounds(grid) && squareIsVisibleTrap(grid) && getSquare(grid).trapTimeout(-1) > 0;
+    }
+
+    /**
+     * Check if the square contains a trap that can be disarmed
+     *
+     * @param grid the Loc of the square to check
+     * @return true if the square contains a known, disarmable player trap
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsDisarmableTrap(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        if (squareIsDisabledTrap(grid)) return false;
+
+        return squareIsVisibleTrap(grid) && squareIsPlayerTrap(grid);
+    }
+
+    private boolean squareDTrapEdge(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        Square square = getSquare(grid);
+        if (!square.isDTrap()) return false;
+
+        return false;
     }
 
     /**
@@ -347,6 +421,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if a trap exists on the given square
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsDecoyed(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isDecoyed();
     }
@@ -357,8 +433,32 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if a web trap exists on the square
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsWebbed(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isWebbed();
+    }
+
+    /**
+     * Tests whether a specific square seems to be a wall
+     *
+     * @param grid the Loc of the square
+     * @return true if the square seems to be a wall
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareSeemsLikeWall(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featSeemsLikeWall();
+    }
+
+    /**
+     * Tests for whether a square has an interesting feature or not
+     *
+     * @param grid the Loc of the square
+     * @return true if the square has an interesting feature
+     */
+    private boolean squareIsInteresting(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsIntersting();
     }
 
     /**
@@ -373,6 +473,36 @@ public class Chunk {
     @Contract(pure = true)
     private boolean squareTrapFlag(@NotNull Loc grid, @NotNull TrapEnum trapFlag) {
         return inBounds(grid) && getSquare(grid).trapFlag(trapFlag);
+    }
+
+    /**
+     * Tests the existence of a locked door
+     *
+     * @param grid the Loc of the square to test
+     * @return true if the square is a locked door
+     */
+    private boolean squareIsLockedDoor(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isLockedDoor();
+    }
+
+    /**
+     * Tests the existence of an unlocked door
+     *
+     * @param grid the Loc of the square to test
+     * @return true if the square is an unlocked door
+     */
+    private boolean squareIsUnlockedDoor(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isUnlockedDoor();
+    }
+
+    /**
+     * Tests for the existence of a player trap
+     *
+     * @param grid the Loc to test
+     * @return true if there is a player trap on the square at grid
+     */
+    private boolean squareIsPlayerTrap(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isPlayerTrap();
     }
 
     /**

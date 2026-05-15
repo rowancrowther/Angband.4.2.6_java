@@ -30,12 +30,22 @@ import java.util.ArrayList;
 
 public class Square {
     private Feature feat;
-    private Flag<SquareEnum> info;
+    private final Flag<SquareEnum> info;
 
     private int light;
     private int monster;
-    private ArrayList<ItemObject> objects;
-    private ArrayList<Trap> traps;
+    private final ArrayList<ItemObject> objects;
+    private final ArrayList<Trap> traps;
+
+    public Square(Feature feature, int light, int monster) {
+        this.feat = feature;
+        this.light = light;
+        this.monster = monster;
+
+        info = new Flag<>(SquareEnum.class);
+        objects = new ArrayList<>();
+        traps = new ArrayList<>();
+    }
 
     /**
      * Get the current light status of this square
@@ -100,6 +110,28 @@ public class Square {
     @CheckReturnValue
     public boolean isRock() {
         return feat.isGranite() && !feat.hasAnyDoor();
+    }
+
+    /**
+     * Tests whether the square seems like a wall or not
+     *
+     * @return true if this square seems like a wall to the player
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featSeemsLikeWall() {
+        return feat.isRock();
+    }
+
+    /**
+     * Tests for whether we have an interesting feat or not
+     *
+     * @return true if the feat is interesting
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsIntersting() {
+        return feat.isInteresting();
     }
 
     /**
@@ -223,6 +255,51 @@ public class Square {
     @CheckReturnValue
     public boolean isBrokenDoor() {
         return feat.hasAnyDoor() && feat.isPassable() && !feat.isCloseable();
+    }
+
+    /**
+     * Test to see if this square is a locked door
+     *
+     * @return true if this square contains a door of power greater than 0
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isLockedDoor() {
+        return squareDoorPower() > 0;
+    }
+
+    /**
+     * Test to see if this square is an unlocked door
+     *
+     * @return true if this square contains a door of power of 0
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isUnlockedDoor() {
+        return isClosedDoor() && squareDoorPower() == 0;
+    }
+
+    /**
+     * The current power of the lock on the door of this square
+     *
+     * @return the current door lock power
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private int squareDoorPower() {
+        if (!isClosedDoor()) return 0;
+
+        TrapKind lock = TrapKind.lookupTrap("door lock");
+
+        if (!trapSpecific(lock)) return 0;
+
+        for (Trap trap : traps) {
+            if (trap.getKind() == lock) {
+                return trap.getPower();
+            }
+        }
+
+        return 0;
     }
 
     /**
@@ -653,6 +730,17 @@ public class Square {
     }
 
     /**
+     * Checks if there is a visible trap on this square
+     *
+     * @return true for the existance of visible traps
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isVisibleTrap() {
+        return trapFlag(TrapEnum.TRF_VISIBLE);
+    }
+
+    /**
      * Check for the existance of a trap with a given flag on this square
      *
      * @param trapFlag the flag to check for
@@ -671,6 +759,26 @@ public class Square {
         }
 
         return false;
+    }
+
+    /**
+     * Get the remaining time for a trap identified by its index to be disabled. Note, the first matching trap on the
+     * square is used
+     *
+     * @param trapIndex the integer index of the trap
+     * @return the number of turns until this trap disarms
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int trapTimeout(int trapIndex) {
+        for (Trap trap : traps) {
+            if (trapIndex >= 0 && trapIndex != trap.getTrapIndex())
+                continue;
+
+            return trap.getTimeout();
+        }
+
+        return 0;
     }
 
     /**

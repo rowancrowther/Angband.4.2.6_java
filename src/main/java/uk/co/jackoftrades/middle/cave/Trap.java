@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 
 public class Trap {
-    private int trapIndex;      // Probably not needed as we will be pointing directly to traps or using arrays
+    private int trapIndex;
     private TrapKind kind;
 
     private Loc grid;
@@ -48,5 +48,28 @@ public class Trap {
     @CheckReturnValue
     public boolean hasTrap(@NotNull TrapEnum trapFlag) {
         return flags.has(trapFlag);
+    }
+
+    /**
+     * Get the current power of this trap
+     *
+     * @return the current power of this trap
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getPower() {
+        return power;
+    }
+
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getTrapIndex() {
+        return trapIndex;
+    }
+
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getTimeout() {
+        return timeout;
     }
 }

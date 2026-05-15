@@ -17,23 +17,42 @@
 
 package uk.co.jackoftrades.middle.cave.enums;
 
+import uk.co.jackoftrades.middle.cave.Loc;
+
 public enum DirectionEnum {
-    DIR_UNKNOWN(0),
-    DIR_NW(7),
-    DIR_N(8),
-    DIR_NE(9),
-    DIR_W(4),
-    DIR_TARGET(5),
-    DIR_NONE(5),
-    DIR_E(6),
-    DIR_SW(1),
-    DIR_S(2),
-    DIR_SE(3);
+    DIR_UNKNOWN(0, 0, 0),
+    DIR_NW(7, -1, 1),
+    DIR_N(8, 0, 1),
+    DIR_NE(9, 1, 1),
+    DIR_W(4, -1, 0),
+    DIR_TARGET(5, 0, 0),
+    DIR_NONE(5, 0, 0),
+    DIR_E(6, 1, 0),
+    DIR_SW(1, -1, -1),
+    DIR_S(2, 0, -1),
+    DIR_SE(3, 1, -1),
+    ;
 
     private final int key;
+    private final int xOffset;
+    private final int yOffset;
 
-    DirectionEnum(int key) {
+    DirectionEnum(int key, int xOffset, int yOffset) {
         this.key = key;
+        this.xOffset = xOffset;
+        this.yOffset = yOffset;
+    }
+
+    public int ddx() {
+        return xOffset;
+    }
+
+    public int ddy() {
+        return yOffset;
+    }
+
+    public Loc ddgrid() {
+        return new Loc(xOffset, yOffset);
     }
 
     public int getKey() {

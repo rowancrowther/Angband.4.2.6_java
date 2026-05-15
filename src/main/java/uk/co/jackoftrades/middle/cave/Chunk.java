@@ -21,6 +21,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.enums.TrapEnum;
 
 import java.util.HashMap;
 
@@ -77,7 +78,31 @@ public class Chunk {
     @CheckReturnValue
     @Contract(pure = true)
     private boolean squareIsGlow(@NotNull Loc grid) {
-        return inBounds(grid) & getSquare(grid).isLit();
+        return inBounds(grid) && getSquare(grid).isLit();
+    }
+
+    /**
+     * Tests the current illumination status of the square
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is currently lit
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsCurrentlyLit(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isLit();
+    }
+
+    /**
+     * Checks to see if a square is damaging to its inhabitants - currently only lava
+     *
+     * @param grid the Loc of the square
+     * @return true if the square damages its occupants
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsDamaging(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isDamaging();
     }
 
     /**
@@ -102,6 +127,30 @@ public class Chunk {
     @Contract(pure = true)
     private boolean squareIsSeen(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isSeen();
+    }
+
+    /**
+     * Checks to see if a specific square allows monster flow information
+     *
+     * @param grid the Loc of the square
+     * @return true if the square does NOT allow monster flow information
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsNoFlow(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsNoFlow();
+    }
+
+    /**
+     * Checks to see if a specific square carries the player scent
+     *
+     * @param grid the Loc of the square
+     * @return true if the square does NOT carry player scent
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsNoScent(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsNoScent();
     }
 
     /**
@@ -269,8 +318,241 @@ public class Chunk {
     }
 
     /**
-     * Returns the square at a given grid location, or null if the location is out of bounds
+     * Tests to see if a square is open, a floor square not occupied by a monster (or the player)
      *
+     * @param grid the Loc of the sqyare
+     * @return true if the square is a floor unoccupied by a monster or the player
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareIsOpen(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isOpen();
+    }
+
+    /**
+     * Tests for a warded trap on a given square
+     *
+     * @param grid the Loc of the square
+     * @return whether there is a glyph of warding on the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsWarded(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isWarded();
+    }
+
+    /**
+     * Checks for a decoy trap on a given square
+     *
+     * @param grid the Loc of the square
+     * @return true if a trap exists on the given square
+     */
+    private boolean squareIsDecoyed(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isDecoyed();
+    }
+
+    /**
+     * Checks for a web trap on a given square
+     *
+     * @param grid the Loc of the square
+     * @return true if a web trap exists on the square
+     */
+    private boolean squareIsWebbed(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isWebbed();
+    }
+
+    /**
+     * Tests for a trap of a certain type in a square at location grid. The square already tests for the location of
+     * a trap at all, so we leave that ti the square
+     *
+     * @param grid     the Loc of the square
+     * @param trapFlag the trap type
+     * @return true if the square at location grid contains a trap with a particular flag
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareTrapFlag(@NotNull Loc grid, @NotNull TrapEnum trapFlag) {
+        return inBounds(grid) && getSquare(grid).trapFlag(trapFlag);
+    }
+
+    /**
+     * Checks to see if a square at a given Loc is empty - open without any items
+     *
+     * @param grid the Loc of the square
+     * @return true if the square at grid is empty
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsEmpty(Loc grid) {
+        if (!inBounds(grid))
+            return false;
+
+        return getSquare(grid).isEmpty();
+    }
+
+    /**
+     * Checks to see if the square at location grid can be run through
+     *
+     * @param grid the Loc of the square
+     * @return whether the square can be run through
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsArrivable(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isArrivable();
+    }
+
+    /**
+     * Check whether a specific square is untrapped without items
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is untrapped without items
+     */
+    private boolean squareCanPutItem(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).canPutItem();
+    }
+
+    /**
+     * Checks to see if this square can be dug. This includes rubble and non-permanent walls
+     *
+     * @param grid the location of this square
+     * @return true if the player can dig this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsDiggable(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        Square square = getSquare(grid);
+        return square.isMineral() || square.isSecretDoor() || square.isRubble();
+    }
+
+    /**
+     * Checks to see if the square at location grid is a floor square
+     *
+     * @param grid the Loc of this square
+     * @return true if this square is floor
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsFloor(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isFloor();
+    }
+
+    /**
+     * Checks to see if a square is a floor without any traps
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is trap free floor
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsWebbable(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+        if (getSquare(grid).getTraps().isEmpty()) return false;
+        return squareIsFloor(grid);
+    }
+
+    /**
+     * Checks to see if a monster can walk through a particular square
+     *
+     * @param grid the Loc of the square
+     * @return true if a monster can walk through this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsMonsterWalkable(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsMonsterWalkable();
+    }
+
+    /**
+     * Check to see if the player can walk through a particular square
+     *
+     * @param grid the Loc of the square
+     * @return true if the player can pass through the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsPassable(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsPassable();
+    }
+
+    /**
+     * Checks if a given square can have a projectile go through it
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is projectile passable
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsProjectable(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsProjectable();
+    }
+
+    /**
+     * Checks to see if a square can be used as a feeling square
+     *
+     * @param grid the Loc of the square
+     * @return whether the square can be used as a feeling square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareAllowsFeel(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).allowsFeel();
+    }
+
+    /**
+     * Checks whether line of sight can pass through this square
+     *
+     * @param grid the Loc of the square
+     * @return true if line of sight passes through this square
+     */
+    private boolean squareAllowsLOS(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featAllowsLOS();
+    }
+
+    /**
+     * Checks to see if the square is a stronger or permanent wall, such as granite, magma and quartz.
+     * This excludes secret doors and rubble
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is a strong wall
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsStrongWall(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        Square square = getSquare(grid);
+        return square.isMineral() || square.isPerm();
+    }
+
+    /**
+     * Checks to see whether a square is internally lit
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is internally lit
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsBright(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsBright();
+    }
+
+    /**
+     * Checks whether a square is fire-based
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is lava
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareIsFiery(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).featIsFiery();
+    }
+
+    /**
+     * Returns the square at a given grid location, or null if the location is out of bounds
      * @param grid A grid Loc
      * @return the square at the location grid, or null if the location is out of bounds
      */

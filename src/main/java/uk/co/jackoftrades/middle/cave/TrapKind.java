@@ -25,6 +25,8 @@ import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 
+import java.util.Objects;
+
 public class TrapKind {
     private String trapKindName;
     private String text;
@@ -54,5 +56,34 @@ public class TrapKind {
 
     public static TrapKind lookupTrap(String description) {
         return GameConstants.lookupTrap(description);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+
+        TrapKind trapKind = (TrapKind) o;
+        return trapKindIndex == trapKind.trapKindIndex && rarity == trapKind.rarity && minDepth == trapKind.minDepth && maxDepth == trapKind.maxDepth && Objects.equals(trapKindName, trapKind.trapKindName) && Objects.equals(text, trapKind.text) && Objects.equals(getDescription(), trapKind.getDescription()) && Objects.equals(messageOnSave, trapKind.messageOnSave) && Objects.equals(messageOnFailure, trapKind.messageOnFailure) && Objects.equals(messageOnExtraEffect, trapKind.messageOnExtraEffect) && Objects.equals(angbandDisplayCharacter, trapKind.angbandDisplayCharacter) && Objects.equals(power, trapKind.power) && Objects.equals(flags, trapKind.flags) && Objects.equals(saveFlags, trapKind.saveFlags) && Objects.equals(effect, trapKind.effect) && Objects.equals(effectXtra, trapKind.effectXtra);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hashCode(trapKindName);
+        result = 31 * result + Objects.hashCode(text);
+        result = 31 * result + Objects.hashCode(getDescription());
+        result = 31 * result + Objects.hashCode(messageOnSave);
+        result = 31 * result + Objects.hashCode(messageOnFailure);
+        result = 31 * result + Objects.hashCode(messageOnExtraEffect);
+        result = 31 * result + trapKindIndex;
+        result = 31 * result + Objects.hashCode(angbandDisplayCharacter);
+        result = 31 * result + rarity;
+        result = 31 * result + minDepth;
+        result = 31 * result + maxDepth;
+        result = 31 * result + Objects.hashCode(power);
+        result = 31 * result + Objects.hashCode(flags);
+        result = 31 * result + Objects.hashCode(saveFlags);
+        result = 31 * result + Objects.hashCode(effect);
+        result = 31 * result + Objects.hashCode(effectXtra);
+        return result;
     }
 }

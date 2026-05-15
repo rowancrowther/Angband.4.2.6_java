@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 
@@ -30,4 +33,20 @@ public class Trap {
     private int timeout;
 
     private Flag<TrapEnum> flags;
+
+    public TrapKind getKind() {
+        return kind;
+    }
+
+    /**
+     * Checks for the existence of a given trap flag
+     *
+     * @param trapFlag the flag to check for
+     * @return true if this trap has the flag set
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean hasTrap(@NotNull TrapEnum trapFlag) {
+        return flags.has(trapFlag);
+    }
 }

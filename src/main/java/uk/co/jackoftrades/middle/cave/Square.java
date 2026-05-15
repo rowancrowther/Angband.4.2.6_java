@@ -21,6 +21,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
+import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.Player;
@@ -35,6 +36,27 @@ public class Square {
     private int monster;
     private ArrayList<ItemObject> objects;
     private ArrayList<Trap> traps;
+
+    /**
+     * Get the current light status of this square
+     * TODO: Change the light intensity from an integer to an enum?
+     *
+     * @return the current light status of this square
+     */
+    private int getLight() {
+        return light;
+    }
+
+    /**
+     * Checks to see the current lighting level of this square
+     *
+     * @return the current lighting value of this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isCurrentlyLit() {
+        return light > 0;
+    }
 
     /**
      * Test for normal open floor
@@ -266,7 +288,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isPlayer() {
-        return (monster < 0);
+        return monster < 0;
     }
 
     /**
@@ -277,7 +299,18 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isOccupied() {
-        return (monster != 0);
+        return monster != 0;
+    }
+
+    /**
+     * Tests to see if a square is occupied
+     *
+     * @return true if the square doesn't contain a monster or the player
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isFree() {
+        return monster == 0;
     }
 
     /**
@@ -421,6 +454,17 @@ public class Square {
     }
 
     /**
+     * Get all the traps associated with this square
+     *
+     * @return the traps on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public ArrayList<Trap> getTraps() {
+        return traps;
+    }
+
+    /**
      * Tests to see if this square has an unknown trap
      *
      * @return true if this square has an unknown trap
@@ -539,5 +583,251 @@ public class Square {
     @CheckReturnValue
     public boolean isNoStairs() {
         return info.has(SquareEnum.SQUARE_NO_STAIRS);
+    }
+
+    /**
+     * Check for the location of a player trap on this square
+     *
+     * @return true if this square contains a player trap
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isPlayerTrap() {
+        return trapFlag(TrapEnum.TRF_TRAP);
+    }
+
+    /**
+     * Check whether this square has a web trap on it
+     *
+     * @return true if this square has a web trap on it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isWebbed() {
+        TrapKind webTrap = TrapKind.lookupTrap("web");
+        return trapSpecific(webTrap);
+    }
+
+    /**
+     * Checks for a decoy trap
+     *
+     * @return true if this square has a decoy trap on it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isDecoyed() {
+        TrapKind decoyedTrap = TrapKind.lookupTrap("decoy");
+        return trapSpecific(decoyedTrap);
+    }
+
+    /**
+     * Checks for a warded trap
+     *
+     * @return true if this square has a warded trap on it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isWarded() {
+        TrapKind wardedTrap = TrapKind.lookupTrap("glyph of warding");
+        return trapSpecific(wardedTrap);
+    }
+
+    /**
+     * Check for a specific kind of trap on a square. This only checks for the same description text, as the TrapKind
+     * class also contains information which may not be the same for trap of the same kind
+     * TODO: Check this out
+     *
+     * @param kind the kind of trap we are checking for
+     * @return true if one of the traps on this square is the same kind of trap as the incoming kind
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean trapSpecific(TrapKind kind) {
+        if (!isTrap()) return false;
+
+        for (Trap trap : traps) {
+            if (trap.getKind().getDescription().equals(kind.getDescription())) return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check for the existance of a trap with a given flag on this square
+     *
+     * @param trapFlag the flag to check for
+     * @return if there is a trap on this square with the given flag set
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean trapFlag(TrapEnum trapFlag) {
+        if (!isTrap())
+            return false;
+
+        for (Trap trap : traps) {
+            if (trap.hasTrap(trapFlag)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Checks to see if this square is open, a floor square not occupied by a monster
+     *
+     * @return true for an empty square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isOpen() {
+        return isFloor() && monster != 0;
+    }
+
+    /**
+     * Tests to see if this square is empty, (an open square without any items)
+     *
+     * @return true if the square doesn't contain any items and is open
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isEmpty() {
+        if (isPlayerTrap() || isWebbed()) return false;
+        return isOpen() && (objects.isEmpty());
+    }
+
+    /**
+     * Check to see if this square can br run through
+     *
+     * @return true if this square can be run through
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isArrivable() {
+        if (isOccupied() || isPlayerTrap() || isWebbed()) return false;
+        if (isFloor() || isStairs()) return true;
+        return false;
+    }
+
+    /**
+     * Checks to see if this square is monster walkable
+     *
+     * @return true if a monster can walk through this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsMonsterWalkable() {
+        return feat != null && feat.isMonsterWalkable();
+    }
+
+    /**
+     * Checks to see if the player can walk through this square
+     *
+     * @return true if the square is passable by the player
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsPassable() {
+        return feat != null && feat.isPassable();
+    }
+
+    /**
+     * Checks to see if a projectile can pass through this square
+     *
+     * @return true if this square can have a projectable in it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsProjectable() {
+        return feat != null && feat.isProjectable();
+    }
+
+    /**
+     * Checks to see if the feature of this square allows line of sight
+     *
+     * @return true if this square allows LoS
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featAllowsLOS() {
+        return feat.isLos();
+    }
+
+    /**
+     * Check to see if this square is internally lit
+     *
+     * @return true if this square is internally lit
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsBright() {
+        return feat != null && feat.isBright();
+    }
+
+    /**
+     * Checks if this square is fire based
+     *
+     * @return true if this square is lava
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsFiery() {
+        return feat != null && feat.isFiery();
+    }
+
+    /**
+     * Checks if the square doesn't allow monster flow information
+     *
+     * @return true if the square DOESN'T allow monster flow information
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsNoFlow() {
+        return feat != null && feat.isNoFlow();
+    }
+
+    /**
+     * Tests to see if this square carries player scent or not
+     *
+     * @return true if this square DOESN'T carry player scent
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean featIsNoScent() {
+        return feat != null && feat.isNoScent();
+    }
+
+    /**
+     * Check to see if this is an untrapped square without items
+     *
+     * @return true if this is an untrapped square without items
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean canPutItem() {
+        if (isObjectHolding() || isTrap()) return false;
+        return objects.isEmpty();
+    }
+
+    /**
+     * Check to see if the square can damage an individual - currently only lava
+     *
+     * @return true if the square is lava
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean isDamaging() {
+        return feat.isFiery();
+    }
+
+    /**
+     * True if a feeling can be used on this square
+     *
+     * @return true if this square can be used for a feeling
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean allowsFeel() {
+        return featIsPassable() && !isDamaging();
     }
 }

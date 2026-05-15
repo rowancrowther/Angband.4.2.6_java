@@ -244,6 +244,15 @@ public class Feature {
     }
 
     /**
+     * Tests for whether this feature carries player scent
+     *
+     * @return true if the feature DOESN'T carry player scent information
+     */
+    public boolean isNoScent() {
+        return flags.has(TerrainFeatureFlags.TF_NO_SCENT);
+    }
+
+    /**
      * Test for whether this feature carries player scent
      *
      * @return true if the feature DOESN'T carry player scent

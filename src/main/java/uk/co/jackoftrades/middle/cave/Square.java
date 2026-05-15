@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
@@ -39,6 +41,8 @@ public class Square {
      *
      * @return true if the square is normal open floor
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isFloor() {
         return feat.isFloor();
     }
@@ -48,6 +52,8 @@ public class Square {
      *
      * @return true if the square can hold a trap
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isTrappable() {
         return feat.isTrapHolding();
     }
@@ -57,6 +63,8 @@ public class Square {
      *
      * @return true if the square can hold an object
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isObjectHolding() {
         return feat.isObjectHolding();
     }
@@ -66,6 +74,8 @@ public class Square {
      *
      * @return true if the square is a granite wall
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isRock() {
         return feat.isGranite() && !feat.hasAnyDoor();
     }
@@ -75,6 +85,8 @@ public class Square {
      *
      * @return true if the square is granite
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isGranite() {
         return feat.isGranite();
     }
@@ -84,6 +96,8 @@ public class Square {
      *
      * @return true for a permanent wall
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isPerm() {
         return feat.isPermanent() && feat.isRock();
     }
@@ -93,6 +107,8 @@ public class Square {
      *
      * @return true if the feature is magma
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isMagma() {
         return feat.isMagma();
     }
@@ -102,6 +118,8 @@ public class Square {
      *
      * @return true if this square is quartz
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isQuartz() {
         return feat.isQuartz();
     }
@@ -111,6 +129,8 @@ public class Square {
      *
      * @return true if this square is rock, quartz or magma
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isMineral() {
         return feat.isRock() || feat.isQuartz() || feat.isMagma();
     }
@@ -120,6 +140,8 @@ public class Square {
      *
      * @return true if there is a gold vein here
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean hasGoldVein() {
         return feat.isTreasure();
     }
@@ -129,6 +151,8 @@ public class Square {
      *
      * @return true if this square has rubble in it
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isRubble() {
         return !feat.isWall() && feat.isRock();
     }
@@ -140,6 +164,8 @@ public class Square {
      *
      * @return true if this square contains a secret door
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isSecretDoor() {
         return feat.hasAnyDoor() && feat.isRock();
     }
@@ -149,6 +175,8 @@ public class Square {
      *
      * @return true if a door is open here
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isOpenDoor() {
         return feat.isOpenDoor();
     }
@@ -158,6 +186,8 @@ public class Square {
      *
      * @return true for a closed door
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isClosedDoor() {
         return feat.isClosedDoor();
     }
@@ -167,6 +197,8 @@ public class Square {
      *
      * @return true if this door is broken
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isBrokenDoor() {
         return feat.hasAnyDoor() && feat.isPassable() && !feat.isCloseable();
     }
@@ -176,6 +208,8 @@ public class Square {
      *
      * @return true for any door
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isDoor() {
         return feat.hasAnyDoor();
     }
@@ -185,6 +219,8 @@ public class Square {
      *
      * @return true for any type of staircase
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isStairs() {
         return feat.isStair();
     }
@@ -194,6 +230,8 @@ public class Square {
      *
      * @return true for an up staircase
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isUpStairs() {
         return feat.isUpStair();
     }
@@ -203,6 +241,8 @@ public class Square {
      *
      * @return true for downstairs
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isDownStairs() {
         return feat.isDownStair();
     }
@@ -212,6 +252,8 @@ public class Square {
      *
      * @return true if this is a shop entrance
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isShop() {
         return feat.isShop();
     }
@@ -221,6 +263,8 @@ public class Square {
      *
      * @return true if the player is here
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isPlayer() {
         return (monster < 0);
     }
@@ -230,6 +274,8 @@ public class Square {
      *
      * @return true if the square contains either a mob or the player
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isOccupied() {
         return (monster != 0);
     }
@@ -241,6 +287,8 @@ public class Square {
      * @param grid The location in that chunk of this square
      * @return True if the information known about this square is also known by the player
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isKnown(Chunk c, Loc grid) {
         Chunk mainCave = GameConstants.cave;
         Player mainPlayer = GameConstants.mainPlayer;
@@ -260,6 +308,8 @@ public class Square {
      * @param grid the grid in that chunk which points to this square in the other grids
      * @return true if there is a difference between the features of this square and the players chunk square
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isMemoryBad(Chunk c, Loc grid) {
         Chunk cave = GameConstants.cave;
         Player mainPlayer = GameConstants.mainPlayer;
@@ -276,6 +326,8 @@ public class Square {
      *
      * @return true if this square is marked
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isMark() {
         return info.has(SquareEnum.SQUARE_MARK);
     }
@@ -285,6 +337,8 @@ public class Square {
      *
      * @return true if the square is lit
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isLit() {
         return info.has(SquareEnum.SQUARE_GLOW);
     }
@@ -294,6 +348,8 @@ public class Square {
      *
      * @return true if the square is part of a vault
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isVault() {
         return info.has(SquareEnum.SQUARE_VAULT);
     }
@@ -303,6 +359,8 @@ public class Square {
      *
      * @return true if it is part of a room
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isRoom() {
         return info.has(SquareEnum.SQUARE_ROOM);
     }
@@ -312,6 +370,8 @@ public class Square {
      *
      * @return true if the player has seen this square
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isSeen() {
         return info.has(SquareEnum.SQUARE_SEEN);
     }
@@ -321,7 +381,163 @@ public class Square {
      *
      * @return true if this square is in view
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isView() {
         return info.has(SquareEnum.SQUARE_VIEW);
+    }
+
+    /**
+     * Tests if this square was seen before the current update
+     *
+     * @return true if the square was seen
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean wasSeen() {
+        return info.has(SquareEnum.SQUARE_SEEN);
+    }
+
+    /**
+     * Tests if this square triggers a feeling
+     *
+     * @return true if this square triggers a feeling
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isFeel() {
+        return info.has(SquareEnum.SQUARE_FEEL);
+    }
+
+    /**
+     * Tests if this square has a known trap
+     *
+     * @return true if this square has a known trap
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isTrap() {
+        return info.has(SquareEnum.SQUARE_TRAP);
+    }
+
+    /**
+     * Tests to see if this square has an unknown trap
+     *
+     * @return true if this square has an unknown trap
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isInvis() {
+        return info.has(SquareEnum.SQUARE_INVIS);
+    }
+
+    /**
+     * Tests to see if this square in an inner wall (generation)
+     *
+     * @return true if this square is an inner wall
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isWallInner() {
+        return info.has(SquareEnum.SQUARE_WALL_INNER);
+    }
+
+    /**
+     * Tests to see if this square is an outer wall (generation)
+     *
+     * @return true if this square is an outer wall
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isWallOuter() {
+        return info.has(SquareEnum.SQUARE_WALL_OUTER);
+    }
+
+    /**
+     * Tests to see if this square is a solid wall (generation)
+     *
+     * @return true if this square is a solid wall
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isWallSolid() {
+        return info.has(SquareEnum.SQUARE_WALL_SOLID);
+    }
+
+    /**
+     * Tests to see if there are monster restrictions on this square (generation)
+     *
+     * @return true for monster restrictions on this square
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isMonRestrict() {
+        return info.has(SquareEnum.SQUARE_MON_RESTRICT);
+    }
+
+    /**
+     * Tests tp see of the square cannot be teleported FROM by the player
+     *
+     * @return true if the player cannot teleport from this square
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isNoTeleport() {
+        return info.has(SquareEnum.SQUARE_NO_TELEPORT);
+    }
+
+    /**
+     * Tests if this square cannot be magically mapped by the player
+     *
+     * @return true if this square CANNOT be magically mapped
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isNoMap() {
+        return info.has(SquareEnum.SQUARE_NO_MAP);
+    }
+
+    /**
+     * Tests if the square can't be detected by player ESP
+     *
+     * @return true if the player cannot detect this square by ESP
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isNoEsp() {
+        return info.has(SquareEnum.SQUARE_NO_ESP);
+    }
+
+    /**
+     * Tests to see if this square is marked for projection processing
+     *
+     * @return true if this square is marked for projection processing
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isProject() {
+        return info.has(SquareEnum.SQUARE_PROJECT);
+    }
+
+    /**
+     * Tests to see if this square has been detected for traps
+     *
+     * @return true if the player has detected for traps here
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isDTrap() {
+        return info.has(SquareEnum.SQUARE_DTRAP);
+    }
+
+    /**
+     * Tests to see if the square is inappropriate to place stairs
+     *
+     * @return true if this square is inappropriate to place stairs
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isNoStairs() {
+        return info.has(SquareEnum.SQUARE_NO_STAIRS);
     }
 }

@@ -60,9 +60,6 @@ public class Square {
         return objects.getFirst();
     }
 
-    public ItemObject getBottomObject() {
-    }
-
     /**
      * Get the current light status of this square
      * TODO: Change the light intensity from an integer to an enum?

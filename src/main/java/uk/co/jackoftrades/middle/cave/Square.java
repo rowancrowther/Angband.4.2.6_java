@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.cave;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
@@ -50,7 +51,8 @@ public class Square {
 
     /**
      * Gets the top most object on this square
-     *
+     * <br/><br/>
+     * TODO: Deal with returning the next object from the square as at present this is impossible
      * @return the top most object on this square
      */
     @CheckReturnValue
@@ -61,6 +63,20 @@ public class Square {
     }
 
     /**
+     * Gets the top most trap on a square
+     * <br/><br/>
+     * Can have multiple traps on a square, but currently not allowed in C code. TODO check if this needs to be kept in
+     *
+     * @return the top most trap on a square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public @Nullable Trap getTrap() {
+        if (traps.isEmpty()) return null;
+        return traps.getFirst();
+    }
+
+    /**
      * Get the current light status of this square
      * TODO: Change the light intensity from an integer to an enum?
      *
@@ -68,6 +84,22 @@ public class Square {
      */
     public int getLight() {
         return light;
+    }
+
+    /**
+     * Check to see if a given object is on this square
+     *
+     * @param object the object we are looking for
+     * @return true if object is in the ArrayList objects
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean holdsObject(@NotNull ItemObject object) {
+        for (ItemObject item : objects) {
+            if (item.equals(object)) return true;
+        }
+
+        return false;
     }
 
     /**

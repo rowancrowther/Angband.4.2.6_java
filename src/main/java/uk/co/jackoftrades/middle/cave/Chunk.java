@@ -946,6 +946,33 @@ public class Chunk {
     }
 
     /**
+     * Get the top most trap from a square
+     *
+     * @param grid the Loc of the square
+     * @return the top most/only trap on the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private @Nullable Trap squareTrap(@NotNull Loc grid) {
+        if (!inBounds(grid)) return null;
+        return getSquare(grid).getTrap();
+    }
+
+    /**
+     * Tests if a given object is on a specific square
+     *
+     * @param grid   the Loc of the square
+     * @param object the object we are checking for
+     * @return true if the object is in the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private boolean squareHoldsObject(@NotNull Loc grid, @NotNull ItemObject object) {
+        if (!inBounds(grid)) return false;
+        return getSquare(grid).holdsObject(object);
+    }
+
+    /**
      * Getter
      * @return the width of this chunk
      */

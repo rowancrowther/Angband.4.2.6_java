@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.cave;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
@@ -33,18 +34,33 @@ public class Square {
     private final Flag<SquareEnum> info;
 
     private int light;
-    private int monster;
+    private int monsterIndex;
     private final ArrayList<ItemObject> objects;
     private final ArrayList<Trap> traps;
 
-    public Square(Feature feature, int light, int monster) {
+    public Square(Feature feature, int light, int monsterIndex) {
         this.feat = feature;
         this.light = light;
-        this.monster = monster;
+        this.monsterIndex = monsterIndex;
 
         info = new Flag<>(SquareEnum.class);
         objects = new ArrayList<>();
         traps = new ArrayList<>();
+    }
+
+    /**
+     * Gets the top most object on this square
+     *
+     * @return the top most object on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public @Nullable ItemObject getTopObject() {
+        if (objects.isEmpty()) return null;
+        return objects.getFirst();
+    }
+
+    public ItemObject getBottomObject() {
     }
 
     /**
@@ -53,7 +69,7 @@ public class Square {
      *
      * @return the current light status of this square
      */
-    private int getLight() {
+    public int getLight() {
         return light;
     }
 
@@ -154,6 +170,21 @@ public class Square {
     @CheckReturnValue
     public boolean isPerm() {
         return feat.isPermanent() && feat.isRock();
+    }
+
+    /**
+     * Checks to see if there is an artefact on this square
+     *
+     * @return true if this square contains an artefact
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean hasObjectArtifact() {
+        for (ItemObject item : objects) {
+            if (item.isArtifact()) return true;
+        }
+
+        return false;
     }
 
     /**
@@ -365,7 +396,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isPlayer() {
-        return monster < 0;
+        return monsterIndex < 0;
     }
 
     /**
@@ -376,7 +407,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isOccupied() {
-        return monster != 0;
+        return monsterIndex != 0;
     }
 
     /**
@@ -387,7 +418,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isFree() {
-        return monster == 0;
+        return monsterIndex == 0;
     }
 
     /**
@@ -789,7 +820,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean isOpen() {
-        return isFloor() && monster != 0;
+        return isFloor() && monsterIndex != 0;
     }
 
     /**
@@ -859,6 +890,17 @@ public class Square {
     @Contract(pure = true)
     public boolean featAllowsLOS() {
         return feat.isLos();
+    }
+
+    /**
+     * Checks to see if the feature of this square is a wall
+     *
+     * @return true if this square is a wall
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean featIsWall() {
+        return feat != null && feat.isWall();
     }
 
     /**
@@ -937,5 +979,27 @@ public class Square {
     @Contract(pure = true)
     public boolean allowsFeel() {
         return featIsPassable() && !isDamaging();
+    }
+
+    /**
+     * Getter
+     *
+     * @return the feat of this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public Feature getFeature() {
+        return feat;
+    }
+
+    /**
+     * Getter
+     *
+     * @return the int index of the monster on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getMonsterIndex() {
+        return monsterIndex;
     }
 }

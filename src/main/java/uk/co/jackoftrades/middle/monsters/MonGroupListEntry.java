@@ -17,10 +17,6 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
-public class Monster {
-    private MonsterRace monsterRace;
-
-    public MonsterRace getMonsterRace() {
-        return monsterRace;
-    }
+public class MonGroupListEntry {
+    private int mIdx;
 }

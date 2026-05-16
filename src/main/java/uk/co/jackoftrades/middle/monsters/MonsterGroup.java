@@ -17,10 +17,10 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
-public class Monster {
-    private MonsterRace monsterRace;
+import java.util.ArrayList;
 
-    public MonsterRace getMonsterRace() {
-        return monsterRace;
-    }
+public class MonsterGroup {
+    private int index;
+    private int leader;
+    private ArrayList<MonGroupListEntry> memberList;
 }

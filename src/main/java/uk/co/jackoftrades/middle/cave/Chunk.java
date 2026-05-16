@@ -20,10 +20,19 @@ package uk.co.jackoftrades.middle.cave;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.monsters.Monster;
+import uk.co.jackoftrades.middle.monsters.MonsterGroup;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.stream.Stream;
 
 public class Chunk {
     private String name;
@@ -43,6 +52,22 @@ public class Chunk {
     private HashMap<TerrainFlags, Integer> featCount;
 
     private Square[][] squares;
+    private Heatmap noise;
+    private Heatmap scent;
+    private Loc decoy;
+
+    private ArrayList<ItemObject> objects; // Should this be ItemObject[][] objects?
+    private int objMax;
+
+    private Monster[] monsters;
+    private int monMax;
+    private int monCnt;
+    private int monCurrent;
+    private int numRepro;
+
+    private MonsterGroup[][] monsterGroups;
+
+    private ArrayList<Connector> join;
 
     /**
      * Test to see whether a grid location is in the bounds for this chunk
@@ -266,11 +291,45 @@ public class Chunk {
         return squareIsVisibleTrap(grid) && squareIsPlayerTrap(grid);
     }
 
+    /**
+     * Check to see if a given square can be destroyed. Used by destruction spells, and for placing stairs, etc.
+     *
+     * @param grid the Loc of the square we are examining
+     * @return true if it can be destroyed
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareChangeable(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        Square square = getSquare(grid);
+
+        if (square.isPerm() || square.isShop() || square.isStairs()) return false;
+
+        return !square.hasObjectArtifact();
+    }
+
+    /**
+     * Check to see if a square is at the (inner) edge of a trap detection area
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is on the edge of a trap detection area
+     */
     private boolean squareDTrapEdge(@NotNull Loc grid) {
         if (!inBounds(grid)) return false;
 
         Square square = getSquare(grid);
         if (!square.isDTrap()) return false;
+
+        Loc southGrid = grid.nextGrid(DirectionEnum.DIR_S);
+        Loc eastGrid = grid.nextGrid(DirectionEnum.DIR_E);
+        Loc northGrid = grid.nextGrid(DirectionEnum.DIR_N);
+        Loc westGrid = grid.nextGrid(DirectionEnum.DIR_W);
+
+        if (inBoundsFully(southGrid) && !squareIsDTrap(southGrid)) return true;
+        if (inBoundsFully(eastGrid) && !squareIsDTrap(eastGrid)) return true;
+        if (inBoundsFully(westGrid) && !squareIsDTrap(westGrid)) return true;
+        if (inBoundsFully(northGrid) && !squareIsDTrap(northGrid)) return true;
 
         return false;
     }
@@ -682,6 +741,126 @@ public class Chunk {
     }
 
     /**
+     * Check to see if the player thinks a square will block projections
+     *
+     * @param grid the Loc of the square
+     * @return true if the player believes the square will block projections/is a wall
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareIsBelievedWall(@NotNull Loc grid) {
+        if (!inBoundsFully(grid)) return true;
+
+        if (!getSquare(grid).isKnown(this, grid)) return false;
+
+        return !GameConstants.mainPlayer.getCave().getSquare(grid).featIsProjectable();
+    }
+
+    /**
+     * Check to see if a square is known by the player to be passible
+     *
+     * @param grid the Loc of the square
+     * @return true if the player knows this square is passable
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean isKnownPassible(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        if (!getSquare(grid).isKnown(this, grid)) return false;
+
+        return GameConstants.mainPlayer.getCave().squareIsPassable(grid);
+    }
+
+    /**
+     * Tests if a square is in a cul-de-sac
+     *
+     * @param grid the Loc of the square we are testing
+     * @return true if the square has exactly 3 horizontal/vertical neighbouring walls and 4 diagonal neighbouring walls
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareSuitsStairsWell(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        if (squareIsVault(grid) || squareIsNoStairs(grid)) return false;
+
+        return squareNumWallsAdjacent(grid) == 3 && squareNumWallsDiagonal(grid) == 4 && squareIsEmpty(grid);
+    }
+
+    /**
+     * Checks whether a square is in a corridor
+     *
+     * @param grid the Loc of this square
+     * @return true if the square has exactly 4 diagonal neighbouring walls and 2 adjacent neighbouring walls
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareSuitsStairsOK(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        if (squareIsVault(grid) || squareIsNoStairs(grid)) return false;
+
+        return squareNumWallsDiagonal(grid) == 4 && squareNumWallsAdjacent(grid) == 2 && squareIsEmpty(grid);
+    }
+
+    /**
+     * Check to see if a square is suitable for placing a summoned monster
+     *
+     * @param grid the Loc of this square
+     * @return true if the square is appropriate for summoning a monster onto
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private boolean squareAllowsSummoning(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+
+        return squareIsEmpty(grid) && !squareIsWarded(grid) && !squareIsDecoyed(grid);
+    }
+
+    /**
+     * Counts the number of adjacent squares vertically or horizontally which are walls
+     *
+     * @param grid the Loc of the grid we are examining
+     * @return the number of adjacent walls
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private int squareNumWallsAdjacent(@NotNull Loc grid) {
+        if (!inBounds(grid)) return 0;
+
+        return (int) Stream.of(
+                        DirectionEnum.DIR_S,
+                        DirectionEnum.DIR_N,
+                        DirectionEnum.DIR_E,
+                        DirectionEnum.DIR_W
+                )
+                .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
+                .count();
+    }
+
+    /**
+     * Counts the number of adjacent walls diagonally
+     *
+     * @param grid the Loc we are looking at
+     * @return the number of diagonal neighbouring walls
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private int squareNumWallsDiagonal(@NotNull Loc grid) {
+        if (!inBounds(grid)) return 0;
+
+        return (int) Stream.of(
+                        DirectionEnum.DIR_SE,
+                        DirectionEnum.DIR_NW,
+                        DirectionEnum.DIR_NE,
+                        DirectionEnum.DIR_SW
+                )
+                .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
+                .count();
+    }
+
+    /**
      * Returns the square at a given grid location, or null if the location is out of bounds
      * @param grid A grid Loc
      * @return the square at the location grid, or null if the location is out of bounds
@@ -693,15 +872,96 @@ public class Chunk {
         return squares[grid.getX()][grid.getY()];
     }
 
+    /**
+     * Gets the feature of a given square
+     *
+     * @param grid the Loc of the square
+     * @return the feature of the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private @Nullable Feature squareFeature(@NotNull Loc grid) {
+        if (!inBounds(grid)) return null;
+        return getSquare(grid).getFeature();
+    }
+
+    /**
+     * Gets the light value for this square
+     *
+     * @param grid the Loc of this square
+     * @return the light value for this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private int squareLight(@NotNull Loc grid) {
+        if (!inBounds(grid)) return 0;
+        return getSquare(grid).getLight();
+    }
+
+    /**
+     * Get a monster in this chunk based on its location
+     *
+     * @param grid the Loc of the square to check for a monster
+     * @return the monster on this square, or null if no monster is on the square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private @Nullable Monster squareMonster(@NotNull Loc grid) {
+        if (!inBounds(grid)) return null;
+
+        Square square = getSquare(grid);
+        int monsterIndex = square.getMonsterIndex();
+
+        if (monsterIndex > 0) {
+            Monster mon = caveMonster(monsterIndex);
+            return mon != null && mon.getMonsterRace() != null ? mon : null;
+        }
+
+        return null;
+    }
+
+    /**
+     * Get a monster in this chunk by its index
+     *
+     * @param index the index of the monster
+     * @return the monster on this level with the given index
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private Monster caveMonster(int index) {
+        return monsters[index];
+    }
+
+    /**
+     * Gets the top object of a pile on the current level by its position
+     *
+     * @param grid the Loc of the square we are examining
+     * @return The topmost object on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private @Nullable ItemObject squareObject(Loc grid) {
+        if (!inBounds(grid)) return null;
+        return getSquare(grid).getTopObject();
+    }
+
+    /**
+     * Getter
+     * @return the width of this chunk
+     */
     @Contract(pure = true)
     @CheckReturnValue
-    public int getWidth() {
+    private int getWidth() {
         return width;
     }
 
+    /**
+     * Getter
+     * @return the height of this chunk
+     */
     @Contract(pure = true)
     @CheckReturnValue
-    public int getHeight() {
+    private int getHeight() {
         return height;
     }
 }

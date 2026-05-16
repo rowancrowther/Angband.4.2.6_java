@@ -15,12 +15,10 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.monsters;
+package uk.co.jackoftrades.middle.cave;
 
-public class Monster {
-    private MonsterRace monsterRace;
-
-    public MonsterRace getMonsterRace() {
-        return monsterRace;
-    }
+public class Connector {
+    private Loc grid;
+    private int feat;
+    private Object info;   // TODO: Change this to a Flag<bitfield> when we find out what bitflags are being used here
 }

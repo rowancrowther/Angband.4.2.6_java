@@ -1,7 +1,27 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.cave;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.RandomValueUtils;
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 
 public class Loc {
     private int x;
@@ -39,6 +59,18 @@ public class Loc {
      */
     public int getX() {
         return x;
+    }
+
+    /**
+     * Returns a grid which is the result of moving one grid in the given direction
+     *
+     * @param direction The direction enum of the direction to move in
+     * @return a new grid one step away from this grid in the given direction
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public Loc nextGrid(DirectionEnum direction) {
+        return new Loc(this.x + direction.ddx(), this.y + direction.ddy());
     }
 
     /**

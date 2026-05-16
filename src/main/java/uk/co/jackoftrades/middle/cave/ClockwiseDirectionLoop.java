@@ -20,7 +20,6 @@ package uk.co.jackoftrades.middle.cave;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 
 public class ClockwiseDirectionLoop {
@@ -68,7 +67,7 @@ public class ClockwiseDirectionLoop {
     }
 
     @Contract(" -> new")
-    public static @NonNull Loc getGrid() {
+    public static @NotNull Loc getGrid() {
         return new Loc(getXOffset(), getYOffset());
     }
 

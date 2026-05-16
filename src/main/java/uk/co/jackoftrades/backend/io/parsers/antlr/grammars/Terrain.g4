@@ -2,8 +2,8 @@ grammar Terrain;
 
 @header{
     import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-    import uk.co.jackoftrades.backend.colour.enums.AttributeColour;
-    import uk.co.jackoftrades.backend.colour.enums.ColourType;
+    import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+    import uk.co.jackoftrades.frontend.colour.enums.ColourType;
     import uk.co.jackoftrades.backend.utils.Flag;
     import uk.co.jackoftrades.middle.cave.Feature;
     import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;

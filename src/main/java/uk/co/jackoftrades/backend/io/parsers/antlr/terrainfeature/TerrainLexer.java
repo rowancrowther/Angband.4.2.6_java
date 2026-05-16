@@ -55,7 +55,6 @@ public class TerrainLexer extends Lexer {
 				"SINGLE_CHAR", "NUMBER", "TEXT"
 		};
 	}
-
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
@@ -66,9 +65,7 @@ public class TerrainLexer extends Lexer {
 				"'resist-flag:'", "'desc:'", "':'", "'| '"
 		};
 	}
-
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
 	private static String[] makeSymbolicNames() {
 		return new String[]{
 				null, "COMMENT", "EOL", "CODE", "NAME", "GRAPHICS", "MIMIC", "PRIORITY",
@@ -77,7 +74,6 @@ public class TerrainLexer extends Lexer {
 				"SINGLE_CHAR", "NUMBER", "TEXT"
 		};
 	}
-
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -86,7 +82,6 @@ public class TerrainLexer extends Lexer {
 	 */
 	@Deprecated
 	public static final String[] tokenNames;
-
 	static {
 		tokenNames = new String[_SYMBOLIC_NAMES.length];
 		for (int i = 0; i < tokenNames.length; i++) {
@@ -302,7 +297,6 @@ public class TerrainLexer extends Lexer {
 					"\u0006\u0000\u0000";
 	public static final ATN _ATN =
 			new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
 	static {
 		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
 		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {

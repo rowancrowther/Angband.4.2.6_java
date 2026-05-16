@@ -18,6 +18,7 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/Terrain.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.io.parsers.antlr.terrainfeature;
 
+
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
@@ -37,7 +38,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterCode(TerrainParser.CodeContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -46,7 +46,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitCode(TerrainParser.CodeContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -55,7 +54,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterName(TerrainParser.NameContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -64,7 +62,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitName(TerrainParser.NameContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -73,7 +70,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterGraphics(TerrainParser.GraphicsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -82,7 +78,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitGraphics(TerrainParser.GraphicsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -91,7 +86,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterMimic(TerrainParser.MimicContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -100,7 +94,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitMimic(TerrainParser.MimicContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -109,7 +102,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterPriority(TerrainParser.PriorityContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -118,7 +110,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitPriority(TerrainParser.PriorityContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -127,7 +118,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterFlags(TerrainParser.FlagsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -136,7 +126,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitFlags(TerrainParser.FlagsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -145,7 +134,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterWalk_msg(TerrainParser.Walk_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -154,7 +142,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitWalk_msg(TerrainParser.Walk_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -163,7 +150,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterRun_msg(TerrainParser.Run_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -172,7 +158,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitRun_msg(TerrainParser.Run_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -181,7 +166,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterHurt_msg(TerrainParser.Hurt_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -190,7 +174,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitHurt_msg(TerrainParser.Hurt_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -199,7 +182,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterDie_msg(TerrainParser.Die_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -208,7 +190,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitDie_msg(TerrainParser.Die_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -217,7 +198,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterConfused_msg(TerrainParser.Confused_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -226,7 +206,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitConfused_msg(TerrainParser.Confused_msgContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -235,7 +214,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterLook_prefix(TerrainParser.Look_prefixContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -244,7 +222,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitLook_prefix(TerrainParser.Look_prefixContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -253,7 +230,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterLook_in_preposition(TerrainParser.Look_in_prepositionContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -262,7 +238,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitLook_in_preposition(TerrainParser.Look_in_prepositionContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -271,7 +246,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterResist_flag(TerrainParser.Resist_flagContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -280,7 +254,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitResist_flag(TerrainParser.Resist_flagContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -289,7 +262,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterDesc(TerrainParser.DescContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -298,7 +270,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitDesc(TerrainParser.DescContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -307,7 +278,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterDigging(TerrainParser.DiggingContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -316,7 +286,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitDigging(TerrainParser.DiggingContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -325,7 +294,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterFeature(TerrainParser.FeatureContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -334,7 +302,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void exitFeature(TerrainParser.FeatureContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -343,7 +310,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterFeatures(TerrainParser.FeaturesContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -361,7 +327,6 @@ public class TerrainBaseListener implements TerrainListener {
 	@Override
 	public void enterEveryRule(ParserRuleContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

@@ -27,10 +27,10 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.backend.colour.enums.AttributeColour;
-import uk.co.jackoftrades.backend.colour.enums.ColourType;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -58,7 +58,6 @@ public class TerrainParser extends Parser {
 			RULE_die_msg = 9, RULE_confused_msg = 10, RULE_look_prefix = 11, RULE_look_in_preposition = 12,
 			RULE_resist_flag = 13, RULE_desc = 14, RULE_digging = 15, RULE_feature = 16,
 			RULE_features = 17;
-
 	private static String[] makeRuleNames() {
 		return new String[]{
 				"code", "name", "graphics", "mimic", "priority", "flags", "walk_msg",
@@ -66,7 +65,6 @@ public class TerrainParser extends Parser {
 				"resist_flag", "desc", "digging", "feature", "features"
 		};
 	}
-
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
@@ -77,9 +75,7 @@ public class TerrainParser extends Parser {
 				"'resist-flag:'", "'desc:'", "':'", "'| '"
 		};
 	}
-
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
 	private static String[] makeSymbolicNames() {
 		return new String[]{
 				null, "COMMENT", "EOL", "CODE", "NAME", "GRAPHICS", "MIMIC", "PRIORITY",
@@ -88,7 +84,6 @@ public class TerrainParser extends Parser {
 				"SINGLE_CHAR", "NUMBER", "TEXT"
 		};
 	}
-
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -97,7 +92,6 @@ public class TerrainParser extends Parser {
 	 */
 	@Deprecated
 	public static final String[] tokenNames;
-
 	static {
 		tokenNames = new String[_SYMBOLIC_NAMES.length];
 		for (int i = 0; i < tokenNames.length; i++) {
@@ -161,7 +155,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public CodeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -170,17 +163,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_code;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterCode(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitCode(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitCode(this);
@@ -200,7 +190,7 @@ public class TerrainParser extends Parser {
 				((CodeContext) _localctx).TEXT = match(TEXT);
 
 				((CodeContext) _localctx).codeFlag = TerrainFlags.valueOf("FEAT_" + ((CodeContext) _localctx).TEXT.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -224,7 +214,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public NameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -233,17 +222,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_name;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterName(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitName(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitName(this);
@@ -263,7 +249,7 @@ public class TerrainParser extends Parser {
 				((NameContext) _localctx).TEXT = match(TEXT);
 
 				((NameContext) _localctx).nameStr = ((NameContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -292,7 +278,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public GraphicsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -301,17 +286,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_graphics;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterGraphics(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitGraphics(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitGraphics(this);
@@ -337,7 +319,7 @@ public class TerrainParser extends Parser {
 
 				AttributeColour attrColour = ColourType.getAttributeColour(colourChar);
 				((GraphicsContext) _localctx).displayCharacter = new AngbandDisplayCharacter(displayChar, attrColour);
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -361,7 +343,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public MimicContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -370,17 +351,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_mimic;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterMimic(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitMimic(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitMimic(this);
@@ -400,7 +378,7 @@ public class TerrainParser extends Parser {
 				((MimicContext) _localctx).TEXT = match(TEXT);
 
 				((MimicContext) _localctx).mimicFlag = TerrainFlags.valueOf("FEAT_" + ((MimicContext) _localctx).TEXT.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -424,7 +402,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode NUMBER() {
 			return getToken(TerrainParser.NUMBER, 0);
 		}
-
 		public PriorityContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -433,17 +410,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_priority;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterPriority(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitPriority(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitPriority(this);
@@ -463,7 +437,7 @@ public class TerrainParser extends Parser {
 				((PriorityContext) _localctx).NUMBER = match(NUMBER);
 
 				((PriorityContext) _localctx).priorityNum = Integer.parseInt(((PriorityContext) _localctx).NUMBER.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -484,7 +458,6 @@ public class TerrainParser extends Parser {
 		public List<TerminalNode> FLAGS() {
 			return getTokens(TerrainParser.FLAGS);
 		}
-
 		public TerminalNode FLAGS(int i) {
 			return getToken(TerrainParser.FLAGS, i);
 		}
@@ -492,7 +465,6 @@ public class TerrainParser extends Parser {
 		public List<TerminalNode> TEXT() {
 			return getTokens(TerrainParser.TEXT);
 		}
-
 		public TerminalNode TEXT(int i) {
 			return getToken(TerrainParser.TEXT, i);
 		}
@@ -500,11 +472,9 @@ public class TerrainParser extends Parser {
 		public List<TerminalNode> OR() {
 			return getTokens(TerrainParser.OR);
 		}
-
 		public TerminalNode OR(int i) {
 			return getToken(TerrainParser.OR, i);
 		}
-
 		public FlagsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -513,17 +483,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_flags;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterFlags(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitFlags(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitFlags(this);
@@ -536,7 +503,7 @@ public class TerrainParser extends Parser {
 		enterRule(_localctx, 10, RULE_flags);
 
 		((FlagsContext) _localctx).flagList = new ArrayList<>();
-
+		        
 		int _la;
 		try {
 			int _alt;
@@ -608,7 +575,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Walk_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -617,17 +583,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_walk_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterWalk_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitWalk_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitWalk_msg(this);
@@ -647,7 +610,7 @@ public class TerrainParser extends Parser {
 				((Walk_msgContext) _localctx).TEXT = match(TEXT);
 
 				((Walk_msgContext) _localctx).walkMsgStr = ((Walk_msgContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -671,7 +634,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Run_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -680,17 +642,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_run_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterRun_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitRun_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitRun_msg(this);
@@ -710,7 +669,7 @@ public class TerrainParser extends Parser {
 				((Run_msgContext) _localctx).TEXT = match(TEXT);
 
 				((Run_msgContext) _localctx).runMsgStr = ((Run_msgContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -734,7 +693,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Hurt_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -743,17 +701,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_hurt_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterHurt_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitHurt_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitHurt_msg(this);
@@ -773,7 +728,7 @@ public class TerrainParser extends Parser {
 				((Hurt_msgContext) _localctx).TEXT = match(TEXT);
 
 				((Hurt_msgContext) _localctx).hurtMsgStr = ((Hurt_msgContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -797,7 +752,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Die_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -806,17 +760,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_die_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterDie_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitDie_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitDie_msg(this);
@@ -836,7 +787,7 @@ public class TerrainParser extends Parser {
 				((Die_msgContext) _localctx).TEXT = match(TEXT);
 
 				((Die_msgContext) _localctx).dieMsgStr = ((Die_msgContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -860,7 +811,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Confused_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -869,17 +819,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_confused_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterConfused_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitConfused_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor)
@@ -900,7 +847,7 @@ public class TerrainParser extends Parser {
 				((Confused_msgContext) _localctx).TEXT = match(TEXT);
 
 				((Confused_msgContext) _localctx).confusedMsgStr = ((Confused_msgContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -924,7 +871,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Look_prefixContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -933,17 +879,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_look_prefix;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterLook_prefix(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitLook_prefix(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor)
@@ -964,7 +907,7 @@ public class TerrainParser extends Parser {
 				((Look_prefixContext) _localctx).TEXT = match(TEXT);
 
 				((Look_prefixContext) _localctx).lookPrefix = ((Look_prefixContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -988,7 +931,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Look_in_prepositionContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -997,17 +939,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_look_in_preposition;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterLook_in_preposition(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitLook_in_preposition(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor)
@@ -1028,7 +967,7 @@ public class TerrainParser extends Parser {
 				((Look_in_prepositionContext) _localctx).TEXT = match(TEXT);
 
 				((Look_in_prepositionContext) _localctx).lookInPreposition = ((Look_in_prepositionContext) _localctx).TEXT.getText();
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -1052,7 +991,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(TerrainParser.TEXT, 0);
 		}
-
 		public Resist_flagContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1061,17 +999,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_resist_flag;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterResist_flag(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitResist_flag(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor)
@@ -1092,7 +1027,7 @@ public class TerrainParser extends Parser {
 				((Resist_flagContext) _localctx).TEXT = match(TEXT);
 
 				((Resist_flagContext) _localctx).monsterRaceFlag = MonsterRaceFlag.valueOf("RF_" + ((Resist_flagContext) _localctx).TEXT.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -1112,7 +1047,6 @@ public class TerrainParser extends Parser {
 		public List<TerminalNode> DESC() {
 			return getTokens(TerrainParser.DESC);
 		}
-
 		public TerminalNode DESC(int i) {
 			return getToken(TerrainParser.DESC, i);
 		}
@@ -1120,11 +1054,9 @@ public class TerrainParser extends Parser {
 		public List<TerminalNode> TEXT() {
 			return getTokens(TerrainParser.TEXT);
 		}
-
 		public TerminalNode TEXT(int i) {
 			return getToken(TerrainParser.TEXT, i);
 		}
-
 		public DescContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1133,17 +1065,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_desc;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterDesc(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitDesc(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitDesc(this);
@@ -1156,7 +1085,7 @@ public class TerrainParser extends Parser {
 		enterRule(_localctx, 28, RULE_desc);
 
 		((DescContext) _localctx).descStr = "";
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -1203,7 +1132,6 @@ public class TerrainParser extends Parser {
 		public TerminalNode NUMBER() {
 			return getToken(TerrainParser.NUMBER, 0);
 		}
-
 		public DiggingContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1212,17 +1140,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_digging;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterDigging(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitDigging(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitDigging(this);
@@ -1242,7 +1167,7 @@ public class TerrainParser extends Parser {
 				((DiggingContext) _localctx).NUMBER = match(NUMBER);
 
 				((DiggingContext) _localctx).diggingNum = Integer.parseInt(((DiggingContext) _localctx).NUMBER.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -1273,75 +1198,57 @@ public class TerrainParser extends Parser {
 		public Look_in_prepositionContext look_in_preposition;
 		public Resist_flagContext resist_flag;
 		public DescContext desc;
-
 		public CodeContext code() {
 			return getRuleContext(CodeContext.class, 0);
 		}
-
 		public NameContext name() {
 			return getRuleContext(NameContext.class, 0);
 		}
-
 		public GraphicsContext graphics() {
 			return getRuleContext(GraphicsContext.class, 0);
 		}
-
 		public PriorityContext priority() {
 			return getRuleContext(PriorityContext.class, 0);
 		}
-
 		public MimicContext mimic() {
 			return getRuleContext(MimicContext.class, 0);
 		}
-
 		public List<FlagsContext> flags() {
 			return getRuleContexts(FlagsContext.class);
 		}
-
 		public FlagsContext flags(int i) {
 			return getRuleContext(FlagsContext.class, i);
 		}
-
 		public DiggingContext digging() {
 			return getRuleContext(DiggingContext.class, 0);
 		}
-
 		public Walk_msgContext walk_msg() {
 			return getRuleContext(Walk_msgContext.class, 0);
 		}
-
 		public Run_msgContext run_msg() {
 			return getRuleContext(Run_msgContext.class, 0);
 		}
-
 		public Hurt_msgContext hurt_msg() {
 			return getRuleContext(Hurt_msgContext.class, 0);
 		}
-
 		public Die_msgContext die_msg() {
 			return getRuleContext(Die_msgContext.class, 0);
 		}
-
 		public Confused_msgContext confused_msg() {
 			return getRuleContext(Confused_msgContext.class, 0);
 		}
-
 		public Look_prefixContext look_prefix() {
 			return getRuleContext(Look_prefixContext.class, 0);
 		}
-
 		public Look_in_prepositionContext look_in_preposition() {
 			return getRuleContext(Look_in_prepositionContext.class, 0);
 		}
-
 		public Resist_flagContext resist_flag() {
 			return getRuleContext(Resist_flagContext.class, 0);
 		}
-
 		public DescContext desc() {
 			return getRuleContext(DescContext.class, 0);
 		}
-
 		public FeatureContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1350,17 +1257,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_feature;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterFeature(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitFeature(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitFeature(this);
@@ -1389,7 +1293,7 @@ public class TerrainParser extends Parser {
 		String descInit = "";
 		int diggingInit = 0;
 		int shopNum = 0;
-
+		        
 		int _la;
 		try {
 			setState(257);
@@ -1805,15 +1709,12 @@ public class TerrainParser extends Parser {
 		public TerminalNode EOF() {
 			return getToken(TerrainParser.EOF, 0);
 		}
-
 		public List<FeatureContext> feature() {
 			return getRuleContexts(FeatureContext.class);
 		}
-
 		public FeatureContext feature(int i) {
 			return getRuleContext(FeatureContext.class, i);
 		}
-
 		public FeaturesContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1822,17 +1723,14 @@ public class TerrainParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_features;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).enterFeatures(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof TerrainListener) ((TerrainListener) listener).exitFeatures(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof TerrainVisitor) return ((TerrainVisitor<? extends T>) visitor).visitFeatures(this);
@@ -1845,7 +1743,7 @@ public class TerrainParser extends Parser {
 		enterRule(_localctx, 34, RULE_features);
 
 		((FeaturesContext) _localctx).terrainFeatures = new ArrayList<>();
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -2059,7 +1957,6 @@ public class TerrainParser extends Parser {
 					"\u00d7\u00dc\u00e1\u00e6\u00eb\u00f0\u00f5\u00fa\u00ff\u0101\u0108";
 	public static final ATN _ATN =
 			new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
 	static {
 		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
 		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {

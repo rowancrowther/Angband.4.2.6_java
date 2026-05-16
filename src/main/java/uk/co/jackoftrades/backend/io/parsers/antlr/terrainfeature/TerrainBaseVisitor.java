@@ -40,7 +40,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitCode(TerrainParser.CodeContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -51,7 +50,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitName(TerrainParser.NameContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -62,7 +60,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitGraphics(TerrainParser.GraphicsContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -73,7 +70,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitMimic(TerrainParser.MimicContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -84,7 +80,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitPriority(TerrainParser.PriorityContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -95,7 +90,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitFlags(TerrainParser.FlagsContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -106,7 +100,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitWalk_msg(TerrainParser.Walk_msgContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -117,7 +110,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitRun_msg(TerrainParser.Run_msgContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -128,7 +120,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitHurt_msg(TerrainParser.Hurt_msgContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -139,7 +130,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitDie_msg(TerrainParser.Die_msgContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -150,7 +140,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitConfused_msg(TerrainParser.Confused_msgContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -161,7 +150,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitLook_prefix(TerrainParser.Look_prefixContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -172,7 +160,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitLook_in_preposition(TerrainParser.Look_in_prepositionContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -183,7 +170,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitResist_flag(TerrainParser.Resist_flagContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -194,7 +180,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitDesc(TerrainParser.DescContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -205,7 +190,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitDigging(TerrainParser.DiggingContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -216,7 +200,6 @@ public class TerrainBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
 	public T visitFeature(TerrainParser.FeatureContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

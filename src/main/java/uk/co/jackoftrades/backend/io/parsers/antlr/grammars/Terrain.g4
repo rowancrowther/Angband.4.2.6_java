@@ -122,7 +122,7 @@ digging
         ;
 
 feature
-        returns[TerrainFeature terrain]
+        returns[Feature terrain]
         @init {
             TerrainFlags codeInit = TerrainFlags.FEAT_NONE;
             String nameInit = "";
@@ -143,7 +143,7 @@ feature
             int shopNum = 0;
         }
         @after {
-            $terrain = new TerrainFeature(
+            $terrain = new Feature(
                     codeInit, nameInit, descInit, mimicInit,
                     priorityInit, shopNum, diggingInit,
                     flagsInit, adcharInit, walkMsgInit,

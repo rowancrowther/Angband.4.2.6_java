@@ -1182,7 +1182,7 @@ public class TerrainParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FeatureContext extends ParserRuleContext {
-		public TerrainFeature terrain;
+		public Feature terrain;
 		public CodeContext code;
 		public NameContext name;
 		public GraphicsContext graphics;
@@ -1683,7 +1683,7 @@ public class TerrainParser extends Parser {
 			}
 			_ctx.stop = _input.LT(-1);
 
-			((FeatureContext) _localctx).terrain = new TerrainFeature(
+			((FeatureContext) _localctx).terrain = new Feature(
 					codeInit, nameInit, descInit, mimicInit,
 					priorityInit, shopNum, diggingInit,
 					flagsInit, adcharInit, walkMsgInit,

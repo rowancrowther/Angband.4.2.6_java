@@ -5,7 +5,7 @@ grammar Terrain;
     import uk.co.jackoftrades.backend.colour.enums.AttributeColour;
     import uk.co.jackoftrades.backend.colour.enums.ColourType;
     import uk.co.jackoftrades.backend.utils.Flag;
-    import uk.co.jackoftrades.middle.cave.TerrainFeature;
+    import uk.co.jackoftrades.middle.cave.Feature;
     import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
     import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;

@@ -31,6 +31,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -1703,7 +1704,7 @@ public class TerrainParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FeaturesContext extends ParserRuleContext {
-		public ArrayList<TerrainFeature> terrainFeatures;
+		public ArrayList<Feature> terrainFeatures;
 		public FeatureContext feature;
 
 		public TerminalNode EOF() {

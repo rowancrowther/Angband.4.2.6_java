@@ -257,7 +257,7 @@ feature
         ;
 
 features
-        returns[ArrayList<TerrainFeature> terrainFeatures]
+        returns[ArrayList<Feature> terrainFeatures]
         @init {
             $terrainFeatures = new ArrayList<>();
         }

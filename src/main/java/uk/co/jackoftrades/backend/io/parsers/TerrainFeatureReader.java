@@ -41,7 +41,7 @@ public class TerrainFeatureReader {
             TerrainParser parser = new TerrainParser(tokens);
             TerrainParser.FeaturesContext result = parser.features();
 
-            return result.features;
+            return result.terrainFeatures;
         } catch (Exception e) {
             logger.error("Exception thrown during parsing of Terrain Features.", e);
         }

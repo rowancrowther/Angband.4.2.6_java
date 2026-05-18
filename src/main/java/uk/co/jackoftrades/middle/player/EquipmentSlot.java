@@ -17,22 +17,12 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
-    private PlayerBody playerBody;
+public class EquipmentSlot {
+    private String name;
+    private int type;
+    private ItemObject item;
 
-    public Chunk getCave() {
-        return cave;
-    }
 
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
-
-    public PlayerBody getPlayerBody() {
-        return playerBody;
-    }
 }

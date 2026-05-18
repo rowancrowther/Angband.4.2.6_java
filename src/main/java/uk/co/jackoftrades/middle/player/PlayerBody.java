@@ -17,22 +17,16 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
-    private PlayerBody playerBody;
+import java.util.HashMap;
 
-    public Chunk getCave() {
-        return cave;
-    }
+public class PlayerBody {
+    private String name;
+    private int count;
+    private HashMap<Integer, ItemObject> equipmentSlots;
 
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
-
-    public PlayerBody getPlayerBody() {
-        return playerBody;
+    public boolean isEquipped(ItemObject item) {
+        return equipmentSlots.containsValue(item);
     }
 }

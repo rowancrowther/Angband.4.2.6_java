@@ -15,24 +15,16 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.player;
+package uk.co.jackoftrades.middle;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
+public class Activation {
+    private String name;
+    private int index;
+    private boolean aim;
+    private int level;
+    private int power;
+    private Effect effect;
+    private String message;
+    private String desc;
 
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
-    private PlayerBody playerBody;
-
-    public Chunk getCave() {
-        return cave;
-    }
-
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
-
-    public PlayerBody getPlayerBody() {
-        return playerBody;
-    }
 }

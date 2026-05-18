@@ -17,23 +17,71 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.Activation;
+import uk.co.jackoftrades.middle.Effect;
 import uk.co.jackoftrades.middle.cave.Loc;
-import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.monsters.MonsterRace;
+import uk.co.jackoftrades.middle.objects.enums.*;
+import uk.co.jackoftrades.middle.player.Player;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * Stem class to hold the c angband object
  */
 
 public class ItemObject {
-    private Object artifact;
     private ObjectKind kind;
+    private EgoItem ego;
+    private Artifact artifact;
+
+    private ItemObject known;
+
     private Loc location;
 
+    private TValue tValue;
+    private int sValue;
+
+    private int pValue;
+
+    private int weight;
+
+    private int damageDice;
+    private int damageSides;
+    private int normalAC;
+    private int toAC;
+    private int toDam;
+    private int toHit;
+
+    private Flag<ObjectFlag> flags;
+    private HashMap<ObjectModifier, Integer> modifiers;
+    private HashMap<ElementEnum, ElementInfo> elInfo;
+    private boolean brands;
+    private boolean slays;
+    private ArrayList<CurseData> curses;
+
+    private ArrayList<Effect> effect;
+    private String effectMessage;
+    private Activation activation;
+    private Random time;
+    private int timeout;
+
+    private int number;
     private Flag<ObjectNotice> notice;
 
     private int heldMIndex;
     private int mimickingMIndex;
+
+    private int origin;
+    private int originDepth;
+    private MonsterRace originRace;
+
+    private Quark note;
 
     public ItemObject() {
         notice = new Flag<>(ObjectNotice.class);
@@ -61,5 +109,19 @@ public class ItemObject {
 
     public void setMimickingMIndex(int mimickingMIndex) {
         this.mimickingMIndex = mimickingMIndex;
+    }
+
+    public boolean similar(ItemObject item2) {
+        Player player = GameConstants.mainPlayer;
+
+        // Check for equipped items
+        if (player.getPlayerBody().isEquipped(this)) return false;
+        if (player.getPlayerBody().isEquipped(item2)) return false;
+
+        // Check for mimicked items
+        if (this.mimickingMIndex != 0 || item2.mimickingMIndex != 0) return false;
+
+        // Check for unknown items
+        return true;
     }
 }

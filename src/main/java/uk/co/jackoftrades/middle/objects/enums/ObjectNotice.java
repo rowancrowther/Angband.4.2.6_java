@@ -15,19 +15,11 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.player;
+package uk.co.jackoftrades.middle.objects.enums;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
-
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
-
-    public Chunk getCave() {
-        return cave;
-    }
-
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
+public enum ObjectNotice {
+    OBJ_NOTICE_WORN,
+    OBJ_NOTICE_ASSESSED,
+    OBJ_NOTICE_IGNORE,
+    OBJ_NOTICE_IMAGINED
 }

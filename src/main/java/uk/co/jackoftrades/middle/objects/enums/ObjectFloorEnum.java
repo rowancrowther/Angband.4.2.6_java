@@ -15,19 +15,31 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.player;
+package uk.co.jackoftrades.middle.objects.enums;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
+public enum ObjectFloorEnum {
+    /**
+     * No options
+     */
+    OFLOOR_NONE,
 
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
+    /**
+     * Verify item tester
+     */
+    OFLOOR_TEST,
 
-    public Chunk getCave() {
-        return cave;
-    }
+    /**
+     * Sensed or known items only
+     */
+    OFLOOR_SENSE,
 
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
+    /**
+     * Only the top item
+     */
+    OFLOOR_TOP,
+
+    /**
+     * Visible items only
+     */
+    OFLOOR_VISIBLE
 }

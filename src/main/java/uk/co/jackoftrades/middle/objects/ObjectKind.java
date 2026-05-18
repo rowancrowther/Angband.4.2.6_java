@@ -18,4 +18,9 @@
 package uk.co.jackoftrades.middle.objects;
 
 public class ObjectKind {
+    private String name;
+
+    public String getName() {
+        return name;
+    }
 }

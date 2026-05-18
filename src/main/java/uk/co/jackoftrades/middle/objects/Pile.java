@@ -1,0 +1,200 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
+package uk.co.jackoftrades.middle.objects;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+
+import java.util.ArrayList;
+
+/**
+ * A pile of objects is defined as a LIFO ArrayList of ItemObjects
+ */
+public class Pile {
+    private final static Logger logger = LogManager.getLogger();
+    private ArrayList<ItemObject> pile;
+
+    private static ArrayList<ItemObject> failPile;
+    private static ArrayList<ItemObject> failObject;
+    private static int failObjectIndex;
+
+    private static String failFile;
+    private static int failLine;
+
+    public Pile() {
+    }
+
+    /**
+     * Peek at the top object (last object added)
+     *
+     * @return the top object from the stack
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    private ItemObject peek() {
+        return pile.getLast();
+    }
+
+    /**
+     * Return the top object (last object added) and remove it from the stack
+     *
+     * @return the top object from the stack
+     */
+    @CheckReturnValue
+    private ItemObject pop() {
+        return pile.removeLast();
+    }
+
+    /**
+     * Push a new object onto the stack
+     *
+     * @param item the object to put on the top
+     */
+    private void push(@NotNull ItemObject item) {
+        pile.addLast(item);
+    }
+
+    /**
+     * Write the current pile to the fatal log file, as this is a fatal error.
+     */
+    @Contract(pure = true)
+    private void writePile() {
+        StringBuilder result = new StringBuilder();
+
+        result.append("Pile integrity failure at ").append(failFile).append(":").append(failLine).append("\n\n")
+                .append("Guilty object\n=============\n");
+
+        ItemObject item = failObject.get(failObjectIndex);
+
+        if (item != null && item.getKind() != null) {
+            result.append("Name: ").append(item.getKind().getName()).append("\n");
+
+            if (failObjectIndex >= 0) {
+                result.append("Previous: ");
+                ItemObject prev = failObject.get(failObjectIndex - 1);
+                if (prev != null && prev.getKind() != null)
+                    result.append(prev.getKind().getName()).append("\n");
+                else
+                    result.append("bad object/n");
+            }
+
+            if (failObjectIndex < failObject.size() - 1) {
+                result.append("Next: ");
+                ItemObject next = failObject.get(failObjectIndex + 1);
+                if (next != null && next.getKind() != null)
+                    result.append(next.getKind().getName()).append("\n");
+                else
+                    result.append("bad object/n");
+            }
+
+            result.append("\n");
+        }
+
+        if (failPile != null) {
+            result.append("Guilty pile\n===========\n");
+            for (ItemObject object : failPile) {
+                if (object.getKind() != null)
+                    result.append("Name: ").append(object.getKind().getName()).append("\n");
+                else
+                    result.append("bad object/n");
+            }
+        }
+
+        logger.fatal(result.toString());
+
+    }
+
+    /**
+     * Deal with an integrity fail<br/><br/>
+     * Note: This is unlikely to ever be needed in java, and the use of filename and line are not going to work, as
+     * we are not parsing the files line by line but by using ANTLR4
+     *
+     * @param item     the object which is causing a fail
+     * @param fileName the file we read the object from
+     * @param line     the line in the file we read the object from
+     */
+    private void integrityFail(ItemObject item, String fileName, int line) {
+        failPile = this.pile;
+
+        failObjectIndex = 0;
+        for (ItemObject object : failPile) {
+            if (item.equals(object)) break;
+            failObjectIndex++;
+        }
+
+        if (failObjectIndex >= failPile.size()) {
+            logger.fatal("Object {} not found in pile despite causing a pile integrity error.", item.getKind().getName());
+            System.exit(-1);
+        }
+
+        failFile = fileName;
+        failLine = line;
+
+        writePile();
+        System.exit(-1);
+    }
+
+    /**
+     * Push an object onto the top of the stack
+     *
+     * @param item The object to push
+     */
+    public void insert(ItemObject item) {
+        push(item);
+    }
+
+    /**
+     * Inserts a new object at the bottom of the stack
+     *
+     * @param item the object to insert
+     */
+    public void insertEnd(ItemObject item) {
+        pile.addFirst(item);
+    }
+
+    /**
+     * Remove an object from the pile
+     *
+     * @param item the object to remove
+     */
+    public void excise(ItemObject item) {
+        pile.remove(item);
+    }
+
+    /**
+     * This is a FILO stack, so just peek the top item
+     *
+     * @return the last item to be added to this stack
+     */
+    public ItemObject lastItem() {
+        return peek();
+    }
+
+    /**
+     * Check to see if an object is in this pile's stack
+     *
+     * @param item the object to look for
+     * @return true if the object exists in the stack
+     */
+    public boolean contains(ItemObject item) {
+        return pile.contains(item);
+    }
+}

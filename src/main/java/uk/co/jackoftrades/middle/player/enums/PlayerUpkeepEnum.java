@@ -15,19 +15,17 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.player;
+package uk.co.jackoftrades.middle.player.enums;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
-
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
-
-    public Chunk getCave() {
-        return cave;
-    }
-
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
+public enum PlayerUpkeepEnum {
+    PU_BONUS,
+    PU_TORCH,
+    PU_HP,
+    PU_MANA,
+    PU_SPELLS,
+    PU_UPDATE_VIEW,
+    PU_MONSTERS,
+    PU_DISTANCE,
+    PU_PANEL,
+    PU_INVEN
 }

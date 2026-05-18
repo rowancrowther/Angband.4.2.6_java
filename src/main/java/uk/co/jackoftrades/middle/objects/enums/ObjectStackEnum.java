@@ -15,19 +15,41 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.player;
+package uk.co.jackoftrades.middle.objects.enums;
 
-import uk.co.jackoftrades.middle.cave.Chunk;
+public enum ObjectStackEnum {
+    /**
+     * NO options - this doesn't mean no stacking
+     */
+    OSTACK_NONE,
 
-public class Player {
-    private Chunk cave;
-    private PlayerUpkeep playerUpkeep;
+    /**
+     * Store stacking
+     */
+    OSTACK_STORE,
 
-    public Chunk getCave() {
-        return cave;
-    }
+    /**
+     * Inventory and home stacking
+     */
+    OSTACK_PACK,
 
-    public PlayerUpkeep getPlayerUpkeep() {
-        return playerUpkeep;
-    }
+    /**
+     * Object list
+     */
+    OSTACK_LIST,
+
+    /**
+     * Monster carrying objects
+     */
+    OSTACK_MONSTER,
+
+    /**
+     * Floor stacking
+     */
+    OSTACK_FLOOR,
+
+    /**
+     * Quiver
+     */
+    OSTACK_QUIVER
 }

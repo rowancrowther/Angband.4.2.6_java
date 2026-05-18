@@ -17,14 +17,49 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
+
 /**
  * Stem class to hold the c angband object
  */
 
 public class ItemObject {
     private Object artifact;
+    private ObjectKind kind;
+    private Loc location;
+
+    private Flag<ObjectNotice> notice;
+
+    private int heldMIndex;
+    private int mimickingMIndex;
+
+    public ItemObject() {
+        notice = new Flag<>(ObjectNotice.class);
+    }
+
+    public void setGrid(Loc grid) {
+        location = grid;
+    }
+
+    public void orNotice(ObjectNotice notice) {
+        this.notice.on(notice);
+    }
 
     public boolean isArtifact() {
         return artifact != null;
+    }
+
+    public ObjectKind getKind() {
+        return kind;
+    }
+
+    public void setHeldMIndex(int heldMIndex) {
+        this.heldMIndex = heldMIndex;
+    }
+
+    public void setMimickingMIndex(int mimickingMIndex) {
+        this.mimickingMIndex = mimickingMIndex;
     }
 }

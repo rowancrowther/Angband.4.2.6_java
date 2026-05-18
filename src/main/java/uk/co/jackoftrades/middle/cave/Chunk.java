@@ -21,7 +21,6 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
@@ -29,6 +28,9 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterGroup;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.Pile;
+import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftrades.middle.player.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,7 +58,7 @@ public class Chunk {
     private Heatmap scent;
     private Loc decoy;
 
-    private ArrayList<ItemObject> objects; // Should this be ItemObject[][] objects?
+    private Pile objectPile; // Should this be ItemObject[][] objects?
     private int objMax;
 
     private Monster[] monsters;
@@ -990,5 +992,38 @@ public class Chunk {
     @CheckReturnValue
     private int getHeight() {
         return height;
+    }
+
+    /**
+     * Delete an object from the cave, and release it for the garbage collector to remove
+     *
+     * @param item The object we wish to delete
+     */
+    private void objectDelete(@NotNull ItemObject item) {
+        objectPile.excise(item);
+
+        Player player = GameConstants.mainPlayer;
+
+        // Remove the object from those tracked by the player upkeep
+        if (player.getPlayerUpkeep() != null) player.getPlayerUpkeep().getPile().excise(item);
+
+        Chunk cave = GameConstants.cave;
+        Chunk playerCave = player.getCave();
+        if (playerCave != null
+                && cave.objectPile.contains(item)
+                && playerCave.objectPile.contains(item)) {
+            item.setGrid(Loc.zero);
+            item.setHeldMIndex(0);
+            item.setMimickingMIndex(0);
+
+            item.orNotice(ObjectNotice.OBJ_NOTICE_IMAGINED);
+            return;
+        }
+
+        if (playerCave != null && playerCave.objectPile.contains(item))
+            playerCave.objectPile.excise(item);
+
+        if (cave.objectPile.contains(item))
+            cave.objectPile.excise(item);
     }
 }

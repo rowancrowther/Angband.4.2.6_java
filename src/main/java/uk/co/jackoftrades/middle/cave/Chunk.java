@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -37,6 +39,8 @@ import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class Chunk {
+    private static final Logger logger = LogManager.getLogger();
+
     private String name;
     private int turn;
     private int depth;
@@ -995,11 +999,28 @@ public class Chunk {
     }
 
     /**
+     * Excise an object from a floor pile leaving it orphaned
+     *
+     * @param grid the location of the object
+     * @param item the object to excise
+     */
+    public void squareExciseObject(@NotNull Loc grid, @NotNull ItemObject item) {
+        if (!inBounds(grid)) {
+            String message = "Location out of bounds, being thrown as a fatal error after logging";
+            IndexOutOfBoundsException ex = new IndexOutOfBoundsException(message);
+            logger.fatal(message, ex);
+            throw ex;
+        }
+
+        getSquare(grid).pileExcise(item);
+    }
+
+    /**
      * Delete an object from the cave, and release it for the garbage collector to remove
      *
      * @param item The object we wish to delete
      */
-    private void objectDelete(@NotNull ItemObject item) {
+    public void objectDelete(Chunk playerCave, @NotNull ItemObject item) {
         objectPile.excise(item);
 
         Player player = GameConstants.mainPlayer;
@@ -1008,7 +1029,6 @@ public class Chunk {
         if (player.getPlayerUpkeep() != null) player.getPlayerUpkeep().getPile().excise(item);
 
         Chunk cave = GameConstants.cave;
-        Chunk playerCave = player.getCave();
         if (playerCave != null
                 && cave.objectPile.contains(item)
                 && playerCave.objectPile.contains(item)) {
@@ -1025,5 +1045,19 @@ public class Chunk {
 
         if (cave.objectPile.contains(item))
             cave.objectPile.excise(item);
+    }
+
+    /**
+     * Remove an object from the object pile in this chunk
+     *
+     * @param item the object to remove
+     */
+    public void delistObject(ItemObject item) {
+        if (!objectPile.contains(item)) return;
+
+        if (this.equals(GameConstants.cave) && GameConstants.mainPlayer.getCave().objectPile.contains(item))
+            return;
+
+        objectPile.excise(item);
     }
 }

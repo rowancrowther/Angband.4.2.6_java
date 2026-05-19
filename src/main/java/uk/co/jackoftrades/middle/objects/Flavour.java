@@ -15,19 +15,16 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.monsters;
+package uk.co.jackoftrades.middle.objects;
 
-import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
-public class MonsterRace {
-    private Flag<MonsterRaceFlag> flags;
+public class Flavour {
+    private String text;
 
-    public MonsterRace() {
-        flags = new Flag<>(MonsterRaceFlag.class);
-    }
+    private TValue tVal;
+    private int sVal;
 
-    public Flag<MonsterRaceFlag> getFlags() {
-        return flags;
-    }
+    private AngbandDisplayCharacter displayCharacter;
 }

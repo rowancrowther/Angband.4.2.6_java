@@ -54,6 +54,17 @@ public class Pile {
     }
 
     /**
+     * Checks to see if this pile is empty or not
+     *
+     * @return true if there are no items in this pile
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean isEmpty() {
+        return pile.isEmpty();
+    }
+
+    /**
      * Return the top object (last object added) and remove it from the stack
      *
      * @return the top object from the stack
@@ -170,6 +181,15 @@ public class Pile {
         pile.addFirst(item);
     }
 
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean hasArtifact() {
+        for (ItemObject object : pile) {
+            if (object.isArtifact()) return true;
+        }
+        return false;
+    }
+
     /**
      * Remove an object from the pile
      *
@@ -180,12 +200,12 @@ public class Pile {
     }
 
     /**
-     * This is a FILO stack, so just peek the top item
+     * This is a FILO stack, so return the top item being the last item to be added
      *
      * @return the last item to be added to this stack
      */
     public ItemObject lastItem() {
-        return peek();
+        return pop();
     }
 
     /**

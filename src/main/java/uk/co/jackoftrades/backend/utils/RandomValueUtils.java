@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils;
 
 import org.apache.logging.log4j.LogManager;
@@ -178,8 +195,7 @@ public abstract class RandomValueUtils {
      */
     public static int damCalc(int number, int sides, @NotNull DamageAspect aspect) {
         return switch (aspect) {
-            case MAXIMIZE -> number * sides;
-            case EXTREMIFY -> number * sides;
+            case MAXIMIZE, EXTREMIFY -> number * sides;
             case RANDOMIZE -> damRoll(number, sides);
             case MINIMIZE -> number;
             case AVERAGE -> number * (sides + 1) / 2;

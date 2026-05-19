@@ -1,4 +1,26 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.objects.enums;
+
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public enum TValue {
     /**
@@ -201,6 +223,185 @@ public enum TValue {
         return name;
     }
 
+    public boolean isStaff() {
+        return this == TV_STAFF;
+    }
+
+    public boolean isWand() {
+        return this == TV_WAND;
+    }
+
+    public boolean isRod() {
+        return this == TV_ROD;
+    }
+
+    public boolean isPotion() {
+        return this == TV_POTION;
+    }
+
+    public boolean isScroll() {
+        return this == TV_SCROLL;
+    }
+
+    public boolean isFood() {
+        return this == TV_FOOD;
+    }
+
+    public boolean isMushroom() {
+        return this == TV_MUSHROOM;
+    }
+
+    public boolean isLight() {
+        return this == TV_LIGHT;
+    }
+
+    public boolean isRing() {
+        return this == TV_RING;
+    }
+
+    public boolean isChest() {
+        return this == TV_CHEST;
+    }
+
+    public boolean isFuel() {
+        return this == TV_FLASK;
+    }
+
+    public boolean isMoney() {
+        return this == TV_GOLD;
+    }
+
+    public boolean isDigger() {
+        return this == TV_DIGGING;
+    }
+
+    public boolean canHaveNourishment() {
+        return this == TV_FOOD || this == TV_POTION
+                || this == TV_MUSHROOM;
+    }
+
+    public boolean canHaveCharges() {
+        return this == TV_STAFF || this == TV_WAND;
+    }
+
+    public boolean canHaveTimeout() {
+        return this == TV_ROD;
+    }
+
+    public boolean isBodyArmour() {
+        return switch (this) {
+            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isHeadArmour() {
+        return this == TV_CROWN || this == TV_HELM;
+    }
+
+    public boolean isAmmo() {
+        return switch (this) {
+            case TV_SHOT, TV_ARROW, TV_BOLT -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isSharpMissile() {
+        return switch (this) {
+            case TV_ARROW, TV_BOLT -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isBolt() {
+        return this == TV_BOLT;
+    }
+
+    public boolean isLauncher() {
+        return this == TV_BOW;
+    }
+
+    public boolean isUseable() {
+        return switch (this) {
+            case TV_ROD, TV_WAND, TV_STAFF, TV_SCROLL, TV_POTION, TV_FOOD, TV_MUSHROOM -> true;
+            default -> false;
+        };
+    }
+
+    public boolean canHaveFailure() {
+        return switch (this) {
+            case TV_STAFF, TV_WAND, TV_ROD -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isJewelry() {
+        return this == TV_RING || this == TV_AMULET;
+    }
+
+    public boolean isWeapon() {
+        return switch (this) {
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING, TV_BOW,
+                 TV_BOLT, TV_ARROW, TV_SHOT -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isArmour() {
+        return switch (this) {
+            case TV_DRAG_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
+                 TV_CLOAK, TV_CROWN, TV_HELM, TV_BOOTS, TV_GLOVES -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isMeleeWeapon() {
+        return switch (this) {
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING -> true;
+            default -> false;
+        };
+    }
+
+    public boolean hasVariablePower() {
+        return switch (this) {
+            case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
+                 TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isWearable() {
+        return switch (this) {
+            case TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
+                 TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isEdible() {
+        return this == TV_FOOD || this == TV_MUSHROOM;
+    }
+
+    public boolean canHaveFlavour() {
+        return switch (this) {
+            case TV_AMULET, TV_RING, TV_STAFF, TV_WAND, TV_ROD, TV_POTION, TV_MUSHROOM, TV_SCROLL -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isBook() {
+        return switch (this) {
+            case TV_MAGIC_BOOK, TV_PRAYER_BOOK, TV_NATURE_BOOK, TV_SHADOW_BOOK, TV_OTHER_BOOK -> true;
+            default -> false;
+        };
+    }
+
+    public boolean isZapper() {
+        return this == TV_WAND || this == TV_STAFF;
+    }
+
     /**
      * Value of for the name string as opposed to the name
      *
@@ -208,7 +409,9 @@ public enum TValue {
      * @return the TValue of the given name, or null if it wasn't
      * found
      */
-    public static TValue fromName(String name) {
+    @CheckReturnValue
+    @Contract(pure = true)
+    public static @Nullable TValue fromName(@NotNull String name) {
         for (TValue value : TValue.values()) {
             if (value.name.equals(name)) {
                 return value;

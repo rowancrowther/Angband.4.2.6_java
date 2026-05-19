@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 
 public class Player {
     private Chunk cave;
@@ -34,5 +35,9 @@ public class Player {
 
     public PlayerBody getPlayerBody() {
         return playerBody;
+    }
+
+    public void knowObject(ItemObject item) {
+
     }
 }

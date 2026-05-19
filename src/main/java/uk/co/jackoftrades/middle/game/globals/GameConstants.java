@@ -80,6 +80,8 @@ public class GameConstants {
      */
     private final static int maxRandDepth = 128;
 
+    public static final int MAX_PVAL = 32_767;
+
     // The directory structure of Angband - OS neutral.
     // Note, if the user wants to save on a custom area, then we will have to amend the function BASE_DIR
     // to return that value. That's a future issue

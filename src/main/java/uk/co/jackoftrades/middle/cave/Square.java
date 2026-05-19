@@ -26,6 +26,7 @@ import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.player.Player;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class Square {
 
     private int light;
     private int monsterIndex;
-    private final ArrayList<ItemObject> objects;
+    private final Pile objectPile;
     private final ArrayList<Trap> traps;
 
     public Square(Feature feature, int light, int monsterIndex) {
@@ -45,8 +46,17 @@ public class Square {
         this.monsterIndex = monsterIndex;
 
         info = new Flag<>(SquareEnum.class);
-        objects = new ArrayList<>();
+        objectPile = new Pile();
         traps = new ArrayList<>();
+    }
+
+    /**
+     * Excise an object from a floor pile, leaving it orphaned (and hence potential bait for the garbage collector)
+     *
+     * @param item The item we are removing.
+     */
+    public void pileExcise(ItemObject item) {
+        objectPile.excise(item);
     }
 
     /**
@@ -58,8 +68,8 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public @Nullable ItemObject getTopObject() {
-        if (objects.isEmpty()) return null;
-        return objects.getFirst();
+        if (objectPile.isEmpty()) return null;
+        return objectPile.lastItem();
     }
 
     /**
@@ -95,11 +105,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean holdsObject(@NotNull ItemObject object) {
-        for (ItemObject item : objects) {
-            if (item.equals(object)) return true;
-        }
-
-        return false;
+        return objectPile.contains(object);
     }
 
     /**
@@ -209,11 +215,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean hasObjectArtifact() {
-        for (ItemObject item : objects) {
-            if (item.isArtifact()) return true;
-        }
-
-        return false;
+        return objectPile.hasArtifact();
     }
 
     /**
@@ -861,7 +863,7 @@ public class Square {
     @Contract(pure = true)
     public boolean isEmpty() {
         if (isPlayerTrap() || isWebbed()) return false;
-        return isOpen() && (objects.isEmpty());
+        return isOpen() && (objectPile.isEmpty());
     }
 
     /**
@@ -985,7 +987,7 @@ public class Square {
     @Contract(pure = true)
     public boolean canPutItem() {
         if (isObjectHolding() || isTrap()) return false;
-        return objects.isEmpty();
+        return objectPile.isEmpty();
     }
 
     /**

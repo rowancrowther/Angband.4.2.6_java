@@ -1,9 +1,27 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.strings;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.AngbandModule;
 
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -38,6 +56,24 @@ public class Quark implements AngbandModule {
     }
 
     /**
+     * Merge a set of quarks from one another Quark into this one
+     *
+     * @param other the other Quark to merge this one with
+     */
+    public void merge(Quark other) {
+        // if the other is null or has no entries, just return
+        if (other == null || other.size() == 0) return;
+
+        // Work out the offset for quarks in this set
+        int offset = Collections.max(quarks.keySet()) + 1;
+
+        // Insert the new quarks using their existing keys plus the offset
+        for (Map.Entry<Integer, String> entry : other.quarks.entrySet()) {
+            quarks.put(entry.getKey() + offset, entry.getValue());
+        }
+    }
+
+    /**
      * Gets the value of the quark with given quark key
      *
      * @param key the key of the string we wish to obtain from the map
@@ -53,6 +89,16 @@ public class Quark implements AngbandModule {
 
         if (quarks.containsKey(key)) return quarks.get(key);
         return null;
+    }
+
+
+    /**
+     * Get the number of quarks in the list
+     *
+     * @return The number of quarks in this quark list
+     */
+    public int size() {
+        return quarks.size();
     }
 
     /**

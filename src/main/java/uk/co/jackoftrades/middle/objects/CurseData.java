@@ -20,4 +20,12 @@ package uk.co.jackoftrades.middle.objects;
 public class CurseData {
     private int power;
     private int timeout;
+
+    public int getPower() {
+        return power;
+    }
+
+    public int getTimeout() {
+        return timeout;
+    }
 }

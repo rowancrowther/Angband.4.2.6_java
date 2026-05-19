@@ -15,19 +15,10 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.monsters;
+package uk.co.jackoftrades.middle.enums;
 
-import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-
-public class MonsterRace {
-    private Flag<MonsterRaceFlag> flags;
-
-    public MonsterRace() {
-        flags = new Flag<>(MonsterRaceFlag.class);
-    }
-
-    public Flag<MonsterRaceFlag> getFlags() {
-        return flags;
-    }
+public enum ElementInfoEnum {
+    EL_INFO_HATES,
+    EL_INFO_IGNORE,
+    EL_INFO_RANDOM
 }

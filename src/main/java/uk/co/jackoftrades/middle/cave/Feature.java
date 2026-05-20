@@ -33,7 +33,7 @@ public class Feature {
     private String description;
     private int featureIndex;
 
-    private TerrainFlags mimic;
+    private Feature mimic;
     private int priority;
 
     private int shopNum;
@@ -55,7 +55,7 @@ public class Feature {
     public Feature(TerrainFlags code,
                    String name,
                    String description,
-                   TerrainFlags mimic,
+                   Feature mimic,
                    int priority,
                    int shopNum,
                    int dig,
@@ -88,9 +88,22 @@ public class Feature {
         this.resistFlag = resistFlag;
     }
 
+    public TerrainFlags getTerrainFlag() {
+        return code;
+    }
+
     /*
      *   Feature predicates
      */
+
+    /**
+     * Tests to see whether this feature is mimicing or not
+     *
+     * @return true if this feature is not what it seems
+     */
+    public boolean isMimicing() {
+        return mimic != null;
+    }
 
     /**
      * Tests for Magma
@@ -438,6 +451,10 @@ public class Feature {
      */
     public String getName() {
         return name;
+    }
+
+    public TerrainFlags getMimic() {
+        return mimic.code;
     }
 
     @Override

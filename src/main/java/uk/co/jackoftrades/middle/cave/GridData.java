@@ -17,16 +17,68 @@
 
 package uk.co.jackoftrades.middle.cave;
 
-import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.middle.cave.enums.GridLightLevel;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.middle.objects.Pile;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
 
 
 public class GridData {
-    private Monster monster;
-    private TerrainFlags terrainFlag;
-    private ArrayList<ObjectKind> objectKindList;
+    private static final Logger logger = LogManager.getLogger();
 
+    private Monster monster;
+    private Feature feature;
+    private ArrayList<ObjectKind> objectKindList;
+    private ArrayList<Trap> trapList;
+
+    private boolean multipleObjects;
+    private boolean unseenObjects;
+    private boolean unseenMoney;
+
+    private GridLightLevel lighting;
+    private boolean inView;
+    private boolean isPlayer;
+    private boolean hallucinate;
+
+    private void mapInfo(Loc grid) {
+        if (!GameConstants.cave.inBounds(grid)) {
+            String message = "Grid location out of bounds! " + grid;
+            IndexOutOfBoundsException ex = new IndexOutOfBoundsException(message);
+            logger.error(message, ex);
+        }
+
+        Chunk cave = GameConstants.cave;
+        Player player = GameConstants.mainPlayer;
+
+        Pile objects;
+
+        objectKindList = null;
+        trapList = null;
+        multipleObjects = false;
+        lighting = GridLightLevel.LIGHTING_LIT;
+        unseenObjects = false;
+        unseenMoney = false;
+
+        feature = cave.getSquare(grid).getFeature();
+        if (feature.isMimicing())
+            feature = GameConstants.lookupFeature(feature.getMimic());
+
+        inView = cave.squareIsSeen(grid);
+        isPlayer = cave.squareIsPlayer(grid);
+        monster = cave.getMonster(grid);
+        hallucinate = player.getTimedEffect(TimedEffect.TMD_IMAGE) > 0;
+
+        if (inView) {
+            boolean lit = cave.squareIsLit(grid);
+
+
+        }
+    }
 }

@@ -147,7 +147,7 @@ public class Screen {
 
     @CheckReturnValue
     private @NotNull MenuItem newGameMenuItem() {
-        MenuItem newGameMenuItem = new MenuItem("New GameEngine");
+        MenuItem newGameMenuItem = new MenuItem("New Game");
         newGameMenuItem.setOnAction(e -> {
             TermXtraWin win = new TermXtraWin();
             win.doSomething(TermXtraEventEnum.TERM_XTRA_CLEAR, 0);

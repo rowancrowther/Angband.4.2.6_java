@@ -83,7 +83,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean inBounds(@NotNull Loc grid) {
+    public boolean inBounds(@NotNull Loc grid) {
         return grid.getX() >= 0 && grid.getX() <= width
                 && grid.getY() >= 0 && grid.getY() <= height;
     }
@@ -169,7 +169,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsSeen(@NotNull Loc grid) {
+    public boolean squareIsSeen(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isSeen();
     }
 
@@ -570,6 +570,10 @@ public class Chunk {
         return inBounds(grid) && getSquare(grid).isPlayerTrap();
     }
 
+    boolean squareIsPlayer(@NotNull Loc grid) {
+        return inBounds(grid) && getSquare(grid).isPlayer();
+    }
+
     /**
      * Checks to see if a square at a given Loc is empty - open without any items
      *
@@ -936,6 +940,31 @@ public class Chunk {
     @Contract(pure = true)
     private Monster caveMonster(int index) {
         return monsters[index];
+    }
+
+    /**
+     * Gets the monster on a given grid
+     *
+     * @param grid the loc of the monster
+     * @return the monster on this square
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    Monster getMonster(@NotNull Loc grid) {
+        if (!inBounds(grid)) return null;
+        int mIndex = getSquare(grid).getMonsterIndex();
+        if (mIndex > 0) return monsters[mIndex];
+        else return null;
+    }
+
+    /**
+     * Gets whether a square is lit or not
+     *
+     * @param grid the Loc of the square
+     * @return true if the square is lit
+     */
+    boolean squareIsLit(Loc grid) {
+        return inBounds(grid) && getSquare(grid).isLit();
     }
 
     /**

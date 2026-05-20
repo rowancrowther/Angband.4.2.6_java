@@ -51,6 +51,16 @@ public class Square {
     }
 
     /**
+     * Check the square info field to see if a particular flag is set on it
+     *
+     * @param squareInfo the flag we are checking for
+     * @return true if the flag is set on the info field
+     */
+    boolean hasInfoFlag(SquareEnum squareInfo) {
+        return info.has(squareInfo);
+    }
+
+    /**
      * Excise an object from a floor pile, leaving it orphaned (and hence potential bait for the garbage collector)
      *
      * @param item The item we are removing.

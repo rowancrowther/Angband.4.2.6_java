@@ -5,6 +5,7 @@ grammar Terrain;
     import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
     import uk.co.jackoftrades.frontend.colour.enums.ColourType;
     import uk.co.jackoftrades.backend.utils.Flag;
+    import uk.co.jackoftrades.middle.game.globals.GameConstants;
     import uk.co.jackoftrades.middle.cave.Feature;
     import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
     import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
@@ -127,7 +128,7 @@ feature
             TerrainFlags codeInit = TerrainFlags.FEAT_NONE;
             String nameInit = "";
             AngbandDisplayCharacter adcharInit = null;
-            TerrainFlags mimicInit = TerrainFlags.FEAT_NONE;
+            Feature mimicInit = null;
             int priorityInit = 0;
             Flag<TerrainFeatureFlags> flagsInit = null;
             String walkMsgInit = "";
@@ -165,7 +166,7 @@ feature
                 priorityInit = $priority.priorityNum;
             }
             (mimic {
-                mimicInit = $mimic.mimicFlag;
+                mimicInit = GameConstants.lookupFeature($mimic.mimicFlag);
             })?
             (flags {
                 flagsInit = new Flag<TerrainFeatureFlags>(TerrainFeatureFlags.class);
@@ -216,7 +217,7 @@ feature
                 priorityInit = $priority.priorityNum;
             }
             (mimic {
-                mimicInit = $mimic.mimicFlag;
+                mimicInit = GameConstants.lookupFeature($mimic.mimicFlag);
             })?
             (flags {
                 flagsInit = new Flag<TerrainFeatureFlags>(TerrainFeatureFlags.class);

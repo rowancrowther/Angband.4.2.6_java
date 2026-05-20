@@ -48,7 +48,7 @@ public class GameEngine {
         EventsHandler handler = EventsHandler.getInstance();
         screen.setStatusLabelText("Initialized game constants...");
         GameConstants.init();
-        screen.setStatusLabelText("Select New GameEngine from GameEngine menu to start the game...");
+        screen.setStatusLabelText("Select New Game from File menu to start the game...");
     }
 
     @CheckReturnValue

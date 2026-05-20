@@ -34,6 +34,7 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.ArrayList;
@@ -1280,7 +1281,7 @@ public class TerrainParser extends Parser {
 		TerrainFlags codeInit = TerrainFlags.FEAT_NONE;
 		String nameInit = "";
 		AngbandDisplayCharacter adcharInit = null;
-		TerrainFlags mimicInit = TerrainFlags.FEAT_NONE;
+		Feature mimicInit = null;
 		int priorityInit = 0;
 		Flag<TerrainFeatureFlags> flagsInit = null;
 		String walkMsgInit = "";
@@ -1332,7 +1333,7 @@ public class TerrainParser extends Parser {
 								setState(123);
 								((FeatureContext) _localctx).mimic = mimic();
 
-								mimicInit = ((FeatureContext) _localctx).mimic.mimicFlag;
+								mimicInit = GameConstants.lookupFeature(((FeatureContext) _localctx).mimic.mimicFlag);
 
 							}
 						}
@@ -1522,7 +1523,7 @@ public class TerrainParser extends Parser {
 								setState(194);
 								((FeatureContext) _localctx).mimic = mimic();
 
-								mimicInit = ((FeatureContext) _localctx).mimic.mimicFlag;
+								mimicInit = GameConstants.lookupFeature(((FeatureContext) _localctx).mimic.mimicFlag);
 
 							}
 						}

@@ -39,6 +39,7 @@ import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
@@ -275,6 +276,8 @@ public class GameConstants {
     private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
     private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
 
+    private static final HashMap<TerrainFlags, Feature> terrains = new HashMap<>();
+
     // non-O melee and ranged criticals
     private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
     private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
@@ -309,6 +312,14 @@ public class GameConstants {
 
     public static final Chunk cave = new Chunk();
     public static final Player mainPlayer = new Player();
+
+    public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {
+        for (Feature feature : features) {
+            if (feature.getTerrainFlag().equals(flag))
+                return feature;
+        }
+        return null;
+    }
 
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {

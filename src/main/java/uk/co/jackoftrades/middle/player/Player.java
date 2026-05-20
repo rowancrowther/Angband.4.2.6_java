@@ -18,9 +18,54 @@
 package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+
+import java.util.HashMap;
 
 public class Player {
+    // private PlayerRace race;
+    // private PlayerClass class;
+
+    private Loc grid;
+    private Loc oldGrid;
+
+    private int hitDie;
+    private int expFact;
+
+    private int age;
+    private int height;
+    private int weight;
+
+    private int au;
+
+    private int maxDepth;
+    private int recallDepth;
+    private int depth;
+
+    private int maxLevel;
+    private int level;
+
+    private int maxExp;
+    private int exp;
+    private int expFrac;
+
+    private int maxHP;
+    private int currentHP;
+    private int chpFrac;
+
+    private int maxSP;
+    private int sp;
+    private int cspFrac;
+
+    private HashMap<Stats, Integer> statMax;
+    private HashMap<Stats, Integer> statCur;
+    private HashMap<Stats, Integer> statMap;
+
+    private HashMap<TimedEffect, Integer> timed;
+
     private Chunk cave;
     private PlayerUpkeep playerUpkeep;
     private PlayerBody playerBody;
@@ -35,6 +80,19 @@ public class Player {
 
     public PlayerBody getPlayerBody() {
         return playerBody;
+    }
+
+    /**
+     * Get the amount of time left on a timed effect on the player
+     *
+     * @param timedEffect the timed effect we are looking for
+     * @return the amount of turns left on the supplied timed effect, or 0 if they are not under that effect
+     */
+    public int getTimedEffect(TimedEffect timedEffect) {
+        if (timed.containsKey(timedEffect)) {
+            return timed.get(timedEffect);
+        }
+        return 0;
     }
 
     public void knowObject(ItemObject item) {

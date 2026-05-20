@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
@@ -36,6 +37,7 @@ import uk.co.jackoftrades.middle.player.Player;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.stream.Stream;
 
 public class Chunk {
@@ -121,7 +123,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsGlow(@NotNull Loc grid) {
+    boolean squareIsGlow(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isLit();
     }
 
@@ -229,7 +231,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsTrap(@NotNull Loc grid) {
+    boolean squareIsTrap(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isTrap();
     }
 
@@ -243,6 +245,16 @@ public class Chunk {
     @CheckReturnValue
     private boolean squareIsInvis(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isInvis();
+    }
+
+    /**
+     * Gets an iterator to iterate through the objects on a particular square
+     *
+     * @param grid the Loc of the square
+     * @return an Iterator<ItemObject> for the objects on square located at grid
+     */
+    Iterator<ItemObject> getPileIterator(Loc grid) {
+        return getSquare(grid).getSquarePileIterator();
     }
 
     /**
@@ -761,7 +773,7 @@ public class Chunk {
     private boolean squareIsBelievedWall(@NotNull Loc grid) {
         if (!inBoundsFully(grid)) return true;
 
-        if (!getSquare(grid).isKnown(this, grid)) return false;
+        if (!this.isKnown(grid)) return false;
 
         return !GameConstants.mainPlayer.getCave().getSquare(grid).featIsProjectable();
     }
@@ -777,7 +789,7 @@ public class Chunk {
     private boolean isKnownPassible(@NotNull Loc grid) {
         if (!inBounds(grid)) return false;
 
-        if (!getSquare(grid).isKnown(this, grid)) return false;
+        if (!isKnown(grid)) return false;
 
         return GameConstants.mainPlayer.getCave().squareIsPassable(grid);
     }
@@ -877,7 +889,7 @@ public class Chunk {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    public Square getSquare(@NotNull Loc grid) {
+    Square getSquare(@NotNull Loc grid) {
         if (!inBounds(grid)) return null;
         return squares[grid.getX()][grid.getY()];
     }
@@ -956,6 +968,19 @@ public class Chunk {
         if (mIndex > 0) return monsters[mIndex];
         else return null;
     }
+
+    /**
+     * Checks for a particular info flag on a square at a given grid location
+     *
+     * @param grid     the Loc of the square
+     * @param infoFlag the info flag we are checking for
+     * @return true if the square at Loc grid has infoFlag set
+     */
+    boolean squareHasInfoFlag(@NotNull Loc grid, SquareEnum infoFlag) {
+        return (inBounds(grid) && getSquare(grid).hasInfoFlag(infoFlag));
+    }
+
+
 
     /**
      * Gets whether a square is lit or not
@@ -1088,5 +1113,58 @@ public class Chunk {
             return;
 
         objectPile.excise(item);
+    }
+
+    /**
+     * Memorize the feature on this square by setting the feature on the same square in the player cave to it
+     *
+     * @param grid the Loc of the square we are memorizing
+     */
+    void squareMemorize(@NotNull Loc grid) {
+        if (this != GameConstants.cave) return;
+        squareSetKnownFeat(grid, getSquare(grid).getFeature());
+    }
+
+    /**
+     * Set the feature that is on the main cave to that on the player cave, so they 'know' it
+     *
+     * @param grid    the location of the grid we are setting the feature
+     * @param feature the feature to set
+     */
+    void squareSetKnownFeat(@NotNull Loc grid, Feature feature) {
+        if (!inBounds(grid)) return;
+        if (this != GameConstants.cave) return;
+
+        GameConstants.mainPlayer.getCave().getSquare(grid).setFeature(feature);
+    }
+
+    /**
+     * Checks whether the square at a particular location is known
+     *
+     * @param grid the Loc of the square
+     * @return true if the location is known
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    boolean isKnown(@NotNull Loc grid) {
+        if (!inBounds(grid)) return false;
+        Player player = GameConstants.mainPlayer;
+
+        if (this != GameConstants.cave && this != player.getCave()) return false;
+
+        if (player.getCave() == null) return false;
+
+        return !player.getCave().getSquare(grid).getFeature().isNoFeat();
+    }
+
+    /**
+     * Get the maximum number of monsters on this level
+     *
+     * @return the maximum number of monsters on this level
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public int getMonMax() {
+        return monMax;
     }
 }

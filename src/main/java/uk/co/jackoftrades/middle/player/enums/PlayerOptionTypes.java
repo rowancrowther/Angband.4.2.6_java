@@ -15,21 +15,8 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.monsters;
+package uk.co.jackoftrades.middle.player.enums;
 
-import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
-
-public class Monster {
-    private MonsterRace monsterRace;
-
-    private Flag<MonsterFlag> monsterFlags;
-
-    public MonsterRace getMonsterRace() {
-        return monsterRace;
-    }
-
-    public boolean hasMonsterFlag(MonsterFlag flag) {
-        return monsterFlags.has(flag);
-    }
+public enum PlayerOptionTypes {
+    SPECIAL, CHEAT, BIRTH, SCORE, INTERFACE
 }

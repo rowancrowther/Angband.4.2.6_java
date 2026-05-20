@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 /**
  * A pile of objects is defined as a LIFO ArrayList of ItemObjects
@@ -142,7 +143,7 @@ public class Pile {
      * @param fileName the file we read the object from
      * @param line     the line in the file we read the object from
      */
-    private void integrityFail(ItemObject item, String fileName, int line) {
+    private void integrityFail(@NotNull ItemObject item, @NotNull String fileName, int line) {
         failPile = this.pile;
 
         failObjectIndex = 0;
@@ -168,7 +169,7 @@ public class Pile {
      *
      * @param item The object to push
      */
-    public void insert(ItemObject item) {
+    public void insert(@NotNull ItemObject item) {
         push(item);
     }
 
@@ -177,10 +178,15 @@ public class Pile {
      *
      * @param item the object to insert
      */
-    public void insertEnd(ItemObject item) {
+    public void insertEnd(@NotNull ItemObject item) {
         pile.addFirst(item);
     }
 
+    /**
+     * Returns whether the pile has an artefact in it or not.
+     *
+     * @return true if one of the objects in the pile is an artefact
+     */
     @Contract(pure = true)
     @CheckReturnValue
     public boolean hasArtifact() {
@@ -195,7 +201,7 @@ public class Pile {
      *
      * @param item the object to remove
      */
-    public void excise(ItemObject item) {
+    public void excise(@NotNull ItemObject item) {
         pile.remove(item);
     }
 
@@ -204,6 +210,7 @@ public class Pile {
      *
      * @return the last item to be added to this stack
      */
+    @CheckReturnValue
     public ItemObject lastItem() {
         return pop();
     }
@@ -214,7 +221,20 @@ public class Pile {
      * @param item the object to look for
      * @return true if the object exists in the stack
      */
-    public boolean contains(ItemObject item) {
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean contains(@NotNull ItemObject item) {
         return pile.contains(item);
+    }
+
+    /**
+     * Get an iterator to allow stepping through the pile
+     *
+     * @return an iterator of type ItemObject
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public Iterator<ItemObject> getIterator() {
+        return pile.iterator();
     }
 }

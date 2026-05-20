@@ -50,10 +50,7 @@ import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftrades.middle.objects.Brand;
-import uk.co.jackoftrades.middle.objects.Curse;
-import uk.co.jackoftrades.middle.objects.ObjectBase;
-import uk.co.jackoftrades.middle.objects.Slay;
+import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
@@ -119,6 +116,12 @@ public class GameConstants {
 
     public boolean canUseGraphics = false;
     public boolean changeTileSize = false;
+
+    /*
+     * Specific object kinds to be used to test against
+     */
+    public static final ObjectKind unknownGoldKind = new ObjectKind();
+    public static final ObjectKind unknownItemKind = new ObjectKind();
 
     /*
      * Array bounds from C Not sure that these are still needed as most of the 'things' are stored in ArrayLists. Need to set
@@ -267,6 +270,9 @@ public class GameConstants {
 
     private static Rational oRangedMaxAdded;
 
+    /*
+     * Maps of things
+     */
     private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
     private static final HashMap<ObjectFlagName, Object> flags = new HashMap<>();
     private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
@@ -293,6 +299,9 @@ public class GameConstants {
      */
     private static LinkedList<World> world;
 
+    /*
+     * Global arrays of master values
+     */
     private static ArrayList<Projection> projections;
     private static ArrayList<UIEntryRenderer> uiEntryRenderers;
     private static ArrayList<UIEntryBase> uiBases;
@@ -309,6 +318,7 @@ public class GameConstants {
     private static ArrayList<PlayerShape> playerShapes;
 
     private static final ArrayList<TrapKind> trapInfo = new ArrayList<>();
+    public static final ArrayList<ObjectKind> objectKinds = new ArrayList<>();
 
     public static final Chunk cave = new Chunk();
     public static final Player mainPlayer = new Player();

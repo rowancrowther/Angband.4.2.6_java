@@ -30,6 +30,7 @@ import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.player.Player;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 
 public class Square {
     private Feature feat;
@@ -284,6 +285,17 @@ public class Square {
     }
 
     /**
+     * Get an iterator through the pile
+     *
+     * @return an Iterator<ItemObject> for the pile of objects on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    Iterator<ItemObject> getSquarePileIterator() {
+        return objectPile.getIterator();
+    }
+
+    /**
      * Tests for secret doors
      * <br/><br/>
      * These appear as if they were granite, when detected they are replaced by a closed door
@@ -461,27 +473,27 @@ public class Square {
     public boolean isFree() {
         return monsterIndex == 0;
     }
-
-    /**
-     * Tests if this square is known by the player
-     *
-     * @param c    The chunk we are examining, should be the owning chunk of this square
-     * @param grid The location in that chunk of this square
-     * @return True if the information known about this square is also known by the player
-     */
-    @Contract(pure = true)
-    @CheckReturnValue
-    public boolean isKnown(Chunk c, Loc grid) {
-        Chunk mainCave = GameConstants.cave;
-        Player mainPlayer = GameConstants.mainPlayer;
-        if (!c.equals(mainCave) && (!c.equals(mainPlayer.getCave())))
-            return false;
-
-        if (mainPlayer.getCave() == null)
-            return false;
-
-        return !mainPlayer.getCave().getSquare(grid).feat.isNoFeat();
-    }
+//
+//    /**
+//     * Tests if this square is known by the player
+//     *
+//     * @param c    The chunk we are examining, should be the owning chunk of this square
+//     * @param grid The location in that chunk of this square
+//     * @return True if the information known about this square is also known by the player
+//     */
+//    @Contract(pure = true)
+//    @CheckReturnValue
+//    public boolean isKnown(Chunk c, Loc grid) {
+//        Chunk mainCave = GameConstants.cave;
+//        Player mainPlayer = GameConstants.mainPlayer;
+//        if (!c.equals(mainCave) && (!c.equals(mainPlayer.getCave())))
+//            return false;
+//
+//        if (mainPlayer.getCave() == null)
+//            return false;
+//
+//        return !mainPlayer.getCave().getSquare(grid).feat.isNoFeat();
+//    }
 
     /**
      * Tests to see if the player's memory of this square has failed
@@ -496,7 +508,7 @@ public class Square {
         Chunk cave = GameConstants.cave;
         Player mainPlayer = GameConstants.mainPlayer;
 
-        return !isKnown(c, grid) || !(mainPlayer.getCave().getSquare(grid).feat.equals(cave.getSquare(grid).feat));
+        return !c.isKnown(grid) || !(mainPlayer.getCave().getSquare(grid).feat.equals(cave.getSquare(grid).feat));
     }
 
     /*
@@ -1043,4 +1055,12 @@ public class Square {
     public int getMonsterIndex() {
         return monsterIndex;
     }
+
+    /**
+     * Setter
+     *
+     * @param feature the feature to set this.feat to
+     */
+    void setFeature(@NotNull Feature feature) {
+        feat = feature; }
 }

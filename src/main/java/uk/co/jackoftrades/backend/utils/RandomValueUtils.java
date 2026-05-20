@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.enums.DamageAspect;
 
 import java.util.Random;
 
-public abstract class RandomValueUtils {
+public class RandomValueUtils {
     private static final Random random = new Random();
     private static final Logger logger = LogManager.getLogger();
 

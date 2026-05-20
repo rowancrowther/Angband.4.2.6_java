@@ -15,21 +15,15 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.monsters;
+package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
+import uk.co.jackoftrades.middle.monsters.MonsterRace;
 
-public class Monster {
-    private MonsterRace monsterRace;
-
-    private Flag<MonsterFlag> monsterFlags;
-
-    public MonsterRace getMonsterRace() {
-        return monsterRace;
-    }
-
-    public boolean hasMonsterFlag(MonsterFlag flag) {
-        return monsterFlags.has(flag);
-    }
+public class Quest {
+    private int index;
+    private String name;
+    private int level;
+    private MonsterRace race;
+    private int currentNumber;
+    private int maxNumber;
 }

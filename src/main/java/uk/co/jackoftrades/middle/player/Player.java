@@ -17,12 +17,18 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerOption;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Player {
@@ -66,9 +72,54 @@ public class Player {
 
     private HashMap<TimedEffect, Integer> timed;
 
+    private int wordRecall;
+    private int deepDescent;
+
+    private int energy;
+    private int totalEnergy;
+    private int restingTurn;
+
+    private int food;
+
+    private int unignoring;
+
+    private int skipCmdCoercion;
+    private int spellFlags; // TODO: Change this once we know what we are dealing with
+    private int spellOrder; // TODO: Change this once we know what we are dealing with
+
+    private String fullName;
+    private String diedFrom;
+    private String history;
+    private ArrayList<Quest> quests;
+    private int totalWinner;
+
+    private int noScore;
+
+    private boolean isDead;
+    private boolean isWizard;
+
+    private int[] playerHP;
+
+    private int auBirth;
+    private HashMap<Stats, Integer> statsBirth;
+    private int htBirth;
+    private int wtBirth;
+
+    private PlayerOptions options;
+    private PlayerHistory playerHistory;
+
+    private PlayerBody body;
+    private ArrayList<PlayerShape> shape;
+
+    private ArrayList<ItemObject> gear;
+    private ArrayList<ItemObject> gearKnown;
+
+    private ArrayList<ItemObject> itemObjectsKnown;
     private Chunk cave;
+
+    private PlayerState state;
+    private PlayerState knownState;
     private PlayerUpkeep playerUpkeep;
-    private PlayerBody playerBody;
 
     public Chunk getCave() {
         return cave;
@@ -79,7 +130,30 @@ public class Player {
     }
 
     public PlayerBody getPlayerBody() {
-        return playerBody;
+        return body;
+    }
+
+    /**
+     * Tests to see if a given player flag ]is set on the player state
+     *
+     * @param flag the player flag to check for
+     * @return true if the player flag is set on the player state
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean hasPlayerFlag(@NotNull PlayerFlag flag) {
+        return state.hasPFlag(flag);
+    }
+
+    /**
+     * Get the radius of the light of the current state of the player
+     *
+     * @return the light radius of the current state of the player
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getStateLight() {
+        return state.getCurLight();
     }
 
     /**
@@ -88,14 +162,33 @@ public class Player {
      * @param timedEffect the timed effect we are looking for
      * @return the amount of turns left on the supplied timed effect, or 0 if they are not under that effect
      */
-    public int getTimedEffect(TimedEffect timedEffect) {
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getTimedEffect(@NotNull TimedEffect timedEffect) {
         if (timed.containsKey(timedEffect)) {
             return timed.get(timedEffect);
         }
         return 0;
     }
 
-    public void knowObject(ItemObject item) {
+    /**
+     * Check whether a given PlayerOptionType flag is set
+     *
+     * @param type the flag to check the state of
+     * @return true if the type flag is set
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean opt(@NotNull PlayerOption type) {
+        return options.has(type);
+    }
 
+    public void knowObject(ItemObject item) {
+        // TODO: Expand this
+    }
+
+    public boolean ignoreKnownItemOk(@NotNull ItemObject item) {
+        // TODO: Expand this
+        return false;
     }
 }

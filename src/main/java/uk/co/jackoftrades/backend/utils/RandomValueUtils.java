@@ -257,7 +257,7 @@ public class RandomValueUtils {
     /**
      * Create a mBonus based on a damage aspect
      *
-     * @param max    the maximum value of the aspect
+     * @param max    the maximum possible bonus of the aspect TODO: Check this
      * @param level  the level on which the damage takes place
      * @param aspect the level aspect
      * @return a random number based on a normal distribution dependent on the aspect

@@ -19,6 +19,8 @@ package uk.co.jackoftrades.backend.strings;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.AngFile;
 import uk.co.jackoftrades.backend.io.enums.FileTypeEnum;
@@ -31,17 +33,26 @@ import java.util.List;
  * T block of text to be displayed straight to the screen.
  */
 public class TextBlock {
-    private List<AngbandDisplayCharacter> textAndAttributes;
+    private ArrayList<AngbandDisplayCharacter> textAndAttributes;
     private Logger logger = LogManager.getLogger();
 
     /**
      * Constructor
      */
+    @CheckReturnValue
+    @Contract(mutates = "this")
     public TextBlock() {
         textAndAttributes = new ArrayList<>();
     }
 
-    private String convertToString() {
+    /**
+     * Converts this to a string
+     *
+     * @return the characters of the AngbandDisplayCharacter values stored in this class
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private @NotNull String convertToString() {
         StringBuilder output = new StringBuilder("");
         for (AngbandDisplayCharacter adc : textAndAttributes) {
             output.append(adc.getCharacter());
@@ -56,7 +67,8 @@ public class TextBlock {
      * @param c   the character we are adding in
      * @param col the AttributeColour we are adding in
      */
-    public void append(char c, AttributeColour col) {
+    @Contract(mutates = "this")
+    public void append(char c, @NotNull AttributeColour col) {
         AngbandDisplayCharacter a = new AngbandDisplayCharacter(c, col);
         textAndAttributes.add(a);
     }
@@ -66,7 +78,8 @@ public class TextBlock {
      *
      * @param a the AngbandDisplayCharacter to append
      */
-    public void append(AngbandDisplayCharacter a) {
+    @Contract(mutates = "this")
+    public void append(@NotNull AngbandDisplayCharacter a) {
         textAndAttributes.add(a);
     }
 
@@ -75,6 +88,7 @@ public class TextBlock {
      *
      * @param toAppend the text block we wish to append to this one.
      */
+    @Contract(mutates = "this")
     public void append(@NotNull TextBlock toAppend) {
 
         for (AngbandDisplayCharacter textAndAttribute : toAppend.textAndAttributes) {
@@ -88,6 +102,7 @@ public class TextBlock {
      * @param fmt     the string to format and then append
      * @param objects the objects to format the string with
      */
+    @Contract(mutates = "this")
     public void append(@NotNull String fmt, Object... objects) {
         append(AttributeColour.COLOUR_WHITE, fmt, objects);
     }
@@ -99,6 +114,7 @@ public class TextBlock {
      * @param fmt     the string to format
      * @param objects the objects to format the string with
      */
+    @Contract(mutates = "this")
     public void append(@NotNull AttributeColour col, @NotNull String fmt, Object... objects) {
         String formattedString = fmt.formatted(objects);
         for (char ch : formattedString.toCharArray()) {
@@ -111,6 +127,8 @@ public class TextBlock {
      *
      * @return The current size of the array in this TextBlock
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public int length() {
         return textAndAttributes.size();
     }
@@ -121,6 +139,8 @@ public class TextBlock {
      * @param index The index of the textAndAttributes list we are starting at
      * @return the first non-whitespace character after index
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     private int skipWhiteSpace(int index) {
         char ch = textAndAttributes.get(index).getCharacter();
 
@@ -138,6 +158,8 @@ public class TextBlock {
      * @param index the current index of the line
      * @return the index of the next white space in the line
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private int skipNonWhiteSpace(int index) {
         char ch = textAndAttributes.get(index).getCharacter();
 
@@ -150,12 +172,13 @@ public class TextBlock {
     }
 
     /**
-     * TODO: Debug this into existance
      * Turn a TextBlock into wrapped lines of length width
      *
      * @param width The width of the wrapped lines
      * @return An array of TextBlocks
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public List<TextBlock> calculateLines(int width) {
         String valueToWrap = convertToString();
         String[] tokens = valueToWrap.split("\\s");
@@ -212,6 +235,7 @@ public class TextBlock {
      * @param string  The string we are appending to this text block
      * @param colours The colours we are using to append, linked to the characters in the string
      */
+    @Contract(mutates = "this")
     public void append(@NotNull String string, @NotNull List<AttributeColour> colours) {
         if (string.length() != colours.size()) {
             logger.error("Invalid string/list input to TextBlock creator. String was of length " + string.length() +
@@ -231,7 +255,8 @@ public class TextBlock {
      * @param indent  The indent to put in front of each line
      * @param wrapAt  Where we are wrapping the lines
      */
-    public void toFile(AngFile angFile, int indent, int wrapAt) {
+    @Contract(pure = true)
+    public void toFile(@NotNull AngFile angFile, int indent, int wrapAt) {
         String indentString;
         StringBuilder builder = new StringBuilder();
         builder.repeat(" ", indent);
@@ -252,6 +277,8 @@ public class TextBlock {
      *
      * @return A string showing the text from the text/attribute pairing
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     @Override
     public String toString() {
         StringBuilder output = new StringBuilder();

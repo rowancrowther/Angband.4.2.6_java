@@ -142,7 +142,7 @@ public class Rational {
      * @throws IllegalArgumentException if the denominator is 0 an illegal argument exception is thrown
      */
     @CheckReturnValue
-    @Contract(value = "_, 0, _ -> fail", mutates = "this")
+    @Contract(mutates = "this")
     public Rational(int numerator, int denominator, boolean simplify) throws IllegalArgumentException {
         if (denominator == 0) throw new IllegalArgumentException("Divide by zero not allowed.");
 

@@ -24,6 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.io.parsers.antlr.randomformatter.RandomFormatterLexer;
@@ -54,6 +55,7 @@ public class Random {
      * @param mBonus the multiplier of the die roll
      */
     @CheckReturnValue
+    @Contract(mutates = "this")
     public Random(int base, int mBonus, int dice, int sides, boolean toNegate) {
         //if (debug) logger.traceEntry("Random.constructor with values base: {} mBonus: {} dice: {} sides: {} toNegate: {}", base, mBonus, dice, sides, toNegate);
         this.base = base;
@@ -76,6 +78,7 @@ public class Random {
      * passed in, the value is set to 0.
      * @param base the lowest value that the Random can roll
      */
+    @Contract(mutates = "this")
     public void setBase(int base) {
         if (base < 0) base = 0;
         this.base = base;
@@ -86,6 +89,7 @@ public class Random {
      * passed in, the value is set to 1.
      * @param dice the number of dice to roll to create this Random value
      */
+    @Contract(mutates = "this")
     public void setDice(int dice) {
         if (dice <= 0) dice = 1;
         this.dice = dice;
@@ -96,6 +100,7 @@ public class Random {
      * passed in, the value is set to 1.
      * @param sides the type of dice to roll, i.e. d4, d6, d5, etc.
      */
+    @Contract(mutates = "this")
     public void setSides(int sides) {
         if (sides <= 0) sides = 1;
         this.sides = sides;
@@ -106,6 +111,7 @@ public class Random {
      * in, the value is set to 1.
      * @param mBonus the multiplier in the dice formula
      */
+    @Contract(mutates = "this")
     public void setMBonus(int mBonus) {
         if (mBonus <= 0) mBonus = 1;
         this.mBonus = mBonus;
@@ -116,6 +122,7 @@ public class Random {
      *
      * @param toNegate whether this random should be negated or not.
      */
+    @Contract(mutates = "this")
     @TestOnly
     public void setToNegate(boolean toNegate) {
         if (negated)
@@ -169,6 +176,7 @@ public class Random {
      * random has not already been negated. This calculates a new base value based
      * on the entire value rolled being negated
      */
+    @Contract(mutates = "this")
     public void negate() {
         //if (debug) logger.traceEntry("Random.negate() oldBase: {}", base);
 
@@ -300,8 +308,9 @@ public class Random {
      * @param string the string we are going to parse
      * @return a Random object based on the incoming string
      */
+    @Contract(pure = true)
     @CheckReturnValue
-    public static Random parseRandom(String string) {
+    public static Random parseRandom(@NotNull String string) {
         CharStream stream = CharStreams.fromString(string);
         RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
         CommonTokenStream tokens = new CommonTokenStream(lexer);

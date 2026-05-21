@@ -1,7 +1,25 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.numerics.Rational;
@@ -21,6 +39,8 @@ public abstract class NumberUtils {
      *         if a + b < Integer.MIN_VALUE then returns Integer.MIN_VALUE.<br>
      *         if a + b > Integer.MAX_VALUE then returns Integer.MAX_VALUE.
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int addGuardI(int a, int b) {
         if (a < 0)
             return b >= 0 || (b > Integer.MIN_VALUE && a >= Integer.MIN_VALUE - b)
@@ -38,6 +58,8 @@ public abstract class NumberUtils {
      * @return a - b provided this falls within the range Integer.MIN_VALUE to Integer.MAX_VALUE, if it is too large
      * then return Integer.MAX_VALUE, and if it is too small return Integer.MIN_VALUE
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int subGuardI(int a, int b) {
         if (a < 0) {
             return b <= 0 || a >= Integer.MIN_VALUE + b
@@ -57,6 +79,8 @@ public abstract class NumberUtils {
      * @return If a + b is outside the range -32768 to 32767 then return either -32758 if it is too low, or 32767 if it
      * is too high, otherwise return a + b.
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int addGuardI16(int a, int b) {
         int maxValue = 32767;
         int minValue = -32768;
@@ -78,6 +102,8 @@ public abstract class NumberUtils {
      * @param b the number to subtract
      * @return a - b if this falls within the range -32768 to 32767, -32768 if it is too small, or 32767 otherwise
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int subGuardI16(int a, int b) {
         int maxValue = 32767;
         int minValue = -32768;
@@ -106,19 +132,21 @@ public abstract class NumberUtils {
      * this requirement will not be there. If size is 0 then a null value is returned. If the size is greater than the
      * size of the ArrayList numbers, then it is changed to be the size of the list.
      */
-    @Contract("_, _ -> new")
+    @CheckReturnValue
+    @Contract(pure = true)
     public static @NotNull Rational mean(@NotNull ArrayList<Integer> numbers, int size) {
-        if (size == 0) {
+        if (size == 0 || numbers.isEmpty()) {
             return Rational.zero;
         }
-        if (size > numbers.size()) size = numbers.size();
 
-        Rational result = Rational.zero;
+        int newSize = Math.min(size, numbers.size());
 
-        for (int index = 0; index < size; index++)
-            result = result.add(new Rational(numbers.get(index)));
+        Rational sum = numbers.subList(0, newSize)
+                .stream()
+                .map(Rational::new)
+                .reduce(Rational.zero, Rational::add);
 
-        return result.div(new Rational(size));
+        return sum.div(new Rational(newSize));
     }
 
     /**
@@ -130,32 +158,30 @@ public abstract class NumberUtils {
      * @param ofMean   whether we are dividing by a further size or not
      * @return the variance of the first size numbers in a list
      */
-    @Contract("_, _, _, _ -> new")
-    public static @NotNull Rational variance(ArrayList<Integer> numbers, int size, boolean unbiased, boolean ofMean)
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static @NotNull Rational variance(@NotNull ArrayList<Integer> numbers, int size, boolean unbiased, boolean ofMean)
     {
         // Deal with division by zero errors
         if (size <= 1) return Rational.zero;
-        if (size > numbers.size()) size = numbers.size();
 
-        Rational result;
+        int newSize = Math.min(size, numbers.size());
 
-        Rational sumNums = Rational.zero;
+        Rational result = Rational.zero;
 
-        Rational mean = mean(numbers, size);
+        Rational mean = mean(numbers, newSize);
         // mean to subtract
         Rational minusMean = mean.multi(new Rational(-1));
 
-        for (int index = 0; index < size; index++) {
-            int num = numbers.get(index);
-            Rational numRational = new Rational(num, 1);
-            // subtract the mean
-            Rational currentTerm = numRational.add(minusMean);
-            currentTerm = currentTerm.multi(currentTerm);
-            sumNums = sumNums.add(currentTerm);
-        }
+        Rational sumNums = numbers.subList(0, newSize).stream()
+                .map(n -> {
+                    Rational t = new Rational(n).add(minusMean);
+                    return t.multi(t);
+                })
+                .reduce(Rational.zero, Rational::add);
 
-        Rational biasedRat = new Rational(size);
-        Rational unbiasedRat = new Rational(size - 1);
+        Rational biasedRat = new Rational(newSize);
+        Rational unbiasedRat = new Rational(newSize - 1);
 
         if (unbiased)
             result = sumNums.div(unbiasedRat);
@@ -163,7 +189,7 @@ public abstract class NumberUtils {
             result = sumNums.div(biasedRat);
 
         if (ofMean)
-            result = result.div(new Rational(size));
+            result = result.div(new Rational(newSize));
 
         return result;
     }

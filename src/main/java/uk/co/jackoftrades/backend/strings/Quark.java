@@ -19,6 +19,9 @@ package uk.co.jackoftrades.backend.strings;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.AngbandModule;
 
 import java.util.Collections;
@@ -37,8 +40,11 @@ public class Quark implements AngbandModule {
      * @return a unique key for it where the key value is 1 higher than the previous highest value in this map.
      * This allows deletions from the middle of the map without looking at the deleted position by accident in the
      * future.
+     * @throws NullPointerException if this collection of quarks is null
      */
-    public int add(String string) throws NullPointerException {
+    @CheckReturnValue
+    @Contract(mutates = "this")
+    public int add(@NotNull String string) throws NullPointerException {
         if (quarks == null) {
             String message = "Quark is null. String '" + string + "' cannot be added to a null quark.";
             logger.error(message);
@@ -60,6 +66,8 @@ public class Quark implements AngbandModule {
      *
      * @param other the other Quark to merge this one with
      */
+    @CheckReturnValue
+    @Contract(mutates = "this")
     public void merge(Quark other) {
         // if the other is null or has no entries, just return
         if (other == null || other.size() == 0) return;
@@ -79,7 +87,10 @@ public class Quark implements AngbandModule {
      * @param key the key of the string we wish to obtain from the map
      * @return if the key is a valid key (contained in the key set), then return the appropriate string - otherwise
      * return null.
+     * @throws NullPointerException when this quark hasn't been initiated yet
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public String getQuark(int key) throws NullPointerException {
         if (quarks == null) {
             String message = "Quark is null. Key '" + key + "' will not be present.";
@@ -91,12 +102,13 @@ public class Quark implements AngbandModule {
         return null;
     }
 
-
     /**
      * Get the number of quarks in the list
      *
      * @return The number of quarks in this quark list
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public int size() {
         return quarks.size();
     }
@@ -105,6 +117,8 @@ public class Quark implements AngbandModule {
      * @return the name of this module
      */
     @Override
+    @CheckReturnValue
+    @Contract(pure = true)
     public String getName() {
         return name;
     }
@@ -112,6 +126,7 @@ public class Quark implements AngbandModule {
     /**
      * Initialize this module
      */
+    @Contract(mutates = "this")
     @Override
     public void init() {
         quarks = new LinkedHashMap<>();
@@ -119,8 +134,9 @@ public class Quark implements AngbandModule {
     }
 
     /**
-     * Cleanup set the linked hash map to null to allow for recycling
+     * Clean up set the linked hash map to null to allow for recycling
      */
+    @Contract(mutates = "this")
     @Override
     public void cleanup() {
         quarks = null;

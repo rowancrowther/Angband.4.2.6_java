@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.backend.strings;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 
 /**
@@ -32,6 +34,8 @@ public class AngbandDisplayCharacter {
      * @param character       The character of this DisplayCharacter
      * @param attributeColour The AttributeColour in which this colour needs to be displayed in a screen
      */
+    @CheckReturnValue
+    @Contract(mutates = "this")
     public AngbandDisplayCharacter(char character, AttributeColour attributeColour) {
         this.character = character;
         this.attributeColour = attributeColour;
@@ -41,6 +45,8 @@ public class AngbandDisplayCharacter {
      * Getter for the character
      * @return the character of this instance
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public char getCharacter() {
         return character;
     }
@@ -49,10 +55,20 @@ public class AngbandDisplayCharacter {
      * Getter for the colour
      * @return the colour of this character as an AttributeColour
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public AttributeColour getAttributeColour() {
         return attributeColour;
     }
 
+    /**
+     * Checks to see if an incoming value is the same class type and value as this one
+     *
+     * @param o the reference object with which to compare.
+     * @return true if this is the same class type and has the same values as this
+     */
+    @CheckReturnValue
+    @Contract(value = "null -> false", pure = true)
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -61,6 +77,15 @@ public class AngbandDisplayCharacter {
         return getCharacter() == that.getCharacter() && getAttributeColour() == that.getAttributeColour();
     }
 
+    /**
+     * Overrides the hash code method of this class
+     * <p>
+     * This is done to ensure we can use .equals() functionality and for use in hashed collections.
+     *
+     * @return
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
     @Override
     public int hashCode() {
         int result = getCharacter();

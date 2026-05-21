@@ -1,12 +1,33 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils;
 
+import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.EnumSet;
+import java.util.List;
 
 public class Flag<E extends Enum<E>> {
-    private EnumSet<E> set;
+    private final EnumSet<E> flagSet;
     private final EnumSet<E> all;
     private final Class<E> eClass;
 
@@ -15,9 +36,10 @@ public class Flag<E extends Enum<E>> {
      *
      * @param eClass The class of the enum
      */
-    public Flag(Class<E> eClass) {
+    @Contract(mutates = "this")
+    public Flag(@NotNull Class<E> eClass) {
         this.eClass = eClass;
-        set = EnumSet.noneOf(this.eClass);
+        flagSet = EnumSet.noneOf(this.eClass);
         all = EnumSet.allOf(this.eClass);
     }
 
@@ -27,8 +49,10 @@ public class Flag<E extends Enum<E>> {
      * @param flag The flag we are testing
      * @return true if flag is in set, false otherwise
      */
-    public boolean has(E flag) {
-        return set.contains(flag);
+    @CheckReturnValue
+    @Contract(pure = true)
+    public boolean has(@NotNull E flag) {
+        return flagSet.contains(flag);
     }
 
     /**
@@ -39,31 +63,17 @@ public class Flag<E extends Enum<E>> {
      * @return The next set flag, or the last flag in the enum if currentFLag isn't set, or there are no more set flags
      * after currentFlag
      */
-    public E next(E currentFlag) {
-        if (!set.contains(currentFlag)) return getLast();
+    @Contract(pure = true)
+    @CheckReturnValue
+    public E next(@NotNull E currentFlag) {
+        boolean found = false;
 
-        Object[] setToArray = set.toArray();
-
-        for (int index = 0; index < set.size(); index++) {
-            if (setToArray[index] == currentFlag) {
-                if (index == set.size() - 1)
-                    return getLast();
-
-                //noinspection unchecked
-                return (E) setToArray[index + 1];
-            }
+        for (E flag : flagSet) {
+            if (found) return flag;
+            if (flag.equals(currentFlag)) found = true;
         }
 
-        return getLast();
-    }
-
-    private E getLast() {
-        Iterator<E> allFlags = all.iterator();
-        E flag = null;
-
-        while (allFlags.hasNext()) flag = allFlags.next();
-
-        return flag;
+        return Collections.max(all);
     }
 
     /**
@@ -71,8 +81,10 @@ public class Flag<E extends Enum<E>> {
      *
      * @return The size of the set of flags which are on
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public int count() {
-        return set.size();
+        return flagSet.size();
     }
 
     /**
@@ -81,8 +93,10 @@ public class Flag<E extends Enum<E>> {
      *
      * @return True if there are no flags set on, false otherwise
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isEmpty() {
-        return set.isEmpty();
+        return flagSet.isEmpty();
     }
 
     /**
@@ -90,8 +104,10 @@ public class Flag<E extends Enum<E>> {
      *
      * @return true if all the flags in set are on, false otherwise
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isFull() {
-        return set.size() == all.size();
+        return flagSet.size() == all.size();
     }
 
     /**
@@ -100,9 +116,11 @@ public class Flag<E extends Enum<E>> {
      * @param other the set we are comparing against
      * @return true if at least one flag is set in both this.set and other.set
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isInter(@NotNull Flag<E> other) {
-        for (E flag : other.set) {
-            if (set.contains(flag))
+        for (E flag : other.flagSet) {
+            if (flagSet.contains(flag))
                 return true;
         }
 
@@ -115,9 +133,11 @@ public class Flag<E extends Enum<E>> {
      * @param other the other set to compare
      * @return False if there exists one flag set in other which is not set in this, true otherwise
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isSubset(@NotNull Flag<E> other) {
-        for (E flag : other.set)
-            if (!set.contains(flag))
+        for (E flag : other.flagSet)
+            if (!flagSet.contains(flag))
                 return false;
 
         return true;
@@ -130,6 +150,8 @@ public class Flag<E extends Enum<E>> {
      * @param other the set we are comparing
      * @return True if both this and other have exactly the same pattern of flags set.
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public boolean isEqual(@NotNull Flag<E> other) {
         return other.isSubset(this) && isSubset(other);
     }
@@ -140,11 +162,12 @@ public class Flag<E extends Enum<E>> {
      * @param flag the flag to set
      * @return false if the flag was already set, true otherwise
      */
-    public boolean on(E flag) {
-        if (set.contains(flag))
+    @Contract(mutates = "this")
+    public boolean on(@NotNull E flag) {
+        if (flagSet.contains(flag))
             return false;
 
-        set.add(flag);
+        flagSet.add(flag);
         return true;
     }
 
@@ -154,9 +177,10 @@ public class Flag<E extends Enum<E>> {
      * @param flag the flag to remove
      * @return true if the flag was there before the remove, false otherwise
      */
-    public boolean off(E flag) {
-        if (set.contains(flag)) {
-            set.remove(flag);
+    @Contract(mutates = "this")
+    public boolean off(@NotNull E flag) {
+        if (flagSet.contains(flag)) {
+            flagSet.remove(flag);
             return true;
         }
         return false;
@@ -165,26 +189,29 @@ public class Flag<E extends Enum<E>> {
     /**
      * Sets all the flags in this set to off
      */
+    @Contract(mutates = "this")
     public void wipe() {
-        set = EnumSet.noneOf(eClass);
+        flagSet.clear();
     }
 
     /**
      * Set all the flags in this set to on
      */
+    @Contract(mutates = "this")
     public void setAll() {
-        set = EnumSet.allOf(eClass);
+        flagSet.addAll(all);
     }
 
     /**
      * Toggle the state of all the flags in the set
      */
+    @Contract(mutates = "this")
     public void negate() {
         for (E flag : all) {
-            if (set.contains(flag))
-                set.remove(flag);
+            if (flagSet.contains(flag))
+                flagSet.remove(flag);
             else
-                set.add(flag);
+                flagSet.add(flag);
         }
     }
 
@@ -193,10 +220,12 @@ public class Flag<E extends Enum<E>> {
      *
      * @return a flag set with the same flags set as this one
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public Flag<E> copy() {
         Flag<E> result = new Flag<>(eClass);
 
-        for (E flag : set) {
+        for (E flag : flagSet) {
             result.on(flag);
         }
 
@@ -209,12 +238,13 @@ public class Flag<E extends Enum<E>> {
      * @param other the set to make this set the union of
      * @return true if any changes were made, false otherwise
      */
+    @Contract(mutates = "this")
     public boolean union(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
-        for (E flag : other.set) {
-            if (!set.contains(flag)) {
-                set.add(flag);
+        for (E flag : other.flagSet) {
+            if (!flagSet.contains(flag)) {
+                flagSet.add(flag);
                 changesMade = true;
             }
         }
@@ -228,15 +258,16 @@ public class Flag<E extends Enum<E>> {
      * @param other the set to make this an intersection of
      * @return true if any changes were made, false otherwise
      */
+    @Contract(mutates = "this")
     public boolean inter(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
         Flag<E> copy = other.copy();
         copy.negate();
 
-        for (E flag : copy.set) {
-            if (set.contains(flag)) {
-                set.remove(flag);
+        for (E flag : copy.flagSet) {
+            if (flagSet.contains(flag)) {
+                flagSet.remove(flag);
                 changesMade = true;
             }
         }
@@ -250,11 +281,12 @@ public class Flag<E extends Enum<E>> {
      * @param other the other flag set to compare to this
      * @return true if any changes were made, false otherwise
      */
+    @Contract(mutates = "this")
     public boolean diff(@NotNull Flag<E> other) {
         boolean changesMade = false;
 
-        for (E flag : other.set) {
-            if (set.contains(flag)) {
+        for (E flag : other.flagSet) {
+            if (flagSet.contains(flag)) {
                 if (this.off(flag)) changesMade = true;
             }
         }
@@ -268,11 +300,12 @@ public class Flag<E extends Enum<E>> {
      * @param flags the list of flags to test this against
      * @return true if any one of the flags in the list is set in this, false otherwise
      */
+    @CheckReturnValue
     @Contract(pure = true)
     @SafeVarargs
     public final boolean test(E @NotNull ... flags) {
         for (E flag : flags) {
-            if (set.contains(flag))
+            if (flagSet.contains(flag))
                 return true;
         }
 
@@ -285,10 +318,11 @@ public class Flag<E extends Enum<E>> {
      * @param flags the list of flags to test this against
      * @return true if any one of the flags in the list is set in this, false otherwise
      */
+    @CheckReturnValue
     @Contract(pure = true)
     public final boolean test(@NotNull List<E> flags) {
         for (E flag : flags) {
-            if (set.contains(flag))
+            if (flagSet.contains(flag))
                 return true;
         }
 
@@ -301,11 +335,12 @@ public class Flag<E extends Enum<E>> {
      * @param flags The flags to test the value of
      * @return true if ALL the flags are set, false otherwise
      */
+    @CheckReturnValue
     @SafeVarargs
     @Contract(pure = true)
     public final boolean testAll(E @NotNull ... flags) {
         for (E flag : flags) {
-            if (!set.contains(flag))
+            if (!flagSet.contains(flag))
                 return false;
         }
 
@@ -318,10 +353,11 @@ public class Flag<E extends Enum<E>> {
      * @param flags The flags to test the value of
      * @return true if ALL the flags are set, false otherwise
      */
+    @CheckReturnValue
     @Contract(pure = true)
     public final boolean testAll(@NotNull List<E> flags) {
         for (E flag : flags) {
-            if (!set.contains(flag))
+            if (!flagSet.contains(flag))
                 return false;
         }
 
@@ -334,15 +370,16 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
      */
+    @Contract(mutates = "this")
     @SafeVarargs
     public final boolean clear(E @NotNull ... flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
-            if (set.contains(flag))
+            if (flagSet.contains(flag))
                 changesMade = true;
 
-            set.remove(flag);
+            flagSet.remove(flag);
         }
 
         return changesMade;
@@ -354,14 +391,15 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
      */
+    @Contract(mutates = "this")
     public final boolean clear(@NotNull List<E> flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
-            if (set.contains(flag))
+            if (flagSet.contains(flag))
                 changesMade = true;
 
-            set.remove(flag);
+            flagSet.remove(flag);
         }
 
         return changesMade;
@@ -373,15 +411,16 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
      */
+    @Contract(mutates = "this")
     @SafeVarargs
     public final boolean set(E @NotNull ... flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
-            if (!set.contains(flag))
+            if (!flagSet.contains(flag))
                 changesMade = true;
 
-            set.add(flag);
+            flagSet.add(flag);
         }
 
         return changesMade;
@@ -393,14 +432,15 @@ public class Flag<E extends Enum<E>> {
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
      */
+    @Contract(mutates = "this")
     public boolean set(@NotNull List<E> flags) {
         boolean changesMade = false;
 
         for (E flag : flags) {
-            if (!set.contains(flag))
+            if (!flagSet.contains(flag))
                 changesMade = true;
 
-            set.add(flag);
+            flagSet.add(flag);
         }
 
         return changesMade;
@@ -411,20 +451,22 @@ public class Flag<E extends Enum<E>> {
      * @param flags The set of flags to initialise the cleared Flag to
      */
     @SafeVarargs
+    @Contract(mutates = "this")
     public final void init(E @NotNull ... flags) {
-        set = EnumSet.noneOf(eClass);
+        flagSet.clear();
 
-        set.addAll(Arrays.stream(flags).toList());
+        flagSet.addAll(Arrays.stream(flags).toList());
     }
 
     /**
      * Clear this set and then set a number of flags in a list to be on
      * @param flags The set of flags to initialise the cleared Flag to
      */
+    @Contract(mutates = "this")
     public void init(@NotNull List<E> flags) {
-        set = EnumSet.noneOf(eClass);
+        flagSet.clear();
 
-        Collections.addAll(flags);
+        flagSet.addAll(flags);
     }
 
     /**
@@ -435,6 +477,7 @@ public class Flag<E extends Enum<E>> {
      *              the compliment and this
      * @return true if any changes were made, false otherwise.
      */
+    @Contract(mutates = "this")
     @SafeVarargs
     public final boolean mask(E @NotNull ... flags) {
         Flag<E> mask = new Flag<>(eClass);
@@ -451,6 +494,7 @@ public class Flag<E extends Enum<E>> {
      *              the compliment and this
      * @return true if any changes were made, false otherwise.
      */
+    @Contract(mutates = "this")
     public boolean mask(@NotNull List<E> flags) {
         Flag<E> mask = new Flag<>(eClass);
         mask.init(flags);

@@ -19,6 +19,8 @@ package uk.co.jackoftrades.backend.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 
@@ -262,6 +264,8 @@ public class RandomValueUtils {
      * @param aspect the level aspect
      * @return a random number based on a normal distribution dependent on the aspect
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     public static int mBonusCalc(int max, int level, @NotNull DamageAspect aspect) {
         return switch (aspect) {
             case EXTREMIFY, MAXIMIZE -> max;

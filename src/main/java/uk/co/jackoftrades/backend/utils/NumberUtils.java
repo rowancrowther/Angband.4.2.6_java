@@ -29,7 +29,8 @@ import java.util.ArrayList;
 public abstract class NumberUtils {
     private static final Logger logger = LogManager.getLogger();
 
-    private NumberUtils() {};
+    private NumberUtils() {
+    }
 
     /**
      * Return a + b coerced to be in the range Integer.MIN_VALUE to Integer.MAX_VALUE
@@ -167,7 +168,7 @@ public abstract class NumberUtils {
 
         int newSize = Math.min(size, numbers.size());
 
-        Rational result = Rational.zero;
+        Rational result;
 
         Rational mean = mean(numbers, newSize);
         // mean to subtract

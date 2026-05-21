@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils;
 
 import org.junit.jupiter.api.Test;
@@ -97,8 +114,8 @@ class StringUtilsTest {
         char isNotPrintable = (char) 10;
 
         assertAll(
-                () -> assertFalse(StringUtils.isPrint(isNotPrintable)),
-                () -> assertTrue(StringUtils.isPrint(isPrintable))
+                () -> assertEquals('\0', StringUtils.isPrint(isNotPrintable)),
+                () -> assertEquals(isPrintable, StringUtils.isPrint(isPrintable))
         );
     }
 
@@ -138,12 +155,19 @@ class StringUtilsTest {
         String second = "ab";
         String third = "AC";
         int number = 2;
+        int largeNumber = 4;
+
+        int res1 = StringUtils.strNICmp(first, second, number);
+        int res2 = StringUtils.strNICmp(second, third, number);
+        int res3 = StringUtils.strNICmp(third, first, number);
+        int res4 = StringUtils.strNICmp(first, second, largeNumber);
+        System.out.println(res4);
 
         assertAll(
                 () -> assertEquals(0, StringUtils.strNICmp(first, second, number)),
                 () -> assertEquals(-1, StringUtils.strNICmp(second, third, number)),
                 () -> assertEquals(1, StringUtils.strNICmp(third, first, number)),
-                () -> assertEquals(0, StringUtils.strNICmp(first, second, 10))
+                () -> assertEquals(0, StringUtils.strNICmp(first, second, largeNumber))
         );
     }
 
@@ -322,7 +346,7 @@ class StringUtilsTest {
                 () -> assertEquals(-1, StringUtils.hexStrToInt(error1)),
                 () -> assertEquals(-1, StringUtils.hexStrToInt(error2)),
                 () -> assertEquals(-1, StringUtils.hexStrToInt(error3))
-                );
+        );
     }
 
     @Test

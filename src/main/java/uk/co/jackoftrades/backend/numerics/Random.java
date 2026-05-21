@@ -38,8 +38,8 @@ public class Random {
     private int mBonus;
     private boolean toNegate;
     private boolean negated;
-    private final Logger logger = LogManager.getLogger(Random.class.getName());
-    private final boolean debug = false;
+    private final static Logger logger = LogManager.getLogger(Random.class.getName());
+    //private final boolean debug = false;
 
     /**
      * Constructor: four integer parameters

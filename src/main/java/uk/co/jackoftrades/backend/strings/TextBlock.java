@@ -33,8 +33,8 @@ import java.util.List;
  * T block of text to be displayed straight to the screen.
  */
 public class TextBlock {
-    private ArrayList<AngbandDisplayCharacter> textAndAttributes;
-    private Logger logger = LogManager.getLogger();
+    private final ArrayList<AngbandDisplayCharacter> textAndAttributes;
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * Constructor
@@ -53,7 +53,7 @@ public class TextBlock {
     @Contract(pure = true)
     @CheckReturnValue
     private @NotNull String convertToString() {
-        StringBuilder output = new StringBuilder("");
+        StringBuilder output = new StringBuilder();
         for (AngbandDisplayCharacter adc : textAndAttributes) {
             output.append(adc.getCharacter());
         }
@@ -186,7 +186,7 @@ public class TextBlock {
         int tokenLength;
         List<TextBlock> output = new ArrayList<>();
         TextBlock currentLine = new TextBlock();
-        boolean splitWord = false;
+        boolean splitWord;
 
         for (String token : tokens) {
             splitWord = false;
@@ -195,7 +195,7 @@ public class TextBlock {
                 if (tokenLength > width) {
                     if (currentLine.length() != 0) output.add(currentLine);
 
-                    while (token.length() > 0) {
+                    while (!token.isEmpty()) {
                         currentLine = new TextBlock();
                         currentLine.append(token.substring(0, Math.min(width, token.length())));
                         if (token.length() > width) {

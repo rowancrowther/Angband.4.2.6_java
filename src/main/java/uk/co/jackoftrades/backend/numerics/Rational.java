@@ -142,7 +142,7 @@ public class Rational {
      * @throws IllegalArgumentException if the denominator is 0 an illegal argument exception is thrown
      */
     @CheckReturnValue
-    @Contract(value = "_, _, 0 -> fail", mutates = "this")
+    @Contract(value = "_, 0, _ -> fail", mutates = "this")
     public Rational(int numerator, int denominator, boolean simplify) throws IllegalArgumentException {
         if (denominator == 0) throw new IllegalArgumentException("Divide by zero not allowed.");
 
@@ -209,22 +209,22 @@ public class Rational {
      * @see #hashCode()
      * @see HashMap
      */
-    @Contract(value = "null -> false", mutates = "this")
-    @CheckReturnValue
+    @Contract(value = "null -> false")
     @Override
     public boolean equals(Object obj) {
         if (obj == null) return false;
-        if (!(obj instanceof Rational)) return false;
+        if (obj instanceof Rational other) {
 
-        Rational other = (Rational) obj;
+            if (denominator == 0 && other.getDenominator() == 0) return true;
+            if (other.getDenominator() == 0 || denominator == 0) return false;
 
-        if (denominator == 0 && other.denominator == 0) return true;
-        if (other.denominator == 0 || denominator == 0) return false;
+            Rational thisRational = new Rational(this.numerator, this.denominator, true);
+            Rational objRational = new Rational(other.getNumerator(), (other.getDenominator()), true);
 
-        this.simplify();
-        other.simplify();
+            return thisRational.numerator == objRational.numerator && thisRational.denominator == objRational.denominator;
+        }
 
-        return this.numerator == other.numerator && this.denominator == other.denominator;
+        return false;
     }
 
     /**

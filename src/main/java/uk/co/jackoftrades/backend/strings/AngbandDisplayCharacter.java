@@ -25,8 +25,8 @@ import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
  * Class to hold a single character of a particular colour
  */
 public class AngbandDisplayCharacter {
-    private char character;
-    private AttributeColour attributeColour;
+    private final char character;
+    private final AttributeColour attributeColour;
 
     /**
      * Constructor (the only way to set field values
@@ -82,7 +82,7 @@ public class AngbandDisplayCharacter {
      * <p>
      * This is done to ensure we can use .equals() functionality and for use in hashed collections.
      *
-     * @return
+     * @return a hash for this instance of this class
      */
     @CheckReturnValue
     @Contract(pure = true)

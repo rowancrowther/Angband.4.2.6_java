@@ -320,7 +320,7 @@ public class GameConstants {
     private static final ArrayList<TrapKind> trapInfo = new ArrayList<>();
     public static final ArrayList<ObjectKind> objectKinds = new ArrayList<>();
 
-    public static final Chunk cave = new Chunk();
+    public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
     public static final Player mainPlayer = new Player();
 
     public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {

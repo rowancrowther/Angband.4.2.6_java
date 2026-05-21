@@ -73,9 +73,46 @@ public class Chunk {
     private int monCurrent;
     private int numRepro;
 
-    private MonsterGroup[][] monsterGroups;
+    private ArrayList<MonsterGroup> monsterGroups;
 
     private ArrayList<Connector> join;
+
+    public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
+                 boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
+                 int monCnt, int monCurrent, int numRepro) {
+        this.name = name;
+        this.turn = turn;
+        this.depth = depth;
+        this.feeling = feeling;
+        this.objectRating = objectRating;
+        this.monsterRating = monsterRating;
+        this.goodItem = goodItem;
+        this.height = height;
+        this.width = width;
+        this.feelingSquares = feelingSquares;
+        this.featCount = new HashMap<>();
+
+        this.squares = new Square[this.width][this.height];
+
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                squares[x][y] = new Square(null, 1, 1);
+            }
+        }
+
+        this.noise = new Heatmap();
+        this.scent = new Heatmap();
+        this.decoy = Loc.zero;
+        this.objectPile = new Pile();
+        this.objMax = objMax;
+        this.monsters = new Monster[monMax];
+        this.monMax = monMax;
+        this.monCnt = monCnt;
+        this.monCurrent = monCurrent;
+        this.numRepro = numRepro;
+        this.monsterGroups = new ArrayList<>();
+        this.join = new ArrayList<>();
+    }
 
     /**
      * Test to see whether a grid location is in the bounds for this chunk
@@ -253,7 +290,9 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return an Iterator<ItemObject> for the objects on square located at grid
      */
-    Iterator<ItemObject> getPileIterator(Loc grid) {
+    @CheckReturnValue
+    @Contract(pure = true)
+    Iterator<ItemObject> getPileIterator(@NotNull Loc grid) {
         return getSquare(grid).getSquarePileIterator();
     }
 
@@ -333,23 +372,14 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square is on the edge of a trap detection area
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareDTrapEdge(@NotNull Loc grid) {
-        if (!inBounds(grid)) return false;
+        if (!inBounds(grid) || getSquare(grid).isDTrap()) return false;
 
-        Square square = getSquare(grid);
-        if (!square.isDTrap()) return false;
-
-        Loc southGrid = grid.nextGrid(DirectionEnum.DIR_S);
-        Loc eastGrid = grid.nextGrid(DirectionEnum.DIR_E);
-        Loc northGrid = grid.nextGrid(DirectionEnum.DIR_N);
-        Loc westGrid = grid.nextGrid(DirectionEnum.DIR_W);
-
-        if (inBoundsFully(southGrid) && !squareIsDTrap(southGrid)) return true;
-        if (inBoundsFully(eastGrid) && !squareIsDTrap(eastGrid)) return true;
-        if (inBoundsFully(westGrid) && !squareIsDTrap(westGrid)) return true;
-        if (inBoundsFully(northGrid) && !squareIsDTrap(northGrid)) return true;
-
-        return false;
+        return Stream.of(DirectionEnum.DIR_N, DirectionEnum.DIR_S, DirectionEnum.DIR_E, DirectionEnum.DIR_W)
+                .map(grid::nextGrid)
+                .anyMatch(neighbour -> inBoundsFully(neighbour) && !squareIsDTrap(neighbour));
     }
 
     /**
@@ -418,6 +448,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square CANNOT be magically mapped by the player
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsNoMap(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isNoMap();
     }
@@ -440,6 +472,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square is marked for projection passing
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsProject(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isProject();
     }
@@ -534,6 +568,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square has an interesting feature
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsInteresting(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).featIsIntersting();
     }
@@ -558,6 +594,8 @@ public class Chunk {
      * @param grid the Loc of the square to test
      * @return true if the square is a locked door
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsLockedDoor(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isLockedDoor();
     }
@@ -568,6 +606,8 @@ public class Chunk {
      * @param grid the Loc of the square to test
      * @return true if the square is an unlocked door
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsUnlockedDoor(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isUnlockedDoor();
     }
@@ -578,10 +618,20 @@ public class Chunk {
      * @param grid the Loc to test
      * @return true if there is a player trap on the square at grid
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareIsPlayerTrap(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isPlayerTrap();
     }
 
+    /**
+     * Tests to see if the player is on this square
+     *
+     * @param grid the Loc of this square
+     * @return true if the player is on this square
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
     boolean squareIsPlayer(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isPlayer();
     }
@@ -594,7 +644,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsEmpty(Loc grid) {
+    private boolean squareIsEmpty(@NotNull Loc grid) {
         if (!inBounds(grid))
             return false;
 
@@ -619,6 +669,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square is untrapped without items
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareCanPutItem(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).canPutItem();
     }
@@ -718,6 +770,8 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if line of sight passes through this square
      */
+    @CheckReturnValue
+    @Contract(pure = true)
     private boolean squareAllowsLOS(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).featAllowsLOS();
     }
@@ -852,10 +906,7 @@ public class Chunk {
         if (!inBounds(grid)) return 0;
 
         return (int) Stream.of(
-                        DirectionEnum.DIR_S,
-                        DirectionEnum.DIR_N,
-                        DirectionEnum.DIR_E,
-                        DirectionEnum.DIR_W
+                        DirectionEnum.DIR_S, DirectionEnum.DIR_N, DirectionEnum.DIR_E, DirectionEnum.DIR_W
                 )
                 .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
                 .count();
@@ -873,10 +924,7 @@ public class Chunk {
         if (!inBounds(grid)) return 0;
 
         return (int) Stream.of(
-                        DirectionEnum.DIR_SE,
-                        DirectionEnum.DIR_NW,
-                        DirectionEnum.DIR_NE,
-                        DirectionEnum.DIR_SW
+                        DirectionEnum.DIR_SE, DirectionEnum.DIR_NW, DirectionEnum.DIR_NE, DirectionEnum.DIR_SW
                 )
                 .filter(dir -> getSquare(grid.nextGrid(dir)).featIsWall())
                 .count();
@@ -976,11 +1024,11 @@ public class Chunk {
      * @param infoFlag the info flag we are checking for
      * @return true if the square at Loc grid has infoFlag set
      */
-    boolean squareHasInfoFlag(@NotNull Loc grid, SquareEnum infoFlag) {
+    @CheckReturnValue
+    @Contract(pure = true)
+    boolean squareHasInfoFlag(@NotNull Loc grid, @NotNull SquareEnum infoFlag) {
         return (inBounds(grid) && getSquare(grid).hasInfoFlag(infoFlag));
     }
-
-
 
     /**
      * Gets whether a square is lit or not
@@ -988,7 +1036,9 @@ public class Chunk {
      * @param grid the Loc of the square
      * @return true if the square is lit
      */
-    boolean squareIsLit(Loc grid) {
+    @CheckReturnValue
+    @Contract(pure = true)
+    boolean squareIsLit(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).isLit();
     }
 
@@ -1000,7 +1050,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private @Nullable ItemObject squareObject(Loc grid) {
+    private @Nullable ItemObject squareObject(@NotNull Loc grid) {
         if (!inBounds(grid)) return null;
         return getSquare(grid).getTopObject();
     }
@@ -1057,8 +1107,10 @@ public class Chunk {
      *
      * @param grid the location of the object
      * @param item the object to excise
+     * @throws IndexOutOfBoundsException if the grid is outside the chunk's boundaries
      */
-    public void squareExciseObject(@NotNull Loc grid, @NotNull ItemObject item) {
+    @Contract(mutates = "this")
+    public void squareExciseObject(@NotNull Loc grid, @NotNull ItemObject item) throws IndexOutOfBoundsException {
         if (!inBounds(grid)) {
             String message = "Location out of bounds, being thrown as a fatal error after logging";
             IndexOutOfBoundsException ex = new IndexOutOfBoundsException(message);
@@ -1074,7 +1126,8 @@ public class Chunk {
      *
      * @param item The object we wish to delete
      */
-    public void objectDelete(Chunk playerCave, @NotNull ItemObject item) {
+    @Contract(mutates = "this")
+    public void objectDelete(@Nullable Chunk playerCave, @NotNull ItemObject item) {
         objectPile.excise(item);
 
         Player player = GameConstants.mainPlayer;
@@ -1106,6 +1159,7 @@ public class Chunk {
      *
      * @param item the object to remove
      */
+    @Contract(mutates = "this")
     public void delistObject(ItemObject item) {
         if (!objectPile.contains(item)) return;
 

@@ -166,8 +166,8 @@ public class Screen {
 
     private void bigcursWin(int x, int y) {
         Rect rect;
-        int tileWid;
-        int tileHgt;
+        long tileWid;
+        long tileHgt;
 
         if (term.getTermData().isMapActive()) {
             cursWin(x, y);
@@ -177,9 +177,9 @@ public class Screen {
             tileHgt = term.getTermData().getTileHeight();
         }
 
-        long left = x * tileWid + term.getTermData().getSizeOW1();
+        long left = (long) x * tileWid + term.getTermData().getSizeOW1();
         long right = left + tileWid * tileWidth;
-        long top = y * tileHgt + term.getTermData().getSizeOH1();
+        long top = (long) y * tileHgt + term.getTermData().getSizeOH1();
         long bottom = top + tileHgt * tileHeight;
 
         rect = new Rect(left, top, right, bottom);

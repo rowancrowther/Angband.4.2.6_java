@@ -1,7 +1,9 @@
 grammar ConstantsFormatter;
 
 @header     {   import java.util.ArrayList;
-                import java.util.HashMap;
+            }
+
+@members    {   public record Entry(String key, String value) {}
             }
 
 section returns[String sect, String value]
@@ -52,9 +54,7 @@ file    returns[ArrayList<HashMap<String, String>> results]
             $results = new ArrayList<>();
         }
         :   (line {
-                        HashMap<String, String> keyValues = new HashMap<>();
-                        keyValues.put($line.sect, $line.val);
-                        $results.add(keyValues);
+                        $results.add(new Entry($line.sect, $line.val));
                   })*
             EOF
         ;

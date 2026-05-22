@@ -17,12 +17,10 @@
 
 package uk.co.jackoftrades.middle.cave;
 
-import org.jetbrains.annotations.CheckReturnValue;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -38,8 +36,8 @@ public class Square {
 
     private int light;
     private int monsterIndex;
-    private final Pile objectPile;
-    private final ArrayList<Trap> traps;
+    private Pile objectPile;
+    private ArrayList<Trap> traps;
 
     public Square(Feature feature, int light, int monsterIndex) {
         this.feat = feature;
@@ -1063,4 +1061,31 @@ public class Square {
      */
     void setFeature(@NotNull Feature feature) {
         feat = feature; }
+
+    @TestOnly
+    void setUpTest(boolean full) {
+        if (objectPile == null)
+            objectPile = new Pile();
+
+        if (full) {
+            feat = GameConstants.lookupFeature(TerrainFlags.FEAT_FLOOR);
+            light = 2;
+            monsterIndex = 1;
+            objectPile.clear();
+            objectPile.insert(new ItemObject());
+            objectPile.insert(new ItemObject());
+            objectPile.insert(new ItemObject());
+            traps.clear();
+            traps.addFirst(new Trap());
+            info.clear();
+            info.negate();
+        } else {
+            feat = GameConstants.lookupFeature(TerrainFlags.FEAT_NONE);
+            light = 0;
+            monsterIndex = -1;
+            objectPile.clear();
+            traps.clear();
+            info.clear();
+        }
+    }
 }

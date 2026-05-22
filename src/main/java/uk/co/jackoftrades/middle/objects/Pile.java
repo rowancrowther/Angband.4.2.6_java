@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -41,6 +42,8 @@ public class Pile {
     private static int failLine;
 
     public Pile() {
+        pile = new ArrayList<>();
+        failPile = new ArrayList<>();
     }
 
     /**
@@ -236,5 +239,10 @@ public class Pile {
     @Contract(pure = true)
     public Iterator<ItemObject> getIterator() {
         return pile.iterator();
+    }
+
+    @TestOnly
+    public void clear() {
+        pile.clear();
     }
 }

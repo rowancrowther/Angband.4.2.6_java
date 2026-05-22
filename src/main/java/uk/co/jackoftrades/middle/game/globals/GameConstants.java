@@ -324,6 +324,7 @@ public class GameConstants {
     public static final Player mainPlayer = new Player();
 
     public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {
+        if (features == null) return null;
         for (Feature feature : features) {
             if (feature.getTerrainFlag().equals(flag))
                 return feature;
@@ -409,21 +410,21 @@ public class GameConstants {
      */
     public static void init() {
         loadGameConstants();
-        loadWorld();
-        loadProjections();
-        loadUIEntryRenderers();
-        loadUIEntryBases();
-        loadUIEntries();
-        loadPlayerProperties();
-        loadTerrainFeatures();
-        loadObjectBases();
-        loadSlays();
-        loadBrands();
-        loadPain();
-        loadMonsterBases();
-        loadSummons();
-        loadCurses();
-        loadPlayerShapes();
+//        loadWorld();
+//        loadProjections();
+//        loadUIEntryRenderers();
+//        loadUIEntryBases();
+//        loadUIEntries();
+//        loadPlayerProperties();
+//        loadTerrainFeatures();
+//        loadObjectBases();
+//        loadSlays();
+//        loadBrands();
+//        loadPain();
+//        loadMonsterBases();
+//        loadSummons();
+//        loadCurses();
+//        loadPlayerShapes();
     }
 
     private static void loadPlayerShapes() {
@@ -689,78 +690,78 @@ public class GameConstants {
             for (HashMap<String, String> map : values) {
                 String[] keys = map.keySet().toArray(new String[0]);
                 String value = keys[0];
-                String set = map.get(value);
+                String key = map.get(value);
                 switch (value) {
                     case "level-max":
-                        setLevelMax(set, value);
+                        setLevelMax(key, value);
                         break;
 
                     case "mon-gen":
-                        setMonGen(set, value);
+                        setMonGen(key, value);
                         break;
 
                     case "mon-play":
-                        setMonPlay(set, value);
+                        setMonPlay(key, value);
                         break;
 
                     case "dun-gen":
-                        setDunGen(set, value);
+                        setDunGen(key, value);
                         break;
 
                     case "world":
-                        setWorld(set, value);
+                        setWorld(key, value);
                         break;
 
                     case "carry-cap":
-                        setCarryCap(set, value);
+                        setCarryCap(key, value);
                         break;
 
                     case "store":
-                        setStoreParameters(set, value);
+                        setStoreParameters(key, value);
                         break;
 
                     case "obj-make":
-                        setObjectCreation(set, value);
+                        setObjectCreation(key, value);
                         break;
 
                     case "player":
-                        setPlayerConstants(set, value);
+                        setPlayerConstants(key, value);
                         break;
 
                     case "melee-critical":
-                        setNonOMeleeCrits(set, value);
+                        setNonOMeleeCrits(key, value);
                         break;
 
                     case "melee-critical-level":
-                        setNonOMeleeCriticalLevels(set, value);
+                        setNonOMeleeCriticalLevels(key, value);
                         break;
 
                     case "ranged-critical":
-                        setNonORangedCrits(set, value);
+                        setNonORangedCrits(key, value);
                         break;
 
                     case "ranged-critical-level":
-                        setNonORangedCriticalLevels(set, value);
+                        setNonORangedCriticalLevels(key, value);
                         break;
 
                     case "o-melee-critical":
-                        setOMeleeCrits(set, value);
+                        setOMeleeCrits(key, value);
                         break;
 
                     case "o-melee-critical-level":
-                        setOMeleeCriticalLevels(set, value);
+                        setOMeleeCriticalLevels(key, value);
                         break;
 
                     case "o-ranged-critical":
-                        setORangedCrits(set, value);
+                        setORangedCrits(key, value);
                         break;
 
                     case "o-ranged-critical-level":
-                        setORangedCriticalLevels(set, value);
+                        setORangedCriticalLevels(key, value);
                         break;
 
                     default:
-                        String message = "Invalid token found. Tokens were: " + value + ":" + set;
+                        String message = "Invalid token found. Tokens were: " + value + ":" + key;
                         logger.error(message);
                         throw new InvalidTokenFoundDuringParse(message);
                 }

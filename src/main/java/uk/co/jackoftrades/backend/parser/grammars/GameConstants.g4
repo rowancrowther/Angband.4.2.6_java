@@ -53,7 +53,7 @@ line    returns[String sect, String val]
         }
         ;
 
-file    returns[ArrayList<HashMap<String, String>> results]
+file    returns[ArrayList<Entry> results]
         @init {
             $results = new ArrayList<>();
         }

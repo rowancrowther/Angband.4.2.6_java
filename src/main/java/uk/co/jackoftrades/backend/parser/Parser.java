@@ -18,8 +18,7 @@
 package uk.co.jackoftrades.backend.parser;
 
 import org.jetbrains.annotations.NotNull;
-
-import java.util.ArrayList;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * <code>Parser</code> interface</p>
@@ -35,6 +34,5 @@ public interface Parser {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      */
-    @NotNull
-    ArrayList<Object> parse(@NotNull String filename);
+    @Nullable Object parse(@NotNull String filename);
 }

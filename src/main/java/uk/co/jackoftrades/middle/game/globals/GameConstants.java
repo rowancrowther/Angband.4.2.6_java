@@ -19,16 +19,15 @@ package uk.co.jackoftrades.middle.game.globals;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.CheckReturnValue;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.jetbrains.annotations.*;
 
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.GameConstantsReader;
+import uk.co.jackoftrades.backend.parser.WorldReader;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
+import uk.co.jackoftrades.backend.parser.world.WorldParser;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
@@ -62,7 +61,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 
 public class GameConstants {
@@ -75,10 +73,28 @@ public class GameConstants {
      * @param key   the String key
      * @param value the String value
      */
-    public record Entry(@NotNull String key, @NotNull String value) {
+    private record Entry(@NotNull String key, @NotNull String value) {
     }
 
-    private record NameValuePair(String name, Integer value) {
+    /**
+     * A <code>record</code> used to store Sting name, int value pairs for the <code>constants.txt</code> file.
+     * Currently only used for the <code>loadGameConstants</code> method. May be extended later.
+     *
+     * @param name  the String key
+     * @param value the int value
+     */
+    private record NameValuePair(@NotNull String name, Integer value) {
+    }
+
+    /**
+     * A World record used to store the details of each level of the dunteon, including the Town
+     *
+     * @param levelName the name of the level
+     * @param prevLevel the name of the previous level in the List of worlds
+     * @param nextLevel the name of the next level in the list of worlds
+     */
+    public record World(int levelNumber, @NotNull String levelName, @NotNull String prevLevel,
+                        @NotNull String nextLevel) {
     }
 
     /**
@@ -87,13 +103,31 @@ public class GameConstants {
      * @param parserEntries the incoming list of <code>GameConstantsParser</code> entries.
      * @return A List of <code>Entry</code> records
      */
-    @Nullable
-    @Contract("null -> null; !null -> !null")
-    public static List<Entry> toEntries(@Nullable List<GameConstantsParser.Entry> parserEntries) {
-        if (parserEntries == null) return null;
+    @NotNull
+    @Unmodifiable
+    @Contract("_ -> !null")
+    private static List<Entry> toEntries(@Nullable List<GameConstantsParser.Entry> parserEntries) {
+        if (parserEntries == null) return List.of();
 
         return parserEntries.stream()
                 .map(e -> new Entry(e.key(), e.value()))
+                .toList();
+    }
+
+    /**
+     * Translates a list of <code>WorldParser.ParsedWorld</code> records to <code>World</code> records.
+     *
+     * @param worlds an ArrayList of WorldParser.ParsedWorld records.
+     * @return a List of <code>Record</code> records.
+     */
+    @NotNull
+    @Unmodifiable
+    @Contract("_ -> !null")
+    private static List<World> toWorlds(@Nullable List<WorldParser.ParsedWorld> worlds) {
+        if (worlds == null) return List.of();
+
+        return worlds.stream()
+                .map(w -> new World(w.level(), w.levelName(), w.levelUp(), w.levelDown()))
                 .toList();
     }
 
@@ -318,11 +352,10 @@ public class GameConstants {
     private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
 
     /**
-     * World is simply a string in a linked list. It starts and ends with null (instead of the C "none" tag). There
-     * should be exactly 128 levels, as outlined in the maxRandDepth, and should be from the town (level 0) to Angband
-     * 127.
+     * Worlds is a list of World records. There should be exactly 128 levels, as outlined in the maxRandDepth,
+     * and should be from Town (level 0) to Angband127.
      */
-    private static LinkedList<World> world;
+    private static List<World> worlds = null;
 
     /*
      * Global arrays of master values
@@ -435,7 +468,7 @@ public class GameConstants {
      */
     public static void init() {
         loadGameConstants();
-//        loadWorld();
+        loadWorld();
 //        loadProjections();
 //        loadUIEntryRenderers();
 //        loadUIEntryBases();
@@ -654,35 +687,18 @@ public class GameConstants {
         } */
     }
 
+    /**
+     * Load in the different levels available in the world.
+     */
     private static void loadWorld() {
-        world = new LinkedList<>();
-
-        WorldParser worldParser = new WorldParser();
-        HashMap<Integer, ArrayList<String>> worlds = new HashMap<>();
+        WorldReader worldReader = new WorldReader();
 
         try {
-            worlds = worldParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "world.txt");
-        } catch (IOException e) {
-            logger.error("Error while loading world", e);
+            worlds = toWorlds(worldReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "world.txt"));
+        } catch (Exception ex) {
+            logger.error("Error while loading world", ex);
+            worlds = null;
         }
-
-        for (int i : worlds.keySet()) {
-            ArrayList<String> readWorld = worlds.get(i);
-
-            int prev = i - 1;
-            int next = i < maxRandDepth - 1 ? i + 1 : -1;
-
-            World thisWorld = new World(i, readWorld.getFirst(), prev, next);
-            world.add(thisWorld);
-        }
-
-        /* Logged the results of this load - worked perfectly
-        logger.info("Loaded " + world.size() + " worlds");
-
-        for (World w : world) {
-            logger.info(w.toString());
-        }
-        */
     }
 
     @Contract(pure = true)
@@ -698,34 +714,33 @@ public class GameConstants {
         GameConstantsReader reader = new GameConstantsReader();
         List<Entry> keyValues = toEntries(reader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "constants.txt"));
 
-        if (keyValues != null) {
-            for (Entry entry : keyValues) {
-                switch (entry.key()) {
-                    case "level-max" -> setLevelMax(entry);
-                    case "mon-gen" -> setMonGen(entry);
-                    case "mon-play" -> setMonPlay(entry);
-                    case "dun-gen" -> setDunGen(entry);
-                    case "world" -> setWorld(entry);
-                    case "carry-cap" -> setCarryCap(entry);
-                    case "store" -> setStoreParameters(entry);
-                    case "obj-make" -> setObjectCreation(entry);
-                    case "player" -> setPlayerConstants(entry);
-                    case "melee-critical" -> setNonOMeleeCrits(entry);
-                    case "melee-critical-level" -> setNonOMeleeCriticalLevels(entry);
-                    case "ranged-critical" -> setNonORangedCrits(entry);
-                    case "ranged-critical-level" -> setNonORangedCriticalLevels(entry);
-                    case "o-melee-critical" -> setOMeleeCrits(entry);
-                    case "o-melee-critical-level" -> setOMeleeCriticalLevels(entry);
-                    case "o-ranged-critical" -> setORangedCrits(entry);
-                    case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
+        for (Entry entry : keyValues) {
+            switch (entry.key()) {
+                case "level-max" -> setLevelMax(entry);
+                case "mon-gen" -> setMonGen(entry);
+                case "mon-play" -> setMonPlay(entry);
+                case "dun-gen" -> setDunGen(entry);
+                case "world" -> setWorld(entry);
+                case "carry-cap" -> setCarryCap(entry);
+                case "store" -> setStoreParameters(entry);
+                case "obj-make" -> setObjectCreation(entry);
+                case "player" -> setPlayerConstants(entry);
+                case "melee-critical" -> setNonOMeleeCrits(entry);
+                case "melee-critical-level" -> setNonOMeleeCriticalLevels(entry);
+                case "ranged-critical" -> setNonORangedCrits(entry);
+                case "ranged-critical-level" -> setNonORangedCriticalLevels(entry);
+                case "o-melee-critical" -> setOMeleeCrits(entry);
+                case "o-melee-critical-level" -> setOMeleeCriticalLevels(entry);
+                case "o-ranged-critical" -> setORangedCrits(entry);
+                case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
 
-                    default -> {
-                        String message = "Invalid token found. Tokens were: " + entry.key + ":" + entry.value;
-                        logger.error(message);
-                        throw new InvalidTokenFoundDuringParse(message);
-                    }
+                default -> {
+                    String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+                    InvalidTokenFoundDuringParse ex = new InvalidTokenFoundDuringParse(message);
+                    logger.error(message, ex);
+                    throw ex;
                 }
-                }
+            }
         }
     }
 

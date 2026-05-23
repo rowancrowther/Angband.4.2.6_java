@@ -1,0 +1,8 @@
+COMMENT=1
+EOL=2
+LEVEL=3
+COLON=4
+NUMBER=5
+NAME=6
+'level:'=3
+':'=4

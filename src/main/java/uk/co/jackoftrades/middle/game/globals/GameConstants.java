@@ -467,9 +467,10 @@ public class GameConstants {
      * Initialize the game objects in the correct order
      */
     public static void init() {
-        loadGameConstants();
-        loadWorld();
-//        loadProjections();
+        try {
+            loadGameConstants();
+            loadWorld();
+            loadProjections();
 //        loadUIEntryRenderers();
 //        loadUIEntryBases();
 //        loadUIEntries();
@@ -483,6 +484,12 @@ public class GameConstants {
 //        loadSummons();
 //        loadCurses();
 //        loadPlayerShapes();
+        } catch (IOException e) {
+            String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
+            logger.error(message, e);
+            System.out.println(message + "\nSystem closing.");
+            System.exit(-1);
+        }
     }
 
     private static void loadPlayerShapes() {
@@ -670,34 +677,30 @@ public class GameConstants {
         }*/
     }
 
-    private static void loadProjections() {
-        projections = new ArrayList<>();
-
+    private static void loadProjections() throws IOException {
         ProjectionParser projectionParser = new ProjectionParser();
+        String filename = ANGBAND_DIR_GAMEDATA + "projection.txt";
 
         try {
-            projections = projectionParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "projection.txt");
-        } catch (Exception e) {
-            logger.error("Error while loading projections", e);
+            projections = projectionParser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
-
-        /* logger.info("Loaded " + projections.size() + " projections");
-        for (Projection projection : projections) {
-            logger.info(projection.toString());
-        } */
     }
 
     /**
      * Load in the different levels available in the world.
      */
-    private static void loadWorld() {
+    private static void loadWorld() throws IOException {
         WorldReader worldReader = new WorldReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
 
         try {
-            worlds = toWorlds(worldReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "world.txt"));
-        } catch (Exception ex) {
-            logger.error("Error while loading world", ex);
-            worlds = null;
+            worlds = toWorlds(worldReader.parse(filename));
+        } catch (IOException ex) {
+            logger.error("Error while loading file {}", filename, ex);
+            throw ex;
         }
     }
 
@@ -710,9 +713,10 @@ public class GameConstants {
      * into the various GameConstants values.
      */
     @Contract
-    private static void loadGameConstants() {
+    private static void loadGameConstants() throws IOException {
         GameConstantsReader reader = new GameConstantsReader();
-        List<Entry> keyValues = toEntries(reader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "constants.txt"));
+        String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
+        List<Entry> keyValues = toEntries(reader.parse(filename));
 
         for (Entry entry : keyValues) {
             switch (entry.key()) {
@@ -735,7 +739,7 @@ public class GameConstants {
                 case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
 
                 default -> {
-                    String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+                    String message = "Invalid token found while parsing file " + filename + ". Tokens were: " + entry.key() + ":" + entry.value();
                     InvalidTokenFoundDuringParse ex = new InvalidTokenFoundDuringParse(message);
                     logger.error(message, ex);
                     throw ex;

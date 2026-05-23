@@ -24,10 +24,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.world.WorldLexer;
 import uk.co.jackoftrades.backend.parser.world.WorldParser;
 
+import java.io.IOException;
 import java.util.ArrayList;
 
 public class WorldReader implements Parser {
@@ -40,7 +40,7 @@ public class WorldReader implements Parser {
      * @return an ArrayList of items read from the file
      */
     @Override
-    public @Nullable ArrayList<WorldParser.ParsedWorld> parse(@NotNull String filename) throws InvalidTokenFoundDuringParse {
+    public @Nullable ArrayList<WorldParser.ParsedWorld> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
             WorldLexer lexer = new WorldLexer(stream);
@@ -49,10 +49,9 @@ public class WorldReader implements Parser {
             WorldParser.FileContext output = parser.file();
 
             return output.levels;
-        } catch (Exception ex) {
-            logger.error("Error while loading file " + filename, ex);
+        } catch (IOException e) {
+            logger.error("Error while loading file " + filename, e);
+            throw e;
         }
-
-        return null;
     }
 }

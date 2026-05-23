@@ -21,6 +21,7 @@ import javafx.scene.paint.Color;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 
 public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
@@ -321,9 +322,11 @@ public enum ColourType {
     }
 
     @Contract(pure = true)
-    public static ColourType findColourType(String colourName) {
+    public static ColourType findColourType(@NotNull String colourName) {
+        String lcColourName = colourName.toUpperCase();
+
         for (ColourType colourType : ColourType.values()) {
-            if (colourType.colourName.toLowerCase().equals(colourName))
+            if (colourType.colourName.toLowerCase().equals(lcColourName))
                 return colourType;
         }
 

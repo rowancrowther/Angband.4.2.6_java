@@ -17,8 +17,10 @@
 
 package uk.co.jackoftrades.backend.parser;
 
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+
+import java.io.IOException;
 
 /**
  * <code>Parser</code> interface</p>
@@ -34,5 +36,7 @@ public interface Parser {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      */
-    @Nullable Object parse(@NotNull String filename);
+    @NotNull
+    @Contract("_, -> !null")
+    Object parse(@NotNull String filename) throws IOException;
 }

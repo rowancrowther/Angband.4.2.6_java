@@ -24,16 +24,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsLexer;
-import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
+import uk.co.jackoftrades.backend.parser.projection.ProjectionLexer;
+import uk.co.jackoftrades.backend.parser.projection.ProjectionParser;
+import uk.co.jackoftrades.middle.game.Projection;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 
-/**
- * Class to read in <code>constants.txt</code> file and pass back to the <code>GameConstants</code> object.
- */
-public class GameConstantsReader implements Parser {
+public class ProjectionReader implements Parser {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -42,20 +40,20 @@ public class GameConstantsReader implements Parser {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      */
-    @Override
     @NotNull
     @Contract("_, -> !null")
-    public ArrayList<GameConstantsParser.Entry> parse(@NotNull String filename) throws IOException {
+    @Override
+    public List<Projection> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            GameConstantsLexer lexer = new GameConstantsLexer(stream);
+            ProjectionLexer lexer = new ProjectionLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            GameConstantsParser parser = new GameConstantsParser(tokens);
-            GameConstantsParser.FileContext output = parser.file();
+            ProjectionParser parser = new ProjectionParser(tokens);
+            ProjectionParser.FileContext output = parser.file();
 
-            return output.results;
+            return output.projections != null ? output.projections : List.of();
         } catch (IOException e) {
-            logger.error("Error while loading " + filename + " file", e);
+            logger.error("Error while loading file {}", filename, e);
             throw e;
         }
     }

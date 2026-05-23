@@ -24,14 +24,15 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.projection.ProjectionLexer;
-import uk.co.jackoftrades.backend.parser.projection.ProjectionParser;
-import uk.co.jackoftrades.middle.game.Projection;
+
+import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererLexer;
+import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererParser;
+import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 
 import java.io.IOException;
 import java.util.List;
 
-public class ProjectionReader implements Parser {
+public class UIEntryRendererReader implements Parser {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -43,15 +44,15 @@ public class ProjectionReader implements Parser {
     @NotNull
     @Contract("_ -> !null")
     @Override
-    public List<Projection> parse(@NotNull String filename) throws IOException {
+    public List<UIEntryRenderer> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            ProjectionLexer lexer = new ProjectionLexer(stream);
+            UIEntryRendererLexer lexer = new UIEntryRendererLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ProjectionParser parser = new ProjectionParser(tokens);
-            ProjectionParser.FileContext output = parser.file();
+            UIEntryRendererParser parser = new UIEntryRendererParser(tokens);
+            UIEntryRendererParser.FileContext output = parser.file();
 
-            return output.projections != null ? output.projections : List.of();
+            return output.renderers != null ? output.renderers : List.of();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

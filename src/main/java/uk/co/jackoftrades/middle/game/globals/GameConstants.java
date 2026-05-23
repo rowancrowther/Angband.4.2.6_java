@@ -471,7 +471,7 @@ public class GameConstants {
             loadGameConstants();
             loadWorld();
             loadProjections();
-//        loadUIEntryRenderers();
+            loadUIEntryRenderers();
 //        loadUIEntryBases();
 //        loadUIEntries();
 //        loadPlayerProperties();
@@ -660,23 +660,27 @@ public class GameConstants {
         } */
     }
 
-    private static void loadUIEntryRenderers() {
-        uiEntryRenderers = new ArrayList<>();
-
+    /**
+     * Load in the UI Entry Renderer information and store it in an ArrayList.
+     *
+     * @throws IOException an error occurred during the parsing - log it and rethrow it
+     */
+    private static void loadUIEntryRenderers() throws IOException {
         UIEntryRendParser renderer = new UIEntryRendParser();
+        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
 
         try {
-            uiEntryRenderers = renderer.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt");
+            uiEntryRenderers = renderer.parse(filename);
         } catch (Exception e) {
-            logger.error("Error while loading UI Entry Renderers", e);
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
-
-        /*
-        for (UIEntryRenderer uiEntryRenderer : uiEntries) {
-            logger.info(uiEntryRenderer.toString());
-        }*/
     }
 
+    /**
+     * Load in the various projection types and store them in an ArrayList
+     * @throws IOException an error occurred during the parsing - log it and rethrow it
+     */
     private static void loadProjections() throws IOException {
         ProjectionParser projectionParser = new ProjectionParser();
         String filename = ANGBAND_DIR_GAMEDATA + "projection.txt";
@@ -690,7 +694,8 @@ public class GameConstants {
     }
 
     /**
-     * Load in the different levels available in the world.
+     * Load in the different levels available in the world and store them in an ArrayList
+     * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
     private static void loadWorld() throws IOException {
         WorldReader worldReader = new WorldReader();

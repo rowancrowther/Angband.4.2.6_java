@@ -9,6 +9,7 @@ grammar Projection;
             import uk.co.jackoftrades.middle.game.Projection;
 
             import java.util.ArrayList;
+            import java.util.List;
         }
 
 code    returns[ProjectionEnum projectionCode]
@@ -198,7 +199,7 @@ projection
             }
         ;
 
-file    returns[ArrayList<Projection> projections]
+file    returns[List<Projection> projections]
         @init {
             $projections = new ArrayList<>();
         }

@@ -21,6 +21,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * <code>Parser</code> interface</p>
@@ -29,7 +30,7 @@ import java.io.IOException;
  * This function should run the file through the generated ANTLR4 code and return an array list of Object, which will
  * be further parsed by the relevant calling class (should be <code>GameConstants</code>).
  */
-public interface Parser {
+public interface Parser<T> {
     /**
      * Run the parser and generate the ArrayList from the file
      *
@@ -38,5 +39,5 @@ public interface Parser {
      */
     @NotNull
     @Contract("_, -> !null")
-    Object parse(@NotNull String filename) throws IOException;
+    List<T> parse(@NotNull String filename) throws IOException;
 }

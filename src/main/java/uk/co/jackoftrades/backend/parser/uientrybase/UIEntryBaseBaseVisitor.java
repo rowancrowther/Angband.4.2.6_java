@@ -15,21 +15,21 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.world;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBase.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.uientrybase;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link WorldVisitor},
+ * This class provides an empty implementation of {@link UIEntryBaseVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements WorldVisitor<T> {
+public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements UIEntryBaseVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLevelNum(WorldParser.LevelNumContext ctx) {
+    public T visitName(UIEntryBaseParser.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLevelName(WorldParser.LevelNameContext ctx) {
+    public T visitRenderer(UIEntryBaseParser.RendererContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitUpAndDown(WorldParser.UpAndDownContext ctx) {
+    public T visitCombine(UIEntryBaseParser.CombineContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLine(WorldParser.LineContext ctx) {
+    public T visitCategory(UIEntryBaseParser.CategoryContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,40 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(WorldParser.FileContext ctx) {
+    public T visitFlags(UIEntryBaseParser.FlagsContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitDesc(UIEntryBaseParser.DescContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(UIEntryBaseParser.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

@@ -102,8 +102,7 @@ public class WorldLexer extends Lexer {
     }
 
 
-    public record ParsedWorld(int level, String levelName, String levelUp, String levelDown) {
-    }
+    public record ParsedWorld(int level, String levelName, String levelUp, String levelDown) {}
 
 
     public WorldLexer(CharStream input) {
@@ -186,5 +185,5 @@ public class WorldLexer extends Lexer {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

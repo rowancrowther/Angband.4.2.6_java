@@ -2,6 +2,7 @@ grammar World;
 
 @header {
             import java.util.ArrayList;
+            import java.util.List;
         }
 
 @members
@@ -44,14 +45,14 @@ line    returns[ParsedWorld world]
             }
         ;
 
-file    returns[ArrayList<ParsedWorld> levels]
+file    returns[List<ParsedWorld> levels]
         @init {
             $levels = new ArrayList<>();
         }
         :   (line
             {
-            })+
-            EOF
+                $levels.add($line.world);
+            })+ EOF
         ;
 
 COMMENT :   '#' (~'\n')* '\n'+ -> skip

@@ -416,7 +416,8 @@ public class WorldParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
-        public ArrayList<ParsedWorld> levels;
+        public List<ParsedWorld> levels;
+        public LineContext line;
 
         public TerminalNode EOF() {
             return getToken(WorldParser.EOF, 0);
@@ -473,8 +474,9 @@ public class WorldParser extends Parser {
                     {
                         {
                             setState(29);
-                            line();
+                            ((FileContext) _localctx).line = line();
 
+                            _localctx.levels.add(((FileContext) _localctx).line.world);
 
                         }
                     }
@@ -528,5 +530,5 @@ public class WorldParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

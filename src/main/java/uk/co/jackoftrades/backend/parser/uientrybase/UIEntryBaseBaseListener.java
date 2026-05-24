@@ -15,8 +15,8 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.world;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBase.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.uientrybase;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link WorldListener},
+ * This class provides an empty implementation of {@link UIEntryBaseListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class WorldBaseListener implements WorldListener {
+public class UIEntryBaseBaseListener implements UIEntryBaseListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLevelNum(WorldParser.LevelNumContext ctx) {
+    public void enterName(UIEntryBaseParser.NameContext ctx) {
     }
 
     /**
@@ -45,7 +45,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLevelNum(WorldParser.LevelNumContext ctx) {
+    public void exitName(UIEntryBaseParser.NameContext ctx) {
     }
 
     /**
@@ -54,7 +54,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLevelName(WorldParser.LevelNameContext ctx) {
+    public void enterRenderer(UIEntryBaseParser.RendererContext ctx) {
     }
 
     /**
@@ -63,7 +63,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLevelName(WorldParser.LevelNameContext ctx) {
+    public void exitRenderer(UIEntryBaseParser.RendererContext ctx) {
     }
 
     /**
@@ -72,7 +72,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterUpAndDown(WorldParser.UpAndDownContext ctx) {
+    public void enterCombine(UIEntryBaseParser.CombineContext ctx) {
     }
 
     /**
@@ -81,7 +81,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitUpAndDown(WorldParser.UpAndDownContext ctx) {
+    public void exitCombine(UIEntryBaseParser.CombineContext ctx) {
     }
 
     /**
@@ -90,7 +90,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLine(WorldParser.LineContext ctx) {
+    public void enterCategory(UIEntryBaseParser.CategoryContext ctx) {
     }
 
     /**
@@ -99,7 +99,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLine(WorldParser.LineContext ctx) {
+    public void exitCategory(UIEntryBaseParser.CategoryContext ctx) {
     }
 
     /**
@@ -108,7 +108,7 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(WorldParser.FileContext ctx) {
+    public void enterFlags(UIEntryBaseParser.FlagsContext ctx) {
     }
 
     /**
@@ -117,7 +117,61 @@ public class WorldBaseListener implements WorldListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(WorldParser.FileContext ctx) {
+    public void exitFlags(UIEntryBaseParser.FlagsContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterDesc(UIEntryBaseParser.DescContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitDesc(UIEntryBaseParser.DescContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(UIEntryBaseParser.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(UIEntryBaseParser.FileContext ctx) {
     }
 
     /**
@@ -149,8 +203,10 @@ public class WorldBaseListener implements WorldListener {
 
     /**
      * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

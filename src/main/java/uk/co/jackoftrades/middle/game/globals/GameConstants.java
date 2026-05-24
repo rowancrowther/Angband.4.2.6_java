@@ -135,7 +135,7 @@ public class GameConstants {
      * The deepest level the dungeon can reach. Used in object and monster creations. Must be greater than 100. Setting
      * less than 128 may prevent some objects being created
      */
-    private final static int maxRandDepth = 128;
+    private static int maxRandDepth;
 
     public static final int MAX_PVAL = 32_767;
 
@@ -440,16 +440,26 @@ public class GameConstants {
         return null;
     }
 
-    public static @Nullable UIEntryRenderer getUIEntryRenderer(String name) {
-        if (uiEntryRenderers == null) return null;
-
-        for (UIEntryRenderer entry : uiEntryRenderers) {
-            if (entry.getName().equals(name)) {
-                return entry;
-            }
+    /**
+     * Return a UIEntryRenderer from the arraylist of all renderers by its name
+     *
+     * @param name the name of the renderer we wish to obtain
+     * @return a reference to the renderer with the same name as the incoming parameter
+     */
+    @Nullable
+    @Contract("_ -> _")
+    public static UIEntryRenderer getUIEntryRenderer(@NotNull String name) {
+        if (uiEntryRenderers == null) {
+            String message = "Invalid attempt to access uiEntryRenderers when it hasn't been initialized";
+            IllegalArgumentException e = new IllegalArgumentException(message);
+            logger.fatal(message, e);
+            throw e;
         }
 
-        return null;
+        return uiEntryRenderers.stream()
+                .filter(e -> e.getName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     public static @Nullable UIEntry getUIEntry(String name) {
@@ -469,10 +479,10 @@ public class GameConstants {
     public static void init() {
         try {
             loadGameConstants();
-            loadWorld();
+            loadWorld();                // World arraylist determines maxRandDepth
             loadProjections();
             loadUIEntryRenderers();
-//        loadUIEntryBases();
+            loadUIEntryBases();         // UIEntryBase is dependent on UIEntyRenderers
 //        loadUIEntries();
 //        loadPlayerProperties();
 //        loadTerrainFeatures();
@@ -707,6 +717,8 @@ public class GameConstants {
             logger.error("Error while loading file {}", filename, ex);
             throw ex;
         }
+
+        maxRandDepth = worlds.size();
     }
 
     @Contract(pure = true)

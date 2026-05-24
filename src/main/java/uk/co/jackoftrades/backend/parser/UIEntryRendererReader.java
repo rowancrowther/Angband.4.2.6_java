@@ -32,7 +32,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import java.io.IOException;
 import java.util.List;
 
-public class UIEntryRendererReader implements Parser {
+public class UIEntryRendererReader implements Parser<UIEntryRenderer> {
     private static final Logger logger = LogManager.getLogger();
 
     /**

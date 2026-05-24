@@ -24,13 +24,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.world.WorldLexer;
-import uk.co.jackoftrades.backend.parser.world.WorldParser;
+import uk.co.jackoftrades.backend.parser.uientrybase.UIEntryBaseParser;
+import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererLexer;
+import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 
 import java.io.IOException;
 import java.util.List;
 
-public class WorldReader implements Parser<WorldParser.ParsedWorld> {
+public class UIEntryBaseReader implements Parser<UIEntryBase> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -38,19 +39,20 @@ public class WorldReader implements Parser<WorldParser.ParsedWorld> {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
+     * @throws IOException if there is an error loading the file stream
      */
     @NotNull
     @Contract("_ -> !null")
     @Override
-    public List<WorldParser.ParsedWorld> parse(@NotNull String filename) throws IOException {
+    public List<UIEntryBase> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            WorldLexer lexer = new WorldLexer(stream);
+            UIEntryRendererLexer lexer = new UIEntryRendererLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            WorldParser parser = new WorldParser(tokens);
-            WorldParser.FileContext output = parser.file();
+            UIEntryBaseParser parser = new UIEntryBaseParser(tokens);
+            UIEntryBaseParser.FileContext output = parser.file();
 
-            return output.levels;
+            return output.uiEntryBases;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

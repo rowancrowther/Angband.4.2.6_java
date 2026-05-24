@@ -31,7 +31,7 @@ import uk.co.jackoftrades.middle.game.Projection;
 import java.io.IOException;
 import java.util.List;
 
-public class ProjectionReader implements Parser {
+public class ProjectionReader implements Parser<Projection> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -39,6 +39,7 @@ public class ProjectionReader implements Parser {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
+     * @throws IOException if there is an issue with creating the CharStream
      */
     @NotNull
     @Contract("_ -> !null")

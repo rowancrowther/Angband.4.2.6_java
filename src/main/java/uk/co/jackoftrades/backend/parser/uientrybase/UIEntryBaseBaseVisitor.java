@@ -41,7 +41,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitName(UIEntryBaseParser.NameContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -52,7 +51,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitRenderer(UIEntryBaseParser.RendererContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -63,7 +61,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitCombine(UIEntryBaseParser.CombineContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -74,7 +71,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitCategory(UIEntryBaseParser.CategoryContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -85,7 +81,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitFlags(UIEntryBaseParser.FlagsContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -96,7 +91,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitDesc(UIEntryBaseParser.DescContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -107,7 +101,6 @@ public class UIEntryBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
 	public T visitEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
 		return visitChildren(ctx);
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

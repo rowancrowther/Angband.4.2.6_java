@@ -19,18 +19,22 @@
 
 package uk.co.jackoftrades.backend.parser.uientrybase;
 
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.frontend.entries.UIEntryBase;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
-import java.util.List;
 import java.util.ArrayList;
-
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
+import java.util.List;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class UIEntryBaseParser extends Parser {
@@ -47,14 +51,12 @@ public class UIEntryBaseParser extends Parser {
 	public static final int
 			RULE_name = 0, RULE_renderer = 1, RULE_combine = 2, RULE_category = 3,
 			RULE_flags = 4, RULE_desc = 5, RULE_entryBase = 6, RULE_file = 7;
-
 	private static String[] makeRuleNames() {
 		return new String[]{
 				"name", "renderer", "combine", "category", "flags", "desc", "entryBase",
 				"file"
 		};
 	}
-
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
@@ -63,16 +65,13 @@ public class UIEntryBaseParser extends Parser {
 				"'flags:'", "'desc:'"
 		};
 	}
-
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
 	private static String[] makeSymbolicNames() {
 		return new String[]{
 				null, "COMMENT", "EOL", "NAME", "RENDERER", "COMBINE", "CATEGORY", "FLAGS",
 				"DESC", "LCASEWORD", "UCASEWORD", "TEXT"
 		};
 	}
-
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -81,7 +80,6 @@ public class UIEntryBaseParser extends Parser {
 	 */
 	@Deprecated
 	public static final String[] tokenNames;
-
 	static {
 		tokenNames = new String[_SYMBOLIC_NAMES.length];
 		for (int i = 0; i < tokenNames.length; i++) {
@@ -145,7 +143,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode LCASEWORD() {
 			return getToken(UIEntryBaseParser.LCASEWORD, 0);
 		}
-
 		public NameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -154,17 +151,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_name;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterName(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitName(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -207,7 +201,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode LCASEWORD() {
 			return getToken(UIEntryBaseParser.LCASEWORD, 0);
 		}
-
 		public RendererContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -216,17 +209,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_renderer;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterRenderer(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitRenderer(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -247,7 +237,7 @@ public class UIEntryBaseParser extends Parser {
 				((RendererContext) _localctx).LCASEWORD = match(LCASEWORD);
 
 				((RendererContext) _localctx).entryRenderer = GameConstants.getUIEntryRenderer(((RendererContext) _localctx).LCASEWORD.getText());
-
+			            
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -271,7 +261,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode UCASEWORD() {
 			return getToken(UIEntryBaseParser.UCASEWORD, 0);
 		}
-
 		public CombineContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -280,17 +269,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_combine;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterCombine(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitCombine(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -311,7 +297,7 @@ public class UIEntryBaseParser extends Parser {
 				((CombineContext) _localctx).UCASEWORD = match(UCASEWORD);
 
 				((CombineContext) _localctx).combinerEnum = CombinerName.valueOf(((CombineContext) _localctx).UCASEWORD.getText());
-
+			            
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -340,7 +326,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode LCASEWORD() {
 			return getToken(UIEntryBaseParser.LCASEWORD, 0);
 		}
-
 		public CategoryContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -349,17 +334,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_category;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterCategory(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitCategory(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -417,7 +399,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode UCASEWORD() {
 			return getToken(UIEntryBaseParser.UCASEWORD, 0);
 		}
-
 		public FlagsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -426,17 +407,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_flags;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterFlags(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitFlags(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -457,7 +435,7 @@ public class UIEntryBaseParser extends Parser {
 				((FlagsContext) _localctx).UCASEWORD = match(UCASEWORD);
 
 				((FlagsContext) _localctx).flagsStr = ((FlagsContext) _localctx).UCASEWORD.getText();
-
+			            
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -481,7 +459,6 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode TEXT() {
 			return getToken(UIEntryBaseParser.TEXT, 0);
 		}
-
 		public DescContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -490,17 +467,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_desc;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterDesc(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitDesc(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -540,39 +514,30 @@ public class UIEntryBaseParser extends Parser {
 		public CategoryContext category;
 		public FlagsContext flags;
 		public DescContext desc;
-
 		public NameContext name() {
 			return getRuleContext(NameContext.class, 0);
 		}
-
 		public RendererContext renderer() {
 			return getRuleContext(RendererContext.class, 0);
 		}
-
 		public CombineContext combine() {
 			return getRuleContext(CombineContext.class, 0);
 		}
-
 		public FlagsContext flags() {
 			return getRuleContext(FlagsContext.class, 0);
 		}
-
 		public List<CategoryContext> category() {
 			return getRuleContexts(CategoryContext.class);
 		}
-
 		public CategoryContext category(int i) {
 			return getRuleContext(CategoryContext.class, i);
 		}
-
 		public List<DescContext> desc() {
 			return getRuleContexts(DescContext.class);
 		}
-
 		public DescContext desc(int i) {
 			return getRuleContext(DescContext.class, i);
 		}
-
 		public EntryBaseContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -581,17 +546,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_entryBase;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterEntryBase(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitEntryBase(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -610,7 +572,7 @@ public class UIEntryBaseParser extends Parser {
 		List<String> categoryInit = new ArrayList<>();
 		String flagsInit = "";
 		String descInit = "";
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -694,15 +656,12 @@ public class UIEntryBaseParser extends Parser {
 		public TerminalNode EOF() {
 			return getToken(UIEntryBaseParser.EOF, 0);
 		}
-
 		public List<EntryBaseContext> entryBase() {
 			return getRuleContexts(EntryBaseContext.class);
 		}
-
 		public EntryBaseContext entryBase(int i) {
 			return getRuleContext(EntryBaseContext.class, i);
 		}
-
 		public FileContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -711,17 +670,14 @@ public class UIEntryBaseParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_file;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).enterFile(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof UIEntryBaseListener) ((UIEntryBaseListener) listener).exitFile(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof UIEntryBaseVisitor)
@@ -735,7 +691,7 @@ public class UIEntryBaseParser extends Parser {
 		enterRule(_localctx, 14, RULE_file);
 
 		((FileContext) _localctx).uiEntryBases = new ArrayList<>();
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -816,7 +772,6 @@ public class UIEntryBaseParser extends Parser {
 					"\u0000\u0001I\u000f\u0001\u0000\u0000\u0000\u0004!6?F";
 	public static final ATN _ATN =
 			new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
 	static {
 		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
 		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {

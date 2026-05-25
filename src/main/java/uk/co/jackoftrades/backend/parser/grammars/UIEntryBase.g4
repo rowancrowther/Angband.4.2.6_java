@@ -1,9 +1,5 @@
 grammar UIEntryBase;
 
-options {
-    tokenVocab = UIEntryBaseLexer;
-}
-
 @header {
     package uk.co.jackoftrades.backend.parser.uientrybase;
 

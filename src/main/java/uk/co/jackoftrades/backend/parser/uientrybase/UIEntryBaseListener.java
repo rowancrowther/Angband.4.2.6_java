@@ -28,112 +28,81 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 public interface UIEntryBaseListener extends ParseTreeListener {
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#name}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterName(UIEntryBaseParser.NameContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#name}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitName(UIEntryBaseParser.NameContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#renderer}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterRenderer(UIEntryBaseParser.RendererContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#renderer}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitRenderer(UIEntryBaseParser.RendererContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#combine}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterCombine(UIEntryBaseParser.CombineContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#combine}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitCombine(UIEntryBaseParser.CombineContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#category}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterCategory(UIEntryBaseParser.CategoryContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#category}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitCategory(UIEntryBaseParser.CategoryContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#flags}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterFlags(UIEntryBaseParser.FlagsContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#flags}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitFlags(UIEntryBaseParser.FlagsContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#desc}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterDesc(UIEntryBaseParser.DescContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#desc}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitDesc(UIEntryBaseParser.DescContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#entryBase}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterEntryBase(UIEntryBaseParser.EntryBaseContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#entryBase}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitEntryBase(UIEntryBaseParser.EntryBaseContext ctx);
-
 	/**
 	 * Enter a parse tree produced by {@link UIEntryBaseParser#file}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void enterFile(UIEntryBaseParser.FileContext ctx);
-
 	/**
 	 * Exit a parse tree produced by {@link UIEntryBaseParser#file}.
-	 *
 	 * @param ctx the parse tree
 	 */
 	void exitFile(UIEntryBaseParser.FileContext ctx);

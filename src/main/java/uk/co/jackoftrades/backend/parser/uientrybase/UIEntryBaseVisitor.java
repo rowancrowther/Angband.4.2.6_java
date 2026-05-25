@@ -31,63 +31,48 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 public interface UIEntryBaseVisitor<T> extends ParseTreeVisitor<T> {
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#name}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitName(UIEntryBaseParser.NameContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#renderer}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitRenderer(UIEntryBaseParser.RendererContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#combine}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCombine(UIEntryBaseParser.CombineContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#category}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCategory(UIEntryBaseParser.CategoryContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#flags}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitFlags(UIEntryBaseParser.FlagsContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#desc}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDesc(UIEntryBaseParser.DescContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#entryBase}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEntryBase(UIEntryBaseParser.EntryBaseContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link UIEntryBaseParser#file}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */

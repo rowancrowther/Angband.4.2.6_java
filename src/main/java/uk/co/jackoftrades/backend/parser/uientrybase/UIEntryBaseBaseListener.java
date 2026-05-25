@@ -39,7 +39,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterName(UIEntryBaseParser.NameContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -48,7 +47,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitName(UIEntryBaseParser.NameContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -57,7 +55,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterRenderer(UIEntryBaseParser.RendererContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -66,7 +63,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitRenderer(UIEntryBaseParser.RendererContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -75,7 +71,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterCombine(UIEntryBaseParser.CombineContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -84,7 +79,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitCombine(UIEntryBaseParser.CombineContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -93,7 +87,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterCategory(UIEntryBaseParser.CategoryContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -102,7 +95,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitCategory(UIEntryBaseParser.CategoryContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -111,7 +103,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterFlags(UIEntryBaseParser.FlagsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -120,7 +111,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitFlags(UIEntryBaseParser.FlagsContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -129,7 +119,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterDesc(UIEntryBaseParser.DescContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -138,7 +127,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitDesc(UIEntryBaseParser.DescContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -147,7 +135,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -156,7 +143,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitEntryBase(UIEntryBaseParser.EntryBaseContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -165,7 +151,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterFile(UIEntryBaseParser.FileContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -183,7 +168,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void enterEveryRule(ParserRuleContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *
@@ -192,7 +176,6 @@ public class UIEntryBaseBaseListener implements UIEntryBaseListener {
 	@Override
 	public void exitEveryRule(ParserRuleContext ctx) {
 	}
-
 	/**
 	 * {@inheritDoc}
 	 *

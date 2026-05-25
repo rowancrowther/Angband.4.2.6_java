@@ -1,5 +1,22 @@
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/PlayerProperty.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.io.parsers.antlr.playerpropertyformatter;
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerProperty.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.playerproperty;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -60,18 +77,18 @@ public interface PlayerPropertyVisitor<T> extends ParseTreeVisitor<T> {
     T visitValue(PlayerPropertyParser.ValueContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link PlayerPropertyParser#playerProperty}.
+     * Visit a parse tree produced by {@link PlayerPropertyParser#property}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitPlayerProperty(PlayerPropertyParser.PlayerPropertyContext ctx);
+    T visitProperty(PlayerPropertyParser.PropertyContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link PlayerPropertyParser#playerProperties}.
+     * Visit a parse tree produced by {@link PlayerPropertyParser#file}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitPlayerProperties(PlayerPropertyParser.PlayerPropertiesContext ctx);
+    T visitFile(PlayerPropertyParser.FileContext ctx);
 }

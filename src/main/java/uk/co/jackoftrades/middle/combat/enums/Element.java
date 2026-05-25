@@ -1,6 +1,24 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.combat.enums;
 
 public enum Element {
+    ELEM_NONE,
     ELEM_ACID,
     ELEM_ELEC,
     ELEM_FIRE,
@@ -25,5 +43,6 @@ public enum Element {
     ELEM_MISSILE,
     ELEM_MANA,
     ELEM_HOLY_ORB,
-    ELEM_ARROW
+    ELEM_ARROW,
+    ELEM_MAX
 }

@@ -24,12 +24,8 @@ import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.numerics.Rational;
-import uk.co.jackoftrades.backend.parser.GameConstantsReader;
-import uk.co.jackoftrades.backend.parser.UIEntryBaseReader;
-import uk.co.jackoftrades.backend.parser.UIEntryReader;
-import uk.co.jackoftrades.backend.parser.WorldReader;
+import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
-import uk.co.jackoftrades.backend.parser.uientry.UIEntryParser;
 import uk.co.jackoftrades.backend.parser.world.WorldParser;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
@@ -367,7 +363,7 @@ public class GameConstants {
     private static List<UIEntryRenderer> uiEntryRenderers;
     private static List<UIEntryBase> uiEntryBases;
     private static List<UIEntry> uiEntries;
-    private static ArrayList<PlayerProperty> playerProperties;
+    private static List<PlayerProperty> playerProperties;
     private static ArrayList<Feature> features;
     private static ArrayList<ObjectBase> objectBases;
     private static ArrayList<Slay> slays;
@@ -488,15 +484,26 @@ public class GameConstants {
                 .orElse(null);
     }
 
-    public static @Nullable UIEntry getUIEntry(String name) {
-        if (uiEntries == null) return null;
-        for (UIEntry entry : uiEntries) {
-            if (entry.getName().equals(name)) {
-                return entry;
-            }
+    /**
+     * Get a UIEntry from a string
+     *
+     * @param name the string representation of the UIEntry's name
+     * @return a UIEntry
+     */
+    @Nullable
+    @Contract("_ -> _")
+    public static UIEntry getUIEntry(String name) {
+        if (uiEntries == null) {
+            String message = "Invalid attempt to access UIEntry when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
         }
 
-        return null;
+        return uiEntries.stream()
+                .filter(e -> e.getName().equals(name))
+                .findFirst()
+                .orElse(null);
     }
 
     /**
@@ -509,8 +516,8 @@ public class GameConstants {
             loadProjections();
             loadUIEntryRenderers();
             loadUIEntryBases();         // UIEntryBase is dependent on UIEntyRenderers
-            loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers7
-//        loadPlayerProperties();     // Dependent on UIENtry.name
+            loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers
+            loadPlayerProperties();     // Dependent on UIEntry
 //        loadTerrainFeatures();
 //        loadObjectBases();
 //        loadSlays();
@@ -649,18 +656,14 @@ public class GameConstants {
     }
 
     private static void loadPlayerProperties() {
-        playerProperties = new ArrayList<>();
         PlayerPropertyReader parser = new PlayerPropertyReader();
+        String filename = GameConstants.ANGBAND_DIR_GAMEDATA + "player_property.txt";
 
         try {
-            playerProperties = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "player_property.txt");
+            playerProperties = parser.parse(filename);
         } catch (Exception e) {
-            logger.error("Error while loading player properties!", e);
+            logger.error("Error while loading file {}", filename, e);
         }
-
-        /* for (PlayerProperty property : playerProperties) {
-            logger.info(property.toString());
-        } */
     }
 
     private static void loadUIEntries() {

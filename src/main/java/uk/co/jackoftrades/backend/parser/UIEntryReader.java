@@ -22,17 +22,15 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-
-import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererGrammarLexer;
-import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererGrammarParser;
-import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftrades.backend.parser.uientry.UIEntryLexer;
+import uk.co.jackoftrades.backend.parser.uientry.UIEntryParser;
+import uk.co.jackoftrades.frontend.entries.UIEntry;
 
 import java.io.IOException;
 import java.util.List;
 
-public class UIEntryRendererReader implements Parser<UIEntryRenderer> {
+public class UIEntryReader implements Parser<UIEntry> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -41,18 +39,16 @@ public class UIEntryRendererReader implements Parser<UIEntryRenderer> {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      */
-    @NotNull
-    @Contract("_ -> !null")
     @Override
-    public List<UIEntryRenderer> parse(@NotNull String filename) throws IOException {
+    public @NotNull List<UIEntry> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            UIEntryRendererGrammarLexer lexer = new UIEntryRendererGrammarLexer(stream);
+            UIEntryLexer lexer = new UIEntryLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            UIEntryRendererGrammarParser parser = new UIEntryRendererGrammarParser(tokens);
-            UIEntryRendererGrammarParser.FileContext output = parser.file();
+            UIEntryParser parser = new UIEntryParser(tokens);
+            UIEntryParser.FileContext output = parser.file();
 
-            return output.renderers != null ? output.renderers : List.of();
+            return output.entries;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

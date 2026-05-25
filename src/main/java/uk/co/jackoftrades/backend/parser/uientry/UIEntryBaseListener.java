@@ -1,5 +1,22 @@
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/UIEntryGram.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.io.parsers.antlr.uientry;
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntry.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.uientry;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -7,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link UIEntryGramListener},
+ * This class provides an empty implementation of {@link UIEntryListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class UIEntryGramBaseListener implements UIEntryGramListener {
+public class UIEntryBaseListener implements UIEntryListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(UIEntryGramParser.NameContext ctx) {
+    public void enterTag(UIEntryParser.TagContext ctx) {
     }
 
     /**
@@ -28,7 +45,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(UIEntryGramParser.NameContext ctx) {
+    public void exitTag(UIEntryParser.TagContext ctx) {
     }
 
     /**
@@ -37,7 +54,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterParameter(UIEntryGramParser.ParameterContext ctx) {
+    public void enterName(UIEntryParser.NameContext ctx) {
     }
 
     /**
@@ -46,7 +63,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitParameter(UIEntryGramParser.ParameterContext ctx) {
+    public void exitName(UIEntryParser.NameContext ctx) {
     }
 
     /**
@@ -55,7 +72,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRenderer(UIEntryGramParser.RendererContext ctx) {
+    public void enterParameter(UIEntryParser.ParameterContext ctx) {
     }
 
     /**
@@ -64,7 +81,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRenderer(UIEntryGramParser.RendererContext ctx) {
+    public void exitParameter(UIEntryParser.ParameterContext ctx) {
     }
 
     /**
@@ -73,7 +90,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCombine(UIEntryGramParser.CombineContext ctx) {
+    public void enterRenderer(UIEntryParser.RendererContext ctx) {
     }
 
     /**
@@ -82,7 +99,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCombine(UIEntryGramParser.CombineContext ctx) {
+    public void exitRenderer(UIEntryParser.RendererContext ctx) {
     }
 
     /**
@@ -91,7 +108,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPriority(UIEntryGramParser.PriorityContext ctx) {
+    public void enterCombine(UIEntryParser.CombineContext ctx) {
     }
 
     /**
@@ -100,7 +117,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPriority(UIEntryGramParser.PriorityContext ctx) {
+    public void exitCombine(UIEntryParser.CombineContext ctx) {
     }
 
     /**
@@ -109,7 +126,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCategory(UIEntryGramParser.CategoryContext ctx) {
+    public void enterPriority(UIEntryParser.PriorityContext ctx) {
     }
 
     /**
@@ -118,7 +135,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCategory(UIEntryGramParser.CategoryContext ctx) {
+    public void exitPriority(UIEntryParser.PriorityContext ctx) {
     }
 
     /**
@@ -127,7 +144,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlags(UIEntryGramParser.FlagsContext ctx) {
+    public void enterCategory(UIEntryParser.CategoryContext ctx) {
     }
 
     /**
@@ -136,7 +153,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlags(UIEntryGramParser.FlagsContext ctx) {
+    public void exitCategory(UIEntryParser.CategoryContext ctx) {
     }
 
     /**
@@ -145,7 +162,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(UIEntryGramParser.DescContext ctx) {
+    public void enterFlags(UIEntryParser.FlagsContext ctx) {
     }
 
     /**
@@ -154,7 +171,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(UIEntryGramParser.DescContext ctx) {
+    public void exitFlags(UIEntryParser.FlagsContext ctx) {
     }
 
     /**
@@ -163,7 +180,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLabel(UIEntryGramParser.LabelContext ctx) {
+    public void enterDesc(UIEntryParser.DescContext ctx) {
     }
 
     /**
@@ -172,7 +189,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLabel(UIEntryGramParser.LabelContext ctx) {
+    public void exitDesc(UIEntryParser.DescContext ctx) {
     }
 
     /**
@@ -181,7 +198,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLabel2(UIEntryGramParser.Label2Context ctx) {
+    public void enterLabel(UIEntryParser.LabelContext ctx) {
     }
 
     /**
@@ -190,7 +207,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLabel2(UIEntryGramParser.Label2Context ctx) {
+    public void exitLabel(UIEntryParser.LabelContext ctx) {
     }
 
     /**
@@ -199,7 +216,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLabel5(UIEntryGramParser.Label5Context ctx) {
+    public void enterLabel5(UIEntryParser.Label5Context ctx) {
     }
 
     /**
@@ -208,7 +225,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLabel5(UIEntryGramParser.Label5Context ctx) {
+    public void exitLabel5(UIEntryParser.Label5Context ctx) {
     }
 
     /**
@@ -217,7 +234,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTemplate(UIEntryGramParser.TemplateContext ctx) {
+    public void enterLabel2(UIEntryParser.Label2Context ctx) {
     }
 
     /**
@@ -226,7 +243,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitTemplate(UIEntryGramParser.TemplateContext ctx) {
+    public void exitLabel2(UIEntryParser.Label2Context ctx) {
     }
 
     /**
@@ -235,7 +252,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEntry(UIEntryGramParser.EntryContext ctx) {
+    public void enterTemplate(UIEntryParser.TemplateContext ctx) {
     }
 
     /**
@@ -244,7 +261,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEntry(UIEntryGramParser.EntryContext ctx) {
+    public void exitTemplate(UIEntryParser.TemplateContext ctx) {
     }
 
     /**
@@ -253,7 +270,7 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEntries(UIEntryGramParser.EntriesContext ctx) {
+    public void enterUiEntry(UIEntryParser.UiEntryContext ctx) {
     }
 
     /**
@@ -262,7 +279,25 @@ public class UIEntryGramBaseListener implements UIEntryGramListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEntries(UIEntryGramParser.EntriesContext ctx) {
+    public void exitUiEntry(UIEntryParser.UiEntryContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(UIEntryParser.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(UIEntryParser.FileContext ctx) {
     }
 
     /**

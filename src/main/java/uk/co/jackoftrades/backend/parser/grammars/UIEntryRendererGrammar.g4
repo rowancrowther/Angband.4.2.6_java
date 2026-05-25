@@ -1,4 +1,4 @@
-grammar UIEntryRenderer;
+grammar UIEntryRendererGrammar;
 
 @header
         {

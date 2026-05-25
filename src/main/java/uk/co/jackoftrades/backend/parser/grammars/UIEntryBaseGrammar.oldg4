@@ -1,12 +1,6 @@
-grammar UIEntryBase;
-
-options {
-    tokenVocab = UIEntryBaseLexer;
-}
+grammar UIEntryBaseGrammar;
 
 @header {
-    package uk.co.jackoftrades.backend.parser.uientrybase;
-
     import uk.co.jackoftrades.middle.game.globals.GameConstants;
     import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
     import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
@@ -50,7 +44,7 @@ flags
 
 desc
         returns[String descStr]
-        :   DESC TEXT { $descStr = $TEXT.getText(); }
+        :   DESC DESC_TEXT { $descStr = $TEXT.getText(); }
         ;
 
 entryBase
@@ -98,46 +92,3 @@ file
         })+ EOF
         ;
 
-COMMENT
-        :   '#' (~'\n')* '\n'+ -> skip
-        ;
-
-EOL
-        :   ' '* '\r'? '\n' -> skip
-        ;
-
-NAME
-        :   'name:'
-        ;
-
-RENDERER
-        :   'renderer:'
-        ;
-
-COMBINE
-        :   'combine:'
-        ;
-
-CATEGORY
-        :   'category:'
-        ;
-
-FLAGS
-        :   'flags:'
-        ;
-
-DESC
-        :   'desc:'
-        ;
-
-LCASEWORD
-        :   ('a'..'z' | '_' | '0'..'9')+
-        ;
-
-UCASEWORD
-        :   ('A'..'Z' | '_' | '0'..'9')+
-        ;
-
-TEXT
-        :   ('A'..'Z' | 'a'..'z' | ' ' | '.')+
-        ;

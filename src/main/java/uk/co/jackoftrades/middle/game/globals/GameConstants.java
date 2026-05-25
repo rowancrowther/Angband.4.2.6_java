@@ -25,8 +25,11 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
 import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.GameConstantsReader;
+import uk.co.jackoftrades.backend.parser.UIEntryBaseReader;
+import uk.co.jackoftrades.backend.parser.UIEntryReader;
 import uk.co.jackoftrades.backend.parser.WorldReader;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
+import uk.co.jackoftrades.backend.parser.uientry.UIEntryParser;
 import uk.co.jackoftrades.backend.parser.world.WorldParser;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
@@ -360,10 +363,10 @@ public class GameConstants {
     /*
      * Global arrays of master values
      */
-    private static ArrayList<Projection> projections;
-    private static ArrayList<UIEntryRenderer> uiEntryRenderers;
-    private static ArrayList<UIEntryBase> uiBases;
-    private static ArrayList<UIEntry> uiEntries;
+    private static List<Projection> projections;
+    private static List<UIEntryRenderer> uiEntryRenderers;
+    private static List<UIEntryBase> uiEntryBases;
+    private static List<UIEntry> uiEntries;
     private static ArrayList<PlayerProperty> playerProperties;
     private static ArrayList<Feature> features;
     private static ArrayList<ObjectBase> objectBases;
@@ -451,12 +454,35 @@ public class GameConstants {
     public static UIEntryRenderer getUIEntryRenderer(@NotNull String name) {
         if (uiEntryRenderers == null) {
             String message = "Invalid attempt to access uiEntryRenderers when it hasn't been initialized";
-            IllegalArgumentException e = new IllegalArgumentException(message);
+            IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
             throw e;
         }
 
         return uiEntryRenderers.stream()
+                .filter(e -> e.getName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Return a UIEntryBase from the arrayList of all bases by its name
+     *
+     * @param name the name of the base we are wanting to find
+     * @return a reference to the base with the name equal to the incoming parameter, or null if no base is found
+     * with that name
+     */
+    @Nullable
+    @Contract("_ -> _")
+    public static UIEntryBase getUIEntryBase(@NotNull String name) {
+        if (uiEntryBases == null) {
+            String message = "Invalid attempt to access UIEntryBase when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return uiEntryBases.stream()
                 .filter(e -> e.getName().equals(name))
                 .findFirst()
                 .orElse(null);
@@ -483,8 +509,8 @@ public class GameConstants {
             loadProjections();
             loadUIEntryRenderers();
             loadUIEntryBases();         // UIEntryBase is dependent on UIEntyRenderers
-//        loadUIEntries();
-//        loadPlayerProperties();
+            loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers7
+//        loadPlayerProperties();     // Dependent on UIENtry.name
 //        loadTerrainFeatures();
 //        loadObjectBases();
 //        loadSlays();
@@ -616,7 +642,6 @@ public class GameConstants {
         TerrainFeatureReader parser = new TerrainFeatureReader();
 
         try {
-            // TODO - move and change this string from being hard-coded
             features = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "terrain.txt");
         } catch (Exception e) {
             logger.error("Error while loading terrain properties!", e);
@@ -639,39 +664,35 @@ public class GameConstants {
     }
 
     private static void loadUIEntries() {
-        uiEntries = new ArrayList<>();
-
-        UIEntryParser parser = new UIEntryParser();
-
-        try {
-            uiEntries = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry.txt");
-        } catch (Exception e) {
-            logger.error("Error while loading UI entries!", e);
-        }
-
-        /* for (UIEntry entry : uiEntries) {
-            logger.info(entry.toString());
-        } */
-    }
-
-    private static void loadUIEntryBases() {
-        uiBases = new ArrayList<>();
-
-        UIEntryBaseParser parser = new UIEntryBaseParser();
+        UIEntryReader parser = new UIEntryReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry.txt";
 
         try {
-            uiBases = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "ui_entry_base.txt");
+            uiEntries = parser.parse(filename);
         } catch (Exception e) {
-            logger.error("Error while loading UI entry base.", e);
+            logger.error("Error while loading file {}", filename, e);
         }
-
-        /* for (UIEntryBase entry : uiBases) {
-            logger.info(entry.toString());
-        } */
     }
 
     /**
-     * Load in the UI Entry Renderer information and store it in an ArrayList.
+     * Load in the UI Bases information and store it in a List
+     *
+     * @throws IOException an IO error occured during parsing
+     */
+    private static void loadUIEntryBases() throws IOException {
+        UIEntryBaseReader uiEntryBaseReader = new UIEntryBaseReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_base.txt";
+
+        try {
+            uiEntryBases = uiEntryBaseReader.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Load in the UI Entry Renderer information and store it in a List.
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
@@ -688,7 +709,7 @@ public class GameConstants {
     }
 
     /**
-     * Load in the various projection types and store them in an ArrayList
+     * Load in the various projection types and store them in a List
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
     private static void loadProjections() throws IOException {
@@ -704,7 +725,7 @@ public class GameConstants {
     }
 
     /**
-     * Load in the different levels available in the world and store them in an ArrayList
+     * Load in the different levels available in the world and store them in a List
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
     private static void loadWorld() throws IOException {

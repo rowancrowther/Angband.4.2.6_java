@@ -15,18 +15,9 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRenderer.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.uientryrenderer;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
@@ -34,8 +25,13 @@ import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
+
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class UIEntryRendererParser extends Parser {
+public class UIEntryRendererGrammarParser extends Parser {
     static {
         RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
     }
@@ -114,7 +110,7 @@ public class UIEntryRendererParser extends Parser {
 
     @Override
     public String getGrammarFileName() {
-        return "UIEntryRenderer.g4";
+        return "UIEntryRendererGrammar.g4";
     }
 
     @Override
@@ -132,7 +128,7 @@ public class UIEntryRendererParser extends Parser {
         return _ATN;
     }
 
-    public UIEntryRendererParser(TokenStream input) {
+    public UIEntryRendererGrammarParser(TokenStream input) {
         super(input);
         _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
@@ -143,11 +139,11 @@ public class UIEntryRendererParser extends Parser {
         public Token LCASEWORD;
 
         public TerminalNode NAME() {
-            return getToken(UIEntryRendererParser.NAME, 0);
+            return getToken(UIEntryRendererGrammarParser.NAME, 0);
         }
 
         public TerminalNode LCASEWORD() {
-            return getToken(UIEntryRendererParser.LCASEWORD, 0);
+            return getToken(UIEntryRendererGrammarParser.LCASEWORD, 0);
         }
 
         public NameContext(ParserRuleContext parent, int invokingState) {
@@ -161,18 +157,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterName(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitName(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitName(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitName(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitName(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -207,11 +205,11 @@ public class UIEntryRendererParser extends Parser {
         public Token UCASEWORD;
 
         public TerminalNode CODE() {
-            return getToken(UIEntryRendererParser.CODE, 0);
+            return getToken(UIEntryRendererGrammarParser.CODE, 0);
         }
 
         public TerminalNode UCASEWORD() {
-            return getToken(UIEntryRendererParser.UCASEWORD, 0);
+            return getToken(UIEntryRendererGrammarParser.UCASEWORD, 0);
         }
 
         public CodeContext(ParserRuleContext parent, int invokingState) {
@@ -225,18 +223,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterCode(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterCode(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitCode(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitCode(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitCode(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitCode(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -272,11 +272,11 @@ public class UIEntryRendererParser extends Parser {
         public Token COLOURCHARS;
 
         public TerminalNode COLOURS() {
-            return getToken(UIEntryRendererParser.COLOURS, 0);
+            return getToken(UIEntryRendererGrammarParser.COLOURS, 0);
         }
 
         public TerminalNode COLOURCHARS() {
-            return getToken(UIEntryRendererParser.COLOURCHARS, 0);
+            return getToken(UIEntryRendererGrammarParser.COLOURCHARS, 0);
         }
 
         public ColoursContext(ParserRuleContext parent, int invokingState) {
@@ -290,18 +290,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterColours(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterColours(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitColours(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitColours(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitColours(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitColours(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -336,11 +338,11 @@ public class UIEntryRendererParser extends Parser {
         public Token COLOURCHARS;
 
         public TerminalNode LABELCOLOURS() {
-            return getToken(UIEntryRendererParser.LABELCOLOURS, 0);
+            return getToken(UIEntryRendererGrammarParser.LABELCOLOURS, 0);
         }
 
         public TerminalNode COLOURCHARS() {
-            return getToken(UIEntryRendererParser.COLOURCHARS, 0);
+            return getToken(UIEntryRendererGrammarParser.COLOURCHARS, 0);
         }
 
         public LabelcoloursContext(ParserRuleContext parent, int invokingState) {
@@ -354,20 +356,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener)
-                ((UIEntryRendererListener) listener).enterLabelcolours(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterLabelcolours(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener)
-                ((UIEntryRendererListener) listener).exitLabelcolours(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitLabelcolours(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitLabelcolours(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitLabelcolours(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -402,11 +404,11 @@ public class UIEntryRendererParser extends Parser {
         public Token SYMBOLCHARS;
 
         public TerminalNode SYMBOLS() {
-            return getToken(UIEntryRendererParser.SYMBOLS, 0);
+            return getToken(UIEntryRendererGrammarParser.SYMBOLS, 0);
         }
 
         public TerminalNode SYMBOLCHARS() {
-            return getToken(UIEntryRendererParser.SYMBOLCHARS, 0);
+            return getToken(UIEntryRendererGrammarParser.SYMBOLCHARS, 0);
         }
 
         public SymbolsContext(ParserRuleContext parent, int invokingState) {
@@ -420,18 +422,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterSymbols(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterSymbols(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitSymbols(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitSymbols(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitSymbols(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitSymbols(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -466,11 +470,11 @@ public class UIEntryRendererParser extends Parser {
         public Token DIGIT;
 
         public TerminalNode NDIGITS() {
-            return getToken(UIEntryRendererParser.NDIGITS, 0);
+            return getToken(UIEntryRendererGrammarParser.NDIGITS, 0);
         }
 
         public TerminalNode DIGIT() {
-            return getToken(UIEntryRendererParser.DIGIT, 0);
+            return getToken(UIEntryRendererGrammarParser.DIGIT, 0);
         }
 
         public NdigitContext(ParserRuleContext parent, int invokingState) {
@@ -484,18 +488,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterNdigit(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterNdigit(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitNdigit(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitNdigit(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitNdigit(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitNdigit(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -530,11 +536,11 @@ public class UIEntryRendererParser extends Parser {
         public Token UCASEWORD;
 
         public TerminalNode SIGN() {
-            return getToken(UIEntryRendererParser.SIGN, 0);
+            return getToken(UIEntryRendererGrammarParser.SIGN, 0);
         }
 
         public TerminalNode UCASEWORD() {
-            return getToken(UIEntryRendererParser.UCASEWORD, 0);
+            return getToken(UIEntryRendererGrammarParser.UCASEWORD, 0);
         }
 
         public SignContext(ParserRuleContext parent, int invokingState) {
@@ -548,18 +554,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterSign(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterSign(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitSign(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitSign(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitSign(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitSign(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -639,18 +647,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterUiEntry(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterUiEntry(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitUiEntry(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitUiEntry(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitUiEntry(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitUiEntry(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -732,7 +742,7 @@ public class UIEntryRendererParser extends Parser {
         public UiEntryContext uiEntry;
 
         public TerminalNode EOF() {
-            return getToken(UIEntryRendererParser.EOF, 0);
+            return getToken(UIEntryRendererGrammarParser.EOF, 0);
         }
 
         public List<UiEntryContext> uiEntry() {
@@ -754,18 +764,20 @@ public class UIEntryRendererParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).enterFile(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterFile(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof UIEntryRendererListener) ((UIEntryRendererListener) listener).exitFile(this);
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitFile(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof UIEntryRendererVisitor)
-                return ((UIEntryRendererVisitor<? extends T>) visitor).visitFile(this);
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitFile(this);
             else return visitor.visitChildren(this);
         }
     }

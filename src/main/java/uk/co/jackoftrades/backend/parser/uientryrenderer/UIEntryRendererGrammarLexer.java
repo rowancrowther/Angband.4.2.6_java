@@ -15,18 +15,17 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRenderer.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.uientryrenderer;
 
+import org.antlr.v4.runtime.Lexer;
+import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.LexerATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class UIEntryRendererLexer extends Lexer {
+public class UIEntryRendererGrammarLexer extends Lexer {
     static {
         RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
     }
@@ -109,14 +108,14 @@ public class UIEntryRendererLexer extends Lexer {
     }
 
 
-    public UIEntryRendererLexer(CharStream input) {
+    public UIEntryRendererGrammarLexer(CharStream input) {
         super(input);
         _interp = new LexerATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
 
     @Override
     public String getGrammarFileName() {
-        return "UIEntryRenderer.g4";
+        return "UIEntryRendererGrammar.g4";
     }
 
     @Override

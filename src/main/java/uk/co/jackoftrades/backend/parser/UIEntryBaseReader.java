@@ -24,8 +24,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+
+import uk.co.jackoftrades.backend.parser.uientrybase.UIEntryBaseLexer;
 import uk.co.jackoftrades.backend.parser.uientrybase.UIEntryBaseParser;
-import uk.co.jackoftrades.backend.parser.uientryrenderer.UIEntryRendererLexer;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 
 import java.io.IOException;
@@ -47,7 +48,7 @@ public class UIEntryBaseReader implements Parser<UIEntryBase> {
     public List<UIEntryBase> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            UIEntryRendererLexer lexer = new UIEntryRendererLexer(stream);
+            UIEntryBaseLexer lexer = new UIEntryBaseLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             UIEntryBaseParser parser = new UIEntryBaseParser(tokens);
             UIEntryBaseParser.FileContext output = parser.file();

@@ -15,13 +15,13 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRenderer.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.uientryrenderer;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link UIEntryRendererVisitor},
+ * This class provides an empty implementation of {@link UIEntryRendererGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements UIEntryRendererVisitor<T> {
+public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements UIEntryRendererGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(UIEntryRendererParser.NameContext ctx) {
+    public T visitName(UIEntryRendererGrammarParser.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(UIEntryRendererParser.CodeContext ctx) {
+    public T visitCode(UIEntryRendererGrammarParser.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitColours(UIEntryRendererParser.ColoursContext ctx) {
+    public T visitColours(UIEntryRendererGrammarParser.ColoursContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLabelcolours(UIEntryRendererParser.LabelcoloursContext ctx) {
+    public T visitLabelcolours(UIEntryRendererGrammarParser.LabelcoloursContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSymbols(UIEntryRendererParser.SymbolsContext ctx) {
+    public T visitSymbols(UIEntryRendererGrammarParser.SymbolsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitNdigit(UIEntryRendererParser.NdigitContext ctx) {
+    public T visitNdigit(UIEntryRendererGrammarParser.NdigitContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSign(UIEntryRendererParser.SignContext ctx) {
+    public T visitSign(UIEntryRendererGrammarParser.SignContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +114,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitUiEntry(UIEntryRendererParser.UiEntryContext ctx) {
+    public T visitUiEntry(UIEntryRendererGrammarParser.UiEntryContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +125,7 @@ public class UIEntryRendererBaseVisitor<T> extends AbstractParseTreeVisitor<T> i
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(UIEntryRendererParser.FileContext ctx) {
+    public T visitFile(UIEntryRendererGrammarParser.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

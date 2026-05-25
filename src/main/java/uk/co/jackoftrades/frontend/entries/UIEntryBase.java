@@ -42,6 +42,15 @@ public class UIEntryBase {
         this.desc = desc;
     }
 
+    /**
+     * Getter - the name of the UIEntryBase
+     *
+     * @return the name of the UIEntryBase
+     */
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toString() {
         return "UIEntryBase{" +

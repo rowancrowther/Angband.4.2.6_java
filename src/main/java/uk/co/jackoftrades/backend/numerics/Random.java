@@ -17,18 +17,12 @@
 
 package uk.co.jackoftrades.backend.numerics;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
-import uk.co.jackoftrades.backend.io.parsers.antlr.randomformatter.RandomFormatterLexer;
-import uk.co.jackoftrades.backend.io.parsers.antlr.randomformatter.RandomFormatterParser;
 import uk.co.jackoftrades.backend.utils.RandomValueUtils;
 
 public class Random {
@@ -308,15 +302,15 @@ public class Random {
      * @param string the string we are going to parse
      * @return a Random object based on the incoming string
      */
-    @Contract(pure = true)
-    @CheckReturnValue
-    public static Random parseRandom(@NotNull String string) {
-        CharStream stream = CharStreams.fromString(string);
-        RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
-        CommonTokenStream tokens = new CommonTokenStream(lexer);
-        RandomFormatterParser parser = new RandomFormatterParser(tokens);
-        RandomFormatterParser.RandomContext result = parser.random();
-
-        return result.randomDice;
-    }
+//    @Contract(pure = true)
+    //@CheckReturnValue
+//    public static Random parseRandom(@NotNull String string) {
+//        CharStream stream = CharStreams.fromString(string);
+//        RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
+//        CommonTokenStream tokens = new CommonTokenStream(lexer);
+//        RandomFormatterParser parser = new RandomFormatterParser(tokens);
+//        RandomFormatterParser.RandomContext result = parser.random();
+//
+//        return result.randomDice;
+//    }
 }

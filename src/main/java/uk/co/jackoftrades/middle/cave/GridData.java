@@ -80,7 +80,7 @@ public class GridData {
 
         feature = cave.getSquare(grid).getFeature();
         if (feature.isMimicing())
-            feature = GameConstants.lookupFeature(feature.getMimic());
+            feature = feature.getMimic();
 
         inView = cave.squareIsSeen(grid);
         isPlayer = cave.squareIsPlayer(grid);
@@ -115,7 +115,7 @@ public class GridData {
         // Mimic
         feature = playerCave.getSquare(grid).getFeature();
         if (feature.isMimicing()) {
-            feature = GameConstants.lookupFeature(feature.getMimic());
+            feature = feature.getMimic();
         }
 
         // Traps

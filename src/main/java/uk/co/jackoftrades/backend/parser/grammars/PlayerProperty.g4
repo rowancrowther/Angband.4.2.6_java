@@ -45,11 +45,16 @@ bindui
             $entry = GameConstants.getUIEntry($TEXT.getText());
         } (TAG {
             String raw = $TAG.getText();
-            String flag = raw.substring(1, raw.length() -1);
-            if (typeOption.equals("player"))
-                $elemEnum = Element.valueOf("ELEM_" + flag);
-            else if (typeOption.equals("object"))
-                $statEnum = Stats.valueOf("STAT_" + flag);
+            String flag;
+            if (raw.length() < 3) {
+                flag = "ERROR";
+            } else {
+                flag = raw.substring(1, raw.length() -1);
+                if (typeOption.equals("player"))
+                    $elemEnum = Element.valueOf("ELEM_" + flag);
+                else if (typeOption.equals("object"))
+                    $statEnum = Stats.valueOf("STAT_" + flag);
+            }
         })? BINDUIVAL {
             $bindUIVal = $BINDUIVAL.getText();
         };

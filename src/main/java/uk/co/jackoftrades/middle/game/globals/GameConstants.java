@@ -22,7 +22,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
 
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftrades.backend.io.parsers.*;
 import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
@@ -364,7 +363,7 @@ public class GameConstants {
     private static List<UIEntryBase> uiEntryBases;
     private static List<UIEntry> uiEntries;
     private static List<PlayerProperty> playerProperties;
-    private static ArrayList<Feature> features;
+    private static List<Feature> features;
     private static ArrayList<ObjectBase> objectBases;
     private static ArrayList<Slay> slays;
     private static ArrayList<Brand> brands;
@@ -518,7 +517,7 @@ public class GameConstants {
             loadUIEntryBases();         // UIEntryBase is dependent on UIEntyRenderers
             loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
-//        loadTerrainFeatures();
+            loadTerrainFeatures();
 //        loadObjectBases();
 //        loadSlays();
 //        loadBrands();
@@ -535,127 +534,138 @@ public class GameConstants {
         }
     }
 
-    private static void loadPlayerShapes() {
-        PlayerShapeParser parser = new PlayerShapeParser();
-
-        try {
-            playerShapes = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "shape.txt");
-        } catch (Exception e) {
-            logger.error("Error while parsing shape file", e);
-        }
-
-//        for (PlayerShape shape : playerShapes) {
-//                logger.info(shape.toString());
+//    private static void loadPlayerShapes() {
+//        PlayerShapeParser parser = new PlayerShapeParser();
+//
+//        try {
+//            playerShapes = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "shape.txt");
+//        } catch (Exception e) {
+//            logger.error("Error while parsing shape file", e);
 //        }
-    }
-
-    private static void loadCurses() {
-        CurseReader curseReader = new CurseReader();
-
-        try {
-            curses = curseReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "curse.txt");
-        } catch (Exception e) {
-            logger.error("Error while parsing curses file", e);
-        }
-
-//        for (Curse curse : curses) {
-//            logger.info(curse.toString());
+//
+////        for (PlayerShape shape : playerShapes) {
+////                logger.info(shape.toString());
+////        }
+//    }
+//
+//    private static void loadCurses() {
+//        CurseReader curseReader = new CurseReader();
+//
+//        try {
+//            curses = curseReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "curse.txt");
+//        } catch (Exception e) {
+//            logger.error("Error while parsing curses file", e);
 //        }
-    }
-
-    private static void loadSummons() {
-        SummonParser parser = new SummonParser();
-
-        try {
-            summons = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "summon.txt");
-        } catch (Exception e) {
-            logger.error("Error while parsing summons file!", e);
-        }
-
-//        for (Summon summon : summons) {
-//            logger.info(summon.toString());
+//
+////        for (Curse curse : curses) {
+////            logger.info(curse.toString());
+////        }
+//    }
+//
+//    private static void loadSummons() {
+//        SummonParser parser = new SummonParser();
+//
+//        try {
+//            summons = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "summon.txt");
+//        } catch (Exception e) {
+//            logger.error("Error while parsing summons file!", e);
 //        }
-    }
+//
+////        for (Summon summon : summons) {
+////            logger.info(summon.toString());
+////        }
+//    }
+//
+//    private static void loadMonsterBases() {
+//        MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
+//
+//        try {
+//            monsterBases = monsterBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "monster_base.txt");
+//        } catch (Exception e) {
+//            logger.error("Error while parsing MonsterBase", e);
+//        }
+//
+//        /* for (MonsterBase monsterBase : monsterBases) {
+//            logger.info(monsterBase.toString());
+//        } */
+//    }
+//
+//    private static void loadPain() {
+//        MonsterPainParser parser = new MonsterPainParser();
+//
+//        try {
+//            monsterPains = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "pain.txt");
+//        } catch (Exception e) {
+//            logger.error("Exception while parsing pain.txt", e);
+//        }
+//
+///*        for (MonsterPain monsterPain : monsterPains) {
+//            logger.info(monsterPain.toString());
+//        }*/
+//    }
+//
+//    private static void loadBrands() {
+//        BrandParser brandParser = new BrandParser();
+//
+//        try {
+//            brands = brandParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "brand.txt");
+//        } catch (Exception e) {
+//            logger.error("Exception while parsing brands.txt", e);
+//        }
+//
+//        /* for (Brand brand : brands) {
+//            logger.info(brand.toString());
+//        } */
+//    }
+//
+//    private static void loadSlays() {
+//        SlayFormatter slayFormatter = new SlayFormatter();
+//
+//        try {
+//            slays = slayFormatter.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "slay.txt");
+//        } catch (Exception e) {
+//            logger.error("Exception thrown during loading Slays.", e);
+//        }
+//
+///*        for (Slay slay : slays) {
+//            logger.info(slay.toString());
+//        } */
+//    }
+//
+//    private static void loadObjectBases() {
+//        objectBases = new ArrayList<>();
+//        ObjectBaseParser objectBaseParser = new ObjectBaseParser();
+//
+//        try {
+//            objectBases = objectBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "object_base.txt");
+//        } catch (IOException e) {
+//            logger.error("Error while loading object_base.txt file", e);
+//        }
+//    }
 
-    private static void loadMonsterBases() {
-        MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
+    /**
+     * Load in the Terrain Feature information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadTerrainFeatures() throws IOException {
+        TerrainReader parser = new TerrainReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "terrain.txt";
 
         try {
-            monsterBases = monsterBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "monster_base.txt");
+            features = parser.parse(filename);
         } catch (Exception e) {
-            logger.error("Error while parsing MonsterBase", e);
-        }
-
-        /* for (MonsterBase monsterBase : monsterBases) {
-            logger.info(monsterBase.toString());
-        } */
-    }
-
-    private static void loadPain() {
-        MonsterPainParser parser = new MonsterPainParser();
-
-        try {
-            monsterPains = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "pain.txt");
-        } catch (Exception e) {
-            logger.error("Exception while parsing pain.txt", e);
-        }
-
-/*        for (MonsterPain monsterPain : monsterPains) {
-            logger.info(monsterPain.toString());
-        }*/
-    }
-
-    private static void loadBrands() {
-        BrandParser brandParser = new BrandParser();
-
-        try {
-            brands = brandParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "brand.txt");
-        } catch (Exception e) {
-            logger.error("Exception while parsing brands.txt", e);
-        }
-
-        /* for (Brand brand : brands) {
-            logger.info(brand.toString());
-        } */
-    }
-
-    private static void loadSlays() {
-        SlayFormatter slayFormatter = new SlayFormatter();
-
-        try {
-            slays = slayFormatter.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "slay.txt");
-        } catch (Exception e) {
-            logger.error("Exception thrown during loading Slays.", e);
-        }
-
-/*        for (Slay slay : slays) {
-            logger.info(slay.toString());
-        } */
-    }
-
-    private static void loadObjectBases() {
-        objectBases = new ArrayList<>();
-        ObjectBaseParser objectBaseParser = new ObjectBaseParser();
-
-        try {
-            objectBases = objectBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "object_base.txt");
-        } catch (IOException e) {
-            logger.error("Error while loading object_base.txt file", e);
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 
-    private static void loadTerrainFeatures() {
-        features = new ArrayList<>();
-        TerrainFeatureReader parser = new TerrainFeatureReader();
-
-        try {
-            features = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "terrain.txt");
-        } catch (Exception e) {
-            logger.error("Error while loading terrain properties!", e);
-        }
-    }
-
-    private static void loadPlayerProperties() {
+    /**
+     * Load in the Player Property information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadPlayerProperties() throws IOException {
         PlayerPropertyReader parser = new PlayerPropertyReader();
         String filename = GameConstants.ANGBAND_DIR_GAMEDATA + "player_property.txt";
 
@@ -663,10 +673,16 @@ public class GameConstants {
             playerProperties = parser.parse(filename);
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 
-    private static void loadUIEntries() {
+    /**
+     * Load in the UI ENtry information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadUIEntries() throws IOException {
         UIEntryReader parser = new UIEntryReader();
         String filename = ANGBAND_DIR_GAMEDATA + "ui_entry.txt";
 
@@ -674,13 +690,14 @@ public class GameConstants {
             uiEntries = parser.parse(filename);
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 
     /**
      * Load in the UI Bases information and store it in a List
      *
-     * @throws IOException an IO error occured during parsing
+     * @throws IOException an IO error occurred during parsing
      */
     private static void loadUIEntryBases() throws IOException {
         UIEntryBaseReader uiEntryBaseReader = new UIEntryBaseReader();
@@ -700,7 +717,7 @@ public class GameConstants {
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
     private static void loadUIEntryRenderers() throws IOException {
-        UIEntryRendParser renderer = new UIEntryRendParser();
+        UIEntryRendererReader renderer = new UIEntryRendererReader();
         String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
 
         try {
@@ -716,7 +733,7 @@ public class GameConstants {
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
     private static void loadProjections() throws IOException {
-        ProjectionParser projectionParser = new ProjectionParser();
+        ProjectionReader projectionParser = new ProjectionReader();
         String filename = ANGBAND_DIR_GAMEDATA + "projection.txt";
 
         try {
@@ -753,7 +770,6 @@ public class GameConstants {
      * Loads the contents of the file constants.txt in the lib\gamedata directory and splits the values out
      * into the various GameConstants values.
      */
-    @Contract
     private static void loadGameConstants() throws IOException {
         GameConstantsReader reader = new GameConstantsReader();
         String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
@@ -834,6 +850,8 @@ public class GameConstants {
      */
     private static void setORangedCrits(@NotNull Entry entry) {
         NameValuePair pair = getValues(entry.value(), entry.key());
+
+        if (pair == null) return;
 
         String name = pair.name();
         int val = pair.value();
@@ -1547,8 +1565,9 @@ public class GameConstants {
      * @throws InvalidTokenFoundDuringParse Either the wrong number of tokens in the value or a badly formatted integer
      * in the value String
      */
+    @NotNull
     @Contract("_, _ -> new")
-    private static @Nullable NameValuePair getValues(@NotNull String value, @NotNull String key) throws InvalidTokenFoundDuringParse {
+    private static NameValuePair getValues(@NotNull String value, @NotNull String key) throws InvalidTokenFoundDuringParse {
         String tag = key + ":";
         String[] results = value.split(":");
 
@@ -1566,10 +1585,9 @@ public class GameConstants {
             return new NameValuePair(name, val);
         } catch (NumberFormatException e) {
             String message = "Poorly formatted integer in incoming token. Token was " + tag + value;
-            logger.error(message);
+            logger.error(message, e);
+            throw e;
         }
-
-        return null;
     }
 
     public static int getStoreMax() {

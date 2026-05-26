@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
-import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
@@ -54,7 +54,7 @@ public class Chunk {
 
     /* How many feeling squares the player has visited */
     private int feelingSquares;
-    private HashMap<TerrainFlags, Integer> featCount;
+    private HashMap<TerrainFeatureFlags, Integer> featCount;
 
     private Square[][] squares;
     private Heatmap noise;

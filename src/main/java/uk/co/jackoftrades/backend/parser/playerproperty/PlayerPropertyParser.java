@@ -356,11 +356,16 @@ public class PlayerPropertyParser extends Parser {
                         ((BinduiContext) _localctx).TAG = match(TAG);
 
                         String raw = ((BinduiContext) _localctx).TAG.getText();
-                        String flag = raw.substring(1, raw.length() - 1);
-                        if (typeOption.equals("player"))
-                            ((BinduiContext) _localctx).elemEnum = Element.valueOf("ELEM_" + flag);
-                        else if (typeOption.equals("object"))
-                            ((BinduiContext) _localctx).statEnum = Stats.valueOf("STAT_" + flag);
+                        String flag;
+                        if (raw.length() < 3) {
+                            flag = "ERROR";
+                        } else {
+                            flag = raw.substring(1, raw.length() - 1);
+                            if (typeOption.equals("player"))
+                                ((BinduiContext) _localctx).elemEnum = Element.valueOf("ELEM_" + flag);
+                            else if (typeOption.equals("object"))
+                                ((BinduiContext) _localctx).statEnum = Stats.valueOf("STAT_" + flag);
+                        }
 
                     }
                 }
@@ -896,5 +901,5 @@ public class PlayerPropertyParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

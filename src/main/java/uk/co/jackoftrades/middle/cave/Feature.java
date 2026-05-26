@@ -23,6 +23,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.Objects;
@@ -33,7 +34,7 @@ public class Feature {
     private String description;
     private int featureIndex;
 
-    private Feature mimic;
+    private TerrainFlags mimic;
     private int priority;
 
     private int shopNum;
@@ -55,7 +56,7 @@ public class Feature {
     public Feature(TerrainFlags code,
                    String name,
                    String description,
-                   Feature mimic,
+                   TerrainFlags mimic,
                    int priority,
                    int shopNum,
                    int dig,
@@ -453,8 +454,12 @@ public class Feature {
         return name;
     }
 
-    public TerrainFlags getMimic() {
-        return mimic.code;
+    public TerrainFlags getCodeFlags() {
+        return code;
+    }
+
+    public Feature getMimic() {
+        return GameConstants.lookupFeature(mimic);
     }
 
     @Override

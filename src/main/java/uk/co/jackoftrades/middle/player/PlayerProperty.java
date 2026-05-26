@@ -65,25 +65,26 @@ public class PlayerProperty {
         this.value = value;
     }
 
+    // TODO: Sort this out
     private void parseBindUIExtras(String binduiExtras) {
-        // String is of format "':' (0 | 1) ':' (int | 'special')"
-        String toParse = binduiExtras.substring(1);
-        String[] split = toParse.split(":");
-        if (split.length != 2) {
-            IllegalArgumentException exception = new IllegalArgumentException("Invalid bindui extras: " + toParse);
-            logger.fatal(exception.getMessage(), exception);
-            throw exception;
-        }
-
-        passType = !(split[0].equals("0"));
-
-        if (split[1].equals("special")) {
-            special = true;
-            passValue = 0;
-        } else {
-            special = false;
-            passValue = Integer.parseInt(split[1]);
-        }
+//        // String is of format "':' (0 | 1) ':' (int | 'special')"
+//        String toParse = binduiExtras.substring(1);
+//        String[] split = toParse.split(":");
+//        if (split.length != 2) {
+//            IllegalArgumentException exception = new IllegalArgumentException("Invalid bindui extras: " + toParse);
+//            logger.fatal(exception.getMessage(), exception);
+//            throw exception;
+//        }
+//
+//        passType = !(split[0].equals("0"));
+//
+//        if (split[1].equals("special")) {
+//            special = true;
+//            passValue = 0;
+//        } else {
+//            special = false;
+//            passValue = Integer.parseInt(split[1]);
+//        }
     }
 
     public enum PlayerPropertyType {

@@ -20,12 +20,12 @@ package uk.co.jackoftrades.middle.objects;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.combat.enums.Element;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class ObjectBase {
     private String name;
@@ -34,7 +34,7 @@ public class ObjectBase {
 
     private Flag<ObjectFlag> flags;
     // Put in to handle HATES_EL flags in object_base.txt
-    private Flag<ElementEnum> hatesEl;
+    private Flag<Element> hatesEl;
     private Flag<ObjectKindFlag> kindFlags;
 
     private int breakPerc;
@@ -43,28 +43,27 @@ public class ObjectBase {
 
     public ObjectBase() {
         flags = new Flag<>(ObjectFlag.class);
-        hatesEl = new Flag<>(ElementEnum.class);
+        hatesEl = new Flag<>(Element.class);
         kindFlags = new Flag<>(ObjectKindFlag.class);
         breakPerc = -1;
         maxStack = -1;
     }
 
-    public void setFlags(@NotNull ArrayList<String> flagStrings) {
+    public void setFlags(@NotNull List<String> flagStrings) {
         for (String flagString : flagStrings) {
             if (flagString.startsWith("HATES_")) {
-                ElementEnum hate = ElementEnum.valueOf("ELEM_" + flagString.substring(6));
-                hatesEl.on(hate);
+                setHatesFlag(Element.valueOf("ELEM_" + flagString.substring(6)));
             } else {
-                kindFlags.on(ObjectKindFlag.valueOf("KF_" + flagString));
+                setKindFlag(ObjectKindFlag.valueOf("KF_" + flagString));
             }
         }
     }
 
-    public void setHatesFlag(ElementEnum flag) {
+    private void setHatesFlag(Element flag) {
         hatesEl.on(flag);
     }
 
-    public void setKindFlag(ObjectKindFlag flag) {
+    private void setKindFlag(ObjectKindFlag flag) {
         kindFlags.on(flag);
     }
 

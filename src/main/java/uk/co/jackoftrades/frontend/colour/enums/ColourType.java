@@ -323,7 +323,7 @@ public enum ColourType {
 
     @Contract(pure = true)
     public static ColourType findColourType(@NotNull String colourName) {
-        String lcColourName = colourName.toUpperCase();
+        String lcColourName = colourName.toLowerCase();
 
         for (ColourType colourType : ColourType.values()) {
             if (colourType.colourName.toLowerCase().equals(lcColourName))

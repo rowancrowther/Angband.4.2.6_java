@@ -364,17 +364,17 @@ public class GameConstants {
     private static List<UIEntry> uiEntries;
     private static List<PlayerProperty> playerProperties;
     private static List<Feature> features;
-    private static ArrayList<ObjectBase> objectBases;
-    private static ArrayList<Slay> slays;
-    private static ArrayList<Brand> brands;
-    private static ArrayList<MonsterPain> monsterPains;
-    private static ArrayList<MonsterBase> monsterBases;
-    private static ArrayList<Summon> summons;
-    private static ArrayList<Curse> curses;
-    private static ArrayList<PlayerShape> playerShapes;
+    private static List<ObjectBase> objectBases;
+    private static List<Slay> slays;
+    private static List<Brand> brands;
+    private static List<MonsterPain> monsterPains;
+    private static List<MonsterBase> monsterBases;
+    private static List<Summon> summons;
+    private static List<Curse> curses;
+    private static List<PlayerShape> playerShapes;
 
-    private static final ArrayList<TrapKind> trapInfo = new ArrayList<>();
-    public static final ArrayList<ObjectKind> objectKinds = new ArrayList<>();
+    private static final List<TrapKind> trapInfo = new ArrayList<>();
+    public static final List<ObjectKind> objectKinds = new ArrayList<>();
 
     public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
     public static final Player mainPlayer = new Player();
@@ -518,7 +518,7 @@ public class GameConstants {
             loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
-//        loadObjectBases();
+            loadObjectBases();
 //        loadSlays();
 //        loadBrands();
 //        loadPain();
@@ -631,17 +631,22 @@ public class GameConstants {
 //            logger.info(slay.toString());
 //        } */
 //    }
-//
-//    private static void loadObjectBases() {
-//        objectBases = new ArrayList<>();
-//        ObjectBaseParser objectBaseParser = new ObjectBaseParser();
-//
-//        try {
-//            objectBases = objectBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "object_base.txt");
-//        } catch (IOException e) {
-//            logger.error("Error while loading object_base.txt file", e);
-//        }
-//    }
+
+    /**
+     * Load in the ObjectBase informatino and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadObjectBases() throws IOException {
+        ObjectBaseReader objectBaseParser = new ObjectBaseReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "object_base.txt";
+
+        try {
+            objectBases = objectBaseParser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading object_base.txt file", e);
+        }
+    }
 
     /**
      * Load in the Terrain Feature information and store it in a List

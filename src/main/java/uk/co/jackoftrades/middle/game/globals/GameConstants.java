@@ -379,6 +379,25 @@ public class GameConstants {
     public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
     public static final Player mainPlayer = new Player();
 
+    /**
+     * Find a MonsterPain record from a incoming number
+     *
+     * @param monsterType The number from the 12 monster pain records
+     * @return The monsterPain with index = monsterType
+     */
+    @Nullable
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static MonsterPain lookupMonsterPain(int monsterType) {
+        if (monsterType <= 0 || monsterType > 12)
+            return null;
+
+        return monsterPains.stream()
+                .filter(e -> e.getPainIndex() == monsterType)
+                .findFirst()
+                .orElse(null);
+    }
+
     public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {
         if (features == null) return null;
         for (Feature feature : features) {
@@ -520,7 +539,7 @@ public class GameConstants {
             loadTerrainFeatures();
             loadObjectBases();
             loadPain();
-//        loadMonsterBases();
+            loadMonsterBases();         // Dependent on MonsterPain
 //        loadSlays();
 //        loadBrands();
 //        loadSummons();
@@ -574,29 +593,27 @@ public class GameConstants {
 ////            logger.info(summon.toString());
 ////        }
 //    }
-//
-//    private static void loadMonsterBases() {
-//        MonsterBaseParser monsterBaseParser = new MonsterBaseParser();
-//
-//        try {
-//            monsterBases = monsterBaseParser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "monster_base.txt");
-//        } catch (Exception e) {
-//            logger.error("Error while parsing MonsterBase", e);
-//        }
-//
-//        /* for (MonsterBase monsterBase : monsterBases) {
-//            logger.info(monsterBase.toString());
-//        } */
-//    }
-//
-private static void loadPain() {
+private static void loadMonsterBases() throws IOException {
+    MonsterBaseReader parser = new MonsterBaseReader();
+    String filename = ANGBAND_DIR_GAMEDATA + "monster_base.txt";
+
+    try {
+        monsterBases = parser.parse(filename);
+    } catch (IOException e) {
+        logger.error("Error while parsing {}", filename, e);
+        throw e;
+    }
+}
+
+    private static void loadPain() throws IOException {
     PainReader parser = new PainReader();
     String filename = ANGBAND_DIR_GAMEDATA + "pain.txt";
 
     try {
         monsterPains = parser.parse(filename);
-    } catch (Exception e) {
-        logger.error("Exception while parsing pain.txt", e);
+    } catch (IOException e) {
+        logger.error("Exception while parsing {}", filename, e);
+        throw e;
     }
 }
 
@@ -637,7 +654,8 @@ private static void loadPain() {
         try {
             objectBases = objectBaseParser.parse(filename);
         } catch (IOException e) {
-            logger.error("Error while loading object_base.txt file", e);
+            logger.error("Exception while parsing {}", filename, e);
+            throw e;
         }
     }
 

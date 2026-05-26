@@ -23,16 +23,15 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-
-import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureLexer;
-import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureParser;
-import uk.co.jackoftrades.middle.cave.Feature;
+import uk.co.jackoftrades.backend.parser.pain.PainLexer;
+import uk.co.jackoftrades.backend.parser.pain.PainParser;
+import uk.co.jackoftrades.middle.monsters.MonsterPain;
 
 import java.io.IOException;
 import java.util.List;
 
-public class TerrainReader implements Parser<Feature> {
-    Logger logger = LogManager.getLogger();
+public class PainReader implements Parser<MonsterPain> {
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * Run the parser and generate the ArrayList from the file
@@ -42,15 +41,14 @@ public class TerrainReader implements Parser<Feature> {
      */
     @NotNull
     @Override
-    public List<uk.co.jackoftrades.middle.cave.Feature> parse(@NotNull String filename) throws IOException {
+    public List<MonsterPain> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            TerrainFeatureLexer lexer = new TerrainFeatureLexer(stream);
+            PainLexer lexer = new PainLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            TerrainFeatureParser parser = new TerrainFeatureParser(tokens);
-            TerrainFeatureParser.FileContext output = parser.file();
-
-            return output.features;
+            PainParser parser = new PainParser(tokens);
+            PainParser.FileContext output = parser.file();
+            return output.monsterPain;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

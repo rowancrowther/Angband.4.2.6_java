@@ -519,18 +519,17 @@ public class GameConstants {
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
             loadObjectBases();
+            loadPain();
+//        loadMonsterBases();
 //        loadSlays();
 //        loadBrands();
-//        loadPain();
-//        loadMonsterBases();
 //        loadSummons();
 //        loadCurses();
 //        loadPlayerShapes();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
-            System.out.println(message + "\nSystem closing.");
-            System.exit(-1);
+            throw new RuntimeException(message, e);
         }
     }
 
@@ -557,9 +556,9 @@ public class GameConstants {
 //            logger.error("Error while parsing curses file", e);
 //        }
 //
-////        for (Curse curse : curses) {
-////            logger.info(curse.toString());
-////        }
+//        for (Curse curse : curses) {
+//            logger.info(curse.toString());
+//        }
 //    }
 //
 //    private static void loadSummons() {
@@ -590,20 +589,17 @@ public class GameConstants {
 //        } */
 //    }
 //
-//    private static void loadPain() {
-//        MonsterPainParser parser = new MonsterPainParser();
-//
-//        try {
-//            monsterPains = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "pain.txt");
-//        } catch (Exception e) {
-//            logger.error("Exception while parsing pain.txt", e);
-//        }
-//
-///*        for (MonsterPain monsterPain : monsterPains) {
-//            logger.info(monsterPain.toString());
-//        }*/
-//    }
-//
+private static void loadPain() {
+    PainReader parser = new PainReader();
+    String filename = ANGBAND_DIR_GAMEDATA + "pain.txt";
+
+    try {
+        monsterPains = parser.parse(filename);
+    } catch (Exception e) {
+        logger.error("Exception while parsing pain.txt", e);
+    }
+}
+
 //    private static void loadBrands() {
 //        BrandParser brandParser = new BrandParser();
 //
@@ -627,9 +623,6 @@ public class GameConstants {
 //            logger.error("Exception thrown during loading Slays.", e);
 //        }
 //
-///*        for (Slay slay : slays) {
-//            logger.info(slay.toString());
-//        } */
 //    }
 
     /**
@@ -855,8 +848,6 @@ public class GameConstants {
      */
     private static void setORangedCrits(@NotNull Entry entry) {
         NameValuePair pair = getValues(entry.value(), entry.key());
-
-        if (pair == null) return;
 
         String name = pair.name();
         int val = pair.value();

@@ -380,6 +380,26 @@ public class GameConstants {
     public static final Player mainPlayer = new Player();
 
     /**
+     * Find a MonsterBase from it's code name
+     *
+     * @param name the code name of the monster base we are searching for
+     * @return either the MonsterBase with the associated code name, or null
+     */
+    @Nullable
+    @CheckReturnValue
+    @Contract(pure = true)
+    public static MonsterBase getMonsterBase(@NotNull String name) {
+        if (monsterBases == null) {
+            throw new IllegalStateException("MonsterBase has not been initialized yet");
+        }
+
+        return monsterBases.stream()
+                .filter(e -> e.getCodeName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
      * Find a MonsterPain record from a incoming number
      *
      * @param monsterType The number from the 12 monster pain records
@@ -533,14 +553,14 @@ public class GameConstants {
             loadWorld();                // World arraylist determines maxRandDepth
             loadProjections();
             loadUIEntryRenderers();
-            loadUIEntryBases();         // UIEntryBase is dependent on UIEntyRenderers
+            loadUIEntryBases();         // Dependent on UIEntyRenderers
             loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
             loadObjectBases();
             loadPain();
             loadMonsterBases();         // Dependent on MonsterPain
-//        loadSlays();
+            loadSlays();                // Dependent on MonsterBases
 //        loadBrands();
 //        loadSummons();
 //        loadCurses();
@@ -631,16 +651,16 @@ private static void loadMonsterBases() throws IOException {
 //        } */
 //    }
 //
-//    private static void loadSlays() {
-//        SlayFormatter slayFormatter = new SlayFormatter();
-//
-//        try {
-//            slays = slayFormatter.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "slay.txt");
-//        } catch (Exception e) {
-//            logger.error("Exception thrown during loading Slays.", e);
-//        }
-//
-//    }
+private static void loadSlays() {
+    SlayReader parser = new SlayReader();
+    String filename = ANGBAND_DIR_GAMEDATA + "slay.txt";
+
+    try {
+        slays = parser.parse(filename);
+    } catch (Exception e) {
+        logger.error("Error while loading file {}", filename, e);
+    }
+    }
 
     /**
      * Load in the ObjectBase informatino and store it in a List

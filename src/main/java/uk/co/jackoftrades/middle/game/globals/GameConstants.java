@@ -562,7 +562,7 @@ public class GameConstants {
             loadMonsterBases();         // Dependent on MonsterPain
             loadSlays();                // Dependent on MonsterBases
             loadBrands();
-//        loadSummons();
+            loadSummons();              // Dependent on MonsterBases
 //        loadCurses();
 //        loadPlayerShapes();
         } catch (IOException e) {
@@ -600,43 +600,63 @@ public class GameConstants {
 //        }
 //    }
 //
-//    private static void loadSummons() {
-//        SummonParser parser = new SummonParser();
-//
-//        try {
-//            summons = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "summon.txt");
-//        } catch (Exception e) {
-//            logger.error("Error while parsing summons file!", e);
-//        }
-//
-////        for (Summon summon : summons) {
-////            logger.info(summon.toString());
-////        }
-//    }
-private static void loadMonsterBases() throws IOException {
-    MonsterBaseReader parser = new MonsterBaseReader();
-    String filename = ANGBAND_DIR_GAMEDATA + "monster_base.txt";
 
-    try {
-        monsterBases = parser.parse(filename);
-    } catch (IOException e) {
-        logger.error("Error while loading file {}", filename, e);
-        throw e;
+    /**
+     * Load in the Summon information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadSummons() throws IOException {
+        SummonReader parser = new SummonReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "summon.txt";
+
+        try {
+            summons = parser.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
+        }
     }
-}
 
+    /**
+     * Load in the MonsterBase information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadMonsterBases() throws IOException {
+        MonsterBaseReader parser = new MonsterBaseReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "monster_base.txt";
+
+        try {
+            monsterBases = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
+        }
+    }
+
+    /**
+     * Load in the Pain information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
     private static void loadPain() throws IOException {
-    PainReader parser = new PainReader();
-    String filename = ANGBAND_DIR_GAMEDATA + "pain.txt";
+        PainReader parser = new PainReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "pain.txt";
 
-    try {
-        monsterPains = parser.parse(filename);
-    } catch (IOException e) {
-        logger.error("Exception while loading file {}", filename, e);
-        throw e;
+        try {
+            monsterPains = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Exception while loading file {}", filename, e);
+            throw e;
+        }
     }
-}
 
+    /**
+     * Load in the Brand information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
     private static void loadBrands() throws IOException {
         BrandReader parser = new BrandReader();
         String filename = ANGBAND_DIR_GAMEDATA + "brand.txt";
@@ -649,19 +669,24 @@ private static void loadMonsterBases() throws IOException {
         }
     }
 
-private static void loadSlays() {
-    SlayReader parser = new SlayReader();
-    String filename = ANGBAND_DIR_GAMEDATA + "slay.txt";
+    /**
+     * Load in the Slays information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadSlays() {
+        SlayReader parser = new SlayReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "slay.txt";
 
-    try {
-        slays = parser.parse(filename);
-    } catch (Exception e) {
-        logger.error("Error while loading file {}", filename, e);
-    }
+        try {
+            slays = parser.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
     }
 
     /**
-     * Load in the ObjectBase informatino and store it in a List
+     * Load in the ObjectBase information and store it in a List
      *
      * @throws IOException an IO error occurred during parsing
      */

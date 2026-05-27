@@ -447,6 +447,28 @@ public class GameConstants {
         return null;
     }
 
+    /**
+     * Get the ObjectBase which has a given string as its name
+     *
+     * @param name the name we are searching the object base list for
+     * @return the object base with given name or null
+     */
+    @Nullable
+    @Contract(pure = true)
+    public static ObjectBase lookupObjectBase(@NotNull String name) {
+        if (objectBases == null) {
+            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return objectBases.stream()
+                .filter(o -> name.equals(o.getName()))
+                .findFirst()
+                .orElse(null);
+    }
+
     public static @Nullable ObjectBase getBaseFromTVal(TValue tVal) {
         for (ObjectBase base : objectBases) {
             if (base.gettVal() == tVal) {
@@ -563,12 +585,30 @@ public class GameConstants {
             loadSlays();                // Dependent on MonsterBases
             loadBrands();
             loadSummons();              // Dependent on MonsterBases
-//        loadCurses();
+            checkSummons();             // Check tha the summons list correctly handles the fallback strings
+            loadCurses();               // Dependent on ObjectBases
 //        loadPlayerShapes();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    /**
+     * Check the summons list to ensure that all fallback positions are correctly stored
+     *
+     * @throws IllegalStateException There was no entry where the fallback of one summon was the name of another.
+     */
+    private static void checkSummons() throws IllegalStateException {
+        for (Summon summon : summons) {
+            String fallBack = summon.getFallback();
+            if (!fallBack.isEmpty()) {
+                if (summons.stream().noneMatch(e -> e.getName().equals(fallBack))) {
+                    String errorMessage = "No fallback record of " + fallBack + " found for " + summon.getName();
+                    throw new IllegalStateException(errorMessage);
+                }
+            }
         }
     }
 
@@ -585,21 +625,23 @@ public class GameConstants {
 ////                logger.info(shape.toString());
 ////        }
 //    }
-//
-//    private static void loadCurses() {
-//        CurseReader curseReader = new CurseReader();
-//
-//        try {
-//            curses = curseReader.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "curse.txt");
-//        } catch (Exception e) {
-//            logger.error("Error while parsing curses file", e);
-//        }
-//
-//        for (Curse curse : curses) {
-//            logger.info(curse.toString());
-//        }
-//    }
-//
+
+    /**
+     * Load in the Curses information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
+    private static void loadCurses() throws IOException {
+        CurseReader curseReader = new CurseReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "curse.txt";
+
+        try {
+            curses = curseReader.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
+        }
+    }
 
     /**
      * Load in the Summon information and store it in a List

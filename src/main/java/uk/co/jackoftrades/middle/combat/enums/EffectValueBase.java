@@ -15,23 +15,15 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle;
+package uk.co.jackoftrades.middle.combat.enums;
 
-import uk.co.jackoftrades.middle.combat.enums.EffectValueBase;
-
-public class Expression {
-    private char codeLetter;
-    private EffectValueBase baseType;
-    private String operations;
-    private String diceString;
-
-    public Expression(char codeLetter, EffectValueBase baseType, String operations) {
-        this.codeLetter = codeLetter;
-        this.baseType = baseType;
-        this.operations = operations;
-    }
-
-    public void setDiceString(String diceString) {
-        this.diceString = diceString;
-    }
+public enum EffectValueBase {
+    EVB_NONE,
+    EVB_SPELL_POWER,
+    EVB_DUNGEON_LEVEL,
+    EVB_MAX_SIGHT,
+    EVB_WEAPON_DAMAGE,
+    EVB_PLAYER_HP,
+    EVB_MONSTER_PERCENT_HP_GONE,
+    EVB_MAX
 }

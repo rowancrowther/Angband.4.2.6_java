@@ -21,27 +21,30 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.Expression;
-import uk.co.jackoftrades.middle.enums.EffectBaseType;
+import uk.co.jackoftrades.middle.combat.enums.EffectValueBase;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.ValueEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Curse {
     private final static Logger logger = LogManager.getLogger();
 
     private String name;
     private boolean poss;
-    private ArrayList<ObjectBase> objectBases;
+    private List<ObjectBase> objectBases;
     private String conflict;
-    private ArrayList<ObjectFlag> flags;
-    private ArrayList<ObjectFlag> conflictFlags;
+    private int weight;
+    private List<ObjectFlagName> flags;
+    private List<ObjectFlagName> conflictFlags;
     private Random dice;
     private Expression diceExpression;
-    private ArrayList<TimedEffect> timedEffects;
+    private MonsterRaceFlag monsterRaceFlag;
+    private TimedEffect timedEffects;
     private Random time;
     private String description;
     private EffectEnum effect;
@@ -50,31 +53,34 @@ public class Curse {
     private int combatDam;
     private int combatAC;
     private Expression expression;
-    private HashMap<ValueEnum, Integer> valueCollection;
+    private Map<ValueEnum, Integer> valueCollection;
     private String message;
 
     public Curse(String name,
                  boolean poss,
-                 ArrayList<ObjectBase> objectBases,
-                 ArrayList<ObjectFlag> flags,
+                 List<ObjectBase> objectBases,
+                 int weight,
+                 List<ObjectFlagName> flags,
                  String conflict,
-                 ArrayList<ObjectFlag> conflictFlags,
+                 List<ObjectFlagName> conflictFlags,
                  String dice,
                  String time,
                  String description,
                  EffectEnum effect,
+                 MonsterRaceFlag monsterRaceFlag,
                  TimedEffect timedEffect,
                  int combatToHit,
                  int combatDam,
                  int combatAC,
                  char expressionChar,
-                 EffectBaseType expressionEffect,
+                 EffectValueBase expressionEffect,
                  String expressionOperation,
-                 HashMap<ValueEnum, Integer> valueCollection,
+                 Map<ValueEnum, Integer> valueCollection,
                  String message) {
         this.name = name;
         this.poss = poss;
         this.objectBases = objectBases;
+        this.weight = weight;
         this.flags = flags;
         this.conflict = conflict;
         this.conflictFlags = conflictFlags;
@@ -86,7 +92,8 @@ public class Curse {
             this.diceExpression = null;
         } else {
             this.dice = null;
-            this.diceExpression = new Expression(dice.substring(1).charAt(0), expressionEffect, expressionOperation);
+            this.diceExpression = new Expression(dice.substring(1).charAt(0),
+                    expressionEffect, expressionOperation);
         }
         if (time.isBlank())
             this.time = null;
@@ -94,6 +101,7 @@ public class Curse {
 //            this.time = Parser.parseDiceString(time);
         this.description = description;
         this.effect = effect;
+        this.monsterRaceFlag = monsterRaceFlag;
         this.timedEffect = timedEffect;
         this.combatToHit = combatToHit;
         this.combatDam = combatDam;

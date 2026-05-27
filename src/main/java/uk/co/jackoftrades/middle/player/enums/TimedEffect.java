@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 
 public enum TimedEffect {
-    TMD_NULL(new PlayerRedraw[]{}, new PlayerUpkeepEnum[]{}),
+    TMD_NONE(new PlayerRedraw[]{}, new PlayerUpkeepEnum[]{}),
     TMD_FAST(new PlayerRedraw[]{PlayerRedraw.PR_STATUS}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_BONUS}),
     TMD_SLOW(new PlayerRedraw[]{PlayerRedraw.PR_STATUS}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_BONUS}),
     TMD_BLIND(new PlayerRedraw[]{PlayerRedraw.PR_MAP}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_UPDATE_VIEW, PlayerUpkeepEnum.PU_MONSTERS}),

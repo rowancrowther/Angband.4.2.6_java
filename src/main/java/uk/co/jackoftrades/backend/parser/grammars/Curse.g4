@@ -7,7 +7,7 @@ grammar Curse;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-    import uk.co.jackoftrades.middle.combat.enums.EffectValueBase;
+    import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.enums.ValueEnum;
     import uk.co.jackoftrades.middle.objects.Curse;
 
@@ -71,14 +71,14 @@ dice
         ;
 
 expr
-        returns[char exprChar, EffectValueBase evBase, String effectString]
+        returns[char exprChar, EffectBaseType evBase, String effectString]
         :   EXPR ch=STRING COLON base=STRING COLON eff=STRING {
                 String raw = $ch.getText();
                 if (raw.length() != 1)
                     throw new IllegalArgumentException("Expression character code may only have one character.");
 
                 $exprChar = $ch.getText().charAt(0);
-                $evBase = EffectValueBase.valueOf("EVB_" + $base.getText());
+                $evBase = EffectBaseType.valueOf("EFB_" + $base.getText());
                 $effectString = $eff.getText();
             }
         ;
@@ -153,7 +153,7 @@ curse
             TimedEffect timedEffectInit = TimedEffect.TMD_NONE;
             String diceInit = "";
             char exprCharInit = '\0';
-            EffectValueBase evBaseInit = EffectValueBase.EVB_NONE;
+            EffectBaseType evBaseInit = EffectBaseType.EFB_NONE;
             String effectStringInit = "";
             String timeInit = "";
             List<ObjectFlagName> flagsInit = new ArrayList<>();

@@ -87,7 +87,7 @@ skill-disarm-phys:-5
 skill-disarm-magic:-10
 skill-melee:10
 obj-flags:PROT_FEAR
-values: STR[3] | INT[-2] | CON[2] | INFRA[1] | STEALTH[-3] | BLOWS[1]
+values:STR[3] | INT[-2] | CON[2] | INFRA[1] | STEALTH[-3] | BLOWS[1]
 blow:cuff
 blow:clout
 blow:claw
@@ -148,10 +148,11 @@ name:werewolf
 combat:5:5:0
 obj-flags:REGEN
 values:BLOWS[1] | MOVES[1]
-effect-msg:taking werewolf form
+# Effect-Msg line moved from here to deal with ambiguity
 effect:PROJECT_LOS:TURN_ALL
 dice:$B
 expr:B:PLAYER_LEVEL:+ 0
+effect-msg:taking werewolf form
 effect:CURE:AFRAID
 effect:TIMED_INC:SHERO
 dice:5+1d20

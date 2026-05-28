@@ -20,7 +20,6 @@ package uk.co.jackoftrades.middle.game.globals;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
-
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.*;
@@ -587,7 +586,7 @@ public class GameConstants {
             loadSummons();              // Dependent on MonsterBases
             checkSummons();             // Check tha the summons list correctly handles the fallback strings
             loadCurses();               // Dependent on ObjectBases
-//        loadPlayerShapes();
+            loadPlayerShapes();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -612,19 +611,16 @@ public class GameConstants {
         }
     }
 
-//    private static void loadPlayerShapes() {
-//        PlayerShapeParser parser = new PlayerShapeParser();
-//
-//        try {
-//            playerShapes = parser.parse(GameConstants.ANGBAND_DIR_GAMEDATA + "shape.txt");
-//        } catch (Exception e) {
-//            logger.error("Error while parsing shape file", e);
-//        }
-//
-////        for (PlayerShape shape : playerShapes) {
-////                logger.info(shape.toString());
-////        }
-//    }
+    private static void loadPlayerShapes() {
+        ShapeReader parser = new ShapeReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "shape.txt";
+
+        try {
+            playerShapes = parser.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
 
     /**
      * Load in the Curses information and store it in a List

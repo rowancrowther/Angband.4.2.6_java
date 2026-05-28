@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.Expression;
-import uk.co.jackoftrades.middle.combat.enums.EffectValueBase;
+import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.ValueEnum;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -73,7 +73,7 @@ public class Curse {
                  int combatDam,
                  int combatAC,
                  char expressionChar,
-                 EffectValueBase expressionEffect,
+                 EffectBaseType expressionEffect,
                  String expressionOperation,
                  Map<ValueEnum, Integer> valueCollection,
                  String message) {

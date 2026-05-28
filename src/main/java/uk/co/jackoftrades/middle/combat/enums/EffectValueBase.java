@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.combat.enums;
 
+// TODO: REMOVE THIS
+
 public enum EffectValueBase {
     EVB_NONE,
     EVB_SPELL_POWER,

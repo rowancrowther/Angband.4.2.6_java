@@ -10,6 +10,7 @@ module uk.co.jackoftrades {
     requires javafx.media;
     requires com.sun.jna.platform;
     requires com.sun.jna;
+    requires java.sql;
 
     opens uk.co.jackoftrades to javafx.fxml;
     exports uk.co.jackoftrades;

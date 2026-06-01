@@ -21,6 +21,11 @@ public class CurseData {
     private int power;
     private int timeout;
 
+    public CurseData(int power, int timeout) {
+        this.power = power;
+        this.timeout = timeout;
+    }
+
     public int getPower() {
         return power;
     }

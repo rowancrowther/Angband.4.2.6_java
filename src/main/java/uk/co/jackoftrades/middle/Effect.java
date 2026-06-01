@@ -19,9 +19,8 @@ package uk.co.jackoftrades.middle;
 
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
-import uk.co.jackoftrades.middle.enums.Projection;
+import uk.co.jackoftrades.middle.enums.*;
+import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 /**
@@ -36,9 +35,16 @@ public class Effect {
     private EffectSubTypeEnum subType;
     private TimedEffect timedEffect;
     private Projection projection;
-    private int radius;
-    private Object otherParameter;
+    private EffectNourish effectNourish;
+    private Stats effectStats;
+    private EffectEnchant effectEnchant;
+    private Summon effectSummon;
+    private Random radius;
+    private Random otherParameter;
+    private int power;
     private String msg;
+    private String visMsg;
+    private Random time;
     private Expression expression;
 
     /**
@@ -96,19 +102,66 @@ public class Effect {
                   int x,
                   TimedEffect timedEffect,
                   Projection projection,
-                  int radius,
-                  Object otherParameter,
+                  Stats effectStats,
+                  EffectNourish effectNourish,
+                  EffectEnchant effectEnchant,
+                  Summon effectSummon,
+                  String radius,
+                  String otherParameter,
                   String msg,
+                  String visMsg,
                   Expression expression) {
         this.index = index;
-        this.dice = null;// Random.parseRandom(dice);
+        this.dice = Random.parseStr(dice);
         this.y = y;
         this.x = x;
         this.projection = projection;
         this.timedEffect = timedEffect;
-        this.radius = radius;
-        this.otherParameter = otherParameter;
+        this.effectNourish = effectNourish;
+        this.effectEnchant = effectEnchant;
+        this.effectSummon = effectSummon;
+        this.effectStats = effectStats;
+        this.radius = Random.parseStr(radius);
+        this.otherParameter = Random.parseStr(otherParameter);
         this.msg = msg;
+        this.visMsg = visMsg;
+        this.expression = expression;
+    }
+
+    @Contract(mutates = "this")
+    public Effect(EffectEnum index,
+                  String dice,
+                  int y,
+                  int x,
+                  TimedEffect timedEffect,
+                  Projection projection,
+                  Stats effectStats,
+                  EffectNourish effectNourish,
+                  EffectEnchant effectEnchant,
+                  Summon effectSummon,
+                  String radius,
+                  String otherParameter,
+                  int power,
+                  String msg,
+                  String visMsg,
+                  String time,
+                  Expression expression) {
+        this.index = index;
+        this.dice = Random.parseStr(dice);
+        this.y = y;
+        this.x = x;
+        this.projection = projection;
+        this.timedEffect = timedEffect;
+        this.effectNourish = effectNourish;
+        this.effectEnchant = effectEnchant;
+        this.effectSummon = effectSummon;
+        this.effectStats = effectStats;
+        this.radius = Random.parseStr(radius);
+        this.otherParameter = Random.parseStr(otherParameter);
+        this.power = power;
+        this.msg = msg;
+        this.visMsg = visMsg;
+        this.time = Random.parseStr(time);
         this.expression = expression;
     }
 }

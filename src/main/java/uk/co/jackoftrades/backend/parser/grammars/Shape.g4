@@ -17,6 +17,10 @@ grammar Shape;
     import uk.co.jackoftrades.middle.combat.enums.Element;
     import uk.co.jackoftrades.middle.player.PlayerBlow;
     import uk.co.jackoftrades.middle.Effect;
+    import uk.co.jackoftrades.middle.enums.Stats;
+    import uk.co.jackoftrades.middle.enums.EffectNourish;
+    import uk.co.jackoftrades.middle.enums.EffectEnchant;
+    import uk.co.jackoftrades.middle.monsters.Summon;
 
     import java.util.List;
     import java.util.ArrayList;
@@ -170,15 +174,22 @@ effect_block
             int yInit = 0;
             TimedEffect timedEffect = TimedEffect.TMD_NONE;
             Projection projectionInit = Projection.PROJ_NONE;
-            int radiusInit = 0;
-            Object otherParameter = null;
+            Stats statsInit = Stats.STAT_NONE;
+            EffectNourish nourInit = EffectNourish.EN_NONE;
+            EffectEnchant encInit = EffectEnchant.EE_NONE;
+            Summon summInit = null;
+            String radiusInit = "";
+            String otherParameter = "";
             String msgInit = "";
+            String visMsgInit = "";
             Expression expInit = null;
         }
         @after {
             $effObj = new Effect(effectEnum, diceInit, yInit, xInit,
-                                 timedEffect, projectionInit, radiusInit,
-                                 otherParameter, msgInit, expInit);
+                                 timedEffect, projectionInit, statsInit,
+                                 nourInit, encInit, summInit,
+                                 radiusInit, otherParameter, msgInit,
+                                 visMsgInit, expInit);
         }
         :   effect {
                 effectEnum = $effect.effectEnum;

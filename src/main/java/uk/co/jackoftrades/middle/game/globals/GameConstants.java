@@ -371,6 +371,7 @@ public class GameConstants {
     private static List<Summon> summons;
     private static List<Curse> curses;
     private static List<PlayerShape> playerShapes;
+    private static List<ItemObject> itemObjects;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -379,14 +380,34 @@ public class GameConstants {
     public static final Player mainPlayer = new Player();
 
     /**
-     * Find a MonsterBase from it's code name
+     * Searches for a summon based on the summon name
+     * @param summonName the name/type of the Summon
+     * @return the Summon where name is equal to the incoming parameter
+     */
+    @Nullable
+    @CheckReturnValue
+    public static Summon lookupSummon(String summonName) {
+        if (summons == null) {
+            String message = "Invalid attempt to access summons when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return summons.stream()
+                .filter(s -> s.getName().equals(summonName))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Find a MonsterBase from its code name
      *
      * @param name the code name of the monster base we are searching for
      * @return either the MonsterBase with the associated code name, or null
      */
     @Nullable
     @CheckReturnValue
-    @Contract(pure = true)
     public static MonsterBase getMonsterBase(@NotNull String name) {
         if (monsterBases == null) {
             throw new IllegalStateException("MonsterBase has not been initialized yet");
@@ -396,6 +417,50 @@ public class GameConstants {
                 .filter(e -> e.getCodeName().equals(name))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Search through the slays to get a slay with the same code as
+     * the incoming parameter
+     *
+     * @param slayName the name/code of the slay to find
+     * @return A slay where the code name is the same as the incoming
+     * parameter, or null
+     */
+    @Nullable
+    @CheckReturnValue
+    public static Slay lookupSlay(String slayName) {
+        if (slays == null) {
+            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return slays.stream()
+                .filter(s -> s.getCode().equals(slayName))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * Locate a cruse by its name
+     *
+     * @param curseName the name of the curse we are looking for
+     * @return The curse with the relevant name or null
+     */
+    @Nullable
+    @CheckReturnValue
+    public static Curse lookupCurse(String curseName) {
+        if (curses == null) {
+            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return curses.stream()
+                .filter(c -> c.getName().equals(curseName))
+                .findFirst().orElse(null);
     }
 
     /**
@@ -453,7 +518,7 @@ public class GameConstants {
      * @return the object base with given name or null
      */
     @Nullable
-    @Contract(pure = true)
+    @CheckReturnValue
     public static ObjectBase lookupObjectBase(@NotNull String name) {
         if (objectBases == null) {
             String message = "Invalid attempt to access objectBases when it hasn't been initialized";
@@ -584,13 +649,25 @@ public class GameConstants {
             loadSlays();                // Dependent on MonsterBases
             loadBrands();
             loadSummons();              // Dependent on MonsterBases
-            checkSummons();             // Check tha the summons list correctly handles the fallback strings
+            checkSummons();             // Check that the summons list correctly handles the fallback strings
             loadCurses();               // Dependent on ObjectBases
             loadPlayerShapes();
+            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadItemObjects() {
+        ItemObjectReader parser = new ItemObjectReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "object.txt";
+
+        try {
+            itemObjects = parser.parse(filename);
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 
@@ -611,6 +688,11 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Load in the PlayerShape information and store it in a List
+     *
+     * @throws IOException an IO error occurred during parsing
+     */
     private static void loadPlayerShapes() {
         ShapeReader parser = new ShapeReader();
         String filename = ANGBAND_DIR_GAMEDATA + "shape.txt";

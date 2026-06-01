@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
@@ -28,10 +29,13 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class ObjectKind {
+    public record CurseEntry(Curse curse, CurseData curseData) {
+    }
+
     private String name;
     private String text;
 
@@ -45,6 +49,7 @@ public class ObjectKind {
     private Random toA;
 
     private int ac;
+    private Random baseDamage;
     private int damageDice;
     private int damageSides;
     private int weight;
@@ -54,12 +59,12 @@ public class ObjectKind {
     private Flag<ObjectFlag> flags;
     private Flag<ObjectKindFlag> kindFlags;
 
-    private HashMap<ObjectModifier, Random> modifiers;
-    private HashMap<ElementEnum, ElementInfo> elInfo;
+    private Map<ObjectModifier, Random> modifiers;
+    private Map<ElementEnum, ElementInfo> elInfo;
 
-    private HashMap<Brand, Boolean> brands;
-    private HashMap<Slay, Boolean> slays;
-    private HashMap<Curse, Integer> curses;
+    private Map<Brand, Boolean> brands;
+    private Map<Slay, Boolean> slays;
+    private Map<CurseEntry, Boolean> curses;
 
     private AngbandDisplayCharacter character;
 
@@ -68,8 +73,8 @@ public class ObjectKind {
     private int alloc_max;
     private int level;
 
-    private ArrayList<Activation> activations;
-    private ArrayList<Effect> effect;
+    private List<Activation> activations;
+    private List<Effect> effect;
     private int power;
     private String effectMessage;
     private String visMessage;
@@ -89,6 +94,83 @@ public class ObjectKind {
 
     private int ignore;
     private boolean everseen;
+
+    // TODO: Change to initiate the members appropriately
+    public ObjectKind() {
+    }
+
+    public ObjectKind(String name, String text, ObjectBase base,
+                      int kindIndex, String pVal, String toH,
+                      String toD, String toA, int ac, String baseDamage,
+                      int damageDice, int damageSides,
+                      int weight, int cost,
+                      Flag<ObjectFlag> flags,
+                      Flag<ObjectKindFlag> kindFlags,
+                      Map<ObjectModifier, String> modifiers,
+                      Map<ElementEnum, ElementInfo> elInfo,
+                      Map<Brand, Boolean> brands,
+                      Map<Slay, Boolean> slays,
+                      Map<ItemObjectParser.CurseEntry, Boolean> curses,
+                      AngbandDisplayCharacter character,
+                      int alloc_prob, int alloc_min,
+                      int alloc_max, int level,
+                      List<Activation> activations,
+                      List<Effect> effect, String effectMessage,
+                      String visMessage, String time,
+                      String charge, int genMultProb,
+                      String stackSize, Flavour flavour,
+                      Quark noteAware, Quark noteUnaware,
+                      boolean aware, boolean tried,
+                      int ignore, boolean everseen) {
+        this.name = name;
+        this.text = text;
+        this.base = base;
+        this.kindIndex = kindIndex;
+        this.pVal = Random.parseStr(pVal);
+        this.toH = Random.parseStr(toH);
+        this.toD = Random.parseStr(toD);
+        this.toA = Random.parseStr(toA);
+        this.ac = ac;
+        this.baseDamage = Random.parseStr(baseDamage);
+        this.damageDice = damageDice;
+        this.damageSides = damageSides;
+        this.weight = weight;
+        this.cost = cost;
+        this.flags = flags;
+        this.kindFlags = kindFlags;
+        for (ObjectModifier mod : modifiers.keySet()) {
+            Random r = Random.parseStr(modifiers.get(mod));
+            this.modifiers.put(mod, r);
+        }
+        this.elInfo = elInfo;
+        this.brands = brands;
+        this.slays = slays;
+        for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
+            CurseEntry thisCE = new CurseEntry(ce.curse(), ce.curseData());
+            this.curses.put(thisCE, curses.get(ce));
+        }
+        this.character = character;
+        this.alloc_prob = alloc_prob;
+        this.alloc_min = alloc_min;
+        this.alloc_max = alloc_max;
+        this.level = level;
+        this.activations = activations;
+        this.effect = effect;
+        this.power = power;
+        this.effectMessage = effectMessage;
+        this.visMessage = visMessage;
+        this.time = Random.parseStr(time);
+        this.charge = Random.parseStr(charge);
+        this.genMultProb = genMultProb;
+        this.stackSize = Random.parseStr(stackSize);
+        this.flavour = flavour;
+        this.noteAware = noteAware;
+        this.noteUnaware = noteUnaware;
+        this.aware = aware;
+        this.tried = tried;
+        this.ignore = ignore;
+        this.everseen = everseen;
+    }
 
     public String getName() {
         return name;

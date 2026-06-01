@@ -17,18 +17,10 @@
 
 package uk.co.jackoftrades.middle.enums;
 
-public enum EffectSubTypeEnum {
-    EST_NONE,
-    EST_PROJ,
-    EST_TMD,
-    EST_NOURISH,
-    EST_MON_TMD,
-    EST_SUMMON,
-    EST_STAT,
-    EST_ENCHANT,
-    EST_SHAPECHANGE,
-    EST_EARTHQUAKE,
-    EST_GLYPH,
-    EST_TELEPORT,
-    EST_TELEPORT_TO
+public enum EffectNourish {
+    EN_NONE,
+    EN_INC_BY,
+    EN_DEC_BY,
+    EN_SET_TO,
+    EN_INC_TO
 }

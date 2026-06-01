@@ -26,238 +26,238 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class ShapeBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ShapeVisitor<T> {
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitName(ShapeParser.NameContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitName(ShapeParser.NameContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitCombat(ShapeParser.CombatContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitCombat(ShapeParser.CombatContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_disarm_phys(ShapeParser.Skill_disarm_physContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_disarm_phys(ShapeParser.Skill_disarm_physContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_disarm_magic(ShapeParser.Skill_disarm_magicContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_disarm_magic(ShapeParser.Skill_disarm_magicContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_save(ShapeParser.Skill_saveContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_save(ShapeParser.Skill_saveContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_stealth(ShapeParser.Skill_stealthContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_stealth(ShapeParser.Skill_stealthContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_search(ShapeParser.Skill_searchContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_search(ShapeParser.Skill_searchContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_melee(ShapeParser.Skill_meleeContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_melee(ShapeParser.Skill_meleeContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_throw(ShapeParser.Skill_throwContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_throw(ShapeParser.Skill_throwContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSkill_dig(ShapeParser.Skill_digContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSkill_dig(ShapeParser.Skill_digContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitObj_flags(ShapeParser.Obj_flagsContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitObj_flags(ShapeParser.Obj_flagsContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitPlayer_flags(ShapeParser.Player_flagsContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitPlayer_flags(ShapeParser.Player_flagsContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitValues(ShapeParser.ValuesContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitValues(ShapeParser.ValuesContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEffect(ShapeParser.EffectContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEffect(ShapeParser.EffectContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitDice(ShapeParser.DiceContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitDice(ShapeParser.DiceContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitExpr(ShapeParser.ExprContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitExpr(ShapeParser.ExprContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEffect_msg(ShapeParser.Effect_msgContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEffect_msg(ShapeParser.Effect_msgContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEffect_block(ShapeParser.Effect_blockContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEffect_block(ShapeParser.Effect_blockContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitBlow(ShapeParser.BlowContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitBlow(ShapeParser.BlowContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitShape(ShapeParser.ShapeContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitShape(ShapeParser.ShapeContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(ShapeParser.FileContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitFile(ShapeParser.FileContext ctx) {
+		return visitChildren(ctx);
+	}
 }

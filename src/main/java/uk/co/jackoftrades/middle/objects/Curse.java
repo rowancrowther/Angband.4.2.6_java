@@ -111,6 +111,10 @@ public class Curse {
         this.message = message;
     }
 
+    public String getName() {
+        return name;
+    }
+
     @Override
     public String toString() {
         return "Curse{" +

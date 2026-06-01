@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
@@ -37,16 +38,15 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
 
-/**
- * Stem class to hold the c angband object
- */
-
 public class ItemObject {
+    public record CurseEntry(Curse curse, CurseData curseData) {
+    }
+
     private static final Logger logger = LogManager.getLogger();
 
     private ObjectKind kind;
@@ -66,21 +66,22 @@ public class ItemObject {
 
     private int damageDice;
     private int damageSides;
+    private Random baseDamage;
     private int normalAC;
-    private int toAC;
-    private int toDam;
-    private int toHit;
+    private Random toAC;
+    private Random toDam;
+    private Random toHit;
 
     private Flag<ObjectFlag> flags;
-    private HashMap<ObjectModifier, Integer> modifiers;
-    private HashMap<ElementEnum, ElementInfo> elInfo;
-    private HashMap<Brand, Boolean> brands;
-    private HashMap<Slay, Boolean> slays;
-    private HashMap<Curse, CurseData> curses;
+    private Map<ObjectModifier, String> modifiers;
+    private Map<ElementEnum, ElementInfo> elInfo;
+    private Map<Brand, Boolean> brands;
+    private Map<Slay, Boolean> slays;
+    private Map<CurseEntry, Boolean> curses;
 
-    private ArrayList<Effect> effect;
+    private List<Effect> effect;
     private String effectMessage;
-    private Activation activation;
+    private List<Activation> activation;
     private Random time;
     private int timeout;
 
@@ -97,7 +98,66 @@ public class ItemObject {
     private Quark note;
 
     public ItemObject() {
-        notice = new Flag<>(ObjectNotice.class);
+    }
+
+    public ItemObject(ObjectKind kind, EgoItem ego,
+                      Artifact artifact, ItemObject known,
+                      Loc location, TValue tValue, int sValue,
+                      String pValue, int weight, int damageDice,
+                      int damageSides, int normalAC, String toAC,
+                      String baseDamage, String toDam, String toHit,
+                      Flag<ObjectFlag> flags,
+                      Map<ObjectModifier, String> modifiers,
+                      Map<ElementEnum, ElementInfo> elInfo,
+                      Map<Brand, Boolean> brands,
+                      Map<Slay, Boolean> slays,
+                      Map<ItemObjectParser.CurseEntry, Boolean> curses,
+                      List<Effect> effect, String effectMessage,
+                      List<Activation> activation, String time,
+                      int timeout, int number,
+                      Flag<ObjectNotice> notice, int heldMIndex,
+                      int mimickingMIndex,
+                      ObjectOriginEnum origin, int originDepth,
+                      MonsterRace originRace, Quark note) {
+        this.kind = kind;
+        this.ego = ego;
+        this.artifact = artifact;
+        this.known = known;
+        this.location = location;
+        this.tValue = tValue;
+        this.sValue = sValue;
+        this.pValue = Integer.parseInt(pValue);
+        this.weight = weight;
+        this.damageDice = damageDice;
+        this.damageSides = damageSides;
+        this.normalAC = normalAC;
+        this.toAC = Random.parseStr(toAC);
+        this.baseDamage = Random.parseStr(baseDamage);
+        this.toDam = Random.parseStr(toDam);
+        this.toHit = Random.parseStr(toHit);
+        this.flags = flags;
+        this.modifiers = modifiers;
+        this.elInfo = elInfo;
+        this.brands = brands;
+        this.slays = slays;
+        for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
+            Boolean b = curses.get(ce);
+            CurseEntry curseEntry = new CurseEntry(ce.curse(), ce.curseData());
+            this.curses.put(curseEntry, b);
+        }
+        this.effect = effect;
+        this.effectMessage = effectMessage;
+        this.activation = activation;
+        this.time = Random.parseStr(time);
+        this.timeout = timeout;
+        this.number = number;
+        this.notice = notice;
+        this.heldMIndex = heldMIndex;
+        this.mimickingMIndex = mimickingMIndex;
+        this.origin = origin;
+        this.originDepth = originDepth;
+        this.originRace = originRace;
+        this.note = note;
     }
 
     public void setGrid(Loc grid) {
@@ -320,7 +380,7 @@ public class ItemObject {
      */
     private void originCombine(@NotNull ItemObject item) {
         if (!originRace.equals(item.originRace)) {
-            boolean uniqThis = (this.originRace != null && this.originRace.getFlags().has(MonsterRaceFlag.RF_UNIQUE));
+            boolean uniqThis = (this.originRace.getFlags().has(MonsterRaceFlag.RF_UNIQUE));
             boolean uniqItem = (item.originRace != null && item.originRace.getFlags().has(MonsterRaceFlag.RF_UNIQUE));
 
             if (uniqThis && !uniqItem) {

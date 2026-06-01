@@ -26,7 +26,7 @@ public enum TValue {
     /**
      * A null TValue - not yet assigned
      */
-    TV_NULL("none"),
+    TV_NONE("none"),
 
     /**
      * A chest

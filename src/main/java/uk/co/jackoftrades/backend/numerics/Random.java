@@ -67,6 +67,10 @@ public class Random {
         negated = false;
     }
 
+    public static Random parseStr(String randomString) {
+        return null;
+    }
+
     /**
      * Sets the base value for this Random die. If an invalid value (less than 0) is
      * passed in, the value is set to 0.

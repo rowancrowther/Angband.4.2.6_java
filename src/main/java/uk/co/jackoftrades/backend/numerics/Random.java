@@ -21,9 +21,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.Nullable;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
-import uk.co.jackoftrades.backend.utils.RandomValueUtils;
+import uk.co.jackoftrades.backend.parser.RandomReader;
+
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Random {
     private int base;
@@ -67,8 +72,29 @@ public class Random {
         negated = false;
     }
 
+    /**
+     * Turn a string into a Random
+     *
+     * @param randomString the Random string we are trying to turn into a random
+     * @return A Random based on the string, or null if an error occurred
+     */
+    @Nullable
+    @CheckReturnValue
     public static Random parseStr(String randomString) {
-        return null;
+        RandomReader reader = new RandomReader();
+        List<Random> randoms = new ArrayList<>();
+        try {
+            randoms = reader.parse(randomString);
+        } catch (IOException e) {
+            logger.error("Error while reading random {}", randomString, e);
+            return null;
+        }
+
+        if (randoms.isEmpty()) {
+            return null;
+        }
+
+        return randoms.get(0);
     }
 
     /**
@@ -179,8 +205,8 @@ public class Random {
         //if (debug) logger.traceEntry("Random.negate() oldBase: {}", base);
 
         if (toNegate && !negated) {
-            int min = base + mBonus * dice;
-            int max = base + mBonus * dice * sides;
+            int min = base + dice;
+            int max = base + dice * sides;
             base = -(min + max);
             toNegate = false;
             negated = true;

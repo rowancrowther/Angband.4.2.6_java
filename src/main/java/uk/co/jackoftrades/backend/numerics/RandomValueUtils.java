@@ -15,7 +15,7 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.backend.utils;
+package uk.co.jackoftrades.backend.numerics;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -23,6 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
+import uk.co.jackoftrades.backend.utils.GlobalUtils;
 
 import java.util.Random;
 

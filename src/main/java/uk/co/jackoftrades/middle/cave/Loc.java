@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.cave;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.utils.RandomValueUtils;
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 
 public class Loc {

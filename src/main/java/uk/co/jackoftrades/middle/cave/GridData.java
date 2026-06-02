@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.cave;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import uk.co.jackoftrades.backend.utils.RandomValueUtils;
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.enums.GridLightLevel;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;

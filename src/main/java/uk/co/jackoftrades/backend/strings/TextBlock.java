@@ -238,10 +238,11 @@ public class TextBlock {
     @Contract(mutates = "this")
     public void append(@NotNull String string, @NotNull List<AttributeColour> colours) {
         if (string.length() != colours.size()) {
-            logger.error("Invalid string/list input to TextBlock creator. String was of length " + string.length() +
-                    " and colours array was of length " + colours.size());
-            throw new IllegalArgumentException("Invalid string/list input to TextBlock creator. String was of length "
-                    + string.length() + " and colours array was of length " + colours.size());
+            String message = "Invalid string/list input to TextBlock creator. String was of length " + string.length() +
+                    " and colours array was of length " + colours.size();
+            IllegalArgumentException e = new IllegalArgumentException(message);
+            logger.error(message, e);
+            throw e;
         }
 
         for (int index = 0; index < colours.size(); index++)

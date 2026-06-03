@@ -18,37 +18,55 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ItemObject.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.itemobject;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.backend.strings.Quark;
-import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourTranslation;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.Effect;
-import uk.co.jackoftrades.middle.Expression;
-import uk.co.jackoftrades.middle.cave.Loc;
-import uk.co.jackoftrades.middle.enums.*;
+import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
+import uk.co.jackoftrades.middle.objects.ObjectBase;
+import uk.co.jackoftrades.middle.objects.Slay;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
-import uk.co.jackoftrades.middle.monsters.MonsterRace;
-import uk.co.jackoftrades.middle.monsters.Summon;
-import uk.co.jackoftrades.middle.objects.*;
-import uk.co.jackoftrades.middle.objects.enums.*;
+import uk.co.jackoftrades.middle.Expression;
+import uk.co.jackoftrades.middle.enums.EffectBaseType;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.ElementInfo;
+import uk.co.jackoftrades.middle.objects.Brand;
+import uk.co.jackoftrades.middle.objects.CurseData;
+import uk.co.jackoftrades.middle.objects.Curse;
+import uk.co.jackoftrades.middle.Activation;
+import uk.co.jackoftrades.middle.objects.Flavour;
+import uk.co.jackoftrades.backend.strings.Quark;
+import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.objects.EgoItem;
+import uk.co.jackoftrades.middle.objects.Artifact;
+import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
+import uk.co.jackoftrades.middle.monsters.MonsterRace;
+import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftrades.middle.enums.EffectNourish;
+import uk.co.jackoftrades.middle.enums.EffectEnchant;
+import uk.co.jackoftrades.middle.monsters.Summon;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.colour.enums.ColourTranslation;
 
-import java.util.ArrayList;
+import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.ArrayList;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ItemObjectParser extends Parser {
@@ -385,7 +403,12 @@ public class ItemObjectParser extends Parser {
                 ((TypeContext) _localctx).STRING = match(STRING);
                 setState(70);
                 match(EOL);
-                ((TypeContext) _localctx).typeObj = TValue.valueOf("TV_" + ((TypeContext) _localctx).STRING.getText().toUpperCase());
+
+                String flagStr = ((TypeContext) _localctx).STRING.getText().toUpperCase().replace(' ', '_');
+                if (flagStr.equals("DIGGER")) flagStr = "DIGGING";
+                if (flagStr.equals("DRAGON_ARMOR")) flagStr = "DRAG_ARMOR";
+                ((TypeContext) _localctx).typeObj = TValue.valueOf("TV_" + flagStr);
+
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1794,7 +1817,7 @@ public class ItemObjectParser extends Parser {
         int xInit = 0;
         EffectSubTypeEnum subTypeInit = EffectSubTypeEnum.EST_NONE;
         TimedEffect timedInit = TimedEffect.TMD_NONE;
-        Projection projInit = Projection.PROJ_NONE;
+        ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
         EffectNourish effNourish = EffectNourish.EN_NONE;
         EffectEnchant effEnchant = EffectEnchant.EE_NONE;
         Summon effSummon = null;
@@ -2203,7 +2226,7 @@ public class ItemObjectParser extends Parser {
 
                 switch (subTypeInit) {
                     case EST_PROJ:
-                        projInit = Projection.valueOf("PROJ_" + subTypeName);
+                        projInit = ProjectionEnum.valueOf("PROJ_" + subTypeName);
                         break;
 
                     case EST_TMD:
@@ -3682,5 +3705,5 @@ public class ItemObjectParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

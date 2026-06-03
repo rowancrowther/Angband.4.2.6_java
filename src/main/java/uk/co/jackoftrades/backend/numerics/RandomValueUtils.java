@@ -215,8 +215,10 @@ public class RandomValueUtils {
     public static int randRange(int lowest, int highest) {
         if (lowest == highest) return lowest;
         if (lowest > highest) {
-            logger.error("lowest " + lowest + " should be less or equal to highest " + highest);
-            throw new IllegalArgumentException("lowest " + lowest + " should be less or equal to highest " + highest);
+            String message = "lowest " + lowest + " should be less or equal to highest " + highest;
+            IllegalArgumentException e = new IllegalArgumentException(message);
+            logger.error(message, e);
+            throw e;
         }
 
         return (lowest + (int) randInt1(1 + highest - lowest));

@@ -18,32 +18,34 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Shape.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.shape;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.Effect;
-import uk.co.jackoftrades.middle.Expression;
-import uk.co.jackoftrades.middle.combat.enums.Element;
-import uk.co.jackoftrades.middle.enums.*;
-import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
-import uk.co.jackoftrades.middle.player.PlayerBlow;
-import uk.co.jackoftrades.middle.player.PlayerShape;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
+import uk.co.jackoftrades.middle.enums.ValueEnum;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.enums.EffectBaseType;
+import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.Expression;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
+import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.middle.player.PlayerShape;
+import uk.co.jackoftrades.middle.combat.enums.Element;
+import uk.co.jackoftrades.middle.player.PlayerBlow;
+import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.enums.EffectNourish;
+import uk.co.jackoftrades.middle.enums.EffectEnchant;
+import uk.co.jackoftrades.middle.monsters.Summon;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.Map;
+import java.util.HashMap;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ShapeParser extends Parser {
@@ -66,7 +68,6 @@ public class ShapeParser extends Parser {
 			RULE_skill_throw = 8, RULE_skill_dig = 9, RULE_obj_flags = 10, RULE_player_flags = 11,
 			RULE_values = 12, RULE_effect = 13, RULE_dice = 14, RULE_expr = 15, RULE_effect_msg = 16,
 			RULE_effect_block = 17, RULE_blow = 18, RULE_shape = 19, RULE_file = 20;
-
 	private static String[] makeRuleNames() {
 		return new String[]{
 				"name", "combat", "skill_disarm_phys", "skill_disarm_magic", "skill_save",
@@ -75,7 +76,6 @@ public class ShapeParser extends Parser {
 				"effect_block", "blow", "shape", "file"
 		};
 	}
-
 	public static final String[] ruleNames = makeRuleNames();
 
 	private static String[] makeLiteralNames() {
@@ -87,9 +87,7 @@ public class ShapeParser extends Parser {
 				"'['", "']'", "':'", "' | '"
 		};
 	}
-
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
 	private static String[] makeSymbolicNames() {
 		return new String[]{
 				null, "COMMENT", "EOL", "NAME", "COMBAT", "SKILL_DISARM_PHYS", "SKILL_DISARM_MAGIC",
@@ -99,7 +97,6 @@ public class ShapeParser extends Parser {
 				"FLAG", "STRING"
 		};
 	}
-
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
 
@@ -108,7 +105,6 @@ public class ShapeParser extends Parser {
 	 */
 	@Deprecated
 	public static final String[] tokenNames;
-
 	static {
 		tokenNames = new String[_SYMBOLIC_NAMES.length];
 		for (int i = 0; i < tokenNames.length; i++) {
@@ -172,7 +168,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public NameContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -181,17 +176,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_name;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterName(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitName(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitName(this);
@@ -237,7 +229,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> COLON() {
 			return getTokens(ShapeParser.COLON);
 		}
-
 		public TerminalNode COLON(int i) {
 			return getToken(ShapeParser.COLON, i);
 		}
@@ -245,11 +236,9 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> STRING() {
 			return getTokens(ShapeParser.STRING);
 		}
-
 		public TerminalNode STRING(int i) {
 			return getToken(ShapeParser.STRING, i);
 		}
-
 		public CombatContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -258,17 +247,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_combat;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterCombat(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitCombat(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitCombat(this);
@@ -298,7 +284,7 @@ public class ShapeParser extends Parser {
 				((CombatContext) _localctx).tohNum = Integer.parseInt(((CombatContext) _localctx).toh.getText());
 				((CombatContext) _localctx).todNum = Integer.parseInt(((CombatContext) _localctx).tod.getText());
 				((CombatContext) _localctx).toaNum = Integer.parseInt(((CombatContext) _localctx).toa.getText());
-
+			        
 			}
 		} catch (RecognitionException re) {
 			_localctx.exception = re;
@@ -322,7 +308,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_disarm_physContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -331,17 +316,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_disarm_phys;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_disarm_phys(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_disarm_phys(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor)
@@ -384,7 +366,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_disarm_magicContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -393,17 +374,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_disarm_magic;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_disarm_magic(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_disarm_magic(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor)
@@ -446,7 +424,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_saveContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -455,17 +432,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_save;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_save(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_save(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_save(this);
@@ -507,7 +481,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_stealthContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -516,17 +489,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_stealth;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_stealth(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_stealth(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_stealth(this);
@@ -568,7 +538,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_searchContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -577,17 +546,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_search;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_search(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_search(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_search(this);
@@ -629,7 +595,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_meleeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -638,17 +603,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_melee;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_melee(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_melee(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_melee(this);
@@ -690,7 +652,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_throwContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -699,17 +660,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_throw;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_throw(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_throw(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_throw(this);
@@ -751,7 +709,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Skill_digContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -760,17 +717,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_skill_dig;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterSkill_dig(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitSkill_dig(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitSkill_dig(this);
@@ -813,7 +767,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> FLAG() {
 			return getTokens(ShapeParser.FLAG);
 		}
-
 		public TerminalNode FLAG(int i) {
 			return getToken(ShapeParser.FLAG, i);
 		}
@@ -821,11 +774,9 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> OR() {
 			return getTokens(ShapeParser.OR);
 		}
-
 		public TerminalNode OR(int i) {
 			return getToken(ShapeParser.OR, i);
 		}
-
 		public Obj_flagsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -834,17 +785,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_obj_flags;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterObj_flags(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitObj_flags(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitObj_flags(this);
@@ -857,7 +805,7 @@ public class ShapeParser extends Parser {
 		enterRule(_localctx, 20, RULE_obj_flags);
 
 		((Obj_flagsContext) _localctx).oFlags = new Flag<>(ObjectFlagName.class);
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -908,7 +856,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> FLAG() {
 			return getTokens(ShapeParser.FLAG);
 		}
-
 		public TerminalNode FLAG(int i) {
 			return getToken(ShapeParser.FLAG, i);
 		}
@@ -916,11 +863,9 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> OR() {
 			return getTokens(ShapeParser.OR);
 		}
-
 		public TerminalNode OR(int i) {
 			return getToken(ShapeParser.OR, i);
 		}
-
 		public Player_flagsContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -929,17 +874,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_player_flags;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterPlayer_flags(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitPlayer_flags(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitPlayer_flags(this);
@@ -952,7 +894,7 @@ public class ShapeParser extends Parser {
 		enterRule(_localctx, 22, RULE_player_flags);
 
 		((Player_flagsContext) _localctx).pFlags = new Flag<>(PlayerFlag.class);
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -1005,7 +947,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> LBRACKET() {
 			return getTokens(ShapeParser.LBRACKET);
 		}
-
 		public TerminalNode LBRACKET(int i) {
 			return getToken(ShapeParser.LBRACKET, i);
 		}
@@ -1013,7 +954,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> RBRACKET() {
 			return getTokens(ShapeParser.RBRACKET);
 		}
-
 		public TerminalNode RBRACKET(int i) {
 			return getToken(ShapeParser.RBRACKET, i);
 		}
@@ -1021,7 +961,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> FLAG() {
 			return getTokens(ShapeParser.FLAG);
 		}
-
 		public TerminalNode FLAG(int i) {
 			return getToken(ShapeParser.FLAG, i);
 		}
@@ -1029,7 +968,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> STRING() {
 			return getTokens(ShapeParser.STRING);
 		}
-
 		public TerminalNode STRING(int i) {
 			return getToken(ShapeParser.STRING, i);
 		}
@@ -1037,11 +975,9 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> OR() {
 			return getTokens(ShapeParser.OR);
 		}
-
 		public TerminalNode OR(int i) {
 			return getToken(ShapeParser.OR, i);
 		}
-
 		public ValuesContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1050,17 +986,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_values;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterValues(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitValues(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitValues(this);
@@ -1073,7 +1006,7 @@ public class ShapeParser extends Parser {
 		enterRule(_localctx, 24, RULE_values);
 
 		((ValuesContext) _localctx).valueMap = new HashMap<>();
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -1135,7 +1068,7 @@ public class ShapeParser extends Parser {
 	public static class EffectContext extends ParserRuleContext {
 		public EffectEnum effectEnum;
 		public TimedEffect timedEffect;
-		public Projection projectionEffect;
+		public ProjectionEnum projectionEffect;
 		public Token f1;
 		public Token f2;
 
@@ -1146,7 +1079,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> FLAG() {
 			return getTokens(ShapeParser.FLAG);
 		}
-
 		public TerminalNode FLAG(int i) {
 			return getToken(ShapeParser.FLAG, i);
 		}
@@ -1154,7 +1086,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode COLON() {
 			return getToken(ShapeParser.COLON, 0);
 		}
-
 		public EffectContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1163,17 +1094,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_effect;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterEffect(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitEffect(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitEffect(this);
@@ -1187,8 +1115,8 @@ public class ShapeParser extends Parser {
 
 		((EffectContext) _localctx).effectEnum = EffectEnum.EF_NONE;
 		((EffectContext) _localctx).timedEffect = TimedEffect.TMD_NONE;
-		((EffectContext) _localctx).projectionEffect = Projection.PROJ_NONE;
-
+		((EffectContext) _localctx).projectionEffect = ProjectionEnum.PROJ_NONE;
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -1213,7 +1141,7 @@ public class ShapeParser extends Parser {
 						if (_localctx.effectEnum == EffectEnum.EF_CURE || _localctx.effectEnum == EffectEnum.EF_TIMED_INC) {
 							((EffectContext) _localctx).timedEffect = TimedEffect.valueOf("TMD_" + ((EffectContext) _localctx).f2.getText());
 						} else {
-							((EffectContext) _localctx).projectionEffect = Projection.valueOf("PROJ_" + ((EffectContext) _localctx).f2.getText());
+							((EffectContext) _localctx).projectionEffect = ProjectionEnum.valueOf("PROJ_" + ((EffectContext) _localctx).f2.getText());
 						}
 
 					}
@@ -1242,7 +1170,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public DiceContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1251,17 +1178,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_dice;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterDice(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitDice(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitDice(this);
@@ -1305,7 +1229,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> COLON() {
 			return getTokens(ShapeParser.COLON);
 		}
-
 		public TerminalNode COLON(int i) {
 			return getToken(ShapeParser.COLON, i);
 		}
@@ -1313,7 +1236,6 @@ public class ShapeParser extends Parser {
 		public List<TerminalNode> FLAG() {
 			return getTokens(ShapeParser.FLAG);
 		}
-
 		public TerminalNode FLAG(int i) {
 			return getToken(ShapeParser.FLAG, i);
 		}
@@ -1321,7 +1243,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public ExprContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1330,17 +1251,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_expr;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterExpr(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitExpr(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitExpr(this);
@@ -1355,7 +1273,7 @@ public class ShapeParser extends Parser {
 		char chInit;
 		EffectBaseType baseInit;
 		String operationInit;
-
+		        
 		try {
 			enterOuterAlt(_localctx, 1);
 			{
@@ -1380,7 +1298,7 @@ public class ShapeParser extends Parser {
 
 				baseInit = EffectBaseType.valueOf("EFB_" + ((ExprContext) _localctx).base.getText());
 				operationInit = ((ExprContext) _localctx).st.getText();
-
+			        
 			}
 			_ctx.stop = _input.LT(-1);
 
@@ -1408,7 +1326,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public Effect_msgContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1417,17 +1334,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_effect_msg;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterEffect_msg(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitEffect_msg(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitEffect_msg(this);
@@ -1464,23 +1378,18 @@ public class ShapeParser extends Parser {
 		public Effect_msgContext effect_msg;
 		public DiceContext dice;
 		public ExprContext expr;
-
 		public EffectContext effect() {
 			return getRuleContext(EffectContext.class, 0);
 		}
-
 		public Effect_msgContext effect_msg() {
 			return getRuleContext(Effect_msgContext.class, 0);
 		}
-
 		public DiceContext dice() {
 			return getRuleContext(DiceContext.class, 0);
 		}
-
 		public ExprContext expr() {
 			return getRuleContext(ExprContext.class, 0);
 		}
-
 		public Effect_blockContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1489,17 +1398,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_effect_block;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterEffect_block(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitEffect_block(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitEffect_block(this);
@@ -1516,7 +1422,7 @@ public class ShapeParser extends Parser {
 		int xInit = 0;
 		int yInit = 0;
 		TimedEffect timedEffect = TimedEffect.TMD_NONE;
-		Projection projectionInit = Projection.PROJ_NONE;
+		ProjectionEnum projectionInit = ProjectionEnum.PROJ_NONE;
 		Stats statsInit = Stats.STAT_NONE;
 		EffectNourish nourInit = EffectNourish.EN_NONE;
 		EffectEnchant encInit = EffectEnchant.EE_NONE;
@@ -1526,7 +1432,7 @@ public class ShapeParser extends Parser {
 		String msgInit = "";
 		String visMsgInit = "";
 		Expression expInit = null;
-
+		        
 		try {
 			setState(176);
 			_errHandler.sync(this);
@@ -1540,7 +1446,7 @@ public class ShapeParser extends Parser {
 					effectEnum = ((Effect_blockContext) _localctx).effect.effectEnum;
 					timedEffect = ((Effect_blockContext) _localctx).effect.timedEffect;
 					projectionInit = ((Effect_blockContext) _localctx).effect.projectionEffect;
-
+				            
 				}
 				break;
 				case 2:
@@ -1555,7 +1461,7 @@ public class ShapeParser extends Parser {
 					timedEffect = ((Effect_blockContext) _localctx).effect.timedEffect;
 					projectionInit = ((Effect_blockContext) _localctx).effect.projectionEffect;
 					msgInit = ((Effect_blockContext) _localctx).effect_msg.effMsgStr;
-
+				            
 				}
 				break;
 				case 3:
@@ -1570,7 +1476,7 @@ public class ShapeParser extends Parser {
 					timedEffect = ((Effect_blockContext) _localctx).effect.timedEffect;
 					projectionInit = ((Effect_blockContext) _localctx).effect.projectionEffect;
 					diceInit = ((Effect_blockContext) _localctx).dice.diceStr;
-
+				            
 				}
 				break;
 				case 4:
@@ -1588,7 +1494,7 @@ public class ShapeParser extends Parser {
 					projectionInit = ((Effect_blockContext) _localctx).effect.projectionEffect;
 					diceInit = ((Effect_blockContext) _localctx).dice.diceStr;
 					msgInit = ((Effect_blockContext) _localctx).effect_msg.effMsgStr;
-
+				            
 				}
 				break;
 				case 5:
@@ -1606,7 +1512,7 @@ public class ShapeParser extends Parser {
 					projectionInit = ((Effect_blockContext) _localctx).effect.projectionEffect;
 					diceInit = ((Effect_blockContext) _localctx).dice.diceStr;
 					expInit = ((Effect_blockContext) _localctx).expr.expression;
-
+				            
 				}
 				break;
 				case 6:
@@ -1627,7 +1533,7 @@ public class ShapeParser extends Parser {
 					diceInit = ((Effect_blockContext) _localctx).dice.diceStr;
 					expInit = ((Effect_blockContext) _localctx).expr.expression;
 					msgInit = ((Effect_blockContext) _localctx).effect_msg.effMsgStr;
-
+				            
 				}
 				break;
 			}
@@ -1661,7 +1567,6 @@ public class ShapeParser extends Parser {
 		public TerminalNode STRING() {
 			return getToken(ShapeParser.STRING, 0);
 		}
-
 		public BlowContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1670,17 +1575,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_blow;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterBlow(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitBlow(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitBlow(this);
@@ -1727,123 +1629,93 @@ public class ShapeParser extends Parser {
 		public ValuesContext values;
 		public Effect_blockContext effect_block;
 		public BlowContext blow;
-
 		public NameContext name() {
 			return getRuleContext(NameContext.class, 0);
 		}
-
 		public List<CombatContext> combat() {
 			return getRuleContexts(CombatContext.class);
 		}
-
 		public CombatContext combat(int i) {
 			return getRuleContext(CombatContext.class, i);
 		}
-
 		public List<Skill_disarm_physContext> skill_disarm_phys() {
 			return getRuleContexts(Skill_disarm_physContext.class);
 		}
-
 		public Skill_disarm_physContext skill_disarm_phys(int i) {
 			return getRuleContext(Skill_disarm_physContext.class, i);
 		}
-
 		public List<Skill_disarm_magicContext> skill_disarm_magic() {
 			return getRuleContexts(Skill_disarm_magicContext.class);
 		}
-
 		public Skill_disarm_magicContext skill_disarm_magic(int i) {
 			return getRuleContext(Skill_disarm_magicContext.class, i);
 		}
-
 		public List<Skill_saveContext> skill_save() {
 			return getRuleContexts(Skill_saveContext.class);
 		}
-
 		public Skill_saveContext skill_save(int i) {
 			return getRuleContext(Skill_saveContext.class, i);
 		}
-
 		public List<Skill_stealthContext> skill_stealth() {
 			return getRuleContexts(Skill_stealthContext.class);
 		}
-
 		public Skill_stealthContext skill_stealth(int i) {
 			return getRuleContext(Skill_stealthContext.class, i);
 		}
-
 		public List<Skill_searchContext> skill_search() {
 			return getRuleContexts(Skill_searchContext.class);
 		}
-
 		public Skill_searchContext skill_search(int i) {
 			return getRuleContext(Skill_searchContext.class, i);
 		}
-
 		public List<Skill_meleeContext> skill_melee() {
 			return getRuleContexts(Skill_meleeContext.class);
 		}
-
 		public Skill_meleeContext skill_melee(int i) {
 			return getRuleContext(Skill_meleeContext.class, i);
 		}
-
 		public List<Skill_throwContext> skill_throw() {
 			return getRuleContexts(Skill_throwContext.class);
 		}
-
 		public Skill_throwContext skill_throw(int i) {
 			return getRuleContext(Skill_throwContext.class, i);
 		}
-
 		public List<Skill_digContext> skill_dig() {
 			return getRuleContexts(Skill_digContext.class);
 		}
-
 		public Skill_digContext skill_dig(int i) {
 			return getRuleContext(Skill_digContext.class, i);
 		}
-
 		public List<Obj_flagsContext> obj_flags() {
 			return getRuleContexts(Obj_flagsContext.class);
 		}
-
 		public Obj_flagsContext obj_flags(int i) {
 			return getRuleContext(Obj_flagsContext.class, i);
 		}
-
 		public List<Player_flagsContext> player_flags() {
 			return getRuleContexts(Player_flagsContext.class);
 		}
-
 		public Player_flagsContext player_flags(int i) {
 			return getRuleContext(Player_flagsContext.class, i);
 		}
-
 		public List<ValuesContext> values() {
 			return getRuleContexts(ValuesContext.class);
 		}
-
 		public ValuesContext values(int i) {
 			return getRuleContext(ValuesContext.class, i);
 		}
-
 		public List<Effect_blockContext> effect_block() {
 			return getRuleContexts(Effect_blockContext.class);
 		}
-
 		public Effect_blockContext effect_block(int i) {
 			return getRuleContext(Effect_blockContext.class, i);
 		}
-
 		public List<BlowContext> blow() {
 			return getRuleContexts(BlowContext.class);
 		}
-
 		public BlowContext blow(int i) {
 			return getRuleContext(BlowContext.class, i);
 		}
-
 		public ShapeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -1852,17 +1724,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_shape;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterShape(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitShape(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitShape(this);
@@ -1886,7 +1755,7 @@ public class ShapeParser extends Parser {
 		Effect effectInit = null;
 		int numBlows = 0;
 		List<PlayerBlow> blowInit = new ArrayList<>();
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -2046,15 +1915,12 @@ public class ShapeParser extends Parser {
 		public TerminalNode EOF() {
 			return getToken(ShapeParser.EOF, 0);
 		}
-
 		public List<ShapeContext> shape() {
 			return getRuleContexts(ShapeContext.class);
 		}
-
 		public ShapeContext shape(int i) {
 			return getRuleContext(ShapeContext.class, i);
 		}
-
 		public FileContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -2063,17 +1929,14 @@ public class ShapeParser extends Parser {
 		public int getRuleIndex() {
 			return RULE_file;
 		}
-
 		@Override
 		public void enterRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).enterFile(this);
 		}
-
 		@Override
 		public void exitRule(ParseTreeListener listener) {
 			if (listener instanceof ShapeListener) ((ShapeListener) listener).exitFile(this);
 		}
-
 		@Override
 		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
 			if (visitor instanceof ShapeVisitor) return ((ShapeVisitor<? extends T>) visitor).visitFile(this);
@@ -2086,7 +1949,7 @@ public class ShapeParser extends Parser {
 		enterRule(_localctx, 40, RULE_file);
 
 		((FileContext) _localctx).shapes = new ArrayList<>();
-
+		        
 		int _la;
 		try {
 			enterOuterAlt(_localctx, 1);
@@ -2272,7 +2135,6 @@ public class ShapeParser extends Parser {
 					"\u0000\u0000\u0000\b^iz\u0083\u00b0\u00e2\u00e4\u00ec";
 	public static final ATN _ATN =
 			new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
 	static {
 		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
 		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {

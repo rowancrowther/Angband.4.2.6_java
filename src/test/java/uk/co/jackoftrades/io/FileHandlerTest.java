@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.io;
 
 import org.apache.logging.log4j.LogManager;
@@ -112,7 +129,7 @@ class FileHandlerTest {
         try {
             newerFile = Files.createFile(Paths.get(movedPath)).toFile();
         } catch (IOException e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         assertTrue(handler.fileNewer(path, movedPath));
@@ -162,7 +179,7 @@ class FileHandlerTest {
             outputStream.write(outputByte);
             outputStream.close();
         } catch (IOException e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         handler.open(FileModeEnum.MODE_READ);
@@ -183,7 +200,7 @@ class FileHandlerTest {
             FileInputStream inputStream = new FileInputStream(path);
             actualInputByte = inputStream.read();
         } catch (IOException e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         assertEquals(inputByte, actualInputByte);
@@ -201,7 +218,7 @@ class FileHandlerTest {
             outputStream.write(outputValues);
             outputStream.close();
         } catch (IOException e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         handler.open(FileModeEnum.MODE_READ);
@@ -235,7 +252,7 @@ class FileHandlerTest {
             outputStream.write(stringToWrite);
             outputStream.close();
         } catch (Exception e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         handler.open(FileModeEnum.MODE_APPEND);
@@ -248,7 +265,7 @@ class FileHandlerTest {
             readBytes = inputStream.readNBytes(length);
             readString = new String(readBytes);
         } catch (Exception e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
             readBytes = null;
         }
 
@@ -276,7 +293,7 @@ class FileHandlerTest {
             writer.println(stringToPut);
             writer.close();
         } catch (Exception e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
         }
 
         handler.open(FileModeEnum.MODE_READ);
@@ -298,7 +315,7 @@ class FileHandlerTest {
             BufferedReader reader = new BufferedReader(new InputStreamReader((inputStream)));
             readLine = reader.readLine();
         } catch (Exception e) {
-            logger.error("An error has occurred: " + e.getMessage());
+            logger.error("An error has occurred: " + e.getMessage(), e);
             readLine = "";
         }
 

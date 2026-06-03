@@ -30,167 +30,126 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 public interface ShapeVisitor<T> extends ParseTreeVisitor<T> {
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#name}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitName(ShapeParser.NameContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#combat}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitCombat(ShapeParser.CombatContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_disarm_phys}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_disarm_phys(ShapeParser.Skill_disarm_physContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_disarm_magic}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_disarm_magic(ShapeParser.Skill_disarm_magicContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_save}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_save(ShapeParser.Skill_saveContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_stealth}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_stealth(ShapeParser.Skill_stealthContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_search}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_search(ShapeParser.Skill_searchContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_melee}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_melee(ShapeParser.Skill_meleeContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_throw}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_throw(ShapeParser.Skill_throwContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#skill_dig}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitSkill_dig(ShapeParser.Skill_digContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#obj_flags}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitObj_flags(ShapeParser.Obj_flagsContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#player_flags}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitPlayer_flags(ShapeParser.Player_flagsContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#values}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitValues(ShapeParser.ValuesContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#effect}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEffect(ShapeParser.EffectContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#dice}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitDice(ShapeParser.DiceContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#expr}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitExpr(ShapeParser.ExprContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#effect_msg}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEffect_msg(ShapeParser.Effect_msgContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#effect_block}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitEffect_block(ShapeParser.Effect_blockContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#blow}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitBlow(ShapeParser.BlowContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#shape}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
 	T visitShape(ShapeParser.ShapeContext ctx);
-
 	/**
 	 * Visit a parse tree produced by {@link ShapeParser#file}.
-	 *
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */

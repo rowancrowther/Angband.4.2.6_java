@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.io;
 
 import org.apache.logging.log4j.LogManager;
@@ -114,7 +131,7 @@ public class FileHandler {
 //            if (inputStream != null) inputStream.close();
 //            if (outputStream != null) outputStream.close();
 //        } catch (Exception e) {
-//            logger.error("An exception has occured: " + e.getMessage());
+//            logger.error("An exception has occured: " + e.getMessage(), e);
 //        } finally {
 //            this.filePath = Paths.get(newFileName);
 //        }
@@ -173,7 +190,7 @@ public class FileHandler {
             inputStream = new FileInputStream(filePath.toRealPath().toString());
             if (outputStream != null) outputStream.close();
         } catch (IOException e) {
-            logger.error("An exception has occurred: " + e.getMessage());
+            logger.error("An exception has occurred: " + e.getMessage(), e);
             inputStream = null;
         }
     }
@@ -183,7 +200,7 @@ public class FileHandler {
             outputStream = new FileOutputStream(filePath.toRealPath().toString(), append);
             if (inputStream != null) inputStream.close();
         } catch (IOException e) {
-            logger.error("An exception has occurred: " + e.getMessage());
+            logger.error("An exception has occurred: " + e.getMessage(), e);
             outputStream = null;
         }
     }
@@ -212,7 +229,7 @@ public class FileHandler {
                     break;
             }
         } catch (IOException e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
         }
     }
 
@@ -230,7 +247,7 @@ public class FileHandler {
             if (skipped < bytesToSkip)
                 return false;
         } catch (IOException e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return false;
         }
 
@@ -272,7 +289,7 @@ public class FileHandler {
         try {
             i = inputStream.read();
         } catch (IOException e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return -1;
         }
 
@@ -290,7 +307,7 @@ public class FileHandler {
         try {
             outputStream.write(c);
         } catch (Exception e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return false;
         }
 
@@ -310,7 +327,7 @@ public class FileHandler {
             byte [] inputBytes = inputStream.readNBytes(size);
             return new String(inputBytes);
         } catch (IOException e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return null;
         }
     }
@@ -327,7 +344,7 @@ public class FileHandler {
         try {
             outputStream.write(toWrite.getBytes(StandardCharsets.UTF_8));
         } catch (Exception e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return false;
         }
 
@@ -345,7 +362,7 @@ public class FileHandler {
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
             return reader.readLine();
         } catch (Exception e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return null;
         }
     }
@@ -365,7 +382,7 @@ public class FileHandler {
             writer.close();
             return true;
         } catch (Exception e) {
-            logger.error("An exception has occured: " + e.getMessage());
+            logger.error("An exception has occured: " + e.getMessage(), e);
             return false;
         }
     }

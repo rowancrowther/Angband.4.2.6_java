@@ -47,8 +47,9 @@ public class Quark implements AngbandModule {
     public int add(@NotNull String string) throws NullPointerException {
         if (quarks == null) {
             String message = "Quark is null. String '" + string + "' cannot be added to a null quark.";
-            logger.error(message);
-            throw new NullPointerException(message);
+            NullPointerException n = new NullPointerException(message);
+            logger.error(message, n);
+            throw n;
         }
 
         int i = quarks.size();
@@ -94,8 +95,9 @@ public class Quark implements AngbandModule {
     public String getQuark(int key) throws NullPointerException {
         if (quarks == null) {
             String message = "Quark is null. Key '" + key + "' will not be present.";
-            logger.error(message);
-            throw new NullPointerException(message);
+            NullPointerException e = new NullPointerException(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (quarks.containsKey(key)) return quarks.get(key);

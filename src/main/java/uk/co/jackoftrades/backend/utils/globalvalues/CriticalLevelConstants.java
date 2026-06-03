@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -38,8 +55,9 @@ public class CriticalLevelConstants {
             String message = "Invalid number of tokens found during a parse. Should be 1 tag and 4 sub-tokens. "
                     + values.length + " sub-tokens found. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         // Get the three integer values, remember for one of the Critical Level the first integer is negative.
@@ -55,32 +73,32 @@ public class CriticalLevelConstants {
             hitType = MessageEnum.valueOf("MSG_" + hitTypeString);
         } catch (IllegalArgumentException e) {
             String message = "Unknown Hit Type message in token. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         try {
             currentCutoff = Integer.parseInt(values[0]);
         } catch (NumberFormatException e) {
             String message = "Invalid cut off value, could not parse string. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         try {
             damageMult = Integer.parseInt(values[1]);
         } catch (NumberFormatException e) {
             String message = "Invalid damage multiplier value, could not parse string. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         try {
             amountAdded = Integer.parseInt(values[2]);
         } catch (NumberFormatException e) {
             String message = "Invalid damage amount added value, could not parse string. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CriticalLevel criticalLevel = new CriticalLevel(currentCutoff, damageMult, amountAdded, hitType);

@@ -29,6 +29,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.Screen;
+import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.TrapKind;
@@ -372,6 +373,7 @@ public class GameConstants {
     private static List<Curse> curses;
     private static List<PlayerShape> playerShapes;
     private static List<ItemObject> itemObjects;
+    private static List<Activation> activations;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -653,6 +655,7 @@ public class GameConstants {
             loadCurses();               // Dependent on ObjectBases
             loadPlayerShapes();
             loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
+            loadActivations();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -660,6 +663,20 @@ public class GameConstants {
         }
     }
 
+    private static void loadActivations() {
+        ActivationReader reader = new ActivationReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "activation.txt";
+
+        try {
+            activations = reader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    /**
+     * Load in the items from object.txt and store them in a List
+     */
     private static void loadItemObjects() {
         ItemObjectReader parser = new ItemObjectReader();
         String filename = ANGBAND_DIR_GAMEDATA + "object.txt";

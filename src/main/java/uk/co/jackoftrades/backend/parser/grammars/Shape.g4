@@ -11,7 +11,7 @@ grammar Shape;
     import uk.co.jackoftrades.middle.Expression;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
     import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
-    import uk.co.jackoftrades.middle.enums.Projection;
+    import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.player.PlayerShape;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.combat.enums.Element;
@@ -116,11 +116,11 @@ values
         ;
 
 effect              // Options are CURE, TIMED_INC, <GENERIC>, PROJECT_LOS
-        returns[EffectEnum effectEnum, TimedEffect timedEffect, Projection projectionEffect]
+        returns[EffectEnum effectEnum, TimedEffect timedEffect, ProjectionEnum projectionEffect]
         @init {
             $effectEnum = EffectEnum.EF_NONE;
             $timedEffect = TimedEffect.TMD_NONE;
-            $projectionEffect = Projection.PROJ_NONE;
+            $projectionEffect = ProjectionEnum.PROJ_NONE;
         }
         :   EFFECT f1=FLAG {
                 $effectEnum = EffectEnum.valueOf("EF_" + $f1.getText());
@@ -129,7 +129,7 @@ effect              // Options are CURE, TIMED_INC, <GENERIC>, PROJECT_LOS
                 if ($effectEnum == EffectEnum.EF_CURE || $effectEnum == EffectEnum.EF_TIMED_INC) {
                     $timedEffect = TimedEffect.valueOf("TMD_" + $f2.getText());
                 } else {
-                    $projectionEffect = Projection.valueOf("PROJ_" + $f2.getText());
+                    $projectionEffect = ProjectionEnum.valueOf("PROJ_" + $f2.getText());
                 }
             })?
         ;
@@ -173,7 +173,7 @@ effect_block
             int xInit = 0;
             int yInit = 0;
             TimedEffect timedEffect = TimedEffect.TMD_NONE;
-            Projection projectionInit = Projection.PROJ_NONE;
+            ProjectionEnum projectionInit = ProjectionEnum.PROJ_NONE;
             Stats statsInit = Stats.STAT_NONE;
             EffectNourish nourInit = EffectNourish.EN_NONE;
             EffectEnchant encInit = EffectEnchant.EE_NONE;

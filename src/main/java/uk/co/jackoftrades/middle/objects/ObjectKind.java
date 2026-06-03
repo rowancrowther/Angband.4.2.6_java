@@ -29,6 +29,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -138,6 +139,7 @@ public class ObjectKind {
         this.cost = cost;
         this.flags = flags;
         this.kindFlags = kindFlags;
+        this.modifiers = new HashMap<>();
         for (ObjectModifier mod : modifiers.keySet()) {
             Random r = Random.parseStr(modifiers.get(mod));
             this.modifiers.put(mod, r);
@@ -145,6 +147,7 @@ public class ObjectKind {
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
+        this.curses = new HashMap<>();
         for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
             CurseEntry thisCE = new CurseEntry(ce.curse(), ce.curseData());
             this.curses.put(thisCE, curses.get(ce));

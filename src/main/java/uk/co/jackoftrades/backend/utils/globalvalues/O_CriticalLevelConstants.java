@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -38,8 +55,9 @@ public class O_CriticalLevelConstants {
 
         if (tokens.length != 3) {
             String message = "Invalid number of tokens found during parsing. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         int chance;
@@ -48,15 +66,16 @@ public class O_CriticalLevelConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid integer format in chance found while parsing constants.txt. Token was: " + tag + ":" + value
                     + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (chance <= 0) {
             String message = "Invalid value of chance found while parsing constants.txt; should be positive."
                     + " Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         int dice;
@@ -66,14 +85,15 @@ public class O_CriticalLevelConstants {
             String message = "Invalid integer format in dice found while parsing constants.txt. Token was: "
                     + tag + ":" + value
                     + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (dice < 0) {
             String message = "Invalid number of dice found while parsing constants.txt. Token was: " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         MessageEnum msgt;
@@ -83,8 +103,8 @@ public class O_CriticalLevelConstants {
             String message = "Invalid value of type found while parsing constants.txt. Token was: "
                     + tag + ":" + value
                     + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         O_CriticalLevel level = new O_CriticalLevel(dice, chance, msgt);

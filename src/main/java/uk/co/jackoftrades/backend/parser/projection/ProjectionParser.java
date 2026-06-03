@@ -18,24 +18,20 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Projection.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.projection;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
+import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.game.Projection;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ProjectionParser extends Parser {
@@ -1510,7 +1506,7 @@ public class ProjectionParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
-        public ArrayList<Projection> projections;
+        public List<Projection> projections;
         public ProjectionContext projection;
 
         public TerminalNode EOF() {
@@ -1687,5 +1683,5 @@ public class ProjectionParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

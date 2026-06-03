@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -44,8 +61,9 @@ public class MeleeCriticalConstants {
         if (values.length != 2) {
             String message = "Invalid number of tokens read from constants.txt. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = values[0];
@@ -56,8 +74,8 @@ public class MeleeCriticalConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid number format in string parsed from constants.txt. Tag was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {
@@ -100,8 +118,9 @@ public class MeleeCriticalConstants {
             default:
                 String message = "Invalid tag received in parse of constants.txt. Token was: "
                         + tag + ":" + value;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 

@@ -50,8 +50,9 @@ public class RangedCriticalConstants {
         if (tokens.length != 2) {
             String message = "Invalid number of tokens in constants.txt. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         name = tokens[0];
@@ -60,8 +61,8 @@ public class RangedCriticalConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid number format in constants.txt file. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {
@@ -109,8 +110,9 @@ public class RangedCriticalConstants {
             default:
                 String message = "Unknown token found while parsing constants.txt. Token was: "
                         + tag + ":" + value;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 

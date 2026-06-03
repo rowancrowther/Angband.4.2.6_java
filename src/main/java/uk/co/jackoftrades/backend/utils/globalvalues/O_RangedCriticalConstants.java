@@ -1,8 +1,26 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
 public class O_RangedCriticalConstants {
     private static final String tag = "o-ranged-critical";
@@ -33,8 +51,9 @@ public class O_RangedCriticalConstants {
 
         if (allTokens.length != 2) {
             String message = "Invalid number of tokens when parsing constants.txt. Token was: " + tag + ":" + tokens;
-            logger.error(message);
-            throw new IllegalArgumentException(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = allTokens[0];
@@ -45,8 +64,8 @@ public class O_RangedCriticalConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid integer format found while parsing constants.txt. Token was: " + tag + ":"
                     + tokens + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new IllegalArgumentException(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {

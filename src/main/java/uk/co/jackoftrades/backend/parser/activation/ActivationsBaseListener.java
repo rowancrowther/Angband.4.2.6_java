@@ -15,8 +15,8 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Projection.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.projection;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.activation;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link ProjectionListener},
+ * This class provides an empty implementation of {@link ActivationsListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ProjectionBaseListener implements ProjectionListener {
+public class ActivationsBaseListener implements ActivationsListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCode(ProjectionParser.CodeContext ctx) {
+    public void enterName(ActivationsParser.NameContext ctx) {
     }
 
     /**
@@ -45,7 +45,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCode(ProjectionParser.CodeContext ctx) {
+    public void exitName(ActivationsParser.NameContext ctx) {
     }
 
     /**
@@ -54,7 +54,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(ProjectionParser.NameContext ctx) {
+    public void enterAim(ActivationsParser.AimContext ctx) {
     }
 
     /**
@@ -63,7 +63,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(ProjectionParser.NameContext ctx) {
+    public void exitAim(ActivationsParser.AimContext ctx) {
     }
 
     /**
@@ -72,7 +72,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterType(ProjectionParser.TypeContext ctx) {
+    public void enterLevel(ActivationsParser.LevelContext ctx) {
     }
 
     /**
@@ -81,7 +81,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitType(ProjectionParser.TypeContext ctx) {
+    public void exitLevel(ActivationsParser.LevelContext ctx) {
     }
 
     /**
@@ -90,7 +90,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(ProjectionParser.DescContext ctx) {
+    public void enterPower(ActivationsParser.PowerContext ctx) {
     }
 
     /**
@@ -99,7 +99,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(ProjectionParser.DescContext ctx) {
+    public void exitPower(ActivationsParser.PowerContext ctx) {
     }
 
     /**
@@ -108,7 +108,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlayerDesc(ProjectionParser.PlayerDescContext ctx) {
+    public void enterEffect(ActivationsParser.EffectContext ctx) {
     }
 
     /**
@@ -117,7 +117,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlayerDesc(ProjectionParser.PlayerDescContext ctx) {
+    public void exitEffect(ActivationsParser.EffectContext ctx) {
     }
 
     /**
@@ -126,7 +126,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBlindDesc(ProjectionParser.BlindDescContext ctx) {
+    public void enterEffect_yx(ActivationsParser.Effect_yxContext ctx) {
     }
 
     /**
@@ -135,7 +135,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBlindDesc(ProjectionParser.BlindDescContext ctx) {
+    public void exitEffect_yx(ActivationsParser.Effect_yxContext ctx) {
     }
 
     /**
@@ -144,7 +144,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLashDesc(ProjectionParser.LashDescContext ctx) {
+    public void enterDice(ActivationsParser.DiceContext ctx) {
     }
 
     /**
@@ -153,7 +153,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLashDesc(ProjectionParser.LashDescContext ctx) {
+    public void exitDice(ActivationsParser.DiceContext ctx) {
     }
 
     /**
@@ -162,7 +162,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterNumerator(ProjectionParser.NumeratorContext ctx) {
+    public void enterExpr(ActivationsParser.ExprContext ctx) {
     }
 
     /**
@@ -171,7 +171,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitNumerator(ProjectionParser.NumeratorContext ctx) {
+    public void exitExpr(ActivationsParser.ExprContext ctx) {
     }
 
     /**
@@ -180,7 +180,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDice(ProjectionParser.DiceContext ctx) {
+    public void enterMsg(ActivationsParser.MsgContext ctx) {
     }
 
     /**
@@ -189,7 +189,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDice(ProjectionParser.DiceContext ctx) {
+    public void exitMsg(ActivationsParser.MsgContext ctx) {
     }
 
     /**
@@ -198,7 +198,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDenominator(ProjectionParser.DenominatorContext ctx) {
+    public void enterEffect_block(ActivationsParser.Effect_blockContext ctx) {
     }
 
     /**
@@ -207,7 +207,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDenominator(ProjectionParser.DenominatorContext ctx) {
+    public void exitEffect_block(ActivationsParser.Effect_blockContext ctx) {
     }
 
     /**
@@ -216,7 +216,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDivisor(ProjectionParser.DivisorContext ctx) {
+    public void enterDesc(ActivationsParser.DescContext ctx) {
     }
 
     /**
@@ -225,7 +225,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDivisor(ProjectionParser.DivisorContext ctx) {
+    public void exitDesc(ActivationsParser.DescContext ctx) {
     }
 
     /**
@@ -234,7 +234,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDamageCap(ProjectionParser.DamageCapContext ctx) {
+    public void enterActivation(ActivationsParser.ActivationContext ctx) {
     }
 
     /**
@@ -243,7 +243,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDamageCap(ProjectionParser.DamageCapContext ctx) {
+    public void exitActivation(ActivationsParser.ActivationContext ctx) {
     }
 
     /**
@@ -252,7 +252,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsgt(ProjectionParser.MsgtContext ctx) {
+    public void enterFile(ActivationsParser.FileContext ctx) {
     }
 
     /**
@@ -261,97 +261,7 @@ public class ProjectionBaseListener implements ProjectionListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsgt(ProjectionParser.MsgtContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterObvious(ProjectionParser.ObviousContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitObvious(ProjectionParser.ObviousContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterWake(ProjectionParser.WakeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitWake(ProjectionParser.WakeContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterColour(ProjectionParser.ColourContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitColour(ProjectionParser.ColourContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterProjection(ProjectionParser.ProjectionContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitProjection(ProjectionParser.ProjectionContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterFile(ProjectionParser.FileContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitFile(ProjectionParser.FileContext ctx) {
+    public void exitFile(ActivationsParser.FileContext ctx) {
     }
 
     /**
@@ -364,21 +274,29 @@ public class ProjectionBaseListener implements ProjectionListener {
     }
 
     /**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

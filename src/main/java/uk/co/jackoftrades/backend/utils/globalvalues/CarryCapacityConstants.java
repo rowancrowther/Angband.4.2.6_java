@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -24,7 +41,8 @@ public class CarryCapacityConstants {
         // check we have the right incoming parameters
         if (values.length != 2) {
             String message = "Incorrect number of incoming tokens during parse. String was " + tag + ":" + value;
-            logger.error(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
             throw new InvalidTokenFoundDuringParse(message);
         }
 
@@ -36,7 +54,7 @@ public class CarryCapacityConstants {
         } catch (NumberFormatException e) {
             String message = "Poorly formatted integer in incoming token. Token was " + tag + ":" + value + ".\n\n"
                     + e.getMessage();
-            logger.error(message);
+            logger.error(message, e);
             throw new InvalidTokenFoundDuringParse(message);
         }
 
@@ -64,8 +82,9 @@ public class CarryCapacityConstants {
             default:
                 String message = "Invalid token found during parse of constants.txt file. Token was :"
                         + tag + ":" + value;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -83,8 +102,9 @@ public class CarryCapacityConstants {
     private static void setPackSize(int packSize, String name) throws InvalidTokenFoundDuringParse {
         if (packSize <= 0) {
             String message = "Invalid pack size imported from constants.txt. Token was: " + tag + ":" + name + ":" + packSize;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CarryCapacityConstants.packSize = packSize;
@@ -104,8 +124,9 @@ public class CarryCapacityConstants {
     private static void setQuiverSize(int quiverSize, String name) throws InvalidTokenFoundDuringParse {
         if (quiverSize <= 0) {
             String message = "Invalid quiver size imported from constants.txt. Token was: " + tag + ":" + name + ":" + quiverSize;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CarryCapacityConstants.quiverSize = quiverSize;
@@ -125,8 +146,9 @@ public class CarryCapacityConstants {
     private static void setQuiverSlotSize(int quiverSlotSize, String name) {
         if (quiverSlotSize < 0) {
             String message = "Invalid quiver slot size imported from constants.txt. Token was: " + tag + ":" + name + ":" + quiverSlotSize;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CarryCapacityConstants.quiverSlotSize = quiverSlotSize;
@@ -147,8 +169,9 @@ public class CarryCapacityConstants {
         if (thrownQuiverMult < 0) {
             String message = "Invalid thrown quiver multiplier imported from constants.txt. Token was: "
                     + tag + ":" + name + ":" + thrownQuiverMult;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CarryCapacityConstants.thrownQuiverMult = thrownQuiverMult;
@@ -170,8 +193,9 @@ public class CarryCapacityConstants {
         if (floorSize <= 1) {
             String message = "Invalid floor stack size imported from constants.txt. Token was: "
                     + tag + ":" + name + ":" + floorSize;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         CarryCapacityConstants.floorSize = floorSize;

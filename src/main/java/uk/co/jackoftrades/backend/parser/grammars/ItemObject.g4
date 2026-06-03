@@ -12,7 +12,7 @@ grammar ItemObject;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
     import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-    import uk.co.jackoftrades.middle.enums.Projection;
+    import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.objects.ObjectKind;
     import uk.co.jackoftrades.middle.objects.ItemObject;
     import uk.co.jackoftrades.middle.objects.enums.TValue;
@@ -74,7 +74,12 @@ graphics
 
 type
         returns[TValue typeObj]
-        :   TYPE STRING EOL { $typeObj = TValue.valueOf("TV_" + $STRING.getText().toUpperCase()); }
+        :   TYPE STRING EOL {
+                String flagStr = $STRING.getText().toUpperCase().replace(' ', '_');
+                if (flagStr.equals("DIGGER")) flagStr = "DIGGING";
+                if (flagStr.equals("DRAGON_ARMOR")) flagStr = "DRAG_ARMOR";
+                $typeObj = TValue.valueOf("TV_" + flagStr);
+            }
         ;
 
 level
@@ -223,7 +228,7 @@ effect_block
             int xInit = 0;
             EffectSubTypeEnum subTypeInit = EffectSubTypeEnum.EST_NONE;
             TimedEffect timedInit = TimedEffect.TMD_NONE;
-            Projection projInit = Projection.PROJ_NONE;
+            ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
             EffectNourish effNourish = EffectNourish.EN_NONE;
             EffectEnchant effEnchant = EffectEnchant.EE_NONE;
             Summon effSummon = null;
@@ -246,7 +251,7 @@ effect_block
 
                 switch (subTypeInit) {
                     case EST_PROJ:
-                        projInit = Projection.valueOf("PROJ_" + subTypeName);
+                        projInit = ProjectionEnum.valueOf("PROJ_" + subTypeName);
                         break;
 
                     case EST_TMD:

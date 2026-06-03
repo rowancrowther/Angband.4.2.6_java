@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.enums.*;
+import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
@@ -34,7 +35,7 @@ public class Effect {
     private int x;
     private EffectSubTypeEnum subType;
     private TimedEffect timedEffect;
-    private Projection projection;
+    private ProjectionEnum projection;
     private EffectNourish effectNourish;
     private Stats effectStats;
     private EffectEnchant effectEnchant;
@@ -95,13 +96,25 @@ public class Effect {
         return index.getDescription();
     }
 
+    /**
+     * Getter for the message for this effect
+     *
+     * @return The message for this effect
+     */
+    @Contract(pure = true)
+    public String getMessage() {
+        if (!isValid()) return null;
+
+        return msg;
+    }
+
     @Contract(mutates = "this")
     public Effect(EffectEnum index,
                   String dice,
                   int y,
                   int x,
                   TimedEffect timedEffect,
-                  Projection projection,
+                  ProjectionEnum projection,
                   Stats effectStats,
                   EffectNourish effectNourish,
                   EffectEnchant effectEnchant,
@@ -134,7 +147,7 @@ public class Effect {
                   int y,
                   int x,
                   TimedEffect timedEffect,
-                  Projection projection,
+                  ProjectionEnum projection,
                   Stats effectStats,
                   EffectNourish effectNourish,
                   EffectEnchant effectEnchant,

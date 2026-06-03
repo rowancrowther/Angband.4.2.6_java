@@ -71,7 +71,7 @@ public class TermXtraWin implements TermEventHook {
             try {
                 Thread.sleep(delay);
             } catch (InterruptedException e) {
-                logger.error(e);
+                logger.error(e.getMessage(), e);
             }
         }
     }

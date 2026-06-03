@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -22,8 +39,9 @@ public class PlayerConstants {
         if (values.length != 2) {
             String message = "Invalid number of tokens incoming from constants.txt. Value was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = values[0];
@@ -34,8 +52,8 @@ public class PlayerConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid number format found in input string from constants.txt. Token was: "
                     + tag + ":" + value + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {
@@ -58,8 +76,9 @@ public class PlayerConstants {
             default:
                 String message = "Unknown value imported from constants.txt. Token was: "
                         + tag + ":" + value;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -77,8 +96,9 @@ public class PlayerConstants {
     private static void setMaxSight(int maxSight, String name) throws InvalidTokenFoundDuringParse {
         if (maxSight <= 0) {
             String message = "Invalid maximum player sight range. Token was: " + tag + ":" + name + ":" + maxSight;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         PlayerConstants.maxSight = maxSight;
@@ -98,8 +118,9 @@ public class PlayerConstants {
     private static void setMaxRange(int maxRange, String name) throws InvalidTokenFoundDuringParse {
         if (maxRange <= 0) {
             String message = "Invalid maximum player missile/spell range. Token was: " + tag + ":" + name + ":" + maxRange;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         PlayerConstants.maxRange = maxRange;
@@ -120,8 +141,9 @@ public class PlayerConstants {
         if (startGold <= 0) {
             String message = "Invalid player starting gold/equipment amount. Token was: " + tag + ":" + name + ":"
                     + startGold;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         PlayerConstants.startGold = startGold;

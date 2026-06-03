@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -31,8 +48,9 @@ public class DungeonGenerationConstants {
 
         if (results.length != 2) {
             String message = "Invalid number of tokens found parsing string " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = results[0];
@@ -41,8 +59,8 @@ public class DungeonGenerationConstants {
             val = Integer.parseInt(results[1]);
         } catch (NumberFormatException e) {
             String message = "Invalid number format found while parsing string " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         /*
@@ -82,9 +100,10 @@ public class DungeonGenerationConstants {
                 break;
 
             default:
-                String msg = "Invalid switch found in constants.txt file. Input was " + tag + ":" + name + ":" + val;
-                logger.error(msg);
-                throw new InvalidTokenFoundDuringParse(msg);
+                String message = "Invalid switch found in constants.txt file. Input was " + tag + ":" + name + ":" + val;
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -102,8 +121,9 @@ public class DungeonGenerationConstants {
     private static void setCentMax(int centMax, String name) throws InvalidTokenFoundDuringParse {
         if (centMax <= 0) {
             String message = "Invalid maximum of room centres in parse of line " + tag + ":" + name + ":" + centMax;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         DungeonGenerationConstants.centMax = centMax;

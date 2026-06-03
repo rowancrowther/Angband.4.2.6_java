@@ -38,6 +38,7 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +127,10 @@ public class ItemObject {
         this.location = location;
         this.tValue = tValue;
         this.sValue = sValue;
-        this.pValue = Integer.parseInt(pValue);
+        if (pValue.isEmpty())
+            this.pValue = 0;
+        else
+            this.pValue = Integer.parseInt(pValue);
         this.weight = weight;
         this.damageDice = damageDice;
         this.damageSides = damageSides;
@@ -140,6 +144,7 @@ public class ItemObject {
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
+        this.curses = new HashMap<>();
         for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
             Boolean b = curses.get(ce);
             CurseEntry curseEntry = new CurseEntry(ce.curse(), ce.curseData());

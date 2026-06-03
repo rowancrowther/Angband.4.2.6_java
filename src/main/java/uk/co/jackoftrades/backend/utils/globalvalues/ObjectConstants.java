@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -26,8 +43,9 @@ public class ObjectConstants {
         if (values.length != 2) {
             String message = "Invalid number of tokens incoming on parsing constants.txt. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = values[0];
@@ -38,8 +56,8 @@ public class ObjectConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid number format found in input string from constants.txt. Token was: "
                     + tag + ":" + value + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {
@@ -70,8 +88,9 @@ public class ObjectConstants {
             default:
                 String message = "Unknown value imported from constants.txt. Token was: "
                         + tag + ":" + name + ":" + val;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -90,8 +109,9 @@ public class ObjectConstants {
         if (maxDepth < 0) {
             String message = "Invalid max depth for object allocation. Token was: "
                     + tag + ":" + name + ":" + maxDepth;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (maxDepth > GameWorldConstants.getMaxDepth()) {
@@ -117,8 +137,9 @@ public class ObjectConstants {
         if (greatObj < 1) {
             String message = "Invalid value for chance of inflating a requested object. Token was: "
                     + tag + ":" + name + ":" + greatObj;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         ObjectConstants.greatObj = greatObj;
@@ -139,8 +160,9 @@ public class ObjectConstants {
         if (greatEgo < 1) {
             String message = "Invalid value for chance of inflating a requested ego item. Token was: "
                     + tag + ":" + name + ":" + greatEgo;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         ObjectConstants.greatEgo = greatEgo;
@@ -161,8 +183,9 @@ public class ObjectConstants {
         if (fuelTorch < 1) {
             String message = "Invalid value for amount of fuel in a torch. Token was: "
                     + tag + ":" + name + ":" + fuelTorch;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         ObjectConstants.fuelTorch = fuelTorch;
@@ -183,8 +206,9 @@ public class ObjectConstants {
         if (fuelLamp < 1) {
             String message = "Invalid value for the amount of fuel in a lamp. Token was: "
                     + tag + ":" + name + ":" + fuelLamp;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (fuelTorch == 0) {
@@ -220,8 +244,9 @@ public class ObjectConstants {
         if (defaultLamp < 1) {
             String message = "Invalid value for the default amount of fuel in a lamp. Token was: "
                     + tag + ":" + name + ":" + defaultLamp;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         if (fuelLamp == 0) {

@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -43,15 +60,16 @@ public class LevelMaxConstants {
         // Check for correct string type
         if (results.length != 2) {
             String message = "Invalid number of arguments found in incoming value. Value was: " + constantsTag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         } else {
             try {
                 val = Integer.parseInt(results[1]);
             } catch (NumberFormatException e) {
                 String message = "Poorly formatted integer in incoming token. Token was " + constantsTag + ":" + value;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
             }
         }
 
@@ -66,9 +84,10 @@ public class LevelMaxConstants {
                 return;
 
             default:
-                String msg = "Invalid switch found in constants.txt file. Input was " + constantsTag + ":" + name + ":" + val;
-                logger.error(msg);
-                throw new InvalidTokenFoundDuringParse(msg);
+                String message = "Invalid switch found in constants.txt file. Input was " + constantsTag + ":" + name + ":" + val;
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -77,8 +96,9 @@ public class LevelMaxConstants {
         if (monsters <= 0) {
             String message = "Invalid value for max monsters on a given level. Incoming value is " + monsters
                     + ". Should be greater than 0";
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
         LevelMaxConstants.monsters = monsters;
     }

@@ -17,14 +17,26 @@
 
 package uk.co.jackoftrades.middle;
 
+import java.util.List;
+
 public class Activation {
     private String name;
     private int index;
     private boolean aim;
     private int level;
     private int power;
-    private Effect effect;
+    private List<Effect> effects;
     private String message;
     private String desc;
 
+    public Activation(String name, int index, boolean aim, int level, int power, List<Effect> effects, String message, String desc) {
+        this.name = name;
+        this.index = index;
+        this.aim = aim;
+        this.level = level;
+        this.power = power;
+        this.effects = effects;
+        this.message = message;
+        this.desc = desc;
+    }
 }

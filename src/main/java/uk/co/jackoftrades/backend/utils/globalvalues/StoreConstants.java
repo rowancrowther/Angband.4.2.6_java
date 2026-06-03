@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -23,8 +40,9 @@ public class StoreConstants {
         if (values.length != 2) {
             String message = "Invalid number of tokens in incoming value from constants.txt. Token was: "
                     + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = values[0];
@@ -35,8 +53,8 @@ public class StoreConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid integer value found in constants.txt. Token was: "
                     + tag + ":" + value + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         switch (name) {
@@ -59,8 +77,9 @@ public class StoreConstants {
             default:
                 String message = "Invalid token found when parsing constants.txt. Token was: "
                         + tag + ":" + name + ":" + val;
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -79,8 +98,9 @@ public class StoreConstants {
         if (invenMax < 1) {
             String message = "Invalid number of store's inventory items from constants.txt. Token was: "
                     + tag + ":" + name + ":" + invenMax;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
         StoreConstants.invenMax = invenMax;
     }
@@ -100,8 +120,9 @@ public class StoreConstants {
         if (turns < 1) {
             String message = "Invalid number of turns between store's turnovers. Token was: "
                     + tag + ":" + name + ":" + turns;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         StoreConstants.turns = turns;
@@ -122,8 +143,9 @@ public class StoreConstants {
         if (shuffle < 1) {
             String message = "Invalid number 1/chance of when reading constants.txt. Token was: "
                     + tag + ":" + name + ":" + shuffle;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         StoreConstants.shuffle = shuffle;
@@ -145,8 +167,9 @@ public class StoreConstants {
         if (magicLevel < 1) {
             String message = "Invalid dungeon level required for magic in mormal stores. Token was: "
                     + tag + ":" + name + ":" + magicLevel;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         StoreConstants.magicLevel = magicLevel;

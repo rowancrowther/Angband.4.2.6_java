@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -27,8 +44,9 @@ public class MonsterGameplayConstants {
 
         if (results.length != 2) {
             String message = "Invalid number of tokens found. Token was: " + constantsTag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = results[0];
@@ -39,8 +57,8 @@ public class MonsterGameplayConstants {
         } catch (NumberFormatException e) {
             String message = "Invalid integer tokens found. Token was: " + constantsTag + ":" + value
                     + "\n\n" + e.getMessage();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         /*
@@ -68,9 +86,10 @@ public class MonsterGameplayConstants {
                 break;
 
             default:
-                String msg = "Invalid switch found in constants.txt file. Input was " + constantsTag + ":" + value;
-                logger.error(msg);
-                throw new InvalidTokenFoundDuringParse(msg);
+                String message = "Invalid switch found in constants.txt file. Input was " + constantsTag + ":" + value;
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -78,8 +97,9 @@ public class MonsterGameplayConstants {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was "
                     + constantsTag + ":" + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         glyphHardness = value;

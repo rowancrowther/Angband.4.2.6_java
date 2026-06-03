@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.utils.globalvalues;
 
 import org.apache.logging.log4j.LogManager;
@@ -28,16 +45,17 @@ public class GameWorldConstants {
         // Check for correct string type
         if (results.length != 2) {
             String message = "Invalid number of tokens in Constants.txt file. Token was " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         try {
             val = Integer.parseInt(results[1]);
         } catch (NumberFormatException e) {
             String message = "Poorly formatted integer in incoming token. Token was " + tag + ":" + value;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         String name = results[0];
@@ -84,9 +102,10 @@ public class GameWorldConstants {
                 break;
 
             default:
-                String msg = "Invalid switch found in constants.txt file. Input was " + tag + ":" + value;
-                logger.error(msg);
-                throw new InvalidTokenFoundDuringParse(msg);
+                String message = "Invalid switch found in constants.txt file. Input was " + tag + ":" + value;
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                throw e;
         }
     }
 
@@ -106,8 +125,9 @@ public class GameWorldConstants {
         if (maxDepth < 100) {
             String message = "Dungeon depth set in constants.txt to be less than 100. This value should be at least 100."
                     + " Value was " + tag + ":" + name + ":" + maxDepth;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         } else if (maxDepth < 128) {
             String message = "Dungeon depth set in constants.txt to be less than 128."
                     + "This value may cause some objects not to be created. Value was "
@@ -154,8 +174,9 @@ public class GameWorldConstants {
         if (dungeonHgt < 1) {
             String message = "Invalid maximum dungeon height. Token string was: "
                     + tag + ":" + name + ":" + dungeonHgt;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         GameWorldConstants.dungeonHgt = dungeonHgt;
@@ -176,8 +197,9 @@ public class GameWorldConstants {
         if (dungeonWid < 1) {
             String message = "Invalid maximum dungeon width. Token string was: "
                     + tag + ":" + name + ":" + dungeonWid;
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         GameWorldConstants.dungeonWid = dungeonWid;

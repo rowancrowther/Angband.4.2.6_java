@@ -22,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
 public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
@@ -230,8 +231,9 @@ public enum ColourType {
         if (index == ColourTranslation.ATTR_MAX) {
             String message = "Colour index out of bounds, should be between 0 and " +
                     ColourTranslation.ATTR_MAX.getValue() + ", was " + index.getValue();
-            logger.error(message);
-            throw new IndexOutOfBoundsException(message);
+            InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+            logger.error(message, e);
+            throw e;
         }
 
         return colourTranslate[index.getValue()];

@@ -33,498 +33,688 @@ import java.util.List;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class RandomParser extends Parser {
-    static {
-        RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
-    }
-
-    protected static final DFA[] _decisionToDFA;
-    protected static final PredictionContextCache _sharedContextCache =
-            new PredictionContextCache();
-    public static final int
-            D = 1, M = 2, PLUS = 3, MINUS = 4, NUMBER = 5;
-    public static final int
-            RULE_dice = 0;
-
-    private static String[] makeRuleNames() {
-        return new String[]{
-                "dice"
-        };
-    }
-
-    public static final String[] ruleNames = makeRuleNames();
-
-    private static String[] makeLiteralNames() {
-        return new String[]{
-                null, "'d'", "'M'", "'+'", "'-'"
-        };
-    }
-
-    private static final String[] _LITERAL_NAMES = makeLiteralNames();
-
-    private static String[] makeSymbolicNames() {
-        return new String[]{
-                null, "D", "M", "PLUS", "MINUS", "NUMBER"
-        };
-    }
-
-    private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
-    public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
-
-    /**
-     * @deprecated Use {@link #VOCABULARY} instead.
-     */
-    @Deprecated
-    public static final String[] tokenNames;
-
-    static {
-        tokenNames = new String[_SYMBOLIC_NAMES.length];
-        for (int i = 0; i < tokenNames.length; i++) {
-            tokenNames[i] = VOCABULARY.getLiteralName(i);
-            if (tokenNames[i] == null) {
-                tokenNames[i] = VOCABULARY.getSymbolicName(i);
-            }
-
-            if (tokenNames[i] == null) {
-                tokenNames[i] = "<INVALID>";
-            }
-        }
-    }
-
-    @Override
-    @Deprecated
-    public String[] getTokenNames() {
-        return tokenNames;
-    }
-
-    @Override
-
-    public Vocabulary getVocabulary() {
-        return VOCABULARY;
-    }
-
-    @Override
-    public String getGrammarFileName() {
-        return "Random.g4";
-    }
-
-    @Override
-    public String[] getRuleNames() {
-        return ruleNames;
-    }
-
-    @Override
-    public String getSerializedATN() {
-        return _serializedATN;
-    }
-
-    @Override
-    public ATN getATN() {
-        return _ATN;
-    }
-
-    public RandomParser(TokenStream input) {
-        super(input);
-        _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
-    }
-
-    @SuppressWarnings("CheckReturnValue")
-    public static class DiceContext extends ParserRuleContext {
-        public Random random;
-        public Token base;
-        public Token diceNum;
-        public Token sides;
-        public Token m_bonus;
-
-        public TerminalNode EOF() {
-            return getToken(RandomParser.EOF, 0);
-        }
-
-        public TerminalNode MINUS() {
-            return getToken(RandomParser.MINUS, 0);
-        }
-
-        public TerminalNode PLUS() {
-            return getToken(RandomParser.PLUS, 0);
-        }
-
-        public TerminalNode D() {
-            return getToken(RandomParser.D, 0);
-        }
-
-        public TerminalNode M() {
-            return getToken(RandomParser.M, 0);
-        }
-
-        public List<TerminalNode> NUMBER() {
-            return getTokens(RandomParser.NUMBER);
-        }
-
-        public TerminalNode NUMBER(int i) {
-            return getToken(RandomParser.NUMBER, i);
-        }
-
-        public DiceContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
-        }
-
-        @Override
-        public int getRuleIndex() {
-            return RULE_dice;
-        }
-
-        @Override
-        public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof RandomListener) ((RandomListener) listener).enterDice(this);
-        }
-
-        @Override
-        public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof RandomListener) ((RandomListener) listener).exitDice(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof RandomVisitor) return ((RandomVisitor<? extends T>) visitor).visitDice(this);
-            else return visitor.visitChildren(this);
-        }
-    }
-
-    public final DiceContext dice() throws RecognitionException {
-        DiceContext _localctx = new DiceContext(_ctx, getState());
-        enterRule(_localctx, 0, RULE_dice);
-
-        int baseInit = 0;
-        int diceInit = 0;
-        int sidesInit = 1;
-        int mBonusInit = 0;
-
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(82);
-                _errHandler.sync(this);
-                switch (getInterpreter().adaptivePredict(_input, 0, _ctx)) {
-                    case 1: {
-                        setState(2);
-                        match(MINUS);
-                        setState(3);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(4);
-                        match(PLUS);
-                        setState(5);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(6);
-                        match(D);
-                        setState(7);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(8);
-                        match(M);
-                        setState(9);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 2: {
-                        setState(11);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(12);
-                        match(PLUS);
-                        setState(13);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(14);
-                        match(D);
-                        setState(15);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(16);
-                        match(M);
-                        setState(17);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 3: {
-                        setState(19);
-                        match(MINUS);
-                        setState(20);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(21);
-                        match(PLUS);
-                        setState(22);
-                        match(D);
-                        setState(23);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(24);
-                        match(M);
-                        setState(25);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 4: {
-                        setState(27);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(28);
-                        match(PLUS);
-                        setState(29);
-                        match(D);
-                        setState(30);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(31);
-                        match(M);
-                        setState(32);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 5: {
-                        setState(34);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(35);
-                        match(D);
-                        setState(36);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(37);
-                        match(M);
-                        setState(38);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 6: {
-                        setState(40);
-                        match(D);
-                        setState(41);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-                        setState(42);
-                        match(M);
-                        setState(43);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 7: {
-                        setState(45);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(46);
-                        match(M);
-                        setState(47);
-                        ((DiceContext) _localctx).m_bonus = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
-
-                    }
-                    break;
-                    case 8: {
-                        setState(49);
-                        match(MINUS);
-                        setState(50);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(51);
-                        match(PLUS);
-                        setState(52);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(53);
-                        match(D);
-                        setState(54);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 9: {
-                        setState(56);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(57);
-                        match(PLUS);
-                        setState(58);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(59);
-                        match(D);
-                        setState(60);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 10: {
-                        setState(62);
-                        match(MINUS);
-                        setState(63);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(64);
-                        match(PLUS);
-                        setState(65);
-                        match(D);
-                        setState(66);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 11: {
-                        setState(68);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-                        setState(69);
-                        match(PLUS);
-                        setState(70);
-                        match(D);
-                        setState(71);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 12: {
-                        setState(73);
-                        ((DiceContext) _localctx).diceNum = match(NUMBER);
-                        setState(74);
-                        match(D);
-                        setState(75);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 13: {
-                        setState(77);
-                        match(D);
-                        setState(78);
-                        ((DiceContext) _localctx).sides = match(NUMBER);
-
-                        sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
-
-                    }
-                    break;
-                    case 14: {
-                        setState(80);
-                        ((DiceContext) _localctx).base = match(NUMBER);
-
-                        baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
-
-                    }
-                    break;
-                }
-                setState(84);
-                match(EOF);
-            }
-            _ctx.stop = _input.LT(-1);
-
-            if (sidesInit < 1) sidesInit = 1;
-
-            ((DiceContext) _localctx).random = new Random(baseInit, mBonusInit, diceInit, sidesInit, false);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    public static final String _serializedATN =
-            "\u0004\u0001\u0005W\u0002\u0000\u0007\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0003" +
-                    "\u0000S\b\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0000\u0000\u0001" +
-                    "\u0000\u0000\u0000b\u0000R\u0001\u0000\u0000\u0000\u0002\u0003\u0005\u0004" +
-                    "\u0000\u0000\u0003\u0004\u0005\u0005\u0000\u0000\u0004\u0005\u0005\u0003" +
-                    "\u0000\u0000\u0005\u0006\u0005\u0005\u0000\u0000\u0006\u0007\u0005\u0001" +
-                    "\u0000\u0000\u0007\b\u0005\u0005\u0000\u0000\b\t\u0005\u0002\u0000\u0000" +
-                    "\t\n\u0005\u0005\u0000\u0000\nS\u0006\u0000\uffff\uffff\u0000\u000b\f" +
-                    "\u0005\u0005\u0000\u0000\f\r\u0005\u0003\u0000\u0000\r\u000e\u0005\u0005" +
-                    "\u0000\u0000\u000e\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\u0005" +
-                    "\u0000\u0000\u0010\u0011\u0005\u0002\u0000\u0000\u0011\u0012\u0005\u0005" +
-                    "\u0000\u0000\u0012S\u0006\u0000\uffff\uffff\u0000\u0013\u0014\u0005\u0004" +
-                    "\u0000\u0000\u0014\u0015\u0005\u0005\u0000\u0000\u0015\u0016\u0005\u0003" +
-                    "\u0000\u0000\u0016\u0017\u0005\u0001\u0000\u0000\u0017\u0018\u0005\u0005" +
-                    "\u0000\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019\u001a\u0005\u0005" +
-                    "\u0000\u0000\u001aS\u0006\u0000\uffff\uffff\u0000\u001b\u001c\u0005\u0005" +
-                    "\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000\u001d\u001e\u0005\u0001" +
-                    "\u0000\u0000\u001e\u001f\u0005\u0005\u0000\u0000\u001f \u0005\u0002\u0000" +
-                    "\u0000 !\u0005\u0005\u0000\u0000!S\u0006\u0000\uffff\uffff\u0000\"#\u0005" +
-                    "\u0005\u0000\u0000#$\u0005\u0001\u0000\u0000$%\u0005\u0005\u0000\u0000" +
-                    "%&\u0005\u0002\u0000\u0000&\'\u0005\u0005\u0000\u0000\'S\u0006\u0000\uffff" +
-                    "\uffff\u0000()\u0005\u0001\u0000\u0000)*\u0005\u0005\u0000\u0000*+\u0005" +
-                    "\u0002\u0000\u0000+,\u0005\u0005\u0000\u0000,S\u0006\u0000\uffff\uffff" +
-                    "\u0000-.\u0005\u0005\u0000\u0000./\u0005\u0002\u0000\u0000/0\u0005\u0005" +
-                    "\u0000\u00000S\u0006\u0000\uffff\uffff\u000012\u0005\u0004\u0000\u0000" +
-                    "23\u0005\u0005\u0000\u000034\u0005\u0003\u0000\u000045\u0005\u0005\u0000" +
-                    "\u000056\u0005\u0001\u0000\u000067\u0005\u0005\u0000\u00007S\u0006\u0000" +
-                    "\uffff\uffff\u000089\u0005\u0005\u0000\u00009:\u0005\u0003\u0000\u0000" +
-                    ":;\u0005\u0005\u0000\u0000;<\u0005\u0001\u0000\u0000<=\u0005\u0005\u0000" +
-                    "\u0000=S\u0006\u0000\uffff\uffff\u0000>?\u0005\u0004\u0000\u0000?@\u0005" +
-                    "\u0005\u0000\u0000@A\u0005\u0003\u0000\u0000AB\u0005\u0001\u0000\u0000" +
-                    "BC\u0005\u0005\u0000\u0000CS\u0006\u0000\uffff\uffff\u0000DE\u0005\u0005" +
-                    "\u0000\u0000EF\u0005\u0003\u0000\u0000FG\u0005\u0001\u0000\u0000GH\u0005" +
-                    "\u0005\u0000\u0000HS\u0006\u0000\uffff\uffff\u0000IJ\u0005\u0005\u0000" +
-                    "\u0000JK\u0005\u0001\u0000\u0000KL\u0005\u0005\u0000\u0000LS\u0006\u0000" +
-                    "\uffff\uffff\u0000MN\u0005\u0001\u0000\u0000NO\u0005\u0005\u0000\u0000" +
-                    "OS\u0006\u0000\uffff\uffff\u0000PQ\u0005\u0005\u0000\u0000QS\u0006\u0000" +
-                    "\uffff\uffff\u0000R\u0002\u0001\u0000\u0000\u0000R\u000b\u0001\u0000\u0000" +
-                    "\u0000R\u0013\u0001\u0000\u0000\u0000R\u001b\u0001\u0000\u0000\u0000R" +
-                    "\"\u0001\u0000\u0000\u0000R(\u0001\u0000\u0000\u0000R-\u0001\u0000\u0000" +
-                    "\u0000R1\u0001\u0000\u0000\u0000R8\u0001\u0000\u0000\u0000R>\u0001\u0000" +
-                    "\u0000\u0000RD\u0001\u0000\u0000\u0000RI\u0001\u0000\u0000\u0000RM\u0001" +
-                    "\u0000\u0000\u0000RP\u0001\u0000\u0000\u0000ST\u0001\u0000\u0000\u0000" +
-                    "TU\u0005\u0000\u0000\u0001U\u0001\u0001\u0000\u0000\u0000\u0001R";
-    public static final ATN _ATN =
-            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-        }
-    }
+	static {
+		RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
+	}
+
+	protected static final DFA[] _decisionToDFA;
+	protected static final PredictionContextCache _sharedContextCache =
+			new PredictionContextCache();
+	public static final int
+			D = 1, M = 2, PLUS = 3, MINUS = 4, DOLLAR_LETTER = 5, NUMBER = 6;
+	public static final int
+			RULE_dice = 0;
+
+	private static String[] makeRuleNames() {
+		return new String[]{
+				"dice"
+		};
+	}
+
+	public static final String[] ruleNames = makeRuleNames();
+
+	private static String[] makeLiteralNames() {
+		return new String[]{
+				null, "'d'", null, "'+'", "'-'"
+		};
+	}
+
+	private static final String[] _LITERAL_NAMES = makeLiteralNames();
+
+	private static String[] makeSymbolicNames() {
+		return new String[]{
+				null, "D", "M", "PLUS", "MINUS", "DOLLAR_LETTER", "NUMBER"
+		};
+	}
+
+	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
+	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
+
+	/**
+	 * @deprecated Use {@link #VOCABULARY} instead.
+	 */
+	@Deprecated
+	public static final String[] tokenNames;
+
+	static {
+		tokenNames = new String[_SYMBOLIC_NAMES.length];
+		for (int i = 0; i < tokenNames.length; i++) {
+			tokenNames[i] = VOCABULARY.getLiteralName(i);
+			if (tokenNames[i] == null) {
+				tokenNames[i] = VOCABULARY.getSymbolicName(i);
+			}
+
+			if (tokenNames[i] == null) {
+				tokenNames[i] = "<INVALID>";
+			}
+		}
+	}
+
+	@Override
+	@Deprecated
+	public String[] getTokenNames() {
+		return tokenNames;
+	}
+
+	@Override
+
+	public Vocabulary getVocabulary() {
+		return VOCABULARY;
+	}
+
+	@Override
+	public String getGrammarFileName() {
+		return "Random.g4";
+	}
+
+	@Override
+	public String[] getRuleNames() {
+		return ruleNames;
+	}
+
+	@Override
+	public String getSerializedATN() {
+		return _serializedATN;
+	}
+
+	@Override
+	public ATN getATN() {
+		return _ATN;
+	}
+
+	public RandomParser(TokenStream input) {
+		super(input);
+		_interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
+	}
+
+	@SuppressWarnings("CheckReturnValue")
+	public static class DiceContext extends ParserRuleContext {
+		public Random random;
+		public Token base;
+		public Token diceNum;
+		public Token sides;
+		public Token m_bonus;
+
+		public TerminalNode EOF() {
+			return getToken(RandomParser.EOF, 0);
+		}
+
+		public TerminalNode PLUS() {
+			return getToken(RandomParser.PLUS, 0);
+		}
+
+		public TerminalNode D() {
+			return getToken(RandomParser.D, 0);
+		}
+
+		public TerminalNode M() {
+			return getToken(RandomParser.M, 0);
+		}
+
+		public TerminalNode MINUS() {
+			return getToken(RandomParser.MINUS, 0);
+		}
+
+		public TerminalNode DOLLAR_LETTER() {
+			return getToken(RandomParser.DOLLAR_LETTER, 0);
+		}
+
+		public List<TerminalNode> NUMBER() {
+			return getTokens(RandomParser.NUMBER);
+		}
+
+		public TerminalNode NUMBER(int i) {
+			return getToken(RandomParser.NUMBER, i);
+		}
+
+		public DiceContext(ParserRuleContext parent, int invokingState) {
+			super(parent, invokingState);
+		}
+
+		@Override
+		public int getRuleIndex() {
+			return RULE_dice;
+		}
+
+		@Override
+		public void enterRule(ParseTreeListener listener) {
+			if (listener instanceof RandomListener) ((RandomListener) listener).enterDice(this);
+		}
+
+		@Override
+		public void exitRule(ParseTreeListener listener) {
+			if (listener instanceof RandomListener) ((RandomListener) listener).exitDice(this);
+		}
+
+		@Override
+		public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+			if (visitor instanceof RandomVisitor) return ((RandomVisitor<? extends T>) visitor).visitDice(this);
+			else return visitor.visitChildren(this);
+		}
+	}
+
+	public final DiceContext dice() throws RecognitionException {
+		DiceContext _localctx = new DiceContext(_ctx, getState());
+		enterRule(_localctx, 0, RULE_dice);
+
+		String baseStr = "";
+		int baseInit = 0;
+		int diceInit = 0;
+		String sidesStr = "";
+		int sidesInit = 1;
+		int mBonusInit = 0;
+
+		try {
+			enterOuterAlt(_localctx, 1);
+			{
+				setState(129);
+				_errHandler.sync(this);
+				switch (getInterpreter().adaptivePredict(_input, 0, _ctx)) {
+					case 1: {
+						setState(2);
+						((DiceContext) _localctx).base = match(DOLLAR_LETTER);
+						setState(3);
+						match(PLUS);
+						setState(4);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(5);
+						match(D);
+						setState(6);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(7);
+						match(M);
+						setState(8);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseStr = ((DiceContext) _localctx).base.getText();
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 2: {
+						setState(10);
+						((DiceContext) _localctx).base = match(DOLLAR_LETTER);
+						setState(11);
+						match(PLUS);
+						setState(12);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(13);
+						match(D);
+						setState(14);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						baseStr = ((DiceContext) _localctx).base.getText();
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 3: {
+						setState(16);
+						match(MINUS);
+						setState(17);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(18);
+						match(PLUS);
+						setState(19);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(20);
+						match(D);
+						setState(21);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(22);
+						match(M);
+						setState(23);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 4: {
+						setState(25);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(26);
+						match(PLUS);
+						setState(27);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(28);
+						match(D);
+						setState(29);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(30);
+						match(M);
+						setState(31);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 5: {
+						setState(33);
+						match(MINUS);
+						setState(34);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(35);
+						match(PLUS);
+						setState(36);
+						match(D);
+						setState(37);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(38);
+						match(M);
+						setState(39);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 6: {
+						setState(41);
+						((DiceContext) _localctx).base = match(DOLLAR_LETTER);
+						setState(42);
+						match(PLUS);
+						setState(43);
+						match(D);
+						setState(44);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(45);
+						match(M);
+						setState(46);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseStr = ((DiceContext) _localctx).base.getText();
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 7: {
+						setState(48);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(49);
+						match(PLUS);
+						setState(50);
+						match(D);
+						setState(51);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(52);
+						match(M);
+						setState(53);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 8: {
+						setState(55);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(56);
+						match(D);
+						setState(57);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(58);
+						match(M);
+						setState(59);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 9: {
+						setState(61);
+						match(D);
+						setState(62);
+						((DiceContext) _localctx).sides = match(NUMBER);
+						setState(63);
+						match(M);
+						setState(64);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 10: {
+						setState(66);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(67);
+						match(M);
+						setState(68);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 11: {
+						setState(70);
+						((DiceContext) _localctx).base = match(DOLLAR_LETTER);
+						setState(71);
+						match(M);
+						setState(72);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseStr = ((DiceContext) _localctx).base.getText();
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 12: {
+						setState(74);
+						match(MINUS);
+						setState(75);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(76);
+						match(PLUS);
+						setState(77);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(78);
+						match(D);
+						setState(79);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 13: {
+						setState(81);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(82);
+						match(PLUS);
+						setState(83);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(84);
+						match(D);
+						setState(85);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 14: {
+						setState(87);
+						match(MINUS);
+						setState(88);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(89);
+						match(PLUS);
+						setState(90);
+						match(D);
+						setState(91);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 15: {
+						setState(93);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(94);
+						match(PLUS);
+						setState(95);
+						match(D);
+						setState(96);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 16: {
+						setState(98);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(99);
+						match(D);
+						setState(100);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 17: {
+						setState(102);
+						match(D);
+						setState(103);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 18: {
+						setState(105);
+						((DiceContext) _localctx).base = match(DOLLAR_LETTER);
+
+						baseStr = ((DiceContext) _localctx).base.getText();
+
+					}
+					break;
+					case 19: {
+						setState(107);
+						((DiceContext) _localctx).base = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+
+					}
+					break;
+					case 20: {
+						setState(109);
+						match(MINUS);
+						setState(110);
+						((DiceContext) _localctx).base = match(NUMBER);
+
+						baseInit = -1 * Integer.parseInt(((DiceContext) _localctx).base.getText());
+
+					}
+					break;
+					case 21: {
+						setState(112);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(113);
+						match(D);
+						setState(114);
+						((DiceContext) _localctx).sides = match(DOLLAR_LETTER);
+
+						diceInit = Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesStr = ((DiceContext) _localctx).sides.getText();
+
+					}
+					break;
+					case 22: {
+						setState(116);
+						((DiceContext) _localctx).base = match(NUMBER);
+						setState(117);
+						match(PLUS);
+						setState(118);
+						match(M);
+						setState(119);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						baseInit = Integer.parseInt(((DiceContext) _localctx).base.getText());
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+					case 23: {
+						setState(121);
+						match(MINUS);
+						setState(122);
+						((DiceContext) _localctx).diceNum = match(NUMBER);
+						setState(123);
+						match(D);
+						setState(124);
+						((DiceContext) _localctx).sides = match(NUMBER);
+
+						diceInit = -1 * Integer.parseInt(((DiceContext) _localctx).diceNum.getText());
+						sidesInit = Integer.parseInt(((DiceContext) _localctx).sides.getText());
+
+					}
+					break;
+					case 24: {
+						setState(126);
+						match(M);
+						setState(127);
+						((DiceContext) _localctx).m_bonus = match(NUMBER);
+
+						mBonusInit = Integer.parseInt(((DiceContext) _localctx).m_bonus.getText());
+
+					}
+					break;
+				}
+				setState(131);
+				match(EOF);
+			}
+			_ctx.stop = _input.LT(-1);
+
+			if (sidesInit < 1) sidesInit = 1;
+
+			if (baseStr.isEmpty() && sidesStr.isEmpty())
+				((DiceContext) _localctx).random = new Random(baseInit, mBonusInit, diceInit, sidesInit, false);
+			else if (baseStr.isEmpty())
+				((DiceContext) _localctx).random = new Random(baseInit, mBonusInit, diceInit, sidesStr);
+			else
+				((DiceContext) _localctx).random = new Random(baseStr, mBonusInit, diceInit, sidesInit);
+
+		} catch (RecognitionException re) {
+			_localctx.exception = re;
+			_errHandler.reportError(this, re);
+			_errHandler.recover(this, re);
+		} finally {
+			exitRule();
+		}
+		return _localctx;
+	}
+
+	public static final String _serializedATN =
+			"\u0004\u0001\u0006\u0086\u0002\u0000\u0007\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+					"\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0003\u0000" +
+					"\u0082\b\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0000\u0000\u0001\u0000" +
+					"\u0000\u0000\u009b\u0000\u0081\u0001\u0000\u0000\u0000\u0002\u0003\u0005" +
+					"\u0005\u0000\u0000\u0003\u0004\u0005\u0003\u0000\u0000\u0004\u0005\u0005" +
+					"\u0006\u0000\u0000\u0005\u0006\u0005\u0001\u0000\u0000\u0006\u0007\u0005" +
+					"\u0006\u0000\u0000\u0007\b\u0005\u0002\u0000\u0000\b\t\u0005\u0006\u0000" +
+					"\u0000\t\u0082\u0006\u0000\uffff\uffff\u0000\n\u000b\u0005\u0005\u0000" +
+					"\u0000\u000b\f\u0005\u0003\u0000\u0000\f\r\u0005\u0006\u0000\u0000\r\u000e" +
+					"\u0005\u0001\u0000\u0000\u000e\u000f\u0005\u0006\u0000\u0000\u000f\u0082" +
+					"\u0006\u0000\uffff\uffff\u0000\u0010\u0011\u0005\u0004\u0000\u0000\u0011" +
+					"\u0012\u0005\u0006\u0000\u0000\u0012\u0013\u0005\u0003\u0000\u0000\u0013" +
+					"\u0014\u0005\u0006\u0000\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015" +
+					"\u0016\u0005\u0006\u0000\u0000\u0016\u0017\u0005\u0002\u0000\u0000\u0017" +
+					"\u0018\u0005\u0006\u0000\u0000\u0018\u0082\u0006\u0000\uffff\uffff\u0000" +
+					"\u0019\u001a\u0005\u0006\u0000\u0000\u001a\u001b\u0005\u0003\u0000\u0000" +
+					"\u001b\u001c\u0005\u0006\u0000\u0000\u001c\u001d\u0005\u0001\u0000\u0000" +
+					"\u001d\u001e\u0005\u0006\u0000\u0000\u001e\u001f\u0005\u0002\u0000\u0000" +
+					"\u001f \u0005\u0006\u0000\u0000 \u0082\u0006\u0000\uffff\uffff\u0000!" +
+					"\"\u0005\u0004\u0000\u0000\"#\u0005\u0006\u0000\u0000#$\u0005\u0003\u0000" +
+					"\u0000$%\u0005\u0001\u0000\u0000%&\u0005\u0006\u0000\u0000&\'\u0005\u0002" +
+					"\u0000\u0000\'(\u0005\u0006\u0000\u0000(\u0082\u0006\u0000\uffff\uffff" +
+					"\u0000)*\u0005\u0005\u0000\u0000*+\u0005\u0003\u0000\u0000+,\u0005\u0001" +
+					"\u0000\u0000,-\u0005\u0006\u0000\u0000-.\u0005\u0002\u0000\u0000./\u0005" +
+					"\u0006\u0000\u0000/\u0082\u0006\u0000\uffff\uffff\u000001\u0005\u0006" +
+					"\u0000\u000012\u0005\u0003\u0000\u000023\u0005\u0001\u0000\u000034\u0005" +
+					"\u0006\u0000\u000045\u0005\u0002\u0000\u000056\u0005\u0006\u0000\u0000" +
+					"6\u0082\u0006\u0000\uffff\uffff\u000078\u0005\u0006\u0000\u000089\u0005" +
+					"\u0001\u0000\u00009:\u0005\u0006\u0000\u0000:;\u0005\u0002\u0000\u0000" +
+					";<\u0005\u0006\u0000\u0000<\u0082\u0006\u0000\uffff\uffff\u0000=>\u0005" +
+					"\u0001\u0000\u0000>?\u0005\u0006\u0000\u0000?@\u0005\u0002\u0000\u0000" +
+					"@A\u0005\u0006\u0000\u0000A\u0082\u0006\u0000\uffff\uffff\u0000BC\u0005" +
+					"\u0006\u0000\u0000CD\u0005\u0002\u0000\u0000DE\u0005\u0006\u0000\u0000" +
+					"E\u0082\u0006\u0000\uffff\uffff\u0000FG\u0005\u0005\u0000\u0000GH\u0005" +
+					"\u0002\u0000\u0000HI\u0005\u0006\u0000\u0000I\u0082\u0006\u0000\uffff" +
+					"\uffff\u0000JK\u0005\u0004\u0000\u0000KL\u0005\u0006\u0000\u0000LM\u0005" +
+					"\u0003\u0000\u0000MN\u0005\u0006\u0000\u0000NO\u0005\u0001\u0000\u0000" +
+					"OP\u0005\u0006\u0000\u0000P\u0082\u0006\u0000\uffff\uffff\u0000QR\u0005" +
+					"\u0006\u0000\u0000RS\u0005\u0003\u0000\u0000ST\u0005\u0006\u0000\u0000" +
+					"TU\u0005\u0001\u0000\u0000UV\u0005\u0006\u0000\u0000V\u0082\u0006\u0000" +
+					"\uffff\uffff\u0000WX\u0005\u0004\u0000\u0000XY\u0005\u0006\u0000\u0000" +
+					"YZ\u0005\u0003\u0000\u0000Z[\u0005\u0001\u0000\u0000[\\\u0005\u0006\u0000" +
+					"\u0000\\\u0082\u0006\u0000\uffff\uffff\u0000]^\u0005\u0006\u0000\u0000" +
+					"^_\u0005\u0003\u0000\u0000_`\u0005\u0001\u0000\u0000`a\u0005\u0006\u0000" +
+					"\u0000a\u0082\u0006\u0000\uffff\uffff\u0000bc\u0005\u0006\u0000\u0000" +
+					"cd\u0005\u0001\u0000\u0000de\u0005\u0006\u0000\u0000e\u0082\u0006\u0000" +
+					"\uffff\uffff\u0000fg\u0005\u0001\u0000\u0000gh\u0005\u0006\u0000\u0000" +
+					"h\u0082\u0006\u0000\uffff\uffff\u0000ij\u0005\u0005\u0000\u0000j\u0082" +
+					"\u0006\u0000\uffff\uffff\u0000kl\u0005\u0006\u0000\u0000l\u0082\u0006" +
+					"\u0000\uffff\uffff\u0000mn\u0005\u0004\u0000\u0000no\u0005\u0006\u0000" +
+					"\u0000o\u0082\u0006\u0000\uffff\uffff\u0000pq\u0005\u0006\u0000\u0000" +
+					"qr\u0005\u0001\u0000\u0000rs\u0005\u0005\u0000\u0000s\u0082\u0006\u0000" +
+					"\uffff\uffff\u0000tu\u0005\u0006\u0000\u0000uv\u0005\u0003\u0000\u0000" +
+					"vw\u0005\u0002\u0000\u0000wx\u0005\u0006\u0000\u0000x\u0082\u0006\u0000" +
+					"\uffff\uffff\u0000yz\u0005\u0004\u0000\u0000z{\u0005\u0006\u0000\u0000" +
+					"{|\u0005\u0001\u0000\u0000|}\u0005\u0006\u0000\u0000}\u0082\u0006\u0000" +
+					"\uffff\uffff\u0000~\u007f\u0005\u0002\u0000\u0000\u007f\u0080\u0005\u0006" +
+					"\u0000\u0000\u0080\u0082\u0006\u0000\uffff\uffff\u0000\u0081\u0002\u0001" +
+					"\u0000\u0000\u0000\u0081\n\u0001\u0000\u0000\u0000\u0081\u0010\u0001\u0000" +
+					"\u0000\u0000\u0081\u0019\u0001\u0000\u0000\u0000\u0081!\u0001\u0000\u0000" +
+					"\u0000\u0081)\u0001\u0000\u0000\u0000\u00810\u0001\u0000\u0000\u0000\u0081" +
+					"7\u0001\u0000\u0000\u0000\u0081=\u0001\u0000\u0000\u0000\u0081B\u0001" +
+					"\u0000\u0000\u0000\u0081F\u0001\u0000\u0000\u0000\u0081J\u0001\u0000\u0000" +
+					"\u0000\u0081Q\u0001\u0000\u0000\u0000\u0081W\u0001\u0000\u0000\u0000\u0081" +
+					"]\u0001\u0000\u0000\u0000\u0081b\u0001\u0000\u0000\u0000\u0081f\u0001" +
+					"\u0000\u0000\u0000\u0081i\u0001\u0000\u0000\u0000\u0081k\u0001\u0000\u0000" +
+					"\u0000\u0081m\u0001\u0000\u0000\u0000\u0081p\u0001\u0000\u0000\u0000\u0081" +
+					"t\u0001\u0000\u0000\u0000\u0081y\u0001\u0000\u0000\u0000\u0081~\u0001" +
+					"\u0000\u0000\u0000\u0082\u0083\u0001\u0000\u0000\u0000\u0083\u0084\u0005" +
+					"\u0000\u0000\u0001\u0084\u0001\u0001\u0000\u0000\u0000\u0001\u0081";
+	public static final ATN _ATN =
+			new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+
+	static {
+		_decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+		for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+			_decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
+	}
 }

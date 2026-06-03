@@ -27,12 +27,13 @@ import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.parser.RandomReader;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Random {
+    private String baseStr;
     private int base;
     private int dice;
+    private String sidesStr;
     private int sides;
     private int mBonus;
     private boolean toNegate;
@@ -72,6 +73,20 @@ public class Random {
         negated = false;
     }
 
+    public Random(String base, int mBonus, int dice, int sides) {
+        this.baseStr = base;
+        this.dice = dice;
+        this.sides = sides;
+        this.mBonus = mBonus;
+    }
+
+    public Random(int base, int mBonus, int dice, String sides) {
+        this.base = base;
+        this.dice = dice;
+        this.mBonus = mBonus;
+        this.sidesStr = sides;
+    }
+
     /**
      * Turn a string into a Random
      *
@@ -81,8 +96,12 @@ public class Random {
     @Nullable
     @CheckReturnValue
     public static Random parseStr(String randomString) {
+        if (randomString.isEmpty()) return null;
+
+        logger.trace("Parsing random string {}", randomString);
+
         RandomReader reader = new RandomReader();
-        List<Random> randoms = new ArrayList<>();
+        List<Random> randoms;
         try {
             randoms = reader.parse(randomString);
         } catch (IOException e) {

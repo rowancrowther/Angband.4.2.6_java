@@ -25,14 +25,14 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link RandomParser}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface RandomVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link RandomParser#dice}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitDice(RandomParser.DiceContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link RandomParser#dice}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDice(RandomParser.DiceContext ctx);
 }

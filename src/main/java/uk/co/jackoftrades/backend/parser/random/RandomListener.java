@@ -25,17 +25,17 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link RandomParser}.
  */
 public interface RandomListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link RandomParser#dice}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDice(RandomParser.DiceContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link RandomParser#dice}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterDice(RandomParser.DiceContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link RandomParser#dice}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDice(RandomParser.DiceContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link RandomParser#dice}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitDice(RandomParser.DiceContext ctx);
 }

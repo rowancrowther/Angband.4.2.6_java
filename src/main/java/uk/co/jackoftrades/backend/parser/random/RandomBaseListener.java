@@ -35,51 +35,48 @@ public class RandomBaseListener implements RandomListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterDice(RandomParser.DiceContext ctx) {
-	}
+    @Override
+    public void enterDice(RandomParser.DiceContext ctx) {
+    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+    @Override
+    public void exitDice(RandomParser.DiceContext ctx) {
+    }
 
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitDice(RandomParser.DiceContext ctx) {
-	}
-
+    @Override
+    public void enterEveryRule(ParserRuleContext ctx) {
+    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void enterEveryRule(ParserRuleContext ctx) {
-	}
-
+    @Override
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void exitEveryRule(ParserRuleContext ctx) {
-	}
-
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override
-	public void visitTerminal(TerminalNode node) {
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override
-	public void visitErrorNode(ErrorNode node) { }
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

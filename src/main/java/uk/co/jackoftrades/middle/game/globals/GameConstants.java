@@ -374,6 +374,7 @@ public class GameConstants {
     private static List<PlayerShape> playerShapes;
     private static List<ItemObject> itemObjects;
     private static List<Activation> activations;
+    private static List<EgoItem> egoItems;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -422,6 +423,26 @@ public class GameConstants {
     }
 
     /**
+     * Get an ObjectKind based on its name
+     *
+     * @param name the name of the object kind we are searching for
+     * @return the object kind with that name or null if it doesn't
+     * exist
+     */
+    public static ObjectKind lookupObjectKind(@NotNull String name) {
+        if (objectKinds == null) {
+            String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return objectKinds.stream()
+                .filter(e -> name.equals(e.getName()))
+                .findFirst().orElse(null);
+    }
+
+    /**
      * Search through the slays to get a slay with the same code as
      * the incoming parameter
      *
@@ -454,7 +475,7 @@ public class GameConstants {
     @CheckReturnValue
     public static Curse lookupCurse(String curseName) {
         if (curses == null) {
-            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            String message = "Invalid attempt to access curses when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
             throw e;
@@ -485,16 +506,26 @@ public class GameConstants {
     }
 
     public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {
-        if (features == null) return null;
-        for (Feature feature : features) {
-            if (feature.getTerrainFlag().equals(flag))
-                return feature;
+        if (features == null) {
+            String message = "Invalid attempt to access features when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
         }
-        return null;
+
+        return features.stream().filter(f -> flag.equals(f.getTerrainFlag()))
+                .findFirst().orElse(null);
     }
 
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
+        if (trapInfo.isEmpty() || trapInfo == null) {
+            String message = "Invalid attempt to access trapInfo when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
         for (TrapKind trap : trapInfo) {
             if (trap.getDescription().equals(description)) {
                 return trap;
@@ -656,6 +687,8 @@ public class GameConstants {
             loadPlayerShapes();
             loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
             loadActivations();
+            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -663,6 +696,59 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Load the ego items into the relevant list
+     */
+    private static void loadEgoItems() {
+        EgoItemReader reader = new EgoItemReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "ego_item.txt";
+
+        try {
+            egoItems = reader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    /**
+     * Return a brand based on the brand name
+     *
+     * @param name the name of the brand to return
+     * @return the brand or null if it isn't found
+     */
+    public static Brand lookupBrandCode(@NotNull String name) {
+        if (brands == null) {
+            String message = "Invalid attempt to access brands when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return brands.stream().filter(b -> name.equals(b.getCode()))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * Get an activation by its name
+     *
+     * @param name The name of the activation we are searching for
+     * @return the Activation in the List activations with the name equal to the incoming parameter
+     */
+    public static Activation lookupActivation(@NotNull String name) {
+        if (activations == null) {
+            String message = "Invalid attempt to access activations when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return activations.stream().filter(e -> name.equals(e.getName()))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * Load in the activations from activation.txt and store them in a List
+     */
     private static void loadActivations() {
         ActivationReader reader = new ActivationReader();
         String filename = ANGBAND_DIR_GAMEDATA + "activation.txt";

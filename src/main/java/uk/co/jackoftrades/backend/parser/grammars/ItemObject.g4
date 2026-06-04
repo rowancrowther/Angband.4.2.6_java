@@ -76,8 +76,6 @@ type
         returns[TValue typeObj]
         :   TYPE STRING EOL {
                 String flagStr = $STRING.getText().toUpperCase().replace(' ', '_');
-                if (flagStr.equals("DIGGER")) flagStr = "DIGGING";
-                if (flagStr.equals("DRAGON_ARMOR")) flagStr = "DRAG_ARMOR";
                 $typeObj = TValue.valueOf("TV_" + flagStr);
             }
         ;

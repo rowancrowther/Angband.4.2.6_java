@@ -39,4 +39,8 @@ public class Activation {
         this.message = message;
         this.desc = desc;
     }
+
+    public String getName() {
+        return name;
+    }
 }

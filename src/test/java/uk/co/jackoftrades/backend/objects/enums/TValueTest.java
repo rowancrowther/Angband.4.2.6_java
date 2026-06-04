@@ -46,7 +46,7 @@ class TValueTest {
     private final TValue tcloak = TValue.TV_CLOAK;
     private final TValue tsoft = TValue.TV_SOFT_ARMOR;
     private final TValue thard = TValue.TV_HARD_ARMOR;
-    private final TValue tdragon = TValue.TV_DRAG_ARMOR;
+    private final TValue tdragon = TValue.TV_DRAGON_ARMOR;
     private final TValue tlight = TValue.TV_LIGHT;
     private final TValue tamulet = TValue.TV_AMULET;
     private final TValue tring = TValue.TV_RING;
@@ -181,7 +181,7 @@ class TValueTest {
                 () -> assertEquals(tcloak, TValue.valueOf("TV_CLOAK")),
                 () -> assertEquals(tsoft, TValue.valueOf("TV_SOFT_ARMOUR")),
                 () -> assertEquals(thard, TValue.valueOf("TV_HARD_ARMOUR")),
-                () -> assertEquals(tdragon, TValue.valueOf("TV_DRAG_ARMOUR")),
+                () -> assertEquals(tdragon, TValue.valueOf("TV_DRAGON_ARMOUR")),
                 () -> assertEquals(tlight, TValue.valueOf("TV_LIGHT")),
                 () -> assertEquals(tamulet, TValue.valueOf("TV_AMULET")),
                 () -> assertEquals(tring, TValue.valueOf("TV_RING")),

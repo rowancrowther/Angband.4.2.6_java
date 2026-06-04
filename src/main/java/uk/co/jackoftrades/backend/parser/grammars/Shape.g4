@@ -289,7 +289,7 @@ shape
                 skillInit.put(PlayerSkill.SKILL_TO_HIT_THROW, $skill_throw.skillNum);
             }
         |   skill_dig {
-                skillInit.put(PlayerSkill.SKILL_DIGGING, $skill_dig.skillNum);
+                skillInit.put(PlayerSkill.SKILL_DIGGER, $skill_dig.skillNum);
             }
         |   obj_flags {
                 oFlagsInit.union($obj_flags.oFlags);

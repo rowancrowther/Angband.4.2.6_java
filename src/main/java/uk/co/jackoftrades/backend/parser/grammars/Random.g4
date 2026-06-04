@@ -75,6 +75,10 @@ dice
                 baseInit = Integer.parseInt($base.getText());
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
+        |   base=NUMBER PLUS M m_bonus=NUMBER {
+                baseInit = Integer.parseInt($base.getText());
+                mBonusInit = Integer.parseInt($m_bonus.getText());
+            }
         |   base=DOLLAR_LETTER M m_bonus=NUMBER {
                 baseStr = $base.getText();
                 mBonusInit = Integer.parseInt($m_bonus.getText());

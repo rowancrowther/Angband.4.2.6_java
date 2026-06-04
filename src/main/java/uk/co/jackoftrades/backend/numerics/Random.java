@@ -19,10 +19,7 @@ package uk.co.jackoftrades.backend.numerics;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.CheckReturnValue;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.Nullable;
-import org.jetbrains.annotations.TestOnly;
+import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.parser.RandomReader;
 
@@ -95,10 +92,10 @@ public class Random {
      */
     @Nullable
     @CheckReturnValue
-    public static Random parseStr(String randomString) {
+    public static Random parseStr(@NotNull String randomString) {
         if (randomString.isEmpty()) return null;
 
-        logger.trace("Parsing random string {}", randomString);
+        logger.trace("Parsing random string: " + randomString);
 
         RandomReader reader = new RandomReader();
         List<Random> randoms;
@@ -113,7 +110,7 @@ public class Random {
             return null;
         }
 
-        return randoms.get(0);
+        return randoms.getFirst();
     }
 
     /**
@@ -344,22 +341,4 @@ public class Random {
     public boolean hasBonus() {
         return mBonus != 1;
     }
-
-    /**
-     * Parse a String and return a Random object
-     *
-     * @param string the string we are going to parse
-     * @return a Random object based on the incoming string
-     */
-//    @Contract(pure = true)
-    //@CheckReturnValue
-//    public static Random parseRandom(@NotNull String string) {
-//        CharStream stream = CharStreams.fromString(string);
-//        RandomFormatterLexer lexer = new RandomFormatterLexer(stream);
-//        CommonTokenStream tokens = new CommonTokenStream(lexer);
-//        RandomFormatterParser parser = new RandomFormatterParser(tokens);
-//        RandomFormatterParser.RandomContext result = parser.random();
-//
-//        return result.randomDice;
-//    }
 }

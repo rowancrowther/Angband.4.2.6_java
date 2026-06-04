@@ -305,8 +305,6 @@ public class ObjectBaseParser extends Parser {
 
                     String raw1 = ((NameContext) _localctx).tval1.getText().toUpperCase().trim();
                     // Deal with the two special flags
-                    if (raw1.equals("DIGGER"))
-                        raw1 = "DIGGING";
                     if (raw1.equals("DRAGON ARMOR"))
                         raw1 = "DRAG ARMOR";
                     raw1 = raw1.replace(' ', '_');
@@ -327,8 +325,6 @@ public class ObjectBaseParser extends Parser {
 
                     String raw2 = ((NameContext) _localctx).tval2.getText().toUpperCase().trim();
                     // Deal with the two special flags
-                    if (raw2.equals("DIGGER"))
-                        raw2 = "DIGGING";
                     if (raw2.equals("DRAGON ARMOR"))
                         raw2 = "DRAG ARMOR";
                     raw2 = raw2.replace(' ', '_');

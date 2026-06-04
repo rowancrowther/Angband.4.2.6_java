@@ -56,7 +56,7 @@ public enum TValue {
     /**
      * A type of digging implement, such as shovel or pick
      */
-    TV_DIGGING("digger"),
+    TV_DIGGER("digger"),
 
     /**
      * A weapon with a haft such as a halberd
@@ -116,6 +116,7 @@ public enum TValue {
     /**
      * Amor fashioned from dragon scale
      */
+    TV_DRAGON_ARMOR("dragon armor"),
     TV_DRAG_ARMOR("dragon armor"),
 
     /**
@@ -272,7 +273,7 @@ public enum TValue {
     }
 
     public boolean isDigger() {
-        return this == TV_DIGGING;
+        return this == TV_DIGGER;
     }
 
     public boolean canHaveNourishment() {
@@ -290,7 +291,7 @@ public enum TValue {
 
     public boolean isBodyArmour() {
         return switch (this) {
-            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR -> true;
+            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR -> true;
             default -> false;
         };
     }
@@ -341,7 +342,7 @@ public enum TValue {
 
     public boolean isWeapon() {
         return switch (this) {
-            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING, TV_BOW,
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER, TV_BOW,
                  TV_BOLT, TV_ARROW, TV_SHOT -> true;
             default -> false;
         };
@@ -349,7 +350,7 @@ public enum TValue {
 
     public boolean isArmour() {
         return switch (this) {
-            case TV_DRAG_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
+            case TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
                  TV_CLOAK, TV_CROWN, TV_HELM, TV_BOOTS, TV_GLOVES -> true;
             default -> false;
         };
@@ -357,25 +358,25 @@ public enum TValue {
 
     public boolean isMeleeWeapon() {
         return switch (this) {
-            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING -> true;
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER -> true;
             default -> false;
         };
     }
 
     public boolean hasVariablePower() {
         return switch (this) {
-            case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
+            case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }
 
     public boolean isWearable() {
         return switch (this) {
-            case TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
+            case TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }

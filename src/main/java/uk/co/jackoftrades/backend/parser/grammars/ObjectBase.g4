@@ -28,8 +28,6 @@ name
         :   (NAME tval1=TEXT COLON nameIn=TEXT) {
                 String raw1 = $tval1.getText().toUpperCase().trim();
                 // Deal with the two special flags
-                if (raw1.equals("DIGGER"))
-                    raw1 = "DIGGING";
                 if (raw1.equals("DRAGON ARMOR"))
                     raw1 = "DRAG ARMOR";
                 raw1 = raw1.replace(' ', '_');
@@ -39,8 +37,6 @@ name
         |   (NAME tval2=TEXT) {
                 String raw2 = $tval2.getText().toUpperCase().trim();
                 // Deal with the two special flags
-                if (raw2.equals("DIGGER"))
-                    raw2 = "DIGGING";
                 if (raw2.equals("DRAGON ARMOR"))
                     raw2 = "DRAG ARMOR";
                 raw2 = raw2.replace(' ', '_');

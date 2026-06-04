@@ -36,8 +36,8 @@ public class RandomBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override
-	public T visitDice(RandomParser.DiceContext ctx) {
-		return visitChildren(ctx);
-	}
+    @Override
+    public T visitDice(RandomParser.DiceContext ctx) {
+        return visitChildren(ctx);
+    }
 }

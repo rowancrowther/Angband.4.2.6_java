@@ -25,38 +25,38 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link BodyParser}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface BodyVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link BodyParser#body}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitBody(BodyParser.BodyContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyParser#body}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBody(BodyParser.BodyContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link BodyParser#slot}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitSlot(BodyParser.SlotContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyParser#slot}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitSlot(BodyParser.SlotContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link BodyParser#entry}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitEntry(BodyParser.EntryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyParser#entry}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitEntry(BodyParser.EntryContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link BodyParser#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(BodyParser.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(BodyParser.FileContext ctx);
 }

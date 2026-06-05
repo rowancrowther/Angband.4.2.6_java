@@ -3,6 +3,7 @@ grammar Body;
 @header {
     import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
     import uk.co.jackoftrades.middle.player.PlayerBody;
+    import uk.co.jackoftrades.middle.objects.ItemObject;
 
     import java.util.Map;
     import java.util.HashMap;
@@ -11,7 +12,7 @@ grammar Body;
 }
 
 @members {
-    record BodySlot(EquipmentSlotsEnum slotType, String name){}
+    public record BodySlot(EquipmentSlotsEnum slotType, String name){}
 }
 
 body

@@ -17,9 +17,11 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.backend.parser.body.BodyParser.BodySlot;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class PlayerBody {
@@ -30,10 +32,14 @@ public class PlayerBody {
     private int count;
     private Map<BodySlotEntry, ItemObject> equipmentSlots;
 
-    public PlayerBody(String name, int count, Map<BodySlotEntry, ItemObject> equipmentSlots) {
+    public PlayerBody(String name, int count, Map<BodySlot, ItemObject> equipmentSlots) {
         this.name = name;
         this.count = count;
-        this.equipmentSlots = equipmentSlots;
+        this.equipmentSlots = new HashMap<>();
+        for (BodySlot bodySlot : equipmentSlots.keySet()) {
+            BodySlotEntry bodySlotEntry = new BodySlotEntry(bodySlot.slotType(), bodySlot.name());
+            this.equipmentSlots.put(bodySlotEntry, equipmentSlots.get(bodySlot));
+        }
     }
 
     public boolean isEquipped(ItemObject item) {

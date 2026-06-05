@@ -50,10 +50,7 @@ import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
-import uk.co.jackoftrades.middle.player.Player;
-import uk.co.jackoftrades.middle.player.PlayerHistoryChart;
-import uk.co.jackoftrades.middle.player.PlayerProperty;
-import uk.co.jackoftrades.middle.player.PlayerShape;
+import uk.co.jackoftrades.middle.player.*;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
 import java.io.File;
@@ -377,6 +374,7 @@ public class GameConstants {
     private static List<Activation> activations;
     private static List<EgoItem> egoItems;
     private static List<PlayerHistoryChart> playerHistoryCharts;
+    private static List<PlayerBody> playerBodies;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -691,6 +689,7 @@ public class GameConstants {
             loadActivations();
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             loadPlayerHistories();
+            loadBodies();
 
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
@@ -699,6 +698,20 @@ public class GameConstants {
         }
     }
 
+    private static void loadBodies() {
+        BodyReader reader = new BodyReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "body.txt";
+
+        try {
+            playerBodies = reader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    /**
+     * Load the player histories into the relevant List
+     */
     private static void loadPlayerHistories() {
         HistoryReader reader = new HistoryReader();
         String filename = ANGBAND_DIR_GAMEDATA + "history.txt";

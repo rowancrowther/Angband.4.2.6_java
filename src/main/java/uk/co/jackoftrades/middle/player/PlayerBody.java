@@ -18,13 +18,23 @@
 package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 
-import java.util.HashMap;
+import java.util.Map;
 
 public class PlayerBody {
+    private record BodySlotEntry(EquipmentSlotsEnum equipmentSlot, String name) {
+    }
+
     private String name;
     private int count;
-    private HashMap<Integer, ItemObject> equipmentSlots;
+    private Map<BodySlotEntry, ItemObject> equipmentSlots;
+
+    public PlayerBody(String name, int count, Map<BodySlotEntry, ItemObject> equipmentSlots) {
+        this.name = name;
+        this.count = count;
+        this.equipmentSlots = equipmentSlots;
+    }
 
     public boolean isEquipped(ItemObject item) {
         return equipmentSlots.containsValue(item);

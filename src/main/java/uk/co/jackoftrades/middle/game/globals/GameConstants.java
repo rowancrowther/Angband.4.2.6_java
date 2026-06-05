@@ -51,6 +51,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerHistoryChart;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.PlayerShape;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -375,6 +376,7 @@ public class GameConstants {
     private static List<ItemObject> itemObjects;
     private static List<Activation> activations;
     private static List<EgoItem> egoItems;
+    private static List<PlayerHistoryChart> playerHistoryCharts;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -688,11 +690,23 @@ public class GameConstants {
             loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
             loadActivations();
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+            loadPlayerHistories();
 
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadPlayerHistories() {
+        HistoryReader reader = new HistoryReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "history.txt";
+
+        try {
+            playerHistoryCharts = reader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

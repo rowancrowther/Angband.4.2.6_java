@@ -20,6 +20,22 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PlayerHistory {
+public class PlayerHistoryEntry {
     private static final Logger logger = LogManager.getLogger();
+
+    private int chartNumber;
+    private int nextChartNumber;
+    private int roll;
+    private String text;
+
+    public PlayerHistoryEntry(int chartNumber, int nextChartNumber, int roll, String text) {
+        this.chartNumber = chartNumber;
+        this.nextChartNumber = nextChartNumber;
+        this.roll = roll;
+        this.text = text;
+    }
+
+    public int getChartNumber() {
+        return chartNumber;
+    }
 }

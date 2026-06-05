@@ -20,6 +20,24 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-public class PlayerHistory {
+import java.util.ArrayList;
+import java.util.List;
+
+public class PlayerHistoryChart {
     private static final Logger logger = LogManager.getLogger();
+
+    private final int chartNumber;
+    private final List<PlayerHistoryEntry> charts = new ArrayList<>();
+
+    public PlayerHistoryChart(int chartNumber) {
+        this.chartNumber = chartNumber;
+    }
+
+    public void addEntry(PlayerHistoryEntry chart) {
+        charts.add(chart);
+    }
+
+    public int getChartNumber() {
+        return chartNumber;
+    }
 }

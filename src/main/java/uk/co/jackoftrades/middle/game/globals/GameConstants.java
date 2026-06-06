@@ -517,9 +517,21 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    public static PlayerHistoryChart lookupPlayerHistoryChart(int chartId) {
+        if (playerHistoryCharts == null) {
+            String message = "Invalid attempt to access playerHistoryCharts when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerHistoryCharts.stream().filter(c -> c.getChartNumber() == chartId)
+                .findFirst().orElse(null);
+    }
+
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
-        if (trapInfo.isEmpty() || trapInfo == null) {
+        if (trapInfo == null || trapInfo.isEmpty()) {
             String message = "Invalid attempt to access trapInfo when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
@@ -673,7 +685,7 @@ public class GameConstants {
             loadProjections();
             loadUIEntryRenderers();
             loadUIEntryBases();         // Dependent on UIEntyRenderers
-            loadUIEntries();            // Dependent on UIEntryBase and UIEntryRenderers
+            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
             loadObjectBases();
@@ -690,12 +702,38 @@ public class GameConstants {
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             loadPlayerHistories();
             loadBodies();
+            //loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
 
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
+    }
+
+    private static void loadPlayerRaces() {
+        PlayerRaceReader parser = new PlayerRaceReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "p_race.txt";
+
+        try {
+            parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    public static PlayerBody lookupPlayerBody(int number) {
+        if (playerBodies == null) {
+            String message = "Invalid attempt to access playerBodies when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerBodies.stream()
+                .filter(b -> number == b.getCount())
+                .findFirst()
+                .orElse(null);
     }
 
     private static void loadBodies() {

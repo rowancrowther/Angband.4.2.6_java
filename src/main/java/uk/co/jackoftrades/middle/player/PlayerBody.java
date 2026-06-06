@@ -42,6 +42,10 @@ public class PlayerBody {
         }
     }
 
+    public int getCount() {
+        return count;
+    }
+
     public boolean isEquipped(ItemObject item) {
         return equipmentSlots.containsValue(item);
     }

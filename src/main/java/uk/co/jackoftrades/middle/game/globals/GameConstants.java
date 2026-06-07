@@ -41,6 +41,7 @@ import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.MessageEnum;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
@@ -375,6 +376,8 @@ public class GameConstants {
     private static List<EgoItem> egoItems;
     private static List<PlayerHistoryChart> playerHistoryCharts;
     private static List<PlayerBody> playerBodies;
+    private static List<PlayerRace> playerRaces;
+    private static List<MagicRealm> realms;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static final List<ObjectKind> objectKinds = new ArrayList<>();
@@ -702,12 +705,26 @@ public class GameConstants {
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             loadPlayerHistories();
             loadBodies();
-            //loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+            loadMagicRealms();
 
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+
+        System.out.println("System lists loaded");
+    }
+
+    private static void loadMagicRealms() {
+        RealmReader parser = new RealmReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "realm.txt";
+
+        try {
+            realms = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 
@@ -716,7 +733,7 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "p_race.txt";
 
         try {
-            parser.parse(filename);
+            playerRaces = parser.parse(filename);
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

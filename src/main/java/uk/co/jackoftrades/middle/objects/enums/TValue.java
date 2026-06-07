@@ -22,6 +22,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+
 public enum TValue {
     /**
      * A null TValue - not yet assigned
@@ -413,12 +415,8 @@ public enum TValue {
     @CheckReturnValue
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
-        for (TValue value : TValue.values()) {
-            if (value.name.equals(name)) {
-                return value;
-            }
-        }
-
-        return null;
+        return Arrays.stream(TValue.values()).filter(t -> name.equals(t.name))
+                .findFirst()
+                .orElse(null);
     }
 }

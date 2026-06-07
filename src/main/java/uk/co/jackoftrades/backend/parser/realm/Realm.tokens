@@ -1,0 +1,14 @@
+COMMENT=1
+EOL=2
+NAME=3
+STAT=4
+VERB=5
+SPELL_NOUN=6
+BOOK_NOUN=7
+UCASE=8
+LCASE=9
+'name:'=3
+'stat:'=4
+'verb:'=5
+'spell-noun:'=6
+'book-noun:'=7

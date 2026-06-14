@@ -15,20 +15,23 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.enums;
+package uk.co.jackoftrades.middle.effect;
 
-public enum EffectSubTypeEnum {
-    EST_NONE,
-    EST_PROJ,
-    EST_TMD,
-    EST_NOURISH,
-    EST_MON_TMD,
-    EST_SUMMON,
-    EST_STAT,
-    EST_ENCHANT,
-    EST_SHAPECHANGE,
-    EST_EARTHQUAKE,
-    EST_GLYPH,
-    EST_TELEPORT,
-    EST_TELEPORT_TO
+import uk.co.jackoftrades.middle.enums.EffectBaseType;
+
+public class Expression {
+    private char codeLetter;
+    private EffectBaseType baseType;
+    private String operations;
+    private String diceString;
+
+    public Expression(char codeLetter, EffectBaseType baseType, String operations) {
+        this.codeLetter = codeLetter;
+        this.baseType = baseType;
+        this.operations = operations;
+    }
+
+    public void setDiceString(String diceString) {
+        this.diceString = diceString;
+    }
 }

@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -212,6 +214,7 @@ public enum TValue {
     TV_MAX("");
 
     private final String name;
+    private static final Logger logger = LogManager.getLogger();
 
     TValue(String name) {
         this.name = name;
@@ -415,8 +418,18 @@ public enum TValue {
     @CheckReturnValue
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
-        return Arrays.stream(TValue.values()).filter(t -> name.equals(t.name))
-                .findFirst()
-                .orElse(null);
+        String toSearch;
+
+        if (name.toUpperCase().contains("RMOUR"))
+            toSearch = name.replace("RMOUR", "RMOR");
+        else
+            toSearch = name;
+
+        try {
+            return TValue.valueOf(toSearch);
+        } catch (IllegalArgumentException e) {
+            logger.error("Unknown TValue: {}", toSearch, e);
+            return null;
+        }
     }
 }

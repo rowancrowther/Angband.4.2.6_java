@@ -378,12 +378,35 @@ public class GameConstants {
     private static List<PlayerBody> playerBodies;
     private static List<PlayerRace> playerRaces;
     private static List<MagicRealm> realms;
+    private static List<PlayerClass> playerClasses;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
-    public static final List<ObjectKind> objectKinds = new ArrayList<>();
+    public static List<ObjectKind> objectKinds = new ArrayList<>();
 
     public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
     public static final Player mainPlayer = new Player();
+
+    /**
+     * Searches for a magic realm based on the magic realm name
+     *
+     * @param realmName the name of the realm to return
+     * @return the MagicRealm with the relevant name or null
+     */
+    @Nullable
+    @CheckReturnValue
+    public static MagicRealm lookupRealm(String realmName) {
+        if (realms == null) {
+            String message = "Invalid attempt to access realms when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return realms.stream()
+                .filter(r -> realmName.equals(r.getName()))
+                .findFirst()
+                .orElse(null);
+    }
 
     /**
      * Searches for a summon based on the summon name
@@ -433,7 +456,7 @@ public class GameConstants {
      * exist
      */
     public static ObjectKind lookupObjectKind(@NotNull String name) {
-        if (objectKinds == null) {
+        if (objectKinds.isEmpty()) {
             String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
@@ -457,7 +480,7 @@ public class GameConstants {
     @CheckReturnValue
     public static Slay lookupSlay(String slayName) {
         if (slays == null) {
-            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            String message = "Invalid attempt to access slays when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
             logger.fatal(message, e);
             throw e;
@@ -560,6 +583,15 @@ public class GameConstants {
     }
 
     /**
+     * Add a new object kind to the list of object kinds
+     *
+     * @param toAdd the ObjectKind to add
+     */
+    public static void addObjectKind(ObjectKind toAdd) {
+        objectKinds.add(toAdd);
+    }
+
+    /**
      * Get the ObjectBase which has a given string as its name
      *
      * @param name the name we are searching the object base list for
@@ -581,14 +613,26 @@ public class GameConstants {
                 .orElse(null);
     }
 
-    public static @Nullable ObjectBase getBaseFromTVal(TValue tVal) {
-        for (ObjectBase base : objectBases) {
-            if (base.gettVal() == tVal) {
-                return base;
-            }
+    /**
+     * Lookup an item base based on its tval and return the first base found
+     *
+     * @param tVal The tval we are looking for
+     * @return the first item base with that tVal
+     */
+    @Nullable
+    @CheckReturnValue
+    public static ObjectBase getBaseFromTVal(@NotNull TValue tVal) {
+        if (objectBases == null) {
+            String message = "Invalid attempt to access objectBases when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
         }
 
-        return null;
+        return objectBases.stream()
+                .filter(ob -> tVal.equals(ob.gettVal()))
+                .findFirst()
+                .orElse(null);
     }
 
     public static @Nullable MonsterBase getBaseFromName(String name) {
@@ -707,14 +751,23 @@ public class GameConstants {
             loadBodies();
             loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
             loadMagicRealms();
-
+            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
+    }
 
-        System.out.println("System lists loaded");
+    private static void loadPlayerClasses() {
+        PlayerClassReader parser = new PlayerClassReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "class.txt";
+
+        try {
+            playerClasses = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
     }
 
     private static void loadMagicRealms() {
@@ -851,6 +904,7 @@ public class GameConstants {
 
         try {
             itemObjects = parser.parse(filename);
+            objectKinds = parser.parseKinds(filename);
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -871,6 +925,18 @@ public class GameConstants {
                 }
             }
         }
+    }
+
+    public static PlayerShape lookupPlayerShape(@NotNull String name) {
+        if (playerShapes == null) {
+            String message = "Invalid attempt to access playerShapes when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerShapes.stream().filter(s -> name.equals(s.getName()))
+                .findFirst().orElse(null);
     }
 
     /**

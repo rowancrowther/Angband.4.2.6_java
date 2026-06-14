@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.objects;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.middle.Expression;
+import uk.co.jackoftrades.middle.effect.Expression;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.ValueEnum;

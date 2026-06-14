@@ -59,6 +59,7 @@ public class ObjectBase {
         }
     }
 
+
     private void setHatesFlag(Element flag) {
         hatesEl.on(flag);
     }

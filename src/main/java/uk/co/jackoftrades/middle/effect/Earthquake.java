@@ -15,16 +15,9 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.backend.io.bespokeexceptions;
+package uk.co.jackoftrades.middle.effect;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-public class InvalidTokenFoundDuringParse extends RuntimeException {
-    private final Logger logger = LogManager.getLogger();
-
-    public InvalidTokenFoundDuringParse(String message) {
-        super(message);
-        logger.error(message);
-    }
+public enum Earthquake {
+    QUAKE_NONE,
+    QUAKE_TARGETED
 }

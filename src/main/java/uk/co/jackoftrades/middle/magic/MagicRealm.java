@@ -35,4 +35,8 @@ public class MagicRealm {
         this.spellNoun = spellNoun;
         this.book = book;
     }
+
+    public String getName() {
+        return name;
+    }
 }

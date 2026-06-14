@@ -7,10 +7,10 @@ grammar ItemObject;
     import uk.co.jackoftrades.middle.objects.Slay;
     import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
     import uk.co.jackoftrades.middle.game.globals.GameConstants;
-    import uk.co.jackoftrades.middle.Expression;
+    import uk.co.jackoftrades.middle.effect.Expression;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
-    import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
+    import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
     import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -19,6 +19,7 @@ grammar ItemObject;
     import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
     import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
     import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+    import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
     import uk.co.jackoftrades.middle.objects.ElementInfo;
     import uk.co.jackoftrades.middle.objects.Brand;
     import uk.co.jackoftrades.middle.objects.CurseData;
@@ -26,7 +27,7 @@ grammar ItemObject;
     import uk.co.jackoftrades.middle.Activation;
     import uk.co.jackoftrades.middle.objects.Flavour;
     import uk.co.jackoftrades.backend.strings.Quark;
-    import uk.co.jackoftrades.middle.Effect;
+    import uk.co.jackoftrades.middle.effect.Effect;
     import uk.co.jackoftrades.middle.objects.EgoItem;
     import uk.co.jackoftrades.middle.objects.Artifact;
     import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
@@ -225,12 +226,7 @@ effect_block
             int yInit = 0;
             int xInit = 0;
             EffectSubTypeEnum subTypeInit = EffectSubTypeEnum.EST_NONE;
-            TimedEffect timedInit = TimedEffect.TMD_NONE;
-            ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
-            EffectNourish effNourish = EffectNourish.EN_NONE;
-            EffectEnchant effEnchant = EffectEnchant.EE_NONE;
-            Summon effSummon = null;
-            Stats effStat = Stats.STAT_NONE;
+            EffectSubTypeWrapper value = null;
             int powerInit = 0;
             String msgInit = "";
             String visMsgInit = "";
@@ -249,27 +245,27 @@ effect_block
 
                 switch (subTypeInit) {
                     case EST_PROJ:
-                        projInit = ProjectionEnum.valueOf("PROJ_" + subTypeName);
+                        value = new EffectSubTypeWrapper(ProjectionEnum.valueOf("PROJ_" + subTypeName));
                         break;
 
                     case EST_TMD:
-                        timedInit = TimedEffect.valueOf("TMD_" + subTypeName);
+                        value = new EffectSubTypeWrapper(TimedEffect.valueOf("TMD_" + subTypeName));
                         break;
 
                     case EST_STAT:
-                        effStat = Stats.valueOf("STAT_" + subTypeName);
+                        value = new EffectSubTypeWrapper(Stats.valueOf("STAT_" + subTypeName));
                         break;
 
                     case EST_NOURISH:
-                        effNourish = EffectNourish.valueOf("EN_" + subTypeName);
+                        value = new EffectSubTypeWrapper(EffectNourish.valueOf("EN_" + subTypeName));
                         break;
 
                     case EST_ENCHANT:
-                        effEnchant = EffectEnchant.valueOf("EE_" + subTypeName);
+                        value = new EffectSubTypeWrapper(EffectEnchant.valueOf("EE_" + subTypeName));
                         break;
 
                     case EST_SUMMON:
-                        effSummon = GameConstants.lookupSummon(subTypeName);
+                        value = new EffectSubTypeWrapper(GameConstants.lookupSummon(subTypeName));
                         break;
                 }
             }
@@ -281,8 +277,7 @@ effect_block
                 effParmStr = effStringList.get(3);
 
             $effObj = new Effect(effInit, diceInit, yInit, xInit,
-                                 timedInit, projInit, effStat,
-                                 effNourish, effEnchant, effSummon,
+                                 value,
                                  effRadStr, effParmStr,
                                  powerInit, msgInit, visMsgInit,
                                  timeInit, exprObj);
@@ -492,10 +487,8 @@ desc
         ;
 
 item_object
-        returns[ItemObject itemObj]
+        returns[ItemObject itemObj, ObjectKind oKind]
         @init {
-            ObjectKind oKind = null;
-
             // ItemObject initial values
             EgoItem ioe = null;
             Artifact ioa = null;
@@ -575,16 +568,16 @@ item_object
         }
         @after
         {
-            oKind = new ObjectKind(kName, kText, kBase, 0, kPVal, kToH, kToD, kToA,
+            $oKind = new ObjectKind(kName, kText, kBase, 0, kPVal, kToH, kToD, kToA,
                                    kAc, kBaseDam, kDamDie, kDamSides, kWeight, kCost,
                                    oFlagInit, oKindFlagInit, kModsInit, kElInfo, kBrands,
                                    kSlays, kCurses, kChar, kAllocProb, kAllocMin,
                                    kAllocMax, kLevel, kActivs, kEffects, kEffectMsg,
                                    kVisEffectMsg, kTime, kCharge, kGenMultProb,
                                    kStackSize, kFlavour, kNoteAware, kNoteUnaware, kAware,
-                                   kTried, kIgnore, kEverseen);
+                                   kTried, kIgnore, kEverseen, ioTVal);
 
-            $itemObj = new ItemObject(oKind, ioe, ioa, known, location, ioTVal, sValInit,
+            $itemObj = new ItemObject($oKind, ioe, ioa, known, location, ioTVal, sValInit,
                                      ioPVal, kWeight, kDamDie, kDamSides, kAc, kBaseDam,
                                      kToA, kToD, kToH, oFlagInit, kModsInit, kElInfo,
                                      kBrands, kSlays, kCurses, kEffects, ioEffMsg,
@@ -637,11 +630,15 @@ item_object
         ;
 
 file
-        returns[List<ItemObject> itemObjects]
+        returns[List<ItemObject> itemObjects, List<ObjectKind> objectKinds]
         @init {
             $itemObjects = new ArrayList<>();
+            $objectKinds = new ArrayList<>();
         }
-        :   (item_object { $itemObjects.add($item_object.itemObj); })+ EOF
+        :   (item_object {
+                $itemObjects.add($item_object.itemObj);
+                $objectKinds.add($item_object.oKind);
+            })+ EOF
         ;
 
 COMMENT

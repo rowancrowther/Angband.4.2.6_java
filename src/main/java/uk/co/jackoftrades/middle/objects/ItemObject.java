@@ -28,7 +28,7 @@ import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;

@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.enums;
 
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 
 /**
  * TODO: Comment and test this

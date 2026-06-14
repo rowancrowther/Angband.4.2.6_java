@@ -15,16 +15,16 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.backend.io.bespokeexceptions;
+package uk.co.jackoftrades.middle.enums;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-public class InvalidTokenFoundDuringParse extends RuntimeException {
-    private final Logger logger = LogManager.getLogger();
-
-    public InvalidTokenFoundDuringParse(String message) {
-        super(message);
-        logger.error(message);
-    }
+public enum TeleportEnum {
+    TELE_NONE,
+    TELE_TELEPORT,
+    TELE_TELEPORT_TO,
+    TELE_TELEPORT_SELF,
+    TELE_TELEPORT_LEVEL,
+    TELE_TELEPORT_OTHER,
+    TELE_TELEPORT_AWAY,
+    TELE_TELEPORT_RANDOM,
+    TELE_MAX
 }

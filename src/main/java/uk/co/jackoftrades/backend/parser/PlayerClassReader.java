@@ -23,16 +23,15 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectLexer;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
-import uk.co.jackoftrades.middle.objects.ItemObject;
-import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassLexer;
+import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassParser;
+import uk.co.jackoftrades.middle.player.PlayerClass;
 
 import java.io.IOException;
 import java.util.List;
 
-public class ItemObjectReader implements Parser<ItemObject> {
-    private final static Logger logger = LogManager.getLogger();
+public class PlayerClassReader implements Parser<PlayerClass> {
+    private static final Logger logger = LogManager.getLogger();
 
     /**
      * Run the parser and generate the ArrayList from the file
@@ -41,31 +40,16 @@ public class ItemObjectReader implements Parser<ItemObject> {
      * @return an ArrayList of items read from the file
      */
     @Override
-    public @NotNull List<ItemObject> parse(@NotNull String filename) throws IOException {
+    public @NotNull List<PlayerClass> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            ItemObjectLexer lexer = new ItemObjectLexer(stream);
+            PlayerClassLexer lexer = new PlayerClassLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ItemObjectParser parser = new ItemObjectParser(tokens);
-            ItemObjectParser.FileContext output = parser.file();
+            PlayerClassParser parser = new PlayerClassParser(tokens);
+            PlayerClassParser.FileContext output = parser.file();
 
-            return output.itemObjects;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
-    }
-
-    public @NotNull List<ObjectKind> parseKinds(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ItemObjectLexer lexer = new ItemObjectLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ItemObjectParser parser = new ItemObjectParser(tokens);
-            ItemObjectParser.FileContext output = parser.file();
-
-            return output.objectKinds;
-        } catch (IOException e) {
+            return output.playerClasses;
+        } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
         }

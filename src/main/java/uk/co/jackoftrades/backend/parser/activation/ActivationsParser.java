@@ -20,16 +20,16 @@ package uk.co.jackoftrades.backend.parser.activation;
 
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
-import uk.co.jackoftrades.middle.Expression;
+import uk.co.jackoftrades.middle.effect.Expression;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.enums.EffectNourish;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.enums.EffectEnchant;
-import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.Activation;
 
@@ -139,13 +139,6 @@ public class ActivationsParser extends Parser {
     @Override
     public ATN getATN() {
         return _ATN;
-    }
-
-
-    record EffectRecord(EffectEnum type, EffectSubTypeEnum subType, TimedEffect tmdEff,
-                        ProjectionEnum projType, EffectNourish nourType, Stats statType,
-                        EffectEnchant effEnc, Summon summType, String radiusStr,
-                        String parmStr) {
     }
 
     public ActivationsParser(TokenStream input) {
@@ -403,7 +396,11 @@ public class ActivationsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class EffectContext extends ParserRuleContext {
-        public EffectRecord effectEntry;
+        public EffectEnum type;
+        public EffectSubTypeEnum subType;
+        public EffectSubTypeWrapper wrapper;
+        public String radiusStr;
+        public String parmStr;
         public Token effType1;
         public Token subType1;
         public Token effRad1;
@@ -482,16 +479,10 @@ public class ActivationsParser extends Parser {
         EffectContext _localctx = new EffectContext(_ctx, getState());
         enterRule(_localctx, 8, RULE_effect);
 
-        String effRadStr = "";
-        String effParmStr = "";
-        EffectEnum effType = EffectEnum.EF_NONE;
-        EffectSubTypeEnum subTypeEnum = EffectSubTypeEnum.EST_NONE;
-        TimedEffect timedInit = TimedEffect.TMD_NONE;
-        ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
-        EffectNourish nourishInit = EffectNourish.EN_NONE;
-        Stats statInit = Stats.STAT_NONE;
-        EffectEnchant effeInit = EffectEnchant.EE_NONE;
-        Summon effSummon = null;
+        ((EffectContext) _localctx).type = EffectEnum.EF_NONE;
+        ((EffectContext) _localctx).radiusStr = "";
+        ((EffectContext) _localctx).parmStr = "";
+        ((EffectContext) _localctx).wrapper = null;
 
         String entry1 = "";
         String entry2 = "";
@@ -610,36 +601,37 @@ public class ActivationsParser extends Parser {
             }
             _ctx.stop = _input.LT(-1);
 
-            effType = EffectEnum.valueOf("EF_" + entry1);
-            subTypeEnum = effType.getSubType();
+            ((EffectContext) _localctx).type = EffectEnum.valueOf("EF_" + entry1);
+            ((EffectContext) _localctx).subType = _localctx.type.getSubType();
 
-            switch (subTypeEnum) {
+            switch (_localctx.subType) {
                 case EST_PROJ:
-                    projInit = ProjectionEnum.valueOf("PROJ_" + entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(ProjectionEnum.valueOf("PROJ_" + entry2));
                     break;
+
                 case EST_TMD:
-                    timedInit = TimedEffect.valueOf("TMD_" + entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(TimedEffect.valueOf("TMD_" + entry2));
                     break;
+
                 case EST_STAT:
-                    statInit = Stats.valueOf("STAT_" + entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(Stats.valueOf("STAT_" + entry2));
                     break;
+
                 case EST_NOURISH:
-                    nourishInit = EffectNourish.valueOf("EN_" + entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(EffectNourish.valueOf("EN_" + entry2));
                     break;
+
                 case EST_ENCHANT:
-                    effeInit = EffectEnchant.valueOf("EE_" + entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(EffectEnchant.valueOf("EE_" + entry2));
                     break;
+
                 case EST_SUMMON:
-                    effSummon = GameConstants.lookupSummon(entry2);
+                    ((EffectContext) _localctx).wrapper = new EffectSubTypeWrapper(GameConstants.lookupSummon(entry2));
                     break;
             }
 
-            effRadStr = entry3;
-            effParmStr = entry4;
-
-            ((EffectContext) _localctx).effectEntry = new EffectRecord(effType, subTypeEnum, timedInit, projInit,
-                    nourishInit, statInit, effeInit, effSummon,
-                    effRadStr, effParmStr);
+            ((EffectContext) _localctx).radiusStr = entry3;
+            ((EffectContext) _localctx).parmStr = entry4;
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1080,13 +1072,8 @@ public class ActivationsParser extends Parser {
         String diceInit = "";
         int yInit = 0;
         int xInit = 0;
+        EffectSubTypeWrapper wrapper = null;
         EffectSubTypeEnum subTypeInit = EffectSubTypeEnum.EST_NONE;
-        TimedEffect timedInit = TimedEffect.TMD_NONE;
-        ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
-        EffectNourish effNourish = EffectNourish.EN_NONE;
-        EffectEnchant effEnchant = EffectEnchant.EE_NONE;
-        Summon effSummon = null;
-        Stats effStat = Stats.STAT_NONE;
         int powerInit = 0;
         String msgInit = "";
         String visMsgInit = "";
@@ -1122,17 +1109,11 @@ public class ActivationsParser extends Parser {
                                     setState(111);
                                     ((Effect_blockContext) _localctx).effect = effect();
 
-                                    EffectRecord entry = ((Effect_blockContext) _localctx).effect.effectEntry;
-                                    effInit = entry.type();
-                                    subTypeInit = entry.subType();
-                                    timedInit = entry.tmdEff();
-                                    projInit = entry.projType();
-                                    effNourish = entry.nourType();
-                                    effStat = entry.statType();
-                                    effEnchant = entry.effEnc();
-                                    effSummon = entry.summType();
-                                    effRadStr = entry.radiusStr();
-                                    effParmStr = entry.parmStr();
+                                    effInit = ((Effect_blockContext) _localctx).effect.type;
+                                    subTypeInit = ((Effect_blockContext) _localctx).effect.subType;
+                                    wrapper = ((Effect_blockContext) _localctx).effect.wrapper;
+                                    effRadStr = ((Effect_blockContext) _localctx).effect.radiusStr;
+                                    effParmStr = ((Effect_blockContext) _localctx).effect.parmStr;
 
                                 }
                                 break;
@@ -1176,8 +1157,8 @@ public class ActivationsParser extends Parser {
             }
             _ctx.stop = _input.LT(-1);
 
-            ((Effect_blockContext) _localctx).effObj = new Effect(effInit, diceInit, yInit, xInit, timedInit, projInit,
-                    effStat, effNourish, effEnchant, effSummon, effRadStr,
+            ((Effect_blockContext) _localctx).effObj = new Effect(effInit, diceInit, yInit, xInit,
+                    wrapper, effRadStr,
                     effParmStr, powerInit, msgInit, visMsgInit, timeInit,
                     exprObj);
 
@@ -1600,5 +1581,5 @@ public class ActivationsParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

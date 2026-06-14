@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle;
 
+import uk.co.jackoftrades.middle.effect.Effect;
+
 import java.util.List;
 
 public class Activation {

@@ -3,11 +3,12 @@ grammar Activations;
 @header {
     import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
-    import uk.co.jackoftrades.middle.Effect;
+    import uk.co.jackoftrades.middle.effect.Effect;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
-    import uk.co.jackoftrades.middle.Expression;
+    import uk.co.jackoftrades.middle.effect.Expression;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-    import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
+    import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
+    import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
     import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.enums.EffectNourish;
     import uk.co.jackoftrades.middle.enums.Stats;
@@ -18,13 +19,6 @@ grammar Activations;
 
     import java.util.List;
     import java.util.ArrayList;
-}
-
-@members {
-    record EffectRecord(EffectEnum type, EffectSubTypeEnum subType, TimedEffect tmdEff,
-                        ProjectionEnum projType, EffectNourish nourType, Stats statType,
-                        EffectEnchant effEnc, Summon summType, String radiusStr,
-                        String parmStr) {}
 }
 
 name
@@ -47,55 +41,51 @@ power
         ;
 
 effect
-        returns[EffectRecord effectEntry]
+        returns[EffectEnum type, EffectSubTypeEnum subType,
+                EffectSubTypeWrapper wrapper, String radiusStr, String parmStr]
         @init {
-            String effRadStr = "";
-            String effParmStr = "";
-            EffectEnum effType = EffectEnum.EF_NONE;
-            EffectSubTypeEnum subTypeEnum = EffectSubTypeEnum.EST_NONE;
-            TimedEffect timedInit = TimedEffect.TMD_NONE;
-            ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
-            EffectNourish nourishInit = EffectNourish.EN_NONE;
-            Stats statInit = Stats.STAT_NONE;
-            EffectEnchant effeInit = EffectEnchant.EE_NONE;
-            Summon effSummon = null;
-            
+            $type = EffectEnum.EF_NONE;
+            $radiusStr = "";
+            $parmStr = "";
+            $wrapper = null;
+
             String entry1 = "";
             String entry2 = "";
             String entry3 = "";
             String entry4 = "";
         }
         @after {
-            effType = EffectEnum.valueOf("EF_" + entry1);
-            subTypeEnum = effType.getSubType();
+            $type = EffectEnum.valueOf("EF_" + entry1);
+            $subType = $type.getSubType();
 
-            switch(subTypeEnum) {
+            switch($subType) {
                 case EST_PROJ:
-                    projInit = ProjectionEnum.valueOf("PROJ_" + entry2);
+                    $wrapper = new EffectSubTypeWrapper(ProjectionEnum.valueOf("PROJ_" + entry2));
                     break;
+
                 case EST_TMD:
-                    timedInit = TimedEffect.valueOf("TMD_" + entry2);
+                    $wrapper = new EffectSubTypeWrapper(TimedEffect.valueOf("TMD_" + entry2));
                     break;
+
                 case EST_STAT:
-                    statInit = Stats.valueOf("STAT_" + entry2);
+                    $wrapper = new EffectSubTypeWrapper(Stats.valueOf("STAT_" + entry2));
                     break;
+
                 case EST_NOURISH:
-                    nourishInit = EffectNourish.valueOf("EN_" + entry2);
+                    $wrapper = new EffectSubTypeWrapper(EffectNourish.valueOf("EN_" + entry2));
                     break;
+
                 case EST_ENCHANT:
-                    effeInit = EffectEnchant.valueOf("EE_" + entry2);
+                    $wrapper = new EffectSubTypeWrapper(EffectEnchant.valueOf("EE_" + entry2));
                     break;
+
                 case EST_SUMMON:
-                    effSummon = GameConstants.lookupSummon(entry2);
+                    $wrapper = new EffectSubTypeWrapper(GameConstants.lookupSummon(entry2));
                     break;
             }
 
-            effRadStr = entry3;
-            effParmStr = entry4;
-
-            $effectEntry = new EffectRecord(effType, subTypeEnum, timedInit, projInit,
-                                            nourishInit, statInit, effeInit, effSummon,
-                                            effRadStr, effParmStr);
+            $radiusStr = entry3;
+            $parmStr = entry4;
         }
         :   EFFECT effType1=UCASE COLON subType1=UCASE COLON effRad1=NUMBER COLON effO1=STRING {
                 entry1 = $effType1.getText();
@@ -168,13 +158,8 @@ effect_block
             String diceInit = "";
             int yInit = 0;
             int xInit = 0;
+            EffectSubTypeWrapper wrapper = null;
             EffectSubTypeEnum subTypeInit = EffectSubTypeEnum.EST_NONE;
-            TimedEffect timedInit = TimedEffect.TMD_NONE;
-            ProjectionEnum projInit = ProjectionEnum.PROJ_NONE;
-            EffectNourish effNourish = EffectNourish.EN_NONE;
-            EffectEnchant effEnchant = EffectEnchant.EE_NONE;
-            Summon effSummon = null;
-            Stats effStat = Stats.STAT_NONE;
             int powerInit = 0;
             String msgInit = "";
             String visMsgInit = "";
@@ -182,24 +167,18 @@ effect_block
             Expression exprObj = null;
         }
         @after {
-            $effObj = new Effect(effInit, diceInit, yInit, xInit, timedInit, projInit,
-                                 effStat, effNourish, effEnchant, effSummon, effRadStr,
+            $effObj = new Effect(effInit, diceInit, yInit, xInit,
+                                 wrapper, effRadStr,
                                  effParmStr, powerInit, msgInit, visMsgInit, timeInit,
                                  exprObj);
         }
         :   (power { powerInit = $power.powerInt; })? (
             effect {
-                EffectRecord entry = $effect.effectEntry;
-                effInit = entry.type();
-                subTypeInit = entry.subType();
-                timedInit = entry.tmdEff();
-                projInit = entry.projType();
-                effNourish = entry.nourType();
-                effStat = entry.statType();
-                effEnchant = entry.effEnc();
-                effSummon = entry.summType();
-                effRadStr = entry.radiusStr();
-                effParmStr = entry.parmStr();
+                effInit = $effect.type;
+                subTypeInit = $effect.subType;
+                wrapper = $effect.wrapper;
+                effRadStr = $effect.radiusStr;
+                effParmStr = $effect.parmStr;
             }
         |   dice { diceInit = $dice.diceStr; }
         |   expr { exprObj = $expr.exprObj; }

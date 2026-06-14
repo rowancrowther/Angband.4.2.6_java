@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.cave;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;

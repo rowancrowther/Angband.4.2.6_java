@@ -15,14 +15,11 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle;
+package uk.co.jackoftrades.middle.effect;
 
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.enums.*;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
-import uk.co.jackoftrades.middle.monsters.Summon;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 /**
  * STUB CLASS: TODO Code, comment and test this
@@ -31,22 +28,33 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 public class Effect {
     private EffectEnum index;
     private Random dice;
+    private String diceString;
     private int y;
     private int x;
     private EffectSubTypeEnum subType;
-    private TimedEffect timedEffect;
-    private ProjectionEnum projection;
-    private EffectNourish effectNourish;
-    private Stats effectStats;
-    private EffectEnchant effectEnchant;
-    private Summon effectSummon;
+    private EffectSubTypeWrapper value;
     private Random radius;
-    private Random otherParameter;
+    private String otherParameter;
     private int power;
     private String msg;
     private String visMsg;
     private Random time;
     private Expression expression;
+
+    @Contract(mutates = "this")
+    public Effect(EffectEnum type, EffectSubTypeEnum subType, EffectSubTypeWrapper wrappedValue,
+                  String radius, String otherParm) {
+        this.index = type;
+        this.subType = subType;
+        this.value = wrappedValue;
+        this.radius = Random.parseStr(radius);
+        this.otherParameter = otherParm;
+    }
+
+    @Contract(pure = true)
+    public void setWrapperValue(EffectSubTypeWrapper value) {
+        this.value = value;
+    }
 
     /**
      * Determines whether this Effect has a valid Effect index
@@ -56,6 +64,10 @@ public class Effect {
     @Contract(pure = true)
     public boolean isValid() {
         return index != EffectEnum.EF_NONE && index != EffectEnum.EF_MAX;
+    }
+
+    public void setExpression(Expression expression) {
+        this.expression = expression;
     }
 
     /**
@@ -84,6 +96,15 @@ public class Effect {
         return index.getInfoLabel();
     }
 
+    public void setYX(int y, int x) {
+        this.y = y;
+        this.x = x;
+    }
+
+    public void setMsg(String msg) {
+        this.msg = msg;
+    }
+
     /**
      * Get the description label for this effect
      *
@@ -108,17 +129,16 @@ public class Effect {
         return msg;
     }
 
+    public void setDice(String diceString) {
+        this.diceString = diceString;
+    }
+
     @Contract(mutates = "this")
     public Effect(EffectEnum index,
                   String dice,
                   int y,
                   int x,
-                  TimedEffect timedEffect,
-                  ProjectionEnum projection,
-                  Stats effectStats,
-                  EffectNourish effectNourish,
-                  EffectEnchant effectEnchant,
-                  Summon effectSummon,
+                  EffectSubTypeWrapper wrappedValue,
                   String radius,
                   String otherParameter,
                   String msg,
@@ -128,14 +148,9 @@ public class Effect {
         this.dice = Random.parseStr(dice);
         this.y = y;
         this.x = x;
-        this.projection = projection;
-        this.timedEffect = timedEffect;
-        this.effectNourish = effectNourish;
-        this.effectEnchant = effectEnchant;
-        this.effectSummon = effectSummon;
-        this.effectStats = effectStats;
+        this.value = wrappedValue;
         this.radius = Random.parseStr(radius);
-        this.otherParameter = Random.parseStr(otherParameter);
+        this.otherParameter = otherParameter;
         this.msg = msg;
         this.visMsg = visMsg;
         this.expression = expression;
@@ -146,12 +161,7 @@ public class Effect {
                   String dice,
                   int y,
                   int x,
-                  TimedEffect timedEffect,
-                  ProjectionEnum projection,
-                  Stats effectStats,
-                  EffectNourish effectNourish,
-                  EffectEnchant effectEnchant,
-                  Summon effectSummon,
+                  EffectSubTypeWrapper wrappedValue,
                   String radius,
                   String otherParameter,
                   int power,
@@ -163,14 +173,9 @@ public class Effect {
         this.dice = Random.parseStr(dice);
         this.y = y;
         this.x = x;
-        this.projection = projection;
-        this.timedEffect = timedEffect;
-        this.effectNourish = effectNourish;
-        this.effectEnchant = effectEnchant;
-        this.effectSummon = effectSummon;
-        this.effectStats = effectStats;
+        this.value = wrappedValue;
         this.radius = Random.parseStr(radius);
-        this.otherParameter = Random.parseStr(otherParameter);
+        this.otherParameter = otherParameter;
         this.power = power;
         this.msg = msg;
         this.visMsg = visMsg;

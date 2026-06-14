@@ -15,9 +15,24 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.enums;
+package uk.co.jackoftrades.middle.player;
 
-public enum EffectGlyph {
-    EG_WARDING,
-    EG_DECOY
+import uk.co.jackoftrades.middle.objects.enums.TValue;
+
+import java.util.List;
+
+public class StartItem {
+    private TValue tValue;
+    private String sValue;
+    private int min;
+    private int max;
+    private String eOpts;
+
+    public StartItem(TValue tValue, String sValue, int min, int max, String eOpts) {
+        this.tValue = tValue;
+        this.sValue = sValue;
+        this.min = min;
+        this.max = max;
+        this.eOpts = eOpts;
+    }
 }

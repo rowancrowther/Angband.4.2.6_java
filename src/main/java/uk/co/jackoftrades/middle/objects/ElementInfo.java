@@ -24,11 +24,19 @@ public class ElementInfo {
     private Flag<ElementInfoEnum> flags;
     private int resLevel;
 
+    public ElementInfo() {
+        this.flags = new Flag<>(ElementInfoEnum.class);
+    }
+
     public int getResLevel() {
         return resLevel;
     }
 
     public Flag<ElementInfoEnum> getFlags() {
         return flags;
+    }
+
+    public boolean on(ElementInfoEnum info) {
+        return flags.on(info);
     }
 }

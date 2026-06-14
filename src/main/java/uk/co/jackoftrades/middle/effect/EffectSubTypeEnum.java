@@ -15,16 +15,21 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.backend.io.bespokeexceptions;
+package uk.co.jackoftrades.middle.effect;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
-public class InvalidTokenFoundDuringParse extends RuntimeException {
-    private final Logger logger = LogManager.getLogger();
-
-    public InvalidTokenFoundDuringParse(String message) {
-        super(message);
-        logger.error(message);
-    }
+public enum EffectSubTypeEnum {
+    EST_NONE,
+    EST_PROJ,
+    EST_TMD,
+    EST_NOURISH,
+    EST_MON_TMD,
+    EST_SUMMON,
+    EST_STAT,
+    EST_ENCHANT,
+    EST_SHAPECHANGE,
+    EST_EARTHQUAKE,
+    EST_GLYPH,
+    EST_TELEPORT,
+    EST_TELEPORT_TO,
+    EST_MAX
 }

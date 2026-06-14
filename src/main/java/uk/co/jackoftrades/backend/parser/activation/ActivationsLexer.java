@@ -18,15 +18,6 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.activation;
 
-import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-import uk.co.jackoftrades.middle.enums.EffectSubTypeEnum;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
-import uk.co.jackoftrades.middle.enums.EffectNourish;
-import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.enums.EffectEnchant;
-import uk.co.jackoftrades.middle.monsters.Summon;
-
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.*;
@@ -115,13 +106,6 @@ public class ActivationsLexer extends Lexer {
 
     public Vocabulary getVocabulary() {
         return VOCABULARY;
-    }
-
-
-    record EffectRecord(EffectEnum type, EffectSubTypeEnum subType, TimedEffect tmdEff,
-                        ProjectionEnum projType, EffectNourish nourType, Stats statType,
-                        EffectEnchant effEnc, Summon summType, String radiusStr,
-                        String parmStr) {
     }
 
 
@@ -258,5 +242,5 @@ public class ActivationsLexer extends Lexer {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

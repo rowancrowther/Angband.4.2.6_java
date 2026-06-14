@@ -23,12 +23,11 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.Effect;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftrades.middle.effect.Effect;
+import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
+import uk.co.jackoftrades.middle.objects.enums.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +41,9 @@ public class ObjectKind {
 
     private ObjectBase base;
     private int kindIndex;
+
+    private TValue tValue;
+    private String sValue;
 
     private Random pVal; // Item extra parameter
 
@@ -96,8 +98,58 @@ public class ObjectKind {
     private int ignore;
     private boolean everseen;
 
-    // TODO: Change to initiate the members appropriately
     public ObjectKind() {
+        elInfo = new HashMap<>();
+        kindFlags = new Flag<>(ObjectKindFlag.class);
+        flags = new Flag<>(ObjectFlag.class);
+        activations = new ArrayList<>();
+        effect = new ArrayList<>();
+        brands = new HashMap<>();
+        slays = new HashMap<>();
+        curses = new HashMap<>();
+    }
+
+    public void setCharacter(AngbandDisplayCharacter character) {
+        this.character = character;
+    }
+
+    public ObjectKind(AngbandDisplayCharacter adc, int cost,
+                      int level, int min, int max,
+                      String name, TValue tvalue, String sValue,
+                      ObjectBase base, boolean isDungeon
+    ) {
+        this.name = name;
+        this.character = adc;
+        this.damageDice = 1;
+        this.damageSides = 1;
+        this.weight = 30;
+        this.cost = cost;
+        this.level = level;
+        this.alloc_min = min;
+        this.alloc_max = max;
+        this.tValue = tvalue;
+        this.sValue = sValue;
+        this.base = base;
+
+        elInfo = new HashMap<>();
+        kindFlags = new Flag<>(ObjectKindFlag.class);
+        if (isDungeon) {
+            for (ElementEnum ee : ElementEnum.values()) {
+                ElementInfo ei = new ElementInfo();
+                ei.on(ElementInfoEnum.EL_INFO_IGNORE);
+                elInfo.put(ee, ei);
+
+                kindFlags.on(ObjectKindFlag.KF_GOOD);
+            }
+        }
+
+        modifiers = new HashMap<>();
+        flags = new Flag<>(ObjectFlag.class);
+        brands = new HashMap<>();
+        slays = new HashMap<>();
+        curses = new HashMap<>();
+        activations = new ArrayList<>();
+        effect = new ArrayList<>();
     }
 
     public ObjectKind(String name, String text, ObjectBase base,
@@ -122,7 +174,7 @@ public class ObjectKind {
                       String stackSize, Flavour flavour,
                       Quark noteAware, Quark noteUnaware,
                       boolean aware, boolean tried,
-                      int ignore, boolean everseen) {
+                      int ignore, boolean everseen, TValue tValue) {
         this.name = name;
         this.text = text;
         this.base = base;
@@ -173,6 +225,7 @@ public class ObjectKind {
         this.tried = tried;
         this.ignore = ignore;
         this.everseen = everseen;
+        this.tValue = tValue;
     }
 
     public String getName() {
@@ -181,5 +234,21 @@ public class ObjectKind {
 
     public ObjectBase getBase() {
         return base;
+    }
+
+    public void setAlloc_prob(int alloc_prob) {
+        this.alloc_prob = alloc_prob;
+    }
+
+    public void setAlloc_min(int alloc_min) {
+        this.alloc_min = alloc_min;
+    }
+
+    public void setAlloc_max(int alloc_max) {
+        this.alloc_max = alloc_max;
+    }
+
+    public void setCost(int cost) {
+        this.cost = cost;
     }
 }

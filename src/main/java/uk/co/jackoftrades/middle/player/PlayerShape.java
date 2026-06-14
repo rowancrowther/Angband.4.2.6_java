@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.Effect;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.combat.enums.Element;
 import uk.co.jackoftrades.middle.enums.ValueEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
@@ -96,5 +96,9 @@ public class PlayerShape {
                 ", numBlows=" + numBlows +
                 ", playerBlow=" + playerBlow +
                 '}';
+    }
+
+    public String getName() {
+        return name;
     }
 }

@@ -20,6 +20,7 @@ package uk.co.jackoftrades.backend.strings;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 
 /**
  * Class to hold a single character of a particular colour
@@ -39,6 +40,17 @@ public class AngbandDisplayCharacter {
     public AngbandDisplayCharacter(char character, AttributeColour attributeColour) {
         this.character = character;
         this.attributeColour = attributeColour;
+    }
+
+    /**
+     * Constructor
+     *
+     * @param character The character of this DisplayCharacter
+     * @param colour    the character representation of this AttributeColour
+     */
+    public AngbandDisplayCharacter(char character, char colour) {
+        this.character = character;
+        this.attributeColour = ColourType.getAttributeColour(colour);
     }
 
     /**

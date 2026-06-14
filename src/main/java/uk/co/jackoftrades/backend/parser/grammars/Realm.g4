@@ -34,7 +34,7 @@ spell_noun
 
 book_noun
         returns[TValue bookTVal]
-        :   BOOK_NOUN LCASE { $bookTVal = TValue.fromName($LCASE.getText()); }
+        :   BOOK_NOUN LCASE { $bookTVal = TValue.fromName("TV_" + $LCASE.getText().replace(' ', '_').toUpperCase()); }
         ;
 
 realm

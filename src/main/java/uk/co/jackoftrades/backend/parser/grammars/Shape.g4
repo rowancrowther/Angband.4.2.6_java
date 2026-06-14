@@ -8,7 +8,7 @@ grammar Shape;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.enums.Stats;
-    import uk.co.jackoftrades.middle.Expression;
+    import uk.co.jackoftrades.middle.effect.Expression;
     import uk.co.jackoftrades.middle.player.enums.TimedEffect;
     import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
     import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
@@ -16,7 +16,8 @@ grammar Shape;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
     import uk.co.jackoftrades.middle.combat.enums.Element;
     import uk.co.jackoftrades.middle.player.PlayerBlow;
-    import uk.co.jackoftrades.middle.Effect;
+    import uk.co.jackoftrades.middle.effect.Effect;
+    import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
     import uk.co.jackoftrades.middle.enums.Stats;
     import uk.co.jackoftrades.middle.enums.EffectNourish;
     import uk.co.jackoftrades.middle.enums.EffectEnchant;
@@ -115,21 +116,19 @@ values
             })*
         ;
 
-effect              // Options are CURE, TIMED_INC, <GENERIC>, PROJECT_LOS
-        returns[EffectEnum effectEnum, TimedEffect timedEffect, ProjectionEnum projectionEffect]
+effect
+        returns[EffectEnum effectEnum, EffectSubTypeWrapper wrapper]
         @init {
-            $effectEnum = EffectEnum.EF_NONE;
-            $timedEffect = TimedEffect.TMD_NONE;
-            $projectionEffect = ProjectionEnum.PROJ_NONE;
+            $wrapper = null;
         }
         :   EFFECT f1=FLAG {
                 $effectEnum = EffectEnum.valueOf("EF_" + $f1.getText());
             }
             (COLON f2=FLAG {
                 if ($effectEnum == EffectEnum.EF_CURE || $effectEnum == EffectEnum.EF_TIMED_INC) {
-                    $timedEffect = TimedEffect.valueOf("TMD_" + $f2.getText());
+                    $wrapper = new EffectSubTypeWrapper(TimedEffect.valueOf("TMD_" + $f2.getText()));
                 } else {
-                    $projectionEffect = ProjectionEnum.valueOf("PROJ_" + $f2.getText());
+                    $wrapper = new EffectSubTypeWrapper(ProjectionEnum.valueOf("PROJ_" + $f2.getText()));
                 }
             })?
         ;
@@ -172,12 +171,7 @@ effect_block
             String diceInit = "";
             int xInit = 0;
             int yInit = 0;
-            TimedEffect timedEffect = TimedEffect.TMD_NONE;
-            ProjectionEnum projectionInit = ProjectionEnum.PROJ_NONE;
-            Stats statsInit = Stats.STAT_NONE;
-            EffectNourish nourInit = EffectNourish.EN_NONE;
-            EffectEnchant encInit = EffectEnchant.EE_NONE;
-            Summon summInit = null;
+            EffectSubTypeWrapper value = null;
             String radiusInit = "";
             String otherParameter = "";
             String msgInit = "";
@@ -186,46 +180,39 @@ effect_block
         }
         @after {
             $effObj = new Effect(effectEnum, diceInit, yInit, xInit,
-                                 timedEffect, projectionInit, statsInit,
-                                 nourInit, encInit, summInit,
+                                 value,
                                  radiusInit, otherParameter, msgInit,
                                  visMsgInit, expInit);
         }
         :   effect {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
             }
         |   effect effect_msg {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
                 msgInit = $effect_msg.effMsgStr;
             }
         |   effect dice {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
                 diceInit = $dice.diceStr;
             }
         |   effect dice effect_msg {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
                 diceInit = $dice.diceStr;
                 msgInit = $effect_msg.effMsgStr;
             }
         |   effect dice expr {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
                 diceInit = $dice.diceStr;
                 expInit = $expr.expression;
             }
         |   effect dice expr effect_msg {
                 effectEnum = $effect.effectEnum;
-                timedEffect = $effect.timedEffect;
-                projectionInit = $effect.projectionEffect;
+                value = $effect.wrapper;
                 diceInit = $dice.diceStr;
                 expInit = $expr.expression;
                 msgInit = $effect_msg.effMsgStr;
@@ -289,7 +276,7 @@ shape
                 skillInit.put(PlayerSkill.SKILL_TO_HIT_THROW, $skill_throw.skillNum);
             }
         |   skill_dig {
-                skillInit.put(PlayerSkill.SKILL_DIGGER, $skill_dig.skillNum);
+                skillInit.put(PlayerSkill.SKILL_DIGGING, $skill_dig.skillNum);
             }
         |   obj_flags {
                 oFlagsInit.union($obj_flags.oFlags);

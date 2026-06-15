@@ -77,5 +77,6 @@ public enum ObjectModifier {
     OM_MIGHT,
     OM_FAM_RED,
     OM_MOVES,
+    OM_DAM_RED,
     OM_MAX
 }

@@ -25,7 +25,8 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
-import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class Artifact {
     private String name;
@@ -34,15 +35,16 @@ public class Artifact {
     private int index;
 
     private TValue tValue;
-    private int sValue;
+    private String sValue;
 
     private int toHit;
     private int toDam;
     private int toAC;
     private int ac;
 
-    private int damageDice;
-    private int damageSides;
+    // private int damageDice;
+    // private int damageSides;
+    private String diceString;
 
     private int weight;
 
@@ -50,12 +52,12 @@ public class Artifact {
 
     private Flag<ObjectFlag> flags;
 
-    private HashMap<ObjectModifier, Integer> modifiers;
-    private HashMap<ElementEnum, ElementInfo> elInfo;
+    private Map<ObjectModifier, Integer> modifiers;
+    private Map<ElementEnum, ElementInfo> elInfo;
 
-    private boolean brands;
-    private boolean slays;
-    private int curses;
+    private List<Brand> brands;
+    private List<Slay> slays;
+    private List<Map<Curse, CurseData>> curses;
 
     private int level;
 
@@ -67,4 +69,35 @@ public class Artifact {
     private String activationMessage;
 
     private Random time;
+
+    public Artifact(String name, String text, int index, TValue tValue, String sValue, int toHit, int toDam, int toAC,
+                    int ac, String diceString, int weight, int cost, Flag<ObjectFlag> flags, Map<ObjectModifier,
+                    Integer> modifiers, List<Brand> brands, List<Slay> slays, List<Map<Curse, CurseData>> curses,
+                    int level, int allocProb, int allocMin, int allocMax, Activation activation,
+                    String activationMessage, String time) {
+        this.name = name;
+        this.text = text;
+        this.index = index;
+        this.tValue = tValue;
+        this.sValue = sValue;
+        this.toHit = toHit;
+        this.toDam = toDam;
+        this.toAC = toAC;
+        this.ac = ac;
+        this.diceString = diceString;
+        this.weight = weight;
+        this.cost = cost;
+        this.flags = flags;
+        this.modifiers = modifiers;
+        this.brands = brands;
+        this.slays = slays;
+        this.curses = curses;
+        this.level = level;
+        this.allocProb = allocProb;
+        this.allocMin = allocMin;
+        this.allocMax = allocMax;
+        this.activation = activation;
+        this.activationMessage = activationMessage;
+        this.time = Random.parseStr(time);
+    }
 }

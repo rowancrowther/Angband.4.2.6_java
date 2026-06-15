@@ -251,4 +251,8 @@ public class ObjectKind {
     public void setCost(int cost) {
         this.cost = cost;
     }
+
+    public TValue gettValue() {
+        return tValue;
+    }
 }

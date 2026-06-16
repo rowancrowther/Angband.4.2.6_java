@@ -425,7 +425,7 @@ public class EgoItemParser extends Parser {
                 setState(54);
                 ((DiceStringContext) _localctx).ds = match(DICE_STRING);
                 ((DiceStringContext) _localctx).diceStr = Random.parseStr(((DiceStringContext) _localctx).ds.getText());
-                logger.trace("Parsing " + _localctx.diceStr);
+                //logger.trace("Parsing " + _localctx.diceStr);
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;

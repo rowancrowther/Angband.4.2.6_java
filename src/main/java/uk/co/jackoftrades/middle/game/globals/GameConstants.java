@@ -380,6 +380,7 @@ public class GameConstants {
     private static List<MagicRealm> realms;
     private static List<PlayerClass> playerClasses;
     private static List<Artifact> artifacts;
+    private static List<ObjectProperty> objectProperties;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -790,10 +791,22 @@ public class GameConstants {
             loadMagicRealms();
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+            loadObjectProperties();     // Dependant on UIEntry
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadObjectProperties() {
+        ObjectPropertyReader parser = new ObjectPropertyReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "object_property.txt";
+
+        try {
+            objectProperties = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

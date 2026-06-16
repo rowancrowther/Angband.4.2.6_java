@@ -63,7 +63,7 @@ alloc
 
 diceString
         returns[Random diceStr]
-        :   ds=DICE_STRING { $diceStr = Random.parseStr($ds.getText()); logger.trace("Parsing " + $diceStr); }
+        :   ds=DICE_STRING { $diceStr = Random.parseStr($ds.getText()); } //logger.trace("Parsing " + $diceStr); }
         ;
 
 combat

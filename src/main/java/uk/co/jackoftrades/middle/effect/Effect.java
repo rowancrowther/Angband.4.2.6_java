@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.effect;
 
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.middle.enums.*;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
 
 /**
  * STUB CLASS: TODO Code, comment and test this
@@ -131,6 +131,32 @@ public class Effect {
 
     public void setDice(String diceString) {
         this.diceString = diceString;
+    }
+
+    public Effect(EffectEnum type, EffectSubTypeWrapper subType) {
+        this.index = type;
+        this.dice = null;
+        this.y = 0;
+        this.x = 0;
+        this.value = subType;
+        this.radius = null;
+        this.otherParameter = null;
+        this.msg = null;
+        this.visMsg = null;
+        this.expression = null;
+    }
+
+    public Effect(EffectEnum type) {
+        this.index = type;
+        this.dice = null;
+        this.y = 0;
+        this.x = 0;
+        this.value = null;
+        this.radius = null;
+        this.otherParameter = null;
+        this.msg = null;
+        this.visMsg = null;
+        this.expression = null;
     }
 
     @Contract(mutates = "this")

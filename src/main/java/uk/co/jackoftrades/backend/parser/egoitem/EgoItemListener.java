@@ -25,269 +25,269 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link EgoItemParser}.
  */
 public interface EgoItemListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterName(EgoItemParser.NameContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterName(EgoItemParser.NameContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitName(EgoItemParser.NameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitName(EgoItemParser.NameContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#info}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterInfo(EgoItemParser.InfoContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#info}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterInfo(EgoItemParser.InfoContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#info}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitInfo(EgoItemParser.InfoContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#info}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitInfo(EgoItemParser.InfoContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#alloc}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterAlloc(EgoItemParser.AllocContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#alloc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterAlloc(EgoItemParser.AllocContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#alloc}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitAlloc(EgoItemParser.AllocContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#alloc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitAlloc(EgoItemParser.AllocContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#diceString}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDiceString(EgoItemParser.DiceStringContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#diceString}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterDiceString(EgoItemParser.DiceStringContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#diceString}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDiceString(EgoItemParser.DiceStringContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#diceString}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitDiceString(EgoItemParser.DiceStringContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#combat}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterCombat(EgoItemParser.CombatContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#combat}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterCombat(EgoItemParser.CombatContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#combat}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitCombat(EgoItemParser.CombatContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#combat}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitCombat(EgoItemParser.CombatContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#minCombat}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterMinCombat(EgoItemParser.MinCombatContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#minCombat}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterMinCombat(EgoItemParser.MinCombatContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#minCombat}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitMinCombat(EgoItemParser.MinCombatContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#minCombat}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitMinCombat(EgoItemParser.MinCombatContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#type}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterType(EgoItemParser.TypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#type}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterType(EgoItemParser.TypeContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#type}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitType(EgoItemParser.TypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#type}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitType(EgoItemParser.TypeContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#item}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterItem(EgoItemParser.ItemContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#item}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterItem(EgoItemParser.ItemContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#item}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitItem(EgoItemParser.ItemContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#item}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitItem(EgoItemParser.ItemContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#flags}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFlags(EgoItemParser.FlagsContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#flags}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFlags(EgoItemParser.FlagsContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#flags}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFlags(EgoItemParser.FlagsContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#flags}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFlags(EgoItemParser.FlagsContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#flags_off}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFlags_off(EgoItemParser.Flags_offContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#flags_off}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFlags_off(EgoItemParser.Flags_offContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#flags_off}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFlags_off(EgoItemParser.Flags_offContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#flags_off}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFlags_off(EgoItemParser.Flags_offContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#values}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterValues(EgoItemParser.ValuesContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#values}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterValues(EgoItemParser.ValuesContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#values}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitValues(EgoItemParser.ValuesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#values}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitValues(EgoItemParser.ValuesContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#minValues}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterMinValues(EgoItemParser.MinValuesContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#minValues}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterMinValues(EgoItemParser.MinValuesContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#minValues}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitMinValues(EgoItemParser.MinValuesContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#minValues}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitMinValues(EgoItemParser.MinValuesContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#act}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterAct(EgoItemParser.ActContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#act}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterAct(EgoItemParser.ActContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#act}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitAct(EgoItemParser.ActContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#act}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitAct(EgoItemParser.ActContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterTime(EgoItemParser.TimeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#time}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterTime(EgoItemParser.TimeContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#time}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitTime(EgoItemParser.TimeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#time}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitTime(EgoItemParser.TimeContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#brand}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBrand(EgoItemParser.BrandContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#brand}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterBrand(EgoItemParser.BrandContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#brand}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBrand(EgoItemParser.BrandContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#brand}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitBrand(EgoItemParser.BrandContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#slay}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterSlay(EgoItemParser.SlayContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#slay}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterSlay(EgoItemParser.SlayContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#slay}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitSlay(EgoItemParser.SlayContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#slay}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitSlay(EgoItemParser.SlayContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDesc(EgoItemParser.DescContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterDesc(EgoItemParser.DescContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDesc(EgoItemParser.DescContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitDesc(EgoItemParser.DescContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#egoItem}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEgoItem(EgoItemParser.EgoItemContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#egoItem}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterEgoItem(EgoItemParser.EgoItemContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#egoItem}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEgoItem(EgoItemParser.EgoItemContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#egoItem}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitEgoItem(EgoItemParser.EgoItemContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link EgoItemParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(EgoItemParser.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link EgoItemParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFile(EgoItemParser.FileContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link EgoItemParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(EgoItemParser.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link EgoItemParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFile(EgoItemParser.FileContext ctx);
 }

@@ -26,216 +26,216 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
 public class EgoItemBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements EgoItemVisitor<T> {
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitName(EgoItemParser.NameContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitName(EgoItemParser.NameContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitInfo(EgoItemParser.InfoContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitInfo(EgoItemParser.InfoContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitAlloc(EgoItemParser.AllocContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitAlloc(EgoItemParser.AllocContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitDiceString(EgoItemParser.DiceStringContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitDiceString(EgoItemParser.DiceStringContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitCombat(EgoItemParser.CombatContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitCombat(EgoItemParser.CombatContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitMinCombat(EgoItemParser.MinCombatContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitMinCombat(EgoItemParser.MinCombatContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitType(EgoItemParser.TypeContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitType(EgoItemParser.TypeContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitItem(EgoItemParser.ItemContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitItem(EgoItemParser.ItemContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFlags(EgoItemParser.FlagsContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitFlags(EgoItemParser.FlagsContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFlags_off(EgoItemParser.Flags_offContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitFlags_off(EgoItemParser.Flags_offContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitValues(EgoItemParser.ValuesContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitValues(EgoItemParser.ValuesContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitMinValues(EgoItemParser.MinValuesContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitMinValues(EgoItemParser.MinValuesContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitAct(EgoItemParser.ActContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitAct(EgoItemParser.ActContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitTime(EgoItemParser.TimeContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitTime(EgoItemParser.TimeContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitBrand(EgoItemParser.BrandContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitBrand(EgoItemParser.BrandContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitSlay(EgoItemParser.SlayContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitSlay(EgoItemParser.SlayContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitDesc(EgoItemParser.DescContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitDesc(EgoItemParser.DescContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEgoItem(EgoItemParser.EgoItemContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEgoItem(EgoItemParser.EgoItemContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(EgoItemParser.FileContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitFile(EgoItemParser.FileContext ctx) {
+		return visitChildren(ctx);
+	}
 }

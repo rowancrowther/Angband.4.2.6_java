@@ -381,6 +381,7 @@ public class GameConstants {
     private static List<PlayerClass> playerClasses;
     private static List<Artifact> artifacts;
     private static List<ObjectProperty> objectProperties;
+    private static List<PlayerTimedEffect> playerTimedEffects;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -792,10 +793,22 @@ public class GameConstants {
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
             loadObjectProperties();     // Dependant on UIEntry
+            loadPlayerTimedProperties();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadPlayerTimedProperties() {
+        PlayerTimedReader parser = new PlayerTimedReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "player_timed.txt";
+
+        try {
+            playerTimedEffects = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

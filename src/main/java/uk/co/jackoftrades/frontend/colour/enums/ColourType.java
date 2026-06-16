@@ -334,4 +334,13 @@ public enum ColourType {
 
         return COLOUR_TYPE_DARK;
     }
+
+    public static ColourType findColourType(@NotNull char colChar) {
+        for (ColourType colourType : ColourType.values()) {
+            if (colourType.getColourCharacter() == colChar)
+                return colourType;
+        }
+
+        return COLOUR_TYPE_DARK;
+    }
 }

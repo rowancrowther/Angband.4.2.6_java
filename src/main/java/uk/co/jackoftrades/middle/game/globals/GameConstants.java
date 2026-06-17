@@ -43,6 +43,7 @@ import uk.co.jackoftrades.middle.enums.MessageEnum;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
+import uk.co.jackoftrades.middle.monsters.BlowEffect;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
@@ -384,6 +385,7 @@ public class GameConstants {
     private static List<ObjectProperty> objectProperties;
     private static List<PlayerTimedEffect> playerTimedEffects;
     private static List<BlowMethod> blowMethods;
+    private static List<BlowEffect> blowEffects;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -804,9 +806,20 @@ public class GameConstants {
         }
     }
 
+    private static void loadBlowEffects() {
+        BlowEffectReader parser = new BlowEffectReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "blow_effects.txt";
+
+        try {
+            blowEffects = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
     private static void loadBlowMethods() {
         BlowMethodReader parser = new BlowMethodReader();
-        String filename = ANGBAND_DIR_GAMEDATA + "blow_effects.txt";
+        String filename = ANGBAND_DIR_GAMEDATA + "blow_methods.txt";
 
         try {
             blowMethods = parser.parse(filename);

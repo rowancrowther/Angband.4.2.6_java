@@ -35,6 +35,7 @@ import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
+import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
@@ -382,6 +383,7 @@ public class GameConstants {
     private static List<Artifact> artifacts;
     private static List<ObjectProperty> objectProperties;
     private static List<PlayerTimedEffect> playerTimedEffects;
+    private static List<BlowMethod> blowMethods;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -794,10 +796,22 @@ public class GameConstants {
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
             loadObjectProperties();     // Dependant on UIEntry
             loadPlayerTimedProperties();
+            loadBlowMethods();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadBlowMethods() {
+        BlowMethodReader parser = new BlowMethodReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "blow_effects.txt";
+
+        try {
+            blowMethods = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

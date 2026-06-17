@@ -28,7 +28,7 @@ public class TimedGrade {
     String downMsg;
 
     public TimedGrade(int grade, ColourType colour, int max, String name, String upMsg, String downMsg) {
-        this.grade = grade; // TODO: work out how to handle this
+        this.grade = grade; // handled in the parser, hard coded to 0 in the parser when read in.
         this.colour = colour;
         this.max = max;
         this.name = name;

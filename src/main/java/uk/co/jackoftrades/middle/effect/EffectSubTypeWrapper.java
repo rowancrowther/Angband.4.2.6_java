@@ -37,6 +37,7 @@ public class EffectSubTypeWrapper {
     private EffectNourish nourishWrapper;
     private EffectMonTimed monTimedWrapper;
     private Summon summonWrapper;
+    private SummonType summonTypeWrapper;
     private Stats statsWrapper;
     private EffectEnchant enchantWrapper;
     private PlayerShape shapeWrapper;
@@ -57,7 +58,6 @@ public class EffectSubTypeWrapper {
             this.teleportWrapper = teleportWrapper;
             this.subType = EffectSubTypeEnum.EST_TELEPORT;
         }
-
     }
 
     public EffectSubTypeWrapper(GlyphType glyphType) {
@@ -112,6 +112,15 @@ public class EffectSubTypeWrapper {
     public void setValue(Summon summonWrapper) {
         this.summonWrapper = summonWrapper;
         this.subType = EffectSubTypeEnum.EST_SUMMON;
+    }
+
+    public EffectSubTypeWrapper(SummonType summonTypeWrapper) {
+        setValue(summonTypeWrapper);
+    }
+
+    public void setValue(SummonType summonTypeWrapper) {
+        this.summonTypeWrapper = summonTypeWrapper;
+        this.subType = EffectSubTypeEnum.EST_SUMMON_SPEC;
     }
 
     public EffectSubTypeWrapper(EffectMonTimed monTimedWrapper) {
@@ -207,6 +216,17 @@ public class EffectSubTypeWrapper {
         }
 
         return summonWrapper;
+    }
+
+    public SummonType getSummonTypeWrapper() throws Exception {
+        if (subType != EffectSubTypeEnum.EST_SUMMON_SPEC) {
+            String message = "Invalid subtype, expected EST_SUMMON_SPEC, got " + subType.toString();
+            Exception ex = new InvalidParameterException(message);
+            logger.error(message, ex);
+            throw ex;
+        }
+
+        return summonTypeWrapper;
     }
 
     public Stats getStatsWrapper() throws Exception {

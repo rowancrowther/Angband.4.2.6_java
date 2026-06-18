@@ -43,10 +43,7 @@ import uk.co.jackoftrades.middle.enums.MessageEnum;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
-import uk.co.jackoftrades.middle.monsters.BlowEffect;
-import uk.co.jackoftrades.middle.monsters.MonsterBase;
-import uk.co.jackoftrades.middle.monsters.MonsterPain;
-import uk.co.jackoftrades.middle.monsters.Summon;
+import uk.co.jackoftrades.middle.monsters.*;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
@@ -386,6 +383,7 @@ public class GameConstants {
     private static List<PlayerTimedEffect> playerTimedEffects;
     private static List<BlowMethod> blowMethods;
     private static List<BlowEffect> blowEffects;
+    private static List<MonsterSpellType> monsterSpellTypes;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -796,13 +794,25 @@ public class GameConstants {
             loadMagicRealms();
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
-            loadObjectProperties();     // Dependant on UIEntry
+            loadObjectProperties();     // Dependent on UIEntry
             loadPlayerTimedProperties();
             loadBlowMethods();
+            loadMonsterSpellTypes();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadMonsterSpellTypes() {
+        MonsterSpellReader parser = new MonsterSpellReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "monster_spell.txt";
+
+        try {
+            monsterSpellTypes = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

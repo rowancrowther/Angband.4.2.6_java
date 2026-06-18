@@ -146,6 +146,20 @@ public class Effect {
         this.expression = null;
     }
 
+    public Effect(EffectEnum index, int y, int x, String diceString,
+                  EffectSubTypeEnum subType, EffectSubTypeWrapper value,
+                  Random radius, String otherParameter, Expression expression) {
+        this.index = index;
+        this.y = y;
+        this.x = x;
+        this.diceString = diceString;
+        this.subType = subType;
+        this.value = value;
+        this.radius = radius;
+        this.otherParameter = otherParameter;
+        this.expression = expression;
+    }
+
     public Effect(EffectEnum type) {
         this.index = type;
         this.dice = null;

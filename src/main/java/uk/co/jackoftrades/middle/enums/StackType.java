@@ -15,22 +15,11 @@
  *    Java code copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.effect;
+package uk.co.jackoftrades.middle.enums;
 
-public enum EffectSubTypeEnum {
-    EST_NONE,
-    EST_PROJ,
-    EST_TMD,
-    EST_NOURISH,
-    EST_MON_TMD,
-    EST_SUMMON,
-    EST_SUMMON_SPEC,
-    EST_STAT,
-    EST_ENCHANT,
-    EST_SHAPECHANGE,
-    EST_EARTHQUAKE,
-    EST_GLYPH,
-    EST_TELEPORT,
-    EST_TELEPORT_TO,
-    EST_MAX
+public enum StackType {
+    STACK_NONE,
+    STACK_NO,
+    STACK_INCR,
+    STACK_MAX
 }

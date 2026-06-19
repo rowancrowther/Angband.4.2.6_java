@@ -28,16 +28,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class VisualsColourCyclesByRace {
-    private Map<MonsterRace, VisualsColourCycle> race;
-
-    public VisualsColourCyclesByRace() {
-        this.race = new HashMap<>();
-    }
+    private static final Map<MonsterRace, VisualsColourCycle> race = new HashMap<>();
 
     @Contract(pure = true)
     @CheckReturnValue
     @NotNull
-    public ColourType getAttrForFrame(@NotNull MonsterRace monsterRace, int frame) {
+    public static ColourType getAttrForFrame(@NotNull MonsterRace monsterRace, int frame) {
         VisualsColourCycle cycle = race.get(monsterRace);
         if (cycle == null)
             return ColourType.COLOUR_TYPE_DARK;
@@ -53,8 +49,7 @@ public class VisualsColourCyclesByRace {
      * @param groupName   The name of the colour cycle group
      * @param cycleName   The name of the colour cycle within that group
      */
-    @Contract(mutates = "this")
-    public void setCycleForRace(MonsterRace monsterRace, String groupName, String cycleName) {
+    public static void setCycleForRace(MonsterRace monsterRace, String groupName, String cycleName) {
         VisualsCycler cyclerTable = GameConstants.getVisualsCyclerTable();
 
         VisualsColourCycle cycle = cyclerTable.cycleByName(groupName, cycleName);

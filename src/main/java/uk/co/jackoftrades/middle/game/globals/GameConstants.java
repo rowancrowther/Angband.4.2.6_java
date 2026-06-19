@@ -386,6 +386,7 @@ public class GameConstants {
     private static List<BlowEffect> blowEffects;
     private static List<MonsterSpellType> monsterSpellTypes;
     private static VisualsCycler visualsCyclerTable = null;
+    private static List<MonsterRace> monsterRaces;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -451,6 +452,19 @@ public class GameConstants {
 
         return monsterBases.stream()
                 .filter(e -> e.getCodeName().equals(name))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static MonsterBase lookupMonsterBase(@NotNull String name) {
+        if (monsterBases == null) {
+            String message = "Invalid attempt to access monsterBases when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return monsterBases.stream().filter(b -> name.equals(b.getCodeName()))
                 .findFirst()
                 .orElse(null);
     }
@@ -799,11 +813,38 @@ public class GameConstants {
             loadObjectProperties();     // Dependent on UIEntry
             loadPlayerTimedProperties();
             loadBlowMethods();
+            loadBlowEffects();
             loadMonsterSpellTypes();
+            loadVisualCyclerTable();
+            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    public static Projection lookupProjectionByLash(String lashType) {
+        if (projections == null) {
+            String message = "Invalid attempt to access projections when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return projections.stream().filter(p -> lashType.equals(p.getLashDescription()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private static void loadMonsters() {
+        MonsterReader parser = new MonsterReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "monster.txt";
+
+        try {
+            monsterRaces = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 
@@ -816,6 +857,30 @@ public class GameConstants {
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
+    }
+
+    public static BlowEffect lookupBlowEffect(@NotNull String effectName) {
+        if (blowEffects == null) {
+            String message = "Invalid attempt to access blowEffects when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return blowEffects.stream().filter(b -> effectName.equals(b.getName()))
+                .findFirst().orElse(null);
+    }
+
+    public static BlowMethod lookupBlowMethod(@NotNull String methodName) {
+        if (blowMethods == null) {
+            String message = "Invalid attempt to access blowMethods when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return blowMethods.stream().filter(b -> methodName.equals(b.getName()))
+                .findFirst().orElse(null);
     }
 
     public static VisualsCycler getVisualsCyclerTable() {

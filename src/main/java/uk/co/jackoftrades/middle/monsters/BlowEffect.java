@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.game.Projection;
 
 public class BlowEffect {
     private String name;
@@ -29,11 +29,12 @@ public class BlowEffect {
     private ColourType loreAttrResist;
     private ColourType loreAttrImmune;
     private String effectType;
-    private ElementEnum resist;
-    private ElementEnum lashType;
+    private String resist;
+    private Projection lashType;
 
     public BlowEffect(String name, int power, int eval, String desc, ColourType loreAttr, ColourType loreAttrResist,
-                      ColourType loreAttrImmune, String effectType, ElementEnum resist, ElementEnum lashType) {
+                      ColourType loreAttrImmune, String effectType, String resist,
+                      Projection lashType) {
         this.name = name;
         this.power = power;
         this.eval = eval;
@@ -44,5 +45,9 @@ public class BlowEffect {
         this.effectType = effectType;
         this.resist = resist;
         this.lashType = lashType;
+    }
+
+    public String getName() {
+        return name;
     }
 }

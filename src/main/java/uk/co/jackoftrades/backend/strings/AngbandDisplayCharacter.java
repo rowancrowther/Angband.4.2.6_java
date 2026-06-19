@@ -19,7 +19,9 @@ package uk.co.jackoftrades.backend.strings;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.colour.enums.ColourTranslation;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 
 /**
@@ -32,12 +34,25 @@ public class AngbandDisplayCharacter {
     /**
      * Constructor (the only way to set field values
      *
+     * @param character  The character of this DisplayCharacter
+     * @param colourType The ColourType in which this colour needs to be displayed in a screen
+     */
+    @CheckReturnValue
+    @Contract(mutates = "this")
+    public AngbandDisplayCharacter(char character, @NotNull ColourType colourType) {
+        this.character = character;
+        this.attributeColour = colourType.colourAttribute(ColourTranslation.ATTR_FULL);
+    }
+
+    /**
+     * Constructor (the only way to set field values
+     *
      * @param character       The character of this DisplayCharacter
      * @param attributeColour The AttributeColour in which this colour needs to be displayed in a screen
      */
     @CheckReturnValue
     @Contract(mutates = "this")
-    public AngbandDisplayCharacter(char character, AttributeColour attributeColour) {
+    public AngbandDisplayCharacter(char character, @NotNull AttributeColour attributeColour) {
         this.character = character;
         this.attributeColour = attributeColour;
     }

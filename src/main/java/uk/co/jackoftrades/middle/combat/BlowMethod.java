@@ -42,4 +42,8 @@ public class BlowMethod {
         this.blowMessage = blowMessage;
         this.desc = desc;
     }
+
+    public String getName() {
+        return name;
+    }
 }

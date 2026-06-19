@@ -2,8 +2,11 @@ grammar BlowEffect;
 
 @header {
     import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+    import uk.co.jackoftrades.middle.game.Projection;
+    import uk.co.jackoftrades.middle.game.globals.GameConstants;
     import uk.co.jackoftrades.middle.monsters.BlowEffect;
     import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+    import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
     import java.util.List;
     import java.util.ArrayList;
@@ -59,18 +62,15 @@ effectType
         ;
 
 resist
-        returns[ElementEnum res]
-        :   RESIST UCASE {
-                String raw = $UCASE.getText();
-                $res = ElementEnum.valueOf("ELEM_" + raw);
-            }
+        returns[String res]
+        :   RESIST UCASE { $res = $UCASE.getText(); }
         ;
 
 lashType
-        returns[ElementEnum las]
+        returns[Projection projObj]
         :   LASH_TYPE UCASE {
-                String raw = $UCASE.getText();
-                $las = ElementEnum.valueOf("ELEM_" + raw);
+                String raw = $UCASE.getText().toLowerCase();
+                $projObj = GameConstants.lookupProjectionByLash(raw);
             }
         ;
 
@@ -85,12 +85,12 @@ blowEffect
             ColourType resistColInit = ColourType.COLOUR_TYPE_DARK;
             ColourType immuneInit = ColourType.COLOUR_TYPE_DARK;
             String effectInit = "";
-            ElementEnum resistInit = ElementEnum.ELEM_NONE;
-            ElementEnum lashTypeInit = ElementEnum.ELEM_NONE;
+            String resistInit = "";
+            Projection lashTypeInit = null;
         }
         @after {
-            $effect = new BlowEffect(nameInit, powerInit, evalInit, descInit, baseInit, resistColInit, immuneInit, effectInit,
-                                     resistInit, lashTypeInit);
+            $effect = new BlowEffect(nameInit, powerInit, evalInit, descInit, baseInit, resistColInit, immuneInit,
+                                     effectInit, resistInit, lashTypeInit);
         }
         :   name { nameInit = $name.nameStr; }
             power { powerInit = $power.powerInt; }
@@ -101,7 +101,7 @@ blowEffect
         |   loreColourImmune { immuneInit = $loreColourImmune.colType; }
         |   effectType { effectInit = $effectType.type; }
         |   resist { resistInit = $resist.res; }
-        |   lashType { lashTypeInit = $lashType.las; }
+        |   lashType { lashTypeInit = $lashType.projObj; }
         )+;
 
 file

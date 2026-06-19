@@ -25,171 +25,171 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link BlowEffectParser}.
  */
 public interface BlowEffectListener extends ParseTreeListener {
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterName(BlowEffectParser.NameContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterName(BlowEffectParser.NameContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#name}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitName(BlowEffectParser.NameContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#name}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitName(BlowEffectParser.NameContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#power}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterPower(BlowEffectParser.PowerContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#power}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterPower(BlowEffectParser.PowerContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#power}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitPower(BlowEffectParser.PowerContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#power}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitPower(BlowEffectParser.PowerContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#eval}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEval(BlowEffectParser.EvalContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#eval}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterEval(BlowEffectParser.EvalContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#eval}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEval(BlowEffectParser.EvalContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#eval}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitEval(BlowEffectParser.EvalContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterDesc(BlowEffectParser.DescContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterDesc(BlowEffectParser.DescContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#desc}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitDesc(BlowEffectParser.DescContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#desc}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitDesc(BlowEffectParser.DescContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#loreColourBase}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLoreColourBase(BlowEffectParser.LoreColourBaseContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#loreColourBase}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterLoreColourBase(BlowEffectParser.LoreColourBaseContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#loreColourBase}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLoreColourBase(BlowEffectParser.LoreColourBaseContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#loreColourBase}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitLoreColourBase(BlowEffectParser.LoreColourBaseContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#loreColourResist}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLoreColourResist(BlowEffectParser.LoreColourResistContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#loreColourResist}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterLoreColourResist(BlowEffectParser.LoreColourResistContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#loreColourResist}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLoreColourResist(BlowEffectParser.LoreColourResistContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#loreColourResist}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitLoreColourResist(BlowEffectParser.LoreColourResistContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#loreColourImmune}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLoreColourImmune(BlowEffectParser.LoreColourImmuneContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#loreColourImmune}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterLoreColourImmune(BlowEffectParser.LoreColourImmuneContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#loreColourImmune}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLoreColourImmune(BlowEffectParser.LoreColourImmuneContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#loreColourImmune}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitLoreColourImmune(BlowEffectParser.LoreColourImmuneContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#effectType}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterEffectType(BlowEffectParser.EffectTypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#effectType}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterEffectType(BlowEffectParser.EffectTypeContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#effectType}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitEffectType(BlowEffectParser.EffectTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#effectType}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitEffectType(BlowEffectParser.EffectTypeContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#resist}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterResist(BlowEffectParser.ResistContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#resist}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterResist(BlowEffectParser.ResistContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#resist}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitResist(BlowEffectParser.ResistContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#resist}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitResist(BlowEffectParser.ResistContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#lashType}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterLashType(BlowEffectParser.LashTypeContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#lashType}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterLashType(BlowEffectParser.LashTypeContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#lashType}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitLashType(BlowEffectParser.LashTypeContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#lashType}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitLashType(BlowEffectParser.LashTypeContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#blowEffect}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterBlowEffect(BlowEffectParser.BlowEffectContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#blowEffect}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterBlowEffect(BlowEffectParser.BlowEffectContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#blowEffect}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitBlowEffect(BlowEffectParser.BlowEffectContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#blowEffect}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitBlowEffect(BlowEffectParser.BlowEffectContext ctx);
 
-    /**
-     * Enter a parse tree produced by {@link BlowEffectParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void enterFile(BlowEffectParser.FileContext ctx);
+	/**
+	 * Enter a parse tree produced by {@link BlowEffectParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void enterFile(BlowEffectParser.FileContext ctx);
 
-    /**
-     * Exit a parse tree produced by {@link BlowEffectParser#file}.
-     *
-     * @param ctx the parse tree
-     */
-    void exitFile(BlowEffectParser.FileContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link BlowEffectParser#file}.
+	 *
+	 * @param ctx the parse tree
+	 */
+	void exitFile(BlowEffectParser.FileContext ctx);
 }

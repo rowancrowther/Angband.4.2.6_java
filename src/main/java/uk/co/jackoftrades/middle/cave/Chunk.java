@@ -19,7 +19,10 @@ package uk.co.jackoftrades.middle.cave;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
@@ -1217,22 +1220,5 @@ public class Chunk {
     @CheckReturnValue
     public int getMonMax() {
         return monMax;
-    }
-
-    @TestOnly
-    public void setUpTest(Loc gridFull, Loc gridEmpty) {
-        Square fullsquare = new Square(null, 0, 0);
-        fullsquare.setUpTest(true);
-        squares[gridFull.getX()][gridFull.getY()] = fullsquare;
-        Square nullsquare = new Square(null, 0, 0);
-        nullsquare.setUpTest(false);
-        squares[gridEmpty.getX()][gridEmpty.getY()] = nullsquare;
-        monsters = new Monster[monMax];
-        monsters[0] = null;
-        monsters[1] = new Monster();
-        Iterator<ItemObject> it = getPileIterator(gridFull);
-        while (it.hasNext()) {
-            objectPile.insert(it.next());
-        }
     }
 }

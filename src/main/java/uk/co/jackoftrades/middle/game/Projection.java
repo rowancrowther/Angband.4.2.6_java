@@ -107,6 +107,10 @@ public class Projection {
         this.colour = colour;
     }
 
+    public String getLashDescription() {
+        return lashDescription;
+    }
+
     @Override
     public String toString() {
         return "Projection{" +

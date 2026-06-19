@@ -25,6 +25,7 @@ import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
 import uk.co.jackoftrades.backend.parser.world.WorldParser;
+import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
@@ -384,6 +385,7 @@ public class GameConstants {
     private static List<BlowMethod> blowMethods;
     private static List<BlowEffect> blowEffects;
     private static List<MonsterSpellType> monsterSpellTypes;
+    private static VisualsCycler visualsCyclerTable = null;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -803,6 +805,21 @@ public class GameConstants {
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
+    }
+
+    private static void loadVisualCyclerTable() {
+        VisualsReader parser = new VisualsReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "visuals.txt";
+
+        try {
+            visualsCyclerTable = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    public static VisualsCycler getVisualsCyclerTable() {
+        return visualsCyclerTable;
     }
 
     private static void loadMonsterSpellTypes() {

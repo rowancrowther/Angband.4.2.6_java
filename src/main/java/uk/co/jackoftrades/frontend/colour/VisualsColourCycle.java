@@ -39,16 +39,22 @@ public class VisualsColourCycle implements Cloneable {
      * Constructor
      *
      * @param name          The name of the current Visuals Colour Cycle
-     * @param stepCount     The maximum number of colours in this cycle
      * @param invalidColour The colour used as a marker for an unused/invalid entry
      */
-    public VisualsColourCycle(@NotNull String name, int stepCount, @NotNull ColourType invalidColour) {
+    public VisualsColourCycle(@NotNull String name, @NotNull ColourType invalidColour) {
         steps = new ArrayList<>();
         cycleName = name;
         this.invalidColour = invalidColour;
-        for (int index = 0; index < stepCount; index++) {
-            steps.add(invalidColour);
-        }
+    }
+
+    /**
+     * Add a new ColourType to this cycle
+     *
+     * @param step the ColourType to add
+     */
+    @Contract(mutates = "this")
+    public void addStep(@NotNull ColourType step) {
+        steps.add(step);
     }
 
     /**
@@ -98,5 +104,14 @@ public class VisualsColourCycle implements Cloneable {
     public ColourType attrForFrame(int frame) {
         frame = frame % steps.size();
         return steps.get(frame);
+    }
+
+    /**
+     * Accessor
+     *
+     * @return the name of this VisualsColourCycle
+     */
+    public String getCycleName() {
+        return cycleName;
     }
 }

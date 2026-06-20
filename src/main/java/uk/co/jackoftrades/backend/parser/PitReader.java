@@ -23,14 +23,14 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.artifact.ArtifactLexer;
-import uk.co.jackoftrades.backend.parser.artifact.ArtifactParser;
-import uk.co.jackoftrades.middle.objects.Artifact;
+import uk.co.jackoftrades.backend.parser.pit.MonsterNestLexer;
+import uk.co.jackoftrades.backend.parser.pit.MonsterNestParser;
+import uk.co.jackoftrades.middle.cave.PitProfile;
 
 import java.io.IOException;
 import java.util.List;
 
-public class ArtifactReader implements Parser {
+public class PitReader implements Parser<PitProfile> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -40,15 +40,15 @@ public class ArtifactReader implements Parser {
      * @return an ArrayList of items read from the file
      */
     @Override
-    public @NotNull List<Artifact> parse(@NotNull String filename) throws IOException {
+    public @NotNull List<PitProfile> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            ArtifactLexer lexer = new ArtifactLexer(stream);
+            MonsterNestLexer lexer = new MonsterNestLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ArtifactParser parser = new ArtifactParser(tokens);
-            ArtifactParser.FileContext output = parser.file();
+            MonsterNestParser parser = new MonsterNestParser(tokens);
+            MonsterNestParser.FileContext output = parser.file();
 
-            return output.artifacts;
+            return output.pits;
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

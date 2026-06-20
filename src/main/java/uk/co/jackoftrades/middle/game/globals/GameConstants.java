@@ -33,6 +33,7 @@ import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Feature;
+import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
@@ -387,12 +388,28 @@ public class GameConstants {
     private static List<MonsterSpellType> monsterSpellTypes;
     private static VisualsCycler visualsCyclerTable = null;
     private static List<MonsterRace> monsterRaces;
+    private static List<PitProfile> monsterPitProfiles;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
 
     public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
     public static final Player mainPlayer = new Player();
+
+    /**
+     * Searches for a particular monster race by name
+     */
+    @Nullable
+    public static MonsterRace lookupMonsterRace(@NotNull String name) {
+        if (monsterRaces == null) {
+            String message = "Invalid attempt to access monsterRaces when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return monsterRaces.stream().filter(mr -> name.equals(mr.getName())).findFirst().orElse(null);
+    }
 
     /**
      * Searches for a magic realm based on the magic realm name
@@ -456,6 +473,7 @@ public class GameConstants {
                 .orElse(null);
     }
 
+    @Nullable
     public static MonsterBase lookupMonsterBase(@NotNull String name) {
         if (monsterBases == null) {
             String message = "Invalid attempt to access monsterBases when it hasn't been initialized";
@@ -476,6 +494,7 @@ public class GameConstants {
      * @return the object kind with that name or null if it doesn't
      * exist
      */
+    @Nullable
     public static ObjectKind lookupObjectKind(@NotNull String name) {
         if (objectKinds.isEmpty()) {
             String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
@@ -489,6 +508,7 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    @Nullable
     public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String name) {
         if (objectKinds.isEmpty()) {
             String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
@@ -565,7 +585,8 @@ public class GameConstants {
                 .orElse(null);
     }
 
-    public static @Nullable Feature lookupFeature(@NotNull TerrainFlags flag) {
+    @Nullable
+    public static Feature lookupFeature(@NotNull TerrainFlags flag) {
         if (features == null) {
             String message = "Invalid attempt to access features when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
@@ -577,6 +598,7 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    @Nullable
     public static PlayerHistoryChart lookupPlayerHistoryChart(int chartId) {
         if (playerHistoryCharts == null) {
             String message = "Invalid attempt to access playerHistoryCharts when it hasn't been initialized";
@@ -817,6 +839,7 @@ public class GameConstants {
             loadMonsterSpellTypes();
             loadVisualCyclerTable();
             loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
+            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -824,6 +847,18 @@ public class GameConstants {
         }
     }
 
+    private static void loadPitProfiles() {
+        PitReader parser = new PitReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "pit.txt";
+
+        try {
+            monsterPitProfiles = parser.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    @Nullable
     public static Projection lookupProjectionByLash(String lashType) {
         if (projections == null) {
             String message = "Invalid attempt to access projections when it hasn't been initialized";
@@ -859,6 +894,7 @@ public class GameConstants {
         }
     }
 
+    @Nullable
     public static BlowEffect lookupBlowEffect(@NotNull String effectName) {
         if (blowEffects == null) {
             String message = "Invalid attempt to access blowEffects when it hasn't been initialized";
@@ -871,6 +907,7 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    @Nullable
     public static BlowMethod lookupBlowMethod(@NotNull String methodName) {
         if (blowMethods == null) {
             String message = "Invalid attempt to access blowMethods when it hasn't been initialized";
@@ -986,6 +1023,7 @@ public class GameConstants {
         }
     }
 
+    @Nullable
     public static PlayerBody lookupPlayerBody(int number) {
         if (playerBodies == null) {
             String message = "Invalid attempt to access playerBodies when it hasn't been initialized";
@@ -1045,6 +1083,7 @@ public class GameConstants {
      * @param name the name of the brand to return
      * @return the brand or null if it isn't found
      */
+    @Nullable
     public static Brand lookupBrandCode(@NotNull String name) {
         if (brands == null) {
             String message = "Invalid attempt to access brands when it hasn't been initialized";
@@ -1063,6 +1102,7 @@ public class GameConstants {
      * @param name The name of the activation we are searching for
      * @return the Activation in the List activations with the name equal to the incoming parameter
      */
+    @Nullable
     public static Activation lookupActivation(@NotNull String name) {
         if (activations == null) {
             String message = "Invalid attempt to access activations when it hasn't been initialized";
@@ -1121,6 +1161,7 @@ public class GameConstants {
         }
     }
 
+    @Nullable
     public static PlayerShape lookupPlayerShape(@NotNull String name) {
         if (playerShapes == null) {
             String message = "Invalid attempt to access playerShapes when it hasn't been initialized";

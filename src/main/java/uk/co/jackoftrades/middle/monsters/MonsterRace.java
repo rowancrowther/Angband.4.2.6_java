@@ -125,4 +125,8 @@ public class MonsterRace {
     public Flag<MonsterRaceFlag> getFlags() {
         return flags;
     }
+
+    public String getName() {
+        return name;
+    }
 }

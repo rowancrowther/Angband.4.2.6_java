@@ -129,4 +129,10 @@ public class MonsterRace {
     public String getName() {
         return name;
     }
+
+    public void setFriends() {
+        for (MonsterFriends friend : friends) {
+            friend.setRace(this);
+        }
+    }
 }

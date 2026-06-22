@@ -224,7 +224,7 @@
 # find them unless they are invisible and you cannot see invisible, and if you
 # use the * command for targeting mode you can pick them as a target.)
 
-# TODO: Explain the other monster and spell flags. But maybe in another file.
+# Explain the other monster and spell flags. But maybe in another file.
 
 
 

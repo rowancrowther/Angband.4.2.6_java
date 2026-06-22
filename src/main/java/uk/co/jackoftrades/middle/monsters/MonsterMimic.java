@@ -23,4 +23,8 @@ import java.util.List;
 
 public class MonsterMimic {
     private List<ObjectKind> kinds;
+
+    public MonsterMimic(List<ObjectKind> kinds) {
+        this.kinds = kinds;
+    }
 }

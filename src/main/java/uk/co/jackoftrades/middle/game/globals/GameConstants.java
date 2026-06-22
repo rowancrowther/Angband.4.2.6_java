@@ -389,6 +389,7 @@ public class GameConstants {
     private static VisualsCycler visualsCyclerTable = null;
     private static List<MonsterRace> monsterRaces;
     private static List<PitProfile> monsterPitProfiles;
+    private static List<MonsterLore> monsterLore;
 
     private static final List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -840,10 +841,22 @@ public class GameConstants {
             loadVisualCyclerTable();
             loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
             loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
+            loadMonsterLore();
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadMonsterLore() {
+        LoreReader loreReader = new LoreReader();
+        String filename = ANGBAND_DIR_USER + "lore.txt";
+
+        try {
+            monsterLore = loreReader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 
@@ -878,6 +891,9 @@ public class GameConstants {
 
         try {
             monsterRaces = parser.parse(filename);
+            for (MonsterRace race : monsterRaces) {
+                race.setFriends();
+            }
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

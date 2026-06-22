@@ -30,6 +30,5 @@ public class MonsterBlow {
         this.method = method;
         this.effect = effect;
         this.dice = dice;
-        this.timesSeen = 0;
     }
 }

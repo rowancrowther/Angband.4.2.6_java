@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * Every kind of in-game message/sound event, each paired with the short string
+ * key used to look up its configured sound. This is the Java port of the C
+ * original's {@code MSG_*} list ({@code src/list-message-sounds.h}); the
+ * constants are self-describing and are documented collectively here.
+ * {@code MSG_MAX} is the count sentinel.
+ *
+ * @author ClaudeCode
+ */
 public enum MessageType {
     MSG_NONE(""),
     MSG_GENERIC(""),
@@ -174,8 +183,19 @@ public enum MessageType {
     MSG_SCRAMBLE("scramble"),
     MSG_MAX("");
 
+    /**
+     * The short key identifying this message's configured sound.
+     *
+     * @author ClaudeCode
+     */
     private String messageString;
 
+    /**
+     * Bind a message type to its sound key.
+     *
+     * @param messageString the sound-lookup key
+     * @author ClaudeCode
+     */
     MessageType(String messageString) {
         this.messageString = messageString;
     }

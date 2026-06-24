@@ -138,7 +138,7 @@ pain:1
 flags:EMPTY_MIND | CLEAR_WEB
 flags:IM_POIS | NO_FEAR | NO_CONF | NO_SLEEP
 flags:NONLIVING
-desc:Elemental
+desc:ElementEnumal
 
 # Fast moving, bash doors, hit hard in melee
 name:feline

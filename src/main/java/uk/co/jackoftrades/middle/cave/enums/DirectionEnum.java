@@ -19,46 +19,116 @@ package uk.co.jackoftrades.middle.cave.enums;
 
 import uk.co.jackoftrades.middle.cave.Loc;
 
+/**
+ * The movement directions, each tied to its numeric-keypad key and its
+ * {@code (x, y)} step offset. This unifies the C original's parallel
+ * {@code ddx}/{@code ddy} offset arrays and keypad-direction mapping into one
+ * enum: the {@code key} is the numpad digit (1–9) for that direction, and the
+ * offsets give the change in column/row for a single step. Note {@code y}
+ * increases <em>northward</em> here (N is {@code +1}), matching the offsets
+ * encoded below.
+ *
+ * @author ClaudeCode
+ */
 public enum DirectionEnum {
+    /**
+     * Unknown/invalid direction (no movement, keypad 0). @author ClaudeCode
+     */
     DIR_UNKNOWN(0, 0, 0),
+    /** North-west (keypad 7). @author ClaudeCode */
     DIR_NW(7, -1, 1),
+    /** North (keypad 8). @author ClaudeCode */
     DIR_N(8, 0, 1),
+    /** North-east (keypad 9). @author ClaudeCode */
     DIR_NE(9, 1, 1),
+    /** West (keypad 4). @author ClaudeCode */
     DIR_W(4, -1, 0),
+    /** "Target" pseudo-direction / centre (keypad 5). @author ClaudeCode */
     DIR_TARGET(5, 0, 0),
+    /** No direction / centre (keypad 5). @author ClaudeCode */
     DIR_NONE(5, 0, 0),
+    /** East (keypad 6). @author ClaudeCode */
     DIR_E(6, 1, 0),
+    /** South-west (keypad 1). @author ClaudeCode */
     DIR_SW(1, -1, -1),
+    /** South (keypad 2). @author ClaudeCode */
     DIR_S(2, 0, -1),
+    /** South-east (keypad 3). @author ClaudeCode */
     DIR_SE(3, 1, -1),
     ;
 
+    /**
+     * The numeric-keypad key (1–9) that selects this direction.
+     *
+     * @author ClaudeCode
+     */
     private final int key;
+    /**
+     * Change in column for one step in this direction.
+     *
+     * @author ClaudeCode
+     */
     private final int xOffset;
+    /**
+     * Change in row for one step in this direction (north is positive).
+     *
+     * @author ClaudeCode
+     */
     private final int yOffset;
 
+    /**
+     * Bind a direction to its keypad key and step offsets.
+     *
+     * @param key     the numpad key
+     * @param xOffset the column step
+     * @param yOffset the row step
+     * @author ClaudeCode
+     */
     DirectionEnum(int key, int xOffset, int yOffset) {
         this.key = key;
         this.xOffset = xOffset;
         this.yOffset = yOffset;
     }
 
+    /**
+     * @return the column step for this direction (the C {@code ddx} value)
+     * @author ClaudeCode
+     */
     public int ddx() {
         return xOffset;
     }
 
+    /**
+     * @return the row step for this direction (the C {@code ddy} value)
+     * @author ClaudeCode
+     */
     public int ddy() {
         return yOffset;
     }
 
+    /**
+     * @return the step offset as a {@link Loc} (the C {@code ddgrid} value)
+     * @author ClaudeCode
+     */
     public Loc ddgrid() {
         return new Loc(xOffset, yOffset);
     }
 
+    /**
+     * @return the numpad key associated with this direction
+     * @author ClaudeCode
+     */
     public int getKey() {
         return key;
     }
 
+    /**
+     * Resolve a direction from its numpad key.
+     *
+     * @param key the numpad key (1–9)
+     * @return the matching direction, or {@link #DIR_UNKNOWN} if none matches
+     * @author ClaudeCode
+     */
     public static DirectionEnum fromKey(int key) {
         for (DirectionEnum d : DirectionEnum.values()) {
             if (d.getKey() == key) {

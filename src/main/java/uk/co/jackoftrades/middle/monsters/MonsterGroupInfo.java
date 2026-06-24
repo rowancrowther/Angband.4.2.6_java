@@ -19,7 +19,24 @@ package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 
+/**
+ * A monster's membership info for its group: the group index it belongs to and
+ * the {@link MonsterGroupRole} it plays. This is the Java port of the C
+ * original's {@code struct monster_group_info} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterGroupInfo {
+    /**
+     * The index of the group this monster belongs to.
+     *
+     * @author ClaudeCode
+     */
     private int index;
+    /**
+     * The role this monster plays in its group.
+     *
+     * @author ClaudeCode
+     */
     private MonsterGroupRole role;
 }

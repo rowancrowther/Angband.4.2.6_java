@@ -1,5 +1,33 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.combat.enums;
 
+/**
+ * The complete set of projection ("GF") types — every kind of bolt, ball, beam
+ * or area effect the game can resolve, from elemental damage (acid, fire, …)
+ * through terrain alteration (kill/make wall, door, trap) to monster-targeting
+ * effects (teleport away, turn, dispel, sleep, polymorph, …). This is the Java
+ * port of the C original's {@code PROJ_*} list ({@code src/list-projections.h});
+ * the constants are self-describing by name and are documented collectively here
+ * rather than individually.
+ *
+ * @author ClaudeCode
+ */
 public enum ProjectionEnum {
     PROJ_NONE,
     PROJ_ACID,

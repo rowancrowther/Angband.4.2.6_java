@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.middle.effect;
 
+/**
+ * The categories of monster a summon effect can call — kin, animals, spiders,
+ * hounds, dragons, undead, demons, uniques and so on, including the "high"
+ * variants. This is the Java port of the C original's {@code summon_types}
+ * ({@code src/list-summon-types.h}); the constants are self-describing and
+ * documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum SummonType {
     SUM_NONE,
     SUM_KIN,

@@ -1,3 +1,29 @@
+// Parser+lexer for lib/gamedata/p_race.txt - one record per playable race
+// (Human, Half-Elf, Dwarf, ...): base stats, birth skills, hit die, XP
+// modifier, age/height/weight ranges, starting history chart, and any
+// innate object/player flags or object-modifier values. Cf. src/init.c:
+// struct file_parser p_race_parser (init.c:2847), directives registered in
+// init_parse_p_race() (~init.c:2750-2820, one parse_p_race_* handler per
+// field below).
+//
+// POTENTIAL PROBLEMS:
+//
+//   1. `race`'s @init declares `int rIndexInit = 0;` and nothing in the
+//      rule ever reassigns it - every PlayerRace built here gets index 0.
+//      The C struct's `r->ridx` is a real, meaningful sequential index
+//      (0 for the first race in the file, 1 for the second, ...), computed
+//      in finish_parse_p_race (init.c:2821-2829) by walking the fully-
+//      parsed (reverse-order) list and re-deriving forward indices. Any
+//      code that distinguishes races by index (lookups, arrays) would see
+//      every race in this Java port as race 0.
+//
+// (`bodyIntInit` defaulting to 0/never being set is intentional, not a bug
+// - p_race.txt has no "body:" directive at all in this version, and the C
+// parser hardcodes the same default: "Default body is humanoid",
+// init.c:2564-2565.)
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar PlayerRace;
 
 @header {
@@ -19,11 +45,13 @@ grammar PlayerRace;
     import java.util.HashMap;
 }
 
+// "name:<race name>" - starts a new race record.
 name
         returns[String nameStr]
         :   NAME STRING { $nameStr = $STRING.getText(); }
         ;
 
+// "stats:<str>:<int>:<wis>:<dex>:<con>" - racial stat modifiers.
 stats
         returns[Map<Stats, Integer> statsMap]
         @init {
@@ -38,6 +66,10 @@ stats
             }
         ;
 
+// "skill-<name>:<base value>" family (skill_disarm_phys through skill_dig)
+// - birth values for each of the 10 racial skills (physical/magical
+// disarm, devices, saves, stealth, search, melee/bow/throw to-hit,
+// digging). One near-identical rule per skill name in the data file.
 skill_disarm_phys
         returns[int value]
         :   SKILL_DISARM_PHYS INTEGER { $value = Integer.parseInt($INTEGER.getText()); }
@@ -88,26 +120,31 @@ skill_dig
         :   SKILL_DIG INTEGER { $value = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "hitdie:<value>" - max hitpoints gained per level.
 hitdie
         returns[int die]
         :   HITDIE INTEGER { $die = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "exp:<value>" - percent of "standard" experience needed to gain a level.
 exp
         returns[int expInt]
         :   EXP INTEGER { $expInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "infravision:<value>" - infravision range, in multiples of 10 feet.
 infravision
         returns[int infraInt]
         :   INFRAVISION INTEGER { $infraInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "history:<chart number>" - starting point in history.txt's chart chain.
 history
         returns[int histInt]
         :   HISTORY INTEGER { $histInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "age:<base>:<random modifier>".
 age
         returns[int ageBase, int ageMod]
         :   AGE base=INTEGER COLON mod=INTEGER {
@@ -116,6 +153,7 @@ age
             }
         ;
 
+// "height:<base>:<random modifier>".
 height
         returns[int heightBase, int heightMod]
         :   HEIGHT base=INTEGER COLON mod=INTEGER {
@@ -124,6 +162,7 @@ height
             }
         ;
 
+// "weight:<base>:<random modifier>".
 weight
         returns[int weightBase, int weightMod]
         :   WEIGHT base=INTEGER COLON mod=INTEGER {
@@ -132,6 +171,7 @@ weight
             }
         ;
 
+// "obj-flags:<OF_FLAG> [| <OF_FLAG> ...]" - object flags this race has innately.
 obj_flags
         returns[Flag<ObjectFlag> flags]
         @init {
@@ -148,6 +188,7 @@ obj_flags
             })*
         ;
 
+// "player-flags:<PF_FLAG> [| <PF_FLAG> ...]" - player flags this race has innately.
 player_flags
         returns[Flag<PlayerFlag> flags]
         @init {
@@ -164,6 +205,8 @@ player_flags
             })*
         ;
 
+// "values:<OM_MODIFIER>[<value>] [| <OM_MODIFIER>[<value>] ...]" - object
+// modifiers this race has innately, e.g. "values:RES_LIGHT[1]".
 values
         returns[Map<ObjectModifier, Integer> modifiers]
         @init {
@@ -182,10 +225,16 @@ values
             })*
         ;
 
+// One full race record: name, then any mix of stats/skills/hitdie/exp/
+// infravision/history/age/height/weight/flags/values in the order they
+// appear in the file.
 race
         returns[PlayerRace playerRace]
         @init {
             String nameInit = "";
+            // BUG: never reassigned below - every PlayerRace ends up with
+            // rIndex == 0 instead of its real, file-order-derived ridx. See
+            // top-of-file problem #1.
             int rIndexInit = 0;
             Map<Stats, Integer> statsInit = new HashMap<>();
             Map<PlayerSkill, Integer> skillsInit = new HashMap<>();
@@ -238,6 +287,7 @@ race
         |   values { valuesInit = $values.modifiers; }
         )+;
 
+// Top-level rule: the whole file is one or more race records.
 file
         returns[List<PlayerRace> races]
         @init {
@@ -248,10 +298,12 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
@@ -344,14 +396,17 @@ VALUES
         :   'values:'
         ;
 
+// A (possibly negative) literal integer - used by most numeric fields above.
 INTEGER
         :   '-'? ('0'..'9')+
         ;
 
+// A flag/modifier/race name - letters, hyphen, underscore.
 STRING
         :   ('A'..'Z' | 'a'..'z' | '-' | '_')+
         ;
 
+// Brackets around a values: modifier's integer argument, e.g. "[1]".
 LBRACKET
         :   '['
         ;
@@ -360,10 +415,21 @@ RBRACKET
         :   ']'
         ;
 
+// Field separator used throughout most directives.
 COLON
         :   ':'
         ;
 
+// The " | " separator between flag/value names on an obj-flags:/
+// player-flags:/values: line.
 OR
         :   ' | '
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Compute rIndexInit from file order - e.g. have `file` pass a running
+//      counter into `race` (or simplest: after collecting all races into
+//      $races in `file`, do a second pass setting each PlayerRace's index
+//      to its list position) so it matches finish_parse_p_race's
+//      zero-based, file-order ridx instead of always being 0.

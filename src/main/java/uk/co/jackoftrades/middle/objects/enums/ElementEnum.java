@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+/**
+ * The damage elements as referenced by object code (resistances, brands, slays).
+ * Mirrors the C original's {@code ELEM_*} list; the constants are self-describing
+ * and documented collectively here. {@code ELEM_MAX} is the count sentinel.
+ *
+ * @author ClaudeCode
+ */
 public enum ElementEnum {
     ELEM_NONE,
     ELEM_ACID,

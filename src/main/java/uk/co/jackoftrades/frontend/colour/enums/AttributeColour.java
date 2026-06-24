@@ -17,6 +17,18 @@
 
 package uk.co.jackoftrades.frontend.colour.enums;
 
+/**
+ * The 29 basic display colours — the low-level palette every glyph is drawn in.
+ * These are the Java port of the C original's {@code COLOUR_*} / {@code TERM_*}
+ * attribute constants ({@code src/z-color.h}); the trailing index comment on each
+ * value is its position in the palette and matches the ordering the C code relies
+ * on. {@link ColourType} maps higher-level named colours onto these attribute
+ * colours per rendering context. The constants are self-describing colour names
+ * (the {@code L_} prefix denotes the lighter variant), so they are documented
+ * collectively here rather than individually.
+ *
+ * @author ClaudeCode
+ */
 public enum AttributeColour {
     COLOUR_DARK, // 0
     COLOUR_WHITE, // 1

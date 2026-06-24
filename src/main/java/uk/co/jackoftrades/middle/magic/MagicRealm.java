@@ -20,14 +20,62 @@ package uk.co.jackoftrades.middle.magic;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
+/**
+ * A school of magic (e.g. arcane, holy) — the spellcasting "realm" that defines
+ * which stat governs casting, the verb used ("cast"/"pray"), the noun for its
+ * spells, and the book item type that holds them. This is the Java port of the
+ * C original's {@code struct magic_realm} ({@code src/player.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MagicRealm {
+    /**
+     * The realm's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * Short code identifying the realm.
+     *
+     * @author ClaudeCode
+     */
     private String code;
+    /**
+     * The stat that governs casting in this realm.
+     *
+     * @author ClaudeCode
+     */
     private Stats stat;
+    /**
+     * The verb used for casting (e.g. "cast", "pray").
+     *
+     * @author ClaudeCode
+     */
     private String verb;
+    /**
+     * The noun used for a spell in this realm (e.g. "spell", "prayer").
+     *
+     * @author ClaudeCode
+     */
     private String spellNoun;
+    /**
+     * The item type (tval) of the books that hold this realm's spells.
+     *
+     * @author ClaudeCode
+     */
     private TValue book;
 
+    /**
+     * Build a magic realm from its parsed data-file fields.
+     *
+     * @param name      realm name
+     * @param stat      governing stat
+     * @param verb      casting verb
+     * @param spellNoun spell noun
+     * @param book      book item type
+     * @author ClaudeCode
+     */
     public MagicRealm(String name, Stats stat, String verb, String spellNoun, TValue book) {
         this.name = name;
         this.stat = stat;
@@ -36,6 +84,10 @@ public class MagicRealm {
         this.book = book;
     }
 
+    /**
+     * @return this realm's name
+     * @author ClaudeCode
+     */
     public String getName() {
         return name;
     }

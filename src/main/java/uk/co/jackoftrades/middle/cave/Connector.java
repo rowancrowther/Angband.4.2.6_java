@@ -17,8 +17,31 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+/**
+ * A connection point between dungeon pieces during level generation — the grid
+ * to join, the terrain feature to place there, and extra info flags. This is the
+ * Java port of the C original's {@code connector} struct ({@code src/generate.h})
+ * used when stitching rooms/chunks together.
+ *
+ * @author ClaudeCode
+ */
 public class Connector {
+    /**
+     * The grid where this connection is made.
+     *
+     * @author ClaudeCode
+     */
     private Loc grid;
+    /**
+     * The terrain feature to place at the connection grid.
+     *
+     * @author ClaudeCode
+     */
     private int feat;
+    /**
+     * Extra connection info flags (type still to be determined in the port).
+     *
+     * @author ClaudeCode
+     */
     private Object info;   // TODO: Change this to a Flag<bitfield> when we find out what bitflags are being used here
 }

@@ -1,0 +1,10 @@
+GRAPHICS=1
+COLOUR_ONLY=2
+GLYPH_ONLY=3
+COLOUR_VALUES=4
+GLYPH_VALUES=5
+COLON_SWITCH=6
+'graphics:'=1
+'color:'=2
+'glyph:'=3
+':'=6

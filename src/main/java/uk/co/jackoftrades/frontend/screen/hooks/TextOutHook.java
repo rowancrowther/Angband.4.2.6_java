@@ -19,7 +19,22 @@ package uk.co.jackoftrades.frontend.screen.hooks;
 
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 
+/**
+ * Sink for coloured text emitted by the game. Abstracts "where text goes" (a
+ * window, a file, a help viewer) behind a small interface so the core can format
+ * and colour output without knowing the destination — the Java port of the C
+ * original's {@code text_out_hook} mechanism ({@code src/z-textblock.c}).
+ *
+ * @author ClaudeCode
+ */
 public interface TextOutHook {
+    /**
+     * Emit a pre-built string in the given colour to this sink.
+     *
+     * @param attribute the colour to draw the text in
+     * @param string    the text to emit
+     * @author ClaudeCode
+     */
     void output(AttributeColour attribute, String string);
 
     /**

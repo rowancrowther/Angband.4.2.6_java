@@ -22,7 +22,22 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.quit.Quit;
 
+/**
+ * Static control/messaging helpers ported from the original C source's
+ * {@code plog}/{@code quit} family ({@code src/z-util.c}). These give the rest
+ * of the game a single place to emit player-visible log warnings and to abort
+ * the program, so the underlying logging/exit mechanism can be swapped without
+ * touching call sites. Abstract because it is a pure utility holder and should
+ * never be instantiated.
+ *
+ * @author ClaudeCode
+ */
 public abstract class ControlUtils {
+    /**
+     * Shared logger backing the {@code plog}/{@code plogFmt} helpers.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**

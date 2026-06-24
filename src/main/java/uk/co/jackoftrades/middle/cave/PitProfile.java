@@ -27,21 +27,113 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 
 import java.util.List;
 
+/**
+ * The recipe for a themed monster pit or nest (as loaded from {@code pit.txt}):
+ * which monsters may appear (by allowed/forbidden race flags, spell flags and
+ * base types), how deep/rare it is, and the colours used for its theme. The level
+ * generator uses this to select and populate pit/nest rooms. This is the Java
+ * port of the C original's {@code struct pit_profile} ({@code src/mon-make.h}).
+ *
+ * @author ClaudeCode
+ */
 public class PitProfile {
+    /**
+     * The pit profile's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * Whether this profile describes a pit, a nest or another room type.
+     *
+     * @author ClaudeCode
+     */
     private PitRoomType roomType;
+    /**
+     * Average native depth of this pit (used in depth/rarity selection).
+     *
+     * @author ClaudeCode
+     */
     private int ave;
+    /**
+     * Rarity weighting controlling how often this profile is chosen.
+     *
+     * @author ClaudeCode
+     */
     private int rarity;
+    /**
+     * Rarity of objects generated within the pit.
+     *
+     * @author ClaudeCode
+     */
     private int objectRarity;
+    /**
+     * Race flags a monster must have to belong in this pit.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterRaceFlag> flags;
+    /**
+     * Race flags that exclude a monster from this pit.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterRaceFlag> forbiddenFlags;
+    /**
+     * Required innate-attack frequency for eligible monsters.
+     *
+     * @author ClaudeCode
+     */
     private int freqInnate;
+    /**
+     * Spell flags a monster must have to belong in this pit.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterSpell> spellsFlags;
+    /**
+     * Spell flags that exclude a monster from this pit.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterSpell> forbiddenSpellFlags;
+    /**
+     * Monster base types allowed in this pit.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterBase> bases;
+    /**
+     * Theme colours associated with this pit.
+     *
+     * @author ClaudeCode
+     */
     private List<ColourType> colours;
+    /**
+     * Specific monster races explicitly forbidden from this pit.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterRace> forbiddenMonsters;
 
+    /**
+     * Build a pit profile from its parsed data-file fields.
+     *
+     * @param name                the profile name
+     * @param roomType            pit/nest/other room type
+     * @param ave                 average native depth
+     * @param rarity              rarity weighting
+     * @param objectRarity        rarity of objects within
+     * @param flags               required race flags
+     * @param forbiddenFlags      excluding race flags
+     * @param freqInnate          required innate-attack frequency
+     * @param spellsFlags         required spell flags
+     * @param forbiddenSpellFlags excluding spell flags
+     * @param bases               allowed monster base types
+     * @param colours             theme colours
+     * @param forbiddenMonsters   explicitly forbidden races
+     * @author ClaudeCode
+     */
     public PitProfile(String name, PitRoomType roomType, int ave, int rarity, int objectRarity,
                       Flag<MonsterRaceFlag> flags, Flag<MonsterRaceFlag> forbiddenFlags, int freqInnate,
                       Flag<MonsterSpell> spellsFlags, Flag<MonsterSpell> forbiddenSpellFlags, List<MonsterBase> bases,

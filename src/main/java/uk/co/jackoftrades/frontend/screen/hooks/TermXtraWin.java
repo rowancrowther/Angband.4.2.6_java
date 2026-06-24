@@ -30,11 +30,39 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.io.File;
 
+/**
+ * Windows-style implementation of the {@link TermEventHook} "extra event"
+ * handler — the Java/JavaFX port of the C original's {@code Term_xtra_win}
+ * ({@code src/main-win.c}). It dispatches each {@link TermXtraEventEnum} to the
+ * appropriate action (play a sound, clear the screen, delay, …). Several actions
+ * that the C code needed (flush, event pumping) are no-ops here because JavaFX's
+ * event loop handles them.
+ *
+ * @author ClaudeCode
+ */
 public class TermXtraWin implements TermEventHook {
+    /**
+     * Logger used to report sound/playback failures.
+     *
+     * @author ClaudeCode
+     */
     private static Logger logger = LogManager.getLogger();
 
+    /**
+     * Player retained for the most recent sound effect so it is not garbage
+     * collected before playback completes.
+     *
+     * @author ClaudeCode
+     */
     private MediaPlayer mediaPlayer;
 
+    /**
+     * Dispatch a terminal extra-event to its concrete handler.
+     *
+     * @param event the requested action
+     * @param value an event-specific parameter (e.g. delay length)
+     * @author ClaudeCode
+     */
     public void doSomething(@NotNull TermXtraEventEnum event, int value) {
         switch (event) {
             case TERM_XTRA_NOISE:
@@ -66,6 +94,13 @@ public class TermXtraWin implements TermEventHook {
         }
     }
 
+    /**
+     * Pause the current thread for the given number of milliseconds (a no-op for
+     * non-positive delays).
+     *
+     * @param delay delay in milliseconds
+     * @author ClaudeCode
+     */
     private void termXtraDelay(int delay) {
         if (delay > 0) {
             try {
@@ -76,6 +111,12 @@ public class TermXtraWin implements TermEventHook {
         }
     }
 
+    /**
+     * React to a change in colour/preferences on the main screen. Currently a
+     * stub awaiting the colour-reaction logic from the C original.
+     *
+     * @author ClaudeCode
+     */
     private void termXtraWinReact() {
         Screen mainScreen = GameConstants.AngbandScreens.get(0);
 
@@ -85,19 +126,45 @@ public class TermXtraWin implements TermEventHook {
 
     }
 
+    /**
+     * Clear the main screen.
+     *
+     * @author ClaudeCode
+     */
     private void termXtraWinClear() {
         Screen screen = GameConstants.AngbandScreens.get(0);
         screen.clear();
     }
 
+    /**
+     * Flush pending output. A no-op under JavaFX, whose event handlers manage
+     * flushing; retained to satisfy the C event model.
+     *
+     * @author ClaudeCode
+     */
     private void termXtraWinFlush() {
         // Not needed as we are in Java and all events are handled by event handlers
     }
 
+    /**
+     * Pump/await a windowing event. A no-op under JavaFX, whose event handlers
+     * deliver events directly; retained to satisfy the C event model.
+     *
+     * @param value the event parameter (unused here)
+     * @author ClaudeCode
+     */
     private void termXtraWinEvent(int value) {
         // Not needed as we are in Java and all events are handled by event handlers
     }
 
+    /**
+     * Play the sound associated with the given message-box style via a JavaFX
+     * {@link MediaPlayer}. Failures are logged and swallowed so a missing/invalid
+     * sound file never interrupts gameplay.
+     *
+     * @param flag the message-box style whose sound to play
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     private void termXtraWinNoise(MessageBoxFlags flag) {
         try {

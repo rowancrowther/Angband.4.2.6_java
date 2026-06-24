@@ -17,14 +17,32 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * The kinds of teleportation effect the game can apply, distinguishing who/where
+ * is moved (self, a target, away, to a location, to another level, …). Mirrors
+ * the teleport variants of the C original's effect code.
+ *
+ * @author ClaudeCode
+ */
 public enum TeleportEnum {
+    /**
+     * No teleport. @author ClaudeCode
+     */
     TELE_NONE,
+    /** Teleport the subject a random short/medium distance. @author ClaudeCode */
     TELE_TELEPORT,
+    /** Teleport the subject to a chosen location. @author ClaudeCode */
     TELE_TELEPORT_TO,
+    /** Teleport the caster itself. @author ClaudeCode */
     TELE_TELEPORT_SELF,
+    /** Teleport the subject to a different dungeon level. @author ClaudeCode */
     TELE_TELEPORT_LEVEL,
+    /** Teleport another creature (away from the caster). @author ClaudeCode */
     TELE_TELEPORT_OTHER,
+    /** Teleport the subject far away. @author ClaudeCode */
     TELE_TELEPORT_AWAY,
+    /** Teleport the subject to a random location. @author ClaudeCode */
     TELE_TELEPORT_RANDOM,
+    /** Count sentinel. @author ClaudeCode */
     TELE_MAX
 }

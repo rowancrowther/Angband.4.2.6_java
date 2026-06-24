@@ -17,6 +17,23 @@
 
 package uk.co.jackoftrades.middle.player.enums;
 
+/**
+ * The set of user-configurable game options, each pairing a human-readable description
+ * with the option category it belongs to and its default ("normal") value.
+ *
+ * <p>Ports the C option table (driven by {@code list-options.h} / {@code option.c}). In the
+ * original an option is an index into parallel arrays of name, description, type and
+ * default; here each option is a single enum constant carrying those attributes inline, so
+ * the data and its metadata cannot drift out of step.
+ *
+ * <p><b>Why the description and default live on the constant:</b> options are surfaced in
+ * menus and persisted in preferences, so every option needs its label, its grouping
+ * ({@link PlayerOptionTypes} — interface / birth / cheat / score / special) and the value a
+ * fresh game starts with. Bundling that triple onto the constant keeps it authoritative in
+ * one place. {@code OP_none} is the index-0 placeholder mirroring the C sentinel.
+ *
+ * @author ClaudeCode
+ */
 public enum PlayerOption {
     OP_none("",
             PlayerOptionTypes.SPECIAL, false),
@@ -111,10 +128,22 @@ public enum PlayerOption {
     OP_birth_percent_damage("To-damage is a percentage of dice (experimental),",
             PlayerOptionTypes.BIRTH, false);
 
+    /**
+     * Menu label shown to the player (C: option description string).
+     */
     private final String description;
+    /** Which option group this belongs to, controlling where and whether it is shown. */
     private final PlayerOptionTypes playerOptionType;
+    /** The default value applied at birth and on a reset-to-defaults. */
     private final boolean normal;
 
+    /**
+     * Binds an option to its display text, category and default state.
+     *
+     * @param description      the menu label
+     * @param playerOptionType the option's category
+     * @param normal           the default value used for a new character
+     */
     private PlayerOption(String description, PlayerOptionTypes playerOptionType, boolean normal) {
         this.description = description;
         this.playerOptionType = playerOptionType;

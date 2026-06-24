@@ -26,15 +26,77 @@ import uk.co.jackoftrades.backend.parser.RandomReader;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * A parameterised random value of the classic Angband form
+ * {@code base + m_bonus + dice 'd' sides}, where the {@code m_bonus} term scales
+ * with dungeon level. This is the Java port of the {@code random_value} struct
+ * and its {@code randcalc()} helper from the original C source
+ * ({@code src/z-rand.h} / {@code src/z-rand.c}); it is used throughout the data
+ * files to express things like damage rolls, durations and quantities.
+ * <p>
+ * Negative ranges are handled by the {@link #negate()} mechanism rather than a
+ * negative base, because the data-file grammar cannot itself express a negative
+ * base — the value is built positive and then flipped.
+ *
+ * @author ClaudeCode
+ */
 public class Random {
+    /**
+     * Unparsed string form of the base term, used by the constructors that take
+     * the base as an expression rather than a resolved integer.
+     *
+     * @author ClaudeCode
+     */
     private String baseStr;
+    /**
+     * The fixed base (minimum) contribution to the rolled value.
+     *
+     * @author ClaudeCode
+     */
     private int base;
+    /**
+     * Number of dice rolled (the {@code N} in {@code NdM}).
+     *
+     * @author ClaudeCode
+     */
     private int dice;
+    /**
+     * Unparsed string form of the sides term, for the expression-based constructor.
+     *
+     * @author ClaudeCode
+     */
     private String sidesStr;
+    /**
+     * Number of sides on each die (the {@code M} in {@code NdM}).
+     *
+     * @author ClaudeCode
+     */
     private int sides;
+    /**
+     * Level-scaling bonus multiplier ({@code m_bonus} in the C original); its
+     * contribution grows with the dungeon level passed to {@link #randCalc(int, uk.co.jackoftrades.backend.enums.DamageAspect)}.
+     *
+     * @author ClaudeCode
+     */
     private int mBonus;
+    /**
+     * Flag set when the constructed value should ultimately represent a negative
+     * range; consumed once by {@link #negate()}.
+     *
+     * @author ClaudeCode
+     */
     private boolean toNegate;
+    /**
+     * Guard ensuring {@link #negate()} only flips the value a single time.
+     *
+     * @author ClaudeCode
+     */
     private boolean negated;
+    /**
+     * Shared logger for parse/calculation diagnostics.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger(Random.class.getName());
     //private final boolean debug = false;
 
@@ -70,6 +132,17 @@ public class Random {
         negated = false;
     }
 
+    /**
+     * Constructor variant where the base term arrives as an unresolved
+     * expression string (stored in {@link #baseStr}) rather than an integer —
+     * used when the data file gives the base as a formula to evaluate later.
+     *
+     * @param base   the base term as a string expression
+     * @param mBonus the level-scaling bonus multiplier
+     * @param dice   the number of dice
+     * @param sides  the sides per die
+     * @author ClaudeCode
+     */
     public Random(String base, int mBonus, int dice, int sides) {
         this.baseStr = base;
         this.dice = dice;
@@ -77,6 +150,16 @@ public class Random {
         this.mBonus = mBonus;
     }
 
+    /**
+     * Constructor variant where the sides term arrives as an unresolved
+     * expression string (stored in {@link #sidesStr}) rather than an integer.
+     *
+     * @param base  the base (minimum) value
+     * @param mBonus the level-scaling bonus multiplier
+     * @param dice  the number of dice
+     * @param sides the sides per die as a string expression
+     * @author ClaudeCode
+     */
     public Random(int base, int mBonus, int dice, String sides) {
         this.base = base;
         this.dice = dice;

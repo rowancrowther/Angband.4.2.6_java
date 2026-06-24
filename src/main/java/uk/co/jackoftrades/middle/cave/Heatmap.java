@@ -17,6 +17,20 @@
 
 package uk.co.jackoftrades.middle.cave;
 
+/**
+ * A grid of integer "distances"/intensities over the whole level, used for
+ * flow-based monster pathfinding (how far each grid is from the player along
+ * passable terrain). This is the Java port of the C original's {@code heatmap}
+ * struct ({@code src/cave.h}); higher-level flow code fills and reads {@link
+ * #grids}.
+ *
+ * @author ClaudeCode
+ */
 public class Heatmap {
+    /**
+     * Per-grid scalar values, indexed {@code [y][x]}.
+     *
+     * @author ClaudeCode
+     */
     private int[][] grids;
 }

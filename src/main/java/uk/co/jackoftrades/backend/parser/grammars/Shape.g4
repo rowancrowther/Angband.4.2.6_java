@@ -1,8 +1,16 @@
+// Parser+lexer for lib/gamedata/shape.txt - player shapechange forms
+// (werewolf, bear, etc): combat/skill modifiers, gained object/player
+// flags and resistances, an on-shapechange effect, and bonus melee blows.
+// Cf. src/init.c: struct file_parser shape_parser (init.c:3335), directive
+// table registered in init_parse_shape() (init.c:3278-3300):
+// name/combat/skill-*/obj-flags/player-flags/values/effect/effect-yx/dice/
+// expr/effect-msg/blow -> parse_shape_*.
+
 grammar Shape;
 
 @header {
     import uk.co.jackoftrades.backend.utils.Flag;
-    import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
+    import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
     import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
     import uk.co.jackoftrades.middle.enums.ValueEnum;
     import uk.co.jackoftrades.middle.enums.EffectEnum;
@@ -14,7 +22,7 @@ grammar Shape;
     import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.player.PlayerShape;
     import uk.co.jackoftrades.middle.enums.EffectBaseType;
-    import uk.co.jackoftrades.middle.combat.enums.Element;
+    import uk.co.jackoftrades.middle.objects.enums.ElementEnum
     import uk.co.jackoftrades.middle.player.PlayerBlow;
     import uk.co.jackoftrades.middle.effect.Effect;
     import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
@@ -29,11 +37,13 @@ grammar Shape;
     import java.util.HashMap;
 }
 
+// "name:<shape name>" - starts a new shape record.
 name
         returns[String nameStr]
         :   NAME STRING { $nameStr = $STRING.getText(); }
         ;
 
+// "combat:<to-hit>:<to-dam>:<to-ac>" - cf. parse_shape_combat (init.c:2980).
 combat
         returns[int tohNum, int todNum, int toaNum]
         :   COMBAT toh=STRING COLON tod=STRING COLON toa=STRING {
@@ -42,6 +52,9 @@ combat
                 $toaNum = Integer.parseInt($toa.getText());
         };
 
+// "skill-<name>:<modifier>" family (skill_disarm_phys through skill_dig) -
+// per-skill birth modifiers gained from this shapechange. One near-
+// identical rule per skill name in the data file.
 skill_disarm_phys
         returns[int skillNum]
         :   SKILL_DISARM_PHYS STRING { $skillNum = Integer.parseInt($STRING.getText()); }
@@ -82,15 +95,19 @@ skill_dig
         :   SKILL_DIG STRING { $skillNum = Integer.parseInt($STRING.getText()); }
         ;
 
+// "obj-flags:<OF_FLAG> [| <OF_FLAG> ...]" - object flags gained from this
+// shapechange - cf. parse_shape_obj_flags.
 obj_flags
-        returns[Flag<ObjectFlagName> oFlags]
+        returns[Flag<ObjectFlag> oFlags]
         @init {
-            $oFlags = new Flag<>(ObjectFlagName.class);
+            $oFlags = new Flag<>(ObjectFlag.class);
         }
-        :   OBJ_FLAGS f1=FLAG { $oFlags.on(ObjectFlagName.valueOf("OF_" + $f1.getText())); }
-            (OR f2=FLAG  { $oFlags.on(ObjectFlagName.valueOf("OF_" + $f2.getText())); })*
+        :   OBJ_FLAGS f1=FLAG { $oFlags.on(ObjectFlag.valueOf("OF_" + $f1.getText())); }
+            (OR f2=FLAG  { $oFlags.on(ObjectFlag.valueOf("OF_" + $f2.getText())); })*
         ;
 
+// "player-flags:<PF_FLAG> [| <PF_FLAG> ...]" - player flags gained from this
+// shapechange - cf. parse_shape_play_flags.
 player_flags
         returns[Flag<PlayerFlag> pFlags]
         @init {
@@ -100,6 +117,8 @@ player_flags
             (OR f2=FLAG { $pFlags.on(PlayerFlag.valueOf("PF_" + $f2.getText())); })*
         ;
 
+// "values:<CV_MODIFIER>[<value>] [| ...]" - resistances/modifiers gained
+// from this shapechange - cf. parse_shape_values.
 values
         returns[Map <ValueEnum, Integer> valueMap]
         @init {
@@ -116,6 +135,7 @@ values
             })*
         ;
 
+// "effect:<TYPE>[:<SUBTYPE>]" - the on-shapechange effect.
 effect
         returns[EffectEnum effectEnum, EffectSubTypeWrapper wrapper]
         @init {
@@ -125,6 +145,9 @@ effect
                 $effectEnum = EffectEnum.valueOf("EF_" + $f1.getText());
             }
             (COLON f2=FLAG {
+                // PROBLEM: only EF_CURE/EF_TIMED_INC are special-cased; every
+                // other effect type's subtype is assumed to be a
+                // ProjectionEnum. See top-of-file problem #2.
                 if ($effectEnum == EffectEnum.EF_CURE || $effectEnum == EffectEnum.EF_TIMED_INC) {
                     $wrapper = new EffectSubTypeWrapper(TimedEffect.valueOf("TMD_" + $f2.getText()));
                 } else {
@@ -133,11 +156,14 @@ effect
             })?
         ;
 
+// "dice:<dice string>" - dice for the effect: line - cf. parse_shape_dice.
 dice
         returns[String diceStr]
         :   DICE STRING { $diceStr = $STRING.getText(); }
         ;
 
+// "expr:<letter>:<EFB_BASE>:<operation>" - binds a dice-string variable used
+// in the dice: line - cf. parse_shape_expr.
 expr
         returns[Expression expression]
         @init {
@@ -159,11 +185,16 @@ expr
             operationInit = $st.getText();
         };
 
+// "effect-msg:<text>" - message shown when the effect: triggers - cf.
+// parse_shape_effect_msg.
 effect_msg
         returns[String effMsgStr]
         :   EFFECT_MSG STRING { $effMsgStr = $STRING.getText(); }
         ;
 
+// Groups one effect: line with whichever of dice:/expr:/effect-msg: follow
+// it into a single Effect - one alternative per combination actually seen
+// in shape.txt (no expr-without-dice, no effect-msg-without-effect, etc).
 effect_block
         returns[Effect effObj]
         @init {
@@ -219,11 +250,16 @@ effect_block
             }
         ;
 
+// "blow:<verb>" - one bonus melee blow this shape grants; can repeat (see
+// `shape`'s blowInit list) for shapes with multiple natural attacks - cf.
+// parse_shape_blow.
 blow
         returns[String blowStr]
         :   BLOW STRING { $blowStr = $STRING.getText(); }
         ;
 
+// One full shape record: name, then any mix of combat/skills/flags/values/
+// effect/blow in the order they appear in the file.
 shape
         returns[PlayerShape shapeObj]
         @init {
@@ -232,10 +268,10 @@ shape
             int toHitInit = 0;
             int toDamInit = 0;
             Map<PlayerSkill, Integer> skillInit = new HashMap<>();
-            Flag<ObjectFlagName> oFlagsInit = new Flag<>(ObjectFlagName.class);
+            Flag<ObjectFlag> oFlagsInit = new Flag<>(ObjectFlag.class);
             Flag<PlayerFlag> pFlagsInit = new Flag<>(PlayerFlag.class);
             Map<ValueEnum, Integer> valueModInit = new HashMap<>();
-            List<Element> resistInit = new ArrayList<>();
+            List<ElementEnum> resistInit = new ArrayList<>();
             Effect effectInit = null;
             int numBlows = 0;
             List<PlayerBlow> blowInit = new ArrayList<>();
@@ -264,7 +300,7 @@ shape
                 skillInit.put(PlayerSkill.SKILL_SAVE, $skill_save.skillNum);
             }
         |   skill_stealth {
-                skillInit.put(PlayerSkill.SKILL_STEALTH, $skill_save.skillNum);
+                skillInit.put(PlayerSkill.SKILL_STEALTH, $skill_stealth.skillNum);
             }
         |   skill_search {
                 skillInit.put(PlayerSkill.SKILL_SEARCH, $skill_search.skillNum);
@@ -289,6 +325,7 @@ shape
         |   blow { blowInit.add(new PlayerBlow($blow.blowStr));  }
         )*;
 
+// Top-level rule: the whole file is one or more shape records.
 file
         returns[List<PlayerShape> shapes]
         @init {
@@ -297,10 +334,12 @@ file
         :   (shape { $shapes.add($shape.shapeObj); })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
@@ -377,6 +416,7 @@ BLOW
         :   'blow:'
         ;
 
+// Brackets around a values: modifier's integer argument, e.g. "[1]".
 LBRACKET
         :   '['
         ;
@@ -385,18 +425,27 @@ RBRACKET
         :   ']'
         ;
 
+// Field separator used throughout most directives.
 COLON
         :   ':'
         ;
 
+// The " | " separator between flag/value names on an obj-flags:/
+// player-flags:/values: line.
 OR
         :   ' | '
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES symbolic name - used for flag/effect/
+// value names.
 FLAG
         :   ('A'..'Z' | '_')+
         ;
 
+// Free-running text used for name:/combat:/skill-*:/dice:/expr:'s text
+// fields - lowercase letters, spaces, a handful of dice-string characters
+// (the stray 'B'/'P'/'S' letters and '$' support things like "$B" dice
+// variables appearing inside a STRING-typed field).
 STRING
         :   ('a'..'z' | ' ' | 'B' | 'P' | 'S' | '-' | '0'..'9' | '+' | '/' | '$')+
         ;

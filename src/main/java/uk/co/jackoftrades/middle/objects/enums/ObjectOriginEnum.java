@@ -17,6 +17,16 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+/**
+ * Where an object came from, used to build the "history" line in an item's
+ * description (found on the floor, dropped by a monster, bought, an inheritance,
+ * …). Each constant carries how many {@code %s} parameters its template needs and
+ * the template itself. Mirrors the C original's {@code ORIGIN_*} list
+ * ({@code src/list-origins.h}); the constants are self-describing and documented
+ * collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectOriginEnum {
     ORIGIN_NONE(-1, ""),
     ORIGIN_FLOOR(1, "Found lying on the floor %s"),
@@ -45,9 +55,27 @@ public enum ObjectOriginEnum {
     ORIGIN_DROP_MIMIC(2, "Dropped by %s %s"),
     ORIGIN_DROP_WIZARD(2, "Dropped by %s %s");
 
+    /**
+     * Number of {@code %s} parameters the {@link #name} template expects
+     * ({@code -1} for origins with no displayed history line).
+     *
+     * @author ClaudeCode
+     */
     private final int numParameters;
+    /**
+     * The history-line template for this origin (with {@code %s} placeholders).
+     *
+     * @author ClaudeCode
+     */
     private final String name;
 
+    /**
+     * Bind an origin to its parameter count and history template.
+     *
+     * @param numParameters number of template parameters
+     * @param name          the history-line template
+     * @author ClaudeCode
+     */
     ObjectOriginEnum(int numParameters, String name) {
         this.numParameters = numParameters;
         this.name = name;

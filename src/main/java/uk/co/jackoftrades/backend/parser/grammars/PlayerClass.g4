@@ -1,3 +1,43 @@
+// Parser+lexer for lib/gamedata/class.txt - the playable classes (Warrior,
+// Mage, ...): stats, birth skills, starting equipment, titles-by-level,
+// innate flags, and (for spellcasters) magic books full of spells and their
+// on-cast effects. This is the live, wired-up grammar for class.txt -
+// PlayerClassReader.java consumes it; Class.g4 in this same directory is an
+// abandoned parallel rewrite with no generated sources/reader (see that
+// file's own header). Cf. src/init.c: struct file_parser class_parser
+// (init.c:4179), directive table in init_parse_class().
+//
+// Verified field-by-field against real class.txt content (all 9 classes):
+// the strict, non-optional ordering `name stats skill-disarm-phys ...
+// equip+ obj-flags? player-flags title*10 (magic book+)?` in `playerClass`
+// matches every class record exactly, including which classes have
+// obj-flags: (only Blackguard), which have a magic block (everything
+// except Warrior/Blackguard's melee-only kit), and the always-exactly-10
+// titles per class.
+//
+// POTENTIAL PROBLEMS (all minor - unused format capacity, not active bugs):
+//
+//   1. The EXP token ('exp:') is lexed but never referenced anywhere in
+//      `playerClass` - there's no `exp` rule at all, and the class's
+//      experience-penalty value is hardcoded to the literal 100 in
+//      `playerClass`'s @after. class.txt's own header confirms this is
+//      currently fine ("The current classes don't set this and get the
+//      default of no experience point penalty"), but a future class adding
+//      an "exp:" line would hit an unexpected-token parse error.
+//
+//   2. `equip`'s last field (`eopts=LOWER_WORD`) only captures a single
+//      birth-option name, but the header documents it as "names of birth
+//      options separated by spaces or |" (a list). Every current equip:
+//      line uses just one option ("none" or "birth_no_recall"), so this is
+//      unexercised rather than broken.
+//
+// (Not a grammar problem: class.txt's header documents "name:class
+// number:class name" as the name: format, but every actual name: line in
+// the file is just "name:<class name>" with no number - `name`'s single-
+// field rule matches reality; the header comment is simply stale.)
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar PlayerClass;
 
 @header {
@@ -40,11 +80,14 @@ grammar PlayerClass;
 }
 
 
+// "name:<class name>" - starts a new class record (see top-of-file note re:
+// the stale "class number" field in the file's own header doc).
 name
         returns[String nameStr]
         :   NAME string=UPPER_LOWER_STRING { $nameStr = $string.getText(); }
         ;
 
+// "stats:<str>:<int>:<wis>:<dex>:<con>" - class stat modifiers.
 stats
         returns[Map<Stats, Integer> stat]
         @init {
@@ -59,6 +102,8 @@ stats
             }
         ;
 
+// "skill-<name>:<base>:<increment per 10 levels>" family (skillDisarmPhys
+// through skillDig) - one near-identical rule per of the 10 birth skills.
 skillDisarmPhys
         returns[int base, int increment]
         :   SKILL_DISARM_PHYS b=INTEGER COLON inc=INTEGER {
@@ -139,26 +184,35 @@ skillDig
             }
         ;
 
+// "hitdie:<value>" - class contribution to max hitpoints per level.
 hitdie
         returns[int increment]
         :   HITDIE INTEGER { $increment = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "max-attacks:<count>" - maximum possible blows per round.
 maxAttacks
         returns[int count]
         :   MAX_ATTACKS INTEGER { $count = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "min-weight:<tenths of a pound>" - minimum weapon weight used when
+// computing blows per round.
 minWeight
         returns[int weight]
         :   MIN_WEIGHT INTEGER { $weight = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "strength-multiplier:<factor>" - strength's contribution to blows per round.
 strengthMultiplier
         returns[int factor]
         :   STRENGTH_MULTIPLIER INTEGER { $factor = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "equip:<tval>:<sval>:<min>:<max>:<birth option>" - one starting equipment
+// item; can repeat (see `equipBlock`). The sval is either plain text
+// (UPPER_LOWER_STRING) or bracketed (BRACKETED_STRING, for magic books).
+// See top-of-file problem #2 re: eopts only capturing one birth option.
 equip
         returns[StartItem startItem]
         @init {
@@ -186,6 +240,7 @@ equip
             }
         ;
 
+// One or more equip: lines - this class's starting gear.
 equipBlock
         returns[List<StartItem> startItems]
         @init {
@@ -194,6 +249,8 @@ equipBlock
         :   (equip { $startItems.add($equip.startItem); })+
         ;
 
+// "obj-flags:<OF_FLAG> [| <OF_FLAG> ...]" - object flags this class has
+// innately. Optional - only Blackguard uses it in the current data.
 objectFlags
         returns[Flag<ObjectFlag> oFlags]
         @init {
@@ -208,6 +265,8 @@ objectFlags
             })*
         ;
 
+// "player-flags:<PF_FLAG> [| <PF_FLAG> ...]" - player flags this class has
+// innately. Every class has exactly one of these.
 playerFlags
         returns[Flag<PlayerFlag> pFlags]
         @init {
@@ -223,11 +282,14 @@ playerFlags
             })*
         ;
 
+// "title:<text>" - one level-up title, e.g. "title:Rookie".
 title
         returns[String titleStr]
         :   TITLE UPPER_LOWER_STRING { $titleStr = $UPPER_LOWER_STRING.getText(); }
         ;
 
+// Exactly 10 title: lines (verified: every class in class.txt has exactly
+// 10) - one per 5-level title tier.
 titleBlock
         returns[List<String> titles]
         @init {
@@ -257,6 +319,8 @@ titleBlock
             }
         ;
 
+// "magic:<first spell level>:<book weight>:<number of books>" - presence of
+// this line is what makes a class a spellcaster (optional in `playerClass`).
 magic
         returns[ClassMagic classMagic]
         @init {
@@ -274,6 +338,8 @@ magic
         }
         ;
 
+// "book:<object base>:<town|dungeon>:<bracketed display name>:<num spells>:<realm>"
+// - one of this class's spellbooks.
 book
         returns[MagicBook magicBook]
         @init {
@@ -296,6 +362,7 @@ book
             }
         ;
 
+// "book-graphics:<symbol>:<colour>" - this spellbook's display glyph.
 bookGraphics
         returns[AngbandDisplayCharacter adc]
         :   BOOK_GRAPHICS charGrap=GRAPHICS_CHAR COLON charCol=COLOUR_CHAR {
@@ -312,6 +379,8 @@ bookGraphics
             }
         ;
 
+// "book-properties:<cost>:<commonness>:<min> to <max>" - this spellbook's
+// shop cost, allocation commonness, and depth range.
 bookProperties
         returns[int cost, int commonness, int min, int max] // Need to be stored on ObjectKind
         :   BOOK_PROPERTIES c=INTEGER COLON common=INTEGER COLON range=RANGE {
@@ -324,6 +393,9 @@ bookProperties
             }
         ;
 
+// "spell:<name>:<level>:<mana>:<fail %>:<exp>" - one spell in a spellbook;
+// note the "spell:" literal is consumed as part of the SPELL_STRING token
+// itself (see that token below), hence the substring(6) in the action.
 spell
         returns[MagicSpell magicSpell]
         @init {
@@ -345,6 +417,13 @@ spell
             }
         ;
 
+// "effect:<TYPE>[:<SUBTYPE>[:<radius>[:<other>]]]" - one alternative per
+// field count (1-4), each resolving SUBTYPE via a switch on
+// EffectEnum.getSubType() covering every EST_* case this codebase uses
+// (PROJ/TMD/NOURISH/SUMMON/STAT/ENCHANT/SHAPECHANGE/EARTHQUAKE/GLYPH) and
+// throwing InvalidTokenFoundDuringParse on an unrecognised one rather than
+// silently producing a null/wrong wrapper - this is the most complete
+// effect-subtype dispatch of any grammar in this directory.
 effect
         returns[Effect effectObj]
         @init {
@@ -500,11 +579,13 @@ effect
             }
         ;
 
+// "effect-msg:<text>" - message shown when the effect: triggers.
 effectMsg
         returns[String msg]
         :   EFFECT_MSG LOWER_WORD { $msg = $LOWER_WORD.getText(); }
         ;
 
+// "effect-yx:<y>:<x>" - sets a coordinate on the preceding effect:.
 effectYX
         returns[int y, int x]
         :   EFFECT_YX yInt=INTEGER COLON xInt=INTEGER {
@@ -513,6 +594,9 @@ effectYX
             }
         ;
 
+// "dice:<dice string>" - dice for the preceding effect:. Unlike most other
+// grammars here, the DICE lexer token itself swallows the whole
+// "dice:<string>" text (see the DICE token below), hence substring(5).
 dice
         returns[String diceString]
         :   DICE {
@@ -520,6 +604,9 @@ dice
             }
         ;
 
+// Groups one effect: line with whichever of dice:/effect-yx:/effect-msg:/
+// expr: follow it (in any order/quantity) into a single Effect, via the
+// Effect setters rather than rebuilding the object.
 effectBlock
         returns[Effect eff]
         @init {
@@ -539,6 +626,11 @@ effectBlock
             (expr {$eff.setExpression($expr.expression); })*
         ;
 
+// "expr:<letter>:<EFB_BASE>:<operation>" - binds a dice-string variable used
+// in the preceding dice: line. Unlike Random.g4/TrapLexer.g4, the operation
+// is tokenized as separate operator/SPACE/integer pieces here and
+// reassembled in the action (supporting up to 2 chained operations, e.g.
+// "/ 2 + 1") rather than captured as one token.
 expr
         returns[Expression expression]
         @init {
@@ -582,11 +674,14 @@ expr
             })*
         ;
 
+// "desc:<text>" - spell flavour text; can repeat to build up multiple lines.
 desc
         returns[String descString]
         :   DESC_STRING { $descString = $DESC_STRING.getText().substring(5); }
         ;
 
+// One full spell entry: the spell: header, one or more effects (each with
+// its own dice/expr/etc via effectBlock), and any desc: lines.
 spellBlock
         returns[MagicSpell magicSpell]
         @init {
@@ -600,6 +695,8 @@ spellBlock
             (desc { descStr = descStr + $desc.descString; })*
         ;
 
+// One full spellbook: book: header, optional graphics/properties/starting-
+// equipment lines, then one or more spells.
 bookBlock
         returns[MagicBook magicBook, StartItem startItem]
         @init {
@@ -633,6 +730,13 @@ bookBlock
             })+
         ;
 
+// One full class record. The sequence below is strict (no '*'/'|' looseness)
+// and matches every class in class.txt exactly: name, stats, the 10
+// skill-* lines in a fixed order, hitdie/max-attacks/min-weight/strength-
+// multiplier, one-or-more equip: lines, an optional obj-flags:, a mandatory
+// player-flags:, exactly 10 titles, then an optional magic+book(s) block
+// for spellcasters. See top-of-file problem #1 re: there being no `exp`
+// step in this sequence at all.
 playerClass
         returns[PlayerClass player]
         @init {
@@ -730,6 +834,7 @@ playerClass
             })+)?
         ;
 
+// Top-level rule: the whole file is one or more class records.
 file
         returns[List<PlayerClass> playerClasses]
         @init {
@@ -740,14 +845,20 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
+// (Also covers the "###### MAGE ######"-style banner lines between classes.)
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through SPELL/EFFECT/EFFECT_YX/EXPR/EFFECT_MSG/DESC below: one
+// literal directive-keyword token each, matching the rule of the same
+// purpose above (e.g. NAME -> `name`, STATS -> `stats`).
 NAME
         :   'name:'
         ;
@@ -872,9 +983,11 @@ DESC
         :   'desc:'
         ;
 
+// Field separator used throughout most directives.
 COLON   :   ':'
         ;
 
+// Negative-number sign, also reused inside `expr`'s operation tokenizing.
 MINUS
         :   '-'
         ;
@@ -891,6 +1004,8 @@ fragment DIGIT
         :   ('0'..'9')
         ;
 
+// A literal space - used both standalone (in `expr`) and as a fragment-like
+// building block inside LOWER_WORD/UPPER_LOWER_STRING below.
 SPACE
         :   ' '
         ;
@@ -899,47 +1014,65 @@ fragment UNDERSCORE
         :   '_'
         ;
 
+// The " | " separator between flag names on an obj-flags:/player-flags: line.
 OR
         :   ' | '
         ;
 
+// A spellbook's display colour code, e.g. "R" for the magic book.
 COLOUR_CHAR
         :   ('R' | 'r' | 'y' | 'o' | 'G' | 'g' | 'P' | 'p')
         ;
 
+// The single-letter dice variable an expr: line binds, e.g. "S"/"D"/"B"/"M".
 EXPR_LETTER
         :   ('S' | 'M' | 'D' | 'B')
         ;
 
+// A (possibly negative) literal integer.
 INTEGER
         :   MINUS? DIGIT+
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES_OR_DIGITS symbolic name - used for flag/
+// effect/subtype names.
 UPPER_WORD
         :   UPPER+ (UNDERSCORE (INTEGER | UPPER)+)*
         ;
 
+// Free-running lowercase text, space- or underscore-separated words - used
+// for tval names, effect-msg: text, and birth-option names.
 LOWER_WORD
         :   LOWER+ ((SPACE | UNDERSCORE) LOWER+)*
         ;
 
+// Title-Case text, possibly multiple space- or hyphen-joined words (e.g.
+// "Ration of Food", "Soft Leather Armor") - used for class/title names and
+// plain (non-bracketed) equip: sval text.
 UPPER_LOWER_STRING
         :   UPPER LOWER+ ((SPACE | MINUS) (LOWER+ | (UPPER LOWER+)))*
         ;
 
+// "desc:" followed by free-running description text, as a single token
+// (mirrors DICE/SPELL_STRING's pattern of folding the literal keyword into
+// the token itself, hence `desc`'s substring(5) above).
 DESC_STRING
         :  DESC ('A'..'Z' | 'a'..'z' | ' ' | '.' | ',' | '0'..'9' | '-' | '+' | ';' | '%'
                 | ')' | '(' | 'ú' | 'ë' | '\'' | '!' | ':')+
         ;
 
+// A "[Bracketed Display Name]" - used for magic book svals/titles.
 BRACKETED_STRING
         : ('[') ('A'..'Z' | ' ' | 'a'..'z' | '\'')+ (']')
         ;
 
+// The display glyph used for every spellbook in this file ("?").
 GRAPHICS_CHAR
         :   ('?')
         ;
 
+// A "<min> to <max>" depth range, e.g. "1 to 100" - book-properties:'s
+// trailing field.
 RANGE
         :   DIGIT+ ' to ' DIGIT+
         ;
@@ -960,14 +1093,32 @@ fragment M
         :   'M'
         ;
 
+// "dice:" plus the entire dice-string expression as one token (digits,
+// '$'-variables, 'd'/'M' separators, sign) - cf. Random.g4's `dice` rule,
+// which is the general-purpose version of this same mini-language.
 DICE
         :   'dice:' MINUS? ('0'..'9' | '$' | 'm' | M | 'S' | 'B' | 'D' | D | '+' | DIGIT+)+
         ;
 
+// The '*'/'/' operators usable in an expr: operation (note '+'/'-' are
+// handled separately via PLUS/MINUS in the `expr` rule's action).
 EXPR_OPERATORS
         :   ('*' | '/')
         ;
 
+// "spell:" plus the spell's name text as one token (same fold-the-keyword-
+// into-the-token pattern as DESC_STRING/DICE), hence `spell`'s substring(6).
 SPELL_STRING
         :   'spell:' ('A'..'Z' | 'a'..'z' | ',' | '&' | ' ' | '-' | '\'' | 'ë')+
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Only worth adding if class.txt ever sets a non-default exp: value -
+//      add an `exp` rule (mirroring PlayerRace.g4's) and an optional
+//      `(exp {...})?` step in `playerClass`, replacing the hardcoded 100.
+//
+//   2. Only worth extending if an equip: line ever needs more than one
+//      birth-option exclusion - widen `eopts` to match a '|'/space-
+//      separated list the same way obj-flags:/player-flags: already do for
+//      their flag lists, instead of a single LOWER_WORD.

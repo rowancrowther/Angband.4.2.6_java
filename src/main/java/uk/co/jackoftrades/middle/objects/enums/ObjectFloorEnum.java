@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+/**
+ * Filtering options for listing objects on the floor (test against a tester,
+ * sensed/known only, top item only, visible only). Mirrors the C original's
+ * {@code OFLOOR_*} flags ({@code src/obj-util.h}).
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectFloorEnum {
     /**
      * No options

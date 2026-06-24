@@ -26,9 +26,37 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 
+/**
+ * A type-safe wrapper around an {@link EnumSet} that emulates Angband's C
+ * "flag set" bit-arrays (the {@code flag_*} family of macros in
+ * {@code src/z-bitflag.c}). The C game stores collections of boolean traits —
+ * monster flags, object flags, etc. — as packed bit arrays and manipulates them
+ * with set/clear/test/union/intersection operations; this class provides the
+ * same operations over a Java enum so callers get the same semantics with
+ * compile-time safety instead of raw bit indices.
+ *
+ * @param <E> the enum type whose constants are the individual flags
+ * @author ClaudeCode
+ */
 public class Flag<E extends Enum<E>> {
+    /**
+     * The flags currently switched on.
+     *
+     * @author ClaudeCode
+     */
     private final EnumSet<E> flagSet;
+    /**
+     * The full set of every possible flag, cached for full/negate/mask operations.
+     *
+     * @author ClaudeCode
+     */
     private final EnumSet<E> all;
+    /**
+     * The enum class, retained so new {@link EnumSet}s can be built generically
+     * (e.g. in {@link #copy()} and {@link #mask}).
+     *
+     * @author ClaudeCode
+     */
     private final Class<E> eClass;
 
     /**

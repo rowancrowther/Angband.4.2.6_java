@@ -29,7 +29,21 @@ import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 
 import java.io.IOException;
 
+/**
+ * Loads the visuals/colour-cycling configuration into a single
+ * {@link VisualsCycler} by driving the ANTLR-generated {@code VisualsLexer}/
+ * {@code VisualsParser}. Unlike the other readers it does not implement
+ * {@link Parser}, because the visuals file produces one aggregate object rather
+ * than a list of entries (Java port of the C {@code flavor}/visuals loading).
+ *
+ * @author ClaudeCode
+ */
 public class VisualsReader {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

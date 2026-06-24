@@ -24,16 +24,76 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "dun-gen" group of constants from {@code constants.txt} — the
+ * budgets the dungeon generator works to: maximum room centres, door/wall/tunnel
+ * grid counts, average object/treasure amounts and the pit/nest cap. Part of the
+ * Java port of the C constants loader; values are {@code static} globals and
+ * {@link #setValue(String)} decodes one {@code name:value} line and routes it to
+ * a validating setter.
+ *
+ * @author ClaudeCode
+ */
 public class DungeonGenerationConstants {
+    /**
+     * The data-file group tag this class consumes ({@code dun-gen}).
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "dun-gen";
+    /**
+     * Maximum number of room centre points (and hence rooms) on a normal level.
+     *
+     * @author ClaudeCode
+     */
     private static int centMax;
+    /**
+     * Maximum number of candidate door locations.
+     *
+     * @author ClaudeCode
+     */
     private static int doorMax;
+    /**
+     * Maximum number of grids where room walls may be pierced by tunnels.
+     *
+     * @author ClaudeCode
+     */
     private static int wallMax;
+    /**
+     * Maximum number of tunnel grids.
+     *
+     * @author ClaudeCode
+     */
     private static int tunnMax;
+    /**
+     * Average number of objects placed in rooms.
+     *
+     * @author ClaudeCode
+     */
     private static int amtRoom;
+    /**
+     * Average number of objects placed across rooms and corridors.
+     *
+     * @author ClaudeCode
+     */
     private static int amtItems;
+    /**
+     * Average amount of treasure placed across rooms and corridors.
+     *
+     * @author ClaudeCode
+     */
     private static int amtGold;
+    /**
+     * Maximum number of pits or nests allowed per level.
+     *
+     * @author ClaudeCode
+     */
     private static int pitMax;
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -118,6 +178,14 @@ public class DungeonGenerationConstants {
         return centMax;
     }
 
+    /**
+     * Validate and store the maximum room-centre count. Rejects values {@code <= 0}.
+     *
+     * @param centMax the proposed maximum
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code centMax <= 0}
+     * @author ClaudeCode
+     */
     private static void setCentMax(int centMax, String name) throws InvalidTokenFoundDuringParse {
         if (centMax <= 0) {
             String message = "Invalid maximum of room centres in parse of line " + tag + ":" + name + ":" + centMax;
@@ -140,6 +208,14 @@ public class DungeonGenerationConstants {
         return doorMax;
     }
 
+    /**
+     * Validate and store the maximum door-location count. Rejects values {@code <= 0}.
+     *
+     * @param doorMax the proposed maximum
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code doorMax <= 0}
+     * @author ClaudeCode
+     */
     private static void setDoorMax(int doorMax, String name) throws InvalidTokenFoundDuringParse {
         if (doorMax <= 0) {
             String message = "Invalid maximum of potential door locations in parse of line " + tag + ":" + name + ":" + doorMax;
@@ -161,6 +237,14 @@ public class DungeonGenerationConstants {
         return wallMax;
     }
 
+    /**
+     * Validate and store the maximum wall-piercing count. Rejects values {@code <= 0}.
+     *
+     * @param wallMax the proposed maximum
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code wallMax <= 0}
+     * @author ClaudeCode
+     */
     private static void setWallMax(int wallMax, String name) throws InvalidTokenFoundDuringParse {
         if (wallMax <= 0) {
             String message = "Invalid maximum of grids for walls in parse of line " + tag + ":" + name + ":" + wallMax;
@@ -182,6 +266,14 @@ public class DungeonGenerationConstants {
         return tunnMax;
     }
 
+    /**
+     * Validate and store the maximum tunnel-grid count. Rejects values {@code <= 0}.
+     *
+     * @param tunnMax the proposed maximum
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code tunnMax <= 0}
+     * @author ClaudeCode
+     */
     private static void setTunnMax(int tunnMax, String name) throws InvalidTokenFoundDuringParse {
         if (tunnMax <= 0) {
             String message = "Invalid maximum of tunnel grids in parse of line " + tag + ":" + name + ":" + tunnMax;
@@ -203,6 +295,14 @@ public class DungeonGenerationConstants {
         return amtRoom;
     }
 
+    /**
+     * Validate and store the average objects-per-room amount. Rejects negatives.
+     *
+     * @param amtRoom the proposed average
+     * @param name    the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code amtRoom < 0}
+     * @author ClaudeCode
+     */
     private static void setAmtRoom(int amtRoom, String name) throws IllegalArgumentException {
         if (amtRoom < 0) {
             String message = "Invalid maximum of room centres in parse of line " + tag + ":" + name + ":" + amtRoom;
@@ -224,6 +324,14 @@ public class DungeonGenerationConstants {
         return amtItems;
     }
 
+    /**
+     * Validate and store the average objects-everywhere amount. Rejects negatives.
+     *
+     * @param amtItems the proposed average
+     * @param name     the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code amtItems < 0}
+     * @author ClaudeCode
+     */
     private static void setAmtItems(int amtItems, String name) throws IllegalArgumentException {
         if (amtItems < 0) {
             String message = "Invalid maximum of items in all places in parse of line " + tag + ":" + name + ":" + amtItems;
@@ -245,6 +353,14 @@ public class DungeonGenerationConstants {
         return amtGold;
     }
 
+    /**
+     * Validate and store the average treasure amount. Rejects negatives.
+     *
+     * @param amtGold the proposed average
+     * @param name    the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code amtGold < 0}
+     * @author ClaudeCode
+     */
     private static void setAmtGold(int amtGold, String name) throws IllegalArgumentException {
         if (amtGold < 0) {
             String message = "Invalid treasure being put anywhere parse of line " + tag + ":" + name + ":" + amtGold;
@@ -266,6 +382,14 @@ public class DungeonGenerationConstants {
         return pitMax;
     }
 
+    /**
+     * Validate and store the maximum pits/nests per level. Rejects negatives.
+     *
+     * @param pitMax the proposed maximum
+     * @param name   the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code pitMax < 0}
+     * @author ClaudeCode
+     */
     private static void setPitMax(int pitMax, String name) throws IllegalArgumentException {
         if (pitMax < 0) {
             String message = "Invalid maximum of pits or nests per level in parse of line " + tag + ":" + name + ":" + pitMax;

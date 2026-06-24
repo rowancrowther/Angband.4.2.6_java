@@ -1,3 +1,10 @@
+// Parser+lexer for lib/gamedata/player_timed.txt - the player's timed
+// status effects (Haste, Blind, Cut, Stun, Poisoned, ...): display grades
+// (colour/threshold/name/messages), fail conditions, what to resist/brand/
+// slay-synonym with, and effects to run on beginning/ending the status.
+// Cf. src/player-timed.c: struct file_parser player_timed_parser
+// (player-timed.c:722).
+
 grammar PlayerTimed;
 
 @header {
@@ -22,6 +29,8 @@ grammar PlayerTimed;
     import java.util.List;
 }
 
+// "name:<TMD_NAME>" - starts a new timed-effect record; must match a
+// TMD_* constant from list-player-timed.h.
 name
         returns[TimedEffect nameStr]
         :   NAME UCASE EOL {
@@ -30,6 +39,7 @@ name
             }
         ;
 
+// "desc:<text>" - the effect's flavour description.
 desc
         returns[String descStr]
         @init {
@@ -39,6 +49,7 @@ desc
             | (LCASE { $descStr = $LCASE.getText(); })) EOL
         ;
 
+// "grade:<colour>:<max turns>:<name>:<up message>[:<down message>]"
 grade
         returns[TimedGrade timedGrade]
         @init {
@@ -57,7 +68,10 @@ grade
                 String [] parts = $GRADE.getText().split(":");
                 // Ignore the first part
                 // Second part is a single character which relates to a colour
-                colInit = ColourType.findColourType(parts[1].charAt(0));
+                if (parts[1].size() = 1)
+                    colInit = ColourType.findColourType(parts[1].charAt(0));
+                else
+                    colInit = ColourType.findColourType(parts[1]);
                 // Third part is the maximum turns this can apply to
                 maxInit = Integer.parseInt(parts[2]);
                 // Next come three strings - Name of the grade,
@@ -73,21 +87,25 @@ grade
             }
         ;
 
+// "on-end:<text>" - message shown when the effect wears off entirely.
 onEnd
         returns[String onEndStr]
         :   ON_END STRING EOL { $onEndStr = $STRING.getText(); }
         ;
 
+// "on-increase:<text>" - message shown when the effect's duration/grade increases.
 onIncrease
         returns[String onIncStr]
         :   ON_INCREASE STRING EOL { $onIncStr = $STRING.getText(); }
         ;
 
+// "on-decrease:<text>" - message shown when the effect's duration/grade decreases.
 onDecrease
         returns[String onDecStr]
         :   ON_DECREASE STRING EOL { $onDecStr = $STRING.getText(); }
         ;
 
+// "msgt:<MSG_TYPE>" - message-type/sound used for grade-change messages.
 msgt
         returns[MessageType msgType]
         :   MSGT UCASE EOL {
@@ -96,6 +114,7 @@ msgt
             }
         ;
 
+// "fail:<reason type index>:<code>"
 fail
         returns[TimedFailure failure]
         :   FAIL idx=INTEGER COLON code=UCASE EOL {
@@ -123,10 +142,16 @@ fail
                     case TYPE_PLAYER_FLAG:
                         PlayerFlag pValue = PlayerFlag.valueOf("PF_" + raw);
                         $failure = new TimedFailure(pValue, codeRes);
+                        break;
+
+                    default:
+                        $failure = new TimedFailure(PlayerFlag.PF_NONE, TimedEffectReasonType.TYPE_NONE);
+                        break;
                 }
             }
         ;
 
+// "on-begin-effect:<EF_TYPE>" - an effect to run when this status begins.
 onBeginEffect
         returns[EffectEnum effObj]
         :   ON_BEGIN_EFFECT UCASE EOL {
@@ -135,6 +160,9 @@ onBeginEffect
             }
         ;
 
+// "on-end-effect:<EF_TYPE>[:<TMD_NAME>]" - an effect to run when this
+// status ends, optionally itself triggering another timed effect (the
+// second form, with no subtype, leaves tEnum at TMD_NONE).
 onEndEffect
         returns[EffectEnum eEnum, TimedEffect tEnum]
         :   ON_END_EFFECT eff=UCASE COLON tef=UCASE EOL {
@@ -147,6 +175,8 @@ onEndEffect
             }
         ;
 
+// "effect-yx:<y>:<x>" - would set a coordinate on the on-end-effect. Dead:
+// see top-of-file problem #2 - not referenced by `playerTimed`.
 effectYX
         returns[int y, int x]
         :   EFFECT_YX yInt=INTEGER COLON xInt=INTEGER EOL {
@@ -155,15 +185,21 @@ effectYX
             }
         ;
 
+// "effect-dice:<value>" - dice for the preceding on-end-effect:.
 effectDice
         returns[String diceStr]
         :   EFFECT_DICE INTEGER EOL { $diceStr = $INTEGER.getText(); }
         ;
 
+// Disabled on purpose
+// "effect-expr:<letter>:<EFB_BASE>:<operation>".
 //effectExpr
 //        :   EFFECT_EXPR ANY_CHAR COLON UCASE COLON OPERATION
 //        ;
 
+// "effect-msg:<text>" - message for the on-end-effect:. Defined and lexed
+// but, like effectYX, not referenced anywhere in `playerTimed`'s loop -
+// dead code (no current player_timed.txt line uses "effect-msg:" either).
 effectMsg
         returns[String effMsg]
         :   EFFECT_MSG STRING EOL {
@@ -171,6 +207,7 @@ effectMsg
             }
         ;
 
+// "resist:<ELEMENT>" - the element this status grants resistance to.
 resist
         returns[ElementEnum resEnum]
         :   RESIST UCASE EOL {
@@ -179,6 +216,7 @@ resist
             }
         ;
 
+// "brand:<CODE>" - the melee brand this status grants, looked up in brand.txt.
 brand
         returns[Brand brandObj]
         :   BRAND UCASE EOL {
@@ -187,6 +225,7 @@ brand
             }
         ;
 
+// "slay:<CODE>" - the slay this status grants, looked up in slay.txt.
 slay
         returns[Slay slayObj]
         :   SLAY UCASE EOL {
@@ -195,6 +234,9 @@ slay
             }
         ;
 
+// "flag-synonym:<OF_FLAG>:<0|1>" - an object_property.txt flag that's
+// treated as synonymous with this timed effect for message-filtering
+// purposes.
 flagSynonym
         returns[ObjectFlag oFlag, int synonymous]
         :   FLAG_SYNONYM UCASE COLON INTEGER EOL {
@@ -204,6 +246,8 @@ flagSynonym
             }
         ;
 
+// "lower-bound:<value>" - the minimum value this timed effect can be
+// reduced to (e.g. by a cure) while still being active.
 lowerBound
         returns[int bound]
         :   LOWER_BOUND INTEGER EOL {
@@ -211,6 +255,9 @@ lowerBound
             }
         ;
 
+// "flags:<NONSTACKING>" - currently the only flag value checked for
+// (`flags`'s result is just compared against the literal string
+// "NONSTACKING" in `playerTimed`, not turned into a real flag set).
 flags
         returns[String flagStr]
         :   FLAGS UCASE EOL {
@@ -218,6 +265,8 @@ flags
             }
         ;
 
+// One full timed-effect record: name, then any mix of the directives above
+// in any order/quantity.
 playerTimed
         returns[PlayerTimedEffect playerTimedEffect]
         @init {
@@ -227,7 +276,7 @@ playerTimed
             String onIncInit = "";
             String onDecInit = "";
             MessageType msgInit = MessageType.MSG_NONE;
-            TimedFailure failInit = null;
+            List<TimedFailure> failInit = new ArrayList<>();
             List<TimedGrade> gradeInit = new ArrayList<>();
             Effect onBegEffInit = null;
             Effect onEndEffInit = null;
@@ -272,7 +321,8 @@ playerTimed
                 msgInit = $msgt.msgType;
             }
         |   fail {
-                failInit = $fail.failure;
+                failInit.add($fail.failure);
+
             }
         |   resist {
                 resistEnum = $resist.resEnum;
@@ -302,6 +352,7 @@ playerTimed
                 EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(t);
                 onEndEffInit = new Effect(e, wrapper);
             }
+// Commented out as no line in gamedata file currently uses this
 //        |   effectYX
         |   effectDice {
                 if (onEndEffInit != null)
@@ -309,6 +360,7 @@ playerTimed
             })+ EOL*
         ;
 
+// Top-level rule: the whole file is one or more timed-effect records.
 file
         returns[List<PlayerTimedEffect> effects]
         @init {
@@ -319,12 +371,19 @@ file
             })+ EOL* EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A line ending, INCLUDING any blank line on its own - deliberately not
+// skipped (every other directive rule explicitly matches a trailing EOL,
+// and `playerTimed`/`file` use EOL* to skip the blank lines between
+// records).
 EOL     :   ' '* '\r'? '\n'
         ;
 
+// NAME through FLAGS below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -333,6 +392,8 @@ DESC
         :   'desc:'
         ;
 
+// "grade:" plus the ENTIRE rest of the line as one token (re-split on ':'
+// in `grade`'s action)
 GRADE
         :   'grade:' ('a'..'z' | 'A'..'Z' | '0'..'9' | ' ' | '!' | ',' | '.' | ':' | '{' | '}')+
         ;
@@ -405,30 +466,39 @@ FLAGS
         :   'flags:'
         ;
 
-ANY_CHAR
-        :   ('a'..'z' | 'A'..'Z')
-        ;
+// Disabled on purpose
+//ANY_CHAR
+//   ('a'..'z' | 'A'..'Z')
+//        ;
 
+// A bare non-negative integer.
 INTEGER
         :   ('0'..'9')+
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES_OR_DIGITS symbolic name - used for TMD_*/
+// EF_*/ELEM_*/OF_*/PF_*/MSG_* names and brand/slay codes.
 UCASE
         :   ('A'..'Z' | '_' | '0'..'9')+
         ;
 
+// Free-running lowercase text with spaces - used for desc:'s plain-text form.
 LCASE
         :   ('a'..'z' | ' ')+
         ;
 
+// Disabled on purpose.
 //OPERATION
 //        :   ('0'..'9' | ' ' | '/' | '-' | '*' | '+')
 //        ;
 
+// Field separator used by on-end-effect:/effect-yx:/flag-synonym: lines.
 COLON
         :   ':'
         ;
 
+// Free-running text used for desc:/on-end:/on-increase:/on-decrease:/
+// effect-msg:'s text fields.
 STRING
         :   ('a'..'z' | 'A'..'Z' | ' ' | '.' | '!' | '-' | '{' | '}' | ',')+
         ;

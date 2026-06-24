@@ -28,31 +28,153 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.Objects;
 
+/**
+ * The definition of one terrain feature type (as loaded from {@code terrain.txt})
+ * — its code, name, display glyph, the {@link TerrainFeatureFlags} that give it
+ * its behaviour, and the various messages shown when the player interacts with
+ * it. The many {@code isXxx()} predicates are convenience tests over {@link
+ * #flags}. This is the Java port of the C original's {@code struct feature}
+ * ({@code src/cave.h}).
+ *
+ * @author ClaudeCode
+ */
 public class Feature {
+    /**
+     * The feature's terrain code (its {@link TerrainFlags} identity).
+     *
+     * @author ClaudeCode
+     */
     private TerrainFlags code;
+    /**
+     * The feature's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * Human-readable description of the feature.
+     *
+     * @author ClaudeCode
+     */
     private String description;
+    /**
+     * Index of this feature in the global feature table.
+     *
+     * @author ClaudeCode
+     */
     private int featureIndex;
 
+    /**
+     * The terrain this feature mimics/disguises as, or {@code null} if none.
+     *
+     * @author ClaudeCode
+     */
     private TerrainFlags mimic;
+    /**
+     * Drawing priority when several features could be shown for a grid.
+     *
+     * @author ClaudeCode
+     */
     private int priority;
 
+    /**
+     * Shop number when this feature is a shop entrance.
+     *
+     * @author ClaudeCode
+     */
     private int shopNum;
+    /**
+     * Difficulty of digging through this feature.
+     *
+     * @author ClaudeCode
+     */
     private int dig;
 
+    /**
+     * The feature's behaviour flags (passable, wall, door, stair, …).
+     *
+     * @author ClaudeCode
+     */
     Flag<TerrainFeatureFlags> flags;
 
+    /**
+     * The glyph and colour used to draw this feature.
+     *
+     * @author ClaudeCode
+     */
     private AngbandDisplayCharacter displayCharacter;
 
+    /**
+     * Message shown when the player walks onto this feature.
+     *
+     * @author ClaudeCode
+     */
     private String walkMsg;
+    /**
+     * Message shown when the player runs onto/through this feature.
+     *
+     * @author ClaudeCode
+     */
     private String runMsg;
+    /**
+     * Message shown when the feature hurts the player.
+     *
+     * @author ClaudeCode
+     */
     private String hurtMsg;
+    /**
+     * Message shown when the player dies to this feature.
+     *
+     * @author ClaudeCode
+     */
     private String dieMsg;
+    /**
+     * Message shown when the player is confused on this feature.
+     *
+     * @author ClaudeCode
+     */
     private String confusedMsg;
+    /**
+     * Prefix used when describing this feature in "look" output.
+     *
+     * @author ClaudeCode
+     */
     private String lookPrefix;
+    /**
+     * Preposition used when describing being "in" this feature in "look" output.
+     *
+     * @author ClaudeCode
+     */
     private String lookInPreposition;
+    /**
+     * Monster race flag granting resistance to this feature's effects.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRaceFlag resistFlag;
 
+    /**
+     * Build a feature definition from its parsed data-file fields.
+     *
+     * @param code              terrain code identity
+     * @param name              feature name
+     * @param description       human-readable description
+     * @param mimic             terrain this feature mimics, or {@code null}
+     * @param priority          drawing priority
+     * @param shopNum           shop number (for shop entrances)
+     * @param dig               digging difficulty
+     * @param flags             behaviour flags
+     * @param displayCharacter  display glyph and colour
+     * @param walkMsg           walk-onto message
+     * @param runMsg            run-onto message
+     * @param hurtMsg           hurt message
+     * @param dieMsg            death message
+     * @param confusedMsg       confused message
+     * @param lookPrefix        look-output prefix
+     * @param lookInPreposition look-output "in" preposition
+     * @param resistFlag        race flag granting resistance
+     * @author ClaudeCode
+     */
     public Feature(TerrainFlags code,
                    String name,
                    String description,
@@ -89,6 +211,10 @@ public class Feature {
         this.resistFlag = resistFlag;
     }
 
+    /**
+     * @return this feature's terrain code
+     * @author ClaudeCode
+     */
     public TerrainFlags getTerrainFlag() {
         return code;
     }
@@ -439,7 +565,7 @@ public class Feature {
     /**
      * Test whether this feature is interesting or not
      *
-     * @return
+     * @return true if this feature is flagged as interesting (noticed when looking around)
      */
     public boolean isInteresting() {
         return flags.has(TerrainFeatureFlags.TF_INTERESTING);
@@ -454,14 +580,28 @@ public class Feature {
         return name;
     }
 
+    /**
+     * @return this feature's terrain code (same as {@link #getTerrainFlag()})
+     * @author ClaudeCode
+     */
     public TerrainFlags getCodeFlags() {
         return code;
     }
 
+    /**
+     * Resolve the feature this one mimics by looking it up in the global table.
+     *
+     * @return the mimicked {@link Feature}
+     * @author ClaudeCode
+     */
     public Feature getMimic() {
         return GameConstants.lookupFeature(mimic);
     }
 
+    /**
+     * @return a debug string listing this feature's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "Feature{" +
@@ -486,6 +626,13 @@ public class Feature {
                 '}';
     }
 
+    /**
+     * Value equality across all fields.
+     *
+     * @param o the object to compare against
+     * @return true if {@code o} is an equivalent {@code Feature}
+     * @author ClaudeCode
+     */
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
@@ -494,6 +641,12 @@ public class Feature {
         return featureIndex == feature.featureIndex && priority == feature.priority && shopNum == feature.shopNum && dig == feature.dig && code == feature.code && Objects.equals(getName(), feature.getName()) && Objects.equals(description, feature.description) && mimic == feature.mimic && Objects.equals(flags, feature.flags) && Objects.equals(displayCharacter, feature.displayCharacter) && Objects.equals(walkMsg, feature.walkMsg) && Objects.equals(runMsg, feature.runMsg) && Objects.equals(hurtMsg, feature.hurtMsg) && Objects.equals(dieMsg, feature.dieMsg) && Objects.equals(confusedMsg, feature.confusedMsg) && Objects.equals(lookPrefix, feature.lookPrefix) && Objects.equals(lookInPreposition, feature.lookInPreposition) && resistFlag == feature.resistFlag;
     }
 
+    /**
+     * Hash code consistent with {@link #equals(Object)}, combining all fields.
+     *
+     * @return this feature's hash code
+     * @author ClaudeCode
+     */
     @Override
     public int hashCode() {
         int result = Objects.hashCode(code);

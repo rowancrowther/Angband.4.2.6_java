@@ -24,8 +24,25 @@ import org.jetbrains.annotations.NotNull;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A named group of related {@link VisualsColourCycle}s. Colour cycles are
+ * organised into groups in the visuals data file, so a monster race can refer to
+ * a cycle by group + cycle name.
+ *
+ * @author ClaudeCode
+ */
 public class VisualsCycleGroup {
+    /**
+     * The colour cycles belonging to this group.
+     *
+     * @author ClaudeCode
+     */
     List<VisualsColourCycle> cycles;
+    /**
+     * The name identifying this group.
+     *
+     * @author ClaudeCode
+     */
     String groupName;
 
     /**
@@ -36,11 +53,23 @@ public class VisualsCycleGroup {
         this.cycles = new ArrayList<>();
     }
 
+    /**
+     * Set this group's name.
+     *
+     * @param groupName the group name
+     * @author ClaudeCode
+     */
     @Contract(mutates = "this")
     public void setGroupName(@NotNull String groupName) {
         this.groupName = groupName;
     }
 
+    /**
+     * Add a colour cycle to this group.
+     *
+     * @param cycle the cycle to add
+     * @author ClaudeCode
+     */
     @Contract(mutates = "this")
     public void addCycle(@NotNull VisualsColourCycle cycle) {
         cycles.add(cycle);

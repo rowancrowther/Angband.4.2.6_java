@@ -28,11 +28,39 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * One named colour-cycling animation: an ordered list of {@link ColourType}
+ * steps that a glyph cycles through, one step per animation frame. This is the
+ * Java port of the C original's colour-cycling support ({@code src/ui-visuals.c}),
+ * used to make certain monsters/terrain shimmer.
+ *
+ * @author ClaudeCode
+ */
 public class VisualsColourCycle implements Cloneable {
+    /**
+     * Logger used to report cloning failures.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The ordered colours this cycle steps through, one per frame.
+     *
+     * @author ClaudeCode
+     */
     private List<ColourType> steps;
+    /**
+     * The name identifying this cycle within its group.
+     *
+     * @author ClaudeCode
+     */
     private String cycleName;
+    /**
+     * The colour used as a marker for an unused/invalid entry.
+     *
+     * @author ClaudeCode
+     */
     private ColourType invalidColour;
 
     /**

@@ -1,7 +1,33 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.objects.enums;
 
 import org.jetbrains.annotations.Contract;
 
+/**
+ * The boolean property flags an object can carry (sustains, protections,
+ * telepathy, free action, light, digging, throwing, curses, …), each with the
+ * short label used in the character/equipment resistance display. Mirrors the C
+ * original's {@code OF_*} object flags ({@code src/list-object-flags.h}); the
+ * constants are self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectFlag {
     OF_NONE(""),
     OF_SUST_STR(" sStr"),
@@ -44,13 +70,28 @@ public enum ObjectFlag {
     OF_MULTIPLY_WEIGHT("MulWg"),
     OF_MAX("");
 
+    /**
+     * The short display label for this flag (used in resistance grids).
+     *
+     * @author ClaudeCode
+     */
     private String flag;
 
+    /**
+     * Bind an object flag to its display label.
+     *
+     * @param flag the display label
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     ObjectFlag(String flag) {
         this.flag = flag;
     }
 
+    /**
+     * @return this flag's short display label
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public String getFlag() {
         return flag;

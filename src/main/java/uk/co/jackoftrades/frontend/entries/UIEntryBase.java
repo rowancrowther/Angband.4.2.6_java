@@ -23,16 +23,70 @@ import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 
 import java.util.List;
 
+/**
+ * A reusable template for {@link UIEntry} definitions: the shared defaults
+ * (renderer, combiner, categories, flags, description) that concrete entries
+ * inherit from. This is the "base" half of the C original's UI-entry system
+ * ({@code src/ui-entry.c}), letting many status entries share common settings.
+ *
+ * @author ClaudeCode
+ */
 public class UIEntryBase {
+    /**
+     * Logger (reserved for diagnostics).
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
+    /**
+     * The template's name, referenced by entries that use it.
+     *
+     * @author ClaudeCode
+     */
     private final String name;
+    /**
+     * Default renderer for entries built from this template.
+     *
+     * @author ClaudeCode
+     */
     private final UIEntryRenderer renderer;
+    /**
+     * Default value-combining strategy.
+     *
+     * @author ClaudeCode
+     */
     private final CombinerName combine;
+    /**
+     * Categories this template belongs to (used to group entries on screen).
+     *
+     * @author ClaudeCode
+     */
     private final List<String> categories;
+    /**
+     * Raw flag string applied to entries built from this template.
+     *
+     * @author ClaudeCode
+     */
     private final String flags;
+    /**
+     * Human-readable description.
+     *
+     * @author ClaudeCode
+     */
     private final String desc;
 
+    /**
+     * Build a UI-entry template from its parsed fields.
+     *
+     * @param name       template name
+     * @param renderer   default renderer
+     * @param combine    default value combiner
+     * @param categories categories the template belongs to
+     * @param flags      raw flag string
+     * @param desc       description
+     * @author ClaudeCode
+     */
     public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine, List<String> categories, String flags, String desc) {
         this.name = name;
         this.renderer = renderer;
@@ -51,6 +105,10 @@ public class UIEntryBase {
         return name;
     }
 
+    /**
+     * @return a debug string listing this template's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "UIEntryBase{" +

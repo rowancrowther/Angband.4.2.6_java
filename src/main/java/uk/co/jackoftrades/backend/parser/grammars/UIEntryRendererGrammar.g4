@@ -1,3 +1,26 @@
+// Parser+lexer for lib/gamedata/ui_entry_renderer.txt - the 5 backend
+// renderers used by ui_entry.txt elements: which native renderer code to
+// bind to, colour/label-colour/symbol palettes, digit count, and sign
+// display. Cf. src/ui-entry-renderers.c's struct file_parser
+// ui_entry_renderer_parser (ui-entry-renderers.c:1727).
+//
+// POTENTIAL PROBLEMS (both latent - not currently triggered, since all 5
+// renderers in this repo's ui_entry_renderer.txt happen to provide every
+// field this grammar treats as mandatory and none use the missing ones):
+//
+//   1. The file's own header documents colors:/labelcolors:/symbols: as
+//      all optional ("Both are optional; if not set, default values from
+//      the backend are used" / "It is optional" for symbols), but
+//      `uiEntry` matches `colours`/`labelcolours`/`symbols` with no '?' -
+//      all mandatory. Every one of the 5 current renderer records happens
+//      to set all three anyway.
+//
+//   2. The header also documents combiner:/units:/combined-renderer:
+//      directives that this grammar has no tokens or rules for at all.
+//      No current renderer record uses any of them.
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar UIEntryRendererGrammar;
 
 @header
@@ -10,6 +33,7 @@ grammar UIEntryRendererGrammar;
             import java.util.List;
         }
 
+// "name:<text>" - starts a new renderer record; referenced by ui_entry.txt's renderer:.
 name
         returns[String nameStr]
         :   NAME LCASEWORD {
@@ -17,6 +41,8 @@ name
             }
         ;
 
+// "code:<text>" - binds this renderer to a backend implementation
+// (list-ui-entry-renderers.h).
 code
         returns[UIEntryRendererEnum codeEnum]
         :   CODE UCASEWORD {
@@ -25,6 +51,9 @@ code
             }
         ;
 
+// "colors:<colour chars>" - palette of colours used for the value. See
+// top-of-file problem #1 re: this being mandatory here despite being
+// documented as optional.
 colours
         returns[String colourCharStr]
         :   COLOURS COLOURCHARS {
@@ -32,6 +61,8 @@ colours
             }
         ;
 
+// "labelcolors:<colour chars>" - palette of colours used for the label.
+// See top-of-file problem #1.
 labelcolours
         returns[String colourCharStr]
         :   LABELCOLOURS COLOURCHARS {
@@ -39,6 +70,8 @@ labelcolours
             }
         ;
 
+// "symbols:<symbol chars>" - palette of symbols used when converting
+// values to display characters. See top-of-file problem #1.
 symbols
         returns[String symbolCharsStr]
         :   SYMBOLS SYMBOLCHARS {
@@ -46,6 +79,7 @@ symbols
             }
         ;
 
+// "ndigit:<digit>" - number of digits to display for a numeric value.
 ndigit
         returns[int numDigitsInt]
         :   NDIGITS DIGIT {
@@ -53,6 +87,7 @@ ndigit
             }
         ;
 
+// "sign:NO_SIGN|ALWAYS_SIGN|NEGATIVE_SIGN" - whether/when a sign indicator is shown.
 sign
         returns[UIEntryEnum signEnum]
         :   SIGN UCASEWORD {
@@ -61,6 +96,8 @@ sign
             }
         ;
 
+// One full renderer record: a fixed sequence of name/code/colours/
+// labelcolours/symbols, then optional ndigit/sign.
 uiEntry
         returns[UIEntryRenderer renderer]
         @init {
@@ -94,6 +131,7 @@ uiEntry
             { signInit = $sign.signEnum; })?
         ;
 
+// Top-level rule: the whole file is one or more renderer records.
 file
         returns[List<UIEntryRenderer> renderers]
         @init {
@@ -105,14 +143,18 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through SIGN below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -141,22 +183,39 @@ SIGN
         :   'sign:'
         ;
 
+// One or more Angband colour-code characters - used for colors:/labelcolors:.
 COLOURCHARS
         :    ('d'|'w'|'s'|'o'|'r'|'g'|'b'|'u'|'D'|'W'|'P'|'y'|'R'|'G'|'B'|'U'|'p'|'v'|'t'|'m'|'Y'|'i'|'T'|'V'|'I'|'M'|'z'|'Z')+
         ;
 
+// One or more display-symbol characters - used for symbols:.
 SYMBOLCHARS
         :   ('?'|' '|'.'|'s'|'*'|'='|'+'|'!'|'-'|'^'|'%'|'~')+
         ;
 
+// A single digit - used for ndigit:.
 DIGIT
         :   ('0'..'9')
         ;
 
+// A lowercase_with_underscores symbolic name (digit '1' also allowed) -
+// used for name:.
 LCASEWORD
         :   ('a'..'z'|'1'|'_')+
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES symbolic name - used for code:/sign:.
 UCASEWORD
         :   ('A'..'Z'|'_')+
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Only worth relaxing if a future renderer omits colors:/labelcolors:/
+//      symbols: - mark them `?` and let the constructed UIEntryRenderer
+//      fall back to backend defaults (mirroring the documented behaviour)
+//      when absent.
+//
+//   2. Only worth adding if a renderer actually needs combiner:/units:/
+//      combined-renderer: - add COMBINER/UNITS/COMBINED_RENDERER tokens
+//      and corresponding optional rules/fields.

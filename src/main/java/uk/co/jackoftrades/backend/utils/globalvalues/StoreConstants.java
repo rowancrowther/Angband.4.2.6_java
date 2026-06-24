@@ -24,16 +24,64 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "store" group of constants from {@code constants.txt} — shop tuning:
+ * inventory size, restock interval, owner-shuffle chance and the depth at which
+ * store goods start gaining magical bonuses. Part of the Java port of the C
+ * constants loader; {@link #setValue(String)} decodes one {@code name:value}
+ * line and routes it to a validating setter.
+ *
+ * @author ClaudeCode
+ */
 public class StoreConstants {
+    /**
+     * The data-file group tag this class consumes ({@code store}).
+     *
+     * @author ClaudeCode
+     */
     private static final String tag = "store";
 
+    /**
+     * Maximum number of distinct items a store may hold.
+     *
+     * @author ClaudeCode
+     */
     private static int invenMax;
+    /**
+     * Number of game turns between store inventory turnovers.
+     *
+     * @author ClaudeCode
+     */
     private static int turns;
+    /**
+     * 1-in-{@code shuffle} chance per day that a store's owner changes.
+     *
+     * @author ClaudeCode
+     */
     private static int shuffle;
+    /**
+     * Dungeon level after which normal-store goods can gain magical bonuses.
+     *
+     * @author ClaudeCode
+     */
     private static int magicLevel;
 
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Parse and store a single {@code store} constant from the data file
+     * ({@code name:integer}), routing it to the matching setter.
+     *
+     * @param value the raw {@code name:value} token from {@code constants.txt}
+     * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
+     *                                      cannot be parsed, or the name is unrecognised
+     * @author ClaudeCode
+     */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
 
@@ -94,6 +142,14 @@ public class StoreConstants {
         return invenMax;
     }
 
+    /**
+     * Validate and store the store inventory size. Rejects values below 1.
+     *
+     * @param invenMax the proposed maximum item count
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code invenMax < 1}
+     * @author ClaudeCode
+     */
     private static void setInvenMax(int invenMax, String name) throws InvalidTokenFoundDuringParse {
         if (invenMax < 1) {
             String message = "Invalid number of store's inventory items from constants.txt. Token was: "
@@ -116,6 +172,14 @@ public class StoreConstants {
         return turns;
     }
 
+    /**
+     * Validate and store the restock interval. Rejects values below 1.
+     *
+     * @param turns the proposed turns between turnovers
+     * @param name  the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code turns < 1}
+     * @author ClaudeCode
+     */
     private static void setTurns(int turns, String name) throws InvalidTokenFoundDuringParse {
         if (turns < 1) {
             String message = "Invalid number of turns between store's turnovers. Token was: "
@@ -139,6 +203,14 @@ public class StoreConstants {
         return shuffle;
     }
 
+    /**
+     * Validate and store the owner-shuffle chance. Rejects values below 1.
+     *
+     * @param shuffle the proposed 1-in-N daily chance
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code shuffle < 1}
+     * @author ClaudeCode
+     */
     private static void setShuffle(int shuffle, String name) throws InvalidTokenFoundDuringParse {
         if (shuffle < 1) {
             String message = "Invalid number 1/chance of when reading constants.txt. Token was: "
@@ -162,6 +234,15 @@ public class StoreConstants {
         return magicLevel;
     }
 
+    /**
+     * Validate and store the magic-level threshold. Rejects values below 1
+     * (dungeon levels are 1-based).
+     *
+     * @param magicLevel the proposed threshold level
+     * @param name       the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code magicLevel < 1}
+     * @author ClaudeCode
+     */
     private static void setMagicLevel(int magicLevel, String name) throws InvalidTokenFoundDuringParse {
         // dungeon levels start at 1
         if (magicLevel < 1) {

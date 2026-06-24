@@ -24,20 +24,99 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "world" group of tunable constants loaded from {@code constants.txt}
+ * — dungeon/town geometry, day length, level-feeling tuning and movement energy.
+ * Part of the Java port of the C constants loader: each value is a {@code static}
+ * global and {@link #setValue(String)} is the parser callback that decodes one
+ * {@code name:value} line and routes it to a validating setter.
+ *
+ * @author ClaudeCode
+ */
 public class GameWorldConstants {
+    /**
+     * The data-file group tag this class consumes ({@code world}).
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "world";
+    /**
+     * Maximum dungeon level; must be at least 100 (below 128 can suppress some objects).
+     *
+     * @author ClaudeCode
+     */
     private static int maxDepth;
+    /**
+     * Length of a full day (dawn to dawn) measured in game turns.
+     *
+     * @author ClaudeCode
+     */
     private static int dayLength;
+    /**
+     * Dungeon level height in grid rows.
+     *
+     * @author ClaudeCode
+     */
     private static int dungeonHgt;
+    /**
+     * Dungeon level width in grid columns.
+     *
+     * @author ClaudeCode
+     */
     private static int dungeonWid;
+    /**
+     * Town map height in grid rows.
+     *
+     * @author ClaudeCode
+     */
     private static int townHgt;
+    /**
+     * Town map width in grid columns.
+     *
+     * @author ClaudeCode
+     */
     private static int townWid;
+    /**
+     * Total number of "feeling" squares per level used to gauge level danger/treasure.
+     *
+     * @author ClaudeCode
+     */
     private static int feelingTotal;
+    /**
+     * Number of squares the player must explore before the first level feeling appears.
+     *
+     * @author ClaudeCode
+     */
     private static int feelingNeed;
+    /**
+     * Number of dungeon levels skipped per staircase descent.
+     *
+     * @author ClaudeCode
+     */
     private static int stairSkip;
+    /**
+     * Energy required for a standard move by the player or a monster.
+     *
+     * @author ClaudeCode
+     */
     private static int moveEnergy;
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
+    /**
+     * Parse and store a single {@code world} constant from the data file.
+     * The value is expected as {@code name:integer}; the name selects the target
+     * constant and each is validated before storage.
+     *
+     * @param value the raw {@code name:value} token from {@code constants.txt}
+     * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
+     *                                      cannot be parsed, or the name is unrecognised
+     * @author ClaudeCode
+     */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] results = value.split(":");
         int val;
@@ -121,6 +200,16 @@ public class GameWorldConstants {
         return maxDepth;
     }
 
+    /**
+     * Validate and store the maximum dungeon depth. Rejects values below 100
+     * (the game's hard minimum) and warns below 128, where some objects can no
+     * longer be generated.
+     *
+     * @param maxDepth the proposed maximum depth
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code maxDepth < 100}
+     * @author ClaudeCode
+     */
     private static void setMaxDepth(int maxDepth, String name) throws InvalidTokenFoundDuringParse {
         if (maxDepth < 100) {
             String message = "Dungeon depth set in constants.txt to be less than 100. This value should be at least 100."
@@ -149,6 +238,14 @@ public class GameWorldConstants {
         return dayLength;
     }
 
+    /**
+     * Store the day length. Warns (but does not reject) when the value is odd,
+     * since an even number of turns avoids rounding issues in day/night logic.
+     *
+     * @param dayLength the proposed day length in turns
+     * @param name      the constant name, used only for error reporting
+     * @author ClaudeCode
+     */
     private static void setDayLength(int dayLength, String name) {
         if (dayLength % 2 != 0) {
             String message = "Number of turns for a day is not even. This may cause issues in the code. Value was: "
@@ -170,6 +267,14 @@ public class GameWorldConstants {
         return dungeonHgt;
     }
 
+    /**
+     * Validate and store the dungeon height. Rejects values below 1.
+     *
+     * @param dungeonHgt the proposed dungeon height in rows
+     * @param name       the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code dungeonHgt < 1}
+     * @author ClaudeCode
+     */
     private static void setDungeonHgt(int dungeonHgt, String name) throws InvalidTokenFoundDuringParse {
         if (dungeonHgt < 1) {
             String message = "Invalid maximum dungeon height. Token string was: "
@@ -193,6 +298,14 @@ public class GameWorldConstants {
         return dungeonWid;
     }
 
+    /**
+     * Validate and store the dungeon width. Rejects values below 1.
+     *
+     * @param dungeonWid the proposed dungeon width in columns
+     * @param name       the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code dungeonWid < 1}
+     * @author ClaudeCode
+     */
     private static void setDungeonWid(int dungeonWid, String name) throws InvalidTokenFoundDuringParse {
         if (dungeonWid < 1) {
             String message = "Invalid maximum dungeon width. Token string was: "
@@ -216,6 +329,14 @@ public class GameWorldConstants {
         return townHgt;
     }
 
+    /**
+     * Validate and store the town height. Rejects values below 1.
+     *
+     * @param townHgt the proposed town height in rows
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code townHgt < 1}
+     * @author ClaudeCode
+     */
     private static void setTownHgt(int townHgt, String name) throws InvalidTokenFoundDuringParse {
         if (townHgt < 1) {
             String message = "Invalid maximum town height. Token string was: "
@@ -238,6 +359,14 @@ public class GameWorldConstants {
         return townWid;
     }
 
+    /**
+     * Validate and store the town width. Rejects values below 1.
+     *
+     * @param townWid the proposed town width in columns
+     * @param name    the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code townWid < 1}
+     * @author ClaudeCode
+     */
     private static void setTownWid(int townWid, String name) throws InvalidTokenFoundDuringParse {
         if (townWid < 1) {
             String message = "Invalid maximum town width. Token string was: "
@@ -260,6 +389,14 @@ public class GameWorldConstants {
         return feelingTotal;
     }
 
+    /**
+     * Validate and store the total feeling-square count. Rejects values below 1.
+     *
+     * @param feelingTotal the proposed number of feeling squares per level
+     * @param name         the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code feelingTotal < 1}
+     * @author ClaudeCode
+     */
     private static void setFeelingTotal(int feelingTotal, String name) throws InvalidTokenFoundDuringParse {
         if (feelingTotal < 1) {
             String message = "Invalid total feeling squares per level. Token string was: "
@@ -282,6 +419,14 @@ public class GameWorldConstants {
         return feelingNeed;
     }
 
+    /**
+     * Validate and store the squares-needed-before-feeling value. Rejects values below 1.
+     *
+     * @param feelingNeed the proposed number of squares to explore first
+     * @param name        the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code feelingNeed < 1}
+     * @author ClaudeCode
+     */
     private static void setFeelingNeed(int feelingNeed, String name) throws InvalidTokenFoundDuringParse {
         if (feelingNeed < 1) {
             String message = "Invalid squares needed to visit before feeling. Token string was: "
@@ -305,6 +450,18 @@ public class GameWorldConstants {
         return stairSkip;
     }
 
+    /**
+     * Validate and store the stair-skip depth.
+     * <p>
+     * Note: the guard here checks {@code feelingNeed} rather than
+     * {@code stairSkip}, which appears to be a copy-paste carry-over from
+     * {@link #setFeelingNeed(int, String)} in the original code.
+     *
+     * @param stairSkip the proposed number of levels skipped per staircase
+     * @param name      the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if the (feelingNeed) guard fails
+     * @author ClaudeCode
+     */
     private static void setStairSkip(int stairSkip, String name) throws InvalidTokenFoundDuringParse {
         if (feelingNeed < 1) {
             String message = "Invalid squares needed to visit before feeling. Token string was: "
@@ -326,6 +483,18 @@ public class GameWorldConstants {
         return moveEnergy;
     }
 
+    /**
+     * Validate and store the per-move energy cost.
+     * <p>
+     * Note: as with {@link #setStairSkip(int, String)}, the guard checks
+     * {@code feelingNeed} rather than {@code moveEnergy} — likely a copy-paste
+     * carry-over in the original code.
+     *
+     * @param moveEnergy the proposed energy required for a standard move
+     * @param name       the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if the (feelingNeed) guard fails
+     * @author ClaudeCode
+     */
     private static void setMoveEnergy(int moveEnergy, String name) throws InvalidTokenFoundDuringParse {
         if (feelingNeed < 1) {
             String message = "Invalid energy needed to move by player or monster. Token string was: "

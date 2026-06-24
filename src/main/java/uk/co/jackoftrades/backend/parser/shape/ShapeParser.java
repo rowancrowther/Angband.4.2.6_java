@@ -18,31 +18,35 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Shape.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.shape;
 
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
-import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.enums.ValueEnum;
-import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.enums.EffectBaseType;
-import uk.co.jackoftrades.middle.effect.Expression;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
-import uk.co.jackoftrades.middle.player.PlayerShape;
-import uk.co.jackoftrades.middle.combat.enums.Element;
-import uk.co.jackoftrades.middle.player.PlayerBlow;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
+import uk.co.jackoftrades.middle.effect.Expression;
+import uk.co.jackoftrades.middle.enums.EffectBaseType;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.enums.ValueEnum;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.player.PlayerBlow;
+import uk.co.jackoftrades.middle.player.PlayerShape;
+import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
-import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
 import java.util.HashMap;
-
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
+import java.util.List;
+import java.util.Map;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ShapeParser extends Parser {
@@ -753,7 +757,7 @@ public class ShapeParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class Obj_flagsContext extends ParserRuleContext {
-		public Flag<ObjectFlagName> oFlags;
+		public Flag<ObjectFlag> oFlags;
 		public Token f1;
 		public Token f2;
 
@@ -801,7 +805,7 @@ public class ShapeParser extends Parser {
 		Obj_flagsContext _localctx = new Obj_flagsContext(_ctx, getState());
 		enterRule(_localctx, 20, RULE_obj_flags);
 
-        ((Obj_flagsContext) _localctx).oFlags = new Flag<>(ObjectFlagName.class);
+		((Obj_flagsContext) _localctx).oFlags = new Flag<>(ObjectFlag.class);
 		        
 		int _la;
 		try {
@@ -811,7 +815,7 @@ public class ShapeParser extends Parser {
                 match(OBJ_FLAGS);
                 setState(87);
                 ((Obj_flagsContext) _localctx).f1 = match(FLAG);
-                _localctx.oFlags.on(ObjectFlagName.valueOf("OF_" + ((Obj_flagsContext) _localctx).f1.getText()));
+				_localctx.oFlags.on(ObjectFlag.valueOf("OF_" + ((Obj_flagsContext) _localctx).f1.getText()));
                 setState(94);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
@@ -822,7 +826,7 @@ public class ShapeParser extends Parser {
                             match(OR);
                             setState(90);
                             ((Obj_flagsContext) _localctx).f2 = match(FLAG);
-                            _localctx.oFlags.on(ObjectFlagName.valueOf("OF_" + ((Obj_flagsContext) _localctx).f2.getText()));
+							_localctx.oFlags.on(ObjectFlag.valueOf("OF_" + ((Obj_flagsContext) _localctx).f2.getText()));
                         }
                     }
                     setState(96);
@@ -1730,10 +1734,10 @@ public class ShapeParser extends Parser {
         int toHitInit = 0;
         int toDamInit = 0;
         Map<PlayerSkill, Integer> skillInit = new HashMap<>();
-        Flag<ObjectFlagName> oFlagsInit = new Flag<>(ObjectFlagName.class);
+		Flag<ObjectFlag> oFlagsInit = new Flag<>(ObjectFlag.class);
         Flag<PlayerFlag> pFlagsInit = new Flag<>(PlayerFlag.class);
         Map<ValueEnum, Integer> valueModInit = new HashMap<>();
-        List<Element> resistInit = new ArrayList<>();
+		List<ElementEnum> resistInit = new ArrayList<>();
         Effect effectInit = null;
         int numBlows = 0;
         List<PlayerBlow> blowInit = new ArrayList<>();

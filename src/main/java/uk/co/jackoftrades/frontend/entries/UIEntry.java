@@ -19,28 +19,132 @@ package uk.co.jackoftrades.frontend.entries;
 
 import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.middle.enums.StatElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
 import java.util.List;
 
+/**
+ * A single entry in the player status display (one stat or resistance line),
+ * ported from the C original's UI-entry system ({@code src/ui-entry.c}). Each
+ * entry binds a stat or element parameter to a renderer, a value combiner, a
+ * priority (for ordering/space competition), one or more labels for different
+ * widths, and an optional {@link UIEntryBase} template it inherits defaults from.
+ *
+ * @author ClaudeCode
+ */
 public class UIEntry {
+    /**
+     * The entry's internal name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * The element this entry tracks, when its parameter is an element.
+     *
+     * @author ClaudeCode
+     */
     private ElementEnum parameter;
+    /**
+     * True if the parameter is an element; false if it is a stat.
+     *
+     * @author ClaudeCode
+     */
     private boolean parmIsElement;
+    /**
+     * Whether this entry's parameter is a stat or an element.
+     *
+     * @author ClaudeCode
+     */
     private StatElemType statOrElement;
+    /**
+     * The renderer used to draw this entry's value.
+     *
+     * @author ClaudeCode
+     */
     private UIEntryRenderer renderer;
+    /**
+     * How multiple contributing values for this entry are combined.
+     *
+     * @author ClaudeCode
+     */
     private CombinerName combineType;
+    /**
+     * Numeric display priority (used when space is limited).
+     *
+     * @author ClaudeCode
+     */
     private int priorityNum;
+    /**
+     * Raw (unparsed) priority string from the data file.
+     *
+     * @author ClaudeCode
+     */
     private String priorityStr;
+    /**
+     * Behavioural flag for this entry.
+     *
+     * @author ClaudeCode
+     */
     private EntryFlag entryFlag;
+    /**
+     * Human-readable description.
+     *
+     * @author ClaudeCode
+     */
     private String description;
+    /**
+     * Default-width label text.
+     *
+     * @author ClaudeCode
+     */
     private String label;
+    /**
+     * Two-character label variant.
+     *
+     * @author ClaudeCode
+     */
     private String label2;
+    /**
+     * Five-character label variant.
+     *
+     * @author ClaudeCode
+     */
     private String label5;
+    /**
+     * Categories this entry belongs to (used for grouping on screen).
+     *
+     * @author ClaudeCode
+     */
     private List<String> categories;
+    /**
+     * The template this entry inherits defaults from, if any.
+     *
+     * @author ClaudeCode
+     */
     private UIEntryBase template;
 
+    /**
+     * Build a UI status entry from its parsed data-file fields. Note the
+     * constructor parameter order places {@code label5} before {@code label2},
+     * matching the data-file column order.
+     *
+     * @param name        internal entry name
+     * @param parameter   the element parameter (when applicable)
+     * @param parmType    whether the parameter is a stat or an element
+     * @param renderer    the renderer for the entry's value
+     * @param combineType the value-combining strategy
+     * @param categories  categories the entry belongs to
+     * @param priorityNum numeric display priority
+     * @param priorityStr raw priority string
+     * @param entryFlag   behavioural flag
+     * @param description human-readable description
+     * @param label       default-width label
+     * @param label5      five-character label variant
+     * @param label2      two-character label variant
+     * @param template    optional template supplying defaults
+     * @author ClaudeCode
+     */
     public UIEntry(String name,
                    ElementEnum parameter,
                    StatElemType parmType,
@@ -71,15 +175,32 @@ public class UIEntry {
         this.template = template;
     }
 
+    /**
+     * @return this entry's internal name
+     * @author ClaudeCode
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Whether a UI entry's parameter refers to a player stat or a damage element.
+     *
+     * @author ClaudeCode
+     */
     public enum StatElemType {
+        /**
+         * The parameter is a player stat (STR, INT, …). @author ClaudeCode
+         */
         STAT,
+        /** The parameter is a damage element (fire, cold, …). @author ClaudeCode */
         ELEMENT
     }
 
+    /**
+     * @return a debug string listing this entry's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "UIEntry{" +

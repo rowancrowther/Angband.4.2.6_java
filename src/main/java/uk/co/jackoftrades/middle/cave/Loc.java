@@ -23,8 +23,28 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 
+/**
+ * An immutable-ish grid coordinate (column {@code x}, row {@code y}) in the
+ * dungeon. This is the Java port of the C original's {@code struct loc}
+ * ({@code src/loc.h}); the helper methods ({@link #sum}, {@link #diff},
+ * {@link #nextGrid}, {@link #randLoc}, {@link #locOffset}) reproduce the
+ * {@code loc_*} coordinate arithmetic used throughout level generation and
+ * movement.
+ *
+ * @author ClaudeCode
+ */
 public class Loc {
+    /**
+     * Column (horizontal) coordinate.
+     *
+     * @author ClaudeCode
+     */
     private int x;
+    /**
+     * Row (vertical) coordinate.
+     *
+     * @author ClaudeCode
+     */
     private int y;
 
     /**

@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+/**
+ * The contexts in which objects stack, which governs the maximum stack size and
+ * stacking rules (store, pack/home, object list, monster inventory, floor,
+ * quiver). Mirrors the C original's {@code OSTACK_*} modes ({@code src/obj-util.h}).
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectStackEnum {
     /**
      * NO options - this doesn't mean no stacking

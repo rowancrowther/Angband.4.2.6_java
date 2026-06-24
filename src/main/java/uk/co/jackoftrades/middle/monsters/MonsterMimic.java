@@ -21,9 +21,27 @@ import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.util.List;
 
+/**
+ * The set of object kinds a "mimic" monster can disguise itself as on the floor
+ * (so it looks like an item until disturbed). This is the Java port of the C
+ * original's {@code struct monster_mimic} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterMimic {
+    /**
+     * The object kinds this monster can mimic.
+     *
+     * @author ClaudeCode
+     */
     private List<ObjectKind> kinds;
 
+    /**
+     * Build a mimic entry from its allowed object kinds.
+     *
+     * @param kinds the object kinds the monster can mimic
+     * @author ClaudeCode
+     */
     public MonsterMimic(List<ObjectKind> kinds) {
         this.kinds = kinds;
     }

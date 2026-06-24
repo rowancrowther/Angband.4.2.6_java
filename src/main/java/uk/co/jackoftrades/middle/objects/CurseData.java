@@ -17,19 +17,52 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+/**
+ * The per-object instance data for an applied {@link Curse} — its current power
+ * and the timeout until its next effect. This is the small mutable counterpart to
+ * the immutable {@link Curse} template; the Java port of the C original's
+ * {@code struct curse_data} ({@code src/object.h}).
+ *
+ * @author ClaudeCode
+ */
 public class CurseData {
+    /**
+     * The curse's current power on this object.
+     *
+     * @author ClaudeCode
+     */
     private int power;
+    /**
+     * Turns until the curse's next effect fires.
+     *
+     * @author ClaudeCode
+     */
     private int timeout;
 
+    /**
+     * Build curse instance data.
+     *
+     * @param power   the curse power
+     * @param timeout the effect timeout
+     * @author ClaudeCode
+     */
     public CurseData(int power, int timeout) {
         this.power = power;
         this.timeout = timeout;
     }
 
+    /**
+     * @return the curse's current power
+     * @author ClaudeCode
+     */
     public int getPower() {
         return power;
     }
 
+    /**
+     * @return turns until the curse's next effect
+     * @author ClaudeCode
+     */
     public int getTimeout() {
         return timeout;
     }

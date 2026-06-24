@@ -1,6 +1,33 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * The timed status effects applicable to a monster (sleep, stun, confusion, fear,
+ * slow, haste, hold, …), each bundling its saving-throw flag, stacking rule,
+ * immunity race flag, duration cap and the begin/end/increase messages. This is a
+ * close parallel of the C original's {@code mon_timed_effect} table ({@code src/mon-timed.c}); the
+ * constants are self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum MonTimed {
+    MON_TMD_NONE(false, MonTimedStack.MTS_NO, MonsterRaceFlag.RF_NONE, 0, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE),
     MON_TMD_SLEEP(true, MonTimedStack.MTS_NO, MonsterRaceFlag.RF_NO_SLEEP, 10000, MonsterMessage.MON_MSG_FALL_ASLEEP, MonsterMessage.MON_MSG_WAKES_UP, MonsterMessage.MON_MSG_NONE),
     MON_TMD_STUN(false, MonTimedStack.MTS_MAX, MonsterRaceFlag.RF_NO_STUN, 50, MonsterMessage.MON_MSG_DAZED, MonsterMessage.MON_MSG_NOT_DAZED, MonsterMessage.MON_MSG_MORE_DAZED),
     MON_TMD_CONF(false, MonTimedStack.MTS_MAX, MonsterRaceFlag.RF_NO_CONF, 50, MonsterMessage.MON_MSG_CONFUSED, MonsterMessage.MON_MSG_NOT_CONFUSED, MonsterMessage.MON_MSG_MORE_CONFUSED),
@@ -13,14 +40,61 @@ public enum MonTimed {
     MON_TMD_CHANGED(false, MonTimedStack.MTS_MAX, MonsterRaceFlag.RF_NONE, 50, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE),
     MON_TMD_MAX(true, MonTimedStack.MTS_INCR, MonsterRaceFlag.RF_NONE, 0, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE);
 
+    /**
+     * Whether the monster gets a saving throw against this effect.
+     *
+     * @author ClaudeCode
+     */
     private boolean saveThrow;
+    /**
+     * How re-applying this effect combines with an existing instance.
+     *
+     * @author ClaudeCode
+     */
     private MonTimedStack stackStyle;
+    /**
+     * Race flag that makes a monster immune to this effect.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRaceFlag resistFlag;
+    /**
+     * Duration cap/scaling value for this effect.
+     *
+     * @author ClaudeCode
+     */
     private int time;
+    /**
+     * Message shown when the effect begins.
+     *
+     * @author ClaudeCode
+     */
     private MonsterMessage messageBegin;
+    /**
+     * Message shown when the effect ends.
+     *
+     * @author ClaudeCode
+     */
     private MonsterMessage messageEnd;
+    /**
+     * Message shown when the effect's duration increases.
+     *
+     * @author ClaudeCode
+     */
     private MonsterMessage messageIncrease;
 
+    /**
+     * Build a monster timed-effect descriptor.
+     *
+     * @param save     whether a save is allowed
+     * @param stc      stacking behaviour
+     * @param flag     immunity race flag
+     * @param time     duration cap
+     * @param begin    begin message
+     * @param end      end message
+     * @param increase increase message
+     * @author ClaudeCode
+     */
     MonTimed(boolean save, MonTimedStack stc, MonsterRaceFlag flag,
              int time, MonsterMessage begin, MonsterMessage end,
              MonsterMessage increase) {

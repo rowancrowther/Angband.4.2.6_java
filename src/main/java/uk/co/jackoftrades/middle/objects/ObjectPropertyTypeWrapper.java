@@ -26,22 +26,83 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
 import java.security.InvalidParameterException;
 
+/**
+ * A type-safe tagged union for an object property's payload. An object property
+ * can be a flag, a stat/modifier, or an element relation (ignore/resist/vuln/imm);
+ * this wrapper stores the appropriate typed value and records which via
+ * {@link #type}. Each typed getter validates that the requested type matches the
+ * stored one, throwing if not, and each constructor accepts only the payload
+ * types valid for its discriminator. This is the Java port of the C original's
+ * union inside {@code struct obj_property} ({@code src/object.h}).
+ *
+ * @author ClaudeCode
+ */
 public class ObjectPropertyTypeWrapper {
+    /**
+     * Logger used to report mismatched-type construction or access.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The discriminator: which kind of property payload is stored.
+     *
+     * @author ClaudeCode
+     */
     private ObjPropertyType type;
+    /**
+     * Payload for a {@code FLAG} property.
+     *
+     * @author ClaudeCode
+     */
     private ObjectFlag flag;
+    /**
+     * Payload for a {@code STAT}/{@code MOD} property.
+     *
+     * @author ClaudeCode
+     */
     private ObjectModifier modifier;
+    /**
+     * Payload for an element relation ({@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}).
+     *
+     * @author ClaudeCode
+     */
     private ElementEnum element;
 
+    /**
+     * The property's primary numeric value.
+     *
+     * @author ClaudeCode
+     */
     private int value;
+    /**
+     * An extra numeric parameter for the property.
+     *
+     * @author ClaudeCode
+     */
     private int extraParm;
 
+    /**
+     * Set the property's numeric value and extra parameter.
+     *
+     * @param value     the primary value
+     * @param extraParm the extra parameter
+     * @author ClaudeCode
+     */
     public void setValues(int value, int extraParm) {
         this.value = value;
         this.extraParm = extraParm;
     }
 
+    /**
+     * Retrieve the modifier payload.
+     *
+     * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_MOD} or {@code OBJ_PROPERTY_STAT})
+     * @return the stored modifier
+     * @throws java.security.InvalidParameterException if {@code typeRequested} is neither MOD nor STAT
+     * @author ClaudeCode
+     */
     public ObjectModifier getModifier(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_MOD &&
                 typeRequested != ObjPropertyType.OBJ_PROPERTY_STAT) {
@@ -54,6 +115,14 @@ public class ObjectPropertyTypeWrapper {
         return modifier;
     }
 
+    /**
+     * Retrieve the element payload.
+     *
+     * @param typeRequested the expected type (must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM})
+     * @return the stored element
+     * @throws java.security.InvalidParameterException if {@code typeRequested} is not an element-relation type
+     * @author ClaudeCode
+     */
     public ElementEnum getElement(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_IGNORE &&
                 typeRequested != ObjPropertyType.OBJ_PROPERTY_RESIST &&
@@ -68,6 +137,14 @@ public class ObjectPropertyTypeWrapper {
         return this.element;
     }
 
+    /**
+     * Retrieve the flag payload.
+     *
+     * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_FLAG})
+     * @return the stored flag
+     * @throws java.security.InvalidParameterException if {@code typeRequested} is not {@code OBJ_PROPERTY_FLAG}
+     * @author ClaudeCode
+     */
     public ObjectFlag getFlag(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_FLAG) {
             throw new InvalidParameterException("Illegal Type requested. Expected OBJ_PROPERTY_FLAG, received "
@@ -77,6 +154,14 @@ public class ObjectPropertyTypeWrapper {
         return this.flag;
     }
 
+    /**
+     * Build a stat/modifier-payload wrapper.
+     *
+     * @param type     must be {@code OBJ_PROPERTY_STAT} or {@code OBJ_PROPERTY_MOD}
+     * @param modifier the modifier payload
+     * @throws java.security.InvalidParameterException if {@code type} is not a stat/mod type
+     * @author ClaudeCode
+     */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectModifier modifier) {
         switch (type) {
             case OBJ_PROPERTY_STAT:
@@ -95,6 +180,14 @@ public class ObjectPropertyTypeWrapper {
         }
     }
 
+    /**
+     * Build a flag-payload wrapper.
+     *
+     * @param type must be {@code OBJ_PROPERTY_FLAG}
+     * @param flag the flag payload
+     * @throws InvalidParameterException if {@code type} is not {@code OBJ_PROPERTY_FLAG}
+     * @author ClaudeCode
+     */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectFlag flag) throws InvalidParameterException {
         if (type == ObjPropertyType.OBJ_PROPERTY_FLAG) {
             this.type = type;
@@ -108,6 +201,14 @@ public class ObjectPropertyTypeWrapper {
         }
     }
 
+    /**
+     * Build an element-relation-payload wrapper.
+     *
+     * @param type    must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}
+     * @param element the element payload
+     * @throws InvalidParameterException if {@code type} is not an element-relation type
+     * @author ClaudeCode
+     */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ElementEnum element) throws InvalidParameterException {
         switch (type) {
             case OBJ_PROPERTY_IGNORE:

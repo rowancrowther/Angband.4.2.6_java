@@ -1,3 +1,13 @@
+// Parser+lexer for lib/gamedata/activation.txt - every activatable effect
+// usable by random artifacts and rods/staves/wands (CURE_POISON,
+// CURE_BLINDNESS, ...): whether it needs aiming, difficulty level, power
+// (for object-power calc and recharge time), the effect itself (with dice/
+// expr/coordinates/message), and a description. Cf. src/obj-init.c:
+// struct file_parser act_parser (obj-init.c:1678), directive table around
+// obj-init.c:1600-1630, and finish_parse_act (obj-init.c:1635) which
+// assigns each activation a sequential index used for array-based lookups
+// elsewhere in the engine.
+
 grammar Activations;
 
 @header {
@@ -11,6 +21,8 @@ grammar Activations;
     import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
     import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
     import uk.co.jackoftrades.middle.enums.EffectNourish;
+    import uk.co.jackoftrades.middle.effect.Earthquake;
+    import uk.co.jackoftrades.middle.enums.GlyphType;
     import uk.co.jackoftrades.middle.enums.Stats;
     import uk.co.jackoftrades.middle.enums.EffectEnchant;
     import uk.co.jackoftrades.middle.monsters.Summon;
@@ -21,25 +33,35 @@ grammar Activations;
     import java.util.ArrayList;
 }
 
+// "name:<CODE>" - starts a new activation record; the code other data
+// files (artifact.txt, ego_item.txt) reference to grant the activation.
 name
         returns[String nameStr]
         :   NAME UCASE { $nameStr = $UCASE.getText(); }
         ;
 
+// "aim:0|1" - whether this activation requires aiming.
 aim
         returns[boolean aimBool]
         :   AIM NUMBER { $aimBool = $NUMBER.getText().equals("1"); }
         ;
 
+// "level:<value>" - activation difficulty.
 level
         returns[int levelInt]
         :   LEVEL NUMBER { $levelInt = Integer.parseInt($NUMBER.getText()); }
         ;
+
+// "power:<value>" - relative power for object-power calc / recharge time.
+// Matched as a prefix inside `effect_block` (see top-of-file problem #1
+// re: this value never reaching `activation`'s own power field).
 power
         returns[int powerInt]
         :   POWER NUMBER { $powerInt = Integer.parseInt($NUMBER.getText()); }
         ;
 
+// "effect:<TYPE>[:<SUBTYPE>[:<radius>[:<other>]]]" - the activation's
+// effect; one alternative per field count (1-4).
 effect
         returns[EffectEnum type, EffectSubTypeEnum subType,
                 EffectSubTypeWrapper wrapper, String radiusStr, String parmStr]
@@ -82,6 +104,13 @@ effect
                 case EST_SUMMON:
                     $wrapper = new EffectSubTypeWrapper(GameConstants.lookupSummon(entry2));
                     break;
+
+                case EST_EARTHQUAKE:
+                    $wrapper = new EffectSubTypeWrapper(Earthquake.valueOf("QUAKE_" + entry2));
+                    break;
+
+                case EST_GLYPH:
+                    $wrapper = new EffectSubTypeWrapper(GlyphType.valueOf("GLYPH_" + entry2));
             }
 
             $radiusStr = entry3;
@@ -113,6 +142,7 @@ effect
             }
         ;
 
+// "effect-yx:<y>:<x>" - sets a coordinate on the effect.
 effect_yx
         returns[int yInt, int xInt]
         :   EFFECT_YX y=NUMBER COLON x=NUMBER {
@@ -121,6 +151,9 @@ effect_yx
             }
         ;
 
+// "dice:<dice string>" - dice for the effect; accepts free text, a bare
+// number, or an all-caps token (covering plain numeric dice as well as
+// $-variable-free forms tokenized under UCASE/STRING).
 dice
         returns[String diceStr]
         :   DICE STRING { $diceStr = $STRING.getText(); }
@@ -128,6 +161,8 @@ dice
         |   DICE UCASE  { $diceStr = $UCASE.getText(); }
         ;
 
+// "expr:<letter>:<EFB_BASE>:<operation>" - binds a dice-string variable
+// used in the preceding dice: line.
 expr
         returns[Expression exprObj]
         :   EXPR char=UCASE COLON func=UCASE COLON oper=EXPR_OPERATORS {
@@ -144,11 +179,16 @@ expr
             }
         ;
 
+// "msg:<text>" - activation message.
 msg
         returns[String msgStr]
         :   MSG STRING { $msgStr = $STRING.getText(); }
         ;
 
+// Groups an optional leading power: line with one-or-more of effect:/
+// dice:/expr:/effect-yx:/msg: (any order) into a single Effect. See top-of-
+// file problem #1 re: this rule's own (correctly parsed) `powerInit` never
+// propagating up to `activation`'s separate, same-named field.
 effect_block
         returns[Effect effObj]
         @init {
@@ -166,9 +206,9 @@ effect_block
             String timeInit = "";
             Expression exprObj = null;
         }
-        @after {
-            $effObj = new Effect(effInit, diceInit, yInit, xInit,
-                                 wrapper, effRadStr,
+        @after {                 // Hardcoded in values prior to adding in EffectBlock import
+            $effObj = new Effect(effInit, null, diceInit, yInit, xInit,
+                                 subTypeInit, wrapper, effRadStr,
                                  effParmStr, powerInit, msgInit, visMsgInit, timeInit,
                                  exprObj);
         }
@@ -186,18 +226,26 @@ effect_block
         |   msg { msgInit = $msg.msgStr; })+
         ;
 
+// "desc:<text>" - activation description.
 desc
         returns[String descStr]
         :   DESC STRING { $descStr = $STRING.getText(); }
         ;
 
+// One full activation record: name, then any mix of aim/level/effect_block/
+// desc in any order/quantity.
 activation
         returns[Activation activationRecord]
         @init {
             String nameInit = "";
+            // BUG: never reassigned below - every Activation ends up with
+            // index == 0. See top-of-file problem #2.
             int indexInit = 0;
             boolean aimInit = false;
             int levelInit = 0;
+            // BUG: never reassigned below either, despite effect_block correctly
+            // parsing its own (differently-scoped) powerInit from the leading
+            // power: line. See top-of-file problem #1.
             int powerInit = 0;
             List<Effect> effectsInit = new ArrayList<>();
             String message = "";
@@ -211,6 +259,7 @@ activation
         }
         :   name { nameInit = $name.nameStr; }
         (   aim { aimInit = $aim.aimBool; }
+        |   power { powerInit = $power.powerInt; }
         |   level { levelInit = $level.levelInt; }
         |   effect_block {
                 effectsInit.add($effect_block.effObj);
@@ -219,6 +268,7 @@ activation
         |   desc { descInit = $desc.descStr; })+
         ;
 
+// Top-level rule: the whole file is one or more activation records.
 file
         returns[List<Activation> activations]
         @init {
@@ -229,14 +279,18 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through DESC below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -277,22 +331,30 @@ DESC
         :   'desc:'
         ;
 
+// A bare non-negative integer.
 NUMBER
         :   ('0'..'9')+
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES_OR_DIGITS symbolic name - used for name:/
+// effect:'s type and subtype segments, and one of dice:'s forms.
 UCASE
         :   ('A'..'Z' | '_' | '0'..'9')+
         ;
 
+// Field separator within effect:/effect-yx:/expr: lines.
 COLON
         :   ':'
         ;
 
+// The operator/operand text for an expr: line's trailing operation, e.g.
+// "/ 2" or "+ 1".
 EXPR_OPERATORS
         :   ('*' | ' ' | '0'..'9' | '+' | '/')+
         ;
 
+// Free-running general-purpose text - used for dice:/msg:/desc:'s text
+// fields and effect:'s "other parameter" segment.
 STRING
         :   ('a'..'z' | ' ' | 'A'..'Z' | '0'..'9' | ',' | '{' | '}' | '.' | '%' | '+' | '-' | '\''
             | '$' | '(' | ')' | '!')+

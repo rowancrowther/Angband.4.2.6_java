@@ -20,12 +20,48 @@ package uk.co.jackoftrades.middle.monsters;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 
+/**
+ * One melee attack ("blow") of a monster: how it is delivered ({@link BlowMethod}),
+ * what it does ({@link BlowEffect}), its damage dice, and how many times the
+ * player has observed it (for lore). This is the Java port of the C original's
+ * {@code struct monster_blow} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterBlow {
+    /**
+     * How the blow is delivered (hit, bite, claw, …).
+     *
+     * @author ClaudeCode
+     */
     private BlowMethod method;
+    /**
+     * What the blow does on landing.
+     *
+     * @author ClaudeCode
+     */
     private BlowEffect effect;
+    /**
+     * The blow's damage dice.
+     *
+     * @author ClaudeCode
+     */
     private Random dice;
+    /**
+     * How many times the player has seen this blow land (for lore).
+     *
+     * @author ClaudeCode
+     */
     private int timesSeen;
 
+    /**
+     * Build a monster blow from its method, effect and damage dice.
+     *
+     * @param method how the blow is delivered
+     * @param effect what the blow does
+     * @param dice   the damage dice
+     * @author ClaudeCode
+     */
     public MonsterBlow(BlowMethod method, BlowEffect effect, Random dice) {
         this.method = method;
         this.effect = effect;

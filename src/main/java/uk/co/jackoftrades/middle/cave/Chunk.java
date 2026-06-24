@@ -40,43 +40,201 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.stream.Stream;
 
+/**
+ * A whole level (or self-contained piece of one): the 2D grid of {@link Square}s
+ * plus everything that lives on it — monsters, objects, noise/scent flow maps,
+ * generation metadata and level feeling. The large family of {@code squareXxx()}
+ * methods are bounds-checked convenience accessors that delegate to the
+ * {@link Square} at a {@link Loc}. This is the Java port of the C original's
+ * {@code struct chunk} ({@code src/cave.h}), which represents both the live cave
+ * and the player's remembered copy of it.
+ *
+ * @author ClaudeCode
+ */
 public class Chunk {
+    /**
+     * Logger used to report out-of-bounds access and similar errors.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The chunk's name (e.g. the level/vault it represents).
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * The game turn this chunk was generated/last updated.
+     *
+     * @author ClaudeCode
+     */
     private int turn;
+    /**
+     * The dungeon depth (level) of this chunk.
+     *
+     * @author ClaudeCode
+     */
     private int depth;
 
+    /**
+     * The level feeling value (how dangerous/rewarding the level feels).
+     *
+     * @author ClaudeCode
+     */
     private int feeling;
+    /**
+     * Accumulated rating of the objects on this level.
+     *
+     * @author ClaudeCode
+     */
     private int objectRating;
+    /**
+     * Accumulated rating of the monsters on this level.
+     *
+     * @author ClaudeCode
+     */
     private int monsterRating;
+    /**
+     * Whether the level contains a notably good item.
+     *
+     * @author ClaudeCode
+     */
     private boolean goodItem;
 
+    /**
+     * Level height in rows.
+     *
+     * @author ClaudeCode
+     */
     private int height;
+    /**
+     * Level width in columns.
+     *
+     * @author ClaudeCode
+     */
     private int width;
 
     /* How many feeling squares the player has visited */
+    /**
+     * How many feeling squares the player has visited so far.
+     *
+     * @author ClaudeCode
+     */
     private int feelingSquares;
+    /**
+     * Count of grids carrying each terrain-feature flag (used for level feeling).
+     *
+     * @author ClaudeCode
+     */
     private HashMap<TerrainFeatureFlags, Integer> featCount;
 
+    /**
+     * The grid of squares, indexed {@code [x][y]}.
+     *
+     * @author ClaudeCode
+     */
     private Square[][] squares;
+    /**
+     * Noise flow map used for monster pathfinding toward sound.
+     *
+     * @author ClaudeCode
+     */
     private Heatmap noise;
+    /**
+     * Scent flow map used for monsters that track by smell.
+     *
+     * @author ClaudeCode
+     */
     private Heatmap scent;
+    /**
+     * Location of the player's decoy, if one is placed.
+     *
+     * @author ClaudeCode
+     */
     private Loc decoy;
 
+    /**
+     * Master list of all objects in this chunk.
+     *
+     * @author ClaudeCode
+     */
     private Pile objectPile; // Should this be ItemObject[][] objects?
+    /**
+     * Highest object index in use.
+     *
+     * @author ClaudeCode
+     */
     private int objMax;
 
+    /**
+     * The monsters present in this chunk, indexed by monster index.
+     *
+     * @author ClaudeCode
+     */
     private Monster[] monsters;
+    /**
+     * Capacity of the {@link #monsters} array (maximum monster index).
+     *
+     * @author ClaudeCode
+     */
     private int monMax;
+    /**
+     * Current count of live monsters.
+     *
+     * @author ClaudeCode
+     */
     private int monCnt;
+    /**
+     * Index of the monster currently being processed.
+     *
+     * @author ClaudeCode
+     */
     private int monCurrent;
+    /**
+     * Number of breeding monsters currently on the level.
+     *
+     * @author ClaudeCode
+     */
     private int numRepro;
 
+    /**
+     * The monster groups (packs) on this level.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<MonsterGroup> monsterGroups;
 
+    /**
+     * Connection points used when stitching this chunk into a larger level.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<Connector> join;
 
+    /**
+     * Build a chunk of the given dimensions and metadata, allocating a fresh
+     * grid of blank {@link Square}s, empty flow maps, an empty object pile and a
+     * monster array sized to {@code monMax}.
+     *
+     * @param name           chunk name
+     * @param turn           generation turn
+     * @param depth          dungeon depth
+     * @param feeling        level feeling value
+     * @param objectRating   object rating
+     * @param monsterRating  monster rating
+     * @param goodItem       whether a notably good item is present
+     * @param height         level height in rows
+     * @param width          level width in columns
+     * @param feelingSquares number of feeling squares visited
+     * @param objMax         highest object index
+     * @param monMax         monster array capacity
+     * @param monCnt         live monster count
+     * @param monCurrent     index of the monster being processed
+     * @param numRepro       number of breeding monsters
+     * @author ClaudeCode
+     */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
                  int monCnt, int monCurrent, int numRepro) {

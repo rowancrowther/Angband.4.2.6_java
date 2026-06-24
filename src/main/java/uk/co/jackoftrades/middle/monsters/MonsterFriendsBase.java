@@ -19,13 +19,57 @@ package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 
+/**
+ * Like {@link MonsterFriends}, but the companions are chosen by monster
+ * <em>base</em> type rather than a specific race — a {@link MonsterBase} that may
+ * be generated alongside the monster, with role, chance and a dice count. This is
+ * the Java port of the C original's {@code struct monster_friends_base}
+ * ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterFriendsBase {
+    /**
+     * The companion monster base type.
+     *
+     * @author ClaudeCode
+     */
     private MonsterBase base;
+    /**
+     * The group role the companions take.
+     *
+     * @author ClaudeCode
+     */
     private MonsterGroupRole role;
+    /**
+     * Percentage chance the companions appear.
+     *
+     * @author ClaudeCode
+     */
     private int percentChance;
+    /**
+     * Number of dice for the companion count.
+     *
+     * @author ClaudeCode
+     */
     private int numberDice;
+    /**
+     * Sides per die for the companion count.
+     *
+     * @author ClaudeCode
+     */
     private int numberSides;
 
+    /**
+     * Build a by-base friends entry.
+     *
+     * @param base          companion monster base type
+     * @param role          group role of the companions
+     * @param percentChance appearance chance
+     * @param numberDice    dice for the count
+     * @param numberSides   sides per die for the count
+     * @author ClaudeCode
+     */
     public MonsterFriendsBase(MonsterBase base, MonsterGroupRole role, int percentChance, int numberDice,
                               int numberSides) {
         this.base = base;

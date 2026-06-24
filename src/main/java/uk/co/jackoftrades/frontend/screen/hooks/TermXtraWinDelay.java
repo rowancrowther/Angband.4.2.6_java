@@ -19,6 +19,13 @@ package uk.co.jackoftrades.frontend.screen.hooks;
 
 import uk.co.jackoftrades.frontend.screen.enums.TermXtraEventEnum;
 
+/**
+ * A {@link TermEventHook} variant dedicated to delay handling. Currently a stub:
+ * its {@link #doSomething(TermXtraEventEnum, int)} does nothing yet, pending the
+ * port of the timed-delay behaviour from the C front end.
+ *
+ * @author ClaudeCode
+ */
 public class TermXtraWinDelay implements TermEventHook {
 
     /**

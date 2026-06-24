@@ -19,8 +19,31 @@ package uk.co.jackoftrades.middle.monsters;
 
 import java.util.ArrayList;
 
+/**
+ * A live group/pack of monsters on the level — its identifier, the monster index
+ * of its leader, and the list of members. Group AI uses this so packs move and
+ * fight cohesively. This is the Java port of the C original's
+ * {@code struct monster_group} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterGroup {
+    /**
+     * This group's identifier within the level.
+     *
+     * @author ClaudeCode
+     */
     private int index;
+    /**
+     * The monster index of the group's leader.
+     *
+     * @author ClaudeCode
+     */
     private int leader;
+    /**
+     * The group's members.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<MonGroupListEntry> memberList;
 }

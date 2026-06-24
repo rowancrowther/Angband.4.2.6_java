@@ -28,9 +28,9 @@ import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
@@ -44,63 +44,307 @@ import java.util.Map;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
 
+/**
+ * A concrete item instance in the game — a specific sword, potion, etc. — as
+ * opposed to its {@link ObjectKind} template. It records the kind plus any
+ * {@link EgoItem}/{@link Artifact}, the player's known view of it, its location,
+ * combat values, flags/modifiers/element-info, brands/slays/curses, stack count,
+ * notice flags, origin and inscription. The methods implement the rules for when
+ * two items are "similar" enough to stack and how stacks merge/absorb. This is
+ * the Java port of the C original's {@code struct object} ({@code src/object.h}).
+ *
+ * @author ClaudeCode
+ */
 public class ItemObject {
+    /**
+     * A curse paired with its instance data, as carried by a live item.
+     *
+     * @param curse     the curse
+     * @param curseData its instance data (power/timeout)
+     * @author ClaudeCode
+     */
     public record CurseEntry(Curse curse, CurseData curseData) {
     }
 
+    /**
+     * Logger used to report stack-merge errors.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The object kind this item is an instance of.
+     *
+     * @author ClaudeCode
+     */
     private ObjectKind kind;
+    /**
+     * The ego type applied to this item, if any.
+     *
+     * @author ClaudeCode
+     */
     private EgoItem ego;
+    /**
+     * The artifact this item is, if any.
+     *
+     * @author ClaudeCode
+     */
     private Artifact artifact;
 
+    /**
+     * The player's known/identified view of this item.
+     *
+     * @author ClaudeCode
+     */
     private ItemObject known;
 
+    /**
+     * The grid this item lies on (when on the floor).
+     *
+     * @author ClaudeCode
+     */
     private Loc location;
 
+    /**
+     * The item type value (tval).
+     *
+     * @author ClaudeCode
+     */
     private TValue tValue;
+    /**
+     * The sub-type value (sval).
+     *
+     * @author ClaudeCode
+     */
     private int sValue;
 
+    /**
+     * The item's extra parameter value (pval).
+     *
+     * @author ClaudeCode
+     */
     private int pValue;
 
+    /**
+     * The item's weight.
+     *
+     * @author ClaudeCode
+     */
     private int weight;
 
+    /**
+     * Number of damage dice.
+     *
+     * @author ClaudeCode
+     */
     private int damageDice;
+    /**
+     * Sides per damage die.
+     *
+     * @author ClaudeCode
+     */
     private int damageSides;
+    /**
+     * Base damage, as a dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random baseDamage;
+    /**
+     * Base armour class.
+     *
+     * @author ClaudeCode
+     */
     private int normalAC;
+    /**
+     * To-armour-class bonus, as a dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random toAC;
+    /**
+     * To-damage bonus, as a dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random toDam;
+    /**
+     * To-hit bonus, as a dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random toHit;
 
+    /**
+     * The item's object flags.
+     *
+     * @author ClaudeCode
+     */
     private Flag<ObjectFlag> flags;
+    /**
+     * The item's numeric modifiers (as unparsed dice strings), keyed by modifier.
+     *
+     * @author ClaudeCode
+     */
     private Map<ObjectModifier, String> modifiers;
+    /**
+     * Per-element relation info.
+     *
+     * @author ClaudeCode
+     */
     private Map<ElementEnum, ElementInfo> elInfo;
+    /**
+     * Brands on the item (mapped to whether intrinsic).
+     *
+     * @author ClaudeCode
+     */
     private Map<Brand, Boolean> brands;
+    /**
+     * Slays on the item (mapped to whether intrinsic).
+     *
+     * @author ClaudeCode
+     */
     private Map<Slay, Boolean> slays;
+    /**
+     * Curses on the item (mapped to whether intrinsic).
+     *
+     * @author ClaudeCode
+     */
     private Map<CurseEntry, Boolean> curses;
 
+    /**
+     * Effects this item produces when used.
+     *
+     * @author ClaudeCode
+     */
     private List<Effect> effect;
+    /**
+     * Message shown when the item's effect fires.
+     *
+     * @author ClaudeCode
+     */
     private String effectMessage;
+    /**
+     * Activations available on this item.
+     *
+     * @author ClaudeCode
+     */
     private List<Activation> activation;
+    /**
+     * Recharge time, as a dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random time;
+    /**
+     * Turns until the item can be used again (0 = ready).
+     *
+     * @author ClaudeCode
+     */
     private int timeout;
 
+    /**
+     * Quantity in this stack.
+     *
+     * @author ClaudeCode
+     */
     private int number;
+    /**
+     * The player's notice flags for this item (worn/assessed/ignore/imagined).
+     *
+     * @author ClaudeCode
+     */
     private Flag<ObjectNotice> notice;
 
+    /**
+     * Index of the monster holding this item, or 0 if not held.
+     *
+     * @author ClaudeCode
+     */
     private int heldMIndex;
+    /**
+     * Index of the monster mimicking this item, or 0 if none.
+     *
+     * @author ClaudeCode
+     */
     private int mimickingMIndex;
 
+    /**
+     * Where this item came from (for the description history line).
+     *
+     * @author ClaudeCode
+     */
     private ObjectOriginEnum origin;
+    /**
+     * The depth at which the item originated.
+     *
+     * @author ClaudeCode
+     */
     private int originDepth;
+    /**
+     * The monster race that dropped the item, if applicable.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRace originRace = new MonsterRace();
 
+    /**
+     * The player's inscription on the item.
+     *
+     * @author ClaudeCode
+     */
     private Quark note;
 
+    /**
+     * Build an empty item (used as a blank slot/placeholder).
+     *
+     * @author ClaudeCode
+     */
     public ItemObject() {
     }
 
+    /**
+     * Build a fully-specified item from its parsed data-file fields, resolving the
+     * dice strings into {@link Random}s and copying the curse map.
+     *
+     * @param kind            object kind
+     * @param ego             ego type, if any
+     * @param artifact        artifact, if any
+     * @param known           known/identified view
+     * @param location        floor location
+     * @param tValue          item type value
+     * @param sValue          sub-type value
+     * @param pValue          extra-parameter value (as string)
+     * @param weight          weight
+     * @param damageDice      number of damage dice
+     * @param damageSides     sides per damage die
+     * @param normalAC        base armour class
+     * @param toAC            to-AC dice string
+     * @param baseDamage      base-damage dice string
+     * @param toDam           to-damage dice string
+     * @param toHit           to-hit dice string
+     * @param flags           object flags
+     * @param modifiers       modifier dice strings
+     * @param elInfo          per-element info
+     * @param brands          brands
+     * @param slays           slays
+     * @param curses          curses
+     * @param effect          effects
+     * @param effectMessage   effect message
+     * @param activation      activations
+     * @param time            recharge dice string
+     * @param timeout         current cooldown
+     * @param number          stack quantity
+     * @param notice          notice flags
+     * @param heldMIndex      holding-monster index
+     * @param mimickingMIndex mimicking-monster index
+     * @param origin          origin category
+     * @param originDepth     origin depth
+     * @param originRace      origin monster race
+     * @param note            inscription
+     * @author ClaudeCode
+     */
     public ItemObject(ObjectKind kind, EgoItem ego,
                       Artifact artifact, ItemObject known,
                       Loc location, TValue tValue, int sValue,

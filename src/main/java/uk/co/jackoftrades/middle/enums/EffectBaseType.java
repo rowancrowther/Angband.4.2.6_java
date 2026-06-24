@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * The base quantities an effect's magnitude can scale from (spell power, player
+ * or dungeon level, weapon damage, the player's HP, etc.).
+ * The constants are self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum EffectBaseType {
     EFB_NONE,
     EFB_SPELL_POWER,
@@ -25,5 +32,6 @@ public enum EffectBaseType {
     EFB_MAX_SIGHT,
     EFB_WEAPON_DAMAGE,
     EFB_PLAYER_HP,
-    EFB_MONSTER_PERCENT_HP_GONE
+    EFB_MONSTER_PERCENT_HP_GONE,
+    EFB_MAX
 }

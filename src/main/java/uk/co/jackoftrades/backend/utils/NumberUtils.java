@@ -26,9 +26,30 @@ import uk.co.jackoftrades.backend.numerics.Rational;
 
 import java.util.ArrayList;
 
+/**
+ * Static integer/statistics helpers ported from the original C source's
+ * arithmetic utilities ({@code src/z-util.c}). The "guard" methods reproduce the
+ * C game's saturating arithmetic: rather than letting an addition or subtraction
+ * overflow (which in C wraps around and corrupts game state), the result is
+ * clamped to the {@code int} or 16-bit range. The {@link Rational}-based
+ * {@link #mean}/{@link #variance} helpers support exact statistical calculations
+ * used by the game's data analysis.
+ *
+ * @author ClaudeCode
+ */
 public abstract class NumberUtils {
+    /**
+     * Shared logger (reserved for diagnostics in this utility holder).
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Private constructor preventing instantiation of this static-only utility class.
+     *
+     * @author ClaudeCode
+     */
     private NumberUtils() {
     }
 

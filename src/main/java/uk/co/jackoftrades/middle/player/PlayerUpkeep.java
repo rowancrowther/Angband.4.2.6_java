@@ -19,9 +19,30 @@ package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.middle.objects.Pile;
 
+/**
+ * The player's transient runtime bookkeeping — the recomputed-each-session state that is
+ * <em>not</em> part of the saved character, as opposed to the persistent data held on
+ * {@link Player}.
+ *
+ * <p>Ports the C {@code struct player_upkeep} ({@code player.h}). In the original this carries
+ * the pending redraw ({@code PR_*}) and update ({@code PU_*}) flag sets, current targeting, the
+ * floor object pile under the player, and similar volatile fields that are rebuilt rather than
+ * serialised. Keeping it separate from the saved player state is exactly what lets the engine
+ * discard the upkeep and recompute it on load.
+ *
+ * <p><b>Status:</b> partially ported — currently only the floor object pile is modelled.
+ *
+ * @author ClaudeCode
+ */
 public class PlayerUpkeep {
+    /**
+     * The pile of objects on the floor beneath the player.
+     */
     private Pile objectPile;
 
+    /**
+     * @return the pile of objects currently under the player
+     */
     public Pile getPile() {
         return objectPile;
     }

@@ -34,6 +34,11 @@ import java.util.ArrayList;
  * Class to read in <code>constants.txt</code> file and pass back to the <code>GameConstants</code> object.
  */
 public class GameConstantsReader implements Parser {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

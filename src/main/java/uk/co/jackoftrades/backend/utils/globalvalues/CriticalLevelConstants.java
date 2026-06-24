@@ -23,17 +23,58 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
 
 import java.util.ArrayList;
 
+/**
+ * Holds the melee/ranged "critical-level" tables loaded from
+ * {@code constants.txt}. Each critical level pairs a power cut-off with a damage
+ * multiplier, a flat damage bonus and the message shown to the player. Unlike
+ * the simple scalar-constant classes, this builds two ordered lists (one per
+ * combat type) and looks up the appropriate level by hit power at combat time —
+ * the Java port of the C original's critical-hit tables.
+ *
+ * @author ClaudeCode
+ */
 public class CriticalLevelConstants {
+    /**
+     * Data-file group tag for melee critical levels.
+     *
+     * @author ClaudeCode
+     */
     private static final String meleeTag = "melee-critical-level";
+    /**
+     * Data-file group tag for ranged critical levels.
+     *
+     * @author ClaudeCode
+     */
     private static final String rangedTag = "ranged-critical-level";
+    /**
+     * Ordered melee critical levels; lookup relies on these being read in
+     * ascending cut-off order from the data file.
+     *
+     * @author ClaudeCode
+     */
     private static final ArrayList<CriticalLevel> meleeLevels = new ArrayList<>();
+    /**
+     * Ordered ranged critical levels; lookup relies on data-file ordering.
+     *
+     * @author ClaudeCode
+     */
     private static final ArrayList<CriticalLevel> rangedLevels = new ArrayList<>();
+    /**
+     * Logger used to report malformed/invalid critical-level tokens.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Private constructor preventing instantiation; the class is a static table holder.
+     *
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     private CriticalLevelConstants() {
     }
@@ -67,10 +108,10 @@ public class CriticalLevelConstants {
         int damageMult;
         int amountAdded;
         String hitTypeString = values[3];
-        MessageEnum hitType;
+        MessageType hitType;
 
         try {
-            hitType = MessageEnum.valueOf("MSG_" + hitTypeString);
+            hitType = MessageType.valueOf("MSG_" + hitTypeString);
         } catch (IllegalArgumentException e) {
             String message = "Unknown Hit Type message in token. Token was: " + tag + ":" + value;
             logger.error(message, e);

@@ -1,3 +1,9 @@
+// Parser+lexer for lib/gamedata/monster.txt - every monster race (624
+// records): base template, display glyph/colour, stats, blows, flags,
+// spells (with per-spell alternate messages), drops, friends/groups,
+// mimicry, and shapechange forms. Cf. src/mon-init.c: struct file_parser
+// monster_parser (mon-init.c:1928).
+
 grammar Monster;
 
 @header {
@@ -30,16 +36,21 @@ grammar Monster;
     import java.util.List;
 }
 
+// "name:<text>" - starts a new monster record.
 name
         returns[String nameStr]
         :   NAME LCASE { $nameStr = $LCASE.getText(); }
         ;
 
+// "plural:<text>" - plural form of the name, for group messages.
 plural
         returns[String pluralStr]
         :   PLURAL LCASE { $pluralStr = $LCASE.getText(); }
         ;
 
+// "base:<monster_base.txt name>" - the template this monster is built on.
+// See top-of-file problem #1: this only resolves the MonsterBase object -
+// it does NOT also seed glyphInit/flagsInit from it the way the C parser does.
 base
         returns[MonsterBase baseObj]
         :   BASE LCASE {
@@ -48,6 +59,10 @@ base
             }
         ;
 
+// "glyph:<char>" - overrides the base template's display character;
+// restricted to '!'/'?'/'='/'~' since it's only ever used for item-mimic
+// monsters. Optional in `monster` - see top-of-file problem #1 for what
+// happens when it's absent (i.e. for 620 of monster.txt's 624 records).
 glyph
         returns[char glyphChr]
         :   GLYPH {
@@ -55,6 +70,8 @@ glyph
             }
         ;
 
+// "color:<colour char>" - display colour; always present (no base-level
+// default exists, since monster_base.txt has no colour field).
 colour
         returns[ColourType colourEnum]
         :   COLOUR COLOUR_CHAR {
@@ -63,6 +80,8 @@ colour
             }
         ;
 
+// "color-cycle:<group>:<cycle name>" - links this monster to a colour-
+// cycling animation group/cycle (see VisualsColourCyclesByRace).
 colourCycle
         returns[String groupName, String cycleName]
         :   COLOUR_CYCLE group=LCASE COLON cycle=LCASE {
@@ -71,56 +90,68 @@ colourCycle
             }
         ;
 
+// "speed:<value>".
 speed
         returns[int speedInt]
         :   SPEED INTEGER { $speedInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "hit-points:<value>" - average HP.
 hitPoints
         returns[int hpInt]
         :   HIT_POINTS INTEGER { $hpInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "light:<value>" - light radius the monster emits/needs.
 light
         returns[int lightInt]
         :   LIGHT INTEGER { $lightInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "hearing:<value>".
 hearing
         returns[int hearingInt]
         :   HEARING INTEGER { $hearingInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "smell:<value>".
 smell
         returns[int smellInt]
         :   SMELL INTEGER { $smellInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "armor-class:<value>".
 armourClass
         returns[int acInt]
         :   ARMOUR_CLASS INTEGER { $acInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "sleepiness:<value>" - how easily the monster wakes.
 sleepiness
         returns[int sleepInt]
         :   SLEEPINESS INTEGER { $sleepInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "depth:<value>" - native dungeon depth.
 dungeonDepth
         returns[int depthInt]
         :   DEPTH INTEGER { $depthInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "rarity:<value>" - generation rarity.
 rarity
         returns[int rarityInt]
         :   RARITY INTEGER { $rarityInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "experience:<value>" - base XP for killing this monster.
 experience
         returns[int expInt]
         :   EXPERIENCE INTEGER { $expInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "blow:<METHOD>[:<EFFECT>[:<dice>]]" - one melee attack; can repeat (see
+// `monster`'s blowsInit list).
 blow
         returns[MonsterBlow blowObj]
         @init {
@@ -146,6 +177,12 @@ blow
             }
         ;
 
+// "flags:<RF_FLAG> [| <RF_FLAG> ...]" - race flags explicitly listed for
+// this monster. See top-of-file problem #1: this does NOT also include
+// whatever flags the monster's base template grants - those are never
+// merged in anywhere in this grammar. The whole line is folded into one
+// FLAGS token (see below) and split apart in this action rather than via
+// separate sub-tokens.
 flags
         returns[Flag<MonsterRaceFlag> flags_On]
         @init {
@@ -164,6 +201,8 @@ flags
             }
         ;
 
+// "flags-off:<RF_FLAG> [| <RF_FLAG> ...]" - race flags explicitly removed
+// from this monster (e.g. to override a flag the base template grants).
 flagsOff
         returns[Flag<MonsterRaceFlag> flags_Off]
         @init {
@@ -179,21 +218,27 @@ flagsOff
             })*
         ;
 
+// "innate-freq:<value>" - frequency of innate (non-spell) ranged attacks.
 innateFreq
         returns[int innateFreqInt]
         :   INNATE_FREQ INTEGER { $innateFreqInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "spell-freq:<value>" - frequency of spellcasting.
 spellFreq
         returns[int spellFreqInt]
         :   SPELL_FREQ INTEGER { $spellFreqInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "spell-power:<value>" - spell power scaling.
 spellPower
         returns[int spellPowerInt]
         :   SPELL_POWER INTEGER { $spellPowerInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "spells:<RSF_CODE> [| <RSF_CODE> ...]" - the spells (from monster_spell.txt)
+// this monster can cast. The whole line is folded into one SPELLS token
+// (see below) and split apart in this action.
 spells
         returns[List<MonsterSpell> spellList]
         @init {
@@ -210,6 +255,8 @@ spells
             }
         ;
 
+// "message-vis:<RSF_CODE>:<text>" - alternate spell message shown when the
+// caster is visible; can repeat (see `monster`'s spellMsgInit list).
 messageVis
         returns[MonsterAltmsg altMsg]
         :   MESSAGE_VIS UCASE COLON LCASE {
@@ -220,6 +267,8 @@ messageVis
             }
         ;
 
+// "message-invis:<RSF_CODE>:<text>" - alternate spell message shown when
+// the caster is unseen.
 messageInvis
         returns[MonsterAltmsg altMsg]
         :   MESSAGE_INVIS UCASE COLON LCASE {
@@ -230,6 +279,8 @@ messageInvis
             }
         ;
 
+// "message-miss:<RSF_CODE>:<text>" - alternate spell message shown when
+// the spell misses.
 messageMiss
         returns[MonsterAltmsg altMsg]
         :   MESSAGE_MISS UCASE COLON LCASE {
@@ -240,16 +291,22 @@ messageMiss
             }
         ;
 
+// "desc:<text>" - monster-lore description; can repeat to build up
+// multiple lines.
 desc
         returns[String descStr]
         :   DESC LCASE { $descStr = $LCASE.getText(); }
         ;
 
+// "shape:<text>" - a shapechange form name (from shape.txt) this monster
+// can take; can repeat (see `monster`'s shapesInit list).
 shape
         returns[String shapeStr]
         :   SHAPE LCASE { $shapeStr = $LCASE.getText(); }
         ;
 
+// "drop:<tval text>:<sval/kind name>:<chance>:<min>:<max>" - a specific
+// item drop; can repeat (see `monster`'s dropsInit list).
 drop
         returns[MonsterDrop dropObj]
         // TValue tval, String sval, int percentage, int min, int max]
@@ -263,6 +320,8 @@ drop
             }
         ;
 
+// "drop-base:<tval text>:<chance>:<min>:<max>" - a drop of any item of the
+// given base type (not a specific kind); can repeat.
 dropBase
         returns[MonsterDrop dropObj]
         :   DROP_BASE LCASE COLON p=INTEGER COLON mi=INTEGER COLON ma=INTEGER {
@@ -274,6 +333,8 @@ dropBase
             }
         ;
 
+// "mimic:<tval text>:<sval/kind name>" - the object kind this monster
+// disguises itself as (paired with an explicit glyph: override); can repeat.
 mimic
         returns[ObjectKind objKind]
         :   MIMIC t=LCASE COLON s=LCASE {
@@ -283,6 +344,10 @@ mimic
             }
         ;
 
+// "friends:<chance>:<dice>:<monster name>[:<group role>]" - a specific
+// monster this one is generated alongside; can repeat. The whole line is
+// folded into one FRIENDS token (see below) and split apart in this
+// action.
 friends
         returns[MonsterFriends friendsObj]
         //int chance, String noAppearing, String nameOfMonster]
@@ -305,6 +370,9 @@ friends
             }
         ;
 
+// "friends-base:<chance>:<dice>:<monster_base.txt name>[:<group role>]" -
+// a monster of the given base template generated alongside this one; can
+// repeat. Same folded-token/split-on-'d' pattern as `friends`.
 friendsBase
         returns[MonsterFriendsBase friendsBaseObj]
             //int chance, String noAppearing, String typeAppearing]
@@ -325,6 +393,10 @@ friendsBase
             }
         ;
 
+// One full monster record: name, optional plural, mandatory base, optional
+// glyph override, mandatory colour, then any mix of every other directive
+// in any order/quantity. See top-of-file problem #1 re: base/glyph/flags
+// inheritance.
 monster
         returns[MonsterRace race]
         @init {
@@ -414,6 +486,7 @@ monster
             })*
         ;
 
+// Top-level rule: the whole file is one or more monster records.
 file
         returns[List<MonsterRace> monsterRaces]
         @init {
@@ -424,10 +497,12 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
@@ -444,6 +519,7 @@ BASE
         :   'base:'
         ;
 
+// Restricted to the 4 item-mimic symbols - see top-of-file problem #1.
 GLYPH
         :   'glyph:' ('!' | '?' | '=' | '~')
         ;
@@ -496,6 +572,8 @@ BLOW
         :   'blow:'
         ;
 
+// "flags:" plus the whole '|'-separated flag list as one token, split
+// apart in the `flags` rule's action.
 FLAGS
         :   'flags:' UCASE (' | ' UCASE)*
         ;
@@ -516,6 +594,8 @@ SPELL_POWER
         :   'spell-power:'
         ;
 
+// "spells:" plus the whole '|'-separated spell list as one token, split
+// apart in the `spells` rule's action.
 SPELLS
         :   'spells:' UCASE (' | ' UCASE)*
         ;
@@ -552,11 +632,14 @@ SHAPE
         :   'shape:'
         ;
 
+// "friends:" plus the whole "<chance>:<dice>:<name>[:<role>]" value as one
+// token, split apart in the `friends` rule's action.
 FRIENDS
         :   'friends:' INTEGER COLON DICE_STRING COLON LCASE COLON LCASE
         |   'friends:' INTEGER COLON DICE_STRING COLON LCASE
         ;
 
+// Same shape as FRIENDS, for friends-base:.
 FRIENDS_BASE
         :   'friends-base:' INTEGER COLON DICE_STRING COLON LCASE COLON LCASE
         |   'friends-base:' INTEGER COLON DICE_STRING COLON LCASE
@@ -566,10 +649,14 @@ COLOUR_CYCLE
         :   'color-cycle:'
         ;
 
+// A (possibly negative) literal integer.
 INTEGER
         :   '-'? ('0'..'9')+
         ;
 
+// A dice expression in any of the "base+dice'd'sides['M'bonus]" shapes -
+// used inside FRIENDS/FRIENDS_BASE's number-appearing field (always the
+// 'd'-containing alternatives in practice - see top-of-file problem #2).
 DICE_STRING
         :   INTEGER '+' INTEGER 'd' INTEGER ('M' | 'm') INTEGER
         |   INTEGER '+' 'd' INTEGER ('M' | 'm') INTEGER
@@ -583,23 +670,30 @@ DICE_STRING
         |   INTEGER
         ;
 
+// Field separator within blow:/drop:/mimic:/color-cycle:/message-*: lines.
 COLON
         :   ':'
         ;
 
+// The " | " separator between entries on a flags-off: line.
 OR
         :   ' | '
         ;
 
+// A single colour-code character - used for color:.
 COLOUR_CHAR
         :   ('d' | 'w' | 's' | 'o' | 'r' | 'g' | 'b' | 'u' | 'D' | 'W' | 'P' | 'y' | 'R'
             | 'G' | 'B' | 'U' | 'p' | 'v' | 't' | 'm' | 'Y' | 'i' | 'T' | 'V' | 'I' | 'M' | 'z' | 'Z')
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES_OR_DIGITS symbolic name - used for flag/
+// spell codes inside FLAGS/SPELLS/FLAGS_OFF, and message-*'s spell code field.
 UCASE
         :   ('A'..'Z' | '_' | '0'..'9')+
         ;
 
+// Free-running text (including several accented characters used in
+// monster names/descriptions) - used for most other string fields.
 LCASE
         :   ('a'..'z' | ' ' | 'A'..'Z' | ',' | '<' | '>' | '.' | '-' |
              '\'' | '!' | '?' | 'é' | '{' | '}' | 'á' | ';' | 'ú' | 'ó' |

@@ -17,8 +17,20 @@
 
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * Selects which alternate spell-cast message a monster uses, depending on
+ * whether the monster is seen, unseen, or the spell missed. Mirrors the C
+ * original's alternate-message categories ({@code src/mon-spell.h}).
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterAltmsgType {
+    /**
+     * Message used when the casting monster is seen. @author ClaudeCode
+     */
     MON_ALTMSG_SEEN,
+    /** Message used when the casting monster is unseen. @author ClaudeCode */
     MON_ALTMSG_UNSEEN,
+    /** Message used when the spell misses/fails. @author ClaudeCode */
     MON_ALTMSG_MISS
 }

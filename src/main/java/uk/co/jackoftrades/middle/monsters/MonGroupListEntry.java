@@ -17,6 +17,18 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+/**
+ * One node in a monster group's member list, holding the monster index of a
+ * group member. This is the Java port of the C original's {@code mon_group_list_entry}
+ * ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonGroupListEntry {
+    /**
+     * The monster index of this group member.
+     *
+     * @author ClaudeCode
+     */
     private int mIdx;
 }

@@ -20,14 +20,45 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * One option in the player's background-history generation — a single weighted line of
+ * backstory that may chain to a further chart.
+ *
+ * <p>Ports the C {@code struct history_entry}, built from {@code history.txt}. A character's
+ * background is produced by walking a series of numbered charts: at each chart a random roll
+ * selects one entry, whose {@link #text} is appended to the biography and whose
+ * {@link #nextChartNumber} (when non-zero) names the next chart to roll on. {@link #roll} is
+ * the cumulative probability threshold at which this entry is chosen.
+ *
+ * <p><b>Why chart-chaining rather than a flat table:</b> backstories branch — race leads to
+ * parentage options, which lead to social-standing options — so the data is a directed graph
+ * of small weighted choices, and each entry carries the edge to its successor chart.
+ *
+ * @author ClaudeCode
+ */
 public class PlayerHistoryEntry {
+    /**
+     * Logger for this type.
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /** The chart this entry belongs to. */
     private int chartNumber;
+    /** The chart to roll on next after choosing this entry, or {@code 0} to stop. */
     private int nextChartNumber;
+    /** Cumulative probability threshold at which this entry is selected during the roll. */
     private int roll;
+    /** The biography text contributed by this entry. */
     private String text;
 
+    /**
+     * Creates a history entry.
+     *
+     * @param chartNumber     the owning chart's number
+     * @param nextChartNumber the successor chart to roll on next ({@code 0} = end of chain)
+     * @param roll            the cumulative selection threshold
+     * @param text            the backstory text this entry adds
+     */
     public PlayerHistoryEntry(int chartNumber, int nextChartNumber, int roll, String text) {
         this.chartNumber = chartNumber;
         this.nextChartNumber = nextChartNumber;
@@ -35,6 +66,9 @@ public class PlayerHistoryEntry {
         this.text = text;
     }
 
+    /**
+     * @return the chart this entry belongs to
+     */
     public int getChartNumber() {
         return chartNumber;
     }

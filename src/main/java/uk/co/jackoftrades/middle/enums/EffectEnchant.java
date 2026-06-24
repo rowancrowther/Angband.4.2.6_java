@@ -17,10 +17,24 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * Which enchantment bonus an "enchant item" effect targets — to-hit, to-damage,
+ * both, or armour class. Mirrors the enchant-mode parameter of the C original's
+ * effect code.
+ *
+ * @author ClaudeCode
+ */
 public enum EffectEnchant {
+    /**
+     * No enchantment. @author ClaudeCode
+     */
     EE_NONE,
+    /** Enchant both to-hit and to-damage. @author ClaudeCode */
     EE_TOBOTH,
+    /** Enchant to-hit only. @author ClaudeCode */
     EE_TOHIT,
+    /** Enchant to-damage only. @author ClaudeCode */
     EE_TODAM,
+    /** Enchant armour class. @author ClaudeCode */
     EE_TOAC
 }

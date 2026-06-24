@@ -1,10 +1,28 @@
+// Parser+lexer for lib/gamedata/projection.txt - every "projection" (element
+// damage types like fire/cold, plus non-element ones like turn-undead,
+// stinking cloud, etc): descriptions, damage formula (numerator/
+// denominator/divisor/cap), message type, and display colour. Cf.
+// src/obj-init.c: struct file_parser projection_parser (obj-init.c:470),
+// directive table at obj-init.c:400-414 (parse_projection_code/_name/
+// _type/_desc/_player_desc/_blind_desc/_lash_desc/_numerator/_denominator/
+// _divisor/_damage_cap/_message_type/_obvious/_wake/_color).
+//
+// No significant problems found - verified the mandatory-vs-optional split
+// in `projection`'s sequence (code/type/desc/blindDesc/obvious/colour
+// mandatory, everything else '?') against every record in projection.txt:
+// the mandatory fields are present everywhere, and every field marked
+// optional here is indeed missing from at least one real record (e.g.
+// TURN_UNDEAD/TURN_LIVING have no name/player-desc/lash-desc/numerator/
+// denominator/divisor/damage-cap/msgt/wake at all). `denominator`'s dice
+// alternative also matches the only dice shape actually used ("8+1d4").
+
 grammar Projection;
 
 @header {
             import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
             import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
             import uk.co.jackoftrades.backend.numerics.Random;
-            import uk.co.jackoftrades.middle.enums.MessageEnum;
+            import uk.co.jackoftrades.middle.enums.MessageType;
             import uk.co.jackoftrades.frontend.colour.enums.ColourType;
             import uk.co.jackoftrades.middle.game.Projection;
 
@@ -12,6 +30,8 @@ grammar Projection;
             import java.util.List;
         }
 
+// "code:<PROJ_CODE>" - starts a new projection record; for type:element
+// projections must match list-elements.h's ordering, otherwise list-projections.h's.
 code    returns[ProjectionEnum projectionCode]
         :   CODE UCASE {
             String projectionEnumString = "PROJ_" + $UCASE.getText();
@@ -19,6 +39,7 @@ code    returns[ProjectionEnum projectionCode]
         }
         ;
 
+// "name:<text>" - human-readable name; links brand.txt entries to this projection.
 name    returns[String projectionName]
         :   NAME LWORDS {
             $projectionName = $LWORDS.getText();
@@ -26,6 +47,7 @@ name    returns[String projectionName]
 
         ;
 
+// "type:element|environs|monster" - what kind of projection this is.
 type    returns[ProjectionType projectionType]
         :   TYPE res=('element'|'environs'|'monster') {
             String projectionTypeString = "PT_" + $res.getText().toUpperCase();
@@ -33,12 +55,14 @@ type    returns[ProjectionType projectionType]
         }
         ;
 
+// "desc:<text>" - general flavour description.
 desc    returns[String description]
         :   DESC LWORDS {
             $description = $LWORDS.getText();
         }
         ;
 
+// "player-desc:<text>" - description used when the player causes this projection.
 playerDesc
         returns[String playerDescription]
         :   PLAYER_DESC LWORDS {
@@ -46,6 +70,7 @@ playerDesc
         }
         ;
 
+// "blind-desc:<text>" - description used when the player is blind.
 blindDesc
         returns[String blindDescription]
         :   BLIND_DESC LWORDS {
@@ -53,6 +78,8 @@ blindDesc
         }
         ;
 
+// "lash-desc:<text>" - description used for a "lash" (whip-like) attack of
+// this type.
 lashDesc
         returns[String lashDescription]
         :   LASH_DESC LWORDS {
@@ -60,6 +87,7 @@ lashDesc
         }
         ;
 
+// "numerator:<value>" - damage multiplier numerator.
 numerator
         returns [int num]
         :   NUMERATOR NUMBER {
@@ -67,6 +95,8 @@ numerator
         }
         ;
 
+// A "<base>+<dice>d<sides>" dice expression - the only form denominator:
+// actually uses when it isn't a bare number (e.g. "8+1d4").
 dice    returns [Random die]
         :   base=NUMBER '+' diceType=NUMBER 'd' sides=NUMBER {
             $die = new Random(
@@ -76,6 +106,8 @@ dice    returns [Random die]
         }
         ;
 
+// "denominator:<value>|<dice>" - damage divisor, either a literal number or
+// a dice expression (e.g. "8+1d4").
 denominator
         returns [int den, Random denDice, boolean isDice]
         :   DENOMINATOR (NUMBER | dice) {
@@ -91,12 +123,15 @@ denominator
         }
         ;
 
+// "divisor:<value>" - HP divisor (e.g. for breath attacks scaled to the
+// breather's HP).
 divisor returns[int div]
         :   DIVISOR NUMBER {
             $div = Integer.parseInt($NUMBER.getText());
         }
         ;
 
+// "damage-cap:<value>" - maximum damage this projection can deal.
 damageCap
         returns[int damCap]
         :   DAMAGE_CAP NUMBER {
@@ -104,13 +139,15 @@ damageCap
         }
         ;
 
-msgt    returns[MessageEnum sound]
+// "msgt:<MSG_TYPE>" - message type/sound used when this projection hits.
+msgt    returns[MessageType sound]
         :   MSGT UCASE {
             String enumTag = "MSG_" + $UCASE.getText();
-            $sound = MessageEnum.valueOf(enumTag);
+            $sound = MessageType.valueOf(enumTag);
         }
         ;
 
+// "obvious:0|1" - whether this projection's effect is obvious to the player.
 obvious returns[boolean isObvious]
         :   OBVIOUS NUMBER {
             int number = Integer.parseInt($NUMBER.getText());
@@ -118,6 +155,7 @@ obvious returns[boolean isObvious]
         }
         ;
 
+// "wake:0|1" - whether this projection wakes sleeping monsters.
 wake    returns[boolean willWake]
         :   WAKE NUMBER {
             int number = Integer.parseInt($NUMBER.getText());
@@ -125,6 +163,9 @@ wake    returns[boolean willWake]
         }
         ;
 
+// "color:<name>" - display colour, either a single-letter/UPPER_CASE code
+// (UCASE) or a Title Case full name (TCASE), e.g. "color:L_DARK" vs
+// "color:Light dark".
 colour  returns[ColourType col]
         :   COLOUR (tc=TCASE|uc=UCASE) {
             String colourName;
@@ -139,6 +180,9 @@ colour  returns[ColourType col]
         }
         ;
 
+// One full projection record - a fixed sequence with code/type/desc/
+// blindDesc/obvious/colour mandatory and everything else optional,
+// confirmed to match every record in projection.txt (see top-of-file note).
 projection
         returns[Projection proj]
         :   code
@@ -184,7 +228,7 @@ projection
 
                 int dam = ($damageCap.ctx == null) ? -1 : $damageCap.damCap;
 
-                MessageEnum msg = ($msgt.ctx == null) ? null : $msgt.sound;
+                MessageType msg = ($msgt.ctx == null) ? null : $msgt.sound;
 
                 boolean obv = $obvious.isObvious;
 
@@ -199,6 +243,7 @@ projection
             }
         ;
 
+// Top-level rule: the whole file is one or more projection records.
 file    returns[List<Projection> projections]
         @init {
             $projections = new ArrayList<>();
@@ -209,12 +254,16 @@ file    returns[List<Projection> projections]
             EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL     :   ' '* '\r'? '\n' -> skip
         ;
 
+// CODE through COLOUR below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 CODE    :   'code:'
         ;
 
@@ -266,17 +315,26 @@ WAKE    :   'wake:'
 COLOUR  :   'color:'
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES symbolic name - used for code:/msgt: and
+// the all-caps form of color:.
 UCASE   :   ('A'..'Z'|'_')+
         ;
 
+// Free-running lowercase description text (with spaces/commas) - used for
+// name:/desc:/player-desc:/blind-desc:/lash-desc:.
 LWORDS  :   ('a'..'z') ('a'..'z'|' '|',')*
         ;
 
+// All-lowercase text with hyphens - unused by any active rule (type:'s
+// literal 'element'/'environs'/'monster' alternatives are matched directly
+// as string literals, not via this token).
 LCASE   :   ('a'..'z'|'-')+
         ;
 
+// A Title Case (or mixed-case) colour name - the other form color: can take.
 TCASE   :   ('A'..'Z') ('a'..'z'|'A'..'Z'|' ')*
         ;
 
+// A bare non-negative integer.
 NUMBER  :   ('0'..'9')+
         ;

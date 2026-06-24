@@ -28,9 +28,9 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
-import uk.co.jackoftrades.middle.combat.enums.Element;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.PlayerProperty.PlayerPropertyType;
@@ -279,7 +279,7 @@ public class PlayerPropertyParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class BinduiContext extends ParserRuleContext {
         public UIEntry entry;
-        public Element elemEnum;
+        public ElementEnum elemEnum;
         public Stats statEnum;
         public String bindUIVal;
         public Token TEXT;
@@ -333,7 +333,7 @@ public class PlayerPropertyParser extends Parser {
         BinduiContext _localctx = new BinduiContext(_ctx, getState());
         enterRule(_localctx, 4, RULE_bindui);
 
-        ((BinduiContext) _localctx).elemEnum = Element.ELEM_NONE;
+        ((BinduiContext) _localctx).elemEnum = ElementEnum.ELEM_NONE;
         ((BinduiContext) _localctx).statEnum = Stats.STAT_NONE;
 
         int _la;
@@ -362,7 +362,7 @@ public class PlayerPropertyParser extends Parser {
                         } else {
                             flag = raw.substring(1, raw.length() - 1);
                             if (typeOption.equals("player"))
-                                ((BinduiContext) _localctx).elemEnum = Element.valueOf("ELEM_" + flag);
+                                ((BinduiContext) _localctx).elemEnum = ElementEnum.valueOf("ELEM_" + flag);
                             else if (typeOption.equals("object"))
                                 ((BinduiContext) _localctx).statEnum = Stats.valueOf("STAT_" + flag);
                         }
@@ -648,7 +648,7 @@ public class PlayerPropertyParser extends Parser {
         PlayerFlag pFlagInit = PlayerFlag.PF_NONE;
         UIEntry entryInit = null;
         Stats statInit = Stats.STAT_NONE;
-        Element elemInit = Element.ELEM_NONE;
+        ElementEnum elemInit = ElementEnum.ELEM_NONE;
         String bindUIValInit = "";
         String nameInit = "";
         String descInit = "";

@@ -1,3 +1,43 @@
+// Parser+lexer for lib/gamedata/object.txt - the base kind for every
+// generated object (potions, wands, weapons, armor, ...): graphics, tval/
+// level/weight/cost, combat stats, allocation, charges/stacking, one or
+// more on-use effects, flags/modifiers/elements/slays/curses, and
+// descriptions. Cf. src/obj-init.c: struct file_parser object_parser
+// (obj-init.c:2230).
+//
+// POTENTIAL PROBLEMS (#1 is severe and active; #2 is a complete missing
+// feature, currently latent only because object.txt doesn't use it yet):
+//
+//   1. SEVERE/ACTIVE: `effect_block` is a hand-enumerated list of ~20
+//      fixed alternatives (e.g. "power effect", "power effect dice",
+//      "effect effect_yx", ...), each allowing at most one or two `effect`
+//      matches. Real object.txt content routinely chains many `effect:`
+//      lines (optionally each with its own dice:/effect-yx:) under a
+//      single power:/msg: header - extracting the actual directive
+//      sequences from object.txt turns up dozens of distinct shapes
+//      including "power,effect,dice,effect,dice,effect,dice,effect,dice,
+//      effect,dice,effect,dice" (6 repeated effect+dice pairs) and
+//      "power,effect,effect,effect,effect,effect,effect,effect,effect,
+//      effect,effect,effect,effect,effect,effect,dice" (14 effects in a
+//      row). None of the ~20 enumerated alternatives accept an arbitrary
+//      number of effects, so the majority of multi-effect items in
+//      object.txt cannot be parsed by this rule as written - this is the
+//      same hand-enumeration trap Random.g4's `dice` rule fell into, but
+//      far more consequential here since it affects most of the file.
+//
+//   2. object.txt's own header documents a "brand:" directive ("brand:
+//      code" - "adds a brand to the object... may appear more than once
+//      for objects with multiple brands", obj-init.c-equivalent doc at
+//      object.txt:30/123-125), and the BRAND lexer token exists, but
+//      there's no `brand` parser rule at all and no alternative for it in
+//      `item_object` - `kBrands`/the ItemObject's brands map can never be
+//      populated by this grammar. Current object.txt happens not to use
+//      brand: on any entry (0 occurrences), so this is latent rather than
+//      actively failing, but it's a wholly unimplemented documented
+//      feature, not just an edge case.
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar ItemObject;
 
 @header {
@@ -48,15 +88,19 @@ grammar ItemObject;
     import java.util.ArrayList;
 }
 
+// Pairs a resolved Curse with its rolled CurseData (power + the 0 here is a
+// placeholder second CurseData field) for `item_object`'s kCurses map key.
 @members {
     public record CurseEntry(Curse curse, CurseData curseData) {}
 }
 
+// "name:<text>" - starts a new object kind record.
 name
         returns[String nameStr]
         :   NAME STRING EOL { $nameStr = $STRING.getText(); }
         ;
 
+// "graphics:<glyph>:<colour>" - display character for this kind.
 graphics
         returns[AngbandDisplayCharacter graphicsADC]
         :   GRAPHICS chr=GRAPHICS_CHAR GRAPHICS_CHAR colourChar=STRING EOL {
@@ -73,6 +117,7 @@ graphics
             }
         ;
 
+// "type:<tval text>" - the object's tval (e.g. "type:wand", "type:soft armor").
 type
         returns[TValue typeObj]
         :   TYPE STRING EOL {
@@ -81,21 +126,25 @@ type
             }
         ;
 
+// "level:<value>" - native depth/difficulty level.
 level
         returns[int levelInt]
         :   LEVEL STRING EOL { $levelInt = Integer.parseInt($STRING.getText()); }
         ;
 
+// "weight:<tenths of a pound>".
 weight
         returns[int weightInt]
         :   WEIGHT STRING EOL { $weightInt = Integer.parseInt($STRING.getText()); }
         ;
 
+// "cost:<value>" - base shop price.
 cost
         returns[int costInt]
         :   COST STRING EOL { $costInt = Integer.parseInt($STRING.getText()); }
         ;
 
+// "attack:<base dice>:<to-hit>:<to-dam>" - melee weapon stats.
 attack
         returns[String toh, String tod, String base]
         :   ATTACK b=STRING GRAPHICS_CHAR h=STRING GRAPHICS_CHAR d=STRING EOL {
@@ -105,6 +154,7 @@ attack
             }
         ;
 
+// "armor:<base AC>:<to-AC>".
 armour
         returns[int baseInt, String toa]
         :   ARMOUR base=STRING GRAPHICS_CHAR ac=STRING EOL {
@@ -113,6 +163,7 @@ armour
             }
         ;
 
+// "alloc:<rarity>:<min level> to <max level>" - generation allocation.
 alloc
         returns[int prob, int minLevel, int maxLevel]
         :   ALLOC p=STRING GRAPHICS_CHAR lev=STRING EOL {
@@ -124,11 +175,13 @@ alloc
             }
         ;
 
+// "charges:<dice string>" - wand/staff charge count.
 charges
         returns[String chargesStr]
         :   CHARGES STRING EOL { $chargesStr = $STRING.getText(); }
         ;
 
+// "pile:<chance>:<dice string>" - chance and amount for generating a stack.
 pile
         returns[int prob, String amount]
         :   PILE p=STRING GRAPHICS_CHAR am=STRING EOL {
@@ -137,11 +190,16 @@ pile
             }
         ;
 
+// "power:<value>" - relative power for object-power calc, consumed as a
+// prefix inside `effect_block`.
 power
         returns[int powerInt]
         :   POWER STRING EOL { $powerInt = Integer.parseInt($STRING.getText()); }
         ;
 
+// "effect:<TYPE>[:<SUBTYPE>[:<radius>[:<other>]]]" - one alternative per
+// field count (1-4), each just collecting raw strings into a list -
+// subtype resolution happens later in `effect_block`'s @after.
 effect
         returns[List<String> effectList]
         @init {
@@ -171,26 +229,31 @@ effect
             }
         ;
 
+// "dice:<dice string>" - dice for the preceding effect: line.
 dice
         returns[String diceStr]
         :   DICE STRING EOL { $diceStr = $STRING.getText(); }
         ;
 
+// "msg:<text>" - message shown when the effect triggers.
 msg
         returns[String msgStr]
         :   MSG STRING EOL { $msgStr = $STRING.getText(); }
         ;
 
+// "vis-msg:<text>" - message shown when the effect is visible to others.
 vis_msg
         returns[String msgStr]
         :   VIS_MSG STRING EOL { $msgStr = $STRING.getText(); }
         ;
 
+// "time:<dice string>" - recharge time after using the effect.
 time
         returns[String timeStr]
         :   TIME STRING EOL { $timeStr = $STRING.getText(); }
         ;
 
+// "effect-yx:<y>:<x>" - sets a coordinate on the preceding effect:.
 effect_yx
         returns[int yInt, int xInt]
         :   EFFECT_YX y=STRING GRAPHICS_CHAR x=STRING EOL {
@@ -199,6 +262,8 @@ effect_yx
             }
         ;
 
+// "expr:<letter>:<EFB_BASE>:<operation>" - binds a dice-string variable used
+// in the preceding dice: line.
 expr
         returns[Expression exprObj]
         :   EXPR ch=STRING GRAPHICS_CHAR func=STRING GRAPHICS_CHAR oper=STRING EOL {
@@ -215,6 +280,11 @@ expr
             }
         ;
 
+// Groups an optional power:/msg:/vis-msg: header with the effect: (and its
+// dice:/expr:/effect-yx:) that follow. See top-of-file problem #1: the
+// alternatives below are a fixed, hand-enumerated list that cannot express
+// "N repetitions of effect (dice)?" for arbitrary N, but real object.txt
+// entries routinely chain many effects under one header.
 effect_block
         returns[Effect effObj]
         @init {
@@ -405,6 +475,9 @@ effect_block
             }
         ;
 
+// "flags:<FLAG> [| <FLAG> ...]" - tries each flag as an ObjectFlag first,
+// falling back to ObjectKindFlag on failure, since the file mixes both
+// flag families in the same '|'-separated list.
 flags
         returns[Flag<ObjectFlag> oFlags, Flag<ObjectKindFlag> kFlags]
         @init {
@@ -438,6 +511,7 @@ flags
         })* EOL
         ;
 
+// "values:<OM_MODIFIER>[<value>] [| ...]" - object modifiers this kind has innately.
 values
         returns[Map<ObjectModifier, String> valueMap]
         @init {
@@ -454,6 +528,8 @@ values
             })* EOL
         ;
 
+// "slay:<CODE>" - a slay this kind has innately, looked up in slay.txt; can
+// repeat (see `item_object`'s kSlays map).
 slay
         returns[Slay slayObj]
         :   SLAY STRING EOL {
@@ -461,6 +537,8 @@ slay
             }
         ;
 
+// "curse:<curse name>:<power>" - a curse this kind comes with innately; can
+// repeat (see `item_object`'s kCurses map).
 curse
         returns[Map<Curse, CurseData> curseMap]
         @init { $curseMap = new HashMap<>(); }
@@ -476,16 +554,25 @@ curse
             }
         ;
 
+// "pval:<dice string>" - the kind's primary value (e.g. ring/amulet bonus magnitude).
 pval
         returns[String pValStr]
         :   PVAL STRING EOL { $pValStr = $STRING.getText(); }
         ;
 
+// "desc:<text>" - flavour description; can repeat to build up multiple lines.
 desc
         returns[String descStr]
         :   DESC STRING EOL { $descStr = $STRING.getText(); }
         ;
 
+// One full object kind record. Builds both an ObjectKind (the base item
+// type) and an ItemObject (a concrete instance of it) from the same parsed
+// fields, since this codebase doesn't yet separate "kind template" from
+// "object instance" construction the way the C struct does (struct
+// object_kind vs struct object). See top-of-file problem #2 re: the
+// missing brand: support - kBrands is declared here but nothing ever
+// populates it.
 item_object
         returns[ItemObject itemObj, ObjectKind oKind]
         @init {
@@ -629,6 +716,7 @@ item_object
         )+  EOL*
         ;
 
+// Top-level rule: the whole file is one or more object kind records.
 file
         returns[List<ItemObject> itemObjects, List<ObjectKind> objectKinds]
         @init {
@@ -641,14 +729,20 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A line ending - deliberately not skipped, since every directive rule
+// explicitly matches a trailing EOL and `item_object` uses EOL* to skip
+// the blank lines between records.
 EOL
         :   ' '* '\r'? '\n'
         ;
 
+// NAME through DESC below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -733,6 +827,9 @@ VALUES
         :   'values:'
         ;
 
+// PROBLEM: lexed but never consumed by any parser rule - see top-of-file
+// problem #2. If object.txt ever adds a brand: line, this token alone
+// won't help since there's no `brand` rule to match it.
 BRAND
         :   'brand:'
         ;
@@ -753,10 +850,14 @@ DESC
         :   'desc:'
         ;
 
+// The " | " separator between modifier entries on a values: line.
 LONG_OR
         :   ' | '
         ;
 
+// Disabled/unused - colour-code charset, superseded by graphics: reading a
+// plain STRING and validating its length in the `graphics` rule's action
+// instead of constraining it at the lexer level.
 // GRAPHICS_COLOUR
 //        :   ('d' | 'D' | 'w' | 's' | 'o' | 'r' | 'g' | 'b'
 //           | 'u' | 'W' | 'P' | 'y' | 'R' | 'G' | 'B' | 'U'
@@ -764,14 +865,42 @@ LONG_OR
 //           | 'I' | 'M' | 'z' | 'Z')
 //        ;
 
+// A generic field separator used as the ':'-equivalent between sub-fields
+// within attack:/armor:/alloc:/pile:/effect:/effect-yx:/expr:/values:/
+// curse: lines (this grammar uses GRAPHICS_CHAR rather than a dedicated
+// COLON token for those, since the values it matches overlap with
+// characters that can appear inside item/flag names elsewhere).
 GRAPHICS_CHAR
         :   (']' | '&' | '*' | '~' | '!' | ',' | '\\' | '|' | ':' | '/'
            | '}' | '{' | '[' | '(' | ')' | '=' | '"'  | '?' | '-' | '_'
            | '$')
         ;
 
+// Free-running general-purpose text - used for nearly every field's value
+// (names, numbers-as-text, flag/effect/type names, dice strings, messages).
 STRING
         :   ('a'..'z' | 'A'..'Z' | '<' | '>' | ' ' | '~' | '&' | '\''
            | '0'..'9' | '.' | ',' | '(' | ')' | '-' | ';' | '!' | '_'
            | '+' | '*' | '$' | '/')+
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Restructure effect_block around repetition rather than enumeration:
+//      something like
+//        (power | msg | vis_msg)?
+//        (effect (dice (expr)? | effect_yx)?)+
+//        time?
+//      so any number of effect (each with its own optional dice/expr or
+//      effect-yx) can follow one header, instead of hand-listing every
+//      combination. Push effObj construction into a list of per-effect
+//      records the way `item_object` already does for `effect_block`
+//      itself (kEffects.add(...)), rather than building a single Effect
+//      per `effect_block` match.
+//
+//   2. Add a `brand` rule (e.g. `BRAND STRING EOL { $brandObj =
+//      GameConstants.lookupBrandCode($STRING.getText()); }`, mirroring
+//      `slay`) and a `(brand { kBrands.put($brand.brandObj, true); })*`
+//      alternative in `item_object`, so this matches its own documented
+//      format and won't break the moment object.txt's first brand: line
+//      appears.

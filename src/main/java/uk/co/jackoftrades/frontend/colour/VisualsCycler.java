@@ -26,18 +26,52 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * The top-level registry of colour-cycling animations, holding all
+ * {@link VisualsCycleGroup}s loaded from the visuals data file and resolving a
+ * cycle (or a specific frame's colour) by group + cycle name. This is the
+ * aggregate object produced by the visuals parser and queried by the rest of the
+ * colour-cycling system.
+ *
+ * @author ClaudeCode
+ */
 public class VisualsCycler {
+    /**
+     * All colour-cycle groups known to this cycler.
+     *
+     * @author ClaudeCode
+     */
     private List<VisualsCycleGroup> groups;
 
+    /**
+     * Create an empty cycler with no groups.
+     *
+     * @author ClaudeCode
+     */
     public VisualsCycler() {
         groups = new ArrayList<>();
     }
 
+    /**
+     * Register a colour-cycle group.
+     *
+     * @param group the group to add
+     * @author ClaudeCode
+     */
     @Contract(mutates = "this")
     public void addVisualsCycleGroup(@NotNull VisualsCycleGroup group) {
         groups.add(group);
     }
 
+    /**
+     * Look up a colour cycle by its group name and cycle name.
+     *
+     * @param groupName the containing group's name
+     * @param cycleName the cycle's name within that group
+     * @return the matching cycle, or {@code null} if either name is empty or no
+     * match is found
+     * @author ClaudeCode
+     */
     @Nullable
     @Contract(pure = true)
     @CheckReturnValue
@@ -54,6 +88,15 @@ public class VisualsCycler {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * Resolve the colour for a given animation frame of a named cycle.
+     *
+     * @param groupName the containing group's name
+     * @param cycleName the cycle's name within that group
+     * @param frame     the animation frame
+     * @return the colour for that frame, or {@code null} if the cycle is not found
+     * @author ClaudeCode
+     */
     @Nullable
     @Contract(pure = true)
     @CheckReturnValue

@@ -20,9 +20,9 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
-import uk.co.jackoftrades.middle.combat.enums.Element;
 import uk.co.jackoftrades.middle.enums.StatElementEnum;
 import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
@@ -35,7 +35,7 @@ public class PlayerProperty {
     private UIEntry uiEntry;
     private StatElementEnum statElement;
     private Stats stats;
-    private Element element;
+    private ElementEnum element;
     private boolean passType;
     private int passValue;
     private boolean special;
@@ -48,7 +48,7 @@ public class PlayerProperty {
                           ObjectFlag oCode,
                           UIEntry uiEntry,
                           Stats stats,
-                          Element element,
+                          ElementEnum element,
                           String binduiExtras,
                           String name,
                           String description,

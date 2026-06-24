@@ -24,8 +24,15 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Arrays;
-
+/**
+ * The item "type value" (tval) of an object — its broad category (chest, weapon,
+ * armour, ring, potion, spellbook, …) that drives stacking, shop placement and
+ * which slot it fits. Each constant carries its display name. This is the Java
+ * port of the C original's {@code TV_*} type values ({@code src/list-tvals.h});
+ * the helper predicates classify groups of tvals.
+ *
+ * @author ClaudeCode
+ */
 public enum TValue {
     /**
      * A null TValue - not yet assigned
@@ -213,9 +220,25 @@ public enum TValue {
      */
     TV_MAX("");
 
+    /**
+     * The display name of this item type.
+     *
+     * @author ClaudeCode
+     */
     private final String name;
+    /**
+     * Logger used to report unknown tval lookups in {@link #fromName(String)}.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Bind a tval to its display name.
+     *
+     * @param name the display name
+     * @author ClaudeCode
+     */
     TValue(String name) {
         this.name = name;
     }
@@ -229,6 +252,10 @@ public enum TValue {
         return name;
     }
 
+    /**
+     * @return whether this tval is a staff
+     * @author ClaudeCode
+     */
     public boolean isStaff() {
         return this == TV_STAFF;
     }
@@ -390,6 +417,12 @@ public enum TValue {
         return this == TV_FOOD || this == TV_MUSHROOM;
     }
 
+    /**
+     * @return whether items of this type get a randomised "flavour" (e.g. an
+     * unidentified potion's colour) — amulets, rings, the magic devices,
+     * potions, mushrooms and scrolls
+     * @author ClaudeCode
+     */
     public boolean canHaveFlavour() {
         return switch (this) {
             case TV_AMULET, TV_RING, TV_STAFF, TV_WAND, TV_ROD, TV_POTION, TV_MUSHROOM, TV_SCROLL -> true;
@@ -397,6 +430,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is a spellbook of any realm
+     * @author ClaudeCode
+     */
     public boolean isBook() {
         return switch (this) {
             case TV_MAGIC_BOOK, TV_PRAYER_BOOK, TV_NATURE_BOOK, TV_SHADOW_BOOK, TV_OTHER_BOOK -> true;
@@ -404,6 +441,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is a "zapper" device (wand or staff)
+     * @author ClaudeCode
+     */
     public boolean isZapper() {
         return this == TV_WAND || this == TV_STAFF;
     }

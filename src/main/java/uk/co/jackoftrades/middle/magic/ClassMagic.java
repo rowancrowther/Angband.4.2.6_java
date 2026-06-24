@@ -20,13 +20,54 @@ package uk.co.jackoftrades.middle.magic;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * A player class's spellcasting profile: when it can first cast, the weight its
+ * spellbooks contribute to encumbrance, and the set of {@link MagicBook}s it can
+ * use. This is the Java port of the C original's {@code struct class_magic}
+ * ({@code src/player.h}).
+ *
+ * @author ClaudeCode
+ */
 public class ClassMagic {
+    /**
+     * The character level at which this class can first cast spells.
+     *
+     * @author ClaudeCode
+     */
     private int firstSpellLevel;
+    /**
+     * Weight contributed by each spellbook (affects encumbrance/casting).
+     *
+     * @author ClaudeCode
+     */
     private int spellWeight;
+    /**
+     * Number of spellbooks this class uses.
+     *
+     * @author ClaudeCode
+     */
     private int numBooks;
+    /**
+     * The spellbooks available to this class.
+     *
+     * @author ClaudeCode
+     */
     List<MagicBook> magicBooks;
+    /**
+     * Running total of spells across all books (maintained by {@link #addMagicBook}).
+     *
+     * @author ClaudeCode
+     */
     private int totalSpells;
 
+    /**
+     * Build an empty class-magic profile with the given casting parameters.
+     *
+     * @param firstSpellLevel level at which casting becomes possible
+     * @param spellWeight     per-book weight
+     * @param numBooks        number of books used
+     * @author ClaudeCode
+     */
     public ClassMagic(int firstSpellLevel, int spellWeight, int numBooks) {
         this.firstSpellLevel = firstSpellLevel;
         this.spellWeight = spellWeight;
@@ -35,6 +76,13 @@ public class ClassMagic {
         this.totalSpells = 0;
     }
 
+    /**
+     * Add a spellbook to this profile and accumulate its spell count into
+     * {@link #totalSpells}.
+     *
+     * @param magicBook the book to add
+     * @author ClaudeCode
+     */
     public void addMagicBook(MagicBook magicBook) {
         this.magicBooks.add(magicBook);
         this.totalSpells += magicBook.getNumOfSpells();

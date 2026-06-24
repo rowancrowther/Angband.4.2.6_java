@@ -26,8 +26,30 @@ import org.jetbrains.annotations.NotNull;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Static string-manipulation helpers ported from the original C source's string
+ * utilities ({@code src/z-util.c} / {@code src/z-form.c}). Because the C game
+ * works with raw {@code char *} buffers it needs explicit helpers for
+ * formatting, length-bounded copies/concatenation, prefix/suffix tests,
+ * case-insensitive comparison, pluralisation and so on; these methods provide
+ * the same behaviour over Java {@link String}s so ported code can keep its
+ * original shape. Abstract because it is a pure utility holder.
+ *
+ * @author ClaudeCode
+ */
 public abstract class StringUtils {
+    /**
+     * Shared logger (reserved for diagnostics in this utility holder).
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
+    /**
+     * The running program's name, mirroring the C global {@code argv0}; used in
+     * messages that need to identify the executable.
+     *
+     * @author ClaudeCode
+     */
     public static String programmeName;
 
     /**

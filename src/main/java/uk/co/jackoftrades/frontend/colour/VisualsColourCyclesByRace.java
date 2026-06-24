@@ -27,9 +27,31 @@ import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Maps each {@link MonsterRace} to the colour cycle that animates its glyph, and
+ * resolves the colour to show for a given animation frame. This is the per-race
+ * binding side of the colour-cycling system (the cycles themselves live in
+ * {@link VisualsCycler}); the Java port of the C original's race→cycle lookup.
+ *
+ * @author ClaudeCode
+ */
 public class VisualsColourCyclesByRace {
+    /**
+     * Per-race colour cycle bindings.
+     *
+     * @author ClaudeCode
+     */
     private static final Map<MonsterRace, VisualsColourCycle> race = new HashMap<>();
 
+    /**
+     * Resolve the colour a race's glyph should use on the given animation frame.
+     *
+     * @param monsterRace the race being drawn
+     * @param frame       the current animation frame
+     * @return the colour for this frame, or {@link ColourType#COLOUR_TYPE_DARK}
+     * if the race has no colour cycle
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     @CheckReturnValue
     @NotNull

@@ -18,12 +18,37 @@
 package uk.co.jackoftrades.middle.game;
 
 public class Angband {
+    /**
+     * The game's name.
+     *
+     * @author ClaudeCode
+     */
     public static final String VERSION_NAME = "Angband";
+    /**
+     * The game's version number.
+     *
+     * @author ClaudeCode
+     */
     public static final String VERSION_STRING = "4.2.6";
 
+    /**
+     * Combined build identifier (name + version).
+     *
+     * @author ClaudeCode
+     */
     public static final String buildId = VERSION_NAME + " " + VERSION_STRING;
+    /**
+     * Build version (same as {@link #VERSION_STRING}).
+     *
+     * @author ClaudeCode
+     */
     public static final String buildVer = VERSION_STRING;
 
+    /**
+     * The full copyright and licence notice shown to the player.
+     *
+     * @author ClaudeCode
+     */
     public static final String copyright =
             "Copyright (c) 1987-2022 Angband contributors.\n"
                     + "\n"

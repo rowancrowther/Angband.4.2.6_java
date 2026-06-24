@@ -22,13 +22,47 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
 
+/**
+ * One level in the O-combat critical-hit table: a 1/chance probability paired
+ * with the number of extra damage dice and the message shown. Unlike the Vanilla
+ * {@link CriticalLevel} (which keys off a power cut-off), O-combat criticals are
+ * chosen probabilistically. This is the Java port of the C original's
+ * {@code o_critical_level}.
+ *
+ * @author ClaudeCode
+ */
 public class O_CriticalLevel {
+    /**
+     * The data-file group tag these levels are parsed under.
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "o-melee-critical-level";
+    /**
+     * 1/chance this level is selected when no earlier level was.
+     *
+     * @author ClaudeCode
+     */
     private int chance;
+    /**
+     * Extra damage dice added at this critical level.
+     *
+     * @author ClaudeCode
+     */
     private int addedDice;
-    private MessageEnum msgt;
+    /**
+     * The message shown to the player for this critical level.
+     *
+     * @author ClaudeCode
+     */
+    private MessageType msgt;
+    /**
+     * Logger used to report invalid parsed values.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -42,7 +76,7 @@ public class O_CriticalLevel {
      *                  in correctly.
      */
     @CheckReturnValue
-    public O_CriticalLevel(int chance, int addedDice, MessageEnum msgt) throws InvalidTokenFoundDuringParse {
+    public O_CriticalLevel(int chance, int addedDice, MessageType msgt) throws InvalidTokenFoundDuringParse {
         if (chance <= 0) {
             String message = "Invalid value of chance in parsing of a constants.txt line. Token was: "
                     + tag + ":" + chance + ":" + addedDice + ":" + msgt.name();
@@ -92,7 +126,7 @@ public class O_CriticalLevel {
      * @return hit type of this critical
      */
     @Contract(pure = true)
-    public MessageEnum getMsgt() {
+    public MessageType getMsgt() {
         return msgt;
     }
 }

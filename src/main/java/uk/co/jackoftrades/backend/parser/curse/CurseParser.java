@@ -34,7 +34,7 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
@@ -744,7 +744,7 @@ public class CurseParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class FlagsContext extends ParserRuleContext {
-		public List<ObjectFlagName> flagList;
+        public List<ObjectFlag> flagList;
 		public Token flg1;
 		public Token flg2;
 
@@ -799,7 +799,7 @@ public class CurseParser extends Parser {
 				setState(77);
 				((FlagsContext) _localctx).flg1 = match(STRING);
 
-				_localctx.flagList.add(ObjectFlagName.valueOf("OF_" + ((FlagsContext) _localctx).flg1.getText().trim()));
+                _localctx.flagList.add(ObjectFlag.valueOf("OF_" + ((FlagsContext) _localctx).flg1.getText().trim()));
 
 				setState(84);
 				_errHandler.sync(this);
@@ -812,7 +812,7 @@ public class CurseParser extends Parser {
 							setState(80);
 							((FlagsContext) _localctx).flg2 = match(STRING);
 
-							_localctx.flagList.add(ObjectFlagName.valueOf("OF_" + ((FlagsContext) _localctx).flg2.getText().trim()));
+                            _localctx.flagList.add(ObjectFlag.valueOf("OF_" + ((FlagsContext) _localctx).flg2.getText().trim()));
 
 						}
 					}
@@ -1139,7 +1139,7 @@ public class CurseParser extends Parser {
 
 	@SuppressWarnings("CheckReturnValue")
 	public static class Conflict_flagsContext extends ParserRuleContext {
-		public List<ObjectFlagName> cFlags;
+        public List<ObjectFlag> cFlags;
 		public Token flg1;
 		public Token flg2;
 
@@ -1194,7 +1194,7 @@ public class CurseParser extends Parser {
 				setState(117);
 				((Conflict_flagsContext) _localctx).flg1 = match(STRING);
 
-				_localctx.cFlags.add(ObjectFlagName.valueOf("OF_" + ((Conflict_flagsContext) _localctx).flg1.getText().trim()));
+                _localctx.cFlags.add(ObjectFlag.valueOf("OF_" + ((Conflict_flagsContext) _localctx).flg1.getText().trim()));
 
 				setState(124);
 				_errHandler.sync(this);
@@ -1207,7 +1207,7 @@ public class CurseParser extends Parser {
 							setState(120);
 							((Conflict_flagsContext) _localctx).flg2 = match(STRING);
 
-							_localctx.cFlags.add(ObjectFlagName.valueOf("OF_" + ((Conflict_flagsContext) _localctx).flg2.getText().trim()));
+                            _localctx.cFlags.add(ObjectFlag.valueOf("OF_" + ((Conflict_flagsContext) _localctx).flg2.getText().trim()));
 
 						}
 					}
@@ -1397,12 +1397,12 @@ public class CurseParser extends Parser {
 		EffectBaseType evBaseInit = EffectBaseType.EFB_NONE;
 		String effectStringInit = "";
 		String timeInit = "";
-		List<ObjectFlagName> flagsInit = new ArrayList<>();
+        List<ObjectFlag> flagsInit = new ArrayList<>();
 		Map<ValueEnum, Integer> valsInit = new HashMap<>();
 		String msgInit = "";
 		String descInit = "";
 		String conflictInit = "";
-		List<ObjectFlagName> confFlagsInit = new ArrayList<>();
+        List<ObjectFlag> confFlagsInit = new ArrayList<>();
 
 		int _la;
 		try {

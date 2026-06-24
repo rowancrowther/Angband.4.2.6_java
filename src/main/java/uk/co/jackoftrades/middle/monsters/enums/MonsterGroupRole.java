@@ -17,11 +17,26 @@
 
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * The role a monster plays within its group/pack, mirroring the C original's
+ * group-role constants — used by group AI to decide behaviour (e.g. bodyguards
+ * stay near the leader).
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterGroupRole {
+    /**
+     * No special group role. @author ClaudeCode
+     */
     MON_GROUP_NONE,
+    /** The group's leader. @author ClaudeCode */
     MON_GROUP_LEADER,
+    /** A servant of the leader. @author ClaudeCode */
     MON_GROUP_SERVANT,
+    /** A bodyguard that stays near the leader. @author ClaudeCode */
     MON_GROUP_BODYGUARD,
+    /** An ordinary group member. @author ClaudeCode */
     MON_GROUP_MEMBER,
+    /** A summoned addition to the group. @author ClaudeCode */
     MON_GROUP_SUMMON
 }

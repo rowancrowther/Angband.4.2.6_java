@@ -1,3 +1,19 @@
+// Parser+lexer for lib/gamedata/object_base.txt - the tval-level defaults
+// every object kind of that base type inherits (display colour, breakage
+// chance, max stack size, base-level flags like HATES_ACID/SHOW_DICE).
+// Cf. src/obj-init.c: struct file_parser object_base_parser
+// (obj-init.c:657), directives "default:break-chance:"/"default:max-stack:"
+// /name/graphics/break/max-stack/flags -> parse_object_base_default_*/
+// _name/_graphics/_break/_max_stack/_flags.
+//
+// No significant problems found. Worth noting since it looks suspicious at
+// a glance: `object_base` matches `(flags {...})*` and several real bases
+// (arrow, bolt, bow, ...) genuinely have two flags: lines - but unlike
+// TerrainFeature.g4's equivalent situation, this is NOT a bug here, because
+// `$objectBase.setFlags(...)` (ObjectBase.java:52) turns flags on via
+// `Flag.on()` against the base's existing flag set rather than replacing
+// it, so calling it once per flags: line correctly accumulates.
+
 grammar ObjectBase;
 
 @header {
@@ -9,6 +25,8 @@ grammar ObjectBase;
     import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 }
 
+// "default:break-chance:<value>" or "default:max-stack:<value>" - file-wide
+// fallback values applied (in `file`) to any base that doesn't set its own.
 default_value
         returns[int maxStackNum, int breakChanceNum]
         @init {
@@ -23,6 +41,9 @@ default_value
             }
         ;
 
+// "name:<tval>[:<plural name>]" - starts a new base record; tval text is
+// upper-cased/underscored into a TV_* constant (with "DRAGON ARMOR"
+// special-cased to TValue's "DRAG ARMOR" alias).
 name
         returns[TValue tValue, String nameStr]
         :   (NAME tval1=TEXT COLON nameIn=TEXT) {
@@ -44,6 +65,7 @@ name
             }
         ;
 
+// "graphics:<colour name>" - default inventory-display colour for this base.
 graphics
         returns[ColourType graphicsColour]
         :   GRAPHICS TEXT {
@@ -51,6 +73,7 @@ graphics
             }
         ;
 
+// "break:<percent>" - breakage chance when thrown.
 break_chance
         returns[int breakChance]
         :   BREAK NUMBER {
@@ -58,6 +81,7 @@ break_chance
             }
         ;
 
+// "max-stack:<count>" - maximum stack size for items of this base.
 max_stack
         returns[int maxStack]
         :   MAX_STACK NUMBER {
@@ -65,6 +89,9 @@ max_stack
             }
         ;
 
+// "flags:<FLAG> [| <FLAG> ...]" - base-level flags (HATES_ACID/_FIRE map to
+// element-vulnerability flags, everything else to ObjectKindFlag - see
+// ObjectBase.setFlags()). Can repeat per base (see top-of-file note).
 flags
         returns[List<String> flagsList]
         @init {
@@ -78,6 +105,9 @@ flags
             })*
         ;
 
+// One full base record: name/graphics header, then optional break/max-stack
+// (left at -1 if absent, to be filled from the file-wide defaults below)
+// and zero or more flags: lines.
 object_base
         returns[ObjectBase objectBase]
         @init {
@@ -101,6 +131,8 @@ object_base
             })*
         ;
 
+// Top-level rule: the file-wide default: lines, then one or more base
+// records, applying the defaults to any base that left break/max-stack at -1.
 file
         returns[List<ObjectBase> objectBaseList]
         @init {
@@ -146,6 +178,8 @@ DEFAULT_BREAK_CHANCE
         :   'default:break-chance:'
         ;
 
+// NAME through FLAGS below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -166,14 +200,18 @@ FLAGS
         :   'flags:'
         ;
 
+// A bare non-negative integer.
 NUMBER
         :   ('0'..'9')+
         ;
 
+// Field separator within a name: line.
 COLON
         :   ':'
         ;
 
+// Free-running text - tval/base names, colour names, and flag names
+// (including the '~' plural-marker suffix used in object names like "Chest~").
 TEXT
         :   ('a'..'z' | 'A'..'Z' | ' ' | '_' | '-' | '~')+
         ;

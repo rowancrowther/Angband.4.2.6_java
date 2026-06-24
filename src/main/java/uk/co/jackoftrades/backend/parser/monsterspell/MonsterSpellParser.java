@@ -36,6 +36,7 @@ import uk.co.jackoftrades.middle.effect.*;
 import uk.co.jackoftrades.middle.enums.*;
 import uk.co.jackoftrades.middle.monsters.MonsterSpellLevel;
 import uk.co.jackoftrades.middle.monsters.MonsterSpellType;
+import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
@@ -868,7 +869,7 @@ public class MonsterSpellParser extends Parser {
                         break;
 
                     case EST_MON_TMD:
-                        wrapperInit = new EffectSubTypeWrapper(EffectMonTimed.valueOf("MON_TMD_" + parm2Init));
+                        wrapperInit = new EffectSubTypeWrapper(MonTimed.valueOf("MON_TMD_" + parm2Init));
                         break;
 
                     case EST_SUMMON:

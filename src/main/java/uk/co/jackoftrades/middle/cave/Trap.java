@@ -23,17 +23,59 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 
+/**
+ * A trap instance placed on a specific dungeon grid — distinct from its
+ * {@link TrapKind} template. It carries the live state (location, current power,
+ * disarm/cooldown timeout and per-instance flags). This is the Java port of the
+ * C original's {@code struct trap} ({@code src/trap.h}).
+ *
+ * @author ClaudeCode
+ */
 public class Trap {
+    /**
+     * This trap's index in the level's trap list.
+     *
+     * @author ClaudeCode
+     */
     private int trapIndex;
+    /**
+     * The kind/template this trap is an instance of.
+     *
+     * @author ClaudeCode
+     */
     private TrapKind kind;
 
+    /**
+     * The grid this trap occupies.
+     *
+     * @author ClaudeCode
+     */
     private Loc grid;
 
+    /**
+     * The trap's current power (affects difficulty/severity).
+     *
+     * @author ClaudeCode
+     */
     private int power;
+    /**
+     * Turns until the trap can trigger again (0 means ready/active).
+     *
+     * @author ClaudeCode
+     */
     private int timeout;
 
+    /**
+     * Per-instance trap flags.
+     *
+     * @author ClaudeCode
+     */
     private Flag<TrapEnum> flags;
 
+    /**
+     * @return the {@link TrapKind} template for this trap
+     * @author ClaudeCode
+     */
     public TrapKind getKind() {
         return kind;
     }
@@ -61,12 +103,20 @@ public class Trap {
         return power;
     }
 
+    /**
+     * @return this trap's index in the level's trap list
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     @Contract(pure = true)
     public int getTrapIndex() {
         return trapIndex;
     }
 
+    /**
+     * @return turns until the trap can trigger again (0 = ready)
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     @Contract(pure = true)
     public int getTimeout() {

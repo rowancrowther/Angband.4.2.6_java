@@ -1,3 +1,12 @@
+// Parser+lexer for lib/gamedata/terrain.txt - every terrain feature (floor,
+// walls, doors, staircases, shop entrances, rubble, lava, ...): display
+// glyph, flags, digging difficulty, mimicry, and player-facing messages.
+// Cf. src/init.c: struct file_parser feat_parser (init.c:2297), directive
+// table in parse_feat_code/_name/_graphics/_mimic/_priority/_flags/
+// _digging/_desc and the various *_msg handlers (init.c:2002-2296ish).
+// This grammar IS wired up (TerrainReader.java exists), unlike TrapGrammar/
+// Class.g4 elsewhere in this directory - the bug below is live.
+
 grammar TerrainFeature;
 
 @header
@@ -16,6 +25,8 @@ grammar TerrainFeature;
             import uk.co.jackoftrades.frontend.colour.enums.ColourTranslation;
         }
 
+// "code:<FEAT_CODE>" - starts a new terrain record; must match a code from
+// list-terrain.h.
 code
         returns[TerrainFlags codeFlag]
         :   CODE TEXT {
@@ -23,11 +34,14 @@ code
             }
         ;
 
+// "name:<text>" - the terrain's printable name.
 name
         returns[String nameStr]
         :   NAME TEXT { $nameStr = $TEXT.getText(); }
         ;
 
+// "graphics:<symbol>:<colour>" - returned as a raw "X:Y" string and parsed
+// apart in `terrain`'s @after instead of here.
 graphics
         returns[String graphicsStr]
         :   GRAPHICS GRAPHICS_CHARACTER // Graphics_character is char : colour
@@ -37,6 +51,7 @@ graphics
             }
         ;
 
+// "mimic:<FEAT_CODE>" - the terrain this one visually/mechanically mimics.
 mimic
         returns[TerrainFlags mimicFlag]
         :   MIMIC TEXT {
@@ -44,6 +59,7 @@ mimic
             }
         ;
 
+// "priority:<value>" - display priority on the mini-map.
 priority
         returns[int priorityNum]
         :   PRIORITY NUMBER
@@ -52,6 +68,9 @@ priority
             }
         ;
 
+// "flags:<TF_FLAG> [| <TF_FLAG> ...]" - this terrain's flags; can repeat
+// per `terrain`'s `(flags {...})+` - see top-of-file problem #1, where a
+// second flags: line replaces rather than merges with the first.
 flags
         returns[Flag<TerrainFeatureFlags> flagsList]
         @init {
@@ -68,6 +87,7 @@ flags
             })*
         ;
 
+// "digging:<index>" - digging difficulty index for this terrain.
 digging
         returns[int diggingNum]
         :   DIGGING NUMBER
@@ -76,6 +96,7 @@ digging
             }
         ;
 
+// "walk-msg:<text>" - warning shown when walking onto this terrain.
 walk_message
         returns[String walkMsgStr]
         :   WALK_MESSAGE TEXT
@@ -84,6 +105,7 @@ walk_message
             }
         ;
 
+// "run-msg:<text>" - warning shown when running onto this terrain.
 run_message
         returns[String runMsgStr]
         :   RUN_MESSAGE TEXT
@@ -92,6 +114,7 @@ run_message
             }
         ;
 
+// "hurt-msg:<text>" - shown when this terrain damages the player.
 hurt_message
         returns[String hurtMsgStr]
         :   HURT_MESSAGE TEXT
@@ -100,6 +123,7 @@ hurt_message
             }
         ;
 
+// "die-msg:<text>" - shown if this terrain kills the player.
 die_message
         returns[String dieMsgStr]
         :   DIE_MESSAGE TEXT
@@ -108,6 +132,8 @@ die_message
             }
         ;
 
+// "confused-msg:<text>" - shown when a confused monster tries to move into
+// this (non-passable) terrain.
 confused_message
         returns[String confMsgStr]
         :   CONFUSED_MESSAGE TEXT
@@ -116,6 +142,7 @@ confused_message
             }
         ;
 
+// "look-prefix:<text>" - text shown before this terrain's name when looking at it.
 look_prefix
         returns[String prefixStr]
         :   LOOK_PREFIX TEXT
@@ -124,6 +151,8 @@ look_prefix
             }
         ;
 
+// "look-in-preposition:<text>" - preposition used when looking at the
+// player's own square (e.g. "in" vs "on").
 look_in_preposition
         returns[String prepositionStr]
         :   LOOK_IN_PREPOSITION TEXT
@@ -132,6 +161,8 @@ look_in_preposition
             }
         ;
 
+// "resist-flag:<RF_FLAG>" - monster race flag for resisting this terrain
+// (e.g. fire-resistant monsters ignoring lava damage).
 resist_flag
         returns[MonsterRaceFlag resistFlag]
         :   RESIST_FLAG TEXT {
@@ -139,6 +170,7 @@ resist_flag
             }
         ;
 
+// "desc:<text>" - flavour description.
 desc
         returns[String descStr]
         @init {
@@ -149,6 +181,8 @@ desc
             }
         ;
 
+// One full terrain record: code/name/graphics header, then any mix of the
+// remaining directives in any order/quantity, accumulated into a Feature.
 terrain
         returns[uk.co.jackoftrades.middle.cave.Feature feature]
         @init {
@@ -205,7 +239,7 @@ terrain
                     mimicInit = $mimic.mimicFlag;
                 }
               | (flags {
-                    tfFlags = $flags.flagsList;
+                    tfFlags.union($flags.flagsList);
                 })+
               | digging {
                     diggingInit = $digging.diggingNum;
@@ -240,6 +274,7 @@ terrain
             )*
         ;
 
+// Top-level rule: the whole file is one or more terrain records.
 file
         returns[List<uk.co.jackoftrades.middle.cave.Feature> features]
         @init{ $features = new ArrayList<>(); }
@@ -248,14 +283,18 @@ file
             })+ EOF
         ;
 
+// Comment line: '# ' or '##' to end of line, plus any blank lines immediately after.
 COMMENT
         :   ('# ' | '##') (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   '\r'? '\n' -> skip
         ;
 
+// CODE through DESC below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 CODE
         :   'code:'
         ;
@@ -320,25 +359,36 @@ DESC
         :   'desc:'
         ;
 
+// A bare non-negative integer - used by priority:/digging:.
 NUMBER
         :   ('0'..'9')+
         ;
 
+// The full Angband colour-code alphabet (one char per colour, including
+// the extended/bright variants) - used for graphics:'s colour field.
 GRAPHICS_COLOUR
         :   'D' | 'w' | 's' | 'o' | 'r' | 'g' | 'b' | 'u' | 'W' | 'P' | 'y' | 'R'
                 | 'G' | 'B' | 'U' | 'p' | 'v' | 't' | 'm' | 'Y' | 'i' | 'T' | 'V'
                 | 'I' | 'M' | 'z' | 'Z'
         ;
 
+// The display glyph for graphics: - includes digits 1-8 for the numbered
+// shop entrances.
 GRAPHICS_SYMBOL
         :   ' ' | '+' | '.' | '*' | '<' | '>' | '1' | '2' | '3' | '4' | '5' | '6'
                 | '7' | '8' | '#' | ':' | '%' | '\''
         ;
 
+// A whole "graphics:" value, e.g. "<:w" - parsed apart by character
+// position in `terrain`'s @after (charAt(0)=symbol, charAt(2)=colour).
 GRAPHICS_CHARACTER
         :   GRAPHICS_SYMBOL ':' GRAPHICS_COLOUR
         ;
 
+// Free-running text used for most string fields (names, messages,
+// descriptions) - letters, spaces, and common punctuation. Also matches
+// flags:'s individual flag names (e.g. "LOS", "PASSABLE") since they fall
+// within the same uppercase-letter range.
 TEXT
         :   ('A'..'Z' | 'a'..'z' | ' ' | ',' | '.' | '_' | ';' | '?' | '!' | '-')+
         ;

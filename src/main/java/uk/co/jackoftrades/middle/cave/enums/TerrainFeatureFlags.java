@@ -17,6 +17,16 @@
 
 package uk.co.jackoftrades.middle.cave.enums;
 
+/**
+ * The intrinsic property flags of a terrain feature — line of sight, passability,
+ * whether it can hold a trap/object, door/wall/stair classification, lighting,
+ * and so on. This is the Java port of the C original's {@code TF_*} feature flags
+ * ({@code src/list-terrain-flags.h}); each constant carries a human-readable
+ * {@link #getDescription() description} so the flags are self-documenting and are
+ * not repeated individually here.
+ *
+ * @author ClaudeCode
+ */
 public enum TerrainFeatureFlags {
     TF_NONE(""),
     TF_LOS("Allows line of sight"),
@@ -52,12 +62,27 @@ public enum TerrainFeatureFlags {
     TF_FIERY("Is fire-based"),
     TF_MAX("");
 
+    /**
+     * Human-readable description of what this terrain-feature flag means.
+     *
+     * @author ClaudeCode
+     */
     private final String description;
 
+    /**
+     * Bind a terrain-feature flag to its description.
+     *
+     * @param description the flag's human-readable description
+     * @author ClaudeCode
+     */
     TerrainFeatureFlags(String description) {
         this.description = description;
     }
 
+    /**
+     * @return this flag's human-readable description
+     * @author ClaudeCode
+     */
     public String getDescription() {
         return description;
     }

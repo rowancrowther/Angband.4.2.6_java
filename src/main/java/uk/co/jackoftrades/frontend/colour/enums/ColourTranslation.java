@@ -75,13 +75,29 @@ public enum ColourTranslation {
      */
     ATTR_MAX(9);
 
+    /**
+     * The integer index this translation occupies in a {@code ColourType}
+     * translation table.
+     *
+     * @author ClaudeCode
+     */
     private final int value;
 
+    /**
+     * Bind the constant to its table index.
+     *
+     * @param value the translation-table index
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     ColourTranslation(int value) {
         this.value = value;
     }
 
+    /**
+     * @return the translation-table index for this constant
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public int getValue() {
         return value;

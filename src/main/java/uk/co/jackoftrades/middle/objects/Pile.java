@@ -31,16 +31,56 @@ import java.util.Iterator;
  * A pile of objects is defined as a LIFO ArrayList of ItemObjects
  */
 public class Pile {
+    /**
+     * Logger used to report pile integrity failures.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
+    /**
+     * The backing LIFO list of items.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<ItemObject> pile;
 
+    /**
+     * Diagnostic snapshot of the pile that triggered an integrity failure.
+     *
+     * @author ClaudeCode
+     */
     private static ArrayList<ItemObject> failPile;
+    /**
+     * Diagnostic snapshot of the object list around a failure.
+     *
+     * @author ClaudeCode
+     */
     private static ArrayList<ItemObject> failObject;
+    /**
+     * Index of the offending object within {@link #failObject}.
+     *
+     * @author ClaudeCode
+     */
     private static int failObjectIndex;
 
+    /**
+     * Source file recorded for an integrity failure (legacy; see {@link #integrityFail}).
+     *
+     * @author ClaudeCode
+     */
     private static String failFile;
+    /**
+     * Source line recorded for an integrity failure (legacy).
+     *
+     * @author ClaudeCode
+     */
     private static int failLine;
 
+    /**
+     * Build an empty pile.
+     *
+     * @author ClaudeCode
+     */
     public Pile() {
         pile = new ArrayList<>();
         failPile = new ArrayList<>();
@@ -241,6 +281,11 @@ public class Pile {
         return pile.iterator();
     }
 
+    /**
+     * Test-only helper that empties the pile.
+     *
+     * @author ClaudeCode
+     */
     @TestOnly
     public void clear() {
         pile.clear();

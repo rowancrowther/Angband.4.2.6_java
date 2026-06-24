@@ -17,7 +17,17 @@
 
 package uk.co.jackoftrades.middle.effect;
 
+/**
+ * Targeting mode for an earthquake effect: centred on the caster, or centred on a
+ * chosen target.
+ *
+ * @author Rowan Crowther
+ */
 public enum Earthquake {
+    /**
+     * No special targeting (centred on the caster). @author ClaudeCode
+     */
     QUAKE_NONE,
+    /** Centred on a chosen target grid. @author ClaudeCode */
     QUAKE_TARGETED
 }

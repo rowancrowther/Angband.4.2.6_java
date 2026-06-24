@@ -41,7 +41,7 @@ import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.combat.CriticalLevel;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
@@ -49,7 +49,7 @@ import uk.co.jackoftrades.middle.monsters.*;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.*;
@@ -61,7 +61,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+/**
+ * The central global registry of all loaded game data and tunable constants — the
+ * Java port's equivalent of the C original's many global tables and {@code z-info}
+ * constants gathered into one place. It holds:
+ * <ul>
+ *   <li>the filesystem layout ({@code ANGBAND_DIR_*});</li>
+ *   <li>the scalar constants read from {@code constants.txt}, grouped by the
+ *       section comments below (these mirror, one-to-one, the per-value
+ *       documentation in the {@code backend.utils.globalvalues} classes);</li>
+ *   <li>the master lists of every data type (monsters, objects, features,
+ *       projections, classes, …) loaded from the {@code gamedata} files;</li>
+ *   <li>the live {@link Chunk} {@code cave} and the {@link Player};</li>
+ *   <li>{@code lookup*}/{@code get*} accessors over those lists, and the
+ *       {@link #init()} pipeline plus its {@code load*} helpers that populate
+ *       everything in dependency order.</li>
+ * </ul>
+ * It is a static-only holder (private constructor); the lookups throw
+ * {@link IllegalStateException} if queried before {@link #init()} has populated
+ * the relevant list.
+ *
+ * @author ClaudeCode
+ */
 public class GameConstants {
+    /**
+     * Logger used to report load failures and premature/invalid access.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -331,7 +358,7 @@ public class GameConstants {
      * Maps of things
      */
     private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
-    private static final HashMap<ObjectFlagName, Object> flags = new HashMap<>();
+    private static final HashMap<ObjectFlag, Object> flags = new HashMap<>();
     private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
     private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
     private static final HashMap<TrapEnum, Object> traps = new HashMap<>();
@@ -474,6 +501,14 @@ public class GameConstants {
                 .orElse(null);
     }
 
+    /**
+     * Look up a monster base by its code name.
+     *
+     * @param name the monster base code name
+     * @return the matching {@link MonsterBase}, or {@code null} if none matches
+     * @throws IllegalStateException if monster bases have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static MonsterBase lookupMonsterBase(@NotNull String name) {
         if (monsterBases == null) {
@@ -509,6 +544,15 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * Look up an object kind by both its tval (type) and name.
+     *
+     * @param tval the object type value
+     * @param name the object kind name
+     * @return the matching {@link ObjectKind}, or {@code null} if none matches
+     * @throws IllegalStateException if object kinds have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String name) {
         if (objectKinds.isEmpty()) {
@@ -586,6 +630,14 @@ public class GameConstants {
                 .orElse(null);
     }
 
+    /**
+     * Look up a terrain feature by its terrain code.
+     *
+     * @param flag the terrain code
+     * @return the matching {@link Feature}, or {@code null} if none matches
+     * @throws IllegalStateException if features have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static Feature lookupFeature(@NotNull TerrainFlags flag) {
         if (features == null) {
@@ -599,6 +651,14 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * Look up a player history chart by its chart number.
+     *
+     * @param chartId the chart number
+     * @return the matching {@link PlayerHistoryChart}, or {@code null} if none matches
+     * @throws IllegalStateException if history charts have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static PlayerHistoryChart lookupPlayerHistoryChart(int chartId) {
         if (playerHistoryCharts == null) {
@@ -612,6 +672,15 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * Look up a trap kind by its description, trying an exact match first and
+     * then a case-insensitive match.
+     *
+     * @param description the trap description
+     * @return the matching {@link TrapKind}, or {@code null} if none matches
+     * @throws IllegalStateException if trap info has not been loaded
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
         if (trapInfo.isEmpty()) {
@@ -715,6 +784,13 @@ public class GameConstants {
                 .orElse(null);
     }
 
+    /**
+     * Find a monster base by its code name (linear scan).
+     *
+     * @param name the monster base code name
+     * @return the matching {@link MonsterBase}, or {@code null} if none matches
+     * @author ClaudeCode
+     */
     public static @Nullable MonsterBase getBaseFromName(String name) {
         for (MonsterBase monsterBase : monsterBases) {
             if (monsterBase.getCodeName().equals(name)) {
@@ -725,6 +801,13 @@ public class GameConstants {
         return null;
     }
 
+    /**
+     * Find a monster pain record by its index (linear scan).
+     *
+     * @param index the pain-record index
+     * @return the matching {@link MonsterPain}, or {@code null} if none matches
+     * @author ClaudeCode
+     */
     public static @Nullable MonsterPain getPainFromIndex(int index) {
         for (MonsterPain monsterPain : monsterPains) {
             if (monsterPain.getPainIndex() == index) {
@@ -841,7 +924,7 @@ public class GameConstants {
             loadVisualCyclerTable();
             loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
             loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
-            loadMonsterLore();
+            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
         } catch (IOException e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -871,6 +954,14 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Look up a projection by its lash-form description.
+     *
+     * @param lashType the lash description
+     * @return the matching {@link Projection}, or {@code null} if none matches
+     * @throws IllegalStateException if projections have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static Projection lookupProjectionByLash(String lashType) {
         if (projections == null) {
@@ -910,6 +1001,14 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Look up a monster blow effect by name.
+     *
+     * @param effectName the blow effect name
+     * @return the matching {@link BlowEffect}, or {@code null} if none matches
+     * @throws IllegalStateException if blow effects have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static BlowEffect lookupBlowEffect(@NotNull String effectName) {
         if (blowEffects == null) {
@@ -923,6 +1022,14 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * Look up a monster blow method by name.
+     *
+     * @param methodName the blow method name
+     * @return the matching {@link BlowMethod}, or {@code null} if none matches
+     * @throws IllegalStateException if blow methods have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static BlowMethod lookupBlowMethod(@NotNull String methodName) {
         if (blowMethods == null) {
@@ -936,6 +1043,10 @@ public class GameConstants {
                 .findFirst().orElse(null);
     }
 
+    /**
+     * @return the loaded colour-cycling table
+     * @author ClaudeCode
+     */
     public static VisualsCycler getVisualsCyclerTable() {
         return visualsCyclerTable;
     }
@@ -1039,6 +1150,14 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Look up a player body type by its count/index.
+     *
+     * @param number the body's count value
+     * @return the matching {@link PlayerBody}, or {@code null} if none matches
+     * @throws IllegalStateException if player bodies have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static PlayerBody lookupPlayerBody(int number) {
         if (playerBodies == null) {
@@ -1177,6 +1296,14 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Look up a player shape by name.
+     *
+     * @param name the shape name
+     * @return the matching {@link PlayerShape}, or {@code null} if none matches
+     * @throws IllegalStateException if player shapes have not been loaded
+     * @author ClaudeCode
+     */
     @Nullable
     public static PlayerShape lookupPlayerShape(@NotNull String name) {
         if (playerShapes == null) {
@@ -1443,6 +1570,11 @@ public class GameConstants {
         maxRandDepth = worlds.size();
     }
 
+    /**
+     * Private constructor preventing instantiation of this static-only registry.
+     *
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     private GameConstants() {
     }
@@ -1505,12 +1637,12 @@ public class GameConstants {
 
         int chance;
         int dice;
-        MessageEnum message;
+        MessageType message;
 
         try {
             chance = Integer.parseInt(values[0]);
             dice = Integer.parseInt(values[1]);
-            message = MessageEnum.valueOf("MSG_" + values[2]);
+            message = MessageType.valueOf("MSG_" + values[2]);
         } catch (NumberFormatException e) {
             String errorMessage = "Invalid number format found. Tokens were: " + tag + entry.value();
             logger.error(errorMessage);
@@ -1592,12 +1724,12 @@ public class GameConstants {
 
         int chance;
         int dice;
-        MessageEnum messageName;
+        MessageType messageName;
 
         try {
             chance = Integer.parseInt(values[0]);
             dice = Integer.parseInt(values[1]);
-            messageName = MessageEnum.valueOf("MSG_" + values[2]);
+            messageName = MessageType.valueOf("MSG_" + values[2]);
         } catch (NumberFormatException e) {
             String message = "Invalid number format found. Tokens were: " + tag + entry.value();
             logger.error(message);
@@ -1672,7 +1804,7 @@ public class GameConstants {
         int cutoffPower = 0;
         int damageMult = 0;
         int amountAdded = 0;
-        MessageEnum messageEnum = MessageEnum.MSG_NONE;
+        MessageType messageEnum = MessageType.MSG_NONE;
         String messageEnumString = "";
 
         try {
@@ -1680,7 +1812,7 @@ public class GameConstants {
             damageMult = Integer.parseInt(results[1]);
             amountAdded = Integer.parseInt(results[2]);
             messageEnumString = results[3];
-            messageEnum = MessageEnum.valueOf("MSG_" + messageEnumString);
+            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
         } catch (NumberFormatException e) {
             String message = "Invalid number found. Tokens were: " + tag + entry.value();
             logger.error(message, e);
@@ -1772,7 +1904,7 @@ public class GameConstants {
         int cutoffPower;
         int damageMult;
         int amountAdded;
-        MessageEnum messageEnum;
+        MessageType messageEnum;
         String messageEnumString;
 
         try {
@@ -1780,7 +1912,7 @@ public class GameConstants {
             damageMult = Integer.parseInt(results[1]);
             amountAdded = Integer.parseInt(results[2]);
             messageEnumString = results[3];
-            messageEnum = MessageEnum.valueOf("MSG_" + messageEnumString);
+            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
         } catch (NumberFormatException e) {
             String message = "Invalid number found. Tokens were: " + tag + entry.value();
             logger.error(message, e);
@@ -2269,450 +2401,898 @@ public class GameConstants {
         }
     }
 
+    /**
+     * @return the configured value of {@code storeMax}
+     * @author ClaudeCode
+     */
     public static int getStoreMax() {
         return storeMax;
     }
 
+    /**
+     * @return the configured value of {@code trapMax}
+     * @author ClaudeCode
+     */
     public static int getTrapMax() {
         return trapMax;
     }
 
+    /**
+     * @return the configured value of {@code objectBaseKindMax}
+     * @author ClaudeCode
+     */
     public static int getObjectBaseKindMax() {
         return objectBaseKindMax;
     }
 
+    /**
+     * @return the configured value of {@code artifactKindMax}
+     * @author ClaudeCode
+     */
     public static int getArtifactKindMax() {
         return artifactKindMax;
     }
 
+    /**
+     * @return the configured value of {@code egoItemKindMax}
+     * @author ClaudeCode
+     */
     public static int getEgoItemKindMax() {
         return egoItemKindMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterRaceMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterRaceMax() {
         return monsterRaceMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterPainMsgMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterPainMsgMax() {
         return monsterPainMsgMax;
     }
 
+    /**
+     * @return the configured value of {@code magicSpellMax}
+     * @author ClaudeCode
+     */
     public static int getMagicSpellMax() {
         return magicSpellMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterPitTypeMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterPitTypeMax() {
         return monsterPitTypeMax;
     }
 
+    /**
+     * @return the configured value of {@code randartActivationsMax}
+     * @author ClaudeCode
+     */
     public static int getRandartActivationsMax() {
         return randartActivationsMax;
     }
 
+    /**
+     * @return the configured value of {@code curseMax}
+     * @author ClaudeCode
+     */
     public static int getCurseMax() {
         return curseMax;
     }
 
+    /**
+     * @return the configured value of {@code slayMax}
+     * @author ClaudeCode
+     */
     public static int getSlayMax() {
         return slayMax;
     }
 
+    /**
+     * @return the configured value of {@code brandMax}
+     * @author ClaudeCode
+     */
     public static int getBrandMax() {
         return brandMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterBlowsMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterBlowsMax() {
         return monsterBlowsMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterBlowsMethodsMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterBlowsMethodsMax() {
         return monsterBlowsMethodsMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterBlowsEffectsMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterBlowsEffectsMax() {
         return monsterBlowsEffectsMax;
     }
 
+    /**
+     * @return the configured value of {@code playerEquipmentSlotsMax}
+     * @author ClaudeCode
+     */
     public static int getPlayerEquipmentSlotsMax() {
         return playerEquipmentSlotsMax;
     }
 
+    /**
+     * @return the configured value of {@code caveProfileMax}
+     * @author ClaudeCode
+     */
     public static int getCaveProfileMax() {
         return caveProfileMax;
     }
 
+    /**
+     * @return the configured value of {@code questMax}
+     * @author ClaudeCode
+     */
     public static int getQuestMax() {
         return questMax;
     }
 
+    /**
+     * @return the configured value of {@code projectionTypeMax}
+     * @author ClaudeCode
+     */
     public static int getProjectionTypeMax() {
         return projectionTypeMax;
     }
 
+    /**
+     * @return the configured value of {@code objectPowerCalculationMax}
+     * @author ClaudeCode
+     */
     public static int getObjectPowerCalculationMax() {
         return objectPowerCalculationMax;
     }
 
+    /**
+     * @return the configured value of {@code objectPropertyMax}
+     * @author ClaudeCode
+     */
     public static int getObjectPropertyMax() {
         return objectPropertyMax;
     }
 
+    /**
+     * @return the configured value of {@code objectsInObject_txt}
+     * @author ClaudeCode
+     */
     public static int getObjectsInObject_txt() {
         return objectsInObject_txt;
     }
 
+    /**
+     * @return the configured value of {@code playerShapeMax}
+     * @author ClaudeCode
+     */
     public static int getPlayerShapeMax() {
         return playerShapeMax;
     }
 
+    /**
+     * @return the configured value of {@code levelMonsterMax}
+     * @author ClaudeCode
+     */
     public static int getLevelMonsterMax() {
         return levelMonsterMax;
     }
 
+    /**
+     * @return the configured value of {@code allocMonsterChance}
+     * @author ClaudeCode
+     */
     public static int getAllocMonsterChance() {
         return allocMonsterChance;
     }
 
+    /**
+     * @return the configured value of {@code levelMonsterMin}
+     * @author ClaudeCode
+     */
     public static int getLevelMonsterMin() {
         return levelMonsterMin;
     }
 
+    /**
+     * @return the configured value of {@code townMonstersDay}
+     * @author ClaudeCode
+     */
     public static int getTownMonstersDay() {
         return townMonstersDay;
     }
 
+    /**
+     * @return the configured value of {@code townMonstersNight}
+     * @author ClaudeCode
+     */
     public static int getTownMonstersNight() {
         return townMonstersNight;
     }
 
+    /**
+     * @return the configured value of {@code reproMonstersNight}
+     * @author ClaudeCode
+     */
     public static int getReproMonstersNight() {
         return reproMonstersNight;
     }
 
+    /**
+     * @return the configured value of {@code oodMonsterChance}
+     * @author ClaudeCode
+     */
     public static int getOodMonsterChance() {
         return oodMonsterChance;
     }
 
+    /**
+     * @return the configured value of {@code oodMonsterAmount}
+     * @author ClaudeCode
+     */
     public static int getOodMonsterAmount() {
         return oodMonsterAmount;
     }
 
+    /**
+     * @return the configured value of {@code monsterGroupMax}
+     * @author ClaudeCode
+     */
     public static int getMonsterGroupMax() {
         return monsterGroupMax;
     }
 
+    /**
+     * @return the configured value of {@code monsterGroupDist}
+     * @author ClaudeCode
+     */
     public static int getMonsterGroupDist() {
         return monsterGroupDist;
     }
 
+    /**
+     * @return the configured value of {@code glyphHardness}
+     * @author ClaudeCode
+     */
     public static int getGlyphHardness() {
         return glyphHardness;
     }
 
+    /**
+     * @return the configured value of {@code reproMonsterRate}
+     * @author ClaudeCode
+     */
     public static int getReproMonsterRate() {
         return reproMonsterRate;
     }
 
+    /**
+     * @return the configured value of {@code lifeDrainPercent}
+     * @author ClaudeCode
+     */
     public static int getLifeDrainPercent() {
         return lifeDrainPercent;
     }
 
+    /**
+     * @return the configured value of {@code fleeRange}
+     * @author ClaudeCode
+     */
     public static int getFleeRange() {
         return fleeRange;
     }
 
+    /**
+     * @return the configured value of {@code turnRange}
+     * @author ClaudeCode
+     */
     public static int getTurnRange() {
         return turnRange;
     }
 
+    /**
+     * @return the configured value of {@code levelRoomMax}
+     * @author ClaudeCode
+     */
     public static int getLevelRoomMax() {
         return levelRoomMax;
     }
 
+    /**
+     * @return the configured value of {@code levelDoorMax}
+     * @author ClaudeCode
+     */
     public static int getLevelDoorMax() {
         return levelDoorMax;
     }
 
+    /**
+     * @return the configured value of {@code wallPierceMax}
+     * @author ClaudeCode
+     */
     public static int getWallPierceMax() {
         return wallPierceMax;
     }
 
+    /**
+     * @return the configured value of {@code tunnGridMax}
+     * @author ClaudeCode
+     */
     public static int getTunnGridMax() {
         return tunnGridMax;
     }
 
+    /**
+     * @return the configured value of {@code roomItemAv}
+     * @author ClaudeCode
+     */
     public static int getRoomItemAv() {
         return roomItemAv;
     }
 
+    /**
+     * @return the configured value of {@code bothItemAv}
+     * @author ClaudeCode
+     */
     public static int getBothItemAv() {
         return bothItemAv;
     }
 
+    /**
+     * @return the configured value of {@code bothGoldAv}
+     * @author ClaudeCode
+     */
     public static int getBothGoldAv() {
         return bothGoldAv;
     }
 
+    /**
+     * @return the configured value of {@code levelPitMax}
+     * @author ClaudeCode
+     */
     public static int getLevelPitMax() {
         return levelPitMax;
     }
 
+    /**
+     * @return the configured value of {@code maxDepth}
+     * @author ClaudeCode
+     */
     public static int getMaxDepth() {
         return maxDepth;
     }
 
+    /**
+     * @return the configured value of {@code dayLength}
+     * @author ClaudeCode
+     */
     public static int getDayLength() {
         return dayLength;
     }
 
+    /**
+     * @return the configured value of {@code dungeonHeight}
+     * @author ClaudeCode
+     */
     public static int getDungeonHeight() {
         return dungeonHeight;
     }
 
+    /**
+     * @return the configured value of {@code dungeonWidth}
+     * @author ClaudeCode
+     */
     public static int getDungeonWidth() {
         return dungeonWidth;
     }
 
+    /**
+     * @return the configured value of {@code townHeight}
+     * @author ClaudeCode
+     */
     public static int getTownHeight() {
         return townHeight;
     }
 
+    /**
+     * @return the configured value of {@code townWidth}
+     * @author ClaudeCode
+     */
     public static int getTownWidth() {
         return townWidth;
     }
 
+    /**
+     * @return the configured value of {@code feelingTotal}
+     * @author ClaudeCode
+     */
     public static int getFeelingTotal() {
         return feelingTotal;
     }
 
+    /**
+     * @return the configured value of {@code feelingNeed}
+     * @author ClaudeCode
+     */
     public static int getFeelingNeed() {
         return feelingNeed;
     }
 
+    /**
+     * @return the configured value of {@code stairSkip}
+     * @author ClaudeCode
+     */
     public static int getStairSkip() {
         return stairSkip;
     }
 
+    /**
+     * @return the configured value of {@code moveEnergy}
+     * @author ClaudeCode
+     */
     public static int getMoveEnergy() {
         return moveEnergy;
     }
 
+    /**
+     * @return the configured value of {@code packSize}
+     * @author ClaudeCode
+     */
     public static int getPackSize() {
         return packSize;
     }
 
+    /**
+     * @return the configured value of {@code quiverSize}
+     * @author ClaudeCode
+     */
     public static int getQuiverSize() {
         return quiverSize;
     }
 
+    /**
+     * @return the configured value of {@code quiverSlotSize}
+     * @author ClaudeCode
+     */
     public static int getQuiverSlotSize() {
         return quiverSlotSize;
     }
 
+    /**
+     * @return the configured value of {@code thrownQuiverMult}
+     * @author ClaudeCode
+     */
     public static int getThrownQuiverMult() {
         return thrownQuiverMult;
     }
 
+    /**
+     * @return the configured value of {@code floorSize}
+     * @author ClaudeCode
+     */
     public static int getFloorSize() {
         return floorSize;
     }
 
+    /**
+     * @return the configured value of {@code storeInvenMax}
+     * @author ClaudeCode
+     */
     public static int getStoreInvenMax() {
         return storeInvenMax;
     }
 
+    /**
+     * @return the configured value of {@code storeTurns}
+     * @author ClaudeCode
+     */
     public static int getStoreTurns() {
         return storeTurns;
     }
 
+    /**
+     * @return the configured value of {@code storeShuffle}
+     * @author ClaudeCode
+     */
     public static int getStoreShuffle() {
         return storeShuffle;
     }
 
+    /**
+     * @return the configured value of {@code storeMagicLevel}
+     * @author ClaudeCode
+     */
     public static int getStoreMagicLevel() {
         return storeMagicLevel;
     }
 
+    /**
+     * @return the configured value of {@code maxObjDepth}
+     * @author ClaudeCode
+     */
     public static int getMaxObjDepth() {
         return maxObjDepth;
     }
 
+    /**
+     * @return the configured value of {@code greatObj}
+     * @author ClaudeCode
+     */
     public static int getGreatObj() {
         return greatObj;
     }
 
+    /**
+     * @return the configured value of {@code greatEgo}
+     * @author ClaudeCode
+     */
     public static int getGreatEgo() {
         return greatEgo;
     }
 
+    /**
+     * @return the configured value of {@code fuelTorch}
+     * @author ClaudeCode
+     */
     public static int getFuelTorch() {
         return fuelTorch;
     }
 
+    /**
+     * @return the configured value of {@code fuelLamp}
+     * @author ClaudeCode
+     */
     public static int getFuelLamp() {
         return fuelLamp;
     }
 
+    /**
+     * @return the configured value of {@code defaultLamp}
+     * @author ClaudeCode
+     */
     public static int getDefaultLamp() {
         return defaultLamp;
     }
 
+    /**
+     * @return the configured value of {@code maxSight}
+     * @author ClaudeCode
+     */
     public static int getMaxSight() {
         return maxSight;
     }
 
+    /**
+     * @return the configured value of {@code maxRange}
+     * @author ClaudeCode
+     */
     public static int getMaxRange() {
         return maxRange;
     }
 
+    /**
+     * @return the configured value of {@code startGold}
+     * @author ClaudeCode
+     */
     public static int getStartGold() {
         return startGold;
     }
 
+    /**
+     * @return the configured value of {@code foodValue}
+     * @author ClaudeCode
+     */
     public static int getFoodValue() {
         return foodValue;
     }
 
+    /**
+     * @return the configured value of {@code mCritDebuffToh}
+     * @author ClaudeCode
+     */
     public static int getmCritDebuffToh() {
         return mCritDebuffToh;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceWeightScl}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceWeightScl() {
         return mCritChanceWeightScl;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceTohScl}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceTohScl() {
         return mCritChanceTohScl;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceLevelScl}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceLevelScl() {
         return mCritChanceLevelScl;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceTohSkillScl}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceTohSkillScl() {
         return mCritChanceTohSkillScl;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceOffset}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceOffset() {
         return mCritChanceOffset;
     }
 
+    /**
+     * @return the configured value of {@code mCritChanceRange}
+     * @author ClaudeCode
+     */
     public static int getmCritChanceRange() {
         return mCritChanceRange;
     }
 
+    /**
+     * @return the configured value of {@code mCritPowerWeightScl}
+     * @author ClaudeCode
+     */
     public static int getmCritPowerWeightScl() {
         return mCritPowerWeightScl;
     }
 
+    /**
+     * @return the configured value of {@code mCritPowerRandom}
+     * @author ClaudeCode
+     */
     public static int getmCritPowerRandom() {
         return mCritPowerRandom;
     }
 
+    /**
+     * @return the configured value of {@code rCritDebuffToh}
+     * @author ClaudeCode
+     */
     public static int getrCritDebuffToh() {
         return rCritDebuffToh;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceWeightScl}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceWeightScl() {
         return rCritChanceWeightScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceTohScl}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceTohScl() {
         return rCritChanceTohScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceLevelScl}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceLevelScl() {
         return rCritChanceLevelScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceLaunchedTohSkillScl}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceLaunchedTohSkillScl() {
         return rCritChanceLaunchedTohSkillScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceThrownTohSkillScl}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceThrownTohSkillScl() {
         return rCritChanceThrownTohSkillScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceOffset}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceOffset() {
         return rCritChanceOffset;
     }
 
+    /**
+     * @return the configured value of {@code rCritChanceRange}
+     * @author ClaudeCode
+     */
     public static int getrCritChanceRange() {
         return rCritChanceRange;
     }
 
+    /**
+     * @return the configured value of {@code rCritPowerWeightScl}
+     * @author ClaudeCode
+     */
     public static int getrCritPowerWeightScl() {
         return rCritPowerWeightScl;
     }
 
+    /**
+     * @return the configured value of {@code rCritPowerRandom}
+     * @author ClaudeCode
+     */
     public static int getrCritPowerRandom() {
         return rCritPowerRandom;
     }
 
+    /**
+     * @return the configured value of {@code oMCritDebuffToh}
+     * @author ClaudeCode
+     */
     public static int getoMCritDebuffToh() {
         return oMCritDebuffToh;
     }
 
+    /**
+     * @return the configured value of {@code oMCritPowerTohSclNum}
+     * @author ClaudeCode
+     */
     public static int getoMCritPowerTohSclNum() {
         return oMCritPowerTohSclNum;
     }
 
+    /**
+     * @return the configured value of {@code oMCritPowerTohSclDen}
+     * @author ClaudeCode
+     */
     public static int getoMCritPowerTohSclDen() {
         return oMCritPowerTohSclDen;
     }
 
+    /**
+     * @return the configured value of {@code oMCritChancePowerSclNum}
+     * @author ClaudeCode
+     */
     public static int getoMCritChancePowerSclNum() {
         return oMCritChancePowerSclNum;
     }
 
+    /**
+     * @return the configured value of {@code oMCritChancePowerSclDen}
+     * @author ClaudeCode
+     */
     public static int getoMCritChancePowerSclDen() {
         return oMCritChancePowerSclDen;
     }
 
+    /**
+     * @return the configured value of {@code oMCritChanceAddDen}
+     * @author ClaudeCode
+     */
     public static int getoMCritChanceAddDen() {
         return oMCritChanceAddDen;
     }
 
+    /**
+     * @return the configured value of {@code oMeleeMaxAdded}
+     * @author ClaudeCode
+     */
     public static Rational getoMeleeMaxAdded() {
         return oMeleeMaxAdded;
     }
 
+    /**
+     * @return the configured value of {@code oRCritDebuffToh}
+     * @author ClaudeCode
+     */
     public static int getoRCritDebuffToh() {
         return oRCritDebuffToh;
     }
 
+    /**
+     * @return the configured value of {@code oRCritPowerLaunchedTohSclNum}
+     * @author ClaudeCode
+     */
     public static int getoRCritPowerLaunchedTohSclNum() {
         return oRCritPowerLaunchedTohSclNum;
     }
 
+    /**
+     * @return the configured value of {@code oRCritPowerLaunchedTohSclDen}
+     * @author ClaudeCode
+     */
     public static int getoRCritPowerLaunchedTohSclDen() {
         return oRCritPowerLaunchedTohSclDen;
     }
 
+    /**
+     * @return the configured value of {@code oRCritPowerThrownTohSclNum}
+     * @author ClaudeCode
+     */
     public static int getoRCritPowerThrownTohSclNum() {
         return oRCritPowerThrownTohSclNum;
     }
 
+    /**
+     * @return the configured value of {@code oRCritPowerThrownTohSclDen}
+     * @author ClaudeCode
+     */
     public static int getoRCritPowerThrownTohSclDen() {
         return oRCritPowerThrownTohSclDen;
     }
 
+    /**
+     * @return the configured value of {@code oRCritChancePowerSclNum}
+     * @author ClaudeCode
+     */
     public static int getoRCritChancePowerSclNum() {
         return oRCritChancePowerSclNum;
     }
 
+    /**
+     * @return the configured value of {@code oRCritChancePowerSclDen}
+     * @author ClaudeCode
+     */
     public static int getoRCritChancePowerSclDen() {
         return oRCritChancePowerSclDen;
     }
 
+    /**
+     * @return the configured value of {@code oRCritChanceAddDen}
+     * @author ClaudeCode
+     */
     public static int getoRCritChanceAddDen() {
         return oRCritChanceAddDen;
     }
 
+    /**
+     * @return the configured value of {@code oRangedMaxAdded}
+     * @author ClaudeCode
+     */
     public static Rational getoRangedMaxAdded() {
         return oRangedMaxAdded;
     }
 
+    /**
+     * @return the configured value of {@code maxRandDepth}
+     * @author ClaudeCode
+     */
     public static int getMaxRandDepth() {
         return maxRandDepth;
     }

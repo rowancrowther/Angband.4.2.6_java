@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * The transient per-monster status flags (in view, active, visible, aware,
+ * handled this turn, tracking, …), each carrying a description. This mirrors
+ * the C original's {@code MFLAG_*}
+ * temporary flags ({@code src/list-mon-temp-flags.h}); the constants are
+ * self-describing and documented collectively here.
+ *
+ * @author Rowan Crowther
+ */
 public enum MonsterFlag {
     MFLAG_NONE(""),
     MFLAG_VIEW("Monster is in line of sight"),
@@ -31,8 +40,19 @@ public enum MonsterFlag {
     MFLAG_TRACKING("Monster is tracking the player by sound or scent"),
     MFLAG_MAX("");
 
+    /**
+     * Human-readable description of what this flag means.
+     *
+     * @author ClaudeCode
+     */
     private final String description;
 
+    /**
+     * Bind a monster flag to its description.
+     *
+     * @param description the flag's description
+     * @author ClaudeCode
+     */
     MonsterFlag(String description) {
         this.description = description;
     }

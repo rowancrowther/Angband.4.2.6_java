@@ -21,6 +21,16 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.io.File;
 
+/**
+ * Mirrors the Win32 {@code MessageBox} {@code MB_*} flag constants, carried over
+ * from the original Windows front end. Each constant optionally associates a
+ * sound file to play when that style of message box is shown (most carry no
+ * sound; {@link #MB_ICONASTERISK} maps to the default system asterisk sound).
+ * The constant names are the standard Win32 flag names and are self-describing,
+ * so they are documented here as a group rather than individually.
+ *
+ * @author ClaudeCode
+ */
 public enum MessageBoxFlags {
     MB_OK(""),
     MB_OKCANCEL(""),
@@ -52,12 +62,28 @@ public enum MessageBoxFlags {
     MB_RIGHT(""),
     MB_RTLREADING("");
 
+    /**
+     * The sound file associated with this message-box style, or a {@link File}
+     * wrapping an empty path when no sound is configured.
+     *
+     * @author ClaudeCode
+     */
     private File file;
 
+    /**
+     * Build the constant, wrapping the given path as its associated sound file.
+     *
+     * @param path the sound file path, or empty for no sound
+     * @author ClaudeCode
+     */
     MessageBoxFlags(String path) {
         file = new File(path);
     }
 
+    /**
+     * @return the {@link File} associated with this message-box style
+     * @author ClaudeCode
+     */
     public File getFileName() {
         return file;
     }

@@ -17,12 +17,27 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * The player's primary statistics, mirroring the C original's {@code STAT_*}
+ * constants. {@code STAT_NONE}/{@code STAT_MAX} bracket the five real stats.
+ *
+ * @author ClaudeCode
+ */
 public enum Stats {
+    /**
+     * No/unset stat. @author ClaudeCode
+     */
     STAT_NONE,
+    /** Strength. @author ClaudeCode */
     STAT_STR,
+    /** Intelligence. @author ClaudeCode */
     STAT_INT,
+    /** Wisdom. @author ClaudeCode */
     STAT_WIS,
+    /** Dexterity. @author ClaudeCode */
     STAT_DEX,
+    /** Constitution. @author ClaudeCode */
     STAT_CON,
+    /** Count sentinel. @author ClaudeCode */
     STAT_MAX
 }

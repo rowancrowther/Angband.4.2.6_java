@@ -41,20 +41,84 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * </ul>
  */
 public class MeleeCriticalConstants {
+    /**
+     * The data-file group tag this class consumes ({@code melee-critical}).
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "melee-critical";
 
+    /**
+     * To-hit added when calculating critical chance against a debuffed target.
+     *
+     * @author ClaudeCode
+     */
     private static int debuffToh;
+    /**
+     * Scale applied to weapon weight in the critical-chance formula.
+     *
+     * @author ClaudeCode
+     */
     private static int chanceWeightScale;
+    /**
+     * Scale applied to the overall to-hit value in the critical-chance formula.
+     *
+     * @author ClaudeCode
+     */
     private static int chanceTohScale;
+    /**
+     * Scale applied to player level in the critical-chance formula.
+     *
+     * @author ClaudeCode
+     */
     private static int chanceLevelScale;
+    /**
+     * Scale applied to the to-hit skill in the critical-chance formula.
+     *
+     * @author ClaudeCode
+     */
     private static int chanceTohSkillScale;
+    /**
+     * Flat offset added to the computed critical chance.
+     *
+     * @author ClaudeCode
+     */
     private static int chanceOffset;
+    /**
+     * Denominator/range over which the critical chance is evaluated (should be a multiple of 100).
+     *
+     * @author ClaudeCode
+     */
     private static int chanceRange;
+    /**
+     * Scale applied to weapon weight when computing critical power (severity).
+     *
+     * @author ClaudeCode
+     */
     private static int powerWeightScale;
+    /**
+     * Maximum of the random term added to critical power.
+     *
+     * @author ClaudeCode
+     */
     private static int powerRandom;
 
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
+    /**
+     * Parse and store a single {@code melee-critical} constant from the data
+     * file ({@code name:integer}), routing it to the matching setter.
+     *
+     * @param value the raw {@code name:value} token from {@code constants.txt}
+     * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
+     *                                      cannot be parsed, or the name is unrecognised
+     * @author ClaudeCode
+     */
     public static void setValue(String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
 
@@ -136,6 +200,12 @@ public class MeleeCriticalConstants {
         return debuffToh;
     }
 
+    /**
+     * Store the debuff to-hit bonus. Accepted without validation (any value is meaningful).
+     *
+     * @param debuffToh the value to store
+     * @author ClaudeCode
+     */
     private static void setDebuffToh(int debuffToh) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.debuffToh = debuffToh;
@@ -152,6 +222,12 @@ public class MeleeCriticalConstants {
         return chanceWeightScale;
     }
 
+    /**
+     * Store the weight scale for critical chance. Accepted without validation.
+     *
+     * @param chanceWeightScale the value to store
+     * @author ClaudeCode
+     */
     private static void setChanceWeightScale(int chanceWeightScale) throws InvalidTokenFoundDuringParse {
         // No checks on this value - just let it through
         MeleeCriticalConstants.chanceWeightScale = chanceWeightScale;
@@ -168,6 +244,12 @@ public class MeleeCriticalConstants {
         return chanceTohScale;
     }
 
+    /**
+     * Store the to-hit scale for critical chance. Accepted without validation.
+     *
+     * @param chanceTohScale the value to store
+     * @author ClaudeCode
+     */
     private static void setChanceTohScale(int chanceTohScale) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.chanceTohScale = chanceTohScale;
@@ -184,6 +266,12 @@ public class MeleeCriticalConstants {
         return chanceLevelScale;
     }
 
+    /**
+     * Store the player-level scale for critical chance. Accepted without validation.
+     *
+     * @param chanceLevelScale the value to store
+     * @author ClaudeCode
+     */
     private static void setChanceLevelScale(int chanceLevelScale) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.chanceLevelScale = chanceLevelScale;
@@ -200,6 +288,12 @@ public class MeleeCriticalConstants {
         return chanceTohSkillScale;
     }
 
+    /**
+     * Store the to-hit-skill scale for critical chance. Accepted without validation.
+     *
+     * @param chanceTohSkillScale the value to store
+     * @author ClaudeCode
+     */
     private static void setChanceTohSkillScale(int chanceTohSkillScale) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.chanceTohSkillScale = chanceTohSkillScale;
@@ -216,6 +310,12 @@ public class MeleeCriticalConstants {
         return chanceOffset;
     }
 
+    /**
+     * Store the flat critical-chance offset. Accepted without validation.
+     *
+     * @param chanceOffset the value to store
+     * @author ClaudeCode
+     */
     private static void setChanceOffset(int chanceOffset) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.chanceOffset = chanceOffset;
@@ -237,6 +337,16 @@ public class MeleeCriticalConstants {
         return chanceRange;
     }
 
+    /**
+     * Validate and store the critical-chance range. Must be non-zero (it is used
+     * as a divisor); warns if it is not a multiple of 100, which would introduce
+     * rounding error into displayed damage.
+     *
+     * @param chanceRange the proposed range
+     * @param name        the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code chanceRange == 0}
+     * @author ClaudeCode
+     */
     private static void setChanceRange(int chanceRange, String name) throws InvalidTokenFoundDuringParse {
         // We must have a non-zero number which is a multiple of 100
 
@@ -265,6 +375,12 @@ public class MeleeCriticalConstants {
         return powerWeightScale;
     }
 
+    /**
+     * Store the weight scale for critical power. Accepted without validation.
+     *
+     * @param powerWeightScale the value to store
+     * @author ClaudeCode
+     */
     private static void setPowerWeightScale(int powerWeightScale) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.powerWeightScale = powerWeightScale;
@@ -281,6 +397,12 @@ public class MeleeCriticalConstants {
         return powerRandom;
     }
 
+    /**
+     * Store the random-power maximum. Accepted without validation.
+     *
+     * @param powerRandom the value to store
+     * @author ClaudeCode
+     */
     private static void setPowerRandom(int powerRandom) {
         // No checks on this value - just let it through
         MeleeCriticalConstants.powerRandom = powerRandom;

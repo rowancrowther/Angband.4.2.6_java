@@ -32,22 +32,98 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.frontend.screen.enums.TermXtraEventEnum;
 import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
 
+/**
+ * The JavaFX realisation of a game window: it owns the {@link Stage}, the drawing
+ * {@link Canvas}/{@link GraphicsContext}, the menu bar and the logical {@link Term}
+ * it renders. This is the concrete front end that replaces the C original's
+ * platform-specific window code ({@code main-win.c} et al.) — the place where the
+ * abstract terminal model meets actual pixels.
+ *
+ * @author ClaudeCode
+ */
 public class Screen {
+    /**
+     * The current JavaFX scene shown on the stage.
+     *
+     * @author ClaudeCode
+     */
     private Scene mainScene;
+    /**
+     * Status line label, updated as the game reports progress.
+     *
+     * @author ClaudeCode
+     */
     private final Label statusLabel = new Label("Initialising game...");
+    /**
+     * Welcome/title label shown on the initial screen.
+     *
+     * @author ClaudeCode
+     */
     private final Label welcomeLabel = new Label("Welcome to Java Angband v4.2.6");
+    /**
+     * The logical terminal this screen draws.
+     *
+     * @author ClaudeCode
+     */
     private final Term term;
+    /**
+     * Horizontal tile scale (in cells) for the cursor/graphics.
+     *
+     * @author ClaudeCode
+     */
     private int tileWidth = 1;
+    /**
+     * Vertical tile scale (in cells) for the cursor/graphics.
+     *
+     * @author ClaudeCode
+     */
     private int tileHeight = 1;
 
+    /**
+     * Whether a palette-based colour mode is in use.
+     *
+     * @author ClaudeCode
+     */
     private boolean paletted = false;
+    /**
+     * Whether the display is limited to 16 colours.
+     *
+     * @author ClaudeCode
+     */
     private boolean colours16 = false;
 
+    /**
+     * The 2D graphics context used for all drawing on {@link #canvas}.
+     *
+     * @author ClaudeCode
+     */
     private final GraphicsContext graphicsContext;
+    /**
+     * The canvas the terminal contents are painted onto.
+     *
+     * @author ClaudeCode
+     */
     private final Canvas canvas;
+    /**
+     * The JavaFX stage (top-level window) hosting this screen.
+     *
+     * @author ClaudeCode
+     */
     private final Stage stage;
+    /**
+     * The window's menu bar.
+     *
+     * @author ClaudeCode
+     */
     private MenuBar menuBar;
 
+    /**
+     * Build the screen on the given stage: create the canvas, wire up a fresh
+     * {@link Term} and {@link TermData}, and perform the initial draw.
+     *
+     * @param stage the JavaFX stage to host this window
+     * @author ClaudeCode
+     */
     public Screen(@NotNull Stage stage) {
         this.stage = stage;
         canvas = new Canvas(800, 600);
@@ -61,6 +137,11 @@ public class Screen {
         redraw();
     }
 
+    /**
+     * Reset the window to a blank black canvas under the menu bar.
+     *
+     * @author ClaudeCode
+     */
     public void clear() {
         Canvas canvas = new Canvas(800, 600);
         GraphicsContext graphicsContext = canvas.getGraphicsContext2D();
@@ -75,6 +156,13 @@ public class Screen {
         stage.setScene(mainScene);
     }
 
+    /**
+     * Rebuild and show the whole window: menu bar (File/Windows menus), the black
+     * canvas, the cursor frame and the welcome/status text, then size and centre
+     * the stage. Called once at construction and whenever a full repaint is needed.
+     *
+     * @author ClaudeCode
+     */
     public void redraw() {
         menuBar = new MenuBar();
         Menu fileMenu = new Menu("File");
@@ -120,6 +208,12 @@ public class Screen {
         stage.show();
     }
 
+    /**
+     * Update the status line text and repaint the welcome/status area.
+     *
+     * @param text the new status message
+     * @author ClaudeCode
+     */
     public void setStatusLabelText(String text) {
         statusLabel.setText(text);
 
@@ -133,10 +227,20 @@ public class Screen {
         stage.show();
     }
 
+    /**
+     * @return the status-line label
+     * @author ClaudeCode
+     */
     public Label getStatusLabel() {
         return statusLabel;
     }
 
+    /**
+     * Build the "Window" menu item (currently a no-op action placeholder).
+     *
+     * @return the configured menu item
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     private @NotNull MenuItem windowMenuItem() {
         MenuItem windowMenuItem = new MenuItem("Window");
@@ -145,6 +249,12 @@ public class Screen {
         return windowMenuItem;
     }
 
+    /**
+     * Build the "New Game" menu item, which clears the terminal when chosen.
+     *
+     * @return the configured menu item
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     private @NotNull MenuItem newGameMenuItem() {
         MenuItem newGameMenuItem = new MenuItem("New Game");
@@ -155,6 +265,12 @@ public class Screen {
         return newGameMenuItem;
     }
 
+    /**
+     * Build the "Exit" menu item, which terminates the JVM when chosen.
+     *
+     * @return the configured menu item
+     * @author ClaudeCode
+     */
     @CheckReturnValue
     private @NotNull MenuItem exitMenuHandler() {
         MenuItem exitMenuItem = new MenuItem("Exit");
@@ -164,6 +280,16 @@ public class Screen {
         return exitMenuItem;
     }
 
+    /**
+     * Draw the large (tile-sized) cursor highlight at the given cell. Falls back
+     * to {@link #cursWin(int, int)} when the reduced-scale map is active;
+     * otherwise computes the tile's pixel rectangle (offsetting by the window
+     * borders) and frames it in yellow. Java port of the C {@code Term_bigcurs}.
+     *
+     * @param x the cell column
+     * @param y the cell row
+     * @author ClaudeCode
+     */
     private void bigcursWin(int x, int y) {
         Rect rect;
         long tileWid;
@@ -187,10 +313,26 @@ public class Screen {
         frameRect(rect, Color.YELLOW);
     }
 
+    /**
+     * Draw the normal (single-cell) cursor highlight at the given cell. Currently
+     * a stub awaiting the single-cell cursor rendering.
+     *
+     * @param x the cell column
+     * @param y the cell row
+     * @author ClaudeCode
+     */
     private void cursWin(int x, int y) {
     }
 
     // Drawing methods
+
+    /**
+     * Stroke the outline of a rectangle in the given colour.
+     *
+     * @param rect   the rectangle to frame
+     * @param colour the stroke colour
+     * @author ClaudeCode
+     */
     private void frameRect(@NotNull Rect rect, @NotNull Color colour) {
         graphicsContext.setStroke(colour);
         graphicsContext.setLineWidth(2);

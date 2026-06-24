@@ -17,8 +17,20 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * Flags describing how an object kind relates to a damage element, mirroring the
+ * C original's {@code EL_INFO_*} flags ({@code src/object.h}) — whether the
+ * material is destroyed by, ignores, or is randomly affected by that element.
+ *
+ * @author ClaudeCode
+ */
 public enum ElementInfoEnum {
+    /**
+     * The object is damaged/destroyed by this element. @author ClaudeCode
+     */
     EL_INFO_HATES,
+    /** The object ignores (is unaffected by) this element. @author ClaudeCode */
     EL_INFO_IGNORE,
+    /** The object is randomly affected by this element. @author ClaudeCode */
     EL_INFO_RANDOM
 }

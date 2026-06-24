@@ -17,8 +17,19 @@
 
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * Distinguishes a monster's primary (originally-generated) group from a group
+ * formed by summoning. Mirrors the C original's group-type distinction.
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterGroupType {
+    /**
+     * The monster's primary/original group. @author ClaudeCode
+     */
     PRIMARY_GROUP,
+    /** A group formed by summoning. @author ClaudeCode */
     SUMMON_GROUP,
+    /** Count sentinel. @author ClaudeCode */
     GROUP_MAX
 }

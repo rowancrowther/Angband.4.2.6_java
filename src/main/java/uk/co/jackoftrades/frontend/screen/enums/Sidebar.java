@@ -17,9 +17,21 @@
 
 package uk.co.jackoftrades.frontend.screen.enums;
 
+/**
+ * The placement options for the player status sidebar, mirroring the
+ * {@code SIDEBAR_*} layout modes of the C original.
+ *
+ * @author ClaudeCode
+ */
 public enum Sidebar {
+    /**
+     * Sidebar down the left edge of the screen. @author ClaudeCode
+     */
     SIDEBAR_LEFT,
+    /** Sidebar across the top of the screen. @author ClaudeCode */
     SIDEBAR_TOP,
+    /** No sidebar shown. @author ClaudeCode */
     SIDEBAR_NONE,
+    /** Count sentinel (number of sidebar modes). @author ClaudeCode */
     SIDEBAR_MAX
 }

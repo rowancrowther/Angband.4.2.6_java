@@ -1,3 +1,9 @@
+// Parser+lexer for lib/gamedata/visuals.txt - colour-cycling animation
+// definitions (multi-hued monsters/objects): legacy "flicker" blocks
+// (intentionally ignored - see `file` below) and the live "cycle" blocks,
+// each a named sequence of colour steps. Cf. src/ui-visuals.c's
+// static struct file_parser visuals_file_parser (ui-visuals.c:1092).
+
 grammar Visuals;
 
 @header {
@@ -6,23 +12,33 @@ grammar Visuals;
     import uk.co.jackoftrades.frontend.colour.VisualsCycler;
     import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 
+    import java.util.Map;
     import java.util.List;
+    import java.util.HashMap;
     import java.util.ArrayList;
 }
 
+// "flicker:<colour char>:<text>" - a legacy flicker definition header.
+// Matched but its content is discarded (see `file`'s comment).
 flicker
         :   FLICKER COLOUR_CHAR COLON LCASE
         ;
 
+// "flicker-color:<colour char>" - one colour step of a legacy flicker
+// definition; can repeat. Also discarded.
 flickerColour
         :   FLICKER_COLOUR COLOUR_CHAR
         ;
 
+// One legacy flicker definition: a flicker: header plus its flicker-color:
+// steps.
 flickerBlock
         :   flicker
             flickerColour+
         ;
 
+// "cycle:flicker|fancy:<name or colour char>" - starts a new colour-cycle
+// definition, naming which group ("flicker" or "fancy") and cycle it belongs to.
 cycle
         returns[String groupName, String cycleName]
         :   CYCLE (FLICKER { $groupName = "flicker"; }
@@ -30,6 +46,8 @@ cycle
             | COLOUR_CHAR { $cycleName = $COLOUR_CHAR.getText(); })
         ;
 
+// "cycle-color:<colour char>" - one colour step of the current cycle; can
+// repeat (see `cycleBlock`'s colourTypes list).
 cycleColour
         returns[ColourType colourType]
         :   CYCLE_COLOUR COLOUR_CHAR {
@@ -38,22 +56,24 @@ cycleColour
             }
         ;
 
+// One full colour-cycle definition: a cycle: header plus its cycle-color:
+// steps, wrapped in its own VisualsCycleGroup. See top-of-file problem #1
+// re: this producing one group per cycle instead of one group per
+// groupName containing all its cycles.
 cycleBlock
-        returns[VisualsCycleGroup group]
+        returns[String name, VisualsColourCycle colourCycleObj]
         @init {
             String groupName = "";
             String cycleName = "";
             List<ColourType> colourTypes = new ArrayList<>();
-            $group = new VisualsCycleGroup();
         }
         @after {
-            VisualsColourCycle colourCycle = new VisualsColourCycle(cycleName, ColourType.COLOUR_TYPE_DARK);
+            $colourCycleObj = new VisualsColourCycle(cycleName, ColourType.COLOUR_TYPE_DARK);
 
             for (ColourType colType : colourTypes)
-                colourCycle.addStep(colType);
+                $colourCycleObj.addStep(colType);
 
-            $group.setGroupName(groupName);
-            $group.addCycle(colourCycle);
+            $name = groupName;
         }
         :   cycle {
                 groupName = $cycle.groupName;
@@ -65,21 +85,36 @@ cycleBlock
             })+
         ;
 
+// Top-level rule: legacy flicker blocks (matched but ignored - "We are
+// ignoring all the flicker blocks as that is a deprecated system"),
+// followed by one or more colour-cycle blocks.
 file
         returns[VisualsCycler cycler]
         @init {
+            Map<String, VisualsCycleGroup> cyclerMap = new HashMap<>();
             $cycler = new VisualsCycler();
+        }
+        @after {
+            for (VisualsCycleGroup group : cyclerMap.values())
+                $cycler.addVisualsCycleGroup(group);
         }
         :   flickerBlock+ // We are ignoring all the flicker blocks as that is a depricated system
             (cycleBlock {
-                $cycler.addVisualsCycleGroup($cycleBlock.group);
+                VisualsCycleGroup group = cyclerMap.computeIfAbsent($cycleBlock.name, name -> {
+                    VisualsCycleGroup newGroup = new VisualsCycleGroup();
+                    newGroup.setGroupName(name);
+                    return newGroup;
+                });
+                group.addCycle($cycleBlock.colourCycleObj);
             })+
             EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL     :   '\r'? '\n' -> skip
         ;
 
@@ -103,14 +138,19 @@ CYCLE_COLOUR
         :   'cycle-color:'
         ;
 
+// Field separator within flicker:/cycle: lines.
 COLON
         :   ':'
         ;
 
+// A single colour-code character - used for flicker:/flicker-color:/
+// cycle:/cycle-color:.
 COLOUR_CHAR
         :   [dwsorgbuDWPyRGBUpvtmYiTVIMzZ]
         ;
 
+// Free-running lowercase text - used for flicker:'s description and
+// cycle:'s cycle-name field (e.g. "rainbow", "storm").
 LCASE
         :   ('a'..'z' | ' ' | '-' | '/' | '(' | ')' | ',')+
         ;

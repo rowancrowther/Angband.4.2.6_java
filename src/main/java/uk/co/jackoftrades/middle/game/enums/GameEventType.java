@@ -17,6 +17,17 @@
 
 package uk.co.jackoftrades.middle.game.enums;
 
+/**
+ * Every kind of game event the UI/event system can broadcast — display updates
+ * (map, stats, HP, …), gameplay notifications (player moved, explosion, message),
+ * context transitions (enter/leave birth, game, world, store, death) and
+ * dungeon-generation introspection hooks. Observers register against these to be
+ * notified of state changes. This is the Java port of the C original's
+ * {@code game_event_type} ({@code src/game-event.h}); each constant's inline
+ * comment gives its meaning.
+ *
+ * @author ClaudeCode
+ */
 public enum GameEventType {
     EVENT_MAP,        /* Some part of the map has changed. */
 

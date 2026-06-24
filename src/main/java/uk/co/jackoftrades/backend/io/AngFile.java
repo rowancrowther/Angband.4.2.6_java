@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.backend.io;
 
 import uk.co.jackoftrades.backend.io.enums.FileModeEnum;
@@ -6,9 +23,39 @@ import uk.co.jackoftrades.backend.io.enums.FileTypeEnum;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
+/**
+ * High-level handle for a single game file, pairing a fixed access {@link
+ * FileModeEnum} with the lower-level {@link FileHandler} that performs the
+ * actual stream I/O.
+ * <p>
+ * This is the Java port of the {@code ang_file} abstraction from the original C
+ * source ({@code src/z-file.c}). It deliberately keeps a narrow, intention-named
+ * API ({@link #getLine()}, {@link #putLine(String)}, {@link #readChar()}, …) so
+ * the rest of the game can read and write data files without touching
+ * {@code java.nio} directly. Most methods lazily open the underlying handler in
+ * the appropriate mode if it is not already open, mirroring the C code's habit
+ * of treating an {@code ang_file} as "open on demand".
+ *
+ * @author ClaudeCode
+ */
 public class AngFile {
+    /**
+     * The access mode (read/write/append) this file was created for.
+     *
+     * @author ClaudeCode
+     */
     private final FileModeEnum mode;
+    /**
+     * The lower-level handler that owns the actual input/output streams.
+     *
+     * @author ClaudeCode
+     */
     private final FileHandler fileHandler;
+    /**
+     * The path/name of the file, retained for reference and reopening.
+     *
+     * @author ClaudeCode
+     */
     private final String filename;
 
     /**

@@ -1,3 +1,18 @@
+// Parser+lexer for lib/gamedata/pit.txt - every monster pit/nest profile
+// (room type, allocation, required/forbidden monster flags and spells,
+// specific base templates/colours/banned monsters). The data file and the
+// C struct call these "pits" (pit_profile) even though the room type can
+// be pit/nest/other - cf. src/mon-init.c: struct file_parser pit_parser
+// (mon-init.c:2232). Despite the grammar's own filename, it's wired up via
+// PitReader.java, not a "MonsterNestReader".
+//
+// No problems found - `pit`'s flexible `(...)+ ` loop correctly accumulates
+// every repeatable directive (mon-base:/color:/mon-ban: via list .add(),
+// flags-req:/flags-ban:/spell-req:/spell-ban: via Flag.union()), and
+// room:/alloc:/obj-rarity: match the C struct's plain-uint fields with a
+// small added enum translation (1/2/3 -> PIT_TYPE_PIT/NEST/OTHER) that C
+// itself doesn't do at parse time.
+
 grammar MonsterNest;
 
 @header {
@@ -15,11 +30,13 @@ grammar MonsterNest;
     import java.util.List;
 }
 
+// "name:<text>" - starts a new pit profile record.
 name
         returns[String nameStr]
         :   NAME STRING { $nameStr = $STRING.getText(); }
         ;
 
+// "room:1|2|3" - room type (pit/nest/other).
 room
         returns[PitRoomType roomTypeEnum]
         :   ROOM INTEGER {
@@ -43,6 +60,7 @@ room
             }
         ;
 
+// "alloc:<rarity>:<average level>".
 alloc
         returns[int rarityInt, int levelInt]
         :   ALLOC rar=INTEGER COLON lev=INTEGER {
@@ -51,16 +69,21 @@ alloc
             }
         ;
 
+// "obj-rarity:<value>" - rarity of object drops generated in this pit.
 objRarity
         returns[int rarityInt]
         :   OBJ_RARITY INTEGER { $rarityInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "color:<colour char>" - an allowed monster colour for this pit; can
+// repeat (see `pit`'s coloursInit list).
 colour
         returns[ColourType colourType]
         :   COLOUR cc=COLOUR_CHAR { $colourType = ColourType.findColourType($cc.getText().charAt(0)); }
         ;
 
+// "mon-base:<monster_base.txt name>" - an allowed monster base for this
+// pit; can repeat (see `pit`'s basesInit list).
 monBase
         returns[MonsterBase base]
         :   MON_BASE STRING {
@@ -69,6 +92,8 @@ monBase
             }
         ;
 
+// "flags-req:<RF_FLAG> [| <RF_FLAG> ...]" - race flags a monster must have
+// to appear in this pit.
 flagsReq
         returns[Flag<MonsterRaceFlag> flags]
         @init {
@@ -84,6 +109,8 @@ flagsReq
             })*
         ;
 
+// "flags-ban:<RF_FLAG> [| <RF_FLAG> ...]" - race flags that exclude a
+// monster from this pit.
 flagsBan
         returns[Flag<MonsterRaceFlag> flags]
         @init {
@@ -99,11 +126,14 @@ flagsBan
             })*
         ;
 
+// "innate-freq:<value>" - minimum innate-attack frequency required.
 innateFreq
         returns[int innateFreqInt]
         :   INNATE_FREQ INTEGER { $innateFreqInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "spell-req:<RSF_CODE> [| <RSF_CODE> ...]" - spells a monster must be
+// able to cast to appear in this pit.
 spellReq
         returns[Flag<MonsterSpell> spells]
         @init {
@@ -118,6 +148,8 @@ spellReq
             })*
         ;
 
+// "spell-ban:<RSF_CODE> [| <RSF_CODE> ...]" - spells that exclude a monster
+// from this pit.
 spellBan
         returns[Flag<MonsterSpell> spells]
         @init {
@@ -132,11 +164,15 @@ spellBan
             })*
         ;
 
+// "mon-ban:<monster name>" - a specific monster excluded from this pit;
+// can repeat (see `pit`'s forbiddenMonstersInit list).
 monBan
         returns[MonsterRace race]
         :   MON_BAN STRING { $race = GameConstants.lookupMonsterRace($STRING.getText()); }
         ;
 
+// One full pit profile record: name, then any mix of the directives above
+// in any order/quantity.
 pit
         returns[PitProfile profile]
         @init {
@@ -176,6 +212,7 @@ pit
         |   monBan { forbiddenMonstersInit.add($monBan.race); })+
         ;
 
+// Top-level rule: the whole file is one or more pit profile records.
 file
         returns[List<PitProfile> pits]
         @init {
@@ -186,14 +223,18 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through MON_BAN below: one literal directive-keyword token each,
+// matching the rule of the same purpose above.
 NAME
         :   'name:'
         ;
@@ -242,22 +283,27 @@ MON_BAN
         :   'mon-ban:'
         ;
 
+// A bare non-negative integer.
 INTEGER
         :   ('0'..'9')+
         ;
 
+// A single colour-code character - used for color:.
 COLOUR_CHAR
         :   [dwsorgbuDWPyRGBUpvtmYiTVIMzZ]
         ;
 
+// Free-running text - used for name:/mon-base:/flags-*:/spell-*:/mon-ban:'s value fields.
 STRING
         :   ('a'..'z' | 'A'..'Z' | ' ' | '-' | '_')+
         ;
 
+// Field separator within alloc: lines.
 COLON
         :   ':'
         ;
 
+// The '|' separator between entries on a flags-req:/flags-ban:/spell-req:/spell-ban: line.
 OR
         :   '|'
         ;

@@ -30,7 +30,21 @@ import uk.co.jackoftrades.middle.objects.Brand;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Loads the brand definitions from their data file into {@link Brand} objects by
+ * driving the ANTLR-generated {@code BrandLexer}/{@code BrandParser}. This is the
+ * Java port of the C original's {@code brand.txt} parser; it is the thin
+ * hand-written bridge between the generated grammar code and the rest of the
+ * game, implementing the shared {@link Parser} contract.
+ *
+ * @author ClaudeCode
+ */
 public class BrandReader implements Parser<Brand> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
 

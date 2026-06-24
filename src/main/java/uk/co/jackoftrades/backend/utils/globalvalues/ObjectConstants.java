@@ -24,18 +24,81 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "obj-make" group of tunable constants from {@code constants.txt} —
+ * object-generation tuning (inflation chances for great/ego items) and light-
+ * source fuel limits. Part of the Java port of the C constants loader: values
+ * are {@code static} globals and {@link #setValue(String)} decodes one
+ * {@code name:value} line and routes it to a validating setter.
+ * <p>
+ * Some setters depend on others having already run (e.g. fuel-lamp must be set
+ * after fuel-torch), so they additionally guard against being parsed out of
+ * order in the data file.
+ *
+ * @author ClaudeCode
+ */
 public class ObjectConstants {
+    /**
+     * The data-file group tag this class consumes ({@code obj-make}).
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "obj-make";
 
+    /**
+     * Maximum depth used for object allocation (distinct from the dungeon's max level).
+     *
+     * @author ClaudeCode
+     */
     private static int maxDepth = 0;
+    /**
+     * 1/chance of inflating a requested object's item level (a "great" object roll).
+     *
+     * @author ClaudeCode
+     */
     private static int greatObj = 0;
+    /**
+     * 1/chance of inflating a requested ego item's level (a "great" ego roll).
+     *
+     * @author ClaudeCode
+     */
     private static int greatEgo = 0;
+    /**
+     * Maximum fuel a torch can hold, in turns.
+     *
+     * @author ClaudeCode
+     */
     private static int fuelTorch = 0;
+    /**
+     * Maximum fuel a lamp can hold, in turns.
+     *
+     * @author ClaudeCode
+     */
     private static int fuelLamp = 0;
+    /**
+     * Default fuel a freshly generated lamp starts with.
+     *
+     * @author ClaudeCode
+     */
     private static int defaultLamp = 0;
 
+    /**
+     * Logger used to report malformed/invalid/out-of-order constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
+    /**
+     * Parse and store a single {@code obj-make} constant from the data file.
+     * The value is expected as {@code name:integer}; the name selects the target
+     * constant and each is validated before storage.
+     *
+     * @param value the raw {@code name:value} token from {@code constants.txt}
+     * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
+     *                                      cannot be parsed, or the name is unrecognised
+     * @author ClaudeCode
+     */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         // separate the value out to string name and int val
         String[] values = value.split(":");
@@ -105,6 +168,16 @@ public class ObjectConstants {
         return maxDepth;
     }
 
+    /**
+     * Validate and store the object-allocation max depth. Rejects negatives and
+     * warns if it exceeds the dungeon's max depth (which could leave some objects
+     * ungeneratable).
+     *
+     * @param maxDepth the proposed allocation max depth
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code maxDepth < 0}
+     * @author ClaudeCode
+     */
     public static void setMaxDepth(int maxDepth, String name) throws InvalidTokenFoundDuringParse {
         if (maxDepth < 0) {
             String message = "Invalid max depth for object allocation. Token was: "
@@ -133,6 +206,15 @@ public class ObjectConstants {
         return greatObj;
     }
 
+    /**
+     * Validate and store the great-object inflation chance. Rejects values below 1
+     * (it is used as a 1/N denominator).
+     *
+     * @param greatObj the proposed 1/chance value
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code greatObj < 1}
+     * @author ClaudeCode
+     */
     public static void setGreatObj(int greatObj, String name) throws InvalidTokenFoundDuringParse {
         if (greatObj < 1) {
             String message = "Invalid value for chance of inflating a requested object. Token was: "
@@ -156,6 +238,15 @@ public class ObjectConstants {
         return greatEgo;
     }
 
+    /**
+     * Validate and store the great-ego inflation chance. Rejects values below 1
+     * (it is used as a 1/N denominator).
+     *
+     * @param greatEgo the proposed 1/chance value
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code greatEgo < 1}
+     * @author ClaudeCode
+     */
     public static void setGreatEgo(int greatEgo, String name) throws InvalidTokenFoundDuringParse {
         if (greatEgo < 1) {
             String message = "Invalid value for chance of inflating a requested ego item. Token was: "
@@ -179,6 +270,14 @@ public class ObjectConstants {
         return fuelTorch;
     }
 
+    /**
+     * Validate and store the torch fuel maximum. Rejects values below 1.
+     *
+     * @param fuelTorch the proposed maximum torch fuel in turns
+     * @param name      the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code fuelTorch < 1}
+     * @author ClaudeCode
+     */
     public static void setFuelTorch(int fuelTorch, String name) throws InvalidTokenFoundDuringParse {
         if (fuelTorch < 1) {
             String message = "Invalid value for amount of fuel in a torch. Token was: "
@@ -202,6 +301,17 @@ public class ObjectConstants {
         return fuelLamp;
     }
 
+    /**
+     * Validate and store the lamp fuel maximum. Rejects values below 1, requires
+     * that {@code fuelTorch} was already parsed (ordering guard), and warns if a
+     * lamp would hold less than a torch.
+     *
+     * @param fuelLamp the proposed maximum lamp fuel in turns
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code fuelLamp < 1} or fuel-torch
+     *         has not yet been set
+     * @author ClaudeCode
+     */
     public static void setFuelLamp(int fuelLamp, String name) throws InvalidTokenFoundDuringParse {
         if (fuelLamp < 1) {
             String message = "Invalid value for the amount of fuel in a lamp. Token was: "
@@ -240,6 +350,17 @@ public class ObjectConstants {
         return defaultLamp;
     }
 
+    /**
+     * Validate and store the default lamp fuel. Rejects values below 1, requires
+     * that {@code fuelLamp} was already parsed (ordering guard), and rejects a
+     * default that exceeds the lamp's maximum.
+     *
+     * @param defaultLamp the proposed default lamp fuel in turns
+     * @param name        the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code defaultLamp < 1}, fuel-lamp
+     *         has not yet been set, or the default exceeds the lamp maximum
+     * @author ClaudeCode
+     */
     public static void setDefaultLamp(int defaultLamp, String name) throws InvalidTokenFoundDuringParse {
         if (defaultLamp < 1) {
             String message = "Invalid value for the default amount of fuel in a lamp. Token was: "

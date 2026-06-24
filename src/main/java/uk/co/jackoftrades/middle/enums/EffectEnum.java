@@ -21,9 +21,17 @@ import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 
 /**
- * TODO: Comment and test this
+ * The master table of every effect the game can apply (damage, heal, cure,
+ * teleport, summon, detect, the various bolt/ball/beam projections, …). Each
+ * constant bundles the effect's sub-type, whether it must be aimed, how many
+ * arguments it takes, the {@link EffectInfoEnum} formatting category, and the
+ * description/menu-format templates used to describe it to the player. This is
+ * the Java port of the C original's {@code effect_list}/{@code list-effects.h};
+ * the constants are self-describing via their description strings and are
+ * documented collectively here. {@code EF_MAX} is the count sentinel.
+ *
+ * @author ClaudeCode
  */
-
 public enum EffectEnum {
     EF_NONE(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "", ""),
     EF_RANDOM(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "randomly ", ""),
@@ -140,14 +148,61 @@ public enum EffectEnum {
     EF_UNSCRAMBLE_STATS(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "", ""),
     EF_MAX(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "", "");
 
+    /**
+     * The effect's sub-type, selecting the family of behaviour it belongs to.
+     *
+     * @author ClaudeCode
+     */
     private final EffectSubTypeEnum subType;
+    /**
+     * Whether the effect must be aimed at a target.
+     *
+     * @author ClaudeCode
+     */
     private final boolean requiresAiming;
+    /**
+     * Short label naming the effect's primary numeric parameter (e.g. "dam", "dur").
+     *
+     * @author ClaudeCode
+     */
     private final String infoLabel;
+    /**
+     * How many arguments the effect consumes.
+     *
+     * @author ClaudeCode
+     */
     private final int numberOfArguments; // May need to change this
+    /**
+     * The formatting category used when building the effect's description.
+     *
+     * @author ClaudeCode
+     */
     private final EffectInfoEnum effectInfoEnum;
+    /**
+     * Description-string template (with {@code %s}/{@code %d} placeholders).
+     *
+     * @author ClaudeCode
+     */
     private final String description;
+    /**
+     * Menu-format template used when the effect is shown in a selection menu.
+     *
+     * @author ClaudeCode
+     */
     private final String menuFormat;
 
+    /**
+     * Build an effect descriptor from its data fields.
+     *
+     * @param subType        the effect's sub-type
+     * @param aim            whether it must be aimed
+     * @param infoLabel      label for its primary parameter
+     * @param arguments      number of arguments consumed
+     * @param effectInfoEnum description formatting category
+     * @param text           description template
+     * @param menuText       menu-format template
+     * @author ClaudeCode
+     */
     @Contract(mutates = "this")
     EffectEnum(EffectSubTypeEnum subType,
                boolean aim,
@@ -165,40 +220,66 @@ public enum EffectEnum {
         menuFormat = menuText;
     }
 
+    /**
+     * @return the effect's sub-type
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public EffectSubTypeEnum getSubType() {
         return subType;
     }
 
+    /**
+     * @return whether the effect must be aimed
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public boolean getAim() {
         return requiresAiming;
     }
 
+    /**
+     * @return the label for the effect's primary parameter
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public String getInfoLabel() {
         return infoLabel;
     }
 
+    /**
+     * @return the number of arguments the effect consumes
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public int getNumberOfArguments() {
         return numberOfArguments;
     }
 
+    /**
+     * @return the description formatting category
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public EffectInfoEnum getEffectInfo() {
         return effectInfoEnum;
     }
 
+    /**
+     * @return the description-string template
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public String getDescription() {
         return description;
     }
 
+    /**
+     * @return the menu-format template
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public String getMenuFormat() {
         return menuFormat;
     }
-
-
 }

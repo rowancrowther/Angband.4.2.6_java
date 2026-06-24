@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.backend.utils.quit;
 
+/**
+ * Strategy interface for terminating the game, mirroring the swappable
+ * {@code quit_aux} function pointer in the original C source. Abstracting the
+ * quit behaviour behind an interface lets the front end decide what "quit"
+ * actually does (clean exit, save-and-exit, error abort, …) without the core
+ * game code needing to know.
+ *
+ * @author ClaudeCode
+ */
 public interface QuitAux {
 
     /**

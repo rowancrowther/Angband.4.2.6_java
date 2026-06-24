@@ -21,26 +21,139 @@ import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
 
+/**
+ * The definition of one projection type (as loaded from {@code projection.txt})
+ * — its identity, the descriptions used in various contexts, the damage-scaling
+ * fraction/divisor/cap, the message and display colour, and whether it is obvious
+ * or wakes monsters. This is the Java port of the C original's
+ * {@code struct projection} ({@code src/project.h}). Two constructors allow the
+ * damage denominator to be given either as a fixed integer or as a dice
+ * expression ({@link #diceDenominator}).
+ *
+ * @author ClaudeCode
+ */
 public class Projection {
+    /**
+     * The projection's identity/code.
+     *
+     * @author ClaudeCode
+     */
     private ProjectionEnum projection;
+    /**
+     * The projection's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * The projection's broad category (element/environs/monster).
+     *
+     * @author ClaudeCode
+     */
     private ProjectionType type;
+    /**
+     * General description of the projection.
+     *
+     * @author ClaudeCode
+     */
     private String description;
+    /**
+     * Description used when the projection affects the player.
+     *
+     * @author ClaudeCode
+     */
     private String playerDescription;
+    /**
+     * Description used when the player is blind.
+     *
+     * @author ClaudeCode
+     */
     private String blindDescription;
+    /**
+     * Description used for the "lash" (short beam) form.
+     *
+     * @author ClaudeCode
+     */
     private String lashDescription;
+    /**
+     * Numerator of the damage-scaling fraction.
+     *
+     * @author ClaudeCode
+     */
     private int numerator;
+    /**
+     * Integer denominator of the damage-scaling fraction ({@code -1} when a dice
+     * denominator is used instead).
+     *
+     * @author ClaudeCode
+     */
     private int denominator;
+    /**
+     * Dice-expression denominator of the damage-scaling fraction (used instead of
+     * {@link #denominator} for the dice-based constructor).
+     *
+     * @author ClaudeCode
+     */
     private Random diceDenominator;
+    /**
+     * Divisor applied to scaled damage.
+     *
+     * @author ClaudeCode
+     */
     private int divisor;
+    /**
+     * Maximum damage this projection can deal.
+     *
+     * @author ClaudeCode
+     */
     private int damageCap;
-    private MessageEnum msgt;
+    /**
+     * The message shown when this projection is used.
+     *
+     * @author ClaudeCode
+     */
+    private MessageType msgt;
+    /**
+     * Whether the projection's effect is obvious to the player.
+     *
+     * @author ClaudeCode
+     */
     private boolean isObvious;
+    /**
+     * Whether the projection wakes sleeping monsters.
+     *
+     * @author ClaudeCode
+     */
     private boolean willWake;
+    /**
+     * The colour used to draw this projection.
+     *
+     * @author ClaudeCode
+     */
     private ColourType colour;
 
+    /**
+     * Build a projection whose damage denominator is a dice expression.
+     *
+     * @param projection        projection code
+     * @param name              name
+     * @param type              broad category
+     * @param description       general description
+     * @param playerDescription player-affected description
+     * @param blindDescription  blind description
+     * @param lashDescription   lash-form description
+     * @param numerator         damage fraction numerator
+     * @param diceDenominator   damage fraction denominator as dice
+     * @param divisor           damage divisor
+     * @param damageCap         maximum damage
+     * @param message           use message
+     * @param isObvious         whether the effect is obvious
+     * @param willwake          whether it wakes monsters
+     * @param colour            display colour
+     * @author ClaudeCode
+     */
     public Projection(ProjectionEnum projection,
                       String name,
                       ProjectionType type,
@@ -52,7 +165,7 @@ public class Projection {
                       Random diceDenominator,
                       int divisor,
                       int damageCap,
-                      MessageEnum message,
+                      MessageType message,
                       boolean isObvious,
                       boolean willwake,
                       ColourType colour) {
@@ -74,6 +187,26 @@ public class Projection {
         this.colour = colour;
     }
 
+    /**
+     * Build a projection whose damage denominator is a fixed integer.
+     *
+     * @param projection        projection code
+     * @param name              name
+     * @param type              broad category
+     * @param description       general description
+     * @param playerDescription player-affected description
+     * @param blindDescription  blind description
+     * @param lashDescription   lash-form description
+     * @param numerator         damage fraction numerator
+     * @param denominator       damage fraction denominator
+     * @param divisor           damage divisor
+     * @param damageCap         maximum damage
+     * @param message           use message
+     * @param isObvious         whether the effect is obvious
+     * @param willWake          whether it wakes monsters
+     * @param colour            display colour
+     * @author ClaudeCode
+     */
     public Projection(ProjectionEnum projection,
                       String name,
                       ProjectionType type,
@@ -85,7 +218,7 @@ public class Projection {
                       int denominator,
                       int divisor,
                       int damageCap,
-                      MessageEnum message,
+                      MessageType message,
                       boolean isObvious,
                       boolean willWake,
                       ColourType colour) {
@@ -107,10 +240,18 @@ public class Projection {
         this.colour = colour;
     }
 
+    /**
+     * @return the lash-form description
+     * @author ClaudeCode
+     */
     public String getLashDescription() {
         return lashDescription;
     }
 
+    /**
+     * @return a debug string listing this projection's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "Projection{" +

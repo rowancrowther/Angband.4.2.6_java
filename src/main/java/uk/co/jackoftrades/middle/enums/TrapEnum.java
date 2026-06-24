@@ -81,7 +81,7 @@ public enum TrapEnum {
     /**
      * The player can avoid effects based on their AC
      */
-    TRF_SAVE_ARMOUR("Allows a save from all effects due to AC"),
+    TRF_SAVE_ARMOR("Allows a save from all effects due to AC"),
 
     /**
      * This trap is set on a lock on a door

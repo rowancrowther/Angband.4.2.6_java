@@ -24,10 +24,33 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
+/**
+ * A set of "pain" messages for a class of monster (as loaded from {@code pain.txt})
+ * — exactly seven messages describing reactions at decreasing health fractions,
+ * keyed by an index that monster bases reference. This is the Java port of the C
+ * original's {@code struct monster_pain} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterPain {
+    /**
+     * Logger used to report malformed pain definitions.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The index linking this pain set to the monster bases that use it.
+     *
+     * @author ClaudeCode
+     */
     private final int painIndex;
+    /**
+     * The seven ordered pain messages (most to least hurt).
+     *
+     * @author ClaudeCode
+     */
     private final List<String> messages;
 
     /**
@@ -79,6 +102,10 @@ public class MonsterPain {
         return result.toString();
     }
 
+    /**
+     * @return the index linking this pain set to its monster bases
+     * @author ClaudeCode
+     */
     public int getPainIndex() {
         return painIndex;
     }

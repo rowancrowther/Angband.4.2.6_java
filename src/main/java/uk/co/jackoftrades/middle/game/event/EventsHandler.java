@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.game.event;
 
 import org.jetbrains.annotations.NotNull;
@@ -9,20 +26,58 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+/**
+ * The central event bus: a singleton registry mapping each {@link GameEventType}
+ * to its list of {@link EventHandlerInterface} listeners, with dispatch and a
+ * family of {@code eventSignal*} convenience methods that build the appropriate
+ * {@link GameEventData} payload. This is the Java port of the C original's
+ * game-event system ({@code src/game-event.c}), decoupling game logic from the
+ * UI that reacts to it.
+ *
+ * @author ClaudeCode
+ */
 public class EventsHandler {
+    /**
+     * A handler paired with the user/context it was registered for.
+     *
+     * @param handler the event handler
+     * @param user    the registering user/context
+     * @author ClaudeCode
+     */
     private record EventRecord(EventHandlerInterface handler, EventUser user) {
     }
 
+    /**
+     * The registry of listeners, keyed by event type.
+     *
+     * @author ClaudeCode
+     */
     private static final HashMap<GameEventType, ArrayList<EventHandlerInterface>> handlers = new HashMap<>();
 
+    /**
+     * The lazily-created singleton instance.
+     *
+     * @author ClaudeCode
+     */
     private static EventsHandler instance;
 
+    /**
+     * Private constructor: pre-populates an empty listener list for every event
+     * type so dispatch never has to null-check.
+     *
+     * @author ClaudeCode
+     */
     private EventsHandler() {
         for (GameEventType eventType : GameEventType.values()) {
             handlers.put(eventType, new ArrayList<>());
         }
     }
 
+    /**
+     * Create the singleton instance if it does not yet exist.
+     *
+     * @author ClaudeCode
+     */
     private static void initialise() {
         if (instance == null) instance = new EventsHandler();
     }

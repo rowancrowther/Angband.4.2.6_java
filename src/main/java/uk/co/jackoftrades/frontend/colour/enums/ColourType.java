@@ -24,6 +24,25 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * The master colour table, ported from the C original's {@code color_table}
+ * (see {@code src/ui-prefs.c}). Each constant is one named display colour and
+ * carries:
+ * <ul>
+ *   <li>a single-character code used in data files and preferences;</li>
+ *   <li>a human-readable name;</li>
+ *   <li>a 9-entry {@link AttributeColour} translation table, indexed by
+ *       {@link ColourTranslation}, giving how this colour should appear under
+ *       different rendering contexts (full colour, mono, light, dark, …) so the
+ *       same logical colour can be remapped for accessibility or terminal
+ *       capability;</li>
+ *   <li>the concrete JavaFX {@link Color} used when actually drawing.</li>
+ * </ul>
+ * The individual colour constants are self-describing by name, so they are
+ * documented collectively here rather than individually.
+ *
+ * @author ClaudeCode
+ */
 public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
             new AttributeColour[]{AttributeColour.COLOUR_DARK, AttributeColour.COLOUR_DARK, AttributeColour.COLOUR_DARK,
@@ -171,13 +190,48 @@ public enum ColourType {
                     AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE, AttributeColour.COLOUR_SHADE},
             Color.rgb(40, 40, 40));
 
+    /**
+     * Single-character code identifying this colour in data files/preferences.
+     *
+     * @author ClaudeCode
+     */
     private final char colourCharacter;
+    /**
+     * Human-readable name of this colour.
+     *
+     * @author ClaudeCode
+     */
     private final String colourName;
+    /**
+     * Per-context translation table: indexed by {@link ColourTranslation}, gives
+     * the {@link AttributeColour} this colour maps to under each rendering mode.
+     *
+     * @author ClaudeCode
+     */
     private final AttributeColour[] colourTranslate;
+    /**
+     * Concrete JavaFX colour used when drawing this colour.
+     *
+     * @author ClaudeCode
+     */
     private final Color colour;
 
+    /**
+     * Logger used to report out-of-range colour-translation lookups.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Build a colour-table entry.
+     *
+     * @param c      the single-character colour code
+     * @param name   the colour's display name
+     * @param table  the 9-entry per-context translation table
+     * @param colour the JavaFX colour used to draw it
+     * @author ClaudeCode
+     */
     ColourType(char c, String name, AttributeColour[] table, Color colour) {
         colourCharacter = c;
         colourName = name;
@@ -185,6 +239,10 @@ public enum ColourType {
         this.colour = colour;
     }
 
+    /**
+     * @return the JavaFX {@link Color} used to draw this colour
+     * @author ClaudeCode
+     */
     public Color getColour() {
         return colour;
     }
@@ -227,6 +285,16 @@ public enum ColourType {
         return COLOUR_TYPE_DARK;
     }
 
+    /**
+     * Look up this colour's {@link AttributeColour} for a given rendering
+     * context. {@link ColourTranslation#ATTR_MAX} is the out-of-range sentinel
+     * and is rejected as an invalid index.
+     *
+     * @param index the rendering-context translation to apply
+     * @return the translated attribute colour
+     * @throws InvalidTokenFoundDuringParse if {@code index} is {@code ATTR_MAX}
+     * @author ClaudeCode
+     */
     public AttributeColour colourAttribute(ColourTranslation index) {
         if (index == ColourTranslation.ATTR_MAX) {
             String message = "Colour index out of bounds, should be between 0 and " +
@@ -314,6 +382,14 @@ public enum ColourType {
         return findColourType(startColour);
     }
 
+    /**
+     * Find the colour type whose base (index 0) translation equals the given
+     * attribute colour.
+     *
+     * @param colour the attribute colour to match
+     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public static ColourType findColourType(AttributeColour colour) {
         for (ColourType colourType : ColourType.values())
@@ -323,6 +399,13 @@ public enum ColourType {
         return COLOUR_TYPE_DARK;
     }
 
+    /**
+     * Find the colour type with the given name, case-insensitively.
+     *
+     * @param colourName the colour name to match
+     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public static ColourType findColourType(@NotNull String colourName) {
         String lcColourName = colourName.toLowerCase();
@@ -335,6 +418,13 @@ public enum ColourType {
         return COLOUR_TYPE_DARK;
     }
 
+    /**
+     * Find the colour type with the given single-character code.
+     *
+     * @param colChar the colour code to match
+     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @author ClaudeCode
+     */
     public static ColourType findColourType(@NotNull char colChar) {
         for (ColourType colourType : ColourType.values()) {
             if (colourType.getColourCharacter() == colChar)

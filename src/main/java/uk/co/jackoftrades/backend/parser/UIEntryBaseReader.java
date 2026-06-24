@@ -32,7 +32,20 @@ import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Loads the relevant data-file entries into {@link UIEntryBase} objects by driving the
+ * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
+ * the generated grammar code and the game, implementing the shared
+ * {@link Parser} contract (Java port of the equivalent C data-file parser).
+ *
+ * @author ClaudeCode
+ */
 public class UIEntryBaseReader implements Parser<UIEntryBase> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

@@ -20,9 +20,30 @@ package uk.co.jackoftrades.backend.io.bespokeexceptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * Unchecked exception thrown when one of the data-file parsers encounters a
+ * token it cannot interpret. It is a {@link RuntimeException} because a
+ * malformed game data file is unrecoverable at load time and should abort
+ * parsing rather than force every call site to handle it; the message is also
+ * logged on construction so the failure is recorded even if the stack trace is
+ * swallowed higher up.
+ *
+ * @author ClaudeCode
+ */
 public class InvalidTokenFoundDuringParse extends RuntimeException {
+    /**
+     * Logger used to record the failure as soon as the exception is built.
+     *
+     * @author ClaudeCode
+     */
     private final Logger logger = LogManager.getLogger();
 
+    /**
+     * Build the exception, logging the supplied message immediately.
+     *
+     * @param message description of the offending token / parse failure
+     * @author ClaudeCode
+     */
     public InvalidTokenFoundDuringParse(String message) {
         super(message);
         logger.error(message);

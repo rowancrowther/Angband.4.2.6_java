@@ -17,6 +17,16 @@
 
 package uk.co.jackoftrades.middle.cave.enums;
 
+/**
+ * The per-grid boolean flags a dungeon square can carry — memory, visibility,
+ * room/vault membership, generation hints, movement/teleport restrictions, etc.
+ * This is the Java port of the C original's {@code SQUARE_*} flags
+ * ({@code src/cave.h}); each constant carries a human-readable {@link
+ * #getDescription() description} so the flags are self-documenting and are not
+ * repeated individually here.
+ *
+ * @author ClaudeCode
+ */
 public enum SquareEnum {
     SQUARE_NONE(""),
     SQUARE_MARK("memorized feature"),
@@ -42,12 +52,27 @@ public enum SquareEnum {
     SQUARE_CLOSE_PLAYER("square is seen and in player's light radius or UNLIGHT detection radius"),
     SQUARE_MAX("");
 
+    /**
+     * Human-readable description of what this square flag means.
+     *
+     * @author ClaudeCode
+     */
     private final String description;
 
+    /**
+     * Bind a square flag to its description.
+     *
+     * @param description the flag's human-readable description
+     * @author ClaudeCode
+     */
     private SquareEnum(String description) {
         this.description = description;
     }
 
+    /**
+     * @return this flag's human-readable description
+     * @author ClaudeCode
+     */
     public String getDescription() {
         return description;
     }

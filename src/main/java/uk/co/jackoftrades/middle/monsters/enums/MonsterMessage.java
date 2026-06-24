@@ -1,7 +1,34 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.monsters.enums;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
 
+/**
+ * The set of templated messages describing what happens to a monster (dies,
+ * resists, wakes up, flees, is held, …), each with its {@link MessageType}
+ * category, whether the monster's name is omitted, and a template using
+ * {@code [is|are]}/{@code [s]} pluralisation markers. Mirrors the C original's
+ * {@code MON_MSG_*} list ({@code src/list-mon-message.h}); the constants are
+ * self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterMessage {
     MON_MSG_NONE(MessageType.MSG_GENERIC, false, "[is|are] hurt."),
     MON_MSG_DIE(MessageType.MSG_KILL, false, "die[s]."),
@@ -68,10 +95,33 @@ public enum MonsterMessage {
     MON_MSG_0(MessageType.MSG_GENERIC, false, ""),
     MON_MSG_MAX(MessageType.MSG_GENERIC, false, "");
 
+    /**
+     * The message/sound category for this message.
+     *
+     * @author ClaudeCode
+     */
     private MessageType type;
+    /**
+     * Whether the monster's name is omitted when displaying the message.
+     *
+     * @author ClaudeCode
+     */
     private boolean omitMonsterName;
+    /**
+     * The message template, with pluralisation markers.
+     *
+     * @author ClaudeCode
+     */
     private String message;
 
+    /**
+     * Bind a monster message to its category, name-omission flag and template.
+     *
+     * @param type            the message category
+     * @param omitMonsterName whether to omit the monster's name
+     * @param message         the message template
+     * @author ClaudeCode
+     */
     MonsterMessage(MessageType type, boolean omitMonsterName, String message) {
         this.type = type;
         this.omitMonsterName = omitMonsterName;

@@ -50,3 +50,7 @@ bin/
 /logs/fatal.log
 /lib/sounds/
 /free software
+/scratch/
+
+## ANTLR4 ##
+*.interp

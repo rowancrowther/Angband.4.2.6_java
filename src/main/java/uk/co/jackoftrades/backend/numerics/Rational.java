@@ -24,8 +24,28 @@ import org.jetbrains.annotations.NotNull;
 import java.util.HashMap;
 import java.util.Objects;
 
+/**
+ * An exact fraction (numerator / denominator) kept in lowest terms, used where
+ * the game needs precise fractional arithmetic without floating-point drift —
+ * for example accumulating fractional regeneration or growth rates that must
+ * stay exact over many turns. Fractions are simplified on construction so that
+ * equal values share a single canonical representation and never balloon into
+ * huge numerator/denominator pairs.
+ *
+ * @author ClaudeCode
+ */
 public class Rational {
+    /**
+     * The denominator; kept positive and coprime with the numerator after {@link #simplify()}.
+     *
+     * @author ClaudeCode
+     */
     private int denominator;
+    /**
+     * The numerator; carries the sign of the fraction after {@link #simplify()}.
+     *
+     * @author ClaudeCode
+     */
     private int numerator;
 
     /**

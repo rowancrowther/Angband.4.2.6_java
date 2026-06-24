@@ -24,13 +24,57 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "mon-play" group of constants from {@code constants.txt} — runtime
+ * monster behaviour tuning (glyph hardness, breeding rate, life-drain strength,
+ * and the flee/turn distances that govern fear behaviour). Part of the Java port
+ * of the C constants loader; {@link #setValue(String)} decodes one
+ * {@code name:value} line and routes it to a validating setter.
+ *
+ * @author ClaudeCode
+ */
 public class MonsterGameplayConstants {
+    /**
+     * The data-file group tag this class consumes ({@code mon-play}).
+     *
+     * @author ClaudeCode
+     */
     private final static String constantsTag = "mon-play";
+    /**
+     * Resistance of a glyph of protection to being broken by a monster.
+     *
+     * @author ClaudeCode
+     */
     private static int glyphHardness;
+    /**
+     * Breeding-rate control; higher values mean slower monster reproduction.
+     *
+     * @author ClaudeCode
+     */
     private static int reproMonsterRate;
+    /**
+     * Percentage of the player's experience drained per life-drain hit.
+     *
+     * @author ClaudeCode
+     */
     private static int lifeDrainPercent;
+    /**
+     * Distance out of the player's sight that terrified monsters will run.
+     *
+     * @author ClaudeCode
+     */
     private static int fleeRange;
+    /**
+     * Distance from the player at which a slower terrified monster turns to fight.
+     *
+     * @author ClaudeCode
+     */
     private static int turnRange;
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -93,6 +137,14 @@ public class MonsterGameplayConstants {
         }
     }
 
+    /**
+     * Validate and store the glyph hardness. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed hardness
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setGlyphHardness(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was "
@@ -117,6 +169,14 @@ public class MonsterGameplayConstants {
     }
 
 
+    /**
+     * Validate and store the breeding-rate control. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed rate
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setReproMonsterRate(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was " + constantsTag
@@ -138,6 +198,14 @@ public class MonsterGameplayConstants {
         return reproMonsterRate;
     }
 
+    /**
+     * Validate and store the life-drain percentage. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed percentage
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setLifeDrainPercent(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was "
@@ -159,6 +227,14 @@ public class MonsterGameplayConstants {
         return lifeDrainPercent;
     }
 
+    /**
+     * Validate and store the flee range. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed range
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setFleeRange(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was "
@@ -180,6 +256,14 @@ public class MonsterGameplayConstants {
         return fleeRange;
     }
 
+    /**
+     * Validate and store the turn-and-fight range. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed range
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setTurnRange(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was "

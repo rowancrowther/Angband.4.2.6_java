@@ -35,10 +35,36 @@ import java.nio.file.attribute.FileTime;
  */
 @SuppressWarnings("ALL")
 public class FileHandler {
+    /**
+     * Path of the file this handler operates on; may be updated by {@link #fileMove(Path)}.
+     *
+     * @author ClaudeCode
+     */
     private Path filePath;
+    /**
+     * Active read stream, or {@code null} when the file is not open for reading.
+     *
+     * @author ClaudeCode
+     */
     private FileInputStream inputStream;
+    /**
+     * Active write stream, or {@code null} when the file is not open for writing.
+     *
+     * @author ClaudeCode
+     */
     private FileOutputStream outputStream;
+    /**
+     * Default open option retained from construction. Largely vestigial now that
+     * the concrete mode is chosen per-{@link #open(FileModeEnum)} call.
+     *
+     * @author ClaudeCode
+     */
     private final StandardOpenOption option;
+    /**
+     * Logger used to report I/O failures without throwing to callers.
+     *
+     * @author ClaudeCode
+     */
     private final Logger logger = LogManager.getRootLogger();
 
     /**
@@ -108,6 +134,14 @@ public class FileHandler {
         return filePath.toFile().exists();
     }
 
+    /**
+     * Create the backing file on disk if it does not already exist. Existence is
+     * treated as success so callers can use this idempotently before opening.
+     *
+     * @return true if the file now exists (created or already present),
+     * false if creation failed with an {@link IOException}
+     * @author ClaudeCode
+     */
     public boolean createFile() {
         if (!Files.exists(filePath)){
             try {
@@ -185,6 +219,14 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Open the file for reading and tear down any open write stream. Only one
+     * direction is ever active at a time, so opening for input closes the
+     * output stream to avoid holding both handles to the same file. On failure
+     * the input stream is left {@code null} so {@link #isOpen()} stays accurate.
+     *
+     * @author ClaudeCode
+     */
     private void openInputStream() {
         try {
             inputStream = new FileInputStream(filePath.toRealPath().toString());
@@ -195,6 +237,14 @@ public class FileHandler {
         }
     }
 
+    /**
+     * Open the file for writing and tear down any open read stream. As with
+     * {@link #openInputStream()}, only one direction is active at a time.
+     *
+     * @param append when true the stream appends to existing content; when
+     *               false the file is truncated/overwritten
+     * @author ClaudeCode
+     */
     private void openOutputStream(boolean append) {
         try {
             outputStream = new FileOutputStream(filePath.toRealPath().toString(), append);

@@ -31,7 +31,20 @@ import uk.co.jackoftrades.middle.objects.ObjectKind;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Loads the relevant data-file entries into {@link ItemObject} objects by driving the
+ * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
+ * the generated grammar code and the game, implementing the shared
+ * {@link Parser} contract (Java port of the equivalent C data-file parser).
+ *
+ * @author ClaudeCode
+ */
 public class ItemObjectReader implements Parser<ItemObject> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -56,6 +69,17 @@ public class ItemObjectReader implements Parser<ItemObject> {
         }
     }
 
+    /**
+     * Parse the same item-object data file but return the {@link ObjectKind}
+     * view of each entry rather than the {@link ItemObject} view. The data file
+     * defines both aspects of every base item, so this is a second pass over the
+     * same grammar output exposing the "kind" template objects.
+     *
+     * @param filename the name of the file
+     * @return the list of object kinds read from the file
+     * @throws IOException if the file cannot be read
+     * @author ClaudeCode
+     */
     public @NotNull List<ObjectKind> parseKinds(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);

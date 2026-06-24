@@ -1,3 +1,22 @@
+// Parser+lexer for lib/gamedata/object_property.txt - the catalogue of
+// every object property (stat, resistance, vulnerability, immunity, flag,
+// modifier): power/mult weighting for object-power calculations, adjective
+// text, and an optional binding to a UI element in ui_entry.txt. Cf.
+// src/obj-init.c: struct file_parser object_property_parser
+// (obj-init.c:3473).
+//
+// POTENTIAL PROBLEMS (latent - not currently triggered):
+//
+//   1. object_property.txt's own header explicitly documents bindui: as
+//      repeatable ("This field can appear multiple times to bind a
+//      property to more than one user interface element", lines 31-32),
+//      but `objProperty` matches it with `(bindUI {...})?` (at most once).
+//      No current entry actually has two bindui: lines, so this is the
+//      same documented-but-unimplemented gap as PlayerProperty.g4's
+//      `bindui`.
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar ObjectProperty;
 
 @header {
@@ -26,6 +45,7 @@ grammar ObjectProperty;
     private static final Logger logger = LogManager.getLogger();
 }
 
+// "name:<text>" - starts a new property record.
 name
         returns[String nameStr]
         :   NAME LCASE {
@@ -34,6 +54,9 @@ name
             }
         ;
 
+// "type:resistance|vulnerability|immunity|stat|flag|mod|..." - the property
+// category; must appear before code: per the file's own header. The three
+// listed synonyms are shortened to match OBJ_PROPERTY_RESIST/_VULN/_IMM.
 type
         returns[ObjPropertyType typeObj]
         :   TYPE LCASE {
@@ -56,31 +79,39 @@ type
             }
         ;
 
+// "subtype:<text>" - subtype, currently only meaningful for flag-typed properties.
 subType
         returns[String subTypeStr]
         :   SUBTYPE LCASE { $subTypeStr = $LCASE.getText(); }
         ;
 
+// "id-type:<text>" - how the property is identified, currently only used by flags.
 idType
         returns[String idTypeStr]
         :   ID_TYPE LCASE { $idTypeStr = $LCASE.getText(); }
         ;
 
+// "code:<CODE>" - the engine-internal code identifying this property
+// within its type (e.g. an OF_*/OM_*/ELEM_* name).
 code
         returns[String codeStr]
         :   CODE UCASE { $codeStr = $UCASE.getText(); }
         ;
 
+// "power:<value>" - weighting in object-power calculations.
 power
         returns[int powerInt]
         :   POWER INTEGER { $powerInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "mult:<value>" - relative value multiplier used in power calculations.
 mult
         returns[int multInt]
         :   MULT INTEGER { $multInt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "type-mult:<tval text>:<value>" - per-object-type power multiplier
+// override; can repeat (see `objProperty`'s typeMultInit map).
 typeMult
         returns[TValue tVal, int value]
         :   TYPE_MULT ty=LCASE COLON val=INTEGER {
@@ -90,16 +121,20 @@ typeMult
             }
         ;
 
+// "adjective:<text>" - adjective form, currently only used by stats.
 adjective
         returns[String adjStr]
         :   ADJECTIVE LCASE { $adjStr = $LCASE.getText(); }
         ;
 
+// "neg-adjective:<text>" - opposite-direction adjective, currently only used by stats.
 negAdjective
         returns[String negAdjStr]
         :   NEG_ADJECTIVE LCASE { $negAdjStr = $LCASE.getText(); }
         ;
 
+// "msg:<text>" - message printed on noticing this property; can repeat to
+// build up multiple lines.
 msg
         returns[String msgStr]
         :   MSG {
@@ -108,6 +143,9 @@ msg
             }
         ;
 
+// "bindui:<ui entry name>[<TAG>]:<aux 0|1>[:<value>]" - binds this property
+// to a UI element in ui_entry.txt. See top-of-file problem #1 re: the
+// multi-occurrence gap.
 bindUI
         returns[UIEntry entryObj, ObjPropertyType propType, int parm1, int parm2]
         @init {
@@ -139,11 +177,15 @@ bindUI
             })?
         ;
 
+// "desc:<text>" - extra descriptive text used in object information.
 desc
         returns[String descStr]
         :   DESC { $descStr = $DESC.getText().substring(5); }
         ;
 
+// One full property record: name, then any mix of type/code/subtype/
+// id-type/power/mult/type-mult/adjective/neg-adjective/msg (any order/
+// quantity), then an optional bindui and an optional desc.
 objProperty
         returns[ObjectProperty property]
         @init {
@@ -220,6 +262,7 @@ objProperty
 
 // immunity, vulnerability, resistance, ignore, flag, mod, stat
 
+// Top-level rule: the whole file is one or more property records.
 file
         returns[List<ObjectProperty> properties]
         @init {
@@ -230,14 +273,19 @@ file
         })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through DESC below: one literal directive-keyword token each,
+// matching the rule of the same purpose above (MSG/DESC fold the value's
+// charset into the token itself too).
 NAME
         :   'name:'
         ;
@@ -290,22 +338,28 @@ DESC
         :   'desc:' ('a'..'z' | 'A'..'Z' | ' ' | '(' | ')' | ',' | '\'')+
         ;
 
+// A (possibly negative) literal integer.
 INTEGER
         :   '-'? ('0'..'9')+
         ;
 
+// Free-running lowercase text - used for name:/type:/subtype:/id-type:/
+// adjective:/neg-adjective:/bindui:'s UI-entry-name field.
 LCASE
         :   ('a'..'z' | '_' | '0'..'9' | ' ' | '-')+
         ;
 
+// An UPPER_CASE_WITH_UNDERSCORES_OR_DIGITS symbolic name - used for code:.
 UCASE
         :   ('A'..'Z' | '_' | '0'..'9')+
         ;
 
+// Field separator within type-mult:/bindui: lines.
 COLON
         :   ':'
         ;
 
+// Brackets around bindui:'s "<ELEMENT>"/"<STAT>"-style parameterization tag.
 LESSTHAN
         :   '<'
         ;
@@ -313,3 +367,10 @@ LESSTHAN
 GREATERTHAN
         :   '>'
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Only worth doing if a future property needs more than one UI
+//      binding - change `objProperty`'s `(bindUI {...})?` to
+//      `(bindUI {...})*` and thread the results into a list/map keyed by
+//      UIEntry instead of a single wrapperObject.

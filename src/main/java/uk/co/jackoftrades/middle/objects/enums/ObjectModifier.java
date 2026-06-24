@@ -17,6 +17,17 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+/**
+ * The numeric modifiers an object can grant — stat bonuses, speed/stealth/search/
+ * infravision, the full set of elemental resistances, light radius, digging,
+ * extra blows/shots/might, damage reduction and movement. Mirrors the C
+ * original's {@code OBJ_MOD_*} list ({@code src/list-object-modifiers.h}); the
+ * commented-out block above shows an earlier naming. The active {@code OM_*}
+ * constants are self-describing and documented collectively here. {@code OM_MAX}
+ * is the count sentinel.
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectModifier {
     //    STAT_STR,
 //    STAT_INT,

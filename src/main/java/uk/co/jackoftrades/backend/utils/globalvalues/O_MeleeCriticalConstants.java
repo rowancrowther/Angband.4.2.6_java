@@ -23,16 +23,66 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "o-melee-critical" group of constants from {@code constants.txt} —
+ * the tuning for the O-combat melee critical formulae. Unlike the Vanilla
+ * weight-based system, the O system derives a critical's power and probability
+ * from scaled to-hit values expressed as numerator/denominator pairs, so several
+ * of these constants are divisors that must be non-zero. Part of the Java port
+ * of the C constants loader.
+ *
+ * @author ClaudeCode
+ */
 public class O_MeleeCriticalConstants {
+    /**
+     * The data-file group tag this class consumes ({@code o-melee-critical}).
+     *
+     * @author ClaudeCode
+     */
     private final static String tag = "o-melee-critical";
 
+    /**
+     * To-hit added when calculating critical power against a debuffed target.
+     *
+     * @author ClaudeCode
+     */
     private static int debuffToh;
+    /**
+     * Numerator of the to-hit-to-power scale factor.
+     *
+     * @author ClaudeCode
+     */
     private static int powerTohSclNum;
+    /**
+     * Denominator of the to-hit-to-power scale factor (must be non-zero).
+     *
+     * @author ClaudeCode
+     */
     private static int powerTohSclDen;
+    /**
+     * Numerator of the power-to-chance scale factor.
+     *
+     * @author ClaudeCode
+     */
     private static int chancePowerSclNum;
+    /**
+     * Denominator of the power-to-chance scale factor (must be non-zero).
+     *
+     * @author ClaudeCode
+     */
     private static int chancePowerSclDen;
+    /**
+     * Additive term in the critical-chance denominator (must be non-zero).
+     *
+     * @author ClaudeCode
+     */
     private static int chanceAddDen;
 
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -111,6 +161,12 @@ public class O_MeleeCriticalConstants {
         return debuffToh;
     }
 
+    /**
+     * Store the debuff to-hit bonus. Accepted without validation.
+     *
+     * @param debuffToh the value to store
+     * @author ClaudeCode
+     */
     private static void setDebuffToh(int debuffToh) {
         // No checks - pass the value through directly
         O_MeleeCriticalConstants.debuffToh = debuffToh;
@@ -126,6 +182,12 @@ public class O_MeleeCriticalConstants {
         return powerTohSclNum;
     }
 
+    /**
+     * Store the power-scale numerator. Accepted without validation.
+     *
+     * @param powerTohSclNum the value to store
+     * @author ClaudeCode
+     */
     private static void setPowerTohSclNum(int powerTohSclNum) {
         // No checks on this, pass straight through
         O_MeleeCriticalConstants.powerTohSclNum = powerTohSclNum;
@@ -140,6 +202,17 @@ public class O_MeleeCriticalConstants {
         return powerTohSclDen;
     }
 
+    /**
+     * Store the power-scale denominator.
+     * <p>
+     * Note: a zero value only builds an (unused) error message in the original
+     * code and is not actually rejected — a latent bug that could allow a
+     * divide-by-zero downstream.
+     *
+     * @param powerTohSclDen the value to store
+     * @param name           the constant name, used only for error reporting
+     * @author ClaudeCode
+     */
     private static void setPowerTohSclDen(int powerTohSclDen, String name) {
         // Denominator - can't be zero
 
@@ -161,6 +234,12 @@ public class O_MeleeCriticalConstants {
         return chancePowerSclNum;
     }
 
+    /**
+     * Store the chance-scale numerator. Accepted without validation.
+     *
+     * @param chancePowerSclNum the value to store
+     * @author ClaudeCode
+     */
     private static void setChancePowerSclNum(int chancePowerSclNum) {
         // No checks - pass the value straight through
         O_MeleeCriticalConstants.chancePowerSclNum = chancePowerSclNum;
@@ -176,6 +255,15 @@ public class O_MeleeCriticalConstants {
         return chancePowerSclDen;
     }
 
+    /**
+     * Validate and store the chance-scale denominator. Rejects zero to prevent a
+     * divide-by-zero in the critical-chance calculation.
+     *
+     * @param chancePowerSclDen the proposed denominator
+     * @param name              the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code chancePowerSclDen == 0}
+     * @author ClaudeCode
+     */
     private static void setChancePowerSclDen(int chancePowerSclDen, String name) {
         // Denominator - can't be zero
         if (chancePowerSclDen == 0) {
@@ -198,6 +286,15 @@ public class O_MeleeCriticalConstants {
         return chanceAddDen;
     }
 
+    /**
+     * Validate and store the additive chance-denominator term. Rejects zero to
+     * prevent a divide-by-zero in the critical-chance calculation.
+     *
+     * @param chanceAddDen the proposed value
+     * @param name         the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code chanceAddDen == 0}
+     * @author ClaudeCode
+     */
     private static void setChanceAddDen(int chanceAddDen, String name) {
         // should not be zero as this may cause a divide by zero
         if (chanceAddDen == 0) {

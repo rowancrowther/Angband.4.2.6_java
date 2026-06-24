@@ -27,54 +27,266 @@ import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.util.List;
 
+/**
+ * The full definition of a kind of monster (as loaded from {@code monster.txt})
+ * — name and flavour text, its {@link MonsterBase}, combat/sense stats, spell and
+ * blow lists, generation level/rarity, display glyph, drops, companions, mimic
+ * kinds, shapes and the accumulated {@link MonsterLore}. This is the shared
+ * template behind every live {@link Monster}, and the Java port of the C
+ * original's {@code struct monster_race} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterRace {
+    /**
+     * The monster's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * Flavour/description text.
+     *
+     * @author ClaudeCode
+     */
     private String text;
+    /**
+     * The plural form of the name.
+     *
+     * @author ClaudeCode
+     */
     private String plural;
 
+    /**
+     * The base type this race belongs to.
+     *
+     * @author ClaudeCode
+     */
     private MonsterBase base;
 
+    /**
+     * Average hit points.
+     *
+     * @author ClaudeCode
+     */
     private int averageHP;
 
+    /**
+     * Armour class.
+     *
+     * @author ClaudeCode
+     */
     private int ac;
 
+    /**
+     * Sleepiness/alertness (higher = sleeps more deeply).
+     *
+     * @author ClaudeCode
+     */
     private int sleep;
+    /**
+     * Hearing acuity (range it detects noise).
+     *
+     * @author ClaudeCode
+     */
     private int hearing;
+    /**
+     * Sense of smell (range it tracks scent).
+     *
+     * @author ClaudeCode
+     */
     private int smell;
+    /**
+     * Base movement speed.
+     *
+     * @author ClaudeCode
+     */
     private int speed;
+    /**
+     * Light radius the monster emits.
+     *
+     * @author ClaudeCode
+     */
     private int light;
 
+    /**
+     * Experience awarded for killing the monster.
+     *
+     * @author ClaudeCode
+     */
     private int mexp;
 
+    /**
+     * Frequency of innate (non-spell) attacks.
+     *
+     * @author ClaudeCode
+     */
     private int freqInnate;
+    /**
+     * Frequency of spell casting.
+     *
+     * @author ClaudeCode
+     */
     private int freqSpell;
+    /**
+     * The monster's spell power.
+     *
+     * @author ClaudeCode
+     */
     private int spellPower;
 
+    /**
+     * Race flags this monster has set.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterRaceFlag> flags;
+    /**
+     * Race flags explicitly cleared for this monster (overriding its base).
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterRaceFlag> flagsOff;
+    /**
+     * The spells this monster can cast.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterSpell> spells;
 
+    /**
+     * The monster's melee blows.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterBlow> blow;
 
+    /**
+     * Native dungeon level.
+     *
+     * @author ClaudeCode
+     */
     private int level;
+    /**
+     * Rarity weighting for generation.
+     *
+     * @author ClaudeCode
+     */
     private int rarity;
 
+    /**
+     * The display glyph and colour.
+     *
+     * @author ClaudeCode
+     */
     private AngbandDisplayCharacter adc;
 
+    /**
+     * Maximum number that may exist at once (1 for uniques).
+     *
+     * @author ClaudeCode
+     */
     private int maxNum;
+    /**
+     * Current number alive.
+     *
+     * @author ClaudeCode
+     */
     private int curNum;
 
+    /**
+     * Alternate spell-cast messages for this monster.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterAltmsg> spellMessages;
+    /**
+     * Possible item drops on death.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterDrop> drops;
 
+    /**
+     * Companion races that may be generated with this monster.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterFriends> friends;
+    /**
+     * Companion base types that may be generated with this monster.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterFriendsBase> friendsBase;
 
+    /**
+     * Object kinds this monster can mimic.
+     *
+     * @author ClaudeCode
+     */
     private List<ObjectKind> mimicKinds;
 
+    /**
+     * Names of the shapes this monster can change into.
+     *
+     * @author ClaudeCode
+     */
     private List<String> shapes;
+    /**
+     * The number of available shapes.
+     *
+     * @author ClaudeCode
+     */
     private int numShapes;
 
+    /**
+     * The player's accumulated lore about this monster.
+     *
+     * @author ClaudeCode
+     */
+    private MonsterLore lore;
+
+    /**
+     * Build a fully-specified monster race from its parsed data-file fields, and
+     * register its colour-cycling animation by group/cycle name.
+     *
+     * @param name          monster name
+     * @param text          flavour text
+     * @param plural        plural name form
+     * @param base          base type
+     * @param averageHP     average hit points
+     * @param ac            armour class
+     * @param sleep         sleepiness
+     * @param hearing       hearing acuity
+     * @param smell         sense of smell
+     * @param speed         base speed
+     * @param light         emitted light radius
+     * @param mexp          experience for killing
+     * @param freqInnate    innate-attack frequency
+     * @param freqSpell     spell frequency
+     * @param spellPower    spell power
+     * @param flags         set race flags
+     * @param flagsOff      cleared race flags
+     * @param spells        castable spells
+     * @param blow          melee blows
+     * @param level         native level
+     * @param rarity        rarity weighting
+     * @param adc           display glyph/colour
+     * @param maxNum        maximum simultaneous count
+     * @param curNum        current count alive
+     * @param spellMessages alternate spell messages
+     * @param drops         death drops
+     * @param friends       companion races
+     * @param friendsBase   companion base types
+     * @param mimicKinds    mimic object kinds
+     * @param shapes        shape names
+     * @param numShapes     number of shapes
+     * @param groupName     colour-cycle group name
+     * @param cycleName     colour-cycle name
+     * @param lore          accumulated lore
+     * @author ClaudeCode
+     */
     public MonsterRace(String name, String text, String plural, MonsterBase base, int averageHP, int ac, int sleep,
                        int hearing, int smell, int speed, int light, int mexp, int freqInnate, int freqSpell,
                        int spellPower, Flag<MonsterRaceFlag> flags, Flag<MonsterRaceFlag> flagsOff,
@@ -82,7 +294,7 @@ public class MonsterRace {
                        AngbandDisplayCharacter adc, int maxNum, int curNum, List<MonsterAltmsg> spellMessages,
                        List<MonsterDrop> drops, List<MonsterFriends> friends, List<MonsterFriendsBase> friendsBase,
                        List<ObjectKind> mimicKinds, List<String> shapes, int numShapes,
-                       String groupName, String cycleName) {
+                       String groupName, String cycleName, MonsterLore lore) {
         this.name = name;
         this.text = text;
         this.plural = plural;
@@ -114,22 +326,52 @@ public class MonsterRace {
         this.mimicKinds = mimicKinds;
         this.shapes = shapes;
         this.numShapes = numShapes;
+        this.lore = lore;
         VisualsColourCyclesByRace.setCycleForRace(this, groupName, cycleName);
     }
 
+    /**
+     * Set this race's accumulated lore.
+     *
+     * @param lore the lore to attach
+     * @author ClaudeCode
+     */
+    public void setLore(MonsterLore lore) {
+        this.lore = lore;
+    }
+
+    /**
+     * Test-only constructor producing a bare race with an empty flag set.
+     *
+     * @author ClaudeCode
+     */
     @TestOnly
     public MonsterRace() {
         flags = new Flag<>(MonsterRaceFlag.class);
     }
 
+    /**
+     * @return this race's set race flags
+     * @author ClaudeCode
+     */
     public Flag<MonsterRaceFlag> getFlags() {
         return flags;
     }
 
+    /**
+     * @return this race's name
+     * @author ClaudeCode
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * Resolve this race's companion ("friends") entries by pointing each back at
+     * this race. Called after all races are loaded.
+     *
+     * @author ClaudeCode
+     */
     public void setFriends() {
         for (MonsterFriends friend : friends) {
             friend.setRace(this);

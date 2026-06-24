@@ -28,9 +28,39 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+/**
+ * The "quark" table: a deduplicating store that maps small integer keys to
+ * strings. This is the Java port of Angband's quark subsystem
+ * ({@code src/z-quark.c}), which the C game uses to keep frequently repeated
+ * strings (such as inscriptions) in one place and refer to them cheaply by an
+ * integer handle rather than copying the text around.
+ * <p>
+ * Implemented as an {@link AngbandModule} so it participates in the game's
+ * init/cleanup lifecycle. New keys are always allocated above the current
+ * maximum so that removing an entry never causes a later {@link #add(String)}
+ * to accidentally reuse a stale key.
+ *
+ * @author ClaudeCode
+ */
 public class Quark implements AngbandModule {
+    /**
+     * This module's display name, set during {@link #init()}.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * The key-to-string table; insertion-ordered so iteration is stable.
+     * {@code null} until {@link #init()} runs and again after {@link #cleanup()}.
+     *
+     * @author ClaudeCode
+     */
     private Map<Integer, String> quarks;
+    /**
+     * Logger used to report misuse (e.g. operating on an uninitialised table).
+     *
+     * @author ClaudeCode
+     */
     private final Logger logger = LogManager.getLogger();
 
     /**

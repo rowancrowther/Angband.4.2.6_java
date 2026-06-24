@@ -1,3 +1,11 @@
+// Parser for lib/user/lore.txt - the player's per-save monster-knowledge
+// record (sightings/kills/deaths, which blows/flags/spells/drops/friends/
+// mimicry have been observed for each monster). Paired with LoreLexer.g4.
+// Cf. src/mon-init.c's lore_parser (mon-init.c:2646) and its directive
+// table (~mon-init.c:2520-2540) - this is also the format used by
+// src/tests/parse/lore.c, which reuses monster.txt's own parser with the
+// lore-specific finish/cleanup swapped in.
+
 parser grammar LoreGrammar;
 options { tokenVocab = LoreLexer; }
 
@@ -27,11 +35,14 @@ options { tokenVocab = LoreLexer; }
     import java.util.Map;
 }
 
+// "name:<text>" - starts a new monster lore record; identifies the
+// monster.txt race this lore belongs to.
 name
         returns[String nameString]
         :   NAME MONSTER_NAME { $nameString = $MONSTER_NAME.getText(); }
         ;
 
+// "counts:<sightings>:<deaths>:<kills>:<wake>:<ignore>:<innate casts>:<spell casts>".
 counts
         returns[int sightings, int deaths, int kills, int wake, int ignore, int innate, int spell]
         :   COUNTS sig=INTEGER COLON dea=INTEGER COLON kil=INTEGER COLON wak=INTEGER COLON ign=INTEGER COLON
@@ -46,6 +57,10 @@ counts
             }
         ;
 
+// "blow:<METHOD>:<EFFECT>:<dice>:<times seen>:<blow index>" - one observed
+// attack; can repeat (see `monsterLore`'s blows map).
+// Blow index field is never used as we are using actual instantiated objects
+// instead of an index to the relevant list
 blow
         returns[MonsterBlow monBlow, Integer timesSeen]
         :   BLOW BLOW_MODE_VALUES {
@@ -60,6 +75,7 @@ blow
             }
         ;
 
+// "flags:<RF_FLAG> [| <RF_FLAG> ...]" - race flags observed for this monster.
 flags
         returns[Flag<MonsterRaceFlag> loreFlags]
         @init {
@@ -75,6 +91,7 @@ flags
             })*
         ;
 
+// "spells:<RSF_CODE> [| <RSF_CODE> ...]" - spells observed cast by this monster.
 spells
         returns[Flag<MonsterSpell> spellFlags]
         @init {
@@ -90,6 +107,7 @@ spells
             })*
         ;
 
+// "base:<monster_base.txt name>" - the observed base template, if known.
 base
         returns[MonsterBase baseObj]
         :   BASE MONSTER_NAME {
@@ -98,6 +116,8 @@ base
             }
         ;
 
+// "drop:<tval text>:<sval/kind name>:<chance>:<min>:<max>" - a specific
+// observed drop; can repeat (see `monsterLore`'s drops list).
 drop
         returns[MonsterDrop monsterDrop]
         @init {
@@ -120,6 +140,8 @@ drop
             }
         ;
 
+// "drop-base:<tval text>:<chance>:<min>:<max>" - an observed drop of any
+// item of the given base type; can repeat.
 dropBase
         returns[MonsterDrop monsterDropBase]
         @init {
@@ -138,6 +160,8 @@ dropBase
             }
         ;
 
+// "friends:<chance>:<dice>:<monster name>[:<group role>]" - an observed
+// group-member monster; can repeat.
 friends
         returns[MonsterFriends monsterFriends]
         @init {
@@ -160,11 +184,13 @@ friends
                 sidesOfDice = temp.getSides();
                 friendsName = $fName.getText();
             } (COLON role=FRIENDS_NAME {
-                String raw = $role.getText();
+                String raw = $role.getText().toUpperCase();
                 friendsRole = MonsterGroupRole.valueOf("MON_GROUP_" + raw);
             })?
         ;
 
+// "friends-base:<chance>:<dice>:<monster_base.txt name>[:<group role>]" -
+// an observed group-member monster of a given base; can repeat.
 friendsBase
         returns[MonsterFriendsBase baseFriend]
         @init {
@@ -189,6 +215,9 @@ friendsBase
             })?
         ;
 
+// "mimic:<tval text>:<sval/kind name>" - an observed item-kind this
+// monster has been seen disguised as; can repeat (see `monsterLore`'s
+// mimics list).
 mimic
         returns[ObjectKind kind]
         :   MIMIC TVAL COLON STRING {
@@ -199,8 +228,10 @@ mimic
             }
         ;
 
+// One full lore record: name, then any mix of the directives above in any
+// order/quantity.
 monsterLore
-        returns[MonsterRace race, MonsterLore lore]
+        returns[MonsterLore lore]
         @init {
             int sights = 0;
             int deaths = 0;
@@ -223,6 +254,7 @@ monsterLore
             List<MonsterFriendsBase> baseFriends = new ArrayList<>();
             List<ObjectKind> mimics = new ArrayList<>();
             MonsterBase monsterBase = null;
+            MonsterRace race = null;
         }
         @after {
             MonsterMimic mimicInit = new MonsterMimic(mimics);
@@ -234,8 +266,9 @@ monsterLore
                                     flags, spells, drops,
                                     friends, baseFriends, mm,
                                     blows, monsterBase);
+            race.setLore($Lore);
         }
-        :   name { $race = GameConstants.lookupMonsterRace($name.nameString); }
+        :   name { race = GameConstants.lookupMonsterRace($name.nameString); }
         (   counts {
                 sights = $counts.sightings;
                 deaths = $counts.deaths;
@@ -271,7 +304,15 @@ monsterLore
             }
         )+;
 
+// Top-level rule: the whole file is one or more lore records.
+//
+// BUG: no @init initializes loreEntries and no action adds each
+// monsterLore match to it - see top-of-file problem #1. $loreEntries is
+// always null.
 file
         returns[List<MonsterLore> loreEntries]
-        :   monsterLore+ EOF
+        @init {
+            $loreEntries = new ArrayList<>();
+        }
+        :   (monsterLore { $loreEntries.add($monsterLore.lore); })+ EOF
         ;

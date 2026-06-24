@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.middle.effect;
 
+/**
+ * The sub-type families an {@link uk.co.jackoftrades.middle.enums.EffectEnum}
+ * effect can belong to — projection, timed effect, nourishment, summon, stat,
+ * enchant, shapechange, earthquake, glyph, teleport, etc. The sub-type selects
+ * which payload an {@link EffectSubTypeWrapper} carries. The constants are
+ * self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum EffectSubTypeEnum {
     EST_NONE,
     EST_PROJ,

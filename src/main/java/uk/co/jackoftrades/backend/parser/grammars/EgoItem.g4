@@ -1,3 +1,27 @@
+// Parser+lexer for lib/gamedata/ego_item.txt - every ego item type (Holy
+// Avenger, of Resistance, ...): which object kinds it can apply to,
+// combat/value bonuses (and their minimums), flags granted/removed,
+// brands/slays, a possible activation, and rarity/allocation. Cf.
+// src/obj-init.c: struct file_parser ego_parser (obj-init.c:2675).
+//
+// Much more robust than ItemObject.g4's effect_block: `egoItem`'s `(...)+ `
+// loop accepts any mix/repetition of directives, and brand/slay/item
+// accumulate correctly via map .put() calls. The `curse` rule is
+// deliberately commented out with an explicit "No curses in the file -
+// reinstate if needed later" note - confirmed accurate, ego_item.txt has
+// no curse: lines, so this is a documented, intentional gap rather than
+// an oversight.
+//
+// POTENTIAL PROBLEMS (minor):
+//
+//   1. `flags` ends with a trailing `OR?` to tolerate a dangling "|" at
+//      end of line - confirmed needed (e.g. "flags:FREE_ACT |", line 949).
+//      `flags_off` has no equivalent trailing OR?, but ego_item.txt only
+//      has a single flags-off: line and it doesn't end in "|", so this
+//      asymmetry is latent rather than active.
+//
+// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+
 grammar EgoItem;
 
 @header {
@@ -33,11 +57,13 @@ grammar EgoItem;
     private static final Logger logger = LogManager.getLogger();
 }
 
+// "name:<text>" - starts a new ego item record.
 name
         returns[String nameStr]
         :   NAME TEXT { $nameStr = $TEXT.getText(); }
         ;
 
+// "info:<cost dice>:<rating dice>" - cost adjustment and power rating.
 info
         returns[Random costDS, Random ratingDS]
         :   INFO cost=diceString COLON rating=diceString {
@@ -46,6 +72,7 @@ info
             }
         ;
 
+// "alloc:<rarity dice>:<min level> to <max level>" - generation allocation.
 alloc
         returns[Random commonInt, int minLev, int maxLev]
         :   ALLOC diceString COLON level=TEXT {
@@ -61,11 +88,14 @@ alloc
             }
         ;
 
+// A dice-string field value, parsed via the shared Random.parseStr() (see
+// Random.g4).
 diceString
         returns[Random diceStr]
         :   ds=DICE_STRING { $diceStr = Random.parseStr($ds.getText()); } //logger.trace("Parsing " + $diceStr); }
         ;
 
+// "combat:<to-hit>:<to-dam>:<to-ac>" - combat bonus dice this ego grants.
 combat
         returns[Random tohStr, Random todStr, Random toaStr]
         :   COMBAT toh=diceString COLON tod=diceString COLON toa=diceString {
@@ -75,6 +105,7 @@ combat
             }
         ;
 
+// "min-combat:<to-hit>:<to-dam>:<to-ac>" - minimum guaranteed combat bonus.
 minCombat
         returns[Random tohStr, Random todStr, Random toaStr]
         :   MIN_COMBAT toh=diceString COLON tod=diceString COLON toa=diceString {
@@ -84,6 +115,7 @@ minCombat
             }
         ;
 
+// "type:<tval text>" - an object type this ego can apply to.
 type
         returns[TValue typeTVal]
         :   TYPE TEXT {
@@ -92,6 +124,8 @@ type
            }
         ;
 
+// "item:<tval text>:<object kind name>" - a specific object kind this ego
+// can apply to; can repeat (see `egoItem`'s possItemInit map).
 item
         returns[TValue itemTVal, ObjectKind oKindObj]
         :   ITEM tval=TEXT COLON sval=TEXT {
@@ -102,6 +136,9 @@ item
             }
         ;
 
+// "flags:<FLAG> [| <FLAG> ...]" - flags granted by this ego; tries
+// ObjectFlag first, falls back to ObjectKindFlag. Tolerates a trailing "|"
+// (see top-of-file problem #1).
 flags
         returns[List<ObjectFlag> oFlagList, List<ObjectKindFlag> okFlagList]
         @init {
@@ -133,6 +170,8 @@ flags
             })* OR?
         ;
 
+// "flags-off:<FLAG> [| <FLAG> ...]" - flags this ego explicitly removes
+// from the base kind. No trailing-OR tolerance (see top-of-file problem #1).
 flags_off
         returns[List<ObjectFlag> oFlagList, List<ObjectKindFlag> okFlagList]
         @init {
@@ -164,6 +203,8 @@ flags_off
             })*
         ;
 
+// "values:<OM_MODIFIER>[<dice>] [| ...]" - object modifier bonus dice this
+// ego grants.
 values
         returns[Map<ObjectModifier, Random> valueMap]
         @init {
@@ -193,6 +234,7 @@ values
             })*
         ;
 
+// "min-values:<OM_MODIFIER>[<dice>] [| ...]" - minimum guaranteed modifier bonus.
 minValues
         returns[Map<ObjectModifier, Random> valueMap]
         @init {
@@ -219,6 +261,7 @@ minValues
             })*
         ;
 
+// "act:<CODE>" - the activation this ego grants, looked up in activation.txt.
 act
         returns[Activation activation]
         :   ACT actName=TEXT {
@@ -226,22 +269,28 @@ act
             }
         ;
 
+// "time:<dice string>" - recharge time for the granted activation.
 time
         returns[Random timeDS]
         :   TIME diceString { $timeDS = $diceString.diceStr; }
         ;
 
+// "brand:<CODE>" - a brand this ego grants, looked up in brand.txt; can
+// repeat (see `egoItem`'s brandsInit map).
 brand
         returns[Brand brandObj]
         :   BRAND TEXT { $brandObj = GameConstants.lookupBrandCode($TEXT.getText()); }
         ;
 
+// "slay:<CODE>" - a slay this ego grants, looked up in slay.txt; can
+// repeat (see `egoItem`'s slaysInit map).
 slay
         returns[Slay slayObj]
         :   SLAY TEXT { $slayObj = GameConstants.lookupSlay($TEXT.getText()); }
         ;
 
-/* No curses in the file - reinstate if needed later
+/* Deliberately disabled - ego_item.txt has no curse: lines (verified).
+   No curses in the file - reinstate if needed later
 
 curse
         returns[Map<Curse, CurseData> curseMap]
@@ -258,11 +307,14 @@ curse
             }
         ; */
 
+// "desc:<text>" - flavour description; can repeat to build up multiple lines.
 desc
         returns[String descStr]
         :   DESC TEXT { $descStr = $TEXT.getText(); }
         ;
 
+// One full ego item record: name, then any mix of the directives above in
+// any order/quantity.
 egoItem
         returns[EgoItem egoItemObj]
         @init {
@@ -351,6 +403,7 @@ egoItem
         |   desc { descInit = descInit + $desc.descStr; })+
         ;
 
+// Top-level rule: the whole file is one or more ego item records.
 file
         returns[List<EgoItem> egoItems]
         @init {
@@ -359,14 +412,19 @@ file
         : (egoItem { $egoItems.add($egoItem.egoItemObj); })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// NAME through DESC below: one literal directive-keyword token each,
+// matching the rule of the same purpose above. CURSE is lexed but unused
+// (the `curse` rule is deliberately disabled - see that rule's comment).
 NAME
         :   'name:'
         ;
@@ -434,19 +492,31 @@ CURSE
 DESC    :   'desc:'
         ;
 
+// Field separator used throughout most directives.
 COLON
         :   ':'
         ;
 
+// A dice-string fragment (digits/sign/d/M) - fed to Random.parseStr() via `diceString`.
 DICE_STRING
         :   ('-' | '0'..'9' | '+' | 'd' | 'M' | 'm')+
         ;
 
+// Free-running general-purpose text - used for nearly every field's value
+// (names, flag/tval/modifier names, descriptions); includes '[' ']' so
+// values:/min-values:'s "MODIFIER[dice]" tokens come through as one TEXT.
 TEXT
         :   ('A'..'Z' | 'a'..'z' | ' ' | '_'| '(' | ')' | '-' | '*' | ('0'..'9')
             | ',' | '.' | '\'' | 'ó' | 'û' | '[' | ']' | '+')+
         ;
 
+// The '|' separator between entries on a flags:/flags-off:/values:/
+// min-values: line, with optional surrounding spaces.
 OR
         :   ' '? '|' ' '?
         ;
+
+// POTENTIAL SOLUTIONS
+//
+//   1. Only worth doing if a flags-off: line ever ends with a trailing
+//      "|" - add the same trailing `OR?` to `flags_off` that `flags` already has.

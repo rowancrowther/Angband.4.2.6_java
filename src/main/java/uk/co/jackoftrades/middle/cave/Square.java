@@ -30,15 +30,64 @@ import uk.co.jackoftrades.middle.player.Player;
 import java.util.ArrayList;
 import java.util.Iterator;
 
+/**
+ * A single dungeon grid's contents: its terrain {@link Feature}, the per-grid
+ * {@link SquareEnum} info flags, lighting, the occupying monster (or player), the
+ * object {@link Pile} and any {@link Trap}s. The large family of {@code isXxx()}
+ * predicates are convenience tests over the feature and info flags. This is the
+ * Java port of the C original's {@code struct square} and the {@code square_*}
+ * predicates ({@code src/cave.h} / {@code src/cave-square.c}).
+ *
+ * @author ClaudeCode
+ */
 public class Square {
+    /**
+     * The terrain feature occupying this grid.
+     *
+     * @author ClaudeCode
+     */
     private Feature feat;
+    /**
+     * Per-grid info flags (seen, view, room, vault, generation hints, …).
+     *
+     * @author ClaudeCode
+     */
     private final Flag<SquareEnum> info;
 
+    /**
+     * Current light intensity of this grid (>0 means lit).
+     *
+     * @author ClaudeCode
+     */
     private int light;
+    /**
+     * Occupant index: positive for a monster, negative for the player, 0 if empty.
+     *
+     * @author ClaudeCode
+     */
     private int monsterIndex;
+    /**
+     * The pile of objects lying on this grid.
+     *
+     * @author ClaudeCode
+     */
     private Pile objectPile;
+    /**
+     * The traps present on this grid.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<Trap> traps;
 
+    /**
+     * Build a square with the given feature, light level and occupant, starting
+     * with empty info flags, an empty object pile and no traps.
+     *
+     * @param feature      the terrain feature
+     * @param light        the initial light level
+     * @param monsterIndex the occupant index (monster &gt; 0, player &lt; 0, 0 if empty)
+     * @author ClaudeCode
+     */
     public Square(Feature feature, int light, int monsterIndex) {
         this.feat = feature;
         this.light = light;
@@ -1062,6 +1111,15 @@ public class Square {
     void setFeature(@NotNull Feature feature) {
         feat = feature; }
 
+    /**
+     * Test-only helper that populates this square with a known fixture. When
+     * {@code full} is true the square becomes a lit floor occupied by a monster,
+     * carrying three objects, a trap and all info flags set; otherwise it becomes
+     * an empty, dark, unknown square holding the player.
+     *
+     * @param full whether to build the fully-populated fixture
+     * @author ClaudeCode
+     */
     @TestOnly
     void setUpTest(boolean full) {
         if (objectPile == null)

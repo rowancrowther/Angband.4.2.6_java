@@ -19,6 +19,16 @@ package uk.co.jackoftrades.middle.objects.enums;
 
 import org.jetbrains.annotations.Contract;
 
+/**
+ * Flags applied to an object <em>kind</em> (the template) rather than to an
+ * individual item — controlling random generation (extra resistances/sustains/
+ * powers), instant-artifact status, display hints (show dice/multiplier), ammo
+ * compatibility and elemental ignore. Mirrors the C original's {@code KF_*}
+ * kind flags ({@code src/list-kind-flags.h}); the constants are self-describing
+ * and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum ObjectKindFlag {
     KF_NONE(""),
     KF_RAND_HI_RES(""),
@@ -44,13 +54,28 @@ public enum ObjectKindFlag {
 
     KF_MAX("");
 
+    /**
+     * Optional descriptive string associated with the flag (often empty).
+     *
+     * @author ClaudeCode
+     */
     private String flag;
 
+    /**
+     * Bind a kind flag to its descriptive string.
+     *
+     * @param flag the descriptive string
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     ObjectKindFlag(String flag) {
         this.flag = flag;
     }
 
+    /**
+     * @return this flag's descriptive string
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     public String getFlag() {
         return flag;

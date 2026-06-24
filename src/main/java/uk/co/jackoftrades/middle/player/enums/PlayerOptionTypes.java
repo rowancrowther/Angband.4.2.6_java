@@ -17,6 +17,35 @@
 
 package uk.co.jackoftrades.middle.player.enums;
 
+/**
+ * The categories a {@link PlayerOption} can belong to, controlling how and where an
+ * option is presented and how it is treated by birth and scoring.
+ *
+ * <p>Mirrors the C option-page groupings. The category decides which options menu an
+ * entry appears on and whether enabling it has side effects (e.g. flagging a character
+ * as having cheated).
+ *
+ * @author ClaudeCode
+ */
 public enum PlayerOptionTypes {
-    SPECIAL, CHEAT, BIRTH, SCORE, INTERFACE
+    /**
+     * Internal / non-user options, e.g. the {@code OP_none} placeholder.
+     */
+    SPECIAL,
+    /**
+     * Wizard/debug "cheat" options; using them marks the character.
+     */
+    CHEAT,
+    /**
+     * Birth options — chosen at character creation and fixed for that game.
+     */
+    BIRTH,
+    /**
+     * Competition/score options that affect the high-score table.
+     */
+    SCORE,
+    /**
+     * Interface and display preferences.
+     */
+    INTERFACE
 }

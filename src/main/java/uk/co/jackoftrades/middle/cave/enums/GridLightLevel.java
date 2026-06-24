@@ -17,10 +17,24 @@
 
 package uk.co.jackoftrades.middle.cave.enums;
 
+/**
+ * The lighting states a dungeon grid can be drawn in, mirroring the
+ * {@code LIGHTING_*} constants of the C original. These select which colour
+ * variant a feature uses when displayed (see {@code ColourTranslation}).
+ *
+ * @author ClaudeCode
+ */
 public enum GridLightLevel {
+    /**
+     * In the player's line of sight (ambient daylight/level light). @author ClaudeCode
+     */
     LIGHTING_LOS,
+    /** Lit by the player's torch. @author ClaudeCode */
     LIGHTING_TORCH,
+    /** Permanently lit (e.g. a lit room). @author ClaudeCode */
     LIGHTING_LIT,
+    /** Dark / unlit. @author ClaudeCode */
     LIGHTING_DARK,
+    /** Count sentinel (number of lighting states). @author ClaudeCode */
     LIGHTING_MAX
 }

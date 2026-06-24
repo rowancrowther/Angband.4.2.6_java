@@ -17,10 +17,24 @@
 
 package uk.co.jackoftrades.middle.enums;
 
+/**
+ * How a "nourish" (food) effect changes the player's food level — increase by,
+ * decrease by, set to, or increase up to a value. Mirrors the nourish-mode
+ * parameter of the C original's effect code.
+ *
+ * @author ClaudeCode
+ */
 public enum EffectNourish {
+    /**
+     * No change. @author ClaudeCode
+     */
     EN_NONE,
+    /** Increase food by a given amount. @author ClaudeCode */
     EN_INC_BY,
+    /** Decrease food by a given amount. @author ClaudeCode */
     EN_DEC_BY,
+    /** Set food to a given value. @author ClaudeCode */
     EN_SET_TO,
+    /** Increase food up to (but not beyond) a given value. @author ClaudeCode */
     EN_INC_TO
 }

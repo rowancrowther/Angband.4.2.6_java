@@ -21,7 +21,21 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * Default {@link QuitAux} implementation: the standard way the game terminates.
+ * It corresponds to the C original's {@code quit_aux} hook ({@code src/z-util.c}),
+ * which lets the front end substitute its own shutdown behaviour. The actual
+ * {@code System.exit} is currently commented out so that the partially-ported
+ * game does not kill the JVM during development/testing.
+ *
+ * @author ClaudeCode
+ */
 public class Quit implements QuitAux {
+    /**
+     * Logger used to record the quit message before (eventually) exiting.
+     *
+     * @author ClaudeCode
+     */
     private final Logger logger = LogManager.getLogger();
 
     /**

@@ -24,17 +24,82 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "mon-gen" group of constants from {@code constants.txt} — the
+ * monster-generation tuning: spawn chance, per-level minimum, town day/night
+ * populations, breeding cap, out-of-depth (OOD) chance/amount and group
+ * size/spacing. Several setters validate against
+ * {@link LevelMaxConstants#getMaxMonstersPerLevel()}, so that data is expected to
+ * be loaded first. Part of the Java port of the C constants loader.
+ *
+ * @author ClaudeCode
+ */
 public class MonsterGenerationConstants {
+    /**
+     * The data-file group tag this class consumes ({@code mon-gen}).
+     *
+     * @author ClaudeCode
+     */
     private final static String constantsTag = "mon-gen";
+    /**
+     * 1-in-{@code chance} probability that a new monster is generated.
+     *
+     * @author ClaudeCode
+     */
     private static int chance;
+    /**
+     * Minimum number of monsters generated on a level.
+     *
+     * @author ClaudeCode
+     */
     private static int levelMin;
+    /**
+     * Number of townsfolk generated during the day.
+     *
+     * @author ClaudeCode
+     */
     private static int townDay;
+    /**
+     * Number of townsfolk generated during the night.
+     *
+     * @author ClaudeCode
+     */
     private static int townNight;
+    /**
+     * Maximum number of breeding monsters allowed on a level.
+     *
+     * @author ClaudeCode
+     */
     private static int reproMax;
+    /**
+     * 1-in-{@code oodChance} probability that a monster is out of its normal depth.
+     *
+     * @author ClaudeCode
+     */
     private static int oodChance;
+    /**
+     * Maximum number of levels out of depth a monster may be generated.
+     *
+     * @author ClaudeCode
+     */
     private static int oodAmount;
+    /**
+     * Maximum number of monsters in a single group.
+     *
+     * @author ClaudeCode
+     */
     private static int groupMax;
+    /**
+     * Maximum distance a group may generate from a related group.
+     *
+     * @author ClaudeCode
+     */
     private static int groupDist;
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -48,6 +113,14 @@ public class MonsterGenerationConstants {
         return chance;
     }
 
+    /**
+     * Validate and store the spawn chance. Rejects values {@code <= 0}.
+     *
+     * @param chanceVal the proposed 1-in-N chance
+     * @param tag       the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code chanceVal <= 0}
+     * @author ClaudeCode
+     */
     private static void setChance(int chanceVal, @NotNull String tag) throws IllegalArgumentException {
         if (chanceVal <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was " + constantsTag + ":" + tag + ":" + chanceVal;
@@ -134,6 +207,14 @@ public class MonsterGenerationConstants {
         }
     }
 
+    /**
+     * Validate and store the per-level monster minimum. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed minimum
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setLevelMin(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Input was " + constantsTag + ":" + tag + ":" + value;
@@ -155,6 +236,15 @@ public class MonsterGenerationConstants {
         return levelMin;
     }
 
+    /**
+     * Validate and store the daytime town population. Must be between 0 and the
+     * per-level monster maximum.
+     *
+     * @param value the proposed count
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if out of the allowed range
+     * @author ClaudeCode
+     */
     private static void setTownDay(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
             String message = "Invalid integer value found in constants.txt file, should have been between 1 and "
@@ -177,6 +267,15 @@ public class MonsterGenerationConstants {
         return townDay;
     }
 
+    /**
+     * Validate and store the night-time town population. Must be between 0 and
+     * the per-level monster maximum.
+     *
+     * @param value the proposed count
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if out of the allowed range
+     * @author ClaudeCode
+     */
     private static void setTownNight(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value
@@ -201,6 +300,15 @@ public class MonsterGenerationConstants {
         return townNight;
     }
 
+    /**
+     * Validate and store the breeding-monster cap. Must be between 0 and the
+     * per-level monster maximum.
+     *
+     * @param value the proposed cap
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if out of the allowed range
+     * @author ClaudeCode
+     */
     private static void setReproMax(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value
@@ -225,6 +333,14 @@ public class MonsterGenerationConstants {
         return reproMax;
     }
 
+    /**
+     * Validate and store the out-of-depth chance. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed 1-in-N chance
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setOodChance(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value
@@ -247,6 +363,14 @@ public class MonsterGenerationConstants {
         return oodChance;
     }
 
+    /**
+     * Validate and store the out-of-depth amount. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed maximum levels out of depth
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setOodAmount(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value
@@ -269,6 +393,15 @@ public class MonsterGenerationConstants {
         return oodAmount;
     }
 
+    /**
+     * Validate and store the maximum group size. Must be between 1 and the
+     * per-level monster maximum.
+     *
+     * @param value the proposed group size
+     * @param tag   the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if out of the allowed range
+     * @author ClaudeCode
+     */
     private static void setGroupMax(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value
@@ -293,6 +426,14 @@ public class MonsterGenerationConstants {
         return groupMax;
     }
 
+    /**
+     * Validate and store the maximum inter-group distance. Rejects values {@code <= 0}.
+     *
+     * @param value the proposed distance
+     * @param tag   the constant name, used only for error reporting
+     * @throws IllegalArgumentException if {@code value <= 0}
+     * @author ClaudeCode
+     */
     private static void setGroupDist(int value, @NotNull String tag) {
         if (value <= 0) {
             String message = "Invalid switch value found in constants.txt file. Value was " + value

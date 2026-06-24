@@ -39,25 +39,117 @@ import java.util.ArrayList;
 import java.util.Iterator;
 
 
+/**
+ * The fully-resolved "what should be drawn here" view of a single dungeon grid:
+ * the visible monster (or none), terrain feature, object(s), traps and lighting,
+ * taking into account the player's knowledge, line of sight and hallucination.
+ * This is the Java port of the C original's {@code grid_data} struct and its
+ * {@code map_info()} routine ({@code src/cave-map.c}), which the display layer
+ * consults to decide each cell's glyph and colour.
+ *
+ * @author ClaudeCode
+ */
 public class GridData {
+    /**
+     * Logger used to report out-of-bounds/invalid grid queries.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The visible monster on this grid, or {@code null} if none is shown.
+     *
+     * @author ClaudeCode
+     */
     private Monster monster;
+    /**
+     * Index of a (possibly hallucinated) monster to display.
+     *
+     * @author ClaudeCode
+     */
     private int monsterIndex;
+    /**
+     * The terrain feature to display (after any mimic resolution).
+     *
+     * @author ClaudeCode
+     */
     private Feature feature;
+    /**
+     * The first/topmost object kind on this grid, or {@code null} if none.
+     *
+     * @author ClaudeCode
+     */
     private ObjectKind firstKind;
+    /**
+     * The object kinds present on this grid.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<ObjectKind> objectKindList;
+    /**
+     * The traps shown on this grid.
+     *
+     * @author ClaudeCode
+     */
     private ArrayList<Trap> trapList = new ArrayList<>();
 
+    /**
+     * True when more than one object is present (so a "pile" should be shown).
+     *
+     * @author ClaudeCode
+     */
     private boolean multipleObjects;
+    /**
+     * True when there are objects the player knows about but cannot currently see.
+     *
+     * @author ClaudeCode
+     */
     private boolean unseenObjects;
+    /**
+     * True when there is money the player knows about but cannot currently see.
+     *
+     * @author ClaudeCode
+     */
     private boolean unseenMoney;
 
+    /**
+     * The lighting state used to colour this grid.
+     *
+     * @author ClaudeCode
+     */
     private GridLightLevel lighting;
+    /**
+     * Whether this grid is currently in the player's view.
+     *
+     * @author ClaudeCode
+     */
     private boolean inView;
+    /**
+     * Whether the player occupies this grid.
+     *
+     * @author ClaudeCode
+     */
     private boolean isPlayer;
+    /**
+     * Whether the player is hallucinating (which can replace the real contents).
+     *
+     * @author ClaudeCode
+     */
     private boolean hallucinate;
 
+    /**
+     * Populate this grid-data from the live caves for the given location: resolve
+     * the feature (handling mimics), determine visibility and lighting, memorise
+     * the grid, then gather the displayed trap, object(s) and monster — applying
+     * the player's ignore settings and, if hallucinating, occasionally
+     * substituting random contents. Mirrors the C original's {@code map_info()}.
+     *
+     * @param grid the dungeon grid to describe
+     * @throws Exception if the grid is out of bounds, or a monster index exceeds
+     *                   the cave's maximum
+     * @author ClaudeCode
+     */
     private void mapInfo(Loc grid) throws Exception {
         if (!GameConstants.cave.inBounds(grid)) {
             String message = "Grid location out of bounds! " + grid;

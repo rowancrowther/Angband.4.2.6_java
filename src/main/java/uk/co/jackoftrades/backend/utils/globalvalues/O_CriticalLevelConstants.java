@@ -23,17 +23,57 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
 
 import java.util.ArrayList;
 
+/**
+ * Holds the melee/ranged O-combat critical tables from {@code constants.txt}.
+ * The "O" variant is the alternative (Oangband-derived) combat system in which a
+ * critical is described by a 1/chance probability and a number of extra damage
+ * dice, plus the message shown to the player — as opposed to the weight-based
+ * Vanilla system in {@link CriticalLevelConstants}. Each parsed entry becomes an
+ * {@link O_CriticalLevel} stored in the appropriate per-combat-type list.
+ *
+ * @author ClaudeCode
+ */
 public class O_CriticalLevelConstants {
+    /**
+     * Logger used to report malformed/invalid critical-level tokens.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
+    /**
+     * Data-file group tag for O-melee critical levels.
+     *
+     * @author ClaudeCode
+     */
     private static final String meleeTag = "o-melee-critical-level";
+    /**
+     * Data-file group tag for O-ranged critical levels.
+     *
+     * @author ClaudeCode
+     */
     private static final String rangedTag = "o-range-critical-level";
+    /**
+     * Parsed O-melee critical levels, in data-file order.
+     *
+     * @author ClaudeCode
+     */
     private static final ArrayList<O_CriticalLevel> meleeCriticals = new ArrayList<>();
+    /**
+     * Parsed O-ranged critical levels, in data-file order.
+     *
+     * @author ClaudeCode
+     */
     private static final ArrayList<O_CriticalLevel> rangedCriticals = new ArrayList<>();
 
+    /**
+     * Private constructor preventing instantiation; the class is a static table holder.
+     *
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     private O_CriticalLevelConstants() {
     }
@@ -96,9 +136,9 @@ public class O_CriticalLevelConstants {
             throw e;
         }
 
-        MessageEnum msgt;
+        MessageType msgt;
         try {
-            msgt = MessageEnum.valueOf(tokens[2]);
+            msgt = MessageType.valueOf(tokens[2]);
         } catch (IllegalArgumentException e) {
             String message = "Invalid value of type found while parsing constants.txt. Token was: "
                     + tag + ":" + value

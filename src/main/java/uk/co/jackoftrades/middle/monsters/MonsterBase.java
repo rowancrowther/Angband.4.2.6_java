@@ -20,14 +20,59 @@ package uk.co.jackoftrades.middle.monsters;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
+/**
+ * A monster "base" template (as loaded from {@code monster_base.txt}) — a family
+ * of monsters (e.g. "dragon", "orc") sharing default flags, display glyph, pain
+ * messages and description, which individual {@link MonsterRace}s inherit from.
+ * This is the Java port of the C original's {@code struct monster_base}
+ * ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterBase {
+    /**
+     * The base's internal code name (used for cross-references).
+     *
+     * @author ClaudeCode
+     */
     private String codeName;
+    /**
+     * The base's in-game display name.
+     *
+     * @author ClaudeCode
+     */
     private String inGameName;
+    /**
+     * Default race flags shared by monsters of this base.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterRaceFlag> flags;
+    /**
+     * Default display glyph for monsters of this base.
+     *
+     * @author ClaudeCode
+     */
     private char defaultMonsterChar;
+    /**
+     * The pain-message set used by monsters of this base.
+     *
+     * @author ClaudeCode
+     */
     private MonsterPain pain;
+    /**
+     * Human-readable description of the base.
+     *
+     * @author ClaudeCode
+     */
     private String description;
 
+    /**
+     * Build a bare base with only a code name; other fields take empty/default values.
+     *
+     * @param codeName the base's code name
+     * @author ClaudeCode
+     */
     public MonsterBase(String codeName) {
         this.codeName = codeName;
         inGameName = "";
@@ -37,6 +82,17 @@ public class MonsterBase {
         description = "";
     }
 
+    /**
+     * Build a fully-specified monster base.
+     *
+     * @param codeName           the base's code name
+     * @param inGameName         the in-game display name
+     * @param flags              default race flags
+     * @param defaultMonsterChar default display glyph
+     * @param pain               pain-message set
+     * @param description        description
+     * @author ClaudeCode
+     */
     public MonsterBase(String codeName,
                        String inGameName,
                        Flag<MonsterRaceFlag> flags,
@@ -51,6 +107,10 @@ public class MonsterBase {
         this.description = description;
     }
 
+    /**
+     * @return a debug string listing this base's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "MonsterBase{" +
@@ -62,6 +122,10 @@ public class MonsterBase {
                 '}';
     }
 
+    /**
+     * @return this base's internal code name
+     * @author ClaudeCode
+     */
     public String getCodeName() {
         return codeName;
     }

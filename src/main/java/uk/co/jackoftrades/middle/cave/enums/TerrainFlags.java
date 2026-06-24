@@ -17,6 +17,15 @@
 
 package uk.co.jackoftrades.middle.cave.enums;
 
+/**
+ * The set of distinct terrain feature types a dungeon grid can be — floor, the
+ * various doors, staircases, the eight store entrances, walls/veins, rubble,
+ * lava, etc. This is the Java port of the C original's {@code FEAT_*} feature
+ * codes ({@code src/list-terrain.h}); each constant's inline comment gives its
+ * meaning.
+ *
+ * @author ClaudeCode
+ */
 public enum TerrainFlags {
     FEAT_NONE, /* nothing/unknown */
     FEAT_FLOOR, /* open floor */

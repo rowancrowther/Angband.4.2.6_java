@@ -1,5 +1,32 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code copyright (c) Rowan Crowther 2026
+ */
+
 package uk.co.jackoftrades.middle.monsters.enums;
 
+/**
+ * The fixed intrinsic flags of a monster race (unique, male/female, group AI,
+ * forced depth, multiply, resistances, immunities, status protections, race type
+ * descriptors, …), each tagged with its {@link MonsterRaceCategory} and an
+ * optional description. This is the Java port of the C original's {@code RF_*}
+ * race flags ({@code src/list-mon-race-flags.h}); the constants are
+ * self-describing and documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterRaceFlag {
     RF_NONE(MonsterRaceCategory.RFT_NONE, ""),
     RF_UNIQUE(MonsterRaceCategory.RFT_OBV, ""),
@@ -87,18 +114,43 @@ public enum MonsterRaceFlag {
     RF_NO_HOLD(MonsterRaceCategory.RFT_PROT, "held"),
     RF_NO_SLOW(MonsterRaceCategory.RFT_PROT, "slowed");
 
+    /**
+     * The category this flag belongs to (for grouping in lore/display).
+     *
+     * @author ClaudeCode
+     */
     private MonsterRaceCategory category;
+    /**
+     * Human-readable description of the property (e.g. the resisted element).
+     *
+     * @author ClaudeCode
+     */
     private String description;
 
+    /**
+     * Bind a race flag to its category and description.
+     *
+     * @param category    the flag category
+     * @param description the description
+     * @author ClaudeCode
+     */
     MonsterRaceFlag(MonsterRaceCategory category, String description) {
         this.category = category;
         this.description = description;
     }
 
+    /**
+     * @return the category this flag belongs to
+     * @author ClaudeCode
+     */
     public MonsterRaceCategory getCategory() {
         return category;
     }
 
+    /**
+     * @return the human-readable description of this flag
+     * @author ClaudeCode
+     */
     public String getDescription() {
         return description;
     }

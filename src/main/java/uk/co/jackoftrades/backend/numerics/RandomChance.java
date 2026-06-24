@@ -21,7 +21,17 @@ package uk.co.jackoftrades.backend.numerics;
  * A class representing a random chance of success, such as 12 in 13
  */
 public class RandomChance {
+    /**
+     * The {@code X} in an "X in Y" chance (number of favourable outcomes).
+     *
+     * @author ClaudeCode
+     */
     private final int numerator;
+    /**
+     * The {@code Y} in an "X in Y" chance (total number of outcomes).
+     *
+     * @author ClaudeCode
+     */
     private final int denominator;
 
     /**

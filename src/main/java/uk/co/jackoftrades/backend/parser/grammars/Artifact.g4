@@ -1,3 +1,20 @@
+// Parser+lexer for lib/gamedata/artifact.txt - every named artifact (the
+// Phial of Galadriel, Narthanc, ...): base object kind, graphics, combat/
+// armor stats, allocation, flags/modifiers/brands/slays/curses, activation,
+// and description. Cf. obj-init.c's artifact_parser (obj-init.c:3112).
+//
+// No significant problems found. This grammar leans on baking the literal
+// directive keyword into several tokens themselves (NAME/BASE_OBJECT/ACT/
+// BRAND/SLAY/MSG/DESC all match 'keyword:' plus the value as one token,
+// unlike most other grammars here which split them) and recovers the value
+// via a hardcoded `.substring(N)` per rule - verified each N against its
+// literal prefix length (e.g. "name:" -> substring(5), "base-object:" ->
+// substring(12)) and all are correct. Also verified `artifact`'s two-phase
+// structure - every non-desc field first, then one-or-more desc: lines
+// strictly at the end - against every real record in artifact.txt (the
+// only records that looked like they broke this rule had the later lines
+// commented out with '#', which doesn't count).
+
 grammar Artifact;
 
 @header {
@@ -21,6 +38,7 @@ grammar Artifact;
     import java.util.HashMap;
 }
 
+// "name:<text>" - starts a new artifact record.
 name
         returns [String nameStr]
         :   NAME {
@@ -29,6 +47,8 @@ name
         }
         ;
 
+// "base-object:<tval text>:<sval/kind name>" - the underlying object kind
+// this artifact is based on.
 baseObject
         returns[TValue tVal, String sVal]
         :   BASE_OBJECT COLON MCASE {
@@ -39,6 +59,8 @@ baseObject
             }
         ;
 
+// "graphics:<symbol>:<colour>" - display character (defaults to the base
+// kind's if absent).
 graphics
         returns[AngbandDisplayCharacter adc]
         :   GRAPHICS {
@@ -47,21 +69,25 @@ graphics
             }
         ;
 
+// "level:<value>" - native depth.
 level
         returns[int lev]
         :   LEVEL INTEGER { $lev = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "weight:<tenths of a pound>".
 weight
         returns[int wgt]
         :   WEIGHT INTEGER { $wgt = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "cost:<value>" - base shop price.
 cost
         returns[int cst]
         :   COST INTEGER { $cst = Integer.parseInt($INTEGER.getText()); }
         ;
 
+// "alloc:<rarity>:<min level> to <max level>".
 alloc
         returns[int prob, int minRange, int maxRange]
         :   ALLOC p=INTEGER COLON min=INTEGER RANGE_TO max=INTEGER {
@@ -71,6 +97,7 @@ alloc
             }
         ;
 
+// "attack:<dice>:<to-hit>:<to-dam>" - melee weapon stats.
 attack
         returns[String damage, int toH, int toD]
         :   ATTACK DICE_STRING COLON hit=INTEGER COLON dam=INTEGER {
@@ -80,6 +107,7 @@ attack
             }
         ;
 
+// "armor:<base AC>:<to-AC>".
 armour
         returns[int baseAC, int toA]
         :   ARMOUR base=INTEGER COLON plus=INTEGER {
@@ -88,6 +116,7 @@ armour
             }
         ;
 
+// "flags:<OF_FLAG> [| <OF_FLAG> ...]" - object flags this artifact has.
 flags
         returns[Flag<ObjectFlag> flag]
         @init {
@@ -102,6 +131,7 @@ flags
             })* OR?
         ;
 
+// "values:<OM_MODIFIER>[<value>] [| ...]" - object modifiers this artifact has.
 values
         returns[Map <ObjectModifier, Integer> skills]
         @init {
@@ -118,6 +148,7 @@ values
             })* OR?
         ;
 
+// "act:<CODE>" - the activation this artifact grants, looked up in activation.txt.
 act
         returns[Activation activation]
         :   ACT {
@@ -126,6 +157,7 @@ act
             }
         ;
 
+// "time:<dice or integer>" - recharge time for the activation.
 time
         returns[String dice]
         :   TIME ((DICE_STRING {
@@ -135,10 +167,14 @@ time
             }))
         ;
 
+// "desc:<text>" - flavour description; can repeat (and must be last - see
+// `artifact`'s two-phase structure).
 desc    returns[String description]
         :   DESC { $description = $DESC.getText().substring(5); }
         ;
 
+// "brand:<CODE>" - a brand this artifact grants, looked up in brand.txt;
+// can repeat (see `artifact`'s brandInit list).
 brand
         returns[Brand b]
         :   BRAND {
@@ -147,6 +183,8 @@ brand
             }
         ;
 
+// "slay:<CODE>" - a slay this artifact grants, looked up in slay.txt; can
+// repeat (see `artifact`'s slayInit list).
 slay
         returns[Slay s]
         :   SLAY {
@@ -155,6 +193,8 @@ slay
             }
         ;
 
+// "curse:<curse name>:<power>" - a curse this artifact comes with; can
+// repeat (see `artifact`'s curseInit list).
 curse
         returns[Map<Curse, CurseData> curses]
         @init {
@@ -169,11 +209,15 @@ curse
             }
         ;
 
+// "msg:<text>" - activation message; can repeat to build up multiple lines.
 msg
         returns[String message]
         :   MSG { $message = $MSG.getText().substring(4); }
         ;
 
+// One full artifact record: name, then any mix of base-object/graphics/
+// level/weight/cost/alloc/attack/armor/flags/brand/curse/slay/values/act/
+// time/msg in any order, followed by one-or-more desc: lines at the end.
 artifact
         returns[Artifact art]
         @init {
@@ -284,6 +328,7 @@ artifact
         )+
         ;
 
+// Top-level rule: the whole file is one or more artifact records.
 file
         returns[List<Artifact> artifacts]
         @init {
@@ -294,14 +339,18 @@ file
             })+ EOF
         ;
 
+// Comment line: '#' to end of line, plus any blank lines immediately after.
 COMMENT
         :   '#' (~'\n')* '\n'+ -> skip
         ;
 
+// A blank line on its own (not part of a comment block).
 EOL
         :   ' '* '\r'? '\n' -> skip
         ;
 
+// Free-running display/description text, including accented characters
+// used in some artifact/flavour names (e.g. "Thráin", "Eärendil").
 fragment MixedCase
         :   ('a'..'z' | 'A'..'Z' | 'ä' | ' ' | '\'' | '.' | ',' | 'á' | '_' | 'â' | '"'
             | '-' | 'ë' | 'û' | ';'| 'ú' | 'ö' | 'É' | '?' | 'ó' | '!' | 'é' | 'í')+
@@ -311,18 +360,26 @@ fragment LowerCase
         :   ('a'..'z')+
         ;
 
+// "name:" plus the artifact's display name, as one token - see `name`'s
+// substring(5).
 NAME
         :   'name:' MixedCase
         ;
 
+// "base-object:" plus the tval text, as one token - see `baseObject`'s substring(12).
 BASE_OBJECT
         :   'base-object:' (LowerCase | ' ')+
         ;
 
+// A whole "graphics:<symbol>:<colour>" value as one token, fixed-width so
+// `graphics`'s action can index into it by character position.
 GRAPHICS
         :   'graphics:' ('~' | '=' | '"') COLON ('y' | 'd' | 'g' | 'w')
         ;
 
+// LEVEL through CURSE below: literal directive-keyword tokens matching the
+// rule of the same purpose above (most as a bare keyword, ACT/BRAND/SLAY/
+// MSG/DESC fold the value's charset into the token itself too).
 LEVEL
         :   'level:'
         ;
@@ -383,28 +440,34 @@ DESC
         :   'desc:' MixedCase
         ;
 
+// The " to " separator in alloc:'s level-range field.
 RANGE_TO
         :   ' to '
         ;
 
+// A dice expression in the "NdM"/"N+dM"/"N+NdM" shapes used by attack:/time:.
 DICE_STRING
         :   INTEGER 'd' INTEGER
         |   INTEGER '+d' INTEGER
         |   INTEGER '+' INTEGER 'd' INTEGER
         ;
 
+// Mixed-case text - used for base-object:'s sval and values:/curse:'s name fields.
 MCASE
         :   MixedCase
         ;
 
+// A (possibly negative) literal integer.
 INTEGER
         :   MINUS? ('0'..'9')+
         ;
 
+// Field separator within base-object:/alloc:/attack:/armor:/curse: lines.
 COLON
         :   ':'
         ;
 
+// Brackets around a values: modifier's integer argument, e.g. "[4]".
 LBRACKET
         :   '['
         ;
@@ -414,6 +477,7 @@ RBRACKET
         |   '] '
         ;
 
+// The '|' separator between entries on a flags:/values: line.
 OR
         :   '|'
         ;

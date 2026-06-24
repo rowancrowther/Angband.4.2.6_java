@@ -18,20 +18,24 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Projection.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.projection;
 
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
+import org.antlr.v4.runtime.tree.TerminalNode;
+import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
-import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.middle.enums.MessageEnum;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.Projection;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class ProjectionParser extends Parser {
@@ -954,7 +958,7 @@ public class ProjectionParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class MsgtContext extends ParserRuleContext {
-        public MessageEnum sound;
+        public MessageType sound;
         public Token UCASE;
 
         public TerminalNode MSGT() {
@@ -1003,7 +1007,7 @@ public class ProjectionParser extends Parser {
                 ((MsgtContext) _localctx).UCASE = match(UCASE);
 
                 String enumTag = "MSG_" + ((MsgtContext) _localctx).UCASE.getText();
-                ((MsgtContext) _localctx).sound = MessageEnum.valueOf(enumTag);
+                ((MsgtContext) _localctx).sound = MessageType.valueOf(enumTag);
 
             }
         } catch (RecognitionException re) {
@@ -1480,7 +1484,7 @@ public class ProjectionParser extends Parser {
 
                 int dam = (((ProjectionContext) _localctx).damageCap == null) ? -1 : ((ProjectionContext) _localctx).damageCap.damCap;
 
-                MessageEnum msg = (((ProjectionContext) _localctx).msgt == null) ? null : ((ProjectionContext) _localctx).msgt.sound;
+                MessageType msg = (((ProjectionContext) _localctx).msgt == null) ? null : ((ProjectionContext) _localctx).msgt.sound;
 
                 boolean obv = ((ProjectionContext) _localctx).obvious.isObvious;
 

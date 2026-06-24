@@ -21,6 +21,16 @@ import uk.co.jackoftrades.backend.utils.Flag;
 
 import static uk.co.jackoftrades.middle.monsters.enums.MonsterSpellType.*;
 
+/**
+ * The complete set of monster spells/abilities (bolts, balls, breaths, summons,
+ * teleports, annoyances, …), each tagged with the {@link MonsterSpellType}
+ * categories it belongs to (stored as a {@link Flag} set so a spell can have
+ * several). This is the Java port of the C original's {@code RSF_*} spell list
+ * ({@code src/list-mon-spells.h}); the constants are self-describing and
+ * documented collectively here.
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterSpell {
     RSF_NONE(new MonsterSpellType[]{}),
     RSF_SHRIEK(new MonsterSpellType[]{RST_ANNOY, RST_INNATE}),
@@ -136,8 +146,20 @@ public enum MonsterSpell {
     RSF_MAX(new MonsterSpellType[]{}),
     ;
 
+    /**
+     * The set of spell-type categories this spell belongs to.
+     *
+     * @author ClaudeCode
+     */
     private final Flag<MonsterSpellType> spellTypes;
 
+    /**
+     * Bind a spell to its categories, building the {@link Flag} set from the
+     * given array.
+     *
+     * @param types the spell-type categories this spell belongs to
+     * @author ClaudeCode
+     */
     private MonsterSpell(MonsterSpellType[] types) {
         spellTypes = new Flag<>(MonsterSpellType.class);
 
@@ -146,6 +168,10 @@ public enum MonsterSpell {
         }
     }
 
+    /**
+     * @return the set of spell-type categories this spell belongs to
+     * @author ClaudeCode
+     */
     private Flag<MonsterSpellType> getTypes() {
         return spellTypes;
     }

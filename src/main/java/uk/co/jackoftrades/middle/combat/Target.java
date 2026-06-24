@@ -20,7 +20,24 @@ package uk.co.jackoftrades.middle.combat;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.monsters.Monster;
 
+/**
+ * The current attack/spell target: either a specific {@link Monster} or a bare
+ * grid {@link Loc} the player is aiming at. This is the Java port of the C
+ * original's {@code struct target} ({@code src/target.h}).
+ *
+ * @author ClaudeCode
+ */
 public class Target {
+    /**
+     * The targeted grid location.
+     *
+     * @author ClaudeCode
+     */
     private Loc grid;
+    /**
+     * The targeted monster, or {@code null} when only a grid is targeted.
+     *
+     * @author ClaudeCode
+     */
     private Monster monster;
 }

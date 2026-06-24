@@ -27,8 +27,31 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.util.Random;
 
+/**
+ * Static collection of the game's random-number helpers — the Java port of the
+ * standard Angband RNG utilities in the original C source ({@code src/z-rand.c}:
+ * {@code randint0}, {@code randint1}, {@code rand_spread}, {@code one_in_},
+ * {@code Rand_normal}, {@code damroll}, {@code m_bonus} and friends).
+ * <p>
+ * Everything is {@code static} around a single shared {@link java.util.Random}
+ * so the whole game draws from one reproducible stream, which is what makes
+ * seeded runs (and tests via {@link #stateInit(long)}) repeatable.
+ *
+ * @author ClaudeCode
+ */
 public class RandomValueUtils {
+    /**
+     * The single shared PRNG backing every helper here, so all randomness comes
+     * from one seedable stream.
+     *
+     * @author ClaudeCode
+     */
     private static final Random random = new Random();
+    /**
+     * Logger used to report illegal argument ranges before throwing.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

@@ -33,7 +33,20 @@ import java.util.List;
  * T block of text to be displayed straight to the screen.
  */
 public class TextBlock {
+    /**
+     * The ordered sequence of coloured characters making up this block; the
+     * pairing of glyph and colour is what lets a block carry per-character
+     * colouring through wrapping and output.
+     *
+     * @author ClaudeCode
+     */
     private final ArrayList<AngbandDisplayCharacter> textAndAttributes;
+    /**
+     * Logger used to report malformed append calls (e.g. mismatched
+     * string/colour lengths).
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

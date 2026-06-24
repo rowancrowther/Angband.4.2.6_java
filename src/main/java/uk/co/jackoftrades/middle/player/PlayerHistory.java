@@ -20,6 +20,21 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+/**
+ * The player's generated background history.
+ *
+ * <p>In the C original a character's biography is produced at birth by rolling through the
+ * {@link PlayerHistoryChart} / {@link PlayerHistoryEntry} graph and is stored as the resulting
+ * text; this type is the player-side holder for that outcome.
+ *
+ * <p><b>Status:</b> currently a stub — only the logger is in place while the history system is
+ * being ported.
+ *
+ * @author ClaudeCode
+ */
 public class PlayerHistory {
+    /**
+     * Logger for this type.
+     */
     private static final Logger logger = LogManager.getLogger();
 }

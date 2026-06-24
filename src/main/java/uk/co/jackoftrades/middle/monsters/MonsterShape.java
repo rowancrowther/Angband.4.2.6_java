@@ -17,8 +17,30 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+/**
+ * A shape a monster can change into — either a specific {@link MonsterRace} or
+ * (for a generic shapechange) a base race to draw from. This is the Java port of
+ * the C original's {@code struct monster_shape} ({@code src/monster.h}).
+ *
+ * @author ClaudeCode
+ */
 public class MonsterShape {
+    /**
+     * The shape's name (the target race/base name).
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * The specific race to change into, if named directly.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRace race;
+    /**
+     * The base race to draw a shape from, for generic shapechanges.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRace base;
 }

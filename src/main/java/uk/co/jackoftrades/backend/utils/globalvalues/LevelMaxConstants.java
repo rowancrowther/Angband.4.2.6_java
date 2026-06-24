@@ -24,9 +24,32 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "level-max" group of constants from {@code constants.txt}. Currently
+ * just the per-level monster cap, but kept as a switch-driven loader (like its
+ * sibling constant classes) so further per-level maxima can be added without
+ * restructuring. Part of the Java port of the C constants loader.
+ *
+ * @author ClaudeCode
+ */
 public class LevelMaxConstants {
+    /**
+     * The data-file group tag this class consumes ({@code level-max}).
+     *
+     * @author ClaudeCode
+     */
     private final static String constantsTag = "level-max";
+    /**
+     * Maximum number of monsters allowed on a single level.
+     *
+     * @author ClaudeCode
+     */
     private static int monsters;
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -91,6 +114,14 @@ public class LevelMaxConstants {
         }
     }
 
+    /**
+     * Validate and store the per-level monster cap. Rejects values {@code <= 0},
+     * since a level must be able to hold at least one monster.
+     *
+     * @param monsters the proposed maximum monsters per level
+     * @throws InvalidTokenFoundDuringParse if {@code monsters <= 0}
+     * @author ClaudeCode
+     */
     @Contract(pure = false)
     private static void setMonsters(int monsters) throws InvalidTokenFoundDuringParse {
         if (monsters <= 0) {

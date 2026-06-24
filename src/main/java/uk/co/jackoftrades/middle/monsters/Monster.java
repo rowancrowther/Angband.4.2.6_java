@@ -30,38 +30,166 @@ import uk.co.jackoftrades.middle.player.PlayerState;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A live monster on the current level — an instance of a {@link MonsterRace} with
+ * its own position, hit points, timed effects, speed/energy, status flags, held
+ * and mimicked objects, target, group membership and flow heatmap. This is the
+ * Java port of the C original's {@code struct monster} ({@code src/monster.h});
+ * contrast with {@link MonsterRace}, which is the shared template.
+ *
+ * @author ClaudeCode
+ */
 public class Monster {
+    /**
+     * The race this monster currently is.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRace monsterRace;
+    /**
+     * The race this monster originally was (before any shapechange).
+     *
+     * @author ClaudeCode
+     */
     private MonsterRace originalRace;
+    /**
+     * The monster's current grid location.
+     *
+     * @author ClaudeCode
+     */
     private Loc grid;
 
+    /**
+     * Current hit points.
+     *
+     * @author ClaudeCode
+     */
     private int hp;
+    /**
+     * Maximum hit points.
+     *
+     * @author ClaudeCode
+     */
     private int maxHp;
 
+    /**
+     * Remaining duration of each active timed effect.
+     *
+     * @author ClaudeCode
+     */
     private Map<MonTimed, Integer> mTimed;
 
+    /**
+     * The monster's current speed.
+     *
+     * @author ClaudeCode
+     */
     private int mSpeed;
+    /**
+     * Accumulated energy (the monster acts when it has enough).
+     *
+     * @author ClaudeCode
+     */
     private int energy;
 
+    /**
+     * Current distance from the player.
+     *
+     * @author ClaudeCode
+     */
     private int cDistance;
 
+    /**
+     * The monster's transient status flags.
+     *
+     * @author ClaudeCode
+     */
     private Flag<MonsterFlag> monsterFlag;
 
+    /**
+     * The object this monster is mimicking, if any.
+     *
+     * @author ClaudeCode
+     */
     private ItemObject mimickedObject;
+    /**
+     * Objects this monster is carrying (dropped on death).
+     *
+     * @author ClaudeCode
+     */
     private List<ItemObject> heldObject;
 
+    /**
+     * The colour this monster is currently drawn in.
+     *
+     * @author ClaudeCode
+     */
     private ColourType colourAttr;
 
+    /**
+     * A snapshot of the player state as known/used by this monster.
+     *
+     * @author ClaudeCode
+     */
     private PlayerState knownPState;
 
+    /**
+     * The monster's current target.
+     *
+     * @author ClaudeCode
+     */
     private Target target;
 
+    /**
+     * This monster's membership in one or more groups.
+     *
+     * @author ClaudeCode
+     */
     private List<MonsterGroupInfo> groupInfo;
+    /**
+     * The monster's personal flow/heatmap used for pathfinding.
+     *
+     * @author ClaudeCode
+     */
     private Heatmap heatmap;
 
+    /**
+     * The minimum range at which the monster prefers to engage.
+     *
+     * @author ClaudeCode
+     */
     private int minRange;
+    /**
+     * The range at which the monster fights most effectively.
+     *
+     * @author ClaudeCode
+     */
     private int bestRange;
 
+    /**
+     * Build a live monster from its full set of state fields.
+     *
+     * @param monsterRace    current race
+     * @param originalRace   original race (pre-shapechange)
+     * @param grid           current location
+     * @param hp             current hit points
+     * @param maxHp          maximum hit points
+     * @param mTimed         active timed effects
+     * @param mSpeed         current speed
+     * @param energy         accumulated energy
+     * @param cDistance      distance from the player
+     * @param monsterFlag    transient status flags
+     * @param mimickedObject mimicked object, if any
+     * @param heldObject     carried objects
+     * @param colourAttr     current draw colour
+     * @param knownPState    known player-state snapshot
+     * @param target         current target
+     * @param groupInfo      group membership
+     * @param heatmap        personal flow map
+     * @param minRange       preferred minimum engagement range
+     * @param bestRange      most-effective fighting range
+     * @author ClaudeCode
+     */
     public Monster(MonsterRace monsterRace, MonsterRace originalRace, Loc grid, int hp, int maxHp,
                    Map<MonTimed, Integer> mTimed, int mSpeed, int energy, int cDistance, Flag<MonsterFlag> monsterFlag,
                    ItemObject mimickedObject, List<ItemObject> heldObject, ColourType colourAttr,
@@ -88,10 +216,21 @@ public class Monster {
         this.bestRange = bestRange;
     }
 
+    /**
+     * @return this monster's current race
+     * @author ClaudeCode
+     */
     public MonsterRace getMonsterRace() {
         return monsterRace;
     }
 
+    /**
+     * Test whether one of this monster's transient status flags is set.
+     *
+     * @param flag the flag to test
+     * @return true if the flag is set
+     * @author ClaudeCode
+     */
     public boolean hasMonsterFlag(MonsterFlag flag) {
         return monsterFlag.has(flag);
     }

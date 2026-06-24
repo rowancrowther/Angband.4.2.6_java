@@ -21,29 +21,69 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
+/**
+ * The categories of monster spell, mirroring the C original's {@code RST_*}
+ * spell types ({@code src/list-mon-spells.h}) — bolt/ball/breath/direct (which
+ * deal damage), plus annoyance, haste, heal, tactic, escape, summon, innate and
+ * archery types. Each constant records whether spells of that type deal damage,
+ * used by monster AI to weigh offensive versus utility casting.
+ *
+ * @author ClaudeCode
+ */
 public enum MonsterSpellType {
+    /**
+     * No spell type. @author ClaudeCode
+     */
     RST_NONE(false),
+    /** A damaging bolt. @author ClaudeCode */
     RST_BOLT(true),
+    /** A damaging ball. @author ClaudeCode */
     RST_BALL(true),
+    /** A damaging breath. @author ClaudeCode */
     RST_BREATH(true),
+    /** A damaging direct attack. @author ClaudeCode */
     RST_DIRECT(true),
+    /** A non-damaging annoyance spell. @author ClaudeCode */
     RST_ANNOY(false),
+    /** A self-haste spell. @author ClaudeCode */
     RST_HASTE(false),
+    /** A self-heal spell. @author ClaudeCode */
     RST_HEAL(false),
+    /** A heal-other spell. @author ClaudeCode */
     RST_HEAL_OTHER(false),
+    /** A tactical (repositioning) spell. @author ClaudeCode */
     RST_TACTIC(false),
+    /** An escape spell. @author ClaudeCode */
     RST_ESCAPE(false),
+    /** A summoning spell. @author ClaudeCode */
     RST_SUMMON(false),
+    /** An innate (non-magical) ability. @author ClaudeCode */
     RST_INNATE(false),
+    /** A ranged archery attack. @author ClaudeCode */
     RST_ARCHERY(false);
 
+    /**
+     * Whether spells of this type deal damage.
+     *
+     * @author ClaudeCode
+     */
     private final boolean isDamage;
 
+    /**
+     * Bind a spell type to whether it is damaging.
+     *
+     * @param isDamage whether the type deals damage
+     * @author ClaudeCode
+     */
     @Contract(mutates = "this")
     private MonsterSpellType(boolean isDamage) {
         this.isDamage = isDamage;
     }
 
+    /**
+     * @return whether spells of this type deal damage
+     * @author ClaudeCode
+     */
     @Contract(pure = true)
     @CheckReturnValue
     @NotNull

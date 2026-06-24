@@ -30,7 +30,20 @@ import uk.co.jackoftrades.middle.objects.ObjectBase;
 import java.io.IOException;
 import java.util.List;
 
+/**
+ * Loads the relevant data-file entries into {@link ObjectBase} objects by driving the
+ * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
+ * the generated grammar code and the game, implementing the shared
+ * {@link Parser} contract (Java port of the equivalent C data-file parser).
+ *
+ * @author ClaudeCode
+ */
 public class ObjectBaseReader implements Parser<ObjectBase> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * @author ClaudeCode
+     */
     public static final Logger logger = LogManager.getLogger();
 
     /**

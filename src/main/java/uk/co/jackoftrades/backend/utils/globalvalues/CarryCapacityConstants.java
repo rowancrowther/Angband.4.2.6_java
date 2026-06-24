@@ -24,17 +24,73 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
+/**
+ * Holds the "carry-cap" group of tunable constants loaded from the game's
+ * {@code constants.txt} data file — the inventory/quiver/floor capacity limits.
+ * This is part of the Java port of the C original's {@code z-info}/constants
+ * parsing: each constant lives as a {@code static} so it is globally readable,
+ * and {@link #setValue(String)} is the parser callback that decodes one
+ * {@code name:value} line for this group and routes it to the matching
+ * validating setter.
+ *
+ * @author ClaudeCode
+ */
 public class CarryCapacityConstants {
+    /**
+     * The data-file group tag this class consumes ({@code carry-cap}).
+     *
+     * @author ClaudeCode
+     */
     private static final String tag = "carry-cap";
 
+    /**
+     * Maximum number of pack (inventory) slots the player can carry.
+     *
+     * @author ClaudeCode
+     */
     private static int packSize;
+    /**
+     * Maximum number of quiver slots available for ammunition.
+     *
+     * @author ClaudeCode
+     */
     private static int quiverSize;
+    /**
+     * Maximum number of missiles that fit in a single quiver slot.
+     *
+     * @author ClaudeCode
+     */
     private static int quiverSlotSize;
+    /**
+     * Multiplier applied to non-ammo thrown items when fitting them into a quiver slot.
+     *
+     * @author ClaudeCode
+     */
     private static int thrownQuiverMult;
+    /**
+     * Maximum number of items that may stack on a single floor grid.
+     *
+     * @author ClaudeCode
+     */
     private static int floorSize;
 
+    /**
+     * Logger used to report malformed/invalid constants during parsing.
+     *
+     * @author ClaudeCode
+     */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Parse and store a single {@code carry-cap} constant from the data file.
+     * The incoming value is expected as {@code name:integer}; the name selects
+     * which constant to set and each is validated before being stored.
+     *
+     * @param value the raw {@code name:value} token from {@code constants.txt}
+     * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
+     *                                      cannot be parsed, or the name is not recognised
+     * @author ClaudeCode
+     */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
 
@@ -99,6 +155,15 @@ public class CarryCapacityConstants {
         return packSize;
     }
 
+    /**
+     * Validate and store the pack size. Rejects non-positive values, since a
+     * pack with no slots would make the game unplayable.
+     *
+     * @param packSize the proposed pack size
+     * @param name     the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code packSize <= 0}
+     * @author ClaudeCode
+     */
     private static void setPackSize(int packSize, String name) throws InvalidTokenFoundDuringParse {
         if (packSize <= 0) {
             String message = "Invalid pack size imported from constants.txt. Token was: " + tag + ":" + name + ":" + packSize;
@@ -121,6 +186,14 @@ public class CarryCapacityConstants {
         return quiverSize;
     }
 
+    /**
+     * Validate and store the quiver size. Rejects non-positive values.
+     *
+     * @param quiverSize the proposed quiver size
+     * @param name       the constant name, used only for error reporting
+     * @throws InvalidTokenFoundDuringParse if {@code quiverSize <= 0}
+     * @author ClaudeCode
+     */
     private static void setQuiverSize(int quiverSize, String name) throws InvalidTokenFoundDuringParse {
         if (quiverSize <= 0) {
             String message = "Invalid quiver size imported from constants.txt. Token was: " + tag + ":" + name + ":" + quiverSize;
@@ -143,6 +216,13 @@ public class CarryCapacityConstants {
         return quiverSlotSize;
     }
 
+    /**
+     * Validate and store the per-slot quiver capacity. Rejects negative values.
+     *
+     * @param quiverSlotSize the proposed missiles-per-slot value
+     * @param name           the constant name, used only for error reporting
+     * @author ClaudeCode
+     */
     private static void setQuiverSlotSize(int quiverSlotSize, String name) {
         if (quiverSlotSize < 0) {
             String message = "Invalid quiver slot size imported from constants.txt. Token was: " + tag + ":" + name + ":" + quiverSlotSize;
@@ -165,6 +245,13 @@ public class CarryCapacityConstants {
         return thrownQuiverMult;
     }
 
+    /**
+     * Validate and store the thrown-item quiver multiplier. Rejects negative values.
+     *
+     * @param thrownQuiverMult the proposed multiplier
+     * @param name             the constant name, used only for error reporting
+     * @author ClaudeCode
+     */
     private static void setThrownQuiverMult(int thrownQuiverMult, String name) {
         if (thrownQuiverMult < 0) {
             String message = "Invalid thrown quiver multiplier imported from constants.txt. Token was: "
@@ -189,6 +276,14 @@ public class CarryCapacityConstants {
         return floorSize;
     }
 
+    /**
+     * Validate and store the floor stack size. Requires more than one item per
+     * grid (a value of 1 or less would be degenerate).
+     *
+     * @param floorSize the proposed maximum items per floor grid
+     * @param name      the constant name, used only for error reporting
+     * @author ClaudeCode
+     */
     private static void setFloorSize(int floorSize, String name) {
         if (floorSize <= 1) {
             String message = "Invalid floor stack size imported from constants.txt. Token was: "

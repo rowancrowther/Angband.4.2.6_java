@@ -20,6 +20,31 @@ package uk.co.jackoftrades.middle.player.enums;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 
+/**
+ * The catalogue of timed player statuses — the {@code TMD_*} effects such as haste, fear,
+ * poison, temporary resistances and the brand/attack buffs — each recording the screen
+ * redraws and model recalculations its onset or expiry should trigger.
+ *
+ * <p>Ports the C {@code TMD_*} timed-effect table ({@code list-player-timed.h} /
+ * {@code player-timed.c}). The numeric level of each status is stored on the player; this
+ * enum captures the <em>static</em> per-effect metadata — specifically which
+ * {@link PlayerRedraw} regions and which {@link PlayerUpkeepEnum} recalculations become dirty
+ * whenever the effect's value changes.
+ *
+ * <p><b>Why carry the flag sets here:</b> when a timed status rises or falls the engine must
+ * refresh exactly the affected display and derived state and nothing more (the dirty-region
+ * discipline described on {@link PlayerRedraw} / {@link PlayerUpkeepEnum}). Attaching those
+ * flag sets to the effect keeps the mapping declarative and in one place. Most effects only
+ * touch the status line and the bonus recalculation ({@code PR_STATUS} + {@code PU_BONUS});
+ * the notable exceptions are sense-altering statuses — e.g. {@code TMD_BLIND} and
+ * {@code TMD_IMAGE} dirty the map and monster/item views, and see-invisible / infravision
+ * additionally re-evaluate monster visibility.
+ *
+ * <p>Each constant declares its flags as plain arrays which the constructor folds into a
+ * {@link uk.co.jackoftrades.backend.utils.Flag} bitset for compact storage and querying.
+ *
+ * @author ClaudeCode
+ */
 public enum TimedEffect {
     TMD_NONE(new PlayerRedraw[]{}, new PlayerUpkeepEnum[]{}),
     TMD_FAST(new PlayerRedraw[]{PlayerRedraw.PR_STATUS}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_BONUS}),
@@ -76,9 +101,22 @@ public enum TimedEffect {
     TMD_STEALTH(new PlayerRedraw[]{PlayerRedraw.PR_STATUS}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_BONUS}),
     TMD_FREE_ACT(new PlayerRedraw[]{PlayerRedraw.PR_STATUS}, new PlayerUpkeepEnum[]{PlayerUpkeepEnum.PU_BONUS});
 
+    /**
+     * Screen regions to mark for redraw whenever this effect's level changes.
+     */
     private final Flag<PlayerRedraw> redrawFlags;
+    /** Derived quantities to mark for recalculation whenever this effect's level changes. */
     private final Flag<PlayerUpkeepEnum> upkeepFlags;
 
+    /**
+     * Folds the per-effect redraw/upkeep arrays into queryable bitsets.
+     *
+     * <p>The constants declare their flags as readable arrays; this constructor turns each
+     * into a {@link Flag} so the runtime can test and combine them cheaply.
+     *
+     * @param redrawFlags the {@link PlayerRedraw} regions this effect dirties
+     * @param upkeepFlags the {@link PlayerUpkeepEnum} recalculations this effect triggers
+     */
     private TimedEffect(PlayerRedraw @NotNull [] redrawFlags, PlayerUpkeepEnum @NotNull [] upkeepFlags) {
         this.redrawFlags = new Flag<PlayerRedraw>(PlayerRedraw.class);
         this.upkeepFlags = new Flag<PlayerUpkeepEnum>(PlayerUpkeepEnum.class);

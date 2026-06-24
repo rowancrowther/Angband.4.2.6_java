@@ -28,7 +28,17 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
  * Class to hold a single character of a particular colour
  */
 public class AngbandDisplayCharacter {
+    /**
+     * The glyph to display.
+     *
+     * @author ClaudeCode
+     */
     private final char character;
+    /**
+     * The colour the glyph is drawn in, resolved to a concrete attribute colour.
+     *
+     * @author ClaudeCode
+     */
     private final AttributeColour attributeColour;
 
     /**

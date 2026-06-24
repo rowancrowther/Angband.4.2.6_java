@@ -17,5 +17,13 @@
 
 package uk.co.jackoftrades.frontend;
 
+/**
+ * Placeholder for the front-end sound subsystem. Currently empty: a stub awaiting
+ * the port of the C original's sound hooks (e.g. {@code sound_hook} /
+ * {@code play_sound} in the platform front ends), which will let the game request
+ * named sound effects without knowing how the front end produces them.
+ *
+ * @author ClaudeCode
+ */
 public class SoundInterface {
 }

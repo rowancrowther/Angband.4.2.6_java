@@ -25,44 +25,192 @@ import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.ValueEnum;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlagName;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The definition of a curse (as loaded from {@code curse.txt}) — a negative
+ * property that can attach to objects, with the object bases it can affect, its
+ * weight/conflicts, the flags it grants, its effect and timed effect, combat
+ * penalties, value modifiers and flavour message. This is the Java port of the C
+ * original's {@code struct curse} ({@code src/object.h}); live instances pair a
+ * {@code Curse} with {@link CurseData}.
+ *
+ * @author ClaudeCode
+ */
 public class Curse {
+    /**
+     * Logger used to report malformed curse definitions.
+     *
+     * @author ClaudeCode
+     */
     private final static Logger logger = LogManager.getLogger();
 
+    /**
+     * The curse's name.
+     *
+     * @author ClaudeCode
+     */
     private String name;
+    /**
+     * Whether this curse can occur on a randomly-generated (non-artifact) item.
+     *
+     * @author ClaudeCode
+     */
     private boolean poss;
+    /**
+     * The object bases this curse may attach to.
+     *
+     * @author ClaudeCode
+     */
     private List<ObjectBase> objectBases;
+    /**
+     * The name of a curse this one conflicts with (cannot co-occur).
+     *
+     * @author ClaudeCode
+     */
     private String conflict;
+    /**
+     * Weight the curse adds (affects encumbrance/selection).
+     *
+     * @author ClaudeCode
+     */
     private int weight;
-    private List<ObjectFlagName> flags;
-    private List<ObjectFlagName> conflictFlags;
+    /**
+     * The object flags this curse grants.
+     *
+     * @author ClaudeCode
+     */
+    private List<ObjectFlag> flags;
+    /**
+     * Object flags that conflict with this curse.
+     *
+     * @author ClaudeCode
+     */
+    private List<ObjectFlag> conflictFlags;
+    /**
+     * The curse's magnitude dice, if a literal dice expression.
+     *
+     * @author ClaudeCode
+     */
     private Random dice;
+    /**
+     * The curse's magnitude as a scaling expression, if not literal dice.
+     *
+     * @author ClaudeCode
+     */
     private Expression diceExpression;
+    /**
+     * A monster race flag associated with the curse's effect.
+     *
+     * @author ClaudeCode
+     */
     private MonsterRaceFlag monsterRaceFlag;
+    /**
+     * (Unused/legacy) timed effects field.
+     *
+     * @author ClaudeCode
+     */
     private TimedEffect timedEffects;
+    /**
+     * Timing dice for the curse's recurring effect.
+     *
+     * @author ClaudeCode
+     */
     private Random time;
+    /**
+     * Human-readable description of the curse.
+     *
+     * @author ClaudeCode
+     */
     private String description;
+    /**
+     * The effect the curse triggers.
+     *
+     * @author ClaudeCode
+     */
     private EffectEnum effect;
+    /**
+     * The timed effect the curse inflicts.
+     *
+     * @author ClaudeCode
+     */
     private TimedEffect timedEffect;
+    /**
+     * To-hit penalty imposed by the curse.
+     *
+     * @author ClaudeCode
+     */
     private int combatToHit;
+    /**
+     * To-damage penalty imposed by the curse.
+     *
+     * @author ClaudeCode
+     */
     private int combatDam;
+    /**
+     * Armour-class penalty imposed by the curse.
+     *
+     * @author ClaudeCode
+     */
     private int combatAC;
+    /**
+     * Scaling expression used to compute curse values.
+     *
+     * @author ClaudeCode
+     */
     private Expression expression;
+    /**
+     * Modifiers the curse applies to object combat values.
+     *
+     * @author ClaudeCode
+     */
     private Map<ValueEnum, Integer> valueCollection;
+    /**
+     * Flavour message shown when the curse triggers.
+     *
+     * @author ClaudeCode
+     */
     private String message;
 
+    /**
+     * Build a curse from its parsed data-file fields. The {@code dice} string is
+     * interpreted as a literal dice expression, an expression placeholder
+     * (prefixed with {@code $}), or empty (no dice).
+     *
+     * @param name                curse name
+     * @param poss                whether it can occur on random items
+     * @param objectBases         affectable object bases
+     * @param weight              added weight
+     * @param flags               granted object flags
+     * @param conflict            conflicting curse name
+     * @param conflictFlags       conflicting object flags
+     * @param dice                magnitude dice string (or {@code $}-expression)
+     * @param time                timing dice string
+     * @param description         description
+     * @param effect              triggered effect
+     * @param monsterRaceFlag     associated race flag
+     * @param timedEffect         inflicted timed effect
+     * @param combatToHit         to-hit penalty
+     * @param combatDam           to-damage penalty
+     * @param combatAC            armour-class penalty
+     * @param expressionChar      expression placeholder letter
+     * @param expressionEffect    expression base type
+     * @param expressionOperation expression operation chain
+     * @param valueCollection     combat-value modifiers
+     * @param message             trigger message
+     * @author ClaudeCode
+     */
     public Curse(String name,
                  boolean poss,
                  List<ObjectBase> objectBases,
                  int weight,
-                 List<ObjectFlagName> flags,
+                 List<ObjectFlag> flags,
                  String conflict,
-                 List<ObjectFlagName> conflictFlags,
+                 List<ObjectFlag> conflictFlags,
                  String dice,
                  String time,
                  String description,
@@ -111,10 +259,18 @@ public class Curse {
         this.message = message;
     }
 
+    /**
+     * @return the curse's name
+     * @author ClaudeCode
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * @return a debug string listing this curse's fields
+     * @author ClaudeCode
+     */
     @Override
     public String toString() {
         return "Curse{" +

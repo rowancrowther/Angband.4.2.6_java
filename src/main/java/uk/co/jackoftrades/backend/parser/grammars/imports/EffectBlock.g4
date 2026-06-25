@@ -12,11 +12,11 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
  * A standalone, domain-class-free parser for the type Effect looking at:
  *   - effect:type[:subtype[:radius[:other parameter]]]
@@ -29,7 +29,7 @@
  *     $<char> variable placeholder. If there are no expression lines
  *     then the dice is simple, and does not have a $ in it.
  *   - expr:<expressionChar>:<base>:<operation>.
- *   - expr-msg:<free text>
+ *   - effect-msg:<free text>
  *
  * It should be noted that different grammar files use different parts of
  * the Effect system, but all should create an Effect object.
@@ -44,7 +44,7 @@ parser grammar EffectBlock;
 options { tokenVocab = EffectBlockLexer; }
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
  * "effect:<TYPE>[:<SUBTYPE>[:<radius>[:<other parameter>]]]"
  *
@@ -70,7 +70,7 @@ effect
         ;
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
  * "time:<dice string>" - the storage of the random string of the
  * time part of the effect. This is a straight dice string with
@@ -84,10 +84,10 @@ time
         ;
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
  * "effect-yx:<y>:<x>" - the range of the effect in the
- * verical (y) and horizontal (x) directions about the effects
+ * vertical (y) and horizontal (x) directions about the effects
  * centre.
  */
 effectYX
@@ -99,9 +99,10 @@ effectYX
         ;
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
- * "dice:<simple dice string>" or "dice:<complex dice string> <expr>"
+ * "dice:<simple dice string>" or "dice:<complex dice string>" followed
+ * by one or more "<expr>" lines.
  *
  * a simple dice string is one which is based on the full dice string
  * "-<int>+<int>d<int>M<int>"
@@ -143,8 +144,9 @@ dice
                 $diceString = $val.getText();
             })
         ;
+
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
  * "expr:<letter>:<BASE_NAME>:<operation>"
  *
@@ -155,7 +157,7 @@ dice
  * BASE_NAME is the name from the EffectBaseType enum, which states
  * which base quantity to use
  *
- * operation is a (operand integer)* space delimited string
+ * operation is a (operator operand)* space delimited string
  */
 expr
         returns[String exprChar, String baseName, String operation]
@@ -167,30 +169,37 @@ expr
         ;
 
 /*
- * @Author Rowan Crowther
+ * @author Rowan Crowther
  *
- * "expr:<letter>:<BASE_NAME>:<operation>"
+ * "effect-msg:<free-text to EOL>"
  *
+ * free-text is the message text, it includes any special characters,
+ * and spaces.
  */
 effectMsg
         returns[String message]
         :   EFFECT_MESSAGE FREE_TEXT { $message = $FREE_TEXT.getText(); }
         ;
 
-// @Author ClaudeCode
-// Groups one effect: line with its optional dice:/expr: lines - the most
-// common/general shape across the 7 surveyed files (matches Curse.g4's
-// actual dice/expr optionality, and is what TrapGrammar.g4's own
-// effectBlock should look like per that file's own documented problem
-// #4). Does not cover Shape.g4's effect_msg or Activations.g4's power/
-// effect_yx/msg interleaving - those directive types aren't tokenized by
-// this module at all (by design - see top-of-file comment), so a consumer
-// needing them must override this rule entirely rather than extend it.
-
-// @Author RowanCrowther
-// As there can be multiple expressions per effect, this has been changed
-// into three caret deliminated strings, one for each of the expression char
-// the expression base name, and the expression operation.
+/*
+ * @author Rowan Crowther
+ *
+ * This 'block' pulls together all the previous parts of an effect.
+ *
+ * effect/(effect-yx or dice)/time/effect-msg - IN THAT ORDER
+ *
+ * expr is no longer part of this block as it is pulled in by
+ * dice to ensure the dice/expr linking is kept clean.
+ *
+ * As there can be multiple expr lines for each dice, the values are
+ * turned into a caret delimited string, for separating by the calling
+ * reader.
+ *
+ * Does not include power - this may need to be amended in future
+ * to include that, but at present there is only one class,
+ * Activations, which uses that, so we may just override in that
+ * class.
+ */
 effectBlock
         returns[String typeInit, String subtypeWrapperInit, String radius, String other,
                 String diceString, String yVal, String xVal, String expressionChars, String expressionBase,

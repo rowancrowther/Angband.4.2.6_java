@@ -1,3 +1,20 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
 // Combined lexer+parser for Angband's dice-string mini-language (e.g. "2d8",
 // "1+1d3", "M80", "4d$S", "$Dd5"). Unlike the other grammars in this
 // directory, this one isn't tied to a single lib/gamedata file or a single

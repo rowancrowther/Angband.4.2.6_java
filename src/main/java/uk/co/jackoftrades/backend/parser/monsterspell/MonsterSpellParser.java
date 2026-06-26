@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterSpell.g4 by ANTLR 4.13.2
@@ -907,9 +907,12 @@ public class MonsterSpellParser extends Parser {
 
             Random radiusRnd = Random.parseStr(radiusInit);
 
-            ((EffectBlockContext) _localctx).eff = new Effect(parm1Init, yInit, xInit, diceStringInit,
+            // TODO(ClaudeCode): EffectBlock not yet re-plumbed to the current Effect constructor API;
+            // this multi-arg Effect(...) overload no longer exists. Commented out to keep the build green.
+            /*((EffectBlockContext) _localctx).eff = new Effect(parm1Init, yInit, xInit, diceStringInit,
                     parm1Init.getSubType(), wrapperInit,
-                    radiusRnd, parm4Init, expInit);
+                    radiusRnd, parm4Init, expInit);*/
+            ((EffectBlockContext) _localctx).eff = null;
 
         } catch (RecognitionException re) {
             _localctx.exception = re;

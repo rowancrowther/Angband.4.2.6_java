@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/shape.txt - player shapechange forms
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/shape.txt - player shapechange forms
 // (werewolf, bear, etc): combat/skill modifiers, gained object/player
 // flags and resistances, an on-shapechange effect, and bonus melee blows.
 // Cf. src/init.c: struct file_parser shape_parser (init.c:3335), directive
@@ -210,10 +227,13 @@ effect_block
             Expression expInit = null;
         }
         @after {
-            $effObj = new Effect(effectEnum, diceInit, yInit, xInit,
+            // TODO(ClaudeCode): EffectBlock not yet re-plumbed to the current Effect constructor API;
+            // this Effect(...) overload no longer exists. Commented out to keep the build green.
+            /*$effObj = new Effect(effectEnum, diceInit, yInit, xInit,
                                  value,
                                  radiusInit, otherParameter, msgInit,
-                                 visMsgInit, expInit);
+                                 visMsgInit, expInit);*/
+            $effObj = null;
         }
         :   effect {
                 effectEnum = $effect.effectEnum;

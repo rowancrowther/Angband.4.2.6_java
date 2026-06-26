@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -236,7 +236,7 @@ public class Curse {
             this.dice = null;
             this.diceExpression = null;
         } else if (!dice.startsWith("$")) {
-            //this.dice = Parser.parseDiceString(dice);
+            //this.dice = Reader.parseDiceString(dice);
             this.diceExpression = null;
         } else {
             this.dice = null;
@@ -246,7 +246,7 @@ public class Curse {
         if (time.isBlank())
             this.time = null;
 //        else
-//            this.time = Parser.parseDiceString(time);
+//            this.time = Reader.parseDiceString(time);
         this.description = description;
         this.effect = effect;
         this.monsterRaceFlag = monsterRaceFlag;

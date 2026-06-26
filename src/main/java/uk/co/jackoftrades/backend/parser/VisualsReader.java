@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -33,7 +33,7 @@ import java.io.IOException;
  * Loads the visuals/colour-cycling configuration into a single
  * {@link VisualsCycler} by driving the ANTLR-generated {@code VisualsLexer}/
  * {@code VisualsParser}. Unlike the other readers it does not implement
- * {@link Parser}, because the visuals file produces one aggregate object rather
+ * {@link Reader}, because the visuals file produces one aggregate object rather
  * than a list of entries (Java port of the C {@code flavor}/visuals loading).
  *
  * @author ClaudeCode

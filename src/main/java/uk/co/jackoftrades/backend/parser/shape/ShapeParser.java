@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Shape.g4 by ANTLR 4.13.2
@@ -1526,10 +1526,13 @@ public class ShapeParser extends Parser {
 			}
 			_ctx.stop = _input.LT(-1);
 
-            ((Effect_blockContext) _localctx).effObj = new Effect(effectEnum, diceInit, yInit, xInit,
+            // TODO(ClaudeCode): EffectBlock not yet re-plumbed to the current Effect constructor API;
+            // this multi-arg Effect(...) overload no longer exists. Commented out to keep the build green.
+            /*((Effect_blockContext) _localctx).effObj = new Effect(effectEnum, diceInit, yInit, xInit,
                     value,
                     radiusInit, otherParameter, msgInit,
-                    visMsgInit, expInit);
+                    visMsgInit, expInit);*/
+            ((Effect_blockContext) _localctx).effObj = null;
 
         } catch (RecognitionException re) {
 			_localctx.exception = re;

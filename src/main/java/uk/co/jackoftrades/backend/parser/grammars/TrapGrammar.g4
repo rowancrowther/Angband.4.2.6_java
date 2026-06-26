@@ -1,4 +1,21 @@
-// Parser for lib/gamedata/trap.txt, producing one uk.co.jackoftrades.middle.cave.TrapKind
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader for lib/gamedata/trap.txt, producing one uk.co.jackoftrades.middle.cave.TrapKind
 // per record (traps, runes/glyphs, decoys, door locks, etc). Mirrors the C
 // parser in src/init.c: struct file_parser trap_parser (init.c:1989), whose
 // directive table is registered in init_parse_trap() (init.c:1907-1928) and
@@ -201,7 +218,7 @@ name
 // "graphics:<glyph>:<colour>" - cf. parse_trap_graphics (init.c:1528).
 graphics
         returns[AngbandDisplayCharacter adc]
-        :   GRAPHICS GLYPH_VALUES COLON_SWITCH COLOUR_VALUES {
+        :   GRAPHICS GLYPH_VALUES GLYPH_COLON_SWITCH COLOUR_VALUES {
                 char graphicsChr = $GLYPH_VALUES.getText().charAt(0);
                 String colour = $COLOUR_VALUES.getText();
                 ColourType colourType;

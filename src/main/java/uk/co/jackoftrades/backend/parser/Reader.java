@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -24,13 +24,13 @@ import java.io.IOException;
 import java.util.List;
 
 /**
- * <code>Parser</code> interface</p>
+ * <code>Reader</code> interface</p>
  * <p>
  * Interface for all the ANTLR4 parsers. Only one function <code>ArrayList&lt;Object&gt; parse(String filename)</code>.
  * This function should run the file through the generated ANTLR4 code and return an array list of Object, which will
  * be further parsed by the relevant calling class (should be <code>GameConstants</code>).
  */
-public interface Parser<T> {
+public interface Reader<T> {
     /**
      * Run the parser and generate the ArrayList from the file
      *

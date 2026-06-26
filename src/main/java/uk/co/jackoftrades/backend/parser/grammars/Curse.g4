@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/curse.txt - every curse that can be applied
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/curse.txt - every curse that can be applied
 // to an object (Curse of Vulnerability, Curse of Siren Song, ...): which
 // object bases it can afflict, weight/combat adjustments, a randomly-
 // triggered effect, flags/value-modifiers it imposes, and other curses it

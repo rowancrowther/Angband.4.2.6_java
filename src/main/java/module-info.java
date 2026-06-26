@@ -11,6 +11,7 @@ module uk.co.jackoftrades {
     requires com.sun.jna.platform;
     requires com.sun.jna;
     requires java.sql;
+    requires org.jspecify;
 
     opens uk.co.jackoftrades to javafx.fxml;
     exports uk.co.jackoftrades;

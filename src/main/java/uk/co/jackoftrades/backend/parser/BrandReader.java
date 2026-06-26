@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -35,11 +35,11 @@ import java.util.List;
  * driving the ANTLR-generated {@code BrandLexer}/{@code BrandParser}. This is the
  * Java port of the C original's {@code brand.txt} parser; it is the thin
  * hand-written bridge between the generated grammar code and the rest of the
- * game, implementing the shared {@link Parser} contract.
+ * game, implementing the shared {@link Reader} contract.
  *
  * @author ClaudeCode
  */
-public class BrandReader implements Parser<Brand> {
+public class BrandReader implements Reader<Brand> {
     /**
      * Logger used to report file-loading failures.
      *

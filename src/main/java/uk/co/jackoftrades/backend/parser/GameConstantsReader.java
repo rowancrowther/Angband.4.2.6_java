@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -33,7 +33,7 @@ import java.util.ArrayList;
 /**
  * Class to read in <code>constants.txt</code> file and pass back to the <code>GameConstants</code> object.
  */
-public class GameConstantsReader implements Parser {
+public class GameConstantsReader implements Reader {
     /**
      * Logger used to report file-loading failures.
      *

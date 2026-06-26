@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/ego_item.txt - every ego item type (Holy
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/ego_item.txt - every ego item type (Holy
 // Avenger, of Resistance, ...): which object kinds it can apply to,
 // combat/value bonuses (and their minimums), flags granted/removed,
 // brands/slays, a possible activation, and rarity/allocation. Cf.

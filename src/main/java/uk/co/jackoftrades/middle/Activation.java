@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle;
@@ -33,50 +33,41 @@ import java.util.List;
 public class Activation {
     /**
      * The activation's name.
-     *
-     * @author ClaudeCode
      */
     private String name;
+
     /**
      * Index of this activation in the global activation table.
-     *
-     * @author ClaudeCode
      */
     private int index;
+
     /**
      * Whether using this activation requires aiming at a target.
-     *
-     * @author ClaudeCode
      */
     private boolean aim;
+
     /**
      * The minimum level associated with this activation (for rating/value).
-     *
-     * @author ClaudeCode
      */
     private int level;
+
     /**
      * The activation's power rating.
-     *
-     * @author ClaudeCode
      */
     private int power;
+
     /**
      * The chain of effects this activation runs when used.
-     *
-     * @author ClaudeCode
      */
     private List<Effect> effects;
+
     /**
      * The message shown when the activation is used.
-     *
-     * @author ClaudeCode
      */
     private String message;
+
     /**
      * Human-readable description of the activation.
-     *
-     * @author ClaudeCode
      */
     private String desc;
 
@@ -91,7 +82,6 @@ public class Activation {
      * @param effects the effects it runs
      * @param message use message
      * @param desc    description
-     * @author ClaudeCode
      */
     public Activation(String name, int index, boolean aim, int level, int power, List<Effect> effects, String message, String desc) {
         this.name = name;
@@ -105,8 +95,8 @@ public class Activation {
     }
 
     /**
+     * Getter for this activation's tag - its name
      * @return this activation's name
-     * @author ClaudeCode
      */
     public String getName() {
         return name;

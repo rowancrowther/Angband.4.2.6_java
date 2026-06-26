@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -23,22 +23,25 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.activation.ActivationsLexer;
-import uk.co.jackoftrades.backend.parser.activation.ActivationsParser;
+import uk.co.jackoftrades.backend.parser.activation.ActivationParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.activations.Activations;
+import uk.co.jackoftrades.backend.parser.grammars.activations.ActivationsLexer;
 import uk.co.jackoftrades.middle.Activation;
+import uk.co.jackoftrades.middle.effect.Effect;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
  * Loads the relevant data-file entries into {@link Activation} objects by driving the
  * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
  * the generated grammar code and the game, implementing the shared
- * {@link Parser} contract (Java port of the equivalent C data-file parser).
+ * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
  * @author ClaudeCode
  */
-public class ActivationReader implements Parser<Activation> {
+public class ActivationReader implements Reader<Activation> {
     /**
      * Logger used to report file-loading failures.
      *
@@ -54,17 +57,37 @@ public class ActivationReader implements Parser<Activation> {
      */
     @Override
     public @NotNull List<Activation> parse(@NotNull String filename) throws IOException {
+        List<ActivationParseRecord> records;
+        List<Activation> activations = new ArrayList<>();
+
         try {
             CharStream stream = CharStreams.fromFileName(filename);
             ActivationsLexer lexer = new ActivationsLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ActivationsParser parser = new ActivationsParser(tokens);
-            ActivationsParser.FileContext output = parser.file();
+            Activations parser = new Activations(tokens);
+            Activations.FileContext output = parser.file();
 
-            return output.activations;
+            records = output.records;
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
         }
+
+        int index = 0;
+        for (ActivationParseRecord record : records) {
+            String actName = record.getName();
+            int actIndex = index++;
+            boolean actAim = record.isAim();
+            int actLevel = record.getLevel();
+            int actPower = record.getPower();
+            List<Effect> actEffects = EffectBuilder.buildEffects(record.getEffects());
+            String actMessage = record.getMessage();
+            String actDesc = record.getDesc();
+
+            activations.add(new Activation(actName, actIndex, actAim,
+                    actLevel, actPower, actEffects, actMessage, actDesc));
+        }
+
+        return activations;
     }
 }

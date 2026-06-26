@@ -12,12 +12,11 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.activation;
-
+// Generated from Activations.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -36,7 +35,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(ActivationsParser.NameContext ctx) {
+    public void enterName(Activations.NameContext ctx) {
     }
 
     /**
@@ -45,7 +44,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(ActivationsParser.NameContext ctx) {
+    public void exitName(Activations.NameContext ctx) {
     }
 
     /**
@@ -54,7 +53,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAim(ActivationsParser.AimContext ctx) {
+    public void enterAim(Activations.AimContext ctx) {
     }
 
     /**
@@ -63,7 +62,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAim(ActivationsParser.AimContext ctx) {
+    public void exitAim(Activations.AimContext ctx) {
     }
 
     /**
@@ -72,7 +71,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLevel(ActivationsParser.LevelContext ctx) {
+    public void enterLevel(Activations.LevelContext ctx) {
     }
 
     /**
@@ -81,7 +80,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLevel(ActivationsParser.LevelContext ctx) {
+    public void exitLevel(Activations.LevelContext ctx) {
     }
 
     /**
@@ -90,7 +89,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPower(ActivationsParser.PowerContext ctx) {
+    public void enterPower(Activations.PowerContext ctx) {
     }
 
     /**
@@ -99,7 +98,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPower(ActivationsParser.PowerContext ctx) {
+    public void exitPower(Activations.PowerContext ctx) {
     }
 
     /**
@@ -108,7 +107,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect(ActivationsParser.EffectContext ctx) {
+    public void enterDesc(Activations.DescContext ctx) {
     }
 
     /**
@@ -117,7 +116,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect(ActivationsParser.EffectContext ctx) {
+    public void exitDesc(Activations.DescContext ctx) {
     }
 
     /**
@@ -126,7 +125,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect_yx(ActivationsParser.Effect_yxContext ctx) {
+    public void enterMsg(Activations.MsgContext ctx) {
     }
 
     /**
@@ -135,7 +134,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect_yx(ActivationsParser.Effect_yxContext ctx) {
+    public void exitMsg(Activations.MsgContext ctx) {
     }
 
     /**
@@ -144,7 +143,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDice(ActivationsParser.DiceContext ctx) {
+    public void enterActivation(Activations.ActivationContext ctx) {
     }
 
     /**
@@ -153,7 +152,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDice(ActivationsParser.DiceContext ctx) {
+    public void exitActivation(Activations.ActivationContext ctx) {
     }
 
     /**
@@ -162,7 +161,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterExpr(ActivationsParser.ExprContext ctx) {
+    public void enterFile(Activations.FileContext ctx) {
     }
 
     /**
@@ -171,7 +170,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitExpr(ActivationsParser.ExprContext ctx) {
+    public void exitFile(Activations.FileContext ctx) {
     }
 
     /**
@@ -180,7 +179,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsg(ActivationsParser.MsgContext ctx) {
+    public void enterEffect(Activations.EffectContext ctx) {
     }
 
     /**
@@ -189,7 +188,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsg(ActivationsParser.MsgContext ctx) {
+    public void exitEffect(Activations.EffectContext ctx) {
     }
 
     /**
@@ -198,7 +197,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect_block(ActivationsParser.Effect_blockContext ctx) {
+    public void enterTime(Activations.TimeContext ctx) {
     }
 
     /**
@@ -207,7 +206,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect_block(ActivationsParser.Effect_blockContext ctx) {
+    public void exitTime(Activations.TimeContext ctx) {
     }
 
     /**
@@ -216,7 +215,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(ActivationsParser.DescContext ctx) {
+    public void enterEffectYX(Activations.EffectYXContext ctx) {
     }
 
     /**
@@ -225,7 +224,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(ActivationsParser.DescContext ctx) {
+    public void exitEffectYX(Activations.EffectYXContext ctx) {
     }
 
     /**
@@ -234,7 +233,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterActivation(ActivationsParser.ActivationContext ctx) {
+    public void enterDice(Activations.DiceContext ctx) {
     }
 
     /**
@@ -243,7 +242,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitActivation(ActivationsParser.ActivationContext ctx) {
+    public void exitDice(Activations.DiceContext ctx) {
     }
 
     /**
@@ -252,7 +251,7 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(ActivationsParser.FileContext ctx) {
+    public void enterExpr(Activations.ExprContext ctx) {
     }
 
     /**
@@ -261,7 +260,43 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(ActivationsParser.FileContext ctx) {
+    public void exitExpr(Activations.ExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectMsg(Activations.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectMsg(Activations.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectBlock(Activations.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectBlock(Activations.EffectBlockContext ctx) {
     }
 
     /**
@@ -279,17 +314,24 @@ public class ActivationsBaseListener implements ActivationsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

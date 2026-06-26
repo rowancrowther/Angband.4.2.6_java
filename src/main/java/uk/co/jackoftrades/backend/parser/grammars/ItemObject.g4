@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/object.txt - the base kind for every
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/object.txt - the base kind for every
 // generated object (potions, wands, weapons, armor, ...): graphics, tval/
 // level/weight/cost, combat stats, allocation, charges/stacking, one or
 // more on-use effects, flags/modifiers/elements/slays/curses, and
@@ -346,11 +363,14 @@ effect_block
             if (effStringList.size() > 3)
                 effParmStr = effStringList.get(3);
 
-            $effObj = new Effect(effInit, diceInit, yInit, xInit,
+            // TODO(ClaudeCode): EffectBlock not yet re-plumbed to the current Effect constructor API;
+            // this Effect(...) overload no longer exists. Commented out to keep the build green.
+            /*$effObj = new Effect(effInit, diceInit, yInit, xInit,
                                  value,
                                  effRadStr, effParmStr,
                                  powerInit, msgInit, visMsgInit,
-                                 timeInit, exprObj);
+                                 timeInit, exprObj);*/
+            $effObj = null;
         }
         :   power effect {
                 powerInit = $power.powerInt;

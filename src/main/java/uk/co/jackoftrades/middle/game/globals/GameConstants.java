@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.globals;
@@ -983,7 +983,8 @@ public class GameConstants {
         try {
             monsterRaces = parser.parse(filename);
             for (MonsterRace race : monsterRaces) {
-                race.setFriends();
+                if (!(race == null))
+                    race.setFriends();
             }
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);

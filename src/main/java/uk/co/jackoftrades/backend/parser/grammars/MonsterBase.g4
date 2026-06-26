@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/monster_base.txt - the monster "templates"
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/monster_base.txt - the monster "templates"
 // (dragon, orc, spider, ...) that monster.txt entries are built on: default
 // glyph, pain-message set (from pain.txt), inherited race flags, and a
 // lore description. Cf. src/mon-init.c: struct file_parser mon_base_parser

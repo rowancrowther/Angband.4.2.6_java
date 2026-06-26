@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.numerics;
@@ -124,7 +124,7 @@ public class Random {
         this.toNegate = toNegate;
 
         // The below lines are put in to deal with the issue of negative bases not being caught by the parser.
-        // TODO: Check this in the upcoming Parser sweep
+        // TODO: Check this in the upcoming Reader sweep
         if (this.base < 0) {
             this.toNegate = true;
             this.base = this.base * -1;

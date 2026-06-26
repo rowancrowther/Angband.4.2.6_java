@@ -1,4 +1,21 @@
-// Parser+lexer for lib/gamedata/monster_spell.txt - every monster spell
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Reader+lexer for lib/gamedata/monster_spell.txt - every monster spell
 // (cast effect): a name, message type/to-hit, one-or-more effects (each
 // with optional coordinates/dice/expr), and per-power-level lore/message
 // overrides. Cf. src/mon-init.c: struct file_parser mon_spell_parser
@@ -219,9 +236,12 @@ effectBlock
 
             Random radiusRnd = Random.parseStr(radiusInit);
 
-            $eff = new Effect(parm1Init, yInit, xInit, diceStringInit,
+            // TODO(ClaudeCode): EffectBlock not yet re-plumbed to the current Effect constructor API;
+            // this Effect(...) overload no longer exists. Commented out to keep the build green.
+            /*$eff = new Effect(parm1Init, yInit, xInit, diceStringInit,
                               parm1Init.getSubType(), wrapperInit,
-                              radiusRnd, parm4Init, expInit);
+                              radiusRnd, parm4Init, expInit);*/
+            $eff = null;
         }
         :   effect {
                 parm1Init = $effect.parm1;

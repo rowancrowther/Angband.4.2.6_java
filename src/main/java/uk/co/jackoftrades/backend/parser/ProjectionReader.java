@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.parser;
@@ -35,11 +35,11 @@ import java.util.List;
  * Loads the relevant data-file entries into {@link Projection} objects by driving the
  * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
  * the generated grammar code and the game, implementing the shared
- * {@link Parser} contract (Java port of the equivalent C data-file parser).
+ * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
  * @author ClaudeCode
  */
-public class ProjectionReader implements Parser<Projection> {
+public class ProjectionReader implements Reader<Projection> {
     /**
      * Logger used to report file-loading failures.
      *

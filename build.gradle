@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 plugins {
@@ -41,6 +41,10 @@ dependencies {
     implementation("org.junit.jupiter:junit-jupiter-engine:6.1.0-M1")
     implementation("org.junit.jupiter:junit-jupiter-params:6.1.0-M1")
 
+    // Required by Gradle's JUnit Platform test runner (the launcher is not pulled in by the
+    // jupiter aggregator); version matches the JUnit 6.1.0-M1 jupiter artifacts above.
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher:6.1.0-M1")
+
     implementation("org.antlr:antlr4-runtime:4.13.2")
 
     implementation "org.jetbrains:annotations:26.1.0"
@@ -62,4 +66,8 @@ java {
 
 application {
     mainClass = 'uk.co.jackoftrades.Main'
+}
+
+test {
+    useJUnitPlatform()
 }

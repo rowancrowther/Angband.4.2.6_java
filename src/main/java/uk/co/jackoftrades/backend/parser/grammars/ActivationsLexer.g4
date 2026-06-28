@@ -34,6 +34,10 @@
 lexer grammar ActivationsLexer;
 import EffectBlockLexer, CommentsAndEol;
 
+RECORD_COUNT
+        :   'record-count:'
+        ;
+
 /*
  * @author Rowan Crowther
  *

@@ -20,6 +20,7 @@ package uk.co.jackoftrades.backend.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
@@ -57,7 +58,13 @@ public class ActivationReader implements Reader<Activation> {
      */
     @Override
     public @NotNull List<Activation> parse(@NotNull String filename) throws IOException {
-        List<ActivationParseRecord> records;
+        return parseWithResult(filename).items();
+    }
+
+    public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
+        List<ActivationParseRecord> records = new ArrayList<>();
+        int recordCount;
+        ParseErrors errorCatcher = null;
         List<Activation> activations = new ArrayList<>();
 
         try {
@@ -65,29 +72,53 @@ public class ActivationReader implements Reader<Activation> {
             ActivationsLexer lexer = new ActivationsLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             Activations parser = new Activations(tokens);
+
+            // Install the catcher
+            errorCatcher = ParseErrors.install(lexer, parser, filename);
+
             Activations.FileContext output = parser.file();
 
+            // throw any errors caught
+            errorCatcher.throwIfAny();
+
             records = output.records;
+            recordCount = output.declaredCount;
+
+            if (records.size() != recordCount) {
+                errorCatcher.add("record-count header declares " + recordCount +
+                        " but file contains " + records.size());
+            }
+
+            int index = 0;
+
+            for (ActivationParseRecord record : records) {
+                try {
+                    String actName = record.getName();
+                    int actIndex = index++;
+                    boolean actAim = record.isAim();
+                    int actLevel = record.getLevel();
+                    int actPower = record.getPower();
+                    List<Effect> actEffects = EffectBuilder.buildEffects(record.getEffects());
+                    String actMessage = record.getMessage();
+                    String actDesc = record.getDesc();
+                    activations.add(new Activation(actName, actIndex, actAim,
+                            actLevel, actPower, actEffects, actMessage, actDesc));
+                } catch (IllegalArgumentException e) {
+                    errorCatcher.add(record.getLineNumber(), e.getMessage());
+                }
+            }
+
+            errorCatcher.throwIfAny();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
+        } catch (ParseCancellationException e) {
+            // errorCatcher must be non-null as this line would not be reached
+            // otherwise
+            return new ParseResult<>(List.of(), errorCatcher.getErrors());
         }
 
-        int index = 0;
-        for (ActivationParseRecord record : records) {
-            String actName = record.getName();
-            int actIndex = index++;
-            boolean actAim = record.isAim();
-            int actLevel = record.getLevel();
-            int actPower = record.getPower();
-            List<Effect> actEffects = EffectBuilder.buildEffects(record.getEffects());
-            String actMessage = record.getMessage();
-            String actDesc = record.getDesc();
-
-            activations.add(new Activation(actName, actIndex, actAim,
-                    actLevel, actPower, actEffects, actMessage, actDesc));
-        }
-
-        return activations;
+        return new ParseResult<>(activations, errorCatcher.getErrors());
     }
+
 }

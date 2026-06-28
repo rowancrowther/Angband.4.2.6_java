@@ -15,8 +15,9 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from Activations.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.activations;
+
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -29,6 +30,24 @@ import org.antlr.v4.runtime.tree.TerminalNode;
  */
 @SuppressWarnings("CheckReturnValue")
 public class ActivationsBaseListener implements ActivationsListener {
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterRecordCount(Activations.RecordCountContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitRecordCount(Activations.RecordCountContext ctx) {
+    }
+
     /**
      * {@inheritDoc}
      *
@@ -312,26 +331,18 @@ public class ActivationsBaseListener implements ActivationsListener {
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitEveryRule(ParserRuleContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitTerminal(TerminalNode node) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitErrorNode(ErrorNode node) {
-    }
+	 */
+	@Override public void exitEveryRule(ParserRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitTerminal(TerminalNode node) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitErrorNode(ErrorNode node) { }
 }

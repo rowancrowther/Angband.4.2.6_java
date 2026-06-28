@@ -2,6 +2,12 @@
 
 # This file is used to initialize effects for random artifacts and traps
 
+# In the java port all files have item counts at the head of the file.
+# If you choose to amend the number of items, remember to amend this as
+# well or the program won't run.
+
+record-count:163
+
 # === Understanding activation.txt ===
 
 # name: effect name code

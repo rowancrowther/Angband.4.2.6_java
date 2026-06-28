@@ -15,21 +15,21 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerTimed.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playertimed;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link PlayerTimedVisitor},
+ * This class provides an empty implementation of {@link ActivationsVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlayerTimedVisitor<T> {
+public class ActivationsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ActivationsVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(PlayerTimedParser.NameContext ctx) {
+    public T visitRecordCount(Activations.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(PlayerTimedParser.DescContext ctx) {
+    public T visitName(Activations.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGrade(PlayerTimedParser.GradeContext ctx) {
+    public T visitAim(Activations.AimContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitOnEnd(PlayerTimedParser.OnEndContext ctx) {
+    public T visitLevel(Activations.LevelContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitOnIncrease(PlayerTimedParser.OnIncreaseContext ctx) {
+    public T visitPower(Activations.PowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitOnDecrease(PlayerTimedParser.OnDecreaseContext ctx) {
+    public T visitDesc(Activations.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMsgt(PlayerTimedParser.MsgtContext ctx) {
+    public T visitMsg(Activations.MsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +114,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFail(PlayerTimedParser.FailContext ctx) {
+    public T visitActivation(Activations.ActivationContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +125,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitOnBeginEffect(PlayerTimedParser.OnBeginEffectContext ctx) {
+    public T visitFile(Activations.FileContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +136,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitOnEndEffect(PlayerTimedParser.OnEndEffectContext ctx) {
+    public T visitEffect(Activations.EffectContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +147,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffectYX(PlayerTimedParser.EffectYXContext ctx) {
+    public T visitTime(Activations.TimeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +158,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffectDice(PlayerTimedParser.EffectDiceContext ctx) {
+    public T visitEffectYX(Activations.EffectYXContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +169,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffectMsg(PlayerTimedParser.EffectMsgContext ctx) {
+    public T visitDice(Activations.DiceContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +180,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitResist(PlayerTimedParser.ResistContext ctx) {
+    public T visitExpr(Activations.ExprContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +191,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBrand(PlayerTimedParser.BrandContext ctx) {
+    public T visitEffectMsg(Activations.EffectMsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -202,62 +202,7 @@ public class PlayerTimedBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSlay(PlayerTimedParser.SlayContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFlagSynonym(PlayerTimedParser.FlagSynonymContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLowerBound(PlayerTimedParser.LowerBoundContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFlags(PlayerTimedParser.FlagsContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitPlayerTimed(PlayerTimedParser.PlayerTimedContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(PlayerTimedParser.FileContext ctx) {
+    public T visitEffectBlock(Activations.EffectBlockContext ctx) {
         return visitChildren(ctx);
     }
 }

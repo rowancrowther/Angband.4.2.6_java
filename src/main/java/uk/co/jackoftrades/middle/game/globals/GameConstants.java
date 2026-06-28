@@ -436,7 +436,8 @@ public class GameConstants {
             throw e;
         }
 
-        return monsterRaces.stream().filter(mr -> name.equals(mr.getName())).findFirst().orElse(null);
+        return null;
+        // return monsterRaces.stream().filter(mr -> name.equals(mr.getName())).findFirst().orElse(null);
     }
 
     /**
@@ -890,42 +891,42 @@ public class GameConstants {
      */
     public static void init() {
         try {
-            loadGameConstants();
-            loadWorld();                // World arraylist determines maxRandDepth
-            loadProjections();
-            loadUIEntryRenderers();
-            loadUIEntryBases();         // Dependent on UIEntyRenderers
-            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
-            loadPlayerProperties();     // Dependent on UIEntry
-            loadTerrainFeatures();
-            loadObjectBases();
-            loadPain();
-            loadMonsterBases();         // Dependent on MonsterPain
-            loadSlays();                // Dependent on MonsterBases
-            loadBrands();
-            loadSummons();              // Dependent on MonsterBases
-            checkSummons();             // Check that the summons list correctly handles the fallback strings
-            loadCurses();               // Dependent on ObjectBases
-            loadPlayerShapes();
-            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
+//            loadGameConstants();
+//            loadWorld();                // World arraylist determines maxRandDepth
+//            loadProjections();
+//            loadUIEntryRenderers();
+//            loadUIEntryBases();         // Dependent on UIEntyRenderers
+//            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+//            loadPlayerProperties();     // Dependent on UIEntry
+//            loadTerrainFeatures();
+//            loadObjectBases();
+//            loadPain();
+//            loadMonsterBases();         // Dependent on MonsterPain
+//            loadSlays();                // Dependent on MonsterBases
+//            loadBrands();
+//            loadSummons();              // Dependent on MonsterBases
+//            checkSummons();             // Check that the summons list correctly handles the fallback strings
+//            loadCurses();               // Dependent on ObjectBases
+//            loadPlayerShapes();
+//            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
             loadActivations();
-            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
-            loadPlayerHistories();
-            loadBodies();
-            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
-            loadMagicRealms();
-            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
-            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
-            loadObjectProperties();     // Dependent on UIEntry
-            loadPlayerTimedProperties();
-            loadBlowMethods();
-            loadBlowEffects();
-            loadMonsterSpellTypes();
-            loadVisualCyclerTable();
-            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
-            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
-            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
-        } catch (IOException e) {
+//            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+//            loadPlayerHistories();
+//            loadBodies();
+//            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+//            loadMagicRealms();
+//            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
+//            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+//            loadObjectProperties();     // Dependent on UIEntry
+//            loadPlayerTimedProperties();
+//            loadBlowMethods();
+//            loadBlowEffects();
+//            loadMonsterSpellTypes();
+//            loadVisualCyclerTable();
+//            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
+//            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
+//            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
+        } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);

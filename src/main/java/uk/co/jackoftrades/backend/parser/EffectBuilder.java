@@ -112,22 +112,22 @@ public class EffectBuilder {
         EffectSubTypeEnum effectSubTypeEnum = effectType.getSubType();
         EffectSubTypeWrapper effectWrapper = buildWrapper(effectSubTypeEnum, tuple.get(1));
         int radius = 0;
-        if (!tuple.get(2).isEmpty())
+        if (tuple.get(2) != null && !tuple.get(2).isEmpty())
             radius = Integer.parseInt(tuple.get(2));
         int otherParameter = 0;
-        if (!tuple.get(3).isEmpty())
+        if (tuple.get(3) != null && !tuple.get(3).isEmpty())
             otherParameter = Integer.parseInt(tuple.get(3));
         String diceString = tuple.get(4);
         int yVal = 0;
-        if (!tuple.get(5).isEmpty())
+        if (tuple.get(5) != null && !tuple.get(5).isEmpty())
             yVal = Integer.parseInt(tuple.get(5));
         int xVal = 0;
-        if (!tuple.get(6).isEmpty())
+        if (tuple.get(6) != null && !tuple.get(6).isEmpty())
             xVal = Integer.parseInt(tuple.get(6));
         List<Expression> expressions = buildExpressions(tuple.get(7), tuple.get(8), tuple.get(9));
         String randomString = tuple.get(10);
         Random timeDice = null;
-        if (!randomString.isEmpty())
+        if (randomString != null && !randomString.isEmpty())
             timeDice = Random.parseStr(tuple.get(10));
         String effectMessage = tuple.get(11);
 
@@ -193,6 +193,16 @@ public class EffectBuilder {
      */
     @Nullable
     private static EffectSubTypeWrapper buildWrapper(@NotNull EffectSubTypeEnum subType, @NotNull String raw) throws IllegalArgumentException {
+        if (subType == EffectSubTypeEnum.EST_NONE)
+            return null;
+
+        if (null == raw || raw.equals("null")) {
+            String message = "Invalid value for subType " + subType;
+            IllegalArgumentException e = new IllegalArgumentException(message);
+            logger.error(message, e);
+            return null;
+        }
+
         switch (subType) {
             case EST_TMD:
                 TimedEffect timedEffect = TimedEffect.valueOf("TMD_" + raw);
@@ -257,9 +267,6 @@ public class EffectBuilder {
             case EST_SUMMON_SPEC:
                 SummonType type = SummonType.valueOf("SUM_" + raw);
                 return new EffectSubTypeWrapper(type);
-
-            case EST_NONE:
-                return null;
 
             default:
                 IllegalArgumentException exception = new IllegalArgumentException("Unknown EffectSubType: " + raw);

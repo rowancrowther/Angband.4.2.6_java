@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from Activations.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
@@ -25,6 +25,20 @@ import org.antlr.v4.runtime.tree.ParseTreeListener;
  * {@link Activations}.
  */
 public interface ActivationsListener extends ParseTreeListener {
+    /**
+     * Enter a parse tree produced by {@link Activations#recordCount}.
+     *
+     * @param ctx the parse tree
+     */
+    void enterRecordCount(Activations.RecordCountContext ctx);
+
+    /**
+     * Exit a parse tree produced by {@link Activations#recordCount}.
+     *
+     * @param ctx the parse tree
+     */
+    void exitRecordCount(Activations.RecordCountContext ctx);
+
     /**
      * Enter a parse tree produced by {@link Activations#name}.
      *

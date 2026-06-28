@@ -85,7 +85,7 @@ grade
                 String [] parts = $GRADE.getText().split(":");
                 // Ignore the first part
                 // Second part is a single character which relates to a colour
-                if (parts[1].size() = 1)
+                if (parts[1].length() == 1)
                     colInit = ColourType.findColourType(parts[1].charAt(0));
                 else
                     colInit = ColourType.findColourType(parts[1]);
@@ -377,13 +377,13 @@ playerTimed
                 //EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(t);
                 //onEndEffInit = new Effect(e, wrapper);
                 onEndEffInit = null;
-            }
+            })+ EOL*
 // Commented out as no line in gamedata file currently uses this
 //        |   effectYX
-        |   effectDice {
-                if (onEndEffInit != null)
-                    onEndEffInit.setDice($effectDice.diceStr);
-            })+ EOL*
+//        |   effectDice {
+//                if (onEndEffInit != null)
+//                    onEndEffInit.setDice($effectDice.diceStr);
+//            })+ EOL*
         ;
 
 // Top-level rule: the whole file is one or more timed-effect records.

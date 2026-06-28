@@ -119,21 +119,28 @@ public class ActivationParseRecord {
     private final List<List<String>> effects;
 
     /**
+     * Holder for the line in the source file this activation started to be parsed on
+     */
+    private final int lineNumber;
+
+    /**
      * Constructs a fully populated parse record. All fields are set at
      * construction and are immutable — the record is a snapshot of what
      * the parser extracted and is not modified afterwards.
      *
-     * @param name    activation code name
-     * @param aim     true if the activation requires aiming
-     * @param level   difficulty level
-     * @param power   relative power / recharge-time weight
-     * @param message activation message (empty string if none)
-     * @param desc    activation description
-     * @param effects list of effect-block string tuples, in parse order
+     * @param name       activation code name
+     * @param aim        true if the activation requires aiming
+     * @param level      difficulty level
+     * @param power      relative power / recharge-time weight
+     * @param message    activation message (empty string if none)
+     * @param desc       activation description
+     * @param effects    list of effect-block string tuples, in parse order
+     * @param lineNumber Line number of the first line of this activation in the
+     *                   data file
      */
     public ActivationParseRecord(String name, boolean aim, int level, int power,
                                  String message, String desc,
-                                 List<List<String>> effects) {
+                                 List<List<String>> effects, int lineNumber) {
         this.name = name;
         this.aim = aim;
         this.level = level;
@@ -141,6 +148,7 @@ public class ActivationParseRecord {
         this.message = message;
         this.desc = desc;
         this.effects = effects;
+        this.lineNumber = lineNumber;
     }
 
     /**
@@ -207,5 +215,16 @@ public class ActivationParseRecord {
      */
     public List<List<String>> getEffects() {
         return effects;
+    }
+
+    /**
+     * Getter for the line number
+     *
+     * @return the line number of the source file that this Activation record
+     * started on
+     * @author Rowan Crowther
+     */
+    public int getLineNumber() {
+        return this.lineNumber;
     }
 }

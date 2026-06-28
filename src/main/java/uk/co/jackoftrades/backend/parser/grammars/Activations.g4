@@ -50,6 +50,17 @@ import EffectBlock;
 /*
  * @author Rowan Crowther
  *
+ * "record-count:<INTEGER>" number of total records in this file. Remember
+ * to change this if you add/remove a record from this file.
+ */
+recordCount
+        returns[int count]
+        :   RECORD_COUNT INTEGER { $count = Integer.parseInt($INTEGER.getText()); }
+        ;
+
+/*
+ * @author Rowan Crowther
+ *
  * "name:<NAME_STRING>" initial token in an activation record. This
  * string is used by other data files as a reference to get a
  * particular activation from the list of all activations.
@@ -157,7 +168,8 @@ activation
             $activationRecord =
                 new ActivationParseRecord(nameInit,
                     aimInit, levelInit, powerInit,
-                    messageInit, descInit, effectsInit);
+                    messageInit, descInit, effectsInit,
+                    $start.getLine());
         }
         :   name {
                 nameInit = $name.nameStr;
@@ -193,8 +205,11 @@ activation
  * to allow the ActivationReader to create the activations from it.
  */
 file
-        returns[List<ActivationParseRecord> records]
-        :   { $records = new ArrayList<>(); }
+        returns[List<ActivationParseRecord> records, int declaredCount]
+        :   {
+                $records = new ArrayList<>();
+            }
+            recordCount { $declaredCount = $recordCount.count; }
             (activation {
                 $records.add($activation.activationRecord);
             })+ EOF

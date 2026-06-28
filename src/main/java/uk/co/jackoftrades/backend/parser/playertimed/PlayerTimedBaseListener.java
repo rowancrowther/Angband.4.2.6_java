@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerTimed.g4 by ANTLR 4.13.2
@@ -412,35 +412,24 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterEveryRule(ParserRuleContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitEveryRule(ParserRuleContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitTerminal(TerminalNode node) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void visitErrorNode(ErrorNode node) {
-    }
+	 */
+	@Override public void enterEveryRule(ParserRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitEveryRule(ParserRuleContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitTerminal(TerminalNode node) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void visitErrorNode(ErrorNode node) { }
 }

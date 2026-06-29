@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -700,7 +700,7 @@ public class ItemObject {
         }
 
         if (thisMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getQuiverSlotSize();
+            int limit = GameConstants.getCarryCapQuiverSlotSize();
             if (itemMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
                 int difference = limit - largest;
 
@@ -716,9 +716,9 @@ public class ItemObject {
                 }
             }
         } else if (itemMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getQuiverSlotSize() / (item.tValue.isAmmo()
+            int limit = GameConstants.getCarryCapQuiverSlotSize() / (item.tValue.isAmmo()
                     ? 1
-                    : GameConstants.getThrownQuiverMult());
+                    : GameConstants.getCarryCapThrownQuiverMult());
 
             newsz1 = largest + smallest - limit;
             newsz2 = limit;

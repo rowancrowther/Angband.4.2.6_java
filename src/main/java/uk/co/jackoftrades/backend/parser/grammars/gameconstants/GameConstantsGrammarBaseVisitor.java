@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstants.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.gameconstants;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.gameconstants;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link GameConstantsVisitor},
+ * This class provides an empty implementation of {@link GameConstantsGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class GameConstantsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements GameConstantsVisitor<T> {
+public class GameConstantsGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements GameConstantsGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class GameConstantsBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSection(GameConstantsParser.SectionContext ctx) {
+    public T visitField(GameConstantsGrammar.FieldContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class GameConstantsBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFurtherValue(GameConstantsParser.FurtherValueContext ctx) {
+    public T visitLine(GameConstantsGrammar.LineContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,29 +59,7 @@ public class GameConstantsBaseVisitor<T> extends AbstractParseTreeVisitor<T> imp
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMultiValue(GameConstantsParser.MultiValueContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLine(GameConstantsParser.LineContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(GameConstantsParser.FileContext ctx) {
+    public T visitFile(GameConstantsGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

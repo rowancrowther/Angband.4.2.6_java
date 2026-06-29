@@ -23,7 +23,7 @@ import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.*;
-import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParser;
+import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
 import uk.co.jackoftrades.backend.parser.world.WorldParser;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
@@ -87,9 +87,15 @@ public class GameConstants {
     /**
      * Logger used to report load failures and premature/invalid access.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
+
+    /**
+     * Data structure for the Game Constants data read from the constants.txt
+     * game data file.
+     */
+    private static GameConstantsParseRecord gameConstantsData;
 
     /**
      * A <code>record</code> used to store String key, String value pairs for the <code>constants.txt</code> file.
@@ -112,7 +118,7 @@ public class GameConstants {
     }
 
     /**
-     * A World record used to store the details of each level of the dunteon, including the Town
+     * A World record used to store the details of each level of the dungeon, including the Town
      *
      * @param levelName the name of the level
      * @param prevLevel the name of the previous level in the List of worlds
@@ -122,39 +128,39 @@ public class GameConstants {
                         @NotNull String nextLevel) {
     }
 
-    /**
-     * Translates a list of <code>GameConstantsParser.Entry</code> to <code>Entry</code>.
-     *
-     * @param parserEntries the incoming list of <code>GameConstantsParser</code> entries.
-     * @return A List of <code>Entry</code> records
-     */
-    @NotNull
-    @Unmodifiable
-    @Contract("_ -> !null")
-    private static List<Entry> toEntries(@Nullable List<GameConstantsParser.Entry> parserEntries) {
-        if (parserEntries == null) return List.of();
+//    /**
+//     * Translates a list of <code>GameConstantsParser.Entry</code> to <code>Entry</code>.
+//     *
+//     * @param parserEntries the incoming list of <code>GameConstantsParser</code> entries.
+//     * @return A List of <code>Entry</code> records
+//     */
+//    @NotNull
+//    @Unmodifiable
+//    @Contract("_ -> !null")
+//    private static List<Entry> toEntries(@Nullable List<GameConstantsParser.Entry> parserEntries) {
+//        if (parserEntries == null) return List.of();
+//
+//        return parserEntries.stream()
+//                .map(e -> new Entry(e.key(), e.value()))
+//                .toList();
+//    }
 
-        return parserEntries.stream()
-                .map(e -> new Entry(e.key(), e.value()))
-                .toList();
-    }
-
-    /**
-     * Translates a list of <code>WorldParser.ParsedWorld</code> records to <code>World</code> records.
-     *
-     * @param worlds an ArrayList of WorldParser.ParsedWorld records.
-     * @return a List of <code>Record</code> records.
-     */
-    @NotNull
-    @Unmodifiable
-    @Contract("_ -> !null")
-    private static List<World> toWorlds(@Nullable List<WorldParser.ParsedWorld> worlds) {
-        if (worlds == null) return List.of();
-
-        return worlds.stream()
-                .map(w -> new World(w.level(), w.levelName(), w.levelUp(), w.levelDown()))
-                .toList();
-    }
+//    /**
+//     * Translates a list of <code>WorldParser.ParsedWorld</code> records to <code>World</code> records.
+//     *
+//     * @param worlds an ArrayList of WorldParser.ParsedWorld records.
+//     * @return a List of <code>Record</code> records.
+//     */
+//    @NotNull
+//    @Unmodifiable
+//    @Contract("_ -> !null")
+//    private static List<World> toWorlds(@Nullable List<WorldParser.ParsedWorld> worlds) {
+//        if (worlds == null) return List.of();
+//
+//        return worlds.stream()
+//                .map(w -> new World(w.level(), w.levelName(), w.levelUp(), w.levelDown()))
+//                .toList();
+//    }
 
     /**
      * The deepest level the dungeon can reach. Used in object and monster creations. Must be greater than 100. Setting
@@ -236,145 +242,163 @@ public class GameConstants {
     private static int objectsInObject_txt;
     private static int playerShapeMax;
 
+    private static GameConstantsData data;
+
     /*
      * Things read from constants.txt
      */
-    // Level things
-    private static int levelMonsterMax;
+    private static void loadGameConstants() throws IOException {
+        String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
+        GameConstantsReader reader = new GameConstantsReader();
+        GameConstantsParseResult result;
 
-    // Monster generation things
-    private static int allocMonsterChance;
-    private static int levelMonsterMin;
-    private static int townMonstersDay;
-    private static int townMonstersNight;
-    private static int reproMonstersNight;
-    private static int oodMonsterChance;
-    private static int oodMonsterAmount;
-    private static int monsterGroupMax;
-    private static int monsterGroupDist;
+        try {
+            result = reader.parse(filename);
+            if (result.hasErrors()) return;
+        } catch (IOException e) {
+            logger.error("Error while reading file {}", filename, e);
+            throw e;
+        }
 
-    // Monster gameplay constants
-    private static int glyphHardness;
-    private static int reproMonsterRate;
-    private static int lifeDrainPercent;
-    private static int fleeRange;
-    private static int turnRange;
+        data = result.getData();
+    }
 
-    // Dungeon generation constants
-    private static int levelRoomMax;
-    private static int levelDoorMax;
-    private static int wallPierceMax;
-    private static int tunnGridMax;
-    private static int roomItemAv;
-    private static int bothItemAv;
-    private static int bothGoldAv;
-    private static int levelPitMax;
-
-    // World shape constants
-    private static int maxDepth;
-    private static int dayLength;
-    private static int dungeonHeight;
-    private static int dungeonWidth;
-    private static int townHeight;
-    private static int townWidth;
-    private static int feelingTotal;
-    private static int feelingNeed;
-    private static int stairSkip;
-    private static int moveEnergy;
-
-    // Carry capacity constants
-    private static int packSize;
-    private static int quiverSize;
-    private static int quiverSlotSize;
-    private static int thrownQuiverMult;
-    private static int floorSize;
-
-    // Store parameters
-    private static int storeInvenMax;
-    private static int storeTurns;
-    private static int storeShuffle;
-    private static int storeMagicLevel;
-
-    // Object creation constants
-    private static int maxObjDepth;
-    private static int greatObj;
-    private static int greatEgo;
-    private static int fuelTorch;
-    private static int fuelLamp;
-    private static int defaultLamp;
-
-    // Player constants
-    private static int maxSight;
-    private static int maxRange;
-    private static int startGold;
-    private static int foodValue;
-
-    // non-O melee critical calculations
-    private static int mCritDebuffToh;
-    private static int mCritChanceWeightScl;
-    private static int mCritChanceTohScl;
-    private static int mCritChanceLevelScl;
-    private static int mCritChanceTohSkillScl;
-    private static int mCritChanceOffset;
-    private static int mCritChanceRange;
-    private static int mCritPowerWeightScl;
-    private static int mCritPowerRandom;
-
-    // non-O ranged critical calculations
-    private static int rCritDebuffToh;
-    private static int rCritChanceWeightScl;
-    private static int rCritChanceTohScl;
-    private static int rCritChanceLevelScl;
-    private static int rCritChanceLaunchedTohSkillScl;
-    private static int rCritChanceThrownTohSkillScl;
-    private static int rCritChanceOffset;
-    private static int rCritChanceRange;
-    private static int rCritPowerWeightScl;
-    private static int rCritPowerRandom;
-
-    // O melee critical calculations
-    private static int oMCritDebuffToh;
-    private static int oMCritPowerTohSclNum;
-    private static int oMCritPowerTohSclDen;
-    private static int oMCritChancePowerSclNum;
-    private static int oMCritChancePowerSclDen;
-    private static int oMCritChanceAddDen;
-
-    private static Rational oMeleeMaxAdded;
-
-    // O ranged critical calculations
-    private static int oRCritDebuffToh;
-    private static int oRCritPowerLaunchedTohSclNum;
-    private static int oRCritPowerLaunchedTohSclDen;
-    private static int oRCritPowerThrownTohSclNum;
-    private static int oRCritPowerThrownTohSclDen;
-    private static int oRCritChancePowerSclNum;
-    private static int oRCritChancePowerSclDen;
-    private static int oRCritChanceAddDen;
-
-    private static Rational oRangedMaxAdded;
-
-    /*
-     * Maps of things
-     */
-    private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
-    private static final HashMap<ObjectFlag, Object> flags = new HashMap<>();
-    private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
-    private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
-    private static final HashMap<TrapEnum, Object> traps = new HashMap<>();
-    private static final HashMap<TerrainFeatureFlags, Object> terrainFlags = new HashMap<>();
-    private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
-    private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
-
-    private static final HashMap<TerrainFlags, Feature> terrains = new HashMap<>();
-
-    // non-O melee and ranged criticals
-    private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
-    private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
-
-    // O melee and ranged criticals
-    private static final ArrayList<O_CriticalLevel> mOCriticalLevels = new ArrayList<>();
-    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
+//    // Level things
+//    private static int levelMonsterMax;
+//
+//    // Monster generation things
+//    private static int allocMonsterChance;
+//    private static int levelMonsterMin;
+//    private static int townMonstersDay;
+//    private static int townMonstersNight;
+//    private static int reproMonstersNight;
+//    private static int oodMonsterChance;
+//    private static int oodMonsterAmount;
+//    private static int monsterGroupMax;
+//    private static int monsterGroupDist;
+//
+//    // Monster gameplay constants
+//    private static int glyphHardness;
+//    private static int reproMonsterRate;
+//    private static int lifeDrainPercent;
+//    private static int fleeRange;
+//    private static int turnRange;
+//
+//    // Dungeon generation constants
+//    private static int levelRoomMax;
+//    private static int levelDoorMax;
+//    private static int wallPierceMax;
+//    private static int tunnGridMax;
+//    private static int roomItemAv;
+//    private static int bothItemAv;
+//    private static int bothGoldAv;
+//    private static int levelPitMax;
+//
+//    // World shape constants
+//    private static int maxDepth;
+//    private static int dayLength;
+//    private static int dungeonHeight;
+//    private static int dungeonWidth;
+//    private static int townHeight;
+//    private static int townWidth;
+//    private static int feelingTotal;
+//    private static int feelingNeed;
+//    private static int stairSkip;
+//    private static int moveEnergy;
+//
+//    // Carry capacity constants
+//    private static int packSize;
+//    private static int quiverSize;
+//    private static int quiverSlotSize;
+//    private static int thrownQuiverMult;
+//    private static int floorSize;
+//
+//    // Store parameters
+//    private static int storeInvenMax;
+//    private static int storeTurns;
+//    private static int storeShuffle;
+//    private static int storeMagicLevel;
+//
+//    // Object creation constants
+//    private static int maxObjDepth;
+//    private static int greatObj;
+//    private static int greatEgo;
+//    private static int fuelTorch;
+//    private static int fuelLamp;
+//    private static int defaultLamp;
+//
+//    // Player constants
+//    private static int maxSight;
+//    private static int maxRange;
+//    private static int startGold;
+//    private static int foodValue;
+//
+//    // non-O melee critical calculations
+//    private static int mCritDebuffToh;
+//    private static int mCritChanceWeightScl;
+//    private static int mCritChanceTohScl;
+//    private static int mCritChanceLevelScl;
+//    private static int mCritChanceTohSkillScl;
+//    private static int mCritChanceOffset;
+//    private static int mCritChanceRange;
+//    private static int mCritPowerWeightScl;
+//    private static int mCritPowerRandom;
+//
+//    // non-O ranged critical calculations
+//    private static int rCritDebuffToh;
+//    private static int rCritChanceWeightScl;
+//    private static int rCritChanceTohScl;
+//    private static int rCritChanceLevelScl;
+//    private static int rCritChanceLaunchedTohSkillScl;
+//    private static int rCritChanceThrownTohSkillScl;
+//    private static int rCritChanceOffset;
+//    private static int rCritChanceRange;
+//    private static int rCritPowerWeightScl;
+//    private static int rCritPowerRandom;
+//
+//    // O melee critical calculations
+//    private static int oMCritDebuffToh;
+//    private static int oMCritPowerTohSclNum;
+//    private static int oMCritPowerTohSclDen;
+//    private static int oMCritChancePowerSclNum;
+//    private static int oMCritChancePowerSclDen;
+//    private static int oMCritChanceAddDen;
+//
+//    private static Rational oMeleeMaxAdded;
+//
+//    // O ranged critical calculations
+//    private static int oRCritDebuffToh;
+//    private static int oRCritPowerLaunchedTohSclNum;
+//    private static int oRCritPowerLaunchedTohSclDen;
+//    private static int oRCritPowerThrownTohSclNum;
+//    private static int oRCritPowerThrownTohSclDen;
+//    private static int oRCritChancePowerSclNum;
+//    private static int oRCritChancePowerSclDen;
+//    private static int oRCritChanceAddDen;
+//
+//    private static Rational oRangedMaxAdded;
+//
+//    /*
+//     * Maps of things
+//     */
+//    private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
+//    private static final HashMap<ObjectFlag, Object> flags = new HashMap<>();
+//    private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
+//    private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
+//    private static final HashMap<TrapEnum, Object> traps = new HashMap<>();
+//    private static final HashMap<TerrainFeatureFlags, Object> terrainFlags = new HashMap<>();
+//    private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
+//    private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
+//
+//    private static final HashMap<TerrainFlags, Feature> terrains = new HashMap<>();
+//
+//    // non-O melee and ranged criticals
+//    private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
+//    private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
+//
+//    // O melee and ranged criticals
+//    private static final ArrayList<O_CriticalLevel> mOCriticalLevels = new ArrayList<>();
+//    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
 
     /**
      * Worlds is a list of World records. There should be exactly 128 levels, as outlined in the maxRandDepth,
@@ -891,7 +915,7 @@ public class GameConstants {
      */
     public static void init() {
         try {
-//            loadGameConstants();
+            loadGameConstants();
 //            loadWorld();                // World arraylist determines maxRandDepth
 //            loadProjections();
 //            loadUIEntryRenderers();
@@ -1554,23 +1578,23 @@ public class GameConstants {
         }
     }
 
-    /**
-     * Load in the different levels available in the world and store them in a List
-     * @throws IOException an error occurred during the parsing - log it and rethrow it
-     */
-    private static void loadWorld() throws IOException {
-        WorldReader worldReader = new WorldReader();
-        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
-
-        try {
-            worlds = toWorlds(worldReader.parse(filename));
-        } catch (IOException ex) {
-            logger.error("Error while loading file {}", filename, ex);
-            throw ex;
-        }
-
-        maxRandDepth = worlds.size();
-    }
+//    /**
+//     * Load in the different levels available in the world and store them in a List
+//     * @throws IOException an error occurred during the parsing - log it and rethrow it
+//     */
+//    private static void loadWorld() throws IOException {
+//        WorldReader worldReader = new WorldReader();
+//        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
+//
+//        try {
+//            worlds = toWorlds(worldReader.parse(filename));
+//        } catch (IOException ex) {
+//            logger.error("Error while loading file {}", filename, ex);
+//            throw ex;
+//        }
+//
+//        maxRandDepth = worlds.size();
+//    }
 
     /**
      * Private constructor preventing instantiation of this static-only registry.
@@ -1585,790 +1609,790 @@ public class GameConstants {
      * Loads the contents of the file constants.txt in the lib\gamedata directory and splits the values out
      * into the various GameConstants values.
      */
-    private static void loadGameConstants() throws IOException {
-        GameConstantsReader reader = new GameConstantsReader();
-        String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
-        List<Entry> keyValues = toEntries(reader.parse(filename));
-
-        for (Entry entry : keyValues) {
-            switch (entry.key()) {
-                case "level-max" -> setLevelMax(entry);
-                case "mon-gen" -> setMonGen(entry);
-                case "mon-play" -> setMonPlay(entry);
-                case "dun-gen" -> setDunGen(entry);
-                case "world" -> setWorld(entry);
-                case "carry-cap" -> setCarryCap(entry);
-                case "store" -> setStoreParameters(entry);
-                case "obj-make" -> setObjectCreation(entry);
-                case "player" -> setPlayerConstants(entry);
-                case "melee-critical" -> setNonOMeleeCrits(entry);
-                case "melee-critical-level" -> setNonOMeleeCriticalLevels(entry);
-                case "ranged-critical" -> setNonORangedCrits(entry);
-                case "ranged-critical-level" -> setNonORangedCriticalLevels(entry);
-                case "o-melee-critical" -> setOMeleeCrits(entry);
-                case "o-melee-critical-level" -> setOMeleeCriticalLevels(entry);
-                case "o-ranged-critical" -> setORangedCrits(entry);
-                case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
-
-                default -> {
-                    String message = "Invalid token found while parsing file " + filename + ". Tokens were: " + entry.key() + ":" + entry.value();
-                    InvalidTokenFoundDuringParse ex = new InvalidTokenFoundDuringParse(message);
-                    logger.error(message, ex);
-                    throw ex;
-                }
-            }
-        }
-    }
-
-
-    /**
-     * Deals with the O Ranged Critical levels from the constants.txt file
-     *
-     * @param entry the key value pair from the ORanged section of the constants.txt file
-     */
-    private static void setORangedCriticalLevels(@NotNull Entry entry) {
-        String tag = entry.key() + ":";
-
-        String[] values = entry.value().split(":");
-
-        if (values.length != 3) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        int chance;
-        int dice;
-        MessageType message;
-
-        try {
-            chance = Integer.parseInt(values[0]);
-            dice = Integer.parseInt(values[1]);
-            message = MessageType.valueOf("MSG_" + values[2]);
-        } catch (NumberFormatException e) {
-            String errorMessage = "Invalid number format found. Tokens were: " + tag + entry.value();
-            logger.error(errorMessage);
-            throw new InvalidTokenFoundDuringParse(errorMessage);
-        } catch (IllegalArgumentException e) {
-            String errorMessage = "Invalid message found. Tokens were: " + tag + entry.value();
-            logger.error(errorMessage);
-            throw new InvalidTokenFoundDuringParse(errorMessage);
-        }
-
-        rOCriticalLevels.add(new O_CriticalLevel(chance, dice, message));
-    }
-
-    /**
-     * Deals with an O Ranged Crit record from the constants.txt file
-     *
-     * @param entry the record to examine
-     */
-    private static void setORangedCrits(@NotNull Entry entry) {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "debuff-toh":
-                oRCritDebuffToh = val;
-                break;
-
-            case "power-launched-toh-scale-numerator":
-                oRCritPowerLaunchedTohSclNum = val;
-                break;
-
-            case "power-launched-toh-scale-denominator":
-                oRCritPowerLaunchedTohSclDen = val;
-                break;
-
-            case "power-thrown-toh-scale-numerator":
-                oRCritPowerThrownTohSclNum = val;
-                break;
-
-            case "power-thrown-toh-scale-denominator":
-                oRCritPowerThrownTohSclDen = val;
-                break;
-
-            case "chance-power-scale-numerator":
-                oRCritChancePowerSclNum = val;
-                break;
-
-            case "chance-power-scale-denominator":
-                oRCritChancePowerSclDen = val;
-                break;
-
-            case "chance-add-denominator":
-                oRCritChanceAddDen = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deals with an O Melee Critical Level record from the constants.txt file
-     *
-     * @param entry the record to deal with
-     */
-    private static void setOMeleeCriticalLevels(@NotNull Entry entry) {
-        String tag = entry.key() + ":";
-        String[] values = entry.value().split(":");
-
-        if (values.length != 3) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        int chance;
-        int dice;
-        MessageType messageName;
-
-        try {
-            chance = Integer.parseInt(values[0]);
-            dice = Integer.parseInt(values[1]);
-            messageName = MessageType.valueOf("MSG_" + values[2]);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number format found. Tokens were: " + tag + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        } catch (IllegalArgumentException e) {
-            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        mOCriticalLevels.add(new O_CriticalLevel(chance, dice, messageName));
-    }
-
-    /**
-     * Deal with an O Melee Crit entry
-     *
-     * @param entry the String key String value record for this entry
-     */
-    private static void setOMeleeCrits(@NotNull Entry entry) {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "debuff-toh":
-                oMCritDebuffToh = val;
-                break;
-
-            case "power-toh-scale-numerator":
-                oMCritPowerTohSclNum = val;
-                break;
-
-            case "power-toh-scale-denominator":
-                oMCritPowerTohSclDen = val;
-                break;
-
-            case "chance-power-scale-numerator":
-                oMCritChancePowerSclNum = val;
-                break;
-
-            case "chance-power-scale-denominator":
-                oMCritChancePowerSclDen = val;
-                break;
-
-            case "chance-add-denominator":
-                oMCritChanceAddDen = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a normal ranged critical level entry
-     *
-     * @param entry the entry
-     */
-    private static void setNonORangedCriticalLevels(@NotNull Entry entry) {
-        String tag = entry.key() + ":";
-        String[] results = entry.value().split(":");
-
-        if (results.length != 4) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        int cutoffPower = 0;
-        int damageMult = 0;
-        int amountAdded = 0;
-        MessageType messageEnum = MessageType.MSG_NONE;
-        String messageEnumString = "";
-
-        try {
-            cutoffPower = Integer.parseInt(results[0]);
-            damageMult = Integer.parseInt(results[1]);
-            amountAdded = Integer.parseInt(results[2]);
-            messageEnumString = results[3];
-            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + entry.value();
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        } catch (IllegalArgumentException e) {
-            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        rCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
-    }
-
-    /**
-     * Deal with a normal Ranged critical entry
-     *
-     * @param entry the entry
-     */
-    private static void setNonORangedCrits(@NotNull Entry entry) {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "debuff-toh":
-                rCritDebuffToh = val;
-                break;
-
-            case "chance-weight-scale":
-                rCritChanceWeightScl = val;
-                break;
-
-            case "chance-toh-scale":
-                rCritChanceTohScl = val;
-                break;
-
-            case "chance-level-scale":
-                rCritChanceLevelScl = val;
-                break;
-
-            case "chance-launched-toh-skill-scale":
-                rCritChanceLaunchedTohSkillScl = val;
-                break;
-
-            case "chance-thrown-toh-skill-scale":
-                rCritChanceThrownTohSkillScl = val;
-                break;
-
-            case "chance-offset":
-                rCritChanceOffset = val;
-                break;
-
-            case "chance-range":
-                rCritChanceRange = val;
-                break;
-
-            case "power-weight-scale":
-                rCritPowerWeightScl = val;
-                break;
-
-            case "power-random":
-                rCritPowerRandom = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deals with a normal melee critical level entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an invalid number of tokens were input for this entry
-     */
-    private static void setNonOMeleeCriticalLevels(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        String tag = entry.key() + ":";
-        String[] results = entry.value().split(":");
-
-        if (results.length != 4) {
-            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        int cutoffPower;
-        int damageMult;
-        int amountAdded;
-        MessageType messageEnum;
-        String messageEnumString;
-
-        try {
-            cutoffPower = Integer.parseInt(results[0]);
-            damageMult = Integer.parseInt(results[1]);
-            amountAdded = Integer.parseInt(results[2]);
-            messageEnumString = results[3];
-            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
-        } catch (NumberFormatException e) {
-            String message = "Invalid number found. Tokens were: " + tag + entry.value();
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        } catch (IllegalArgumentException e) {
-            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-            logger.error(message, e);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-
-        mCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
-    }
-
-    /**
-     * Deal with a normal melee critical entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse a melee critical entry with an unknown key was found
-     */
-    private static void setNonOMeleeCrits(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "debuff-toh":
-                mCritDebuffToh = val;
-                break;
-
-            case "chance-weight-scale":
-                mCritChanceWeightScl = val;
-                break;
-
-            case "chance-toh-scale":
-                mCritChanceTohScl = val;
-                break;
-
-            case "chance-level-scale":
-                mCritChanceLevelScl = val;
-                break;
-
-            case "chance-toh-skill-scale":
-                mCritChanceTohSkillScl = val;
-                break;
-
-            case "chance-offset":
-                mCritChanceOffset = val;
-                break;
-
-            case "chance-range":
-                mCritChanceRange = val;
-                break;
-
-            case "power-weight-scale":
-                mCritPowerWeightScl = val;
-                break;
-
-            case "power-random":
-                mCritPowerRandom = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a Player Constant entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an invalid key found
-     */
-    private static void setPlayerConstants(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "max-sight":
-                maxSight = val;
-                break;
-
-            case "max-range":
-                maxRange = val;
-                break;
-
-            case "start-gold":
-                startGold = val;
-                break;
-
-            case "food-value":
-                foodValue = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a Object Creation entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an unknown key found
-     * @throws NumberFormatException        a badly formatted integer found
-     */
-    private static void setObjectCreation(@NotNull Entry entry) throws InvalidTokenFoundDuringParse, NumberFormatException {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "max-depth":
-                maxObjDepth = val;
-                break;
-
-            case "great-obj":
-                greatObj = val;
-                break;
-
-            case "great-ego":
-                greatEgo = val;
-                break;
-
-            case "fuel-torch":
-                fuelTorch = val;
-                break;
-
-            case "fuel-lamp":
-                fuelLamp = val;
-                break;
-
-            case "default-lamp":
-                defaultLamp = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a Store Parameter entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an unknown key found
-     */
-    private static void setStoreParameters(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "inven-max":
-                storeInvenMax = val;
-                break;
-
-            case "turns":
-                storeTurns = val;
-                break;
-
-            case "shuffle":
-                storeShuffle = val;
-                break;
-
-            case "magic-level":
-                storeMagicLevel = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a Carry Cap entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-     */
-    private static void setCarryCap(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "pack-size":
-                packSize = val;
-                break;
-
-            case "quiver-size":
-                quiverSize = val;
-                break;
-
-            case "quiver-slot-size":
-                quiverSlotSize = val;
-                break;
-
-            case "thrown-quiver-mult":
-                thrownQuiverMult = val;
-                break;
-
-            case "floor-size":
-                floorSize = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a world constant entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-     */
-    private static void setWorld(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "max-depth":
-                maxDepth = val;
-                break;
-
-            case "day-length":
-                dayLength = val;
-                break;
-
-            case "dungeon-hgt":
-                dungeonHeight = val;
-                break;
-
-            case "dungeon-wid":
-                dungeonWidth = val;
-                break;
-
-            case "town-hgt":
-                townHeight = val;
-                break;
-
-            case "town-wid":
-                townWidth = val;
-                break;
-
-            case "feeling-total":
-                feelingTotal = val;
-                break;
-
-            case "feeling-need":
-                feelingNeed = val;
-                break;
-
-            case "stair-skip":
-                stairSkip = val;
-                break;
-
-            case "move-energy":
-                moveEnergy = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a dungeon generation constant entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse invalid entry.key found
-     */
-    private static void setDunGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "cent-max":
-                levelRoomMax = val;
-                break;
-
-            case "door-max":
-                levelDoorMax = val;
-                break;
-
-            case "wall-max":
-                wallPierceMax = val;
-                break;
-
-            case "tunn-max":
-                tunnGridMax = val;
-                break;
-
-            case "amt-room":
-                roomItemAv = val;
-                break;
-
-            case "amt-item":
-                bothItemAv = val;
-                break;
-
-            case "amt-gold":
-                bothGoldAv = val;
-                break;
-
-            case "pit-max":
-                levelPitMax = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a monster entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse unknown entry.key found
-     */
-    private static void setMonPlay(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "break-glyph":
-                glyphHardness = val;
-                break;
-
-            case "mult-rate":
-                reproMonsterRate = val;
-                break;
-
-            case "life-drain":
-                lifeDrainPercent = val;
-                break;
-
-            case "flee-range":
-                fleeRange = val;
-                break;
-
-            case "turn-range":
-                turnRange = val;
-                break;
-
-            default:
-                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-                logger.error(message);
-                throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
-
-    /**
-     * Deal with a monster generation entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-     */
-    private static void setMonGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        switch (name) {
-            case "chance":
-                allocMonsterChance = val;
-                break;
-
-            case "level-min":
-                levelMonsterMin = val;
-                break;
-
-            case "town-day":
-                townMonstersDay = val;
-                break;
-
-            case "town-night":
-                townMonstersNight = val;
-                break;
-
-            case "repro-max":
-                reproMonstersNight = val;
-                break;
-
-            case "ood-chance":
-                oodMonsterChance = val;
-                break;
-
-            case "ood-amount":
-                oodMonsterAmount = val;
-                break;
-
-            case "group-max":
-                monsterGroupMax = val;
-                break;
-
-            case "group-dist":
-                monsterGroupDist = val;
-                break;
-
-            default:
-                String msg = "Invalid token found in constants.txt file. Input was " + entry.key() + ":" + entry.value();
-                logger.error(msg);
-                throw new InvalidTokenFoundDuringParse(msg);
-        }
-    }
-
-    /**
-     * Deal with a level maximum entry
-     *
-     * @param entry the entry
-     * @throws InvalidTokenFoundDuringParse An unknown entry.key found
-     */
-    private static void setLevelMax(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-        NameValuePair pair = getValues(entry.value(), entry.key());
-
-        String name = pair.name();
-        int val = pair.value();
-
-        if (name.equals("monsters")) {
-            levelMonsterMax = val;
-        } else {
-            String message = "Unknown tag found in constants.txt file. Token was " + entry.key() + ":" + entry.value();
-            logger.error(message);
-            throw new InvalidTokenFoundDuringParse(message);
-        }
-    }
+//    private static void loadGameConstants() throws IOException {
+//        GameConstantsReader reader = new GameConstantsReader();
+//        String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
+//        List<Entry> keyValues = toEntries(reader.parse(filename));
+//
+//        for (Entry entry : keyValues) {
+//            switch (entry.key()) {
+//                case "level-max" -> setLevelMax(entry);
+//                case "mon-gen" -> setMonGen(entry);
+//                case "mon-play" -> setMonPlay(entry);
+//                case "dun-gen" -> setDunGen(entry);
+//                case "world" -> setWorld(entry);
+//                case "carry-cap" -> setCarryCap(entry);
+//                case "store" -> setStoreParameters(entry);
+//                case "obj-make" -> setObjectCreation(entry);
+//                case "player" -> setPlayerConstants(entry);
+//                case "melee-critical" -> setNonOMeleeCrits(entry);
+//                case "melee-critical-level" -> setNonOMeleeCriticalLevels(entry);
+//                case "ranged-critical" -> setNonORangedCrits(entry);
+//                case "ranged-critical-level" -> setNonORangedCriticalLevels(entry);
+//                case "o-melee-critical" -> setOMeleeCrits(entry);
+//                case "o-melee-critical-level" -> setOMeleeCriticalLevels(entry);
+//                case "o-ranged-critical" -> setORangedCrits(entry);
+//                case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
+//
+//                default -> {
+//                    String message = "Invalid token found while parsing file " + filename + ". Tokens were: " + entry.key() + ":" + entry.value();
+//                    InvalidTokenFoundDuringParse ex = new InvalidTokenFoundDuringParse(message);
+//                    logger.error(message, ex);
+//                    throw ex;
+//                }
+//            }
+//        }
+//    }
+
+
+//    /**
+//     * Deals with the O Ranged Critical levels from the constants.txt file
+//     *
+//     * @param entry the key value pair from the ORanged section of the constants.txt file
+//     */
+//    private static void setORangedCriticalLevels(@NotNull Entry entry) {
+//        String tag = entry.key() + ":";
+//
+//        String[] values = entry.value().split(":");
+//
+//        if (values.length != 3) {
+//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        int chance;
+//        int dice;
+//        MessageType message;
+//
+//        try {
+//            chance = Integer.parseInt(values[0]);
+//            dice = Integer.parseInt(values[1]);
+//            message = MessageType.valueOf("MSG_" + values[2]);
+//        } catch (NumberFormatException e) {
+//            String errorMessage = "Invalid number format found. Tokens were: " + tag + entry.value();
+//            logger.error(errorMessage);
+//            throw new InvalidTokenFoundDuringParse(errorMessage);
+//        } catch (IllegalArgumentException e) {
+//            String errorMessage = "Invalid message found. Tokens were: " + tag + entry.value();
+//            logger.error(errorMessage);
+//            throw new InvalidTokenFoundDuringParse(errorMessage);
+//        }
+//
+//        rOCriticalLevels.add(new O_CriticalLevel(chance, dice, message));
+//    }
+//
+//    /**
+//     * Deals with an O Ranged Crit record from the constants.txt file
+//     *
+//     * @param entry the record to examine
+//     */
+//    private static void setORangedCrits(@NotNull Entry entry) {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "debuff-toh":
+//                oRCritDebuffToh = val;
+//                break;
+//
+//            case "power-launched-toh-scale-numerator":
+//                oRCritPowerLaunchedTohSclNum = val;
+//                break;
+//
+//            case "power-launched-toh-scale-denominator":
+//                oRCritPowerLaunchedTohSclDen = val;
+//                break;
+//
+//            case "power-thrown-toh-scale-numerator":
+//                oRCritPowerThrownTohSclNum = val;
+//                break;
+//
+//            case "power-thrown-toh-scale-denominator":
+//                oRCritPowerThrownTohSclDen = val;
+//                break;
+//
+//            case "chance-power-scale-numerator":
+//                oRCritChancePowerSclNum = val;
+//                break;
+//
+//            case "chance-power-scale-denominator":
+//                oRCritChancePowerSclDen = val;
+//                break;
+//
+//            case "chance-add-denominator":
+//                oRCritChanceAddDen = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deals with an O Melee Critical Level record from the constants.txt file
+//     *
+//     * @param entry the record to deal with
+//     */
+//    private static void setOMeleeCriticalLevels(@NotNull Entry entry) {
+//        String tag = entry.key() + ":";
+//        String[] values = entry.value().split(":");
+//
+//        if (values.length != 3) {
+//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        int chance;
+//        int dice;
+//        MessageType messageName;
+//
+//        try {
+//            chance = Integer.parseInt(values[0]);
+//            dice = Integer.parseInt(values[1]);
+//            messageName = MessageType.valueOf("MSG_" + values[2]);
+//        } catch (NumberFormatException e) {
+//            String message = "Invalid number format found. Tokens were: " + tag + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        } catch (IllegalArgumentException e) {
+//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
+//            logger.error(message, e);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        mOCriticalLevels.add(new O_CriticalLevel(chance, dice, messageName));
+//    }
+//
+//    /**
+//     * Deal with an O Melee Crit entry
+//     *
+//     * @param entry the String key String value record for this entry
+//     */
+//    private static void setOMeleeCrits(@NotNull Entry entry) {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "debuff-toh":
+//                oMCritDebuffToh = val;
+//                break;
+//
+//            case "power-toh-scale-numerator":
+//                oMCritPowerTohSclNum = val;
+//                break;
+//
+//            case "power-toh-scale-denominator":
+//                oMCritPowerTohSclDen = val;
+//                break;
+//
+//            case "chance-power-scale-numerator":
+//                oMCritChancePowerSclNum = val;
+//                break;
+//
+//            case "chance-power-scale-denominator":
+//                oMCritChancePowerSclDen = val;
+//                break;
+//
+//            case "chance-add-denominator":
+//                oMCritChanceAddDen = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a normal ranged critical level entry
+//     *
+//     * @param entry the entry
+//     */
+//    private static void setNonORangedCriticalLevels(@NotNull Entry entry) {
+//        String tag = entry.key() + ":";
+//        String[] results = entry.value().split(":");
+//
+//        if (results.length != 4) {
+//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        int cutoffPower = 0;
+//        int damageMult = 0;
+//        int amountAdded = 0;
+//        MessageType messageEnum = MessageType.MSG_NONE;
+//        String messageEnumString = "";
+//
+//        try {
+//            cutoffPower = Integer.parseInt(results[0]);
+//            damageMult = Integer.parseInt(results[1]);
+//            amountAdded = Integer.parseInt(results[2]);
+//            messageEnumString = results[3];
+//            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
+//        } catch (NumberFormatException e) {
+//            String message = "Invalid number found. Tokens were: " + tag + entry.value();
+//            logger.error(message, e);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        } catch (IllegalArgumentException e) {
+//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
+//            logger.error(message, e);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        rCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
+//    }
+//
+//    /**
+//     * Deal with a normal Ranged critical entry
+//     *
+//     * @param entry the entry
+//     */
+//    private static void setNonORangedCrits(@NotNull Entry entry) {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "debuff-toh":
+//                rCritDebuffToh = val;
+//                break;
+//
+//            case "chance-weight-scale":
+//                rCritChanceWeightScl = val;
+//                break;
+//
+//            case "chance-toh-scale":
+//                rCritChanceTohScl = val;
+//                break;
+//
+//            case "chance-level-scale":
+//                rCritChanceLevelScl = val;
+//                break;
+//
+//            case "chance-launched-toh-skill-scale":
+//                rCritChanceLaunchedTohSkillScl = val;
+//                break;
+//
+//            case "chance-thrown-toh-skill-scale":
+//                rCritChanceThrownTohSkillScl = val;
+//                break;
+//
+//            case "chance-offset":
+//                rCritChanceOffset = val;
+//                break;
+//
+//            case "chance-range":
+//                rCritChanceRange = val;
+//                break;
+//
+//            case "power-weight-scale":
+//                rCritPowerWeightScl = val;
+//                break;
+//
+//            case "power-random":
+//                rCritPowerRandom = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deals with a normal melee critical level entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an invalid number of tokens were input for this entry
+//     */
+//    private static void setNonOMeleeCriticalLevels(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        String tag = entry.key() + ":";
+//        String[] results = entry.value().split(":");
+//
+//        if (results.length != 4) {
+//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        int cutoffPower;
+//        int damageMult;
+//        int amountAdded;
+//        MessageType messageEnum;
+//        String messageEnumString;
+//
+//        try {
+//            cutoffPower = Integer.parseInt(results[0]);
+//            damageMult = Integer.parseInt(results[1]);
+//            amountAdded = Integer.parseInt(results[2]);
+//            messageEnumString = results[3];
+//            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
+//        } catch (NumberFormatException e) {
+//            String message = "Invalid number found. Tokens were: " + tag + entry.value();
+//            logger.error(message, e);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        } catch (IllegalArgumentException e) {
+//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
+//            logger.error(message, e);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//
+//        mCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
+//    }
+//
+//    /**
+//     * Deal with a normal melee critical entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse a melee critical entry with an unknown key was found
+//     */
+//    private static void setNonOMeleeCrits(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "debuff-toh":
+//                mCritDebuffToh = val;
+//                break;
+//
+//            case "chance-weight-scale":
+//                mCritChanceWeightScl = val;
+//                break;
+//
+//            case "chance-toh-scale":
+//                mCritChanceTohScl = val;
+//                break;
+//
+//            case "chance-level-scale":
+//                mCritChanceLevelScl = val;
+//                break;
+//
+//            case "chance-toh-skill-scale":
+//                mCritChanceTohSkillScl = val;
+//                break;
+//
+//            case "chance-offset":
+//                mCritChanceOffset = val;
+//                break;
+//
+//            case "chance-range":
+//                mCritChanceRange = val;
+//                break;
+//
+//            case "power-weight-scale":
+//                mCritPowerWeightScl = val;
+//                break;
+//
+//            case "power-random":
+//                mCritPowerRandom = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a Player Constant entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an invalid key found
+//     */
+//    private static void setPlayerConstants(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "max-sight":
+//                maxSight = val;
+//                break;
+//
+//            case "max-range":
+//                maxRange = val;
+//                break;
+//
+//            case "start-gold":
+//                startGold = val;
+//                break;
+//
+//            case "food-value":
+//                foodValue = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a Object Creation entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an unknown key found
+//     * @throws NumberFormatException        a badly formatted integer found
+//     */
+//    private static void setObjectCreation(@NotNull Entry entry) throws InvalidTokenFoundDuringParse, NumberFormatException {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "max-depth":
+//                maxObjDepth = val;
+//                break;
+//
+//            case "great-obj":
+//                greatObj = val;
+//                break;
+//
+//            case "great-ego":
+//                greatEgo = val;
+//                break;
+//
+//            case "fuel-torch":
+//                fuelTorch = val;
+//                break;
+//
+//            case "fuel-lamp":
+//                fuelLamp = val;
+//                break;
+//
+//            case "default-lamp":
+//                defaultLamp = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a Store Parameter entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an unknown key found
+//     */
+//    private static void setStoreParameters(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "inven-max":
+//                storeInvenMax = val;
+//                break;
+//
+//            case "turns":
+//                storeTurns = val;
+//                break;
+//
+//            case "shuffle":
+//                storeShuffle = val;
+//                break;
+//
+//            case "magic-level":
+//                storeMagicLevel = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a Carry Cap entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
+//     */
+//    private static void setCarryCap(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "pack-size":
+//                packSize = val;
+//                break;
+//
+//            case "quiver-size":
+//                quiverSize = val;
+//                break;
+//
+//            case "quiver-slot-size":
+//                quiverSlotSize = val;
+//                break;
+//
+//            case "thrown-quiver-mult":
+//                thrownQuiverMult = val;
+//                break;
+//
+//            case "floor-size":
+//                floorSize = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a world constant entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
+//     */
+//    private static void setWorld(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "max-depth":
+//                maxDepth = val;
+//                break;
+//
+//            case "day-length":
+//                dayLength = val;
+//                break;
+//
+//            case "dungeon-hgt":
+//                dungeonHeight = val;
+//                break;
+//
+//            case "dungeon-wid":
+//                dungeonWidth = val;
+//                break;
+//
+//            case "town-hgt":
+//                townHeight = val;
+//                break;
+//
+//            case "town-wid":
+//                townWidth = val;
+//                break;
+//
+//            case "feeling-total":
+//                feelingTotal = val;
+//                break;
+//
+//            case "feeling-need":
+//                feelingNeed = val;
+//                break;
+//
+//            case "stair-skip":
+//                stairSkip = val;
+//                break;
+//
+//            case "move-energy":
+//                moveEnergy = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a dungeon generation constant entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse invalid entry.key found
+//     */
+//    private static void setDunGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "cent-max":
+//                levelRoomMax = val;
+//                break;
+//
+//            case "door-max":
+//                levelDoorMax = val;
+//                break;
+//
+//            case "wall-max":
+//                wallPierceMax = val;
+//                break;
+//
+//            case "tunn-max":
+//                tunnGridMax = val;
+//                break;
+//
+//            case "amt-room":
+//                roomItemAv = val;
+//                break;
+//
+//            case "amt-item":
+//                bothItemAv = val;
+//                break;
+//
+//            case "amt-gold":
+//                bothGoldAv = val;
+//                break;
+//
+//            case "pit-max":
+//                levelPitMax = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a monster entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse unknown entry.key found
+//     */
+//    private static void setMonPlay(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "break-glyph":
+//                glyphHardness = val;
+//                break;
+//
+//            case "mult-rate":
+//                reproMonsterRate = val;
+//                break;
+//
+//            case "life-drain":
+//                lifeDrainPercent = val;
+//                break;
+//
+//            case "flee-range":
+//                fleeRange = val;
+//                break;
+//
+//            case "turn-range":
+//                turnRange = val;
+//                break;
+//
+//            default:
+//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
+//                logger.error(message);
+//                throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a monster generation entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
+//     */
+//    private static void setMonGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        switch (name) {
+//            case "chance":
+//                allocMonsterChance = val;
+//                break;
+//
+//            case "level-min":
+//                levelMonsterMin = val;
+//                break;
+//
+//            case "town-day":
+//                townMonstersDay = val;
+//                break;
+//
+//            case "town-night":
+//                townMonstersNight = val;
+//                break;
+//
+//            case "repro-max":
+//                reproMonstersNight = val;
+//                break;
+//
+//            case "ood-chance":
+//                oodMonsterChance = val;
+//                break;
+//
+//            case "ood-amount":
+//                oodMonsterAmount = val;
+//                break;
+//
+//            case "group-max":
+//                monsterGroupMax = val;
+//                break;
+//
+//            case "group-dist":
+//                monsterGroupDist = val;
+//                break;
+//
+//            default:
+//                String msg = "Invalid token found in constants.txt file. Input was " + entry.key() + ":" + entry.value();
+//                logger.error(msg);
+//                throw new InvalidTokenFoundDuringParse(msg);
+//        }
+//    }
+//
+//    /**
+//     * Deal with a level maximum entry
+//     *
+//     * @param entry the entry
+//     * @throws InvalidTokenFoundDuringParse An unknown entry.key found
+//     */
+//    private static void setLevelMax(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
+//        NameValuePair pair = getValues(entry.value(), entry.key());
+//
+//        String name = pair.name();
+//        int val = pair.value();
+//
+//        if (name.equals("monsters")) {
+//            levelMonsterMax = val;
+//        } else {
+//            String message = "Unknown tag found in constants.txt file. Token was " + entry.key() + ":" + entry.value();
+//            logger.error(message);
+//            throw new InvalidTokenFoundDuringParse(message);
+//        }
+//    }
 
     /**
      * Convert a String key, String value record into a String key int value record
@@ -2595,706 +2619,1034 @@ public class GameConstants {
         return playerShapeMax;
     }
 
+
     /**
-     * @return the configured value of {@code levelMonsterMax}
-     * @author ClaudeCode
+     * @return the value of {@code level-max:monsters}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLevelMonsterMax() {
-        return levelMonsterMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getLevelMaxMonsters() {
+        return data.levelMax().monsters();
     }
 
     /**
-     * @return the configured value of {@code allocMonsterChance}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:chance}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getAllocMonsterChance() {
-        return allocMonsterChance;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenChance() {
+        return data.monGen().chance();
     }
 
     /**
-     * @return the configured value of {@code levelMonsterMin}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:level-min}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLevelMonsterMin() {
-        return levelMonsterMin;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenLevelMin() {
+        return data.monGen().levelMin();
     }
 
     /**
-     * @return the configured value of {@code townMonstersDay}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:town-day}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTownMonstersDay() {
-        return townMonstersDay;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenTownDay() {
+        return data.monGen().townDay();
     }
 
     /**
-     * @return the configured value of {@code townMonstersNight}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:town-night}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTownMonstersNight() {
-        return townMonstersNight;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenTownNight() {
+        return data.monGen().townNight();
     }
 
     /**
-     * @return the configured value of {@code reproMonstersNight}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:repro-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getReproMonstersNight() {
-        return reproMonstersNight;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenReproMax() {
+        return data.monGen().reproMax();
     }
 
     /**
-     * @return the configured value of {@code oodMonsterChance}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:ood-chance}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getOodMonsterChance() {
-        return oodMonsterChance;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenOodChance() {
+        return data.monGen().oodChance();
     }
 
     /**
-     * @return the configured value of {@code oodMonsterAmount}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:ood-amount}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getOodMonsterAmount() {
-        return oodMonsterAmount;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenOodAmount() {
+        return data.monGen().oodAmount();
     }
 
     /**
-     * @return the configured value of {@code monsterGroupMax}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:group-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMonsterGroupMax() {
-        return monsterGroupMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenGroupMax() {
+        return data.monGen().groupMax();
     }
 
     /**
-     * @return the configured value of {@code monsterGroupDist}
-     * @author ClaudeCode
+     * @return the value of {@code mon-gen:group-dist}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMonsterGroupDist() {
-        return monsterGroupDist;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonGenGroupDist() {
+        return data.monGen().groupDist();
     }
 
     /**
-     * @return the configured value of {@code glyphHardness}
-     * @author ClaudeCode
+     * @return the value of {@code mon-play:break-glyph}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getGlyphHardness() {
-        return glyphHardness;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonPlayBreakGlyph() {
+        return data.monPlay().breakGlyph();
     }
 
     /**
-     * @return the configured value of {@code reproMonsterRate}
-     * @author ClaudeCode
+     * @return the value of {@code mon-play:mult-rate}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getReproMonsterRate() {
-        return reproMonsterRate;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonPlayMultRate() {
+        return data.monPlay().multRate();
     }
 
     /**
-     * @return the configured value of {@code lifeDrainPercent}
-     * @author ClaudeCode
+     * @return the value of {@code mon-play:life-drain}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLifeDrainPercent() {
-        return lifeDrainPercent;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonPlayLifeDrain() {
+        return data.monPlay().lifeDrain();
     }
 
     /**
-     * @return the configured value of {@code fleeRange}
-     * @author ClaudeCode
+     * @return the value of {@code mon-play:flee-range}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFleeRange() {
-        return fleeRange;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonPlayFleeRange() {
+        return data.monPlay().fleeRange();
     }
 
     /**
-     * @return the configured value of {@code turnRange}
-     * @author ClaudeCode
+     * @return the value of {@code mon-play:turn-range}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTurnRange() {
-        return turnRange;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMonPlayTurnRange() {
+        return data.monPlay().turnRange();
     }
 
     /**
-     * @return the configured value of {@code levelRoomMax}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:cent-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLevelRoomMax() {
-        return levelRoomMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenCentMax() {
+        return data.dunGen().centMax();
     }
 
     /**
-     * @return the configured value of {@code levelDoorMax}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:door-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLevelDoorMax() {
-        return levelDoorMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenDoorMax() {
+        return data.dunGen().doorMax();
     }
 
     /**
-     * @return the configured value of {@code wallPierceMax}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:wall-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getWallPierceMax() {
-        return wallPierceMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenWallMax() {
+        return data.dunGen().wallMax();
     }
 
     /**
-     * @return the configured value of {@code tunnGridMax}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:tunn-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTunnGridMax() {
-        return tunnGridMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenTunnMax() {
+        return data.dunGen().tunnMax();
     }
 
     /**
-     * @return the configured value of {@code roomItemAv}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:amt-room}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getRoomItemAv() {
-        return roomItemAv;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenAmtRoom() {
+        return data.dunGen().amtRoom();
     }
 
     /**
-     * @return the configured value of {@code bothItemAv}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:amt-item}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getBothItemAv() {
-        return bothItemAv;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenAmtItem() {
+        return data.dunGen().amtItem();
     }
 
     /**
-     * @return the configured value of {@code bothGoldAv}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:amt-gold}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getBothGoldAv() {
-        return bothGoldAv;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenAmtGold() {
+        return data.dunGen().amtGold();
     }
 
     /**
-     * @return the configured value of {@code levelPitMax}
-     * @author ClaudeCode
+     * @return the value of {@code dun-gen:pit-max}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getLevelPitMax() {
-        return levelPitMax;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getDunGenPitMax() {
+        return data.dunGen().pitMax();
     }
 
     /**
-     * @return the configured value of {@code maxDepth}
-     * @author ClaudeCode
+     * @return the value of {@code world:max-depth}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMaxDepth() {
-        return maxDepth;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldMaxDepth() {
+        return data.world().maxDepth();
     }
 
     /**
-     * @return the configured value of {@code dayLength}
-     * @author ClaudeCode
+     * @return the value of {@code world:day-length}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getDayLength() {
-        return dayLength;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldDayLength() {
+        return data.world().dayLength();
     }
 
     /**
-     * @return the configured value of {@code dungeonHeight}
-     * @author ClaudeCode
+     * @return the value of {@code world:dungeon-hgt}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getDungeonHeight() {
-        return dungeonHeight;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldDungeonHgt() {
+        return data.world().dungeonHgt();
     }
 
     /**
-     * @return the configured value of {@code dungeonWidth}
-     * @author ClaudeCode
+     * @return the value of {@code world:dungeon-wid}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getDungeonWidth() {
-        return dungeonWidth;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldDungeonWid() {
+        return data.world().dungeonWid();
     }
 
     /**
-     * @return the configured value of {@code townHeight}
-     * @author ClaudeCode
+     * @return the value of {@code world:town-hgt}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTownHeight() {
-        return townHeight;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldTownHgt() {
+        return data.world().townHgt();
     }
 
     /**
-     * @return the configured value of {@code townWidth}
-     * @author ClaudeCode
+     * @return the value of {@code world:town-wid}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getTownWidth() {
-        return townWidth;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldTownWid() {
+        return data.world().townWid();
     }
 
     /**
-     * @return the configured value of {@code feelingTotal}
-     * @author ClaudeCode
+     * @return the value of {@code world:feeling-total}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFeelingTotal() {
-        return feelingTotal;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldFeelingTotal() {
+        return data.world().feelingTotal();
     }
 
     /**
-     * @return the configured value of {@code feelingNeed}
-     * @author ClaudeCode
+     * @return the value of {@code world:feeling-need}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFeelingNeed() {
-        return feelingNeed;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldFeelingNeed() {
+        return data.world().feelingNeed();
     }
 
     /**
-     * @return the configured value of {@code stairSkip}
-     * @author ClaudeCode
+     * @return the value of {@code world:stair-skip}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getStairSkip() {
-        return stairSkip;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldStairSkip() {
+        return data.world().stairSkip();
     }
 
     /**
-     * @return the configured value of {@code moveEnergy}
-     * @author ClaudeCode
+     * @return the value of {@code world:move-energy}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMoveEnergy() {
-        return moveEnergy;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getWorldMoveEnergy() {
+        return data.world().moveEnergy();
     }
 
     /**
-     * @return the configured value of {@code packSize}
-     * @author ClaudeCode
+     * @return the value of {@code carry-cap:pack-size}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getPackSize() {
-        return packSize;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getCarryCapPackSize() {
+        return data.carryCap().packSize();
     }
 
     /**
-     * @return the configured value of {@code quiverSize}
-     * @author ClaudeCode
+     * @return the value of {@code carry-cap:quiver-size}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getQuiverSize() {
-        return quiverSize;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getCarryCapQuiverSize() {
+        return data.carryCap().quiverSize();
     }
 
     /**
-     * @return the configured value of {@code quiverSlotSize}
-     * @author ClaudeCode
+     * @return the value of {@code carry-cap:quiver-slot-size}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getQuiverSlotSize() {
-        return quiverSlotSize;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getCarryCapQuiverSlotSize() {
+        return data.carryCap().quiverSlotSize();
     }
 
     /**
-     * @return the configured value of {@code thrownQuiverMult}
-     * @author ClaudeCode
+     * @return the value of {@code carry-cap:thrown-quiver-mult}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getThrownQuiverMult() {
-        return thrownQuiverMult;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getCarryCapThrownQuiverMult() {
+        return data.carryCap().thrownQuiverMult();
     }
 
     /**
-     * @return the configured value of {@code floorSize}
-     * @author ClaudeCode
+     * @return the value of {@code carry-cap:floor-size}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFloorSize() {
-        return floorSize;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getCarryCapFloorSize() {
+        return data.carryCap().floorSize();
     }
 
     /**
-     * @return the configured value of {@code storeInvenMax}
-     * @author ClaudeCode
+     * @return the value of {@code store:magic-level}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int getStoreInvenMax() {
-        return storeInvenMax;
+        return data.store().invenMax();
     }
 
     /**
-     * @return the configured value of {@code storeTurns}
-     * @author ClaudeCode
+     * @return the value of {@code store:turns}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int getStoreTurns() {
-        return storeTurns;
+        return data.store().turns();
     }
 
     /**
-     * @return the configured value of {@code storeShuffle}
-     * @author ClaudeCode
+     * @return the value of {@code store:shuffle}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int getStoreShuffle() {
-        return storeShuffle;
+        return data.store().shuffle();
     }
 
     /**
-     * @return the configured value of {@code storeMagicLevel}
-     * @author ClaudeCode
+     * @return the value of {@code store:magic-level}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int getStoreMagicLevel() {
-        return storeMagicLevel;
+        return data.store().magicLevel();
     }
 
     /**
-     * @return the configured value of {@code maxObjDepth}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:max-depth}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMaxObjDepth() {
-        return maxObjDepth;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeMaxDepth() {
+        return data.objMake().maxDepth();
     }
 
     /**
-     * @return the configured value of {@code greatObj}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:great-obj}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getGreatObj() {
-        return greatObj;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeGreatObj() {
+        return data.objMake().greatObj();
     }
 
     /**
-     * @return the configured value of {@code greatEgo}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:great-ego}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getGreatEgo() {
-        return greatEgo;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeGreatEgo() {
+        return data.objMake().greatEgo();
     }
 
     /**
-     * @return the configured value of {@code fuelTorch}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:fuel-torch}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFuelTorch() {
-        return fuelTorch;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeFuelTorch() {
+        return data.objMake().fuelTorch();
     }
 
     /**
-     * @return the configured value of {@code fuelLamp}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:fuel-lamp}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFuelLamp() {
-        return fuelLamp;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeFuelLamp() {
+        return data.objMake().fuelLamp();
     }
 
     /**
-     * @return the configured value of {@code defaultLamp}
-     * @author ClaudeCode
+     * @return the value of {@code obj-make:default-lamp}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getDefaultLamp() {
-        return defaultLamp;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getObjectMakeDefaultLamp() {
+        return data.objMake().defaultLamp();
     }
 
     /**
-     * @return the configured value of {@code maxSight}
-     * @author ClaudeCode
+     * @return the value of {@code player:max-sight}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMaxSight() {
-        return maxSight;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getPlayerMaxSight() {
+        return data.player().maxSight();
     }
 
     /**
-     * @return the configured value of {@code maxRange}
-     * @author ClaudeCode
+     * @return the value of {@code player:max-range}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getMaxRange() {
-        return maxRange;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getPlayerMaxRange() {
+        return data.player().maxRange();
     }
 
     /**
-     * @return the configured value of {@code startGold}
-     * @author ClaudeCode
+     * @return the value of {@code player:start-gold}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getStartGold() {
-        return startGold;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getPlayerStartGold() {
+        return data.player().startGold();
     }
 
     /**
-     * @return the configured value of {@code foodValue}
-     * @author ClaudeCode
+     * @return the value of {@code player:food-value}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getFoodValue() {
-        return foodValue;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getPlayerFoodValue() {
+        return data.player().foodValue();
     }
 
     /**
-     * @return the configured value of {@code mCritDebuffToh}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:debuff-toh}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritDebuffToh() {
-        return mCritDebuffToh;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalDebuffToh() {
+        return data.meleeCritical().debuffToh();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceWeightScl}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:chance-weight-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceWeightScl() {
-        return mCritChanceWeightScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceWeightScale() {
+        return data.meleeCritical().chanceWeightScale();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceTohScl}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:chance-toh-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceTohScl() {
-        return mCritChanceTohScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceTohScale() {
+        return data.meleeCritical().chanceTohScale();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceLevelScl}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:chance-level-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceLevelScl() {
-        return mCritChanceLevelScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceLevelScale() {
+        return data.meleeCritical().chanceLevelScale();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceTohSkillScl}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:chance-toh-skill-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceTohSkillScl() {
-        return mCritChanceTohSkillScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceTohSkillScale() {
+        return data.meleeCritical().chanceTohSkillScale();
+    }
+    /**
+     * @return the value of {@code melee-ranged:chance-offset}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceOffset() {
+        return data.meleeCritical().chanceOffset();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceOffset}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:chance-range}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceOffset() {
-        return mCritChanceOffset;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalChanceRange() {
+        return data.meleeCritical().chanceRange();
     }
 
     /**
-     * @return the configured value of {@code mCritChanceRange}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:power-weight-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritChanceRange() {
-        return mCritChanceRange;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalPowerWeightScale() {
+        return data.meleeCritical().powerWeightScale();
     }
 
     /**
-     * @return the configured value of {@code mCritPowerWeightScl}
-     * @author ClaudeCode
+     * @return the value of {@code melee-ranged:power-random}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritPowerWeightScl() {
-        return mCritPowerWeightScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getMeleeCriticalPowerRandom() {
+        return data.meleeCritical().powerRandom();
     }
 
     /**
-     * @return the configured value of {@code mCritPowerRandom}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-level-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getmCritPowerRandom() {
-        return mCritPowerRandom;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalDebuffToh() {
+        return data.rangedCritical().debuffToh();
     }
 
     /**
-     * @return the configured value of {@code rCritDebuffToh}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-weight-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritDebuffToh() {
-        return rCritDebuffToh;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceWeightScale() {
+        return data.rangedCritical().chanceWeightScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceWeightScl}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-toh-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceWeightScl() {
-        return rCritChanceWeightScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceTohScale() {
+        return data.rangedCritical().chanceTohScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceTohScl}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-level-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceTohScl() {
-        return rCritChanceTohScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceLevelScale() {
+        return data.rangedCritical().chanceLevelScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceLevelScl}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-launched-toh-skill-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceLevelScl() {
-        return rCritChanceLevelScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceLaunchedTohSkillScale() {
+        return data.rangedCritical().chanceLaunchedTohSkillScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceLaunchedTohSkillScl}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-thrown-toh-skill-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceLaunchedTohSkillScl() {
-        return rCritChanceLaunchedTohSkillScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceThrownTohSkillScale() {
+        return data.rangedCritical().chanceThrownTohSkillScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceThrownTohSkillScl}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:chance-offset}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceThrownTohSkillScl() {
-        return rCritChanceThrownTohSkillScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceOffset() {
+        return data.rangedCritical().chanceOffset();
+    }
+
+
+    /**
+     * @return the value of {@code ranged-critical:chance-range}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalChanceRange() {
+        return data.rangedCritical().chanceRange();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceOffset}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:power-weight-scale}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceOffset() {
-        return rCritChanceOffset;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalPowerWeightScale() {
+        return data.rangedCritical().powerWeightScale();
     }
 
     /**
-     * @return the configured value of {@code rCritChanceRange}
-     * @author ClaudeCode
+     * @return the value of {@code ranged-critical:power-random}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritChanceRange() {
-        return rCritChanceRange;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getRangedCriticalPowerRandom() {
+        return data.rangedCritical().powerRandom();
     }
 
     /**
-     * @return the configured value of {@code rCritPowerWeightScl}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:debuff-toh}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritPowerWeightScl() {
-        return rCritPowerWeightScl;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalDebuffToh() {
+        return data.oMeleeCritical().debuffToh();
     }
 
     /**
-     * @return the configured value of {@code rCritPowerRandom}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:power-toh-scale-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getrCritPowerRandom() {
-        return rCritPowerRandom;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalPowerTohScaleNumerator() {
+        return data.oMeleeCritical().powerTohScaleNumerator();
     }
 
     /**
-     * @return the configured value of {@code oMCritDebuffToh}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:power-toh-scale-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritDebuffToh() {
-        return oMCritDebuffToh;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalPowerTohScaleDenominator() {
+        return data.oMeleeCritical().powerTohScaleDenominator();
     }
 
     /**
-     * @return the configured value of {@code oMCritPowerTohSclNum}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:chance-add-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritPowerTohSclNum() {
-        return oMCritPowerTohSclNum;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalChancePowerScaleNumerator() {
+        return data.oMeleeCritical().chancePowerScaleNumerator();
     }
 
     /**
-     * @return the configured value of {@code oMCritPowerTohSclDen}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:chance-power-scale-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritPowerTohSclDen() {
-        return oMCritPowerTohSclDen;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalChancePowerScaleDenominator() {
+        return data.oMeleeCritical().chancePowerScaleDenominator();
     }
 
     /**
-     * @return the configured value of {@code oMCritChancePowerSclNum}
-     * @author ClaudeCode
+     * @return the value of {@code o-melee-critical:chance-add-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritChancePowerSclNum() {
-        return oMCritChancePowerSclNum;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getOMeleeCriticalChanceAddDenominator() {
+        return data.oMeleeCritical().chanceAddDenominator();
     }
 
     /**
-     * @return the configured value of {@code oMCritChancePowerSclDen}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:power-launched-toh-scale-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritChancePowerSclDen() {
-        return oMCritChancePowerSclDen;
+    @Contract(pure = true)
+    @CheckReturnValue
+    private static int getORangedCriticalDebuffToh() {
+        return data.oRangedCritical().debuffToh();
     }
 
     /**
-     * @return the configured value of {@code oMCritChanceAddDen}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:power-launched-toh-scale-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoMCritChanceAddDen() {
-        return oMCritChanceAddDen;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalPowerLaunchedTohScaleNumerator() {
+        return data.oRangedCritical().powerLaunchedTohScaleNumerator();
     }
 
     /**
-     * @return the configured value of {@code oMeleeMaxAdded}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:power-launched-toh-scale-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static Rational getoMeleeMaxAdded() {
-        return oMeleeMaxAdded;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalPowerLaunchedTohScaleDenominator() {
+        return data.oRangedCritical().powerLaunchedTohScaleDenominator();
     }
 
     /**
-     * @return the configured value of {@code oRCritDebuffToh}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:power-thrown-toh-scale-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoRCritDebuffToh() {
-        return oRCritDebuffToh;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalPowerThrownTohScaleNumerator() {
+        return data.oRangedCritical().powerThrownTohScaleNumerator();
     }
 
     /**
-     * @return the configured value of {@code oRCritPowerLaunchedTohSclNum}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:power-thrown-toh-scale-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoRCritPowerLaunchedTohSclNum() {
-        return oRCritPowerLaunchedTohSclNum;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalPowerThrownTohScaleDenominator() {
+        return data.oRangedCritical().powerThrownTohScaleDenominator();
     }
 
     /**
-     * @return the configured value of {@code oRCritPowerLaunchedTohSclDen}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:chance-power-scale-numerator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoRCritPowerLaunchedTohSclDen() {
-        return oRCritPowerLaunchedTohSclDen;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalChancePowerScaleNumerator() {
+        return data.oRangedCritical().chancePowerScaleNumerator();
     }
 
     /**
-     * @return the configured value of {@code oRCritPowerThrownTohSclNum}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:chance-power-scale-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoRCritPowerThrownTohSclNum() {
-        return oRCritPowerThrownTohSclNum;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalChancePowerScaleDenominator() {
+        return data.oRangedCritical().chancePowerScaleDenominator();
     }
 
     /**
-     * @return the configured value of {@code oRCritPowerThrownTohSclDen}
-     * @author ClaudeCode
+     * @return the value of {@code o-ranged-critical:chance-add-denominator}
+     * read from the constants.txt file.
+     *
+     * @author Rowan Crowther
      */
-    public static int getoRCritPowerThrownTohSclDen() {
-        return oRCritPowerThrownTohSclDen;
-    }
-
-    /**
-     * @return the configured value of {@code oRCritChancePowerSclNum}
-     * @author ClaudeCode
-     */
-    public static int getoRCritChancePowerSclNum() {
-        return oRCritChancePowerSclNum;
-    }
-
-    /**
-     * @return the configured value of {@code oRCritChancePowerSclDen}
-     * @author ClaudeCode
-     */
-    public static int getoRCritChancePowerSclDen() {
-        return oRCritChancePowerSclDen;
-    }
-
-    /**
-     * @return the configured value of {@code oRCritChanceAddDen}
-     * @author ClaudeCode
-     */
-    public static int getoRCritChanceAddDen() {
-        return oRCritChanceAddDen;
-    }
-
-    /**
-     * @return the configured value of {@code oRangedMaxAdded}
-     * @author ClaudeCode
-     */
-    public static Rational getoRangedMaxAdded() {
-        return oRangedMaxAdded;
+    @Contract(pure = true)
+    @CheckReturnValue
+    public static int getORangedCriticalChanceAddDenominator() {
+        return data.oRangedCritical().chanceAddDenominator();
     }
 
     /**
      * @return the configured value of {@code maxRandDepth}
-     * @author ClaudeCode
+     *
+     * @author Rowan Crowther
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static int getMaxRandDepth() {
         return maxRandDepth;
     }

@@ -12,11 +12,11 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstants.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.gameconstants;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.gameconstants;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link GameConstantsListener},
+ * This class provides an empty implementation of {@link GameConstantsGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class GameConstantsBaseListener implements GameConstantsListener {
+public class GameConstantsGrammarBaseListener implements GameConstantsGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSection(GameConstantsParser.SectionContext ctx) {
+    public void enterField(GameConstantsGrammar.FieldContext ctx) {
     }
 
     /**
@@ -45,7 +45,7 @@ public class GameConstantsBaseListener implements GameConstantsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSection(GameConstantsParser.SectionContext ctx) {
+    public void exitField(GameConstantsGrammar.FieldContext ctx) {
     }
 
     /**
@@ -54,7 +54,7 @@ public class GameConstantsBaseListener implements GameConstantsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFurtherValue(GameConstantsParser.FurtherValueContext ctx) {
+    public void enterLine(GameConstantsGrammar.LineContext ctx) {
     }
 
     /**
@@ -63,7 +63,7 @@ public class GameConstantsBaseListener implements GameConstantsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFurtherValue(GameConstantsParser.FurtherValueContext ctx) {
+    public void exitLine(GameConstantsGrammar.LineContext ctx) {
     }
 
     /**
@@ -72,7 +72,7 @@ public class GameConstantsBaseListener implements GameConstantsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMultiValue(GameConstantsParser.MultiValueContext ctx) {
+    public void enterFile(GameConstantsGrammar.FileContext ctx) {
     }
 
     /**
@@ -81,43 +81,7 @@ public class GameConstantsBaseListener implements GameConstantsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMultiValue(GameConstantsParser.MultiValueContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLine(GameConstantsParser.LineContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLine(GameConstantsParser.LineContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterFile(GameConstantsParser.FileContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitFile(GameConstantsParser.FileContext ctx) {
+    public void exitFile(GameConstantsGrammar.FileContext ctx) {
     }
 
     /**

@@ -241,7 +241,6 @@
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports/AngbandDisplayCharacter.g4" />
@@ -255,6 +254,46 @@
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/WorldLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/WorldsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Worlds.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />

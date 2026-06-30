@@ -15,62 +15,115 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.grammars;
-
-            import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
-
-            import java.util.List;
-            import java.util.ArrayList;
-        
+// Generated from Worlds.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link GameConstantsGrammarListener},
+ * This class provides an empty implementation of {@link WorldsListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class GameConstantsGrammarBaseListener implements GameConstantsGrammarListener {
+public class WorldsBaseListener implements WorldsListener {
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterRecordCount(Worlds.RecordCountContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitRecordCount(Worlds.RecordCountContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterLevelNum(Worlds.LevelNumContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitLevelNum(Worlds.LevelNumContext ctx) {
+    }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterField(GameConstantsGrammar.FieldContext ctx) { }
+     */
+    @Override
+    public void enterLevelName(Worlds.LevelNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitField(GameConstantsGrammar.FieldContext ctx) { }
+     */
+    @Override
+    public void exitLevelName(Worlds.LevelNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterLine(GameConstantsGrammar.LineContext ctx) { }
+     */
+    @Override
+    public void enterUpAndDown(Worlds.UpAndDownContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitLine(GameConstantsGrammar.LineContext ctx) { }
+     */
+    @Override
+    public void exitUpAndDown(Worlds.UpAndDownContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFile(GameConstantsGrammar.FileContext ctx) { }
+     */
+    @Override
+    public void enterLine(Worlds.LineContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFile(GameConstantsGrammar.FileContext ctx) { }
+     */
+    @Override
+    public void exitLine(Worlds.LineContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(Worlds.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(Worlds.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

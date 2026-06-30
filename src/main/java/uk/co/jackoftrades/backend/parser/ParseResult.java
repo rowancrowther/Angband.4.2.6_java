@@ -19,6 +19,14 @@ package uk.co.jackoftrades.backend.parser;
 
 import java.util.List;
 
+/**
+ * A record template to be used when returning items from a
+ * {@code lib/gamedata} file parse
+ *
+ * @param items  A list of items of type T (the template class)
+ * @param errors A String List of errors
+ * @param <T>    The object type which this parser is holding.
+ */
 public record ParseResult<T>(List<T> items, List<String> errors) {
     public boolean hasErrors() {
         return !errors.isEmpty();

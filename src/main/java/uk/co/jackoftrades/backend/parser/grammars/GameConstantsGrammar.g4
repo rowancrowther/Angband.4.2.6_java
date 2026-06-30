@@ -84,7 +84,7 @@ line
 /*
  * @author Rowan Crowther
  *
- * Top level, returns a DTO of GameConstantsParseRecord, which consists of
+ * Top level, returns a DTO of WorldParseRecord, which consists of
  * three fields: String category, List<String> fields, int lineNo.
  * Contents of this are parsed to the GameConstantsReader which parses
  * the list of field values.

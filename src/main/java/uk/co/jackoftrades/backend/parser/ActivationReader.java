@@ -40,13 +40,11 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ActivationReader implements Reader<Activation> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author ClaudeCode
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -55,12 +53,25 @@ public class ActivationReader implements Reader<Activation> {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
+     *
+     * @author Rowan Crowther
      */
     @Override
     public @NotNull List<Activation> parse(@NotNull String filename) throws IOException {
         return parseWithResult(filename).items();
     }
 
+    /**
+     * Return an ArrayList of items read from the file, and handle any
+     * parse errors found during parsing
+     *
+     * @param filename THe name of the file we are parsing
+     * @return A ParseResult record, which consists of two items,
+     * a List<T> of items (activations in this case), and a
+     * String List of errors
+     * @throws IOException when the file could not be found
+     * @author Rowan Crowther
+     */
     public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
         List<ActivationParseRecord> records = new ArrayList<>();
         int recordCount;
@@ -120,5 +131,4 @@ public class ActivationReader implements Reader<Activation> {
 
         return new ParseResult<>(activations, errorCatcher.getErrors());
     }
-
 }

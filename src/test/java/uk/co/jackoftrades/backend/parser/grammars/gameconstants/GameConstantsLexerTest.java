@@ -33,8 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * text — for each {@code constants.txt} directive shape. They pin down the behaviours designed by
  * hand: the four token kinds ({@code GC_NAME}, {@code GC_MSG}, {@code COLON}, {@code INTEGER}), the
  * single sign-capable {@code INTEGER} (C7), hyphenated lowercase names, and that the imported
- * {@link uk.co.jackoftrades.backend.parser.grammars.imports.CommentsAndEol} comment/EOL rules are
- * skipped (so CRLF gamedata tokenises clean — C9).
+ * {@code CommentsAndEol} comment/EOL rules are skipped (so CRLF gamedata tokenises clean — C9).
  *
  * @author ClaudeCode
  */

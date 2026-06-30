@@ -20,29 +20,30 @@ package uk.co.jackoftrades.backend.parser;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.world.WorldLexer;
-import uk.co.jackoftrades.backend.parser.world.WorldParser;
+import uk.co.jackoftrades.backend.parser.grammars.world.Worlds;
+import uk.co.jackoftrades.backend.parser.grammars.world.WorldsLexer;
+import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into the corresponding data objects objects by driving the
- * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * Loads the data-file lib/gamedata/world.txt entries into the corresponding
+ * data objects by driving the matching ANTLR-generated lexer/parser. The
+ * thin hand-written bridge between the generated grammar code and the game,
+ * implementing the shared {@link Reader} contract (Java port of the
+ * equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
-public class WorldReader implements Reader<WorldParser.ParsedWorld> {
+public class WorldReader implements Reader<WorldParseRecord> {
     /**
-     * Logger used to report file-loading failures.
-     *
-     * @author ClaudeCode
+     * Logger used to report file-loading failures
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -51,22 +52,93 @@ public class WorldReader implements Reader<WorldParser.ParsedWorld> {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
+     *
+     * @author Rowan Crowther
      */
     @NotNull
-    @Contract("_ -> !null")
     @Override
-    public List<WorldParser.ParsedWorld> parse(@NotNull String filename) throws IOException {
+    public List<WorldParseRecord> parse(@NotNull String filename) throws IOException {
+        return parseWithResults(filename).items();
+    }
+
+    /**
+     * Run the parser and generate the ArrayList from the file
+     * logging all errors that occur during the run. Once the parse
+     * has been complete, change the incoming values to values
+     * acceptable to the data format of the stored values
+     *
+     * @param filename The name of the file to parse
+     * @return A {@link ParseResult} of type {@link WorldParseRecord}
+     * @throws IOException when there is a problem finding or reading
+     *                     the file
+     * @author Rowan Crowther
+     */
+    public ParseResult<WorldParseRecord> parseWithResults(@NotNull String filename) throws IOException {
+        ParseResult<WorldParseRecord> worldResult = new ParseResult<>(new ArrayList<>(), new ArrayList<>());
+        List<List<String>> records;
+        int recCount = 0;
+
+        ParseErrors errorCatcher = null;
+
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            WorldLexer lexer = new WorldLexer(stream);
+            WorldsLexer lexer = new WorldsLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            WorldParser parser = new WorldParser(tokens);
-            WorldParser.FileContext output = parser.file();
+            Worlds parser = new Worlds(tokens);
 
-            return output.levels;
+            // Install the error catcher
+            errorCatcher = ParseErrors.install(lexer, parser, filename);
+
+            Worlds.FileContext output = parser.file();
+
+            // throw any caught errors
+            errorCatcher.throwIfAny();
+
+            records = output.levels;
+
+            try {
+                recCount = Integer.parseInt(output.declaredCount);
+            } catch (NumberFormatException e) {
+                errorCatcher.add("Invalid number format for declared count");
+                recCount = -1;
+            }
+
+            if (recCount != -1 && recCount != records.size()) {
+                errorCatcher.add("record-count header declares " + recCount +
+                        " but file contains " + records.size());
+            }
+
+            int line = -1;
+
+            for (List<String> record : records) {
+                try {
+                    int levelNumber = Integer.parseInt(record.get(0));
+                    String levelName = record.get(1);
+                    String upLevelName = record.get(2).equals("None")
+                            ? null : record.get(2);
+                    String downLevelName = record.get(3).equals("None")
+                            ? null : record.get(3);
+                    line = Integer.parseInt(record.get(4));
+
+                    WorldParseRecord worldParseRecord = new WorldParseRecord(levelNumber,
+                            levelName, upLevelName, downLevelName, line);
+
+                    worldResult.items().add(worldParseRecord);
+
+                } catch (NumberFormatException e) {
+                    errorCatcher.add("Line: " + record.get(4) + ": Invalid number format found: " +
+                            record.get(0));
+                }
+            }
+
+            errorCatcher.throwIfAny();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
+        } catch (ParseCancellationException e) {
+            return new ParseResult<>(List.of(), errorCatcher.getErrors());
         }
+
+        return worldResult;
     }
 }

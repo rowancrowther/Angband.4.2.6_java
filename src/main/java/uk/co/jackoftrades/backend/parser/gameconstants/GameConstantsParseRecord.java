@@ -27,7 +27,7 @@ import java.util.List;
  * The grammar's only job is to extract raw text from the data file and populate
  * this record — no enum resolution, no domain-object construction, no calls to
  * GameConstants. All of that work happens in the reader (GameConstantsReader),
- * which converts a {@code List<GameConstantsParseRecord>} into the real domain
+ * which converts a {@code List<WorldParseRecord>} into the real domain
  * objects once the domain API is stable enough to use.</p>
  *
  * <p>A DTO rather than returning the domain values directly

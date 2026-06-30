@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.world;
+// Generated from Worlds.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link WorldVisitor},
+ * This class provides an empty implementation of {@link WorldsVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements WorldVisitor<T> {
+public class WorldsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements WorldsVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,35 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLevelNum(WorldParser.LevelNumContext ctx) {
+    public T visitRecordCount(Worlds.RecordCountContext ctx) {
+        return visitChildren(ctx);
+    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitLevelNum(Worlds.LevelNumContext ctx) {
+        return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitLevelName(Worlds.LevelNameContext ctx) {
+        return visitChildren(ctx); }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitUpAndDown(Worlds.UpAndDownContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +76,7 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLevelName(WorldParser.LevelNameContext ctx) {
+    public T visitLine(Worlds.LineContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,29 +87,6 @@ public class WorldBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitUpAndDown(WorldParser.UpAndDownContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitLine(WorldParser.LineContext ctx) {
-        return visitChildren(ctx);
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitFile(WorldParser.FileContext ctx) {
-        return visitChildren(ctx);
-    }
+    public T visitFile(Worlds.FileContext ctx) {
+        return visitChildren(ctx); }
 }

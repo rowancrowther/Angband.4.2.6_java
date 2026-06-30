@@ -3,6 +3,9 @@
 # records are
 # level:level name:level up:level down
 
+# record-count must match the number of level: records below - update it if a level is added or removed.
+record-count:128
+
 level:0:Town:None:Angband 1
 level:1:Angband 1:Town:Angband 2
 level:2:Angband 2:Angband 1:Angband 3

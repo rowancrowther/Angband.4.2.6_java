@@ -12,59 +12,64 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.world;
+// Generated from Worlds.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.world;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link WorldParser}.
+ * by {@link Worlds}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  * operations with no return type.
  */
-public interface WorldVisitor<T> extends ParseTreeVisitor<T> {
+public interface WorldsVisitor<T> extends ParseTreeVisitor<T> {
     /**
-     * Visit a parse tree produced by {@link WorldParser#levelNum}.
+     * Visit a parse tree produced by {@link Worlds#recordCount}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitLevelNum(WorldParser.LevelNumContext ctx);
+    T visitRecordCount(Worlds.RecordCountContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link WorldParser#levelName}.
+     * Visit a parse tree produced by {@link Worlds#levelNum}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitLevelName(WorldParser.LevelNameContext ctx);
+    T visitLevelNum(Worlds.LevelNumContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link WorldParser#upAndDown}.
+     * Visit a parse tree produced by {@link Worlds#levelName}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitUpAndDown(WorldParser.UpAndDownContext ctx);
+    T visitLevelName(Worlds.LevelNameContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link WorldParser#line}.
-     *
-     * @param ctx the parse tree
+     * Visit a parse tree produced by {@link Worlds#upAndDown}.
+	 * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitLine(WorldParser.LineContext ctx);
+    T visitUpAndDown(Worlds.UpAndDownContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link WorldParser#file}.
-     *
-     * @param ctx the parse tree
+	 * Visit a parse tree produced by {@link Worlds#line}.
+	 * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFile(WorldParser.FileContext ctx);
+    T visitLine(Worlds.LineContext ctx);
+
+    /**
+	 * Visit a parse tree produced by {@link Worlds#file}.
+	 * @param ctx the parse tree
+     * @return the visitor result
+	 */
+	T visitFile(Worlds.FileContext ctx);
 }

@@ -19,12 +19,14 @@ package uk.co.jackoftrades.middle.game.globals;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.jetbrains.annotations.*;
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
-import uk.co.jackoftrades.backend.numerics.Rational;
 import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
-import uk.co.jackoftrades.backend.parser.world.WorldParser;
+import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
@@ -35,25 +37,14 @@ import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.TrapKind;
-import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
-import uk.co.jackoftrades.middle.combat.CriticalLevel;
-import uk.co.jackoftrades.middle.combat.O_CriticalLevel;
-import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.*;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.*;
-import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.*;
-import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 
 import java.io.File;
 import java.io.IOException;
@@ -120,47 +111,47 @@ public class GameConstants {
     /**
      * A World record used to store the details of each level of the dungeon, including the Town
      *
+     * @param levelNumber the number of the level in 0-base from the town downwards
      * @param levelName the name of the level
-     * @param prevLevel the name of the previous level in the List of worlds
-     * @param nextLevel the name of the next level in the list of worlds
+     * @param prevLevel the name of the previous level in the List of worlds or null if one doesn't exist,
+     *                  i.e. the current level is the town level
+     * @param nextLevel the name of the next level in the list of worlds or null if one doesn't exist, i.e.
+     *                  the current level is the deepest one in the dungeon
      */
-    public record World(int levelNumber, @NotNull String levelName, @NotNull String prevLevel,
-                        @NotNull String nextLevel) {
+    public record World(int levelNumber, @NotNull String levelName, @Nullable String prevLevel,
+                        @Nullable String nextLevel) {
     }
 
-//    /**
-//     * Translates a list of <code>GameConstantsParser.Entry</code> to <code>Entry</code>.
-//     *
-//     * @param parserEntries the incoming list of <code>GameConstantsParser</code> entries.
-//     * @return A List of <code>Entry</code> records
-//     */
-//    @NotNull
-//    @Unmodifiable
-//    @Contract("_ -> !null")
-//    private static List<Entry> toEntries(@Nullable List<GameConstantsParser.Entry> parserEntries) {
-//        if (parserEntries == null) return List.of();
-//
-//        return parserEntries.stream()
-//                .map(e -> new Entry(e.key(), e.value()))
-//                .toList();
-//    }
+    /**
+     * Load in the list of 'world' levels from the gamedata/world.txt file.
+     *
+     * @throws IOException if there is a problem loading the file
+     * @author Rowan Crowther
+     */
+    private static void loadWorld() throws IOException {
+        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
+        WorldReader worldReader = new WorldReader();
 
-//    /**
-//     * Translates a list of <code>WorldParser.ParsedWorld</code> records to <code>World</code> records.
-//     *
-//     * @param worlds an ArrayList of WorldParser.ParsedWorld records.
-//     * @return a List of <code>Record</code> records.
-//     */
-//    @NotNull
-//    @Unmodifiable
-//    @Contract("_ -> !null")
-//    private static List<World> toWorlds(@Nullable List<WorldParser.ParsedWorld> worlds) {
-//        if (worlds == null) return List.of();
-//
-//        return worlds.stream()
-//                .map(w -> new World(w.level(), w.levelName(), w.levelUp(), w.levelDown()))
-//                .toList();
-//    }
+        try {
+            ParseResult<WorldParseRecord> result = worldReader.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid lib/gamedata/world.txt file.";
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                return;
+            }
+
+            worlds = result.items().stream()
+                    .map(r -> new World(r.getLevelNumber(), r.getLevelName(), r.getUp(), r.getDown()))
+                    .toList();
+            maxRandDepth = worlds.size();
+        } catch (IOException e) {
+            String message = "Error loading lib/gamedata/world.txt file.";
+            logger.error(message, e);
+            throw e;
+        }
+    }
 
     /**
      * The deepest level the dungeon can reach. Used in object and monster creations. Must be greater than 100. Setting
@@ -401,10 +392,9 @@ public class GameConstants {
 //    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
 
     /**
-     * Worlds is a list of World records. There should be exactly 128 levels, as outlined in the maxRandDepth,
-     * and should be from Town (level 0) to Angband127.
+     * Worlds is a list of Worlds. There should be levels from Town (level 0) to Angband 127.
      */
-    private static List<World> worlds = null;
+    private static List<World> worlds;
 
     /*
      * Global arrays of master values
@@ -916,7 +906,7 @@ public class GameConstants {
     public static void init() {
         try {
             loadGameConstants();
-//            loadWorld();                // World arraylist determines maxRandDepth
+            loadWorld();                // World arraylist determines maxRandDepth
 //            loadProjections();
 //            loadUIEntryRenderers();
 //            loadUIEntryBases();         // Dependent on UIEntyRenderers
@@ -1585,14 +1575,17 @@ public class GameConstants {
 //    private static void loadWorld() throws IOException {
 //        WorldReader worldReader = new WorldReader();
 //        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
+//        ParseResult<WorldParseRecord> result;
 //
 //        try {
-//            worlds = toWorlds(worldReader.parse(filename));
-//        } catch (IOException ex) {
-//            logger.error("Error while loading file {}", filename, ex);
-//            throw ex;
+//            result = worldReader.parseWithResults(filename);
+//            if (result.hasErrors()) return;
+//        } catch (IOException e) {
+//            logger.error("Error while loading file {}", filename, e);
+//            throw e;
 //        }
 //
+//        worlds = result.items();
 //        maxRandDepth = worlds.size();
 //    }
 
@@ -1604,795 +1597,6 @@ public class GameConstants {
     @Contract(pure = true)
     private GameConstants() {
     }
-
-    /**
-     * Loads the contents of the file constants.txt in the lib\gamedata directory and splits the values out
-     * into the various GameConstants values.
-     */
-//    private static void loadGameConstants() throws IOException {
-//        GameConstantsReader reader = new GameConstantsReader();
-//        String filename = ANGBAND_DIR_GAMEDATA + "constants.txt";
-//        List<Entry> keyValues = toEntries(reader.parse(filename));
-//
-//        for (Entry entry : keyValues) {
-//            switch (entry.key()) {
-//                case "level-max" -> setLevelMax(entry);
-//                case "mon-gen" -> setMonGen(entry);
-//                case "mon-play" -> setMonPlay(entry);
-//                case "dun-gen" -> setDunGen(entry);
-//                case "world" -> setWorld(entry);
-//                case "carry-cap" -> setCarryCap(entry);
-//                case "store" -> setStoreParameters(entry);
-//                case "obj-make" -> setObjectCreation(entry);
-//                case "player" -> setPlayerConstants(entry);
-//                case "melee-critical" -> setNonOMeleeCrits(entry);
-//                case "melee-critical-level" -> setNonOMeleeCriticalLevels(entry);
-//                case "ranged-critical" -> setNonORangedCrits(entry);
-//                case "ranged-critical-level" -> setNonORangedCriticalLevels(entry);
-//                case "o-melee-critical" -> setOMeleeCrits(entry);
-//                case "o-melee-critical-level" -> setOMeleeCriticalLevels(entry);
-//                case "o-ranged-critical" -> setORangedCrits(entry);
-//                case "o-ranged-critical-level" -> setORangedCriticalLevels(entry);
-//
-//                default -> {
-//                    String message = "Invalid token found while parsing file " + filename + ". Tokens were: " + entry.key() + ":" + entry.value();
-//                    InvalidTokenFoundDuringParse ex = new InvalidTokenFoundDuringParse(message);
-//                    logger.error(message, ex);
-//                    throw ex;
-//                }
-//            }
-//        }
-//    }
-
-
-//    /**
-//     * Deals with the O Ranged Critical levels from the constants.txt file
-//     *
-//     * @param entry the key value pair from the ORanged section of the constants.txt file
-//     */
-//    private static void setORangedCriticalLevels(@NotNull Entry entry) {
-//        String tag = entry.key() + ":";
-//
-//        String[] values = entry.value().split(":");
-//
-//        if (values.length != 3) {
-//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        int chance;
-//        int dice;
-//        MessageType message;
-//
-//        try {
-//            chance = Integer.parseInt(values[0]);
-//            dice = Integer.parseInt(values[1]);
-//            message = MessageType.valueOf("MSG_" + values[2]);
-//        } catch (NumberFormatException e) {
-//            String errorMessage = "Invalid number format found. Tokens were: " + tag + entry.value();
-//            logger.error(errorMessage);
-//            throw new InvalidTokenFoundDuringParse(errorMessage);
-//        } catch (IllegalArgumentException e) {
-//            String errorMessage = "Invalid message found. Tokens were: " + tag + entry.value();
-//            logger.error(errorMessage);
-//            throw new InvalidTokenFoundDuringParse(errorMessage);
-//        }
-//
-//        rOCriticalLevels.add(new O_CriticalLevel(chance, dice, message));
-//    }
-//
-//    /**
-//     * Deals with an O Ranged Crit record from the constants.txt file
-//     *
-//     * @param entry the record to examine
-//     */
-//    private static void setORangedCrits(@NotNull Entry entry) {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "debuff-toh":
-//                oRCritDebuffToh = val;
-//                break;
-//
-//            case "power-launched-toh-scale-numerator":
-//                oRCritPowerLaunchedTohSclNum = val;
-//                break;
-//
-//            case "power-launched-toh-scale-denominator":
-//                oRCritPowerLaunchedTohSclDen = val;
-//                break;
-//
-//            case "power-thrown-toh-scale-numerator":
-//                oRCritPowerThrownTohSclNum = val;
-//                break;
-//
-//            case "power-thrown-toh-scale-denominator":
-//                oRCritPowerThrownTohSclDen = val;
-//                break;
-//
-//            case "chance-power-scale-numerator":
-//                oRCritChancePowerSclNum = val;
-//                break;
-//
-//            case "chance-power-scale-denominator":
-//                oRCritChancePowerSclDen = val;
-//                break;
-//
-//            case "chance-add-denominator":
-//                oRCritChanceAddDen = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deals with an O Melee Critical Level record from the constants.txt file
-//     *
-//     * @param entry the record to deal with
-//     */
-//    private static void setOMeleeCriticalLevels(@NotNull Entry entry) {
-//        String tag = entry.key() + ":";
-//        String[] values = entry.value().split(":");
-//
-//        if (values.length != 3) {
-//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        int chance;
-//        int dice;
-//        MessageType messageName;
-//
-//        try {
-//            chance = Integer.parseInt(values[0]);
-//            dice = Integer.parseInt(values[1]);
-//            messageName = MessageType.valueOf("MSG_" + values[2]);
-//        } catch (NumberFormatException e) {
-//            String message = "Invalid number format found. Tokens were: " + tag + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        } catch (IllegalArgumentException e) {
-//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-//            logger.error(message, e);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        mOCriticalLevels.add(new O_CriticalLevel(chance, dice, messageName));
-//    }
-//
-//    /**
-//     * Deal with an O Melee Crit entry
-//     *
-//     * @param entry the String key String value record for this entry
-//     */
-//    private static void setOMeleeCrits(@NotNull Entry entry) {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "debuff-toh":
-//                oMCritDebuffToh = val;
-//                break;
-//
-//            case "power-toh-scale-numerator":
-//                oMCritPowerTohSclNum = val;
-//                break;
-//
-//            case "power-toh-scale-denominator":
-//                oMCritPowerTohSclDen = val;
-//                break;
-//
-//            case "chance-power-scale-numerator":
-//                oMCritChancePowerSclNum = val;
-//                break;
-//
-//            case "chance-power-scale-denominator":
-//                oMCritChancePowerSclDen = val;
-//                break;
-//
-//            case "chance-add-denominator":
-//                oMCritChanceAddDen = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a normal ranged critical level entry
-//     *
-//     * @param entry the entry
-//     */
-//    private static void setNonORangedCriticalLevels(@NotNull Entry entry) {
-//        String tag = entry.key() + ":";
-//        String[] results = entry.value().split(":");
-//
-//        if (results.length != 4) {
-//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        int cutoffPower = 0;
-//        int damageMult = 0;
-//        int amountAdded = 0;
-//        MessageType messageEnum = MessageType.MSG_NONE;
-//        String messageEnumString = "";
-//
-//        try {
-//            cutoffPower = Integer.parseInt(results[0]);
-//            damageMult = Integer.parseInt(results[1]);
-//            amountAdded = Integer.parseInt(results[2]);
-//            messageEnumString = results[3];
-//            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
-//        } catch (NumberFormatException e) {
-//            String message = "Invalid number found. Tokens were: " + tag + entry.value();
-//            logger.error(message, e);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        } catch (IllegalArgumentException e) {
-//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-//            logger.error(message, e);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        rCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
-//    }
-//
-//    /**
-//     * Deal with a normal Ranged critical entry
-//     *
-//     * @param entry the entry
-//     */
-//    private static void setNonORangedCrits(@NotNull Entry entry) {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "debuff-toh":
-//                rCritDebuffToh = val;
-//                break;
-//
-//            case "chance-weight-scale":
-//                rCritChanceWeightScl = val;
-//                break;
-//
-//            case "chance-toh-scale":
-//                rCritChanceTohScl = val;
-//                break;
-//
-//            case "chance-level-scale":
-//                rCritChanceLevelScl = val;
-//                break;
-//
-//            case "chance-launched-toh-skill-scale":
-//                rCritChanceLaunchedTohSkillScl = val;
-//                break;
-//
-//            case "chance-thrown-toh-skill-scale":
-//                rCritChanceThrownTohSkillScl = val;
-//                break;
-//
-//            case "chance-offset":
-//                rCritChanceOffset = val;
-//                break;
-//
-//            case "chance-range":
-//                rCritChanceRange = val;
-//                break;
-//
-//            case "power-weight-scale":
-//                rCritPowerWeightScl = val;
-//                break;
-//
-//            case "power-random":
-//                rCritPowerRandom = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deals with a normal melee critical level entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an invalid number of tokens were input for this entry
-//     */
-//    private static void setNonOMeleeCriticalLevels(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        String tag = entry.key() + ":";
-//        String[] results = entry.value().split(":");
-//
-//        if (results.length != 4) {
-//            String message = "Invalid number of tokens found. Tokens were: " + tag + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        int cutoffPower;
-//        int damageMult;
-//        int amountAdded;
-//        MessageType messageEnum;
-//        String messageEnumString;
-//
-//        try {
-//            cutoffPower = Integer.parseInt(results[0]);
-//            damageMult = Integer.parseInt(results[1]);
-//            amountAdded = Integer.parseInt(results[2]);
-//            messageEnumString = results[3];
-//            messageEnum = MessageType.valueOf("MSG_" + messageEnumString);
-//        } catch (NumberFormatException e) {
-//            String message = "Invalid number found. Tokens were: " + tag + entry.value();
-//            logger.error(message, e);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        } catch (IllegalArgumentException e) {
-//            String message = "Message flag not found. Tokens were: " + tag + entry.value();
-//            logger.error(message, e);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//
-//        mCriticalLevels.add(new CriticalLevel(cutoffPower, damageMult, amountAdded, messageEnum));
-//    }
-//
-//    /**
-//     * Deal with a normal melee critical entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse a melee critical entry with an unknown key was found
-//     */
-//    private static void setNonOMeleeCrits(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "debuff-toh":
-//                mCritDebuffToh = val;
-//                break;
-//
-//            case "chance-weight-scale":
-//                mCritChanceWeightScl = val;
-//                break;
-//
-//            case "chance-toh-scale":
-//                mCritChanceTohScl = val;
-//                break;
-//
-//            case "chance-level-scale":
-//                mCritChanceLevelScl = val;
-//                break;
-//
-//            case "chance-toh-skill-scale":
-//                mCritChanceTohSkillScl = val;
-//                break;
-//
-//            case "chance-offset":
-//                mCritChanceOffset = val;
-//                break;
-//
-//            case "chance-range":
-//                mCritChanceRange = val;
-//                break;
-//
-//            case "power-weight-scale":
-//                mCritPowerWeightScl = val;
-//                break;
-//
-//            case "power-random":
-//                mCritPowerRandom = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a Player Constant entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an invalid key found
-//     */
-//    private static void setPlayerConstants(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "max-sight":
-//                maxSight = val;
-//                break;
-//
-//            case "max-range":
-//                maxRange = val;
-//                break;
-//
-//            case "start-gold":
-//                startGold = val;
-//                break;
-//
-//            case "food-value":
-//                foodValue = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a Object Creation entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an unknown key found
-//     * @throws NumberFormatException        a badly formatted integer found
-//     */
-//    private static void setObjectCreation(@NotNull Entry entry) throws InvalidTokenFoundDuringParse, NumberFormatException {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "max-depth":
-//                maxObjDepth = val;
-//                break;
-//
-//            case "great-obj":
-//                greatObj = val;
-//                break;
-//
-//            case "great-ego":
-//                greatEgo = val;
-//                break;
-//
-//            case "fuel-torch":
-//                fuelTorch = val;
-//                break;
-//
-//            case "fuel-lamp":
-//                fuelLamp = val;
-//                break;
-//
-//            case "default-lamp":
-//                defaultLamp = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a Store Parameter entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an unknown key found
-//     */
-//    private static void setStoreParameters(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "inven-max":
-//                storeInvenMax = val;
-//                break;
-//
-//            case "turns":
-//                storeTurns = val;
-//                break;
-//
-//            case "shuffle":
-//                storeShuffle = val;
-//                break;
-//
-//            case "magic-level":
-//                storeMagicLevel = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a Carry Cap entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-//     */
-//    private static void setCarryCap(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "pack-size":
-//                packSize = val;
-//                break;
-//
-//            case "quiver-size":
-//                quiverSize = val;
-//                break;
-//
-//            case "quiver-slot-size":
-//                quiverSlotSize = val;
-//                break;
-//
-//            case "thrown-quiver-mult":
-//                thrownQuiverMult = val;
-//                break;
-//
-//            case "floor-size":
-//                floorSize = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a world constant entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-//     */
-//    private static void setWorld(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "max-depth":
-//                maxDepth = val;
-//                break;
-//
-//            case "day-length":
-//                dayLength = val;
-//                break;
-//
-//            case "dungeon-hgt":
-//                dungeonHeight = val;
-//                break;
-//
-//            case "dungeon-wid":
-//                dungeonWidth = val;
-//                break;
-//
-//            case "town-hgt":
-//                townHeight = val;
-//                break;
-//
-//            case "town-wid":
-//                townWidth = val;
-//                break;
-//
-//            case "feeling-total":
-//                feelingTotal = val;
-//                break;
-//
-//            case "feeling-need":
-//                feelingNeed = val;
-//                break;
-//
-//            case "stair-skip":
-//                stairSkip = val;
-//                break;
-//
-//            case "move-energy":
-//                moveEnergy = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a dungeon generation constant entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse invalid entry.key found
-//     */
-//    private static void setDunGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "cent-max":
-//                levelRoomMax = val;
-//                break;
-//
-//            case "door-max":
-//                levelDoorMax = val;
-//                break;
-//
-//            case "wall-max":
-//                wallPierceMax = val;
-//                break;
-//
-//            case "tunn-max":
-//                tunnGridMax = val;
-//                break;
-//
-//            case "amt-room":
-//                roomItemAv = val;
-//                break;
-//
-//            case "amt-item":
-//                bothItemAv = val;
-//                break;
-//
-//            case "amt-gold":
-//                bothGoldAv = val;
-//                break;
-//
-//            case "pit-max":
-//                levelPitMax = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a monster entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse unknown entry.key found
-//     */
-//    private static void setMonPlay(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "break-glyph":
-//                glyphHardness = val;
-//                break;
-//
-//            case "mult-rate":
-//                reproMonsterRate = val;
-//                break;
-//
-//            case "life-drain":
-//                lifeDrainPercent = val;
-//                break;
-//
-//            case "flee-range":
-//                fleeRange = val;
-//                break;
-//
-//            case "turn-range":
-//                turnRange = val;
-//                break;
-//
-//            default:
-//                String message = "Invalid token found. Tokens were: " + entry.key() + ":" + entry.value();
-//                logger.error(message);
-//                throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a monster generation entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse an unknown entry.key found
-//     */
-//    private static void setMonGen(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        switch (name) {
-//            case "chance":
-//                allocMonsterChance = val;
-//                break;
-//
-//            case "level-min":
-//                levelMonsterMin = val;
-//                break;
-//
-//            case "town-day":
-//                townMonstersDay = val;
-//                break;
-//
-//            case "town-night":
-//                townMonstersNight = val;
-//                break;
-//
-//            case "repro-max":
-//                reproMonstersNight = val;
-//                break;
-//
-//            case "ood-chance":
-//                oodMonsterChance = val;
-//                break;
-//
-//            case "ood-amount":
-//                oodMonsterAmount = val;
-//                break;
-//
-//            case "group-max":
-//                monsterGroupMax = val;
-//                break;
-//
-//            case "group-dist":
-//                monsterGroupDist = val;
-//                break;
-//
-//            default:
-//                String msg = "Invalid token found in constants.txt file. Input was " + entry.key() + ":" + entry.value();
-//                logger.error(msg);
-//                throw new InvalidTokenFoundDuringParse(msg);
-//        }
-//    }
-//
-//    /**
-//     * Deal with a level maximum entry
-//     *
-//     * @param entry the entry
-//     * @throws InvalidTokenFoundDuringParse An unknown entry.key found
-//     */
-//    private static void setLevelMax(@NotNull Entry entry) throws InvalidTokenFoundDuringParse {
-//        NameValuePair pair = getValues(entry.value(), entry.key());
-//
-//        String name = pair.name();
-//        int val = pair.value();
-//
-//        if (name.equals("monsters")) {
-//            levelMonsterMax = val;
-//        } else {
-//            String message = "Unknown tag found in constants.txt file. Token was " + entry.key() + ":" + entry.value();
-//            logger.error(message);
-//            throw new InvalidTokenFoundDuringParse(message);
-//        }
-//    }
 
     /**
      * Convert a String key, String value record into a String key int value record

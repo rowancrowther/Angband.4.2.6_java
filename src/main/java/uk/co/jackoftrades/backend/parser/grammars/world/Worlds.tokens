@@ -1,0 +1,10 @@
+RECORD_COUNT=1
+LEVEL=2
+COLON=3
+INTEGER=4
+NAME=5
+COMMENT=6
+EOL=7
+'record-count:'=1
+'level:'=2
+':'=3

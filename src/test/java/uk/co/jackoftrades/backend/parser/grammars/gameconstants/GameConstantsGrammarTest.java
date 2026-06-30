@@ -31,7 +31,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * half; paired with {@link GameConstantsLexer}).
  *
  * <p>These drive the {@code file} start rule on small inline sources and assert on the extraction
- * output — the {@code List<GameConstantsParseRecord>} of {@code (category, ordered field strings,
+ * output — the {@code List<WorldParseRecord>} of {@code (category, ordered field strings,
  * line number)} — plus the syntax-error count (collected via a custom listener). They lock in the
  * design decisions: the single uniform {@code line} rule handles every directive arity (the 2-/3-/4-
  * field split is the reader's job, not the grammar's), fields keep file order, line numbers survive

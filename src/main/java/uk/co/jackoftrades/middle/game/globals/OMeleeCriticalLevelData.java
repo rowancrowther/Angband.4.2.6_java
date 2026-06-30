@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.game.globals;
 
+import uk.co.jackoftrades.middle.enums.MessageType;
+
 /**
  * Level for non-standard (O) melee criticals. These are normally visited in the order they are
  * written in ("It is convenient to put the least likely first"). If no critical level is
@@ -24,8 +26,10 @@ package uk.co.jackoftrades.middle.game.globals;
  *
  * @param chance      1/chance that this level of critical occurs
  * @param dice        The number of dice to add for the critical
- * @param messageType The message type enum to use when this critical occurs
+ * @param messageType The resolved {@link MessageType} emitted
+ *                    when a critical at this level occurs
+ *
  * @author Rowan Crowther
  */
-public record OMeleeCriticalLevelData(int chance, int dice, String messageType) {
+public record OMeleeCriticalLevelData(int chance, int dice, MessageType messageType) {
 }

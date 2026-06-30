@@ -15,42 +15,29 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Reader+lexer for lib/gamedata/constants.txt - Angband's miscellaneous
-// engine-tuning constants (level/monster-generation maxima, critical-hit
-// tables, dungeon-generation limits, etc). Cf. the C parser in src/init.c:
-// struct file_parser constants_parser (init.c:1051), whose directive table
-// is registered in init_parse_constants() (init.c:949-980). Every directive
-// there has the shape "<category> sym label int value" EXCEPT the 4
-// critical-hit-level ones, which instead carry several int fields plus a
-// trailing str message - that 3-vs-4-numeric-field split is exactly what
-// `furtherValue`/`multiValue` below exist to handle:
-//   - "category:label:value"                       -> `section`
-//     (level-max/mon-gen/mon-play/dun-gen/world/carry-cap/store/obj-make/
-//     player/melee-critical/ranged-critical/o-melee-critical/
-//     o-ranged-critical)
-//   - "category:value:value:MSG_NAME"               -> `furtherValue`
-//     (o-melee-critical-level: "uint chance uint dice str msg",
-//      o-ranged-critical-level: same)
-//   - "category:value:value:value:MSG_NAME"         -> `multiValue`
-//     (melee-critical-level: "int cutoff int mult int add str msg",
-//      ranged-critical-level: same)
-// Downstream, uk.co.jackoftrades.middle.game.globals.GameConstants.
-// loadGameConstants() dispatches on `Entry.key()` (the category) and each
-// setXxx() helper re-splits `Entry.value()` on ':' to recover the
-// individual fields - confirmed correct against this grammar's output by
-// reading both sides, so the string-concatenate-then-re-split shape is a
-// deliberate (if unusual) design rather than a bug.
-//
-// POTENTIAL PROBLEMS (minor - this file is otherwise in good shape):
-//
-//   1. FURTHER only matches an uppercase/underscore symbolic name
-//      (e.g. "HIT_GOOD"), but the C registration types this field as a
-//      general "str msg" - free text, not a restricted symbol set. Every
-//      current value (HIT_GOOD/HIT_GREAT/HIT_SUPERB/HIT_HI_GREAT/
-//      HIT_HI_SUPERB) happens to fit, so this is latent rather than active,
-//      the same pattern as TrapLexer.g4's GRAPHICS_COLOUR.
-//
-// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+/*
+ * @author Rowan Crowther
+ *
+ * Reader for lib/gamedata/constants.txt - Angband's miscellaneous
+ * engine-tuning constants (level/monster-generation maxima, critical-hit
+ * tables, dungeon-generation limits, etc). Cf. the C parser in src/init.c:
+ * struct file_parser constants_parser (init.c:1051), whose directive table
+ * is registered in init_parse_constants() (init.c:949-980). Every directive
+ * there has the shape "<category> sym label int value" EXCEPT the 4
+ * critical-hit-level ones, which instead carry several int fields plus a
+ * trailing str message.
+ *
+ * <p>Lines consisting of fields (separated by colon ':') are read in
+ * where the first field value should be a string and is stored as a
+ * category. The remaining fields are stored as a list of strings.
+ *
+ * Downstream, the field values are separated into String label/Integer
+ * value pairs (for everything apart from the 4 critical-hit-level ones, which
+ * parse into a record of Integer, Integer, (Integer), String. All of the
+ * parsed values are put into records, and collected into a GameConstantData
+ * record. This record is stored on GameConstants, and queried for access to
+ * constants.txt values.
+ */
 
 parser grammar GameConstantsGrammar;
 
@@ -64,6 +51,12 @@ options { tokenVocab = GameConstantsLexer; }
             import java.util.ArrayList;
         }
 
+/*
+ * @author Rowan Crowther
+ *
+ * A 'field' value, either a name stored in a String, an integer stored in
+ * a String, or a MessageType stored in a String
+ */
 field
         returns[String fieldValue]
         :   GC_NAME { $fieldValue = $GC_NAME.getText(); }
@@ -71,6 +64,13 @@ field
         |   GC_MSG { $fieldValue = $GC_MSG.getText(); }
         ;
 
+/*
+ * @author Rowan Crowther
+ *
+ * A single line of game constant data, consisting of an initial
+ * category label, a list of values stored as strings, and the
+ * line number of the line
+ */
 line
         returns[String category, List<String> fields, int lineNo]
         @init {
@@ -81,6 +81,14 @@ line
             (COLON f=field { $fields.add($f.fieldValue); })+
         ;
 
+/*
+ * @author Rowan Crowther
+ *
+ * Top level, returns a DTO of GameConstantsParseRecord, which consists of
+ * three fields: String category, List<String> fields, int lineNo.
+ * Contents of this are parsed to the GameConstantsReader which parses
+ * the list of field values.
+ */
 file    returns[ArrayList<GameConstantsParseRecord> results]
         @init {
             $results = new ArrayList<>();

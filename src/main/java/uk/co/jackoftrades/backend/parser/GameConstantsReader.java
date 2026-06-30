@@ -29,6 +29,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
 import uk.co.jackoftrades.backend.parser.grammars.gameconstants.GameConstantsGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.gameconstants.GameConstantsLexer;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.globals.*;
 
 import java.io.IOException;
@@ -127,6 +128,16 @@ public class GameConstantsReader {
         }
     }
 
+    /**
+     * Parse a record from a list of 'o-ranged-critical-level' into the builder
+     *
+     * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
+     *
+     * @param rec    The entry from the list
+     * @param b      The builder responsible for building the game data
+     * @param errors The list of current errors
+     * @author Rowan Crowther
+     */
     private void oRangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                       @NotNull List<String> errors) {
         List<String> f = rec.getFields();
@@ -144,8 +155,16 @@ public class GameConstantsReader {
             return;
 
         String messageType = f.get(2);
+        MessageType messageTypeEnum;
 
-        ORangedCriticalLevelData record = new ORangedCriticalLevelData(chance, dice, messageType);
+        try {
+            messageTypeEnum = MessageType.valueOf("MSG_" + messageType);
+        } catch (IllegalArgumentException e) {
+            errors.add("Line: " + line + ": unknown message type: " + messageType);
+            return;
+        }
+
+        ORangedCriticalLevelData record = new ORangedCriticalLevelData(chance, dice, messageTypeEnum);
         b.addORangedCriticalLevel(record);
     }
 
@@ -220,6 +239,8 @@ public class GameConstantsReader {
     /**
      * Parse a record from a list of 'o-melee-critical-level' into the builder
      *
+     * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -231,7 +252,7 @@ public class GameConstantsReader {
         int line = rec.getLineNumber();
 
         if (f.size() != 3) {
-            errors.add("Line: " + line + ": o-melee-critical expects value:value:value, got " +
+            errors.add("Line: " + line + ": o-melee-critical-level expects value:value:value, got " +
                     f.size() + " fields");
             return;
         }
@@ -239,12 +260,20 @@ public class GameConstantsReader {
         Integer chance = coerceInt(f.get(0), line, errors);
         Integer dice = coerceInt(f.get(1), line, errors);
         String messageType = f.get(2);
+        MessageType messageTypeEnum;
 
         if (chance == null || dice == null) {
             return;
         }
 
-        OMeleeCriticalLevelData record = new OMeleeCriticalLevelData(chance, dice, messageType);
+        try {
+            messageTypeEnum = MessageType.valueOf("MSG_" + messageType);
+        } catch (IllegalArgumentException e) {
+            errors.add("Line: " + line + ": unknown message type " + messageType);
+            return;
+        }
+
+        OMeleeCriticalLevelData record = new OMeleeCriticalLevelData(chance, dice, messageTypeEnum);
         b.addOMeleeCriticalLevelData(record);
     }
 
@@ -308,6 +337,8 @@ public class GameConstantsReader {
     /**
      * Parse a record from a list of 'ranged-critical-level' into the builder
      *
+     * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -331,8 +362,16 @@ public class GameConstantsReader {
             return;
 
         String messageType = f.get(3);
+        MessageType messageTypeEnum;
 
-        b.addRangedCriticalLevelData(new RangedCriticalLevelData(cutoff, damageMultiplier, damageAdded, messageType));
+        try {
+            messageTypeEnum = MessageType.valueOf("MSG_" + messageType);
+        } catch (IllegalArgumentException e) {
+            errors.add("Line: " + line + ": unknown message type: " + messageType);
+            return;
+        }
+
+        b.addRangedCriticalLevelData(new RangedCriticalLevelData(cutoff, damageMultiplier, damageAdded, messageTypeEnum));
     }
 
     /**
@@ -417,6 +456,8 @@ public class GameConstantsReader {
     /**
      * Parse a record from a list of 'melee-critical-level' into the builder
      *
+     * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -439,9 +480,17 @@ public class GameConstantsReader {
         if (cutoff == null || damageMultiplier == null || damageAddition == null) return;
 
         String messageType = f.get(3);
+        MessageType messageTypeEnum;
+
+        try {
+            messageTypeEnum = MessageType.valueOf("MSG_" + messageType);
+        } catch (IllegalArgumentException e) {
+            errors.add("Line: " + rec.getLineNumber() + ": unknown message type: " + messageType);
+            return;
+        }
 
         MeleeCriticalLevelData meleeCriticalLevelData = new MeleeCriticalLevelData(cutoff, damageMultiplier,
-                damageAddition, messageType);
+                damageAddition, messageTypeEnum);
 
         b.addMeleeCriticalLevelData(meleeCriticalLevelData);
     }

@@ -126,7 +126,7 @@ public class ActivationReader implements Reader<Activation> {
         } catch (ParseCancellationException e) {
             // errorCatcher must be non-null as this line would not be reached
             // otherwise
-            return new ParseResult<>(List.of(), errorCatcher.getErrors());
+            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : null);
         }
 
         return new ParseResult<>(activations, errorCatcher.getErrors());

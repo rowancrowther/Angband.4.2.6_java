@@ -136,7 +136,7 @@ public class WorldReader implements Reader<WorldParseRecord> {
             logger.error("Error while loading file {}", filename, e);
             throw e;
         } catch (ParseCancellationException e) {
-            return new ParseResult<>(List.of(), errorCatcher.getErrors());
+            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : null);
         }
 
         return worldResult;

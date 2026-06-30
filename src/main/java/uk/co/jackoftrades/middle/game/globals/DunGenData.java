@@ -24,9 +24,15 @@ package uk.co.jackoftrades.middle.game.globals;
  * @param doorMax Number of possible door locations
  * @param wallMax Number of possible places to pierce room walls with tunnels
  * @param tunnMax Number of tunnel grids
- * @param amtRoom Average number of objects to place in a room (TODO: Work out whether this is per room or per level)
- * @param amtItem Average number of objects to place in rooms/corridors
- * @param amtGold Average amount of treasure to place in rooms/corridors
+ * @param amtRoom Average number of objects scattered into room squares across a
+ *                generated level (mean of a normal distribution with standard
+ *                deviation 3), a per-level count, not per-room.
+ *                cf. C room_item_av, used in gen-cave.c via
+ *                alloc_objects(..., SET_ROOM, ...)
+ * @param amtItem Average number of objects to place in either rooms or corridors
+ *                per generated level
+ * @param amtGold Average amount of treasure to place in rooms/corridors per
+ *                generated level
  * @param pitMax  Maximum number of pits or nests per level
  * @author Rowan Crowther
  */

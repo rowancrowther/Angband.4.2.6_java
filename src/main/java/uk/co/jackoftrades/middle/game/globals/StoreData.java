@@ -21,7 +21,7 @@ package uk.co.jackoftrades.middle.game.globals;
  * Data record for storing 'store' generation data
  *
  * @param invenMax   Maximum number of discrete objects in store inventory
- * @param turns      Number of turns between store turnover (TODO: Confirm this is of store inventory)
+ * @param turns      Number of turns between store inventory turnover
  * @param shuffle    1/chance per day of owner changing
  * @param magicLevel Dungeon level to apply magic to objects for normal stores
  * @author Rowan Crowther

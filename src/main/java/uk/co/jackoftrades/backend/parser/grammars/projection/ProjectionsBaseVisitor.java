@@ -12,24 +12,23 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Projection.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.projection;
+// Generated from Projections.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.projection;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link ProjectionVisitor},
+ * This class provides an empty implementation of {@link ProjectionsVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ProjectionVisitor<T> {
+public class ProjectionsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ProjectionsVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(ProjectionParser.CodeContext ctx) {
+    public T visitRecordCount(Projections.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(ProjectionParser.NameContext ctx) {
+    public T visitCode(Projections.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitType(ProjectionParser.TypeContext ctx) {
+    public T visitName(Projections.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(ProjectionParser.DescContext ctx) {
+    public T visitType(Projections.TypeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPlayerDesc(ProjectionParser.PlayerDescContext ctx) {
+    public T visitDesc(Projections.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBlindDesc(ProjectionParser.BlindDescContext ctx) {
+    public T visitPlayerDesc(Projections.PlayerDescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLashDesc(ProjectionParser.LashDescContext ctx) {
+    public T visitBlindDesc(Projections.BlindDescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitNumerator(ProjectionParser.NumeratorContext ctx) {
+    public T visitLashDesc(Projections.LashDescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDice(ProjectionParser.DiceContext ctx) {
+    public T visitNumerator(Projections.NumeratorContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +135,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDenominator(ProjectionParser.DenominatorContext ctx) {
+    public T visitDenominator(Projections.DenominatorContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +146,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDivisor(ProjectionParser.DivisorContext ctx) {
+    public T visitDivisor(Projections.DivisorContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +157,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDamageCap(ProjectionParser.DamageCapContext ctx) {
+    public T visitDamageCap(Projections.DamageCapContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +168,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMsgt(ProjectionParser.MsgtContext ctx) {
+    public T visitMsgt(Projections.MsgtContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +179,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitObvious(ProjectionParser.ObviousContext ctx) {
+    public T visitObvious(Projections.ObviousContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +190,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitWake(ProjectionParser.WakeContext ctx) {
+    public T visitWake(Projections.WakeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -202,7 +201,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitColour(ProjectionParser.ColourContext ctx) {
+    public T visitColour(Projections.ColourContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -213,7 +212,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitProjection(ProjectionParser.ProjectionContext ctx) {
+    public T visitProjection(Projections.ProjectionContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -224,7 +223,7 @@ public class ProjectionBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(ProjectionParser.FileContext ctx) {
+    public T visitFile(Projections.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

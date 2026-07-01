@@ -154,6 +154,36 @@ public class GameConstants {
     }
 
     /**
+     * Load in the list of 'projections' from the gamedata/projection.txt file.
+     *
+     * @throws IOException if there is a problem loading the file
+     * @author Rowan Crowther
+     */
+    private static void loadProjections() throws IOException {
+        String filename = ANGBAND_DIR_GAMEDATA + "projection.txt";
+        ProjectionReader reader = new ProjectionReader();
+
+        try {
+            ParseResult<Projection> result = reader.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid lib/gamedata/projection.txt file.";
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                return;
+            }
+
+            projections = result.items();
+            projectionTypeMax = projections.size();
+
+        } catch (IOException e) {
+            String message = "Error loading lib/gamedata/projection.txt file.";
+            logger.error(message, e);
+            throw e;
+        }
+    }
+
+    /**
      * The deepest level the dungeon can reach. Used in object and monster creations. Must be greater than 100. Setting
      * less than 128 may prevent some objects being created
      */
@@ -907,7 +937,7 @@ public class GameConstants {
         try {
             loadGameConstants();
             loadWorld();                // World arraylist determines maxRandDepth
-//            loadProjections();
+            loadProjections();
 //            loadUIEntryRenderers();
 //            loadUIEntryBases();         // Dependent on UIEntyRenderers
 //            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
@@ -1551,43 +1581,6 @@ public class GameConstants {
             throw e;
         }
     }
-
-    /**
-     * Load in the various projection types and store them in a List
-     * @throws IOException an error occurred during the parsing - log it and rethrow it
-     */
-    private static void loadProjections() throws IOException {
-        ProjectionReader projectionParser = new ProjectionReader();
-        String filename = ANGBAND_DIR_GAMEDATA + "projection.txt";
-
-        try {
-            projections = projectionParser.parse(filename);
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
-    }
-
-//    /**
-//     * Load in the different levels available in the world and store them in a List
-//     * @throws IOException an error occurred during the parsing - log it and rethrow it
-//     */
-//    private static void loadWorld() throws IOException {
-//        WorldReader worldReader = new WorldReader();
-//        String filename = ANGBAND_DIR_GAMEDATA + "world.txt";
-//        ParseResult<WorldParseRecord> result;
-//
-//        try {
-//            result = worldReader.parseWithResults(filename);
-//            if (result.hasErrors()) return;
-//        } catch (IOException e) {
-//            logger.error("Error while loading file {}", filename, e);
-//            throw e;
-//        }
-//
-//        worlds = result.items();
-//        maxRandDepth = worlds.size();
-//    }
 
     /**
      * Private constructor preventing instantiation of this static-only registry.

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.combat.enums;
@@ -25,6 +25,10 @@ package uk.co.jackoftrades.middle.combat.enums;
  * @author ClaudeCode
  */
 public enum ProjectionType {
+    /**
+     * Used to signify a blank/null enum value
+     */
+    PT_NONE,
     /**
      * Acts as a damage element against creatures. @author ClaudeCode
      */

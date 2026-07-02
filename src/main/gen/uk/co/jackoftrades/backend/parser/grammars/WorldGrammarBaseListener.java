@@ -15,115 +15,96 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from Worlds.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.grammars.world;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/WorldGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars;
+
+            import java.util.ArrayList;
+            import java.util.List;
+        
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link WorldsListener},
+ * This class provides an empty implementation of {@link WorldGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class WorldsBaseListener implements WorldsListener {
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterRecordCount(Worlds.RecordCountContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitRecordCount(Worlds.RecordCountContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLevelNum(Worlds.LevelNumContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLevelNum(Worlds.LevelNumContext ctx) {
-    }
+public class WorldGrammarBaseListener implements WorldGrammarListener {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLevelName(Worlds.LevelNameContext ctx) { }
+	 */
+	@Override public void enterRecordCount(WorldGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLevelName(Worlds.LevelNameContext ctx) { }
+	 */
+	@Override public void exitRecordCount(WorldGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterUpAndDown(Worlds.UpAndDownContext ctx) { }
+	 */
+	@Override public void enterLevelNum(WorldGrammar.LevelNumContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitUpAndDown(Worlds.UpAndDownContext ctx) { }
+	 */
+	@Override public void exitLevelNum(WorldGrammar.LevelNumContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterLine(Worlds.LineContext ctx) { }
+	 */
+	@Override public void enterLevelName(WorldGrammar.LevelNameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitLine(Worlds.LineContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void enterFile(Worlds.FileContext ctx) {
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-     */
-    @Override
-    public void exitFile(Worlds.FileContext ctx) { }
+	 */
+	@Override public void exitLevelName(WorldGrammar.LevelNameContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitUpAndDown(WorldGrammar.UpAndDownContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterLine(WorldGrammar.LineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitLine(WorldGrammar.LineContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void enterFile(WorldGrammar.FileContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitFile(WorldGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

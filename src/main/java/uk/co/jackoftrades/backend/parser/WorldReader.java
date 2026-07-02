@@ -24,8 +24,8 @@ import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.grammars.world.Worlds;
-import uk.co.jackoftrades.backend.parser.grammars.world.WorldsLexer;
+import uk.co.jackoftrades.backend.parser.grammars.world.WorldGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.world.WorldLexer;
 import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
 
 import java.io.IOException;
@@ -82,14 +82,14 @@ public class WorldReader implements Reader<WorldParseRecord> {
 
         try {
             CharStream stream = CharStreams.fromFileName(filename);
-            WorldsLexer lexer = new WorldsLexer(stream);
+            WorldLexer lexer = new WorldLexer(stream);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            Worlds parser = new Worlds(tokens);
+            WorldGrammar parser = new WorldGrammar(tokens);
 
             // Install the error catcher
             errorCatcher = ParseErrors.install(lexer, parser, filename);
 
-            Worlds.FileContext output = parser.file();
+            WorldGrammar.FileContext output = parser.file();
 
             // throw any caught errors
             errorCatcher.throwIfAny();

@@ -40,6 +40,8 @@ public class GameConstantsAssembler {
      * @param records The list of records to create the {@link GameConstantsData} from
      * @param errors  A list of errors which is returned to the builder
      * @return the {@link GameConstantsData} containing the data - note, this can be null
+     *
+     * @author Rowan Crowther
      */
     @Nullable
     @CheckReturnValue

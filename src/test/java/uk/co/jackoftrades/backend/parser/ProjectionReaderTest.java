@@ -67,15 +67,15 @@ class ProjectionReaderTest {
     }
 
     @Test
-    void recordCountMismatchIsReportedWithNoItems() throws IOException {
-        // Header over-declares: 5 vs the single record present.
+    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
+        // Header over-declares: 5 vs the single record present. The mismatch is a
+        // soft error - the one valid record still loads (partial-results contract).
         String path = tempFile("bad-count.txt", "record-count:5\n" + ONE_RECORD);
-
         ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
-
         assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
+        assertEquals(1, result.items().size());
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") &&
+                        e.contains("contains 1")),
                 result.errors()::toString);
     }
 

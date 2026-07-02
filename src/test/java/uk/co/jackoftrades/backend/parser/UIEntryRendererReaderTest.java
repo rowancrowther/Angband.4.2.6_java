@@ -74,7 +74,7 @@ class UIEntryRendererReaderTest {
         assertEquals("wwwwwwGGGrrGGGwGrGwwrwWWWWWWGGGrrGGGWGrGWWrW", first.getColours());
         assertEquals("swBrgwBrwBwBr", first.getLabelColours());
         assertEquals("?..+-*!^.=.%%%~!=%~+=~", first.getSymbols());
-        assertEquals(1, first.getnDigit());                              // ndigit absent -> default 1
+        assertEquals(1, first.getnDigits());                              // ndigit absent -> default 1
         assertEquals(UIEntryEnum.UI_ENTRY_SIGN_DEFAULT, first.getSign()); // sign absent -> default
 
         // Last renderer: the only one that sets ndigit and sign explicitly; symbols has a space.
@@ -82,7 +82,7 @@ class UIEntryRendererReaderTest {
         assertEquals("char_screen1_stat_mod_renderer", last.getName());
         assertEquals(UIEntryRendererEnum.UI_ENTRY_RENDERER_NUMERIC_RENDERER_WITH_BOOL_AUX, last.getCode());
         assertEquals("? .s*=", last.getSymbols());
-        assertEquals(1, last.getnDigit());
+        assertEquals(1, last.getnDigits());
         assertEquals(UIEntryEnum.UI_ENTRY_NO_SIGN, last.getSign());       // sign:NO_SIGN resolved
     }
 

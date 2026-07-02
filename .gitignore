@@ -54,3 +54,4 @@ bin/
 
 ## ANTLR4 ##
 *.interp
+/.claude/worktrees/

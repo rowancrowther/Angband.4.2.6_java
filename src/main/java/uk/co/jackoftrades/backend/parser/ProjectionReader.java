@@ -28,8 +28,8 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.backend.parser.grammars.projection.Projections;
-import uk.co.jackoftrades.backend.parser.grammars.projection.ProjectionsLexer;
+import uk.co.jackoftrades.backend.parser.grammars.projection.ProjectionGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.projection.ProjectionLexer;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
@@ -91,14 +91,14 @@ public class ProjectionReader implements Reader<Projection> {
 
         try {
             CharStream input = CharStreams.fromFileName(filename);
-            ProjectionsLexer lexer = new ProjectionsLexer(input);
+            ProjectionLexer lexer = new ProjectionLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
-            Projections parser = new Projections(tokens);
+            ProjectionGrammar parser = new ProjectionGrammar(tokens);
 
             // install the error catcher
             errorCatcher = ParseErrors.install(lexer, parser, filename);
 
-            Projections.FileContext output = parser.file();
+            ProjectionGrammar.FileContext output = parser.file();
             projectionRecords = output.projections;
 
             errorCatcher.throwIfAny();

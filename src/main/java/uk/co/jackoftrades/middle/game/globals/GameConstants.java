@@ -1567,17 +1567,17 @@ public class GameConstants {
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
-    private static void loadUIEntryRenderers() throws IOException {
-        UIEntryRendererReader renderer = new UIEntryRendererReader();
-        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
-
-        try {
-            uiEntryRenderers = renderer.parse(filename);
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
-    }
+//    private static void loadUIEntryRenderers() throws IOException {
+//        UIEntryRendererReader renderer = new UIEntryRendererReader();
+//        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
+//
+//        try {
+//            uiEntryRenderers = renderer.parse(filename);
+//        } catch (Exception e) {
+//            logger.error("Error while loading file {}", filename, e);
+//            throw e;
+//        }
+//    }
 
     /**
      * Private constructor preventing instantiation of this static-only registry.

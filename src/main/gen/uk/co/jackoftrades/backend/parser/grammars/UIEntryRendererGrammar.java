@@ -18,6 +18,7 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars;
 
+            import java.util.Arrays;
             import java.util.ArrayList;
             import java.util.List;
         
@@ -39,7 +40,7 @@ public class UIEntryRendererGrammar extends Parser {
 		new PredictionContextCache();
 	public static final int
 		RECORD_COUNT=1, NAME=2, CODE=3, COLOURS=4, LABELCOLOURS=5, SYMBOLS=6, 
-		NDIGITS=7, SIGN=8, COLOURCHARS=9, INTEGER=10, COMMENT=11, EOL=12, TAG=13, 
+		NDIGITS=7, SIGN=8, COLOURCHARS=9, INTEGER=10, COMMENT=11, EOL=12, FLAG=13, 
 		STRING=14;
 	public static final int
 		RULE_recordCount = 0, RULE_name = 1, RULE_code = 2, RULE_colours = 3, 
@@ -63,7 +64,7 @@ public class UIEntryRendererGrammar extends Parser {
 	private static String[] makeSymbolicNames() {
 		return new String[] {
 			null, "RECORD_COUNT", "NAME", "CODE", "COLOURS", "LABELCOLOURS", "SYMBOLS", 
-			"NDIGITS", "SIGN", "COLOURCHARS", "INTEGER", "COMMENT", "EOL", "TAG", 
+			"NDIGITS", "SIGN", "COLOURCHARS", "INTEGER", "COMMENT", "EOL", "FLAG", 
 			"STRING"
 		};
 	}
@@ -223,9 +224,9 @@ public class UIEntryRendererGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class CodeContext extends ParserRuleContext {
 		public String codeStr;
-		public Token TAG;
+		public Token FLAG;
 		public TerminalNode CODE() { return getToken(UIEntryRendererGrammar.CODE, 0); }
-		public TerminalNode TAG() { return getToken(UIEntryRendererGrammar.TAG, 0); }
+		public TerminalNode FLAG() { return getToken(UIEntryRendererGrammar.FLAG, 0); }
 		public CodeContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -254,9 +255,9 @@ public class UIEntryRendererGrammar extends Parser {
 			setState(28);
 			match(CODE);
 			setState(29);
-			((CodeContext)_localctx).TAG = match(TAG);
+			((CodeContext)_localctx).FLAG = match(FLAG);
 
-			                ((CodeContext)_localctx).codeStr =  ((CodeContext)_localctx).TAG.getText();
+			                ((CodeContext)_localctx).codeStr =  ((CodeContext)_localctx).FLAG.getText();
 			            
 			}
 		}
@@ -478,9 +479,9 @@ public class UIEntryRendererGrammar extends Parser {
 	@SuppressWarnings("CheckReturnValue")
 	public static class SignContext extends ParserRuleContext {
 		public String signEnum;
-		public Token STRING;
+		public Token FLAG;
 		public TerminalNode SIGN() { return getToken(UIEntryRendererGrammar.SIGN, 0); }
-		public TerminalNode STRING() { return getToken(UIEntryRendererGrammar.STRING, 0); }
+		public TerminalNode FLAG() { return getToken(UIEntryRendererGrammar.FLAG, 0); }
 		public SignContext(ParserRuleContext parent, int invokingState) {
 			super(parent, invokingState);
 		}
@@ -509,9 +510,9 @@ public class UIEntryRendererGrammar extends Parser {
 			setState(48);
 			match(SIGN);
 			setState(49);
-			((SignContext)_localctx).STRING = match(STRING);
+			((SignContext)_localctx).FLAG = match(FLAG);
 
-			                ((SignContext)_localctx).signEnum =  ((SignContext)_localctx).STRING.getText();
+			                ((SignContext)_localctx).signEnum =  ((SignContext)_localctx).FLAG.getText();
 			            
 			}
 		}
@@ -756,20 +757,20 @@ public class UIEntryRendererGrammar extends Parser {
 		")*\u0005\u000e\u0000\u0000*+\u0006\u0005\uffff\uffff\u0000+\u000b\u0001"+
 		"\u0000\u0000\u0000,-\u0005\u0007\u0000\u0000-.\u0005\n\u0000\u0000./\u0006"+
 		"\u0006\uffff\uffff\u0000/\r\u0001\u0000\u0000\u000001\u0005\b\u0000\u0000"+
-		"12\u0005\u000e\u0000\u000023\u0006\u0007\uffff\uffff\u00003\u000f\u0001"+
-		"\u0000\u0000\u000045\u0003\u0002\u0001\u000056\u0006\b\uffff\uffff\u0000"+
-		"67\u0003\u0004\u0002\u000078\u0006\b\uffff\uffff\u000089\u0003\u0006\u0003"+
-		"\u00009:\u0006\b\uffff\uffff\u0000:;\u0003\b\u0004\u0000;<\u0006\b\uffff"+
-		"\uffff\u0000<=\u0003\n\u0005\u0000=A\u0006\b\uffff\uffff\u0000>?\u0003"+
-		"\f\u0006\u0000?@\u0006\b\uffff\uffff\u0000@B\u0001\u0000\u0000\u0000A"+
-		">\u0001\u0000\u0000\u0000AB\u0001\u0000\u0000\u0000BF\u0001\u0000\u0000"+
-		"\u0000CD\u0003\u000e\u0007\u0000DE\u0006\b\uffff\uffff\u0000EG\u0001\u0000"+
-		"\u0000\u0000FC\u0001\u0000\u0000\u0000FG\u0001\u0000\u0000\u0000G\u0011"+
-		"\u0001\u0000\u0000\u0000HI\u0003\u0000\u0000\u0000IM\u0006\t\uffff\uffff"+
-		"\u0000JK\u0003\u0010\b\u0000KL\u0006\t\uffff\uffff\u0000LN\u0001\u0000"+
-		"\u0000\u0000MJ\u0001\u0000\u0000\u0000NO\u0001\u0000\u0000\u0000OM\u0001"+
-		"\u0000\u0000\u0000OP\u0001\u0000\u0000\u0000PQ\u0001\u0000\u0000\u0000"+
-		"QR\u0005\u0000\u0000\u0001R\u0013\u0001\u0000\u0000\u0000\u0003AFO";
+		"12\u0005\r\u0000\u000023\u0006\u0007\uffff\uffff\u00003\u000f\u0001\u0000"+
+		"\u0000\u000045\u0003\u0002\u0001\u000056\u0006\b\uffff\uffff\u000067\u0003"+
+		"\u0004\u0002\u000078\u0006\b\uffff\uffff\u000089\u0003\u0006\u0003\u0000"+
+		"9:\u0006\b\uffff\uffff\u0000:;\u0003\b\u0004\u0000;<\u0006\b\uffff\uffff"+
+		"\u0000<=\u0003\n\u0005\u0000=A\u0006\b\uffff\uffff\u0000>?\u0003\f\u0006"+
+		"\u0000?@\u0006\b\uffff\uffff\u0000@B\u0001\u0000\u0000\u0000A>\u0001\u0000"+
+		"\u0000\u0000AB\u0001\u0000\u0000\u0000BF\u0001\u0000\u0000\u0000CD\u0003"+
+		"\u000e\u0007\u0000DE\u0006\b\uffff\uffff\u0000EG\u0001\u0000\u0000\u0000"+
+		"FC\u0001\u0000\u0000\u0000FG\u0001\u0000\u0000\u0000G\u0011\u0001\u0000"+
+		"\u0000\u0000HI\u0003\u0000\u0000\u0000IM\u0006\t\uffff\uffff\u0000JK\u0003"+
+		"\u0010\b\u0000KL\u0006\t\uffff\uffff\u0000LN\u0001\u0000\u0000\u0000M"+
+		"J\u0001\u0000\u0000\u0000NO\u0001\u0000\u0000\u0000OM\u0001\u0000\u0000"+
+		"\u0000OP\u0001\u0000\u0000\u0000PQ\u0001\u0000\u0000\u0000QR\u0005\u0000"+
+		"\u0000\u0001R\u0013\u0001\u0000\u0000\u0000\u0003AFO";
 	public static final ATN _ATN =
 		new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 	static {

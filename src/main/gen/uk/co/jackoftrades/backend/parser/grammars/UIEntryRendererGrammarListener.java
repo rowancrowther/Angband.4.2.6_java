@@ -18,6 +18,7 @@
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars;
 
+            import java.util.Arrays;
             import java.util.ArrayList;
             import java.util.List;
         

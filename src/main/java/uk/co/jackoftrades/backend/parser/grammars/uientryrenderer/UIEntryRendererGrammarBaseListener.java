@@ -12,12 +12,10 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.uientryrenderer;
-
+// Generated from UIEntryRendererGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.uientryrenderer;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
@@ -36,7 +34,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(UIEntryRendererGrammarParser.NameContext ctx) {
+    public void enterRecordCount(UIEntryRendererGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(UIEntryRendererGrammarParser.NameContext ctx) {
+    public void exitRecordCount(UIEntryRendererGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCode(UIEntryRendererGrammarParser.CodeContext ctx) {
+    public void enterName(UIEntryRendererGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCode(UIEntryRendererGrammarParser.CodeContext ctx) {
+    public void exitName(UIEntryRendererGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterColours(UIEntryRendererGrammarParser.ColoursContext ctx) {
+    public void enterCode(UIEntryRendererGrammar.CodeContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitColours(UIEntryRendererGrammarParser.ColoursContext ctx) {
+    public void exitCode(UIEntryRendererGrammar.CodeContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLabelcolours(UIEntryRendererGrammarParser.LabelcoloursContext ctx) {
+    public void enterColours(UIEntryRendererGrammar.ColoursContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLabelcolours(UIEntryRendererGrammarParser.LabelcoloursContext ctx) {
+    public void exitColours(UIEntryRendererGrammar.ColoursContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSymbols(UIEntryRendererGrammarParser.SymbolsContext ctx) {
+    public void enterLabelcolours(UIEntryRendererGrammar.LabelcoloursContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSymbols(UIEntryRendererGrammarParser.SymbolsContext ctx) {
+    public void exitLabelcolours(UIEntryRendererGrammar.LabelcoloursContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterNdigit(UIEntryRendererGrammarParser.NdigitContext ctx) {
+    public void enterSymbols(UIEntryRendererGrammar.SymbolsContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitNdigit(UIEntryRendererGrammarParser.NdigitContext ctx) {
+    public void exitSymbols(UIEntryRendererGrammar.SymbolsContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSign(UIEntryRendererGrammarParser.SignContext ctx) {
+    public void enterNdigit(UIEntryRendererGrammar.NdigitContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSign(UIEntryRendererGrammarParser.SignContext ctx) {
+    public void exitNdigit(UIEntryRendererGrammar.NdigitContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterUiEntry(UIEntryRendererGrammarParser.UiEntryContext ctx) {
+    public void enterSign(UIEntryRendererGrammar.SignContext ctx) {
     }
 
     /**
@@ -171,7 +169,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitUiEntry(UIEntryRendererGrammarParser.UiEntryContext ctx) {
+    public void exitSign(UIEntryRendererGrammar.SignContext ctx) {
     }
 
     /**
@@ -180,7 +178,7 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(UIEntryRendererGrammarParser.FileContext ctx) {
+    public void enterUiEntry(UIEntryRendererGrammar.UiEntryContext ctx) {
     }
 
     /**
@@ -189,7 +187,25 @@ public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGramma
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(UIEntryRendererGrammarParser.FileContext ctx) {
+    public void exitUiEntry(UIEntryRendererGrammar.UiEntryContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(UIEntryRendererGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(UIEntryRendererGrammar.FileContext ctx) {
     }
 
     /**

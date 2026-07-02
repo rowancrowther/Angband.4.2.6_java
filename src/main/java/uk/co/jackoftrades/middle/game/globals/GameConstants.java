@@ -174,8 +174,6 @@ public class GameConstants {
             }
 
             projections = result.items();
-            projectionTypeMax = projections.size();
-
         } catch (IOException e) {
             String message = "Error loading lib/gamedata/projection.txt file.";
             logger.error(message, e);
@@ -257,7 +255,6 @@ public class GameConstants {
     private static int playerEquipmentSlotsMax;
     private static int caveProfileMax;
     private static int questMax;
-    private static int projectionTypeMax;
     private static int objectPowerCalculationMax;
     private static int objectPropertyMax;
     private static int objectsInObject_txt;
@@ -422,7 +419,7 @@ public class GameConstants {
 //    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
 
     /**
-     * Worlds is a list of Worlds. There should be levels from Town (level 0) to Angband 127.
+     * Worlds is a list of World records. There should be levels from Town (level 0) to Angband 127.
      */
     private static List<World> worlds;
 
@@ -937,7 +934,7 @@ public class GameConstants {
         try {
             loadGameConstants();
             loadWorld();                // World arraylist determines maxRandDepth
-            loadProjections();
+            loadProjections();          // projections arrayList determines projectionTypeMax
 //            loadUIEntryRenderers();
 //            loadUIEntryBases();         // Dependent on UIEntyRenderers
 //            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
@@ -1780,8 +1777,8 @@ public class GameConstants {
      * @return the configured value of {@code projectionTypeMax}
      * @author ClaudeCode
      */
-    public static int getProjectionTypeMax() {
-        return projectionTypeMax;
+    public static int getProjMax() {
+        return projections.size();
     }
 
     /**

@@ -250,6 +250,9 @@
 # configures whether that label is shown after each numeric value.  By default,
 # no such label is shown.
 
+# record-count must match the number of level: records below - update it if a level is added or removed.
+record-count:5
+
 name:char_screen1_resist_renderer
 code:COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX
 colors:wwwwwwGGGrrGGGwGrGwwrwWWWWWWGGGrrGGGWGrGWWrW

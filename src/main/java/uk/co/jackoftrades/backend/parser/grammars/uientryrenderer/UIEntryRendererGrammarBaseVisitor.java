@@ -12,11 +12,10 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.uientryrenderer;
+// Generated from UIEntryRendererGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.uientryrenderer;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
@@ -37,7 +36,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(UIEntryRendererGrammarParser.NameContext ctx) {
+    public T visitRecordCount(UIEntryRendererGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(UIEntryRendererGrammarParser.CodeContext ctx) {
+    public T visitName(UIEntryRendererGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitColours(UIEntryRendererGrammarParser.ColoursContext ctx) {
+    public T visitCode(UIEntryRendererGrammar.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLabelcolours(UIEntryRendererGrammarParser.LabelcoloursContext ctx) {
+    public T visitColours(UIEntryRendererGrammar.ColoursContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSymbols(UIEntryRendererGrammarParser.SymbolsContext ctx) {
+    public T visitLabelcolours(UIEntryRendererGrammar.LabelcoloursContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitNdigit(UIEntryRendererGrammarParser.NdigitContext ctx) {
+    public T visitSymbols(UIEntryRendererGrammar.SymbolsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSign(UIEntryRendererGrammarParser.SignContext ctx) {
+    public T visitNdigit(UIEntryRendererGrammar.NdigitContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitUiEntry(UIEntryRendererGrammarParser.UiEntryContext ctx) {
+    public T visitSign(UIEntryRendererGrammar.SignContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,18 @@ public class UIEntryRendererGrammarBaseVisitor<T> extends AbstractParseTreeVisit
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(UIEntryRendererGrammarParser.FileContext ctx) {
+    public T visitUiEntry(UIEntryRendererGrammar.UiEntryContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(UIEntryRendererGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

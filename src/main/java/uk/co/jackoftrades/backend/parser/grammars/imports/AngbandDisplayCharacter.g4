@@ -32,6 +32,8 @@
  */
 lexer grammar AngbandDisplayCharacter;
 
+import Colours;
+
 /*
  * @author Rowan Crowther
  *
@@ -67,27 +69,11 @@ GLYPH_ONLY
  *
  * GRAPHICS_COLOUR_FRAGMENT contains all possible single letter
  * values for the colour table, as well as the colour names, both
- * minuscule and title case.
+ * minuscule and title case. Both forms are sourced from the shared
+ * Colours import so the colour alphabet lives in exactly one place.
  */
  fragment GRAPHICS_COLOUR_FRAGMENT
-
-        :  ('D' | 'w' | 's' | 'o' | 'r' | 'g' | 'b' | 'u' | 'W' | 'P' | 'y' | 'R'
-                | 'G' | 'B' | 'U' | 'p' | 'v' | 't' | 'm' | 'Y' | 'i' | 'T' | 'V'
-                | 'I' | 'M' | 'z' | 'Z' | 'd'
-
-                | 'dark' | 'white' | 'slate' | 'orange' | 'red' | 'green' | 'blue'
-                | 'umber' | 'light dark' | 'light slate' | 'light purple' | 'yellow'
-                | 'light red' | 'light green' | 'light blue' | 'light umber'
-                | 'purple' | 'violet' | 'teal' | 'mud' | 'light yellow'
-                | 'magenta-pink' | 'light teal' | 'light violet' | 'light pink'
-                | 'mustard' | 'blue slate' | 'deep light blue' | 'shade'
-
-                | 'Dark' | 'White' | 'Slate' | 'Orange' | 'Red' | 'Green' | 'Blue'
-                | 'Umber' | 'Light Dark' | 'Light Slate' | 'Light Purple' | 'Yellow'
-                | 'Light Red' | 'Light Green' | 'Light Blue' | 'Light Umber'
-                | 'Purple' | 'Violet' | 'Teal' | 'Mud' | 'Light Yellow'
-                | 'Magenta-Pink' | 'Light Teal' | 'Light Violet' | 'Light Pink'
-                | 'Mustard' | 'Blue Slate' | 'Deep Light Blue' | 'Shade')
+        :   COLOUR_CODE | COLOUR_NAME
         ;
 
 /*

@@ -12,26 +12,27 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+// Generated from UIEntryRendererGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.uientryrenderer;
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.uientryrenderer;
-
-import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.frontend.entries.enums.UIEntryEnum;
-import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
+import org.antlr.v4.runtime.tree.TerminalNode;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
-
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class UIEntryRendererGrammarParser extends Parser {
+public class UIEntryRendererGrammar extends Parser {
     static {
         RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
     }
@@ -40,17 +41,18 @@ public class UIEntryRendererGrammarParser extends Parser {
     protected static final PredictionContextCache _sharedContextCache =
             new PredictionContextCache();
     public static final int
-            COMMENT = 1, EOL = 2, NAME = 3, CODE = 4, COLOURS = 5, LABELCOLOURS = 6, SYMBOLS = 7,
-            NDIGITS = 8, SIGN = 9, COLOURCHARS = 10, SYMBOLCHARS = 11, DIGIT = 12, LCASEWORD = 13,
-            UCASEWORD = 14;
+            RECORD_COUNT = 1, NAME = 2, CODE = 3, COLOURS = 4, LABELCOLOURS = 5, SYMBOLS = 6,
+            NDIGITS = 7, SIGN = 8, COLOURCHARS = 9, INTEGER = 10, COMMENT = 11, EOL = 12, FLAG = 13,
+            STRING = 14;
     public static final int
-            RULE_name = 0, RULE_code = 1, RULE_colours = 2, RULE_labelcolours = 3,
-            RULE_symbols = 4, RULE_ndigit = 5, RULE_sign = 6, RULE_uiEntry = 7, RULE_file = 8;
+            RULE_recordCount = 0, RULE_name = 1, RULE_code = 2, RULE_colours = 3,
+            RULE_labelcolours = 4, RULE_symbols = 5, RULE_ndigit = 6, RULE_sign = 7,
+            RULE_uiEntry = 8, RULE_file = 9;
 
     private static String[] makeRuleNames() {
         return new String[]{
-                "name", "code", "colours", "labelcolours", "symbols", "ndigit", "sign",
-                "uiEntry", "file"
+                "recordCount", "name", "code", "colours", "labelcolours", "symbols",
+                "ndigit", "sign", "uiEntry", "file"
         };
     }
 
@@ -58,7 +60,7 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     private static String[] makeLiteralNames() {
         return new String[]{
-                null, null, null, "'name:'", "'code:'", "'colors:'", "'labelcolors:'",
+                null, "'record-count:'", "'name:'", "'code:'", "'colors:'", "'labelcolors:'",
                 "'symbols:'", "'ndigit:'", "'sign:'"
         };
     }
@@ -67,9 +69,9 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     private static String[] makeSymbolicNames() {
         return new String[]{
-                null, "COMMENT", "EOL", "NAME", "CODE", "COLOURS", "LABELCOLOURS", "SYMBOLS",
-                "NDIGITS", "SIGN", "COLOURCHARS", "SYMBOLCHARS", "DIGIT", "LCASEWORD",
-                "UCASEWORD"
+                null, "RECORD_COUNT", "NAME", "CODE", "COLOURS", "LABELCOLOURS", "SYMBOLS",
+                "NDIGITS", "SIGN", "COLOURCHARS", "INTEGER", "COMMENT", "EOL", "FLAG",
+                "STRING"
         };
     }
 
@@ -128,22 +130,88 @@ public class UIEntryRendererGrammarParser extends Parser {
         return _ATN;
     }
 
-    public UIEntryRendererGrammarParser(TokenStream input) {
+    public UIEntryRendererGrammar(TokenStream input) {
         super(input);
         _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
 
     @SuppressWarnings("CheckReturnValue")
-    public static class NameContext extends ParserRuleContext {
-        public String nameStr;
-        public Token LCASEWORD;
+    public static class RecordCountContext extends ParserRuleContext {
+        public String count;
+        public Token INTEGER;
 
-        public TerminalNode NAME() {
-            return getToken(UIEntryRendererGrammarParser.NAME, 0);
+        public TerminalNode RECORD_COUNT() {
+            return getToken(UIEntryRendererGrammar.RECORD_COUNT, 0);
         }
 
-        public TerminalNode LCASEWORD() {
-            return getToken(UIEntryRendererGrammarParser.LCASEWORD, 0);
+        public TerminalNode INTEGER() {
+            return getToken(UIEntryRendererGrammar.INTEGER, 0);
+        }
+
+        public RecordCountContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
+
+        @Override
+        public int getRuleIndex() {
+            return RULE_recordCount;
+        }
+
+        @Override
+        public void enterRule(ParseTreeListener listener) {
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).enterRecordCount(this);
+        }
+
+        @Override
+        public void exitRule(ParseTreeListener listener) {
+            if (listener instanceof UIEntryRendererGrammarListener)
+                ((UIEntryRendererGrammarListener) listener).exitRecordCount(this);
+        }
+
+        @Override
+        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
+            if (visitor instanceof UIEntryRendererGrammarVisitor)
+                return ((UIEntryRendererGrammarVisitor<? extends T>) visitor).visitRecordCount(this);
+            else return visitor.visitChildren(this);
+        }
+    }
+
+    public final RecordCountContext recordCount() throws RecognitionException {
+        RecordCountContext _localctx = new RecordCountContext(_ctx, getState());
+        enterRule(_localctx, 0, RULE_recordCount);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(20);
+                match(RECORD_COUNT);
+                setState(21);
+                ((RecordCountContext) _localctx).INTEGER = match(INTEGER);
+
+                ((RecordCountContext) _localctx).count = ((RecordCountContext) _localctx).INTEGER.getText();
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    @SuppressWarnings("CheckReturnValue")
+    public static class NameContext extends ParserRuleContext {
+        public String nameStr;
+        public Token STRING;
+
+        public TerminalNode NAME() {
+            return getToken(UIEntryRendererGrammar.NAME, 0);
+        }
+
+        public TerminalNode STRING() {
+            return getToken(UIEntryRendererGrammar.STRING, 0);
         }
 
         public NameContext(ParserRuleContext parent, int invokingState) {
@@ -177,16 +245,16 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final NameContext name() throws RecognitionException {
         NameContext _localctx = new NameContext(_ctx, getState());
-        enterRule(_localctx, 0, RULE_name);
+        enterRule(_localctx, 2, RULE_name);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(18);
+                setState(24);
                 match(NAME);
-                setState(19);
-                ((NameContext) _localctx).LCASEWORD = match(LCASEWORD);
+                setState(25);
+                ((NameContext) _localctx).STRING = match(STRING);
 
-                ((NameContext) _localctx).nameStr = ((NameContext) _localctx).LCASEWORD.getText();
+                ((NameContext) _localctx).nameStr = ((NameContext) _localctx).STRING.getText();
 
             }
         } catch (RecognitionException re) {
@@ -201,15 +269,15 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class CodeContext extends ParserRuleContext {
-        public UIEntryRendererEnum codeEnum;
-        public Token UCASEWORD;
+        public String codeStr;
+        public Token FLAG;
 
         public TerminalNode CODE() {
-            return getToken(UIEntryRendererGrammarParser.CODE, 0);
+            return getToken(UIEntryRendererGrammar.CODE, 0);
         }
 
-        public TerminalNode UCASEWORD() {
-            return getToken(UIEntryRendererGrammarParser.UCASEWORD, 0);
+        public TerminalNode FLAG() {
+            return getToken(UIEntryRendererGrammar.FLAG, 0);
         }
 
         public CodeContext(ParserRuleContext parent, int invokingState) {
@@ -243,17 +311,16 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final CodeContext code() throws RecognitionException {
         CodeContext _localctx = new CodeContext(_ctx, getState());
-        enterRule(_localctx, 2, RULE_code);
+        enterRule(_localctx, 4, RULE_code);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(22);
+                setState(28);
                 match(CODE);
-                setState(23);
-                ((CodeContext) _localctx).UCASEWORD = match(UCASEWORD);
+                setState(29);
+                ((CodeContext) _localctx).FLAG = match(FLAG);
 
-                String flag = "UI_ENTRY_RENDERER_" + ((CodeContext) _localctx).UCASEWORD.getText();
-                ((CodeContext) _localctx).codeEnum = UIEntryRendererEnum.valueOf(flag);
+                ((CodeContext) _localctx).codeStr = ((CodeContext) _localctx).FLAG.getText();
 
             }
         } catch (RecognitionException re) {
@@ -272,11 +339,11 @@ public class UIEntryRendererGrammarParser extends Parser {
         public Token COLOURCHARS;
 
         public TerminalNode COLOURS() {
-            return getToken(UIEntryRendererGrammarParser.COLOURS, 0);
+            return getToken(UIEntryRendererGrammar.COLOURS, 0);
         }
 
         public TerminalNode COLOURCHARS() {
-            return getToken(UIEntryRendererGrammarParser.COLOURCHARS, 0);
+            return getToken(UIEntryRendererGrammar.COLOURCHARS, 0);
         }
 
         public ColoursContext(ParserRuleContext parent, int invokingState) {
@@ -310,13 +377,13 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final ColoursContext colours() throws RecognitionException {
         ColoursContext _localctx = new ColoursContext(_ctx, getState());
-        enterRule(_localctx, 4, RULE_colours);
+        enterRule(_localctx, 6, RULE_colours);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(26);
+                setState(32);
                 match(COLOURS);
-                setState(27);
+                setState(33);
                 ((ColoursContext) _localctx).COLOURCHARS = match(COLOURCHARS);
 
                 ((ColoursContext) _localctx).colourCharStr = ((ColoursContext) _localctx).COLOURCHARS.getText();
@@ -338,11 +405,11 @@ public class UIEntryRendererGrammarParser extends Parser {
         public Token COLOURCHARS;
 
         public TerminalNode LABELCOLOURS() {
-            return getToken(UIEntryRendererGrammarParser.LABELCOLOURS, 0);
+            return getToken(UIEntryRendererGrammar.LABELCOLOURS, 0);
         }
 
         public TerminalNode COLOURCHARS() {
-            return getToken(UIEntryRendererGrammarParser.COLOURCHARS, 0);
+            return getToken(UIEntryRendererGrammar.COLOURCHARS, 0);
         }
 
         public LabelcoloursContext(ParserRuleContext parent, int invokingState) {
@@ -376,13 +443,13 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final LabelcoloursContext labelcolours() throws RecognitionException {
         LabelcoloursContext _localctx = new LabelcoloursContext(_ctx, getState());
-        enterRule(_localctx, 6, RULE_labelcolours);
+        enterRule(_localctx, 8, RULE_labelcolours);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(30);
+                setState(36);
                 match(LABELCOLOURS);
-                setState(31);
+                setState(37);
                 ((LabelcoloursContext) _localctx).COLOURCHARS = match(COLOURCHARS);
 
                 ((LabelcoloursContext) _localctx).colourCharStr = ((LabelcoloursContext) _localctx).COLOURCHARS.getText();
@@ -401,14 +468,14 @@ public class UIEntryRendererGrammarParser extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class SymbolsContext extends ParserRuleContext {
         public String symbolCharsStr;
-        public Token SYMBOLCHARS;
+        public Token STRING;
 
         public TerminalNode SYMBOLS() {
-            return getToken(UIEntryRendererGrammarParser.SYMBOLS, 0);
+            return getToken(UIEntryRendererGrammar.SYMBOLS, 0);
         }
 
-        public TerminalNode SYMBOLCHARS() {
-            return getToken(UIEntryRendererGrammarParser.SYMBOLCHARS, 0);
+        public TerminalNode STRING() {
+            return getToken(UIEntryRendererGrammar.STRING, 0);
         }
 
         public SymbolsContext(ParserRuleContext parent, int invokingState) {
@@ -442,16 +509,16 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final SymbolsContext symbols() throws RecognitionException {
         SymbolsContext _localctx = new SymbolsContext(_ctx, getState());
-        enterRule(_localctx, 8, RULE_symbols);
+        enterRule(_localctx, 10, RULE_symbols);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(34);
+                setState(40);
                 match(SYMBOLS);
-                setState(35);
-                ((SymbolsContext) _localctx).SYMBOLCHARS = match(SYMBOLCHARS);
+                setState(41);
+                ((SymbolsContext) _localctx).STRING = match(STRING);
 
-                ((SymbolsContext) _localctx).symbolCharsStr = ((SymbolsContext) _localctx).SYMBOLCHARS.getText();
+                ((SymbolsContext) _localctx).symbolCharsStr = ((SymbolsContext) _localctx).STRING.getText();
 
             }
         } catch (RecognitionException re) {
@@ -466,15 +533,15 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class NdigitContext extends ParserRuleContext {
-        public int numDigitsInt;
-        public Token DIGIT;
+        public String numDigitsStr;
+        public Token INTEGER;
 
         public TerminalNode NDIGITS() {
-            return getToken(UIEntryRendererGrammarParser.NDIGITS, 0);
+            return getToken(UIEntryRendererGrammar.NDIGITS, 0);
         }
 
-        public TerminalNode DIGIT() {
-            return getToken(UIEntryRendererGrammarParser.DIGIT, 0);
+        public TerminalNode INTEGER() {
+            return getToken(UIEntryRendererGrammar.INTEGER, 0);
         }
 
         public NdigitContext(ParserRuleContext parent, int invokingState) {
@@ -508,16 +575,16 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final NdigitContext ndigit() throws RecognitionException {
         NdigitContext _localctx = new NdigitContext(_ctx, getState());
-        enterRule(_localctx, 10, RULE_ndigit);
+        enterRule(_localctx, 12, RULE_ndigit);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(38);
+                setState(44);
                 match(NDIGITS);
-                setState(39);
-                ((NdigitContext) _localctx).DIGIT = match(DIGIT);
+                setState(45);
+                ((NdigitContext) _localctx).INTEGER = match(INTEGER);
 
-                ((NdigitContext) _localctx).numDigitsInt = Integer.parseInt(((NdigitContext) _localctx).DIGIT.getText());
+                ((NdigitContext) _localctx).numDigitsStr = ((NdigitContext) _localctx).INTEGER.getText();
 
             }
         } catch (RecognitionException re) {
@@ -532,15 +599,15 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class SignContext extends ParserRuleContext {
-        public UIEntryEnum signEnum;
-        public Token UCASEWORD;
+        public String signEnum;
+        public Token FLAG;
 
         public TerminalNode SIGN() {
-            return getToken(UIEntryRendererGrammarParser.SIGN, 0);
+            return getToken(UIEntryRendererGrammar.SIGN, 0);
         }
 
-        public TerminalNode UCASEWORD() {
-            return getToken(UIEntryRendererGrammarParser.UCASEWORD, 0);
+        public TerminalNode FLAG() {
+            return getToken(UIEntryRendererGrammar.FLAG, 0);
         }
 
         public SignContext(ParserRuleContext parent, int invokingState) {
@@ -574,17 +641,16 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final SignContext sign() throws RecognitionException {
         SignContext _localctx = new SignContext(_ctx, getState());
-        enterRule(_localctx, 12, RULE_sign);
+        enterRule(_localctx, 14, RULE_sign);
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(42);
+                setState(48);
                 match(SIGN);
-                setState(43);
-                ((SignContext) _localctx).UCASEWORD = match(UCASEWORD);
+                setState(49);
+                ((SignContext) _localctx).FLAG = match(FLAG);
 
-                String flag = "UI_ENTRY_" + ((SignContext) _localctx).UCASEWORD.getText();
-                ((SignContext) _localctx).signEnum = UIEntryEnum.valueOf(flag);
+                ((SignContext) _localctx).signEnum = ((SignContext) _localctx).FLAG.getText();
 
             }
         } catch (RecognitionException re) {
@@ -599,7 +665,7 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class UiEntryContext extends ParserRuleContext {
-        public UIEntryRenderer renderer;
+        public List<String> renderer;
         public NameContext name;
         public CodeContext code;
         public ColoursContext colours;
@@ -667,64 +733,60 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final UiEntryContext uiEntry() throws RecognitionException {
         UiEntryContext _localctx = new UiEntryContext(_ctx, getState());
-        enterRule(_localctx, 14, RULE_uiEntry);
+        enterRule(_localctx, 16, RULE_uiEntry);
 
-        String nameInit = "";
-        UIEntryRendererEnum codeInit = UIEntryRendererEnum.UI_ENTRY_RENDERER_NONE;
-        String colourCharsInit = "";
-        String labelColourCharsInit = "";
-        String symbolCharsInit = "";
-        int nDigitInit = 1;
-        UIEntryEnum signInit = UIEntryEnum.UI_ENTRY_NO_SIGN;
+        String[] uiEntryRendererStrings = new String[7];
+        Arrays.fill(uiEntryRendererStrings, "");
+        int lineNumber = -1;
 
         int _la;
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(46);
-                ((UiEntryContext) _localctx).name = name();
-                nameInit = ((UiEntryContext) _localctx).name.nameStr;
-                setState(48);
-                ((UiEntryContext) _localctx).code = code();
-                codeInit = ((UiEntryContext) _localctx).code.codeEnum;
-                setState(50);
-                ((UiEntryContext) _localctx).colours = colours();
-                colourCharsInit = ((UiEntryContext) _localctx).colours.colourCharStr;
                 setState(52);
-                ((UiEntryContext) _localctx).labelcolours = labelcolours();
-                labelColourCharsInit = ((UiEntryContext) _localctx).labelcolours.colourCharStr;
+                ((UiEntryContext) _localctx).name = name();
+                uiEntryRendererStrings[0] = ((UiEntryContext) _localctx).name.nameStr;
+                lineNumber = _localctx.start.getLine();
+
                 setState(54);
+                ((UiEntryContext) _localctx).code = code();
+                uiEntryRendererStrings[1] = ((UiEntryContext) _localctx).code.codeStr;
+                setState(56);
+                ((UiEntryContext) _localctx).colours = colours();
+                uiEntryRendererStrings[2] = ((UiEntryContext) _localctx).colours.colourCharStr;
+                setState(58);
+                ((UiEntryContext) _localctx).labelcolours = labelcolours();
+                uiEntryRendererStrings[3] = ((UiEntryContext) _localctx).labelcolours.colourCharStr;
+                setState(60);
                 ((UiEntryContext) _localctx).symbols = symbols();
-                symbolCharsInit = ((UiEntryContext) _localctx).symbols.symbolCharsStr;
-                setState(59);
+                uiEntryRendererStrings[4] = ((UiEntryContext) _localctx).symbols.symbolCharsStr;
+                setState(65);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 if (_la == NDIGITS) {
                     {
-                        setState(56);
+                        setState(62);
                         ((UiEntryContext) _localctx).ndigit = ndigit();
-                        nDigitInit = ((UiEntryContext) _localctx).ndigit.numDigitsInt;
+                        uiEntryRendererStrings[5] = ((UiEntryContext) _localctx).ndigit.numDigitsStr;
                     }
                 }
 
-                setState(64);
+                setState(70);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 if (_la == SIGN) {
                     {
-                        setState(61);
+                        setState(67);
                         ((UiEntryContext) _localctx).sign = sign();
-                        signInit = ((UiEntryContext) _localctx).sign.signEnum;
+                        uiEntryRendererStrings[6] = ((UiEntryContext) _localctx).sign.signEnum;
                     }
                 }
 
             }
             _ctx.stop = _input.LT(-1);
 
-            ((UiEntryContext) _localctx).renderer = new UIEntryRenderer(nameInit,
-                    codeInit, colourCharsInit,
-                    labelColourCharsInit, symbolCharsInit,
-                    nDigitInit, signInit);
+            ((UiEntryContext) _localctx).renderer = new ArrayList<>(Arrays.asList(uiEntryRendererStrings));
+            _localctx.renderer.add(String.valueOf(lineNumber));
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -738,11 +800,17 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
-        public List<UIEntryRenderer> renderers;
+        public List<List<String>> renderers;
+        public String record;
+        public RecordCountContext recordCount;
         public UiEntryContext uiEntry;
 
+        public RecordCountContext recordCount() {
+            return getRuleContext(RecordCountContext.class, 0);
+        }
+
         public TerminalNode EOF() {
-            return getToken(UIEntryRendererGrammarParser.EOF, 0);
+            return getToken(UIEntryRendererGrammar.EOF, 0);
         }
 
         public List<UiEntryContext> uiEntry() {
@@ -784,7 +852,7 @@ public class UIEntryRendererGrammarParser extends Parser {
 
     public final FileContext file() throws RecognitionException {
         FileContext _localctx = new FileContext(_ctx, getState());
-        enterRule(_localctx, 16, RULE_file);
+        enterRule(_localctx, 18, RULE_file);
 
         ((FileContext) _localctx).renderers = new ArrayList<>();
 
@@ -792,24 +860,27 @@ public class UIEntryRendererGrammarParser extends Parser {
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(69);
+                setState(72);
+                ((FileContext) _localctx).recordCount = recordCount();
+                ((FileContext) _localctx).record = ((FileContext) _localctx).recordCount.count;
+                setState(77);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 do {
                     {
                         {
-                            setState(66);
+                            setState(74);
                             ((FileContext) _localctx).uiEntry = uiEntry();
 
                             _localctx.renderers.add(((FileContext) _localctx).uiEntry.renderer);
 
                         }
                     }
-                    setState(71);
+                    setState(79);
                     _errHandler.sync(this);
                     _la = _input.LA(1);
                 } while (_la == NAME);
-                setState(73);
+                setState(81);
                 match(EOF);
             }
         } catch (RecognitionException re) {
@@ -823,48 +894,50 @@ public class UIEntryRendererGrammarParser extends Parser {
     }
 
     public static final String _serializedATN =
-            "\u0004\u0001\u000eL\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
+            "\u0004\u0001\u000eT\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
                     "\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007\u0002" +
-                    "\b\u0007\b\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001" +
-                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002" +
-                    "\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004" +
-                    "\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005" +
-                    "\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0007" +
-                    "\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007" +
-                    "\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007" +
-                    "\u0003\u0007<\b\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0003\u0007" +
-                    "A\b\u0007\u0001\b\u0001\b\u0001\b\u0004\bF\b\b\u000b\b\f\bG\u0001\b\u0001" +
-                    "\b\u0001\b\u0000\u0000\t\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0000" +
-                    "\u0000E\u0000\u0012\u0001\u0000\u0000\u0000\u0002\u0016\u0001\u0000\u0000" +
-                    "\u0000\u0004\u001a\u0001\u0000\u0000\u0000\u0006\u001e\u0001\u0000\u0000" +
-                    "\u0000\b\"\u0001\u0000\u0000\u0000\n&\u0001\u0000\u0000\u0000\f*\u0001" +
-                    "\u0000\u0000\u0000\u000e.\u0001\u0000\u0000\u0000\u0010E\u0001\u0000\u0000" +
-                    "\u0000\u0012\u0013\u0005\u0003\u0000\u0000\u0013\u0014\u0005\r\u0000\u0000" +
-                    "\u0014\u0015\u0006\u0000\uffff\uffff\u0000\u0015\u0001\u0001\u0000\u0000" +
-                    "\u0000\u0016\u0017\u0005\u0004\u0000\u0000\u0017\u0018\u0005\u000e\u0000" +
-                    "\u0000\u0018\u0019\u0006\u0001\uffff\uffff\u0000\u0019\u0003\u0001\u0000" +
-                    "\u0000\u0000\u001a\u001b\u0005\u0005\u0000\u0000\u001b\u001c\u0005\n\u0000" +
-                    "\u0000\u001c\u001d\u0006\u0002\uffff\uffff\u0000\u001d\u0005\u0001\u0000" +
-                    "\u0000\u0000\u001e\u001f\u0005\u0006\u0000\u0000\u001f \u0005\n\u0000" +
-                    "\u0000 !\u0006\u0003\uffff\uffff\u0000!\u0007\u0001\u0000\u0000\u0000" +
-                    "\"#\u0005\u0007\u0000\u0000#$\u0005\u000b\u0000\u0000$%\u0006\u0004\uffff" +
-                    "\uffff\u0000%\t\u0001\u0000\u0000\u0000&\'\u0005\b\u0000\u0000\'(\u0005" +
-                    "\f\u0000\u0000()\u0006\u0005\uffff\uffff\u0000)\u000b\u0001\u0000\u0000" +
-                    "\u0000*+\u0005\t\u0000\u0000+,\u0005\u000e\u0000\u0000,-\u0006\u0006\uffff" +
-                    "\uffff\u0000-\r\u0001\u0000\u0000\u0000./\u0003\u0000\u0000\u0000/0\u0006" +
-                    "\u0007\uffff\uffff\u000001\u0003\u0002\u0001\u000012\u0006\u0007\uffff" +
-                    "\uffff\u000023\u0003\u0004\u0002\u000034\u0006\u0007\uffff\uffff\u0000" +
-                    "45\u0003\u0006\u0003\u000056\u0006\u0007\uffff\uffff\u000067\u0003\b\u0004" +
-                    "\u00007;\u0006\u0007\uffff\uffff\u000089\u0003\n\u0005\u00009:\u0006\u0007" +
-                    "\uffff\uffff\u0000:<\u0001\u0000\u0000\u0000;8\u0001\u0000\u0000\u0000" +
-                    ";<\u0001\u0000\u0000\u0000<@\u0001\u0000\u0000\u0000=>\u0003\f\u0006\u0000" +
-                    ">?\u0006\u0007\uffff\uffff\u0000?A\u0001\u0000\u0000\u0000@=\u0001\u0000" +
-                    "\u0000\u0000@A\u0001\u0000\u0000\u0000A\u000f\u0001\u0000\u0000\u0000" +
-                    "BC\u0003\u000e\u0007\u0000CD\u0006\b\uffff\uffff\u0000DF\u0001\u0000\u0000" +
-                    "\u0000EB\u0001\u0000\u0000\u0000FG\u0001\u0000\u0000\u0000GE\u0001\u0000" +
-                    "\u0000\u0000GH\u0001\u0000\u0000\u0000HI\u0001\u0000\u0000\u0000IJ\u0005" +
-                    "\u0000\u0000\u0001J\u0011\u0001\u0000\u0000\u0000\u0003;@G";
+                    "\b\u0007\b\u0002\t\u0007\t\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000" +
+                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002" +
+                    "\u0001\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003" +
+                    "\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005" +
+                    "\u0001\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006" +
+                    "\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\b\u0001\b\u0001" +
+                    "\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001" +
+                    "\b\u0001\b\u0003\bB\b\b\u0001\b\u0001\b\u0001\b\u0003\bG\b\b\u0001\t\u0001" +
+                    "\t\u0001\t\u0001\t\u0001\t\u0004\tN\b\t\u000b\t\f\tO\u0001\t\u0001\t\u0001" +
+                    "\t\u0000\u0000\n\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0000" +
+                    "\u0000L\u0000\u0014\u0001\u0000\u0000\u0000\u0002\u0018\u0001\u0000\u0000" +
+                    "\u0000\u0004\u001c\u0001\u0000\u0000\u0000\u0006 \u0001\u0000\u0000\u0000" +
+                    "\b$\u0001\u0000\u0000\u0000\n(\u0001\u0000\u0000\u0000\f,\u0001\u0000" +
+                    "\u0000\u0000\u000e0\u0001\u0000\u0000\u0000\u00104\u0001\u0000\u0000\u0000" +
+                    "\u0012H\u0001\u0000\u0000\u0000\u0014\u0015\u0005\u0001\u0000\u0000\u0015" +
+                    "\u0016\u0005\n\u0000\u0000\u0016\u0017\u0006\u0000\uffff\uffff\u0000\u0017" +
+                    "\u0001\u0001\u0000\u0000\u0000\u0018\u0019\u0005\u0002\u0000\u0000\u0019" +
+                    "\u001a\u0005\u000e\u0000\u0000\u001a\u001b\u0006\u0001\uffff\uffff\u0000" +
+                    "\u001b\u0003\u0001\u0000\u0000\u0000\u001c\u001d\u0005\u0003\u0000\u0000" +
+                    "\u001d\u001e\u0005\r\u0000\u0000\u001e\u001f\u0006\u0002\uffff\uffff\u0000" +
+                    "\u001f\u0005\u0001\u0000\u0000\u0000 !\u0005\u0004\u0000\u0000!\"\u0005" +
+                    "\t\u0000\u0000\"#\u0006\u0003\uffff\uffff\u0000#\u0007\u0001\u0000\u0000" +
+                    "\u0000$%\u0005\u0005\u0000\u0000%&\u0005\t\u0000\u0000&\'\u0006\u0004" +
+                    "\uffff\uffff\u0000\'\t\u0001\u0000\u0000\u0000()\u0005\u0006\u0000\u0000" +
+                    ")*\u0005\u000e\u0000\u0000*+\u0006\u0005\uffff\uffff\u0000+\u000b\u0001" +
+                    "\u0000\u0000\u0000,-\u0005\u0007\u0000\u0000-.\u0005\n\u0000\u0000./\u0006" +
+                    "\u0006\uffff\uffff\u0000/\r\u0001\u0000\u0000\u000001\u0005\b\u0000\u0000" +
+                    "12\u0005\r\u0000\u000023\u0006\u0007\uffff\uffff\u00003\u000f\u0001\u0000" +
+                    "\u0000\u000045\u0003\u0002\u0001\u000056\u0006\b\uffff\uffff\u000067\u0003" +
+                    "\u0004\u0002\u000078\u0006\b\uffff\uffff\u000089\u0003\u0006\u0003\u0000" +
+                    "9:\u0006\b\uffff\uffff\u0000:;\u0003\b\u0004\u0000;<\u0006\b\uffff\uffff" +
+                    "\u0000<=\u0003\n\u0005\u0000=A\u0006\b\uffff\uffff\u0000>?\u0003\f\u0006" +
+                    "\u0000?@\u0006\b\uffff\uffff\u0000@B\u0001\u0000\u0000\u0000A>\u0001\u0000" +
+                    "\u0000\u0000AB\u0001\u0000\u0000\u0000BF\u0001\u0000\u0000\u0000CD\u0003" +
+                    "\u000e\u0007\u0000DE\u0006\b\uffff\uffff\u0000EG\u0001\u0000\u0000\u0000" +
+                    "FC\u0001\u0000\u0000\u0000FG\u0001\u0000\u0000\u0000G\u0011\u0001\u0000" +
+                    "\u0000\u0000HI\u0003\u0000\u0000\u0000IM\u0006\t\uffff\uffff\u0000JK\u0003" +
+                    "\u0010\b\u0000KL\u0006\t\uffff\uffff\u0000LN\u0001\u0000\u0000\u0000M" +
+                    "J\u0001\u0000\u0000\u0000NO\u0001\u0000\u0000\u0000OM\u0001\u0000\u0000" +
+                    "\u0000OP\u0001\u0000\u0000\u0000PQ\u0001\u0000\u0000\u0000QR\u0005\u0000" +
+                    "\u0000\u0001R\u0013\u0001\u0000\u0000\u0000\u0003AFO";
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.entries;
@@ -119,5 +119,25 @@ public class UIEntryBase {
                 ", flags='" + flags + '\'' +
                 ", desc='" + desc + '\'' +
                 '}';
+    }
+
+    public UIEntryRenderer getRenderer() {
+        return renderer;
+    }
+
+    public CombinerName getCombine() {
+        return combine;
+    }
+
+    public List<String> getCategories() {
+        return categories;
+    }
+
+    public String getFlags() {
+        return flags;
+    }
+
+    public String getDesc() {
+        return desc;
     }
 }

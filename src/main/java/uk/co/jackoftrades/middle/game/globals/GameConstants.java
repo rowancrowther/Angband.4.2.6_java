@@ -847,19 +847,23 @@ public class GameConstants {
      * @return a reference to the renderer with the same name as the incoming parameter
      */
     @Nullable
-    @Contract("_ -> _")
-    public static UIEntryRenderer getUIEntryRenderer(@NotNull String name) {
+    public static UIEntryRenderer getUIEntryRenderer(@NotNull String name, @NotNull List<String> errors) {
         if (uiEntryRenderers == null) {
-            String message = "Invalid attempt to access uiEntryRenderers when it hasn't been initialized";
-            IllegalStateException e = new IllegalStateException(message);
-            logger.fatal(message, e);
-            throw e;
+            errors.add("Invalid attempt to access uiEntryRenderers when it hasn't been initialized");
+            return null;
         }
 
-        return uiEntryRenderers.stream()
+        UIEntryRenderer renderer = uiEntryRenderers.stream()
                 .filter(e -> e.getName().equals(name))
                 .findFirst()
                 .orElse(null);
+
+        if (renderer == null) {
+            errors.add("Invalid UIEntryRenderer name: " + name + " no records found");
+            return null;
+        }
+
+        return renderer;
     }
 
     /**
@@ -916,7 +920,7 @@ public class GameConstants {
             loadWorld();                // world arraylist size determines maxRandDepth
             loadProjections();          // projections arrayList size determines projectionTypeMax
             loadUIEntryRenderers();
-//            loadUIEntryBases();         // Dependent on UIEntyRenderers
+            loadUIEntryBases();         // Dependent on UIEntyRenderers
 //            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 //            loadPlayerProperties();     // Dependent on UIEntry
 //            loadTerrainFeatures();
@@ -1531,11 +1535,20 @@ public class GameConstants {
      * @throws IOException an IO error occurred during parsing
      */
     private static void loadUIEntryBases() throws IOException {
-        UIEntryBaseReader uiEntryBaseReader = new UIEntryBaseReader();
+        UIEntryBaseReader reader = new UIEntryBaseReader();
         String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_base.txt";
 
         try {
-            uiEntryBases = uiEntryBaseReader.parse(filename);
+            ParseResult<UIEntryBase> result = reader.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid lib/gamedata/ui_entry_base.txt file";
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                return;
+            }
+
+            uiEntryBases = result.items();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

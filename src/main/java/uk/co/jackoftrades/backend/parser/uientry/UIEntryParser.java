@@ -12,28 +12,32 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntry.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.uientry;
 
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
-import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.atn.ATN;
+import org.antlr.v4.runtime.atn.ATNDeserializer;
+import org.antlr.v4.runtime.atn.ParserATNSimulator;
+import org.antlr.v4.runtime.atn.PredictionContextCache;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.tree.ParseTreeListener;
+import org.antlr.v4.runtime.tree.ParseTreeVisitor;
+import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntry.StatElemType;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
+import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
+import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
-import java.util.List;
 import java.util.ArrayList;
-
-import org.antlr.v4.runtime.atn.*;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.tree.*;
+import java.util.List;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class UIEntryParser extends Parser {
@@ -394,7 +398,7 @@ public class UIEntryParser extends Parser {
                 setState(46);
                 ((RendererContext) _localctx).TEXT = match(TEXT);
 
-                ((RendererContext) _localctx).uiEntryRenderer = GameConstants.getUIEntryRenderer(((RendererContext) _localctx).TEXT.getText());
+                ((RendererContext) _localctx).uiEntryRenderer = GameConstants.getUIEntryRenderer(((RendererContext) _localctx).TEXT.getText(), new java.util.ArrayList<>());
 
             }
         } catch (RecognitionException re) {

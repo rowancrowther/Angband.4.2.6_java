@@ -5,6 +5,8 @@
 # appear directly in the user interface - has to have something in ui_entry.txt
 # that pulls it in as a template.
 
+record-count:3
+
 name:good_flag_ui_compact_0
 renderer:char_screen1_flag_renderer
 combine:LOGICAL_OR

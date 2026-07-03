@@ -43,12 +43,13 @@ public class UIEntryRendererAssembler
     public List<UIEntryRenderer> assemble(@NotNull List<UIEntryRendererParseRecord> records, @NotNull List<String> errors) {
         List<UIEntryRenderer> results = new ArrayList<>();
         for (UIEntryRendererParseRecord record : records) {
+            int line = Integer.parseInt(record.lineNumber());
 
             UIEntryRendererEnum code;
             try {
                 code = UIEntryRendererEnum.valueOf("UI_ENTRY_RENDERER_" + record.code());
             } catch (IllegalArgumentException e) {
-                errors.add("Block starting on line: " + record.lineNumber()
+                errors.add("Block starting on line: " + line
                         + " has illegal code enum value: " + record.code());
                 continue;
             }
@@ -65,7 +66,7 @@ public class UIEntryRendererAssembler
                 try {
                     sign = UIEntryEnum.valueOf("UI_ENTRY_" + record.sign());
                 } catch (IllegalArgumentException e) {
-                    errors.add("Block starting on line: " + record.lineNumber()
+                    errors.add("Block starting on line: " + line
                             + " has illegal sign enum value: " + record.sign());
                     continue;
                 }

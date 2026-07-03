@@ -55,7 +55,7 @@ package uk.co.jackoftrades.backend.parser.uientryrenderer;
  *
  * @author Rowan Crowther
  */
-public record UIEntryRendererParseRecord(int lineNumber, String name, String code,
+public record UIEntryRendererParseRecord(String lineNumber, String name, String code,
                                          String colours, String labelColours, String symbols,
                                          String nDigits, String sign) {
 }

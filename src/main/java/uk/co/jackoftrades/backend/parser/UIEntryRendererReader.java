@@ -17,10 +17,6 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
@@ -73,59 +69,36 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
      * and a list of errors thrown during the parse
      * @throws IOException when the file cannot be read/is not existent
      */
+    @NotNull
+    @CheckReturnValue
     public ParseResult<UIEntryRenderer> parseWithResults(@NotNull String filename) throws IOException {
-        List<UIEntryRendererParseRecord> items = new ArrayList<>();
-        List<List<String>> records;
-        List<String> errors = new ArrayList<>();
-        int recCount = 0;
+        return GrammarDriver.run(filename,
+                UIEntryRendererLexer::new,
+                UIEntryRendererGrammar::new,
+                UIEntryRendererReader::extract,
+                new UIEntryRendererAssembler(), logger);
+    }
 
-        ParseErrors errorCatcher = null;
+    private static List<UIEntryRendererParseRecord> extract(
+            @NotNull UIEntryRendererGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        List<UIEntryRendererParseRecord> records = new ArrayList<>();
+        UIEntryRendererGrammar.FileContext output = parser.file();
+        List<List<String>> results = output.renderers;
+        errorCatcher.throwIfAny();
 
-        try {
-            CharStream input = CharStreams.fromFileName(filename);
-            UIEntryRendererLexer lexer = new UIEntryRendererLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            UIEntryRendererGrammar parser = new UIEntryRendererGrammar(tokens);
+        String declaredRecordCount = output.record;
+        GrammarDriver.checkRecordCount(declaredRecordCount,
+                results.size(), errors);
 
-            errorCatcher = ParseErrors.install(lexer, parser, filename);
-            UIEntryRendererGrammar.FileContext output = parser.file();
+        for (List<String> result : results) {
+            int line = Integer.parseInt(result.getLast());
 
-            records = output.renderers;
-
-            errorCatcher.throwIfAny();
-
-            try {
-                recCount = Integer.parseInt(output.record);
-            } catch (NumberFormatException e) {
-                errors.add("Invalid number format for declared count");
-                recCount = -1;
-            }
-
-            if (recCount != -1 && recCount != records.size()) {
-                errors.add("record-count header declares " + recCount +
-                        " but file contains " + records.size());
-            }
-
-            for (List<String> record : records) {
-                try {
-                    UIEntryRendererParseRecord parseRecord = getUiEntryRendererParseRecord(record);
-
-                    items.add(parseRecord);
-                } catch (NumberFormatException e) {
-                    errors.add("Line: " + record.getLast() + " Invalid number format found: "
-                            + record.get(0));
-                }
-            }
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        } catch (ParseCancellationException e) {
-            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : List.of());
+            records.add(getUiEntryRendererParseRecord(result));
         }
 
-        List<UIEntryRenderer> renderers = new UIEntryRendererAssembler().assemble(items, errors);
-
-        return new ParseResult<>(renderers, errors);
+        return records;
     }
 
     /**
@@ -139,7 +112,7 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
     @CheckReturnValue
     @NotNull
     private static UIEntryRendererParseRecord getUiEntryRendererParseRecord(@NotNull List<String> record) {
-        int line = Integer.parseInt(record.getLast());
+        String line = record.getLast();
         String name = record.get(0);
         String code = record.get(1);
         String colours = record.get(2);

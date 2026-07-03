@@ -52,7 +52,7 @@ class UIEntryRendererAssemblerTest {
     private static UIEntryRendererParseRecord rec(String name, String code, String colours,
                                                   String labelColours, String symbols,
                                                   String nDigits, String sign) {
-        return new UIEntryRendererParseRecord(1, name, code, colours, labelColours, symbols, nDigits, sign);
+        return new UIEntryRendererParseRecord("1", name, code, colours, labelColours, symbols, nDigits, sign);
     }
 
     @Test

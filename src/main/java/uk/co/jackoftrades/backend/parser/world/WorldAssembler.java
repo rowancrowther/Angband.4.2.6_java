@@ -41,12 +41,7 @@ public class WorldAssembler
     public List<World> assemble(@NotNull List<WorldParseRecord> records, @NotNull List<String> errors) {
         List<World> results = new ArrayList<>();
         for (WorldParseRecord record : records) {
-            int levelNumber = -1;
-            try {
-                levelNumber = Integer.parseInt(record.getLevelNumber());
-            } catch (NumberFormatException e) {
-                errors.add("Invalid level number: " + record.getLevelNumber());
-            }
+            int levelNumber = Integer.parseInt(record.getLevelNumber());
             String levelName = record.getLevelName();
             String up = record.getUp().equals("None") ? null : record.getUp();
             String down = record.getDown().equals("None") ? null : record.getDown();

@@ -89,7 +89,24 @@ public class WorldReader implements Reader<World> {
         errorCatcher.throwIfAny();
 
         String declaredRecordCount = output.declaredCount;
-        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        // world.txt is the whole cave-system map: a bad level number OR a record-count
+        // mismatch means missing/degraded map data, so both are hard errors on the same
+        // channel as a grammar error - the whole file refuses to load rather than load partial.
+        for (List<String> result : results) {
+            int line = Integer.parseInt(result.getLast());
+            try {
+                Integer.parseInt(result.get(0));
+            } catch (NumberFormatException e) {
+                errorCatcher.add(line, "Invalid level number: " + result.get(0));
+            }
+        }
+        int declared = Integer.parseInt(declaredRecordCount);
+        if (declared != results.size()) {
+            errorCatcher.add("record-count header declares " + declared
+                    + " levels, but file contains " + results.size());
+        }
+        errorCatcher.throwIfAny();
 
         for (List<String> result : results) {
             records.add(new WorldParseRecord(result.get(0),

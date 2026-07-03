@@ -167,7 +167,7 @@
           <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBaseLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
-          <option name="libDir" value="" />
+          <option name="libDir" value="C:\Users\rowan\Documents\IntelliJProjects\Angband.4.2.6\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />

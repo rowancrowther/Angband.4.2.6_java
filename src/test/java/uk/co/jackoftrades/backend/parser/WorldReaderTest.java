@@ -94,26 +94,29 @@ class WorldReaderTest {
     }
 
     @Test
-    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
-        // One real record, but the header over-declares. The declared-vs-actual cross-check (the one
-        // failure the grammar cannot detect) is a soft error: it is reported, but the valid record
-        // still assembles and loads.
+    void recordCountMismatchFailsClosed() throws IOException {
+        // world.txt is the whole cave map, so a wrong record-count (missing/extra levels) is a HARD
+        // error, not a soft one: the whole file refuses to load rather than serve a partial map.
         String path = tempFile("bad-count.txt", "record-count:5\nlevel:0:Town:None:Angband 1\n");
 
         ParseResult<World> result = new WorldReader().parseWithResults(path);
 
-        assertTrue(result.hasErrors());
+        assertTrue(result.items().isEmpty(), result.items()::toString);
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
                 result.errors()::toString);
+    }
 
-        // The partial-results contract: the one valid level survives the mismatch.
-        List<World> levels = result.items();
-        assertEquals(1, levels.size());
-        World town = levels.get(0);
-        assertEquals(0, town.levelNumber());
-        assertEquals("Town", town.levelName());
-        assertNull(town.prevLevel());
-        assertEquals("Angband 1", town.nextLevel());
+    @Test
+    void badLevelNumberFailsClosed() throws IOException {
+        // A level number that overflows int range (the only way past the lexer's INTEGER token) is a
+        // corrupt cave-map index, so it is HARD: nothing loads, the bad number is reported.
+        String path = tempFile("bad-number.txt", "record-count:1\nlevel:99999999999:Deep:None:None\n");
+
+        ParseResult<World> result = new WorldReader().parseWithResults(path);
+
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+        assertTrue(result.errors().stream().anyMatch(e -> e.contains("Invalid level number") && e.contains("99999999999")),
+                result.errors()::toString);
     }
 
     @Test
@@ -126,5 +129,30 @@ class WorldReaderTest {
 
         assertTrue(result.hasErrors());
         assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void twoDifferentErrorsAreBothReportedAndFailClosed() throws IOException {
+        // Two *different* hard errors at once: the header over-declares (5 vs the 2 records present),
+        // AND the second level's depth overflows int range. Both land on the hard error channel, so
+        // the whole file fails closed - no items - and both errors are reported (they are collected
+        // before the single throwIfAny() aborts the parse).
+        String path = tempFile("two-errors.txt", String.join("\n",
+                "record-count:5",
+                "level:0:Town:None:Angband 1",
+                "level:99999999999:Deep:Angband 1:None",
+                ""));
+
+        ParseResult<World> result = new WorldReader().parseWithResults(path);
+
+        // Fail closed: nothing loads.
+        assertTrue(result.items().isEmpty(), result.items()::toString);
+
+        // Both distinct errors are reported.
+        List<String> errors = result.errors();
+        assertTrue(errors.stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 2")),
+                errors::toString);
+        assertTrue(errors.stream().anyMatch(e -> e.contains("Invalid level number") && e.contains("99999999999")),
+                errors::toString);
     }
 }

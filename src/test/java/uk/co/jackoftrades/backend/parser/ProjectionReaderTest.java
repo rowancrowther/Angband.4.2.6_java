@@ -24,6 +24,7 @@ import uk.co.jackoftrades.middle.game.Projection;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -101,5 +102,31 @@ class ProjectionReaderTest {
 
         assertTrue(result.hasErrors());
         assertTrue(result.items().isEmpty());
+    }
+
+    @Test
+    void twoDifferentErrorsAreEachLoggedAndGoodRecordSurvives() throws IOException {
+        // Three records with a matching record-count (so no count error): one valid, one with an
+        // unknown type, one with an unknown code. The two *different* semantic errors are each
+        // logged independently and both bad records are skipped (null type/code -> continue), while
+        // the one valid record still loads. It does NOT fail closed.
+        // (Note: an unknown *colour* would NOT work here - resolveColour falls back to Dark for an
+        // unrecognised name rather than returning null, so it never errors or skips.)
+        String path = tempFile("mixed.txt", String.join("\n",
+                "record-count:3",
+                "code:ACID\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
+                "code:ELEC\ntype:NOTATYPE\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Blue",
+                "code:NOTACODE\ntype:element\ndesc:x\nblind-desc:x\nobvious:1\ncolor:Slate",
+                ""));
+
+        ParseResult<Projection> result = new ProjectionReader().parseWithResults(path);
+
+        // Only the valid record survives; the two defective ones are skipped.
+        assertEquals(1, result.items().size(), result.items()::toString);
+
+        // Both distinct errors are present.
+        List<String> errors = result.errors();
+        assertTrue(errors.stream().anyMatch(e -> e.contains("Unknown projection type")), errors::toString);
+        assertTrue(errors.stream().anyMatch(e -> e.contains("NOTACODE")), errors::toString);
     }
 }

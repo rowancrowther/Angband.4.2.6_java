@@ -156,12 +156,12 @@ uiEntry
             }
             code
             { uiEntryRendererStrings[1] = $code.codeStr; }
-            colours
-            { uiEntryRendererStrings[2] = $colours.colourCharStr; }
-            labelcolours
-            { uiEntryRendererStrings[3] = $labelcolours.colourCharStr; }
-            symbols
-            { uiEntryRendererStrings[4] = $symbols.symbolCharsStr; }
+            (colours
+            { uiEntryRendererStrings[2] = $colours.colourCharStr; })?
+            (labelcolours
+            { uiEntryRendererStrings[3] = $labelcolours.colourCharStr; })?
+            (symbols
+            { uiEntryRendererStrings[4] = $symbols.symbolCharsStr; })?
             (ndigit
             { uiEntryRendererStrings[5] = $ndigit.numDigitsStr; })?
             (sign

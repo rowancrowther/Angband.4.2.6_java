@@ -24,7 +24,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link UIEntryRendererGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface UIEntryRendererGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**

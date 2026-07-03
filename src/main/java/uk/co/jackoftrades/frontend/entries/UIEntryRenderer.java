@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.entries;
@@ -26,49 +26,35 @@ import uk.co.jackoftrades.frontend.entries.enums.UIEntryRendererEnum;
  * the colour/symbol tables, digit count and sign mode actually used to draw an
  * entry's value (Java port of the C original's UI-entry renderer definitions).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class UIEntryRenderer {
     /**
      * The renderer's name.
-     *
-     * @author ClaudeCode
      */
     private String name;
     /**
      * The built-in renderer kind this instance is based on.
-     *
-     * @author ClaudeCode
      */
     private UIEntryRendererEnum code;
     /**
      * Per-state value colours, one colour code per character.
-     *
-     * @author ClaudeCode
      */
     private String colours;
     /**
      * Per-state label colours, one colour code per character.
-     *
-     * @author ClaudeCode
      */
     private String labelColours;
     /**
      * Per-state display symbols, one symbol per character.
-     *
-     * @author ClaudeCode
      */
     private String symbols;
     /**
      * Number of digits used when rendering a numeric value.
-     *
-     * @author ClaudeCode
      */
     private int nDigit;
     /**
      * The sign-display mode applied to this renderer's values.
-     *
-     * @author ClaudeCode
      */
     private UIEntryEnum sign;
 
@@ -82,7 +68,7 @@ public class UIEntryRenderer {
      * @param symbols      per-state symbol table
      * @param nDigit       digit count for numeric rendering
      * @param sign         sign-display mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public UIEntryRenderer(String name,
                            UIEntryRendererEnum code,
@@ -102,7 +88,7 @@ public class UIEntryRenderer {
 
     /**
      * @return a debug string listing this renderer's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -119,9 +105,33 @@ public class UIEntryRenderer {
 
     /**
      * @return this renderer's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
+    }
+
+    public UIEntryRendererEnum getCode() {
+        return code;
+    }
+
+    public String getColours() {
+        return colours;
+    }
+
+    public String getLabelColours() {
+        return labelColours;
+    }
+
+    public String getSymbols() {
+        return symbols;
+    }
+
+    public int getnDigit() {
+        return nDigit;
+    }
+
+    public UIEntryEnum getSign() {
+        return sign;
     }
 }

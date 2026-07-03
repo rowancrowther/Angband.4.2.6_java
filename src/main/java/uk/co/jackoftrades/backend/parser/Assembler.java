@@ -17,19 +17,23 @@
 
 package uk.co.jackoftrades.backend.parser;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.List;
 
 /**
- * A record template to be used when returning items from a
- * {@code lib/gamedata} file parse
+ * 'Assembles' the parse-records into the result T
  *
- * @param items  A list of items of type T (the template class)
- * @param errors A String List of errors
- * @param <T>    The object type which this parser is holding
+ * @param <R> parse-record type
+ * @param <T> assembled result
  * @author Rowan Crowther
  */
-public record ParseResult<T>(List<T> items, List<String> errors) {
-    public boolean hasErrors() {
-        return !errors.isEmpty();
-    }
+public interface Assembler<R, T> {
+    /**
+     *
+     * @param records List of R_ParseRecord objects
+     * @param errors  List of errors as string messages
+     * @return result of assembling list of R objects
+     */
+    T assemble(@NotNull List<R> records, @NotNull List<String> errors);
 }

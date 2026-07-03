@@ -21,6 +21,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
@@ -30,7 +31,7 @@ import uk.co.jackoftrades.middle.game.Projection;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProjectionAssembler {
+public class ProjectionAssembler implements Assembler<ProjectionParseRecord, List<Projection>> {
     /**
      * Assembles the data from the list of {@link ProjectionParseRecord} to create
      * a List of {@link Projection} objects
@@ -40,7 +41,8 @@ public class ProjectionAssembler {
      * @return a List of {@link Projection} objects
      * @author Rowan Crowther
      */
-    public List<Projection> assemble(List<ProjectionParseRecord> records, List<String> errors) {
+    @Override
+    public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors) {
         List<Projection> result = new ArrayList<>();
         for (ProjectionParseRecord record : records) {
             int line = record.lineNumber();

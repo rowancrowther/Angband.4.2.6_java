@@ -20,6 +20,7 @@ package uk.co.jackoftrades.backend.parser.gameconstants;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.globals.*;
 
@@ -31,7 +32,7 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class GameConstantsAssembler {
+public class GameConstantsAssembler implements Assembler<GameConstantsParseRecord, GameConstantsData> {
     /**
      * Assembles the data from the list of records using a
      * {@link GameConstantsData.GameConstantsBuilder}, returning a {@link GameConstantsData}
@@ -43,6 +44,7 @@ public class GameConstantsAssembler {
      *
      * @author Rowan Crowther
      */
+    @Override
     @Nullable
     @CheckReturnValue
     public GameConstantsData assemble(@NotNull List<GameConstantsParseRecord> records,

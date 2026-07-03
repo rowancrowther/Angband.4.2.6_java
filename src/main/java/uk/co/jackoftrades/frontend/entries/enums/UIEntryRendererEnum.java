@@ -12,11 +12,13 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.entries.enums;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 
 /**
@@ -31,7 +33,7 @@ import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
  * @author ClaudeCode
  */
 public enum UIEntryRendererEnum {
-    UI_ENTRY_RENDERER_NONE(CombinerName.NONE, "", "", "", 1, UIEntryEnum.UI_ENTRY_NO_SIGN),
+    UI_ENTRY_RENDERER_NONE(CombinerName.NONE, "", "", "", 0, UIEntryEnum.UI_ENTRY_NO_SIGN),
     UI_ENTRY_RENDERER_COMPACT_RESIST_RENDERER_WITH_COMBINED_AUX(CombinerName.RESIST_0,
             "wwwwwwGGGrrGGGwGrGwwrwWWWWWWGGGrrGGGWGrGWWrW",
             "swBrgwBrwBwBr", "?..+-*!^.=.%%%~!=%~+=~", 0, UIEntryEnum.UI_ENTRY_NO_SIGN),
@@ -43,38 +45,26 @@ public enum UIEntryRendererEnum {
 
     /**
      * How multiple contributing values are merged before rendering.
-     *
-     * @author ClaudeCode
      */
     private final CombinerName combiner;
     /**
      * Per-state value colours, one colour code per character.
-     *
-     * @author ClaudeCode
      */
     private final String defaultColours;
     /**
      * Per-state label colours, one colour code per character.
-     *
-     * @author ClaudeCode
      */
     private final String defaultLabelColours;
     /**
      * Per-state display symbols, one symbol per character.
-     *
-     * @author ClaudeCode
      */
     private final String defaultSymbols;
     /**
      * Number of digits to use when rendering a numeric value.
-     *
-     * @author ClaudeCode
      */
     private final int defaultDigits;
     /**
      * The sign-display mode applied to this renderer's values.
-     *
-     * @author ClaudeCode
      */
     private final UIEntryEnum entry;
 
@@ -88,7 +78,7 @@ public enum UIEntryRendererEnum {
      * @param defaultSymbols      per-state symbol table
      * @param defaultDigits       digit count for numeric rendering
      * @param entry               sign-display mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     UIEntryRendererEnum(CombinerName combiner, String defaultColours, String defaultLabelColours, String defaultSymbols, int defaultDigits, UIEntryEnum entry) {
         this.combiner = combiner;
@@ -97,5 +87,65 @@ public enum UIEntryRendererEnum {
         this.defaultSymbols = defaultSymbols;
         this.defaultDigits = defaultDigits;
         this.entry = entry;
+    }
+
+    /**
+     * Get the default digits to display for UI Entry Renderers
+     *
+     * @return the default number of digits for this UI Entry Renderer enum
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public int getDefaultDigits() {
+        return defaultDigits;
+    }
+
+    /**
+     * Get the default sign for UI Entry Renderers
+     *
+     * @return the default sign for this UI Entry Renderer enum
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public UIEntryEnum getEntry() {
+        return entry;
+    }
+
+    /**
+     * Get the default colours for UI Entry Renderers
+     *
+     * @return the default colours for UI Entry Renderers
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public String getDefaultColours() {
+        return defaultColours;
+    }
+
+    /**
+     * Get the default label colours for UI Entry Renderers
+     *
+     * @return the default label colours for UI Entry Renderers
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public String getDefaultLabelColours() {
+        return defaultLabelColours;
+    }
+
+    /**
+     * Get the default symbols for UI Entry Renderers
+     *
+     * @return the default symbols for UI Entry Renderers
+     * @author Rowan Crowther
+     */
+    @Contract(pure = true)
+    @CheckReturnValue
+    public String getDefaultSymbols() {
+        return defaultSymbols;
     }
 }

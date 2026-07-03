@@ -933,9 +933,9 @@ public class GameConstants {
     public static void init() {
         try {
             loadGameConstants();
-            loadWorld();                // World arraylist determines maxRandDepth
-            loadProjections();          // projections arrayList determines projectionTypeMax
-//            loadUIEntryRenderers();
+            loadWorld();                // world arraylist size determines maxRandDepth
+            loadProjections();          // projections arrayList size determines projectionTypeMax
+            loadUIEntryRenderers();
 //            loadUIEntryBases();         // Dependent on UIEntyRenderers
 //            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 //            loadPlayerProperties();     // Dependent on UIEntry
@@ -1567,17 +1567,26 @@ public class GameConstants {
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
-//    private static void loadUIEntryRenderers() throws IOException {
-//        UIEntryRendererReader renderer = new UIEntryRendererReader();
-//        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
-//
-//        try {
-//            uiEntryRenderers = renderer.parse(filename);
-//        } catch (Exception e) {
-//            logger.error("Error while loading file {}", filename, e);
-//            throw e;
-//        }
-//    }
+    private static void loadUIEntryRenderers() throws IOException {
+        UIEntryRendererReader reader = new UIEntryRendererReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
+
+        try {
+            ParseResult<UIEntryRenderer> result = reader.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid lib/gamedata/ui_entry_renderer.txt file";
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message, e);
+                return;
+            }
+
+            uiEntryRenderers = result.items();
+        } catch (Exception e) {
+            logger.error("Error while loading file {}", filename, e);
+            throw e;
+        }
+    }
 
     /**
      * Private constructor preventing instantiation of this static-only registry.

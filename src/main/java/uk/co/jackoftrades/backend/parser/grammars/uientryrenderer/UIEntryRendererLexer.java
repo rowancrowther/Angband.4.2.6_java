@@ -533,5 +533,5 @@ public class UIEntryRendererLexer extends Lexer {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

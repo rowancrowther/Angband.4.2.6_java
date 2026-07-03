@@ -17,10 +17,6 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
@@ -77,66 +73,41 @@ public class ProjectionReader implements Reader<Projection> {
      * @author Rowan Crowther
      */
     public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
-        List<List<String>> projectionRecords;
-        int recordCount = 0;
+        return GrammarDriver.run(filename, ProjectionLexer::new,
+                ProjectionGrammar::new,
+                ProjectionReader::extract,
+                new ProjectionAssembler(), logger);
+    }
 
-        ParseErrors errorCatcher = null;
+    private static List<ProjectionParseRecord> extract(
+            @NotNull ProjectionGrammar parser, @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
 
         List<ProjectionParseRecord> records = new ArrayList<>();
-        List<String> errors = new ArrayList<>();
+        ProjectionGrammar.FileContext output = parser.file();
+        List<List<String>> results = output.projections;
+        errorCatcher.throwIfAny();
+        String declaredRecordCount = output.records;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
-        try {
-            CharStream input = CharStreams.fromFileName(filename);
-            ProjectionLexer lexer = new ProjectionLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ProjectionGrammar parser = new ProjectionGrammar(tokens);
-
-            // install the error catcher
-            errorCatcher = ParseErrors.install(lexer, parser, filename);
-
-            ProjectionGrammar.FileContext output = parser.file();
-            projectionRecords = output.projections;
-
-            errorCatcher.throwIfAny();
-
+        for (List<String> result : results) {
+            String lineStr = result.getLast();
+            int line;
             try {
-                recordCount = Integer.parseInt(output.records);
+                line = Integer.parseInt(lineStr);
             } catch (NumberFormatException e) {
-                errors.add("Invalid number format for declared record count");
-                recordCount = -1;
+                errors.add("Invalid number format for declared line: " + lineStr +
+                        " Projection code: " + result.getFirst());
+                line = -1;
             }
 
-            if (recordCount != -1 && recordCount != projectionRecords.size()) {
-                errors.add("record-count header declares " + recordCount +
-                        " but file contains " + projectionRecords.size());
-            }
-
-            for (List<String> record : projectionRecords) {
-                String lineStr = record.getLast();
-                int line;
-                try {
-                    line = Integer.parseInt(lineStr);
-                } catch (NumberFormatException e) {
-                    errors.add("Invalid number format for declared line: " + lineStr +
-                            " Projection code: " + record.getFirst());
-                    line = -1;
-                }
-
-                records.add(new ProjectionParseRecord(record.get(0), record.get(1),
-                        record.get(2), record.get(3), record.get(4), record.get(5),
-                        record.get(6), record.get(7), record.get(8), record.get(9),
-                        record.get(10), record.get(11), record.get(12), record.get(13),
-                        record.get(14), line));
-            }
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        } catch (ParseCancellationException e) {
-            return new ParseResult<>(List.of(), errorCatcher.getErrors());
+            records.add(new ProjectionParseRecord(result.get(0), result.get(1),
+                    result.get(2), result.get(3), result.get(4), result.get(5),
+                    result.get(6), result.get(7), result.get(8), result.get(9),
+                    result.get(10), result.get(11), result.get(12), result.get(13),
+                    result.get(14), line));
         }
 
-        List<Projection> projections = new ProjectionAssembler().assemble(records, errors);
-
-        return new ParseResult<>(projections, errors);
+        return records;
     }
 }

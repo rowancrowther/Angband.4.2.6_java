@@ -30,7 +30,8 @@ import java.util.List;
  * Assembler class - takes a list of UIEntryRendererParseRecords and converts them
  * to a List of UIEntryRenderers.
  */
-public class UIEntryRendererAssembler implements Assembler<UIEntryRendererParseRecord, List<UIEntryRenderer>> {
+public class UIEntryRendererAssembler
+        implements Assembler<UIEntryRendererParseRecord, List<UIEntryRenderer>> {
     /**
      * Assemble the record from the thin DTO ParseRecords and return them in a list
      *

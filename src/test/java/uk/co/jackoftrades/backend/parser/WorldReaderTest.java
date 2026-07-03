@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
+import uk.co.jackoftrades.middle.cave.World;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -31,15 +31,22 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Reader/assembly tests for {@link WorldReader} (grammar-suite reader track R4).
  *
+ * <p>These tests run the full reader-through-assembler pipeline, so they assert on the assembled
+ * {@link World} domain records — not the intermediate {@code WorldParseRecord} DTOs. In particular
+ * the {@code "None"} sentinel that the grammar extracts verbatim for the up/down fields is resolved
+ * to {@code null} by {@link uk.co.jackoftrades.backend.parser.world.WorldAssembler}, so the town has
+ * a {@code null} previous level and the deepest level a {@code null} next level.
+ *
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/world.txt}; a clean load
  * is itself the assertion that the file's declared {@code record-count} matched the records found.
  * The error-path tests build tiny fixtures that inject a single defect each.
  *
- * <p>Note on coverage: the reader's per-field {@code parseInt} guards are effectively unreachable —
- * the lexer's {@code INTEGER} token already guarantees the depth/line/count fields are numeric, so a
- * non-numeric value is a <em>grammar</em> error, not a reader coercion error. The genuinely
- * reader-level failure is the {@code record-count} declared-vs-actual mismatch, which the grammar
- * cannot catch; that is exercised on its own below.
+ * <p>Note on coverage: the per-field numeric coercion is effectively unreachable — the lexer's
+ * {@code INTEGER} token already guarantees the depth/line/count fields are numeric, so a non-numeric
+ * value is a <em>grammar</em> error, not an assembly coercion error. The genuinely reader-level
+ * failure is the {@code record-count} declared-vs-actual mismatch, which the grammar cannot catch;
+ * that is a <em>soft</em> error, so the valid records still load alongside it (partial-results
+ * contract). Both paths are exercised below.
  *
  * @author ClaudeCode
  */
@@ -64,48 +71,58 @@ class WorldReaderTest {
 
     @Test
     void cleanLoadOfTheRealFileReportsNoErrorsAndAllLevels() throws IOException {
-        ParseResult<WorldParseRecord> result = new WorldReader().parseWithResults(REAL_FILE);
+        ParseResult<World> result = new WorldReader().parseWithResults(REAL_FILE);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
 
-        List<WorldParseRecord> levels = result.items();
+        List<World> levels = result.items();
         assertEquals(128, levels.size());
 
-        // Town: level 0, nothing above it (the "None" sentinel is mapped to null by the reader).
-        WorldParseRecord town = levels.get(0);
-        assertEquals(0, town.getLevelNumber());
-        assertEquals("Town", town.getLevelName());
-        assertNull(town.getUp());
-        assertEquals("Angband 1", town.getDown());
+        // Town: level 0, nothing above it (the "None" sentinel is mapped to null by the assembler).
+        World town = levels.get(0);
+        assertEquals(0, town.levelNumber());
+        assertEquals("Town", town.levelName());
+        assertNull(town.prevLevel());
+        assertEquals("Angband 1", town.nextLevel());
 
         // The deepest level: nothing below it.
-        WorldParseRecord deepest = levels.get(127);
-        assertEquals(127, deepest.getLevelNumber());
-        assertEquals("Angband 127", deepest.getLevelName());
-        assertEquals("Angband 126", deepest.getUp());
-        assertNull(deepest.getDown());
+        World deepest = levels.get(127);
+        assertEquals(127, deepest.levelNumber());
+        assertEquals("Angband 127", deepest.levelName());
+        assertEquals("Angband 126", deepest.prevLevel());
+        assertNull(deepest.nextLevel());
     }
 
     @Test
-    void recordCountMismatchIsReportedWithNoItems() throws IOException {
-        // One real record, but the header over-declares — the reader's declared-vs-actual cross-check
-        // (the one failure the grammar cannot detect) fires.
+    void recordCountMismatchIsReportedButValidRecordStillLoads() throws IOException {
+        // One real record, but the header over-declares. The declared-vs-actual cross-check (the one
+        // failure the grammar cannot detect) is a soft error: it is reported, but the valid record
+        // still assembles and loads.
         String path = tempFile("bad-count.txt", "record-count:5\nlevel:0:Town:None:Angband 1\n");
 
-        ParseResult<WorldParseRecord> result = new WorldReader().parseWithResults(path);
+        ParseResult<World> result = new WorldReader().parseWithResults(path);
 
         assertTrue(result.hasErrors());
-        assertTrue(result.items().isEmpty());
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
                 result.errors()::toString);
+
+        // The partial-results contract: the one valid level survives the mismatch.
+        List<World> levels = result.items();
+        assertEquals(1, levels.size());
+        World town = levels.get(0);
+        assertEquals(0, town.levelNumber());
+        assertEquals("Town", town.levelName());
+        assertNull(town.prevLevel());
+        assertEquals("Angband 1", town.nextLevel());
     }
 
     @Test
     void missingRecordCountHeaderIsReportedWithNoItems() throws IOException {
-        // No record-count directive at all: a grammar syntax error, surfaced through ParseErrors.
+        // No record-count directive at all: a grammar syntax error, surfaced through ParseErrors as a
+        // hard (fail-closed) failure, so nothing loads.
         String path = tempFile("no-header.txt", "level:0:Town:None:Angband 1\n");
 
-        ParseResult<WorldParseRecord> result = new WorldReader().parseWithResults(path);
+        ParseResult<World> result = new WorldReader().parseWithResults(path);
 
         assertTrue(result.hasErrors());
         assertTrue(result.items().isEmpty());

@@ -24,7 +24,7 @@ package uk.co.jackoftrades.backend.parser.world;
  * <p>This class is the boundary between the grammar layer and the reader layer.
  * The grammar's only job is to extract raw text from the data file and populate
  * this record — no enum resolution, no domain-object construction, no calls to
- * GameConstants. All of that work happens in the reader (WorldReader),
+ * GameConstants. All of that work happens in {@link WorldAssembler},
  * which converts a {@code List<WorldParseRecord>} into the real domain
  * objects once the domain API is stable enough to use.</p>
  *
@@ -43,12 +43,12 @@ public class WorldParseRecord {
     /**
      * Holder for the line that any error occurred on
      */
-    private final int lineNumber;
+    private final String lineNumber;
 
     /**
      * Holder for the level number for this level, i.e. 0
      */
-    private final int levelNumber;
+    private final String levelNumber;
 
     /**
      * Holder for the level name for this level
@@ -87,8 +87,8 @@ public class WorldParseRecord {
      *                    line
      * @author Rowan Crowther
      */
-    public WorldParseRecord(int levelNumber, String levelName, String up,
-                            String down, int lineNumber) {
+    public WorldParseRecord(String levelNumber, String levelName, String up,
+                            String down, String lineNumber) {
         this.lineNumber = lineNumber;
         this.levelNumber = levelNumber;
         this.levelName = levelName;
@@ -103,7 +103,7 @@ public class WorldParseRecord {
      * world was found on
      * @author Rowan Crowther
      */
-    public int getLineNumber() {
+    public String getLineNumber() {
         return lineNumber;
     }
 
@@ -114,7 +114,7 @@ public class WorldParseRecord {
      * number of levels in this dungeon - 1
      * @author Rowan Crowther
      */
-    public int getLevelNumber() {
+    public String getLevelNumber() {
         return levelNumber;
     }
 

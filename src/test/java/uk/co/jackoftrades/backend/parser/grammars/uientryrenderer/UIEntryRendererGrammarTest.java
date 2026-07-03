@@ -145,11 +145,30 @@ class UIEntryRendererGrammarTest {
     }
 
     @Test
-    void recordMissingAMandatoryFieldIsAParseError() {
-        // No colors/labelcolors/symbols after code: the mandatory sequence can't complete.
+    void recordWithOnlyNameAndCodeParsesWithEveryOptionalFieldEmpty() {
+        // colors/labelcolors/symbols/ndigit/sign are all optional (grammar decision (b)):
+        // the reader defaults each absent field from the resolved code, so a record that
+        // supplies only the two mandatory fields (name, code) parses cleanly, with all five
+        // optionals surfaced as empty strings.
         Errors errors = new Errors();
-        parser("record-count:1\nname:foo\ncode:BAR\n", errors).file();
+        UIEntryRendererGrammar.FileContext ctx = parser(
+                "record-count:1\nname:foo\ncode:BAR\n", errors).file();
 
-        assertFalse(errors.messages.isEmpty(), "a record missing a mandatory field must not parse");
+        assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
+        assertEquals(1, ctx.renderers.size());
+        // [name, code, colours, labelcolours, symbols, ndigit, sign, lineNo]; name: is on source line 2.
+        assertEquals(
+                List.of("foo", "BAR", "", "", "", "", "", "2"),
+                ctx.renderers.get(0));
+    }
+
+    @Test
+    void recordMissingAMandatoryFieldIsAParseError() {
+        // code: is mandatory (unlike the optional colour/symbol fields), so a record that
+        // supplies only name: cannot complete the mandatory name->code sequence.
+        Errors errors = new Errors();
+        parser("record-count:1\nname:foo\n", errors).file();
+
+        assertFalse(errors.messages.isEmpty(), "a record missing the mandatory code: field must not parse");
     }
 }

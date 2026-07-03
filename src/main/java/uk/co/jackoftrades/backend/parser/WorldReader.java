@@ -17,16 +17,14 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.grammars.world.WorldGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.world.WorldLexer;
+import uk.co.jackoftrades.backend.parser.world.WorldAssembler;
 import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
+import uk.co.jackoftrades.middle.cave.World;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,7 +39,7 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class WorldReader implements Reader<WorldParseRecord> {
+public class WorldReader implements Reader<World> {
     /**
      * Logger used to report file-loading failures
      */
@@ -57,7 +55,7 @@ public class WorldReader implements Reader<WorldParseRecord> {
      */
     @NotNull
     @Override
-    public List<WorldParseRecord> parse(@NotNull String filename) throws IOException {
+    public List<World> parse(@NotNull String filename) throws IOException {
         return parseWithResults(filename).items();
     }
 
@@ -73,72 +71,31 @@ public class WorldReader implements Reader<WorldParseRecord> {
      *                     the file
      * @author Rowan Crowther
      */
-    public ParseResult<WorldParseRecord> parseWithResults(@NotNull String filename) throws IOException {
-        ParseResult<WorldParseRecord> worldResult = new ParseResult<>(new ArrayList<>(), new ArrayList<>());
-        List<List<String>> records;
-        int recCount = 0;
+    public ParseResult<World> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                WorldLexer::new,
+                WorldGrammar::new,
+                WorldReader::extract,
+                new WorldAssembler(), logger);
+    }
 
-        ParseErrors errorCatcher = null;
+    private static List<WorldParseRecord> extract(
+            @NotNull WorldGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        List<WorldParseRecord> records = new ArrayList<>();
+        WorldGrammar.FileContext output = parser.file();
+        List<List<String>> results = output.levels;
+        errorCatcher.throwIfAny();
 
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            WorldLexer lexer = new WorldLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            WorldGrammar parser = new WorldGrammar(tokens);
+        String declaredRecordCount = output.declaredCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
-            // Install the error catcher
-            errorCatcher = ParseErrors.install(lexer, parser, filename);
-
-            WorldGrammar.FileContext output = parser.file();
-
-            // throw any caught errors
-            errorCatcher.throwIfAny();
-
-            records = output.levels;
-
-            try {
-                recCount = Integer.parseInt(output.declaredCount);
-            } catch (NumberFormatException e) {
-                errorCatcher.add("Invalid number format for declared count");
-                recCount = -1;
-            }
-
-            if (recCount != -1 && recCount != records.size()) {
-                errorCatcher.add("record-count header declares " + recCount +
-                        " but file contains " + records.size());
-            }
-
-            int line = -1;
-
-            for (List<String> record : records) {
-                try {
-                    int levelNumber = Integer.parseInt(record.get(0));
-                    String levelName = record.get(1);
-                    String upLevelName = record.get(2).equals("None")
-                            ? null : record.get(2);
-                    String downLevelName = record.get(3).equals("None")
-                            ? null : record.get(3);
-                    line = Integer.parseInt(record.get(4));
-
-                    WorldParseRecord worldParseRecord = new WorldParseRecord(levelNumber,
-                            levelName, upLevelName, downLevelName, line);
-
-                    worldResult.items().add(worldParseRecord);
-
-                } catch (NumberFormatException e) {
-                    errorCatcher.add("Line: " + record.get(4) + ": Invalid number format found: " +
-                            record.get(0));
-                }
-            }
-
-            errorCatcher.throwIfAny();
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        } catch (ParseCancellationException e) {
-            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : null);
+        for (List<String> result : results) {
+            records.add(new WorldParseRecord(result.get(0),
+                    result.get(1), result.get(2), result.get(3),
+                    result.getLast()));
         }
-
-        return worldResult;
+        return records;
     }
 }

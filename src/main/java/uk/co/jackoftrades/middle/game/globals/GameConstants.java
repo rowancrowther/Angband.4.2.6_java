@@ -26,17 +26,13 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
-import uk.co.jackoftrades.backend.parser.world.WorldParseRecord;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.cave.Chunk;
-import uk.co.jackoftrades.middle.cave.Feature;
-import uk.co.jackoftrades.middle.cave.PitProfile;
-import uk.co.jackoftrades.middle.cave.TrapKind;
+import uk.co.jackoftrades.middle.cave.*;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.game.Projection;
@@ -109,20 +105,6 @@ public class GameConstants {
     }
 
     /**
-     * A World record used to store the details of each level of the dungeon, including the Town
-     *
-     * @param levelNumber the number of the level in 0-base from the town downwards
-     * @param levelName the name of the level
-     * @param prevLevel the name of the previous level in the List of worlds or null if one doesn't exist,
-     *                  i.e. the current level is the town level
-     * @param nextLevel the name of the next level in the list of worlds or null if one doesn't exist, i.e.
-     *                  the current level is the deepest one in the dungeon
-     */
-    public record World(int levelNumber, @NotNull String levelName, @Nullable String prevLevel,
-                        @Nullable String nextLevel) {
-    }
-
-    /**
      * Load in the list of 'world' levels from the gamedata/world.txt file.
      *
      * @throws IOException if there is a problem loading the file
@@ -133,18 +115,16 @@ public class GameConstants {
         WorldReader worldReader = new WorldReader();
 
         try {
-            ParseResult<WorldParseRecord> result = worldReader.parseWithResults(filename);
+            ParseResult<World> result = worldReader.parseWithResults(filename);
 
             if (result.hasErrors()) {
                 String message = "Invalid lib/gamedata/world.txt file.";
                 InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
                 logger.error(message, e);
-                return;
+                throw e;
             }
 
-            worlds = result.items().stream()
-                    .map(r -> new World(r.getLevelNumber(), r.getLevelName(), r.getUp(), r.getDown()))
-                    .toList();
+            worlds = result.items();
             maxRandDepth = worlds.size();
         } catch (IOException e) {
             String message = "Error loading lib/gamedata/world.txt file.";

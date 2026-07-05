@@ -921,7 +921,7 @@ public class GameConstants {
             loadProjections();          // projections arrayList size determines projectionTypeMax
             loadUIEntryRenderers();
             loadUIEntryBases();         // Dependent on UIEntyRenderers
-//            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+            loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 //            loadPlayerProperties();     // Dependent on UIEntry
 //            loadTerrainFeatures();
 //            loadObjectBases();

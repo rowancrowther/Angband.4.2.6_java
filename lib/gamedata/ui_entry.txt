@@ -66,6 +66,8 @@
 # that flag is used, any properties bound to the element as auxiliary values
 # will be ignored.
 
+record-count:47
+
 name:stat_mod_ui_compact_0
 parameter:stat
 renderer:char_screen1_stat_mod_renderer

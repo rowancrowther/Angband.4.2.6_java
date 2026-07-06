@@ -14,8 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryGrammar.g4 by ANTLR 4.13.2
+// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.uientry;
 
 import org.antlr.v4.runtime.*;
@@ -339,6 +338,7 @@ public class UIEntryGrammar extends Parser {
                         setState(44);
                         ((NameContext) _localctx).tag = tag();
                         ((NameContext) _localctx).elemOrStat = ((NameContext) _localctx).tag.elementOrStat;
+                        ((NameContext) _localctx).nameStr = _localctx.nameStr + (((NameContext) _localctx).tag != null ? _input.getText(((NameContext) _localctx).tag.start, ((NameContext) _localctx).tag.stop) : null);
                     }
                 }
 
@@ -1245,6 +1245,7 @@ public class UIEntryGrammar extends Parser {
         String priorityInit = "";
         List<String> flagInit = new ArrayList<>();
         String descInit = "";
+        String nameTagInit = "";
 
         int _la;
         try {
@@ -1254,7 +1255,7 @@ public class UIEntryGrammar extends Parser {
                 ((UiEntryContext) _localctx).name = name();
                 nameInit = ((UiEntryContext) _localctx).name.nameStr;
                 if (((UiEntryContext) _localctx).name.elemOrStat != null)
-                    parameterInit = ((UiEntryContext) _localctx).name.elemOrStat;
+                    nameTagInit = ((UiEntryContext) _localctx).name.elemOrStat;
                 line = _localctx.start.getLine();
                 setState(111);
                 _errHandler.sync(this);
@@ -1396,7 +1397,7 @@ public class UIEntryGrammar extends Parser {
 
             ((UiEntryContext) _localctx).entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
                     label5Init, label2Init, parameterInit, rendererInit, combinerInit,
-                    priorityInit, categoryInit, flagInit, descInit, line);
+                    priorityInit, categoryInit, flagInit, descInit, nameTagInit, line);
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1618,5 +1619,5 @@ public class UIEntryGrammar extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

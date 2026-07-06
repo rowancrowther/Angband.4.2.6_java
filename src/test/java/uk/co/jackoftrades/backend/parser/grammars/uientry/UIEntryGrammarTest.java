@@ -147,29 +147,33 @@ class UIEntryGrammarTest {
     }
 
     @Test
-    void nameTagSuppliesParameterAndIsStrippedFromName() {
+    void nameTagIsCapturedSeparatelyAndTheNameKeepsTheTag() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
                 parser("record-count:1\nname:resist_ui_compact_0<STR>\nlabel:Str\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
-        // The <STR> tag becomes the parameter; the name keeps only the part before the '<'.
-        assertEquals("resist_ui_compact_0", rec.name());
-        assertEquals("STR", rec.parameter());
+        // The <STR> tag is captured in nameTag; the name keeps the full tagged form so that
+        // bindui look-ups by "name<TAG>" still match. With no parameter: line, parameter stays empty.
+        assertEquals("resist_ui_compact_0<STR>", rec.name());
+        assertEquals("STR", rec.nameTag());
+        assertEquals("", rec.parameter());
         assertEquals("Str", rec.label());
     }
 
     @Test
-    void parameterLineOverridesTheNameTag() {
+    void parameterLineAndNameTagAreCapturedIndependently() {
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx =
                 parser("record-count:1\nname:foo<ACID>\nparameter:element\n", errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
         UIEntryParseRecord rec = ctx.entries.get(0);
-        assertEquals("foo", rec.name());
-        // Both a tag and a parameter: line are present; the later parameter: assignment wins.
+        // Tag and parameter: now live in separate fields: the <ACID> tag no longer overwrites the
+        // parameter: directive; the name retains the tag and nameTag/parameter are both populated.
+        assertEquals("foo<ACID>", rec.name());
+        assertEquals("ACID", rec.nameTag());
         assertEquals("element", rec.parameter());
     }
 

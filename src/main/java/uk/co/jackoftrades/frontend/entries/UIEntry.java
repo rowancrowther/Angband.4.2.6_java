@@ -189,6 +189,7 @@ public class UIEntry {
      * @author ClaudeCode
      */
     public enum StatElemType {
+        NONE,
         /**
          * The parameter is a player stat (STR, INT, …). @author ClaudeCode
          */

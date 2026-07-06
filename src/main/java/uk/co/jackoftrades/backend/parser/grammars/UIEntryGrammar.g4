@@ -74,7 +74,9 @@ tag
 // a specialized per-element/per-stat entry generated from a generic one.
 name
         returns[String nameStr, String elemOrStat]
-        :   NAME LCASE { $nameStr = $LCASE.getText(); } (tag { $elemOrStat = $tag.elementOrStat; })?
+        :   NAME LCASE { $nameStr = $LCASE.getText(); }
+            (tag { $elemOrStat = $tag.elementOrStat;
+                   $nameStr = $nameStr + $tag.text; })?
         ;
 
 // "parameter:stat|element" - marks this as a generic entry, repeated for
@@ -183,20 +185,21 @@ uiEntry
             String          priorityInit    = "";
             List<String>    flagInit        = new ArrayList<>();
             String          descInit        = "";
+            String          nameTagInit     = "";
         }
         @after {
             $entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
             label5Init, label2Init, parameterInit, rendererInit, combinerInit,
-            priorityInit, categoryInit, flagInit, descInit, line);
+            priorityInit, categoryInit, flagInit, descInit, nameTagInit, line);
         }
         :   name { nameInit = $name.nameStr;
-                   if ($name.elemOrStat != null) parameterInit = $name.elemOrStat;
+                   if ($name.elemOrStat != null) nameTagInit = $name.elemOrStat;
                    line = $start.getLine(); }
             (template { templateInit = $template.uiEntryBase; })?
             (label { labelInit = $label.labelStr; })?
             (label5 { label5Init = $label5.label5Str; })?
             (label2 { label2Init = $label2.label2Str; })?
-            (category {categoryInit.addAll($category.categoryStr); })?
+            (category { categoryInit.addAll($category.categoryStr); })?
             (parameter { parameterInit = $parameter.isElement; })?
             (renderer { rendererInit = $renderer.uiEntryRenderer; })?
             (combine { combinerInit = $combine.combiner; })?

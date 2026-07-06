@@ -76,19 +76,28 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
         for (UIEntryParseRecord record : records) {
             int line = record.line();
 
-            String name = record.name();
             ElementEnum parameter = ElementEnum.ELEM_NONE;
-            if (record.parameter() != null && !record.parameter().isEmpty()) {
+            if (!record.nameTag().isEmpty()) {
                 try {
-                    parameter = ElementEnum.valueOf("ELEM_" + record.parameter());
+                    parameter = ElementEnum.valueOf("ELEM_" + record.nameTag());
                 } catch (IllegalArgumentException e) {
-                    errors.add("Block starting on line: " + line
-                            + " has illegal parameter enum value: " + record.parameter());
+                    errors.add("Block starting on line " + line + ": " +
+                            "has illegal parameter element " + record.nameTag());
                     continue;
                 }
             }
-            // Hardcoded as at present all tags are elements
-            UIEntry.StatElemType statElemType = UIEntry.StatElemType.ELEMENT;
+            String name = record.name();
+            UIEntry.StatElemType statElemType = switch (record.parameter()) {
+                case "stat" -> UIEntry.StatElemType.STAT;
+                case "element" -> UIEntry.StatElemType.ELEMENT;
+                case "" -> UIEntry.StatElemType.NONE;
+                default -> {
+                    errors.add("Block starting on line: " + line +
+                            " has illegal parameter kind: " + record.parameter());
+                    yield null;
+                }
+            };
+            if (statElemType == null) continue;
             String rendStr = record.renderer();
             UIEntryRenderer renderer;
             if (!rendStr.isEmpty()) {

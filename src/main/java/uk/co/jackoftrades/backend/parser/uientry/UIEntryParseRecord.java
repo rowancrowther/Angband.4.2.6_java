@@ -38,9 +38,9 @@ import java.util.List;
  * default to an empty list. A record is only created once its {@code name:}
  * line has parsed, so {@code name} and {@code line} are always populated.
  *
- * @param name      the entry's symbolic name with any {@code <TAG>} suffix
- *                  removed (e.g. {@code resist_ui_compact_0}); used to link the
- *                  entry from {@code bindui} fields and {@code template:} lines.
+ * @param name      the entry's symbolic name (e.g. {@code resist_ui_compact_0});
+ *                  used to link the entry from {@code bindui} fields and
+ *                  {@code template:} lines.
  * @param template  the name of the {@code ui_entry_base.txt} template supplying
  *                  default values for this entry's unset fields, or {@code ""}
  *                  if the entry declares no {@code template:} line.
@@ -78,5 +78,5 @@ import java.util.List;
 public record UIEntryParseRecord(String name, String template, String label, String label5, String label2,
                                  String parameter, String renderer,
                                  String combine, String priority, List<String> category,
-                                 List<String> flags, String desc, int line) {
+                                 List<String> flags, String desc, String nameTag, int line) {
 }

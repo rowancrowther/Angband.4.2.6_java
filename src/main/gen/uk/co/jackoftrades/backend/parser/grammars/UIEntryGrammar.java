@@ -43,7 +43,7 @@ public class UIEntryGrammar extends Parser {
 		RECORD_COUNT=1, NAME=2, PARAMETER=3, RENDERER=4, COMBINE=5, PRIORITY=6, 
 		CATEGORY=7, FLAGS=8, DESC=9, LABEL=10, LABEL5=11, LABEL2=12, TEMPLATE=13, 
 		LTHAN=14, GTHAN=15, INTEGER=16, LCASE=17, PARAMETER_VALUE=18, COMMENT=19, 
-		EOL=20, FLAG=21, FLAG_GTHAN=22, FLAG_EOL=23, STRING=24, FLAG_OR=25;
+		EOL=20, FLAG=21, FLAG_OR=22, FLAG_EOL=23, STRING=24;
 	public static final int
 		RULE_recordCount = 0, RULE_tag = 1, RULE_name = 2, RULE_parameter = 3, 
 		RULE_renderer = 4, RULE_combine = 5, RULE_priority = 6, RULE_category = 7, 
@@ -62,7 +62,7 @@ public class UIEntryGrammar extends Parser {
 		return new String[] {
 			null, "'record-count:'", "'name:'", "'parameter:'", "'renderer:'", "'combine:'", 
 			"'priority:'", "'category:'", "'flags:'", "'desc:'", "'label:'", "'label5:'", 
-			"'label2:'", "'template:'", "'<'"
+			"'label2:'", "'template:'", "'<'", "'>'"
 		};
 	}
 	private static final String[] _LITERAL_NAMES = makeLiteralNames();
@@ -71,7 +71,7 @@ public class UIEntryGrammar extends Parser {
 			null, "RECORD_COUNT", "NAME", "PARAMETER", "RENDERER", "COMBINE", "PRIORITY", 
 			"CATEGORY", "FLAGS", "DESC", "LABEL", "LABEL5", "LABEL2", "TEMPLATE", 
 			"LTHAN", "GTHAN", "INTEGER", "LCASE", "PARAMETER_VALUE", "COMMENT", "EOL", 
-			"FLAG", "FLAG_GTHAN", "FLAG_EOL", "STRING", "FLAG_OR"
+			"FLAG", "FLAG_OR", "FLAG_EOL", "STRING"
 		};
 	}
 	private static final String[] _SYMBOLIC_NAMES = makeSymbolicNames();
@@ -277,7 +277,8 @@ public class UIEntryGrammar extends Parser {
 				{
 				setState(44);
 				((NameContext)_localctx).tag = tag();
-				 ((NameContext)_localctx).elemOrStat =  ((NameContext)_localctx).tag.elementOrStat; 
+				 ((NameContext)_localctx).elemOrStat =  ((NameContext)_localctx).tag.elementOrStat;
+				                   ((NameContext)_localctx).nameStr =  _localctx.nameStr + (((NameContext)_localctx).tag!=null?_input.getText(((NameContext)_localctx).tag.start,((NameContext)_localctx).tag.stop):null); 
 				}
 			}
 
@@ -1012,6 +1013,7 @@ public class UIEntryGrammar extends Parser {
 		            String          priorityInit    = "";
 		            List<String>    flagInit        = new ArrayList<>();
 		            String          descInit        = "";
+		            String          nameTagInit     = "";
 		        
 		int _la;
 		try {
@@ -1020,7 +1022,7 @@ public class UIEntryGrammar extends Parser {
 			setState(106);
 			((UiEntryContext)_localctx).name = name();
 			 nameInit = ((UiEntryContext)_localctx).name.nameStr;
-			                   if (((UiEntryContext)_localctx).name.elemOrStat != null) parameterInit = ((UiEntryContext)_localctx).name.elemOrStat;
+			                   if (((UiEntryContext)_localctx).name.elemOrStat != null) nameTagInit = ((UiEntryContext)_localctx).name.elemOrStat;
 			                   line = _localctx.start.getLine(); 
 			setState(111);
 			_errHandler.sync(this);
@@ -1073,7 +1075,7 @@ public class UIEntryGrammar extends Parser {
 				{
 				setState(128);
 				((UiEntryContext)_localctx).category = category();
-				categoryInit.addAll(((UiEntryContext)_localctx).category.categoryStr); 
+				 categoryInit.addAll(((UiEntryContext)_localctx).category.categoryStr); 
 				}
 				break;
 			}
@@ -1163,7 +1165,7 @@ public class UIEntryGrammar extends Parser {
 
 			            ((UiEntryContext)_localctx).entry =  new UIEntryParseRecord(nameInit, templateInit, labelInit,
 			            label5Init, label2Init, parameterInit, rendererInit, combinerInit,
-			            priorityInit, categoryInit, flagInit, descInit, line);
+			            priorityInit, categoryInit, flagInit, descInit, nameTagInit, line);
 			        
 		}
 		catch (RecognitionException re) {
@@ -1256,7 +1258,7 @@ public class UIEntryGrammar extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\u0004\u0001\u0019\u00b7\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
+		"\u0004\u0001\u0018\u00b7\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001"+
 		"\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004"+
 		"\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007"+
 		"\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b"+
@@ -1310,7 +1312,7 @@ public class UIEntryGrammar extends Parser {
 		"\u0007\uffff\uffff\u0000DA\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000"+
 		"\u0000FD\u0001\u0000\u0000\u0000FG\u0001\u0000\u0000\u0000G\u000f\u0001"+
 		"\u0000\u0000\u0000HI\u0005\b\u0000\u0000IJ\u0005\u0015\u0000\u0000JP\u0006"+
-		"\b\uffff\uffff\u0000KL\u0005\u0019\u0000\u0000LM\u0005\u0015\u0000\u0000"+
+		"\b\uffff\uffff\u0000KL\u0005\u0016\u0000\u0000LM\u0005\u0015\u0000\u0000"+
 		"MO\u0006\b\uffff\uffff\u0000NK\u0001\u0000\u0000\u0000OR\u0001\u0000\u0000"+
 		"\u0000PN\u0001\u0000\u0000\u0000PQ\u0001\u0000\u0000\u0000Q\u0011\u0001"+
 		"\u0000\u0000\u0000RP\u0001\u0000\u0000\u0000ST\u0005\t\u0000\u0000TU\u0005"+

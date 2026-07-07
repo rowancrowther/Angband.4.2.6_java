@@ -13,6 +13,8 @@
 # max-stack: maximum number that can appear in a stack
 # flags: default flags
 
+record-count:34
+
 default:break-chance:10
 default:max-stack:40
 

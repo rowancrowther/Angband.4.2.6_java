@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseLexer;
-import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseParser;
+import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseLexer;
+import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseAssembler;
+import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseParseRecord;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,28 @@ public class ObjectBaseReader implements Reader<ObjectBase> {
      */
     @Override
     public @NotNull List<ObjectBase> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ObjectBaseLexer lexer = new ObjectBaseLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ObjectBaseParser parser = new ObjectBaseParser(tokens);
-            ObjectBaseParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.objectBaseList;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public @NotNull ParseResult<ObjectBase> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ObjectBaseLexer::new,
+                ObjectBaseGrammar::new,
+                ObjectBaseReader::extract,
+                new ObjectBaseAssembler(), logger);
+    }
+
+    private static List<ObjectBaseParseRecord> extract(
+            @NotNull ObjectBaseGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        ObjectBaseGrammar.FileContext output = parser.file();
+        List<ObjectBaseParseRecord> result = output.objectBaseList;
+        errorCatcher.throwIfAny();
+
+        String declaredCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredCount, result.size(), errors);
+
+        return new ArrayList<>(result);
     }
 }

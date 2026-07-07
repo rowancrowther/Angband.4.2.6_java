@@ -12,20 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
 
-import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
-
-import java.util.List;
 
 /**
  * The base type of a family of object kinds (as loaded from {@code object_base.txt})
@@ -43,12 +39,14 @@ public class ObjectBase {
      * @author ClaudeCode
      */
     private String name;
+
     /**
      * The item type value (tval) of this base.
      *
      * @author ClaudeCode
      */
     private TValue tVal;
+
     /**
      * Default display colour for kinds of this base.
      *
@@ -57,18 +55,12 @@ public class ObjectBase {
     private ColourType attr;
 
     /**
-     * Object flags shared by kinds of this base.
-     *
-     * @author ClaudeCode
-     */
-    private Flag<ObjectFlag> flags;
-    // Put in to handle HATES_EL flags in object_base.txt
-    /**
      * Elements this base's items are destroyed by (the {@code HATES_*} flags).
      *
      * @author ClaudeCode
      */
     private Flag<ElementEnum> hatesEl;
+
     /**
      * Object-kind flags shared by kinds of this base.
      *
@@ -100,98 +92,15 @@ public class ObjectBase {
      *
      * @author ClaudeCode
      */
-    public ObjectBase() {
-        flags = new Flag<>(ObjectFlag.class);
-        hatesEl = new Flag<>(ElementEnum.class);
-        kindFlags = new Flag<>(ObjectKindFlag.class);
-        breakPerc = -1;
-        maxStack = -1;
-    }
-
-    /**
-     * Parse and apply a list of flag strings, routing {@code HATES_*} entries to
-     * the elemental-vulnerability set and the rest to the kind-flag set.
-     *
-     * @param flagStrings the raw flag names from the data file
-     * @author ClaudeCode
-     */
-    public void setFlags(@NotNull List<String> flagStrings) {
-        for (String flagString : flagStrings) {
-            if (flagString.startsWith("HATES_")) {
-                setHatesFlag(ElementEnum.valueOf("ELEM_" + flagString.substring(6)));
-            } else {
-                setKindFlag(ObjectKindFlag.valueOf("KF_" + flagString));
-            }
-        }
-    }
-
-
-    /**
-     * Set an elemental-vulnerability flag.
-     *
-     * @param flag the element this base hates
-     * @author ClaudeCode
-     */
-    private void setHatesFlag(ElementEnum flag) {
-        hatesEl.on(flag);
-    }
-
-    /**
-     * Set an object-kind flag on this base.
-     *
-     * @param flag the kind flag to set
-     * @author ClaudeCode
-     */
-    private void setKindFlag(ObjectKindFlag flag) {
-        kindFlags.on(flag);
-    }
-
-    /**
-     * @param name the base type's name
-     * @author ClaudeCode
-     */
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    /**
-     * @param tVal the item type value
-     * @author ClaudeCode
-     */
-    public void settVal(TValue tVal) {
+    public ObjectBase(TValue tVal, String name, ColourType colour, Flag<ObjectKindFlag> kFlag,
+                      Flag<ElementEnum> hatesFlag, int breakChance, int maxStack) {
         this.tVal = tVal;
-    }
-
-    /**
-     * @param attr the default display colour
-     * @author ClaudeCode
-     */
-    public void setAttr(ColourType attr) {
-        this.attr = attr;
-    }
-
-    /**
-     * @param breakPerc the break-on-throw percentage
-     * @author ClaudeCode
-     */
-    public void setBreakPerc(int breakPerc) {
-        this.breakPerc = breakPerc;
-    }
-
-    /**
-     * @param maxStack the maximum stack size
-     * @author ClaudeCode
-     */
-    public void setMaxStack(int maxStack) {
+        this.name = name;
+        this.attr = colour;
+        this.kindFlags = kFlag;
+        this.hatesEl = hatesFlag;
+        this.breakPerc = breakChance;
         this.maxStack = maxStack;
-    }
-
-    /**
-     * @param numSvals the number of sub-values
-     * @author ClaudeCode
-     */
-    public void setNumSvals(int numSvals) {
-        this.numSvals = numSvals;
     }
 
     /**
@@ -244,7 +153,6 @@ public class ObjectBase {
                 "name='" + name + '\'' +
                 ", tVal=" + tVal +
                 ", attr=" + attr +
-                ", flags=" + flags +
                 ", hatesEl=" + hatesEl +
                 ", kindFlags=" + kindFlags +
                 ", breakPerc=" + breakPerc +

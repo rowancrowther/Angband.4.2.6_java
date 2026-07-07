@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectBase.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.objectbase;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectBaseGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.objectbase;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link ObjectBaseVisitor},
+ * This class provides an empty implementation of {@link ObjectBaseGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ObjectBaseVisitor<T> {
+public class ObjectBaseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ObjectBaseGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDefault_value(ObjectBaseParser.Default_valueContext ctx) {
+    public T visitRecordCount(ObjectBaseGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(ObjectBaseParser.NameContext ctx) {
+    public T visitDefault_value(ObjectBaseGrammar.Default_valueContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGraphics(ObjectBaseParser.GraphicsContext ctx) {
+    public T visitName(ObjectBaseGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBreak_chance(ObjectBaseParser.Break_chanceContext ctx) {
+    public T visitGraphics(ObjectBaseGrammar.GraphicsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMax_stack(ObjectBaseParser.Max_stackContext ctx) {
+    public T visitBreak_chance(ObjectBaseGrammar.Break_chanceContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlags(ObjectBaseParser.FlagsContext ctx) {
+    public T visitMax_stack(ObjectBaseGrammar.Max_stackContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,7 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitObject_base(ObjectBaseParser.Object_baseContext ctx) {
+    public T visitFlags(ObjectBaseGrammar.FlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +114,18 @@ public class ObjectBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(ObjectBaseParser.FileContext ctx) {
+    public T visitObject_base(ObjectBaseGrammar.Object_baseContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(ObjectBaseGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

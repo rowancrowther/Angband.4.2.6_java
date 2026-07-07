@@ -787,7 +787,7 @@ public class GameConstants {
             loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
-//            loadObjectBases();
+            loadObjectBases();
 //            loadPain();
 //            loadMonsterBases();         // Dependent on MonsterPain
 //            loadSlays();                // Dependent on MonsterBases
@@ -1326,11 +1326,20 @@ public class GameConstants {
      * @throws IOException an IO error occurred during parsing
      */
     private static void loadObjectBases() throws IOException {
-        ObjectBaseReader objectBaseParser = new ObjectBaseReader();
+        ObjectBaseReader parser = new ObjectBaseReader();
         String filename = ANGBAND_DIR_GAMEDATA + "object_base.txt";
 
         try {
-            objectBases = objectBaseParser.parse(filename);
+            ParseResult<ObjectBase> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            objectBases = result.items();
         } catch (IOException e) {
             logger.error("Exception while loading file {}", filename, e);
             throw e;

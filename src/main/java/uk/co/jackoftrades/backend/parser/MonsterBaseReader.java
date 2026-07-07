@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.monsterbase.MonsterBaseLexer;
-import uk.co.jackoftrades.backend.parser.monsterbase.MonsterBaseParser;
+import uk.co.jackoftrades.backend.parser.grammars.monsterbase.MonsterBaseGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.monsterbase.MonsterBaseLexer;
+import uk.co.jackoftrades.backend.parser.monsterbase.MonsterBaseAssembler;
+import uk.co.jackoftrades.backend.parser.monsterbase.MonsterBaseParseRecord;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -55,17 +55,28 @@ public class MonsterBaseReader implements Reader<MonsterBase> {
     @NotNull
     @Override
     public List<MonsterBase> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            MonsterBaseLexer lexer = new MonsterBaseLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            MonsterBaseParser parser = new MonsterBaseParser(tokens);
-            MonsterBaseParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.bases;
-        } catch (IOException ex) {
-            logger.error("Error while loading file {}", filename, ex);
-            throw ex;
-        }
+    public ParseResult<MonsterBase> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                MonsterBaseLexer::new,
+                MonsterBaseGrammar::new,
+                MonsterBaseReader::extract,
+                new MonsterBaseAssembler(), logger);
+    }
+
+    private static List<MonsterBaseParseRecord> extract(
+            @NotNull MonsterBaseGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        MonsterBaseGrammar.FileContext output = parser.file();
+        List<MonsterBaseParseRecord> records = output.bases;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

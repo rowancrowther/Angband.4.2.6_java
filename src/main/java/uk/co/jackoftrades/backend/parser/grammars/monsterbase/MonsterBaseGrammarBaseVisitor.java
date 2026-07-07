@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterBase.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.monsterbase;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterBaseGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.monsterbase;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link MonsterBaseVisitor},
+ * This class provides an empty implementation of {@link MonsterBaseGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MonsterBaseVisitor<T> {
+public class MonsterBaseGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MonsterBaseGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(MonsterBaseParser.NameContext ctx) {
+    public T visitRecordCount(MonsterBaseGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGlyph(MonsterBaseParser.GlyphContext ctx) {
+    public T visitName(MonsterBaseGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPain(MonsterBaseParser.PainContext ctx) {
+    public T visitGlyph(MonsterBaseGrammar.GlyphContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlags(MonsterBaseParser.FlagsContext ctx) {
+    public T visitPain(MonsterBaseGrammar.PainContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(MonsterBaseParser.DescContext ctx) {
+    public T visitFlags(MonsterBaseGrammar.FlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMonsterBase(MonsterBaseParser.MonsterBaseContext ctx) {
+    public T visitDesc(MonsterBaseGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,18 @@ public class MonsterBaseBaseVisitor<T> extends AbstractParseTreeVisitor<T> imple
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(MonsterBaseParser.FileContext ctx) {
+    public T visitMonsterBase(MonsterBaseGrammar.MonsterBaseContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(MonsterBaseGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

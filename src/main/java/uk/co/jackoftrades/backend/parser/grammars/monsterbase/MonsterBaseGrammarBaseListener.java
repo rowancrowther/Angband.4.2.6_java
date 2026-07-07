@@ -12,11 +12,11 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterBase.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.monsterbase;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterBaseGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.monsterbase;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link MonsterBaseListener},
+ * This class provides an empty implementation of {@link MonsterBaseGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class MonsterBaseBaseListener implements MonsterBaseListener {
+public class MonsterBaseGrammarBaseListener implements MonsterBaseGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(MonsterBaseParser.NameContext ctx) {
+    public void enterRecordCount(MonsterBaseGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +45,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(MonsterBaseParser.NameContext ctx) {
+    public void exitRecordCount(MonsterBaseGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +54,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterGlyph(MonsterBaseParser.GlyphContext ctx) {
+    public void enterName(MonsterBaseGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +63,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitGlyph(MonsterBaseParser.GlyphContext ctx) {
+    public void exitName(MonsterBaseGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +72,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPain(MonsterBaseParser.PainContext ctx) {
+    public void enterGlyph(MonsterBaseGrammar.GlyphContext ctx) {
     }
 
     /**
@@ -81,7 +81,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPain(MonsterBaseParser.PainContext ctx) {
+    public void exitGlyph(MonsterBaseGrammar.GlyphContext ctx) {
     }
 
     /**
@@ -90,7 +90,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlags(MonsterBaseParser.FlagsContext ctx) {
+    public void enterPain(MonsterBaseGrammar.PainContext ctx) {
     }
 
     /**
@@ -99,7 +99,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlags(MonsterBaseParser.FlagsContext ctx) {
+    public void exitPain(MonsterBaseGrammar.PainContext ctx) {
     }
 
     /**
@@ -108,7 +108,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(MonsterBaseParser.DescContext ctx) {
+    public void enterFlags(MonsterBaseGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -117,7 +117,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(MonsterBaseParser.DescContext ctx) {
+    public void exitFlags(MonsterBaseGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -126,7 +126,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMonsterBase(MonsterBaseParser.MonsterBaseContext ctx) {
+    public void enterDesc(MonsterBaseGrammar.DescContext ctx) {
     }
 
     /**
@@ -135,7 +135,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMonsterBase(MonsterBaseParser.MonsterBaseContext ctx) {
+    public void exitDesc(MonsterBaseGrammar.DescContext ctx) {
     }
 
     /**
@@ -144,7 +144,7 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(MonsterBaseParser.FileContext ctx) {
+    public void enterMonsterBase(MonsterBaseGrammar.MonsterBaseContext ctx) {
     }
 
     /**
@@ -153,7 +153,25 @@ public class MonsterBaseBaseListener implements MonsterBaseListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(MonsterBaseParser.FileContext ctx) {
+    public void exitMonsterBase(MonsterBaseGrammar.MonsterBaseContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(MonsterBaseGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(MonsterBaseGrammar.FileContext ctx) {
     }
 
     /**

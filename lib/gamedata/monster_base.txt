@@ -25,6 +25,8 @@
 # several other data files (notably monster.txt), so any name changes will
 # have to take this into account.
 
+record-count:56
+
 ##### Normal monster templates #####
 
 # Dragons are the most important breathing monsters in Angband, and their

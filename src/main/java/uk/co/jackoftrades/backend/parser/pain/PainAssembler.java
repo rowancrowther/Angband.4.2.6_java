@@ -21,7 +21,6 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 
-
 import java.util.ArrayList;
 import java.util.List;
 

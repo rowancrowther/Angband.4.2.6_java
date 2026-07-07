@@ -12,51 +12,59 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Pain.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.pain;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PainGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.pain;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link PainParser}.
+ * by {@link PainGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  *            operations with no return type.
  */
-public interface PainVisitor<T> extends ParseTreeVisitor<T> {
+public interface PainGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
-     * Visit a parse tree produced by {@link PainParser#type}.
+     * Visit a parse tree produced by {@link PainGrammar#recordCount}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitType(PainParser.TypeContext ctx);
+    T visitRecordCount(PainGrammar.RecordCountContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link PainParser#message}.
+     * Visit a parse tree produced by {@link PainGrammar#type}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitMessage(PainParser.MessageContext ctx);
+    T visitType(PainGrammar.TypeContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link PainParser#painEntry}.
+     * Visit a parse tree produced by {@link PainGrammar#message}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitPainEntry(PainParser.PainEntryContext ctx);
+    T visitMessage(PainGrammar.MessageContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link PainParser#file}.
+     * Visit a parse tree produced by {@link PainGrammar#painEntry}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFile(PainParser.FileContext ctx);
+    T visitPainEntry(PainGrammar.PainEntryContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link PainGrammar#file}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitFile(PainGrammar.FileContext ctx);
 }

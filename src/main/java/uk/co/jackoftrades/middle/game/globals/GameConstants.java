@@ -788,7 +788,7 @@ public class GameConstants {
             loadPlayerProperties();     // Dependent on UIEntry
             loadTerrainFeatures();
             loadObjectBases();
-//            loadPain();
+            loadPain();
 //            loadMonsterBases();         // Dependent on MonsterPain
 //            loadSlays();                // Dependent on MonsterBases
 //            loadBrands();
@@ -1282,7 +1282,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "pain.txt";
 
         try {
-            monsterPains = parser.parse(filename);
+            ParseResult<MonsterPain> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            monsterPains = result.items();
         } catch (IOException e) {
             logger.error("Exception while loading file {}", filename, e);
             throw e;

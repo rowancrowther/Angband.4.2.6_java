@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -30,26 +30,26 @@ import java.util.List;
  * keyed by an index that monster bases reference. This is the Java port of the C
  * original's {@code struct monster_pain} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterPain {
     /**
      * Logger used to report malformed pain definitions.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The index linking this pain set to the monster bases that use it.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int painIndex;
     /**
      * The seven ordered pain messages (most to least hurt).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final List<String> messages;
 
@@ -104,7 +104,7 @@ public class MonsterPain {
 
     /**
      * @return the index linking this pain set to its monster bases
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getPainIndex() {
         return painIndex;

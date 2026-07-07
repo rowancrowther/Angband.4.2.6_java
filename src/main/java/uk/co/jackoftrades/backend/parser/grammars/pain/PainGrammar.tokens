@@ -1,0 +1,10 @@
+RECORD_COUNT=1
+TYPE=2
+MESSAGE=3
+INTEGER=4
+COMMENT=5
+EOL=6
+STRING=7
+'record-count:'=1
+'type:'=2
+'message:'=3

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.strings;
@@ -76,6 +76,26 @@ public class AngbandDisplayCharacter {
     public AngbandDisplayCharacter(char character, char colour) {
         this.character = character;
         this.attributeColour = ColourType.getAttributeColour(colour);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param character The character glyph for this DisplayCharacter
+     * @param colour    A string containing either a single character
+     *                  representation of the ColourType, or a name
+     *                  of the ColourType
+     */
+    public AngbandDisplayCharacter(char character, String colour) {
+        ColourType colourType;
+
+        if (colour.length() == 1)
+            colourType = ColourType.findColourType(colour.charAt(0));
+        else
+            colourType = ColourType.findColourType(colour);
+
+        this.character = character;
+        this.attributeColour = colourType.colourAttribute(ColourTranslation.ATTR_FULL);
     }
 
     /**

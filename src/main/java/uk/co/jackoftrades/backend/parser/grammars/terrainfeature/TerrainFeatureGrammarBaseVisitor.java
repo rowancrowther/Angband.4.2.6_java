@@ -12,16 +12,15 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/TerrainFeature.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.terrainfeature;
+// Generated from TerrainFeatureGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.terrainfeature;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link TerrainFeatureVisitor},
+ * This class provides an empty implementation of {@link TerrainFeatureGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +28,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements TerrainFeatureVisitor<T> {
+public class TerrainFeatureGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements TerrainFeatureGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(TerrainFeatureParser.CodeContext ctx) {
+    public T visitRecordCount(TerrainFeatureGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(TerrainFeatureParser.NameContext ctx) {
+    public T visitCode(TerrainFeatureGrammar.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGraphics(TerrainFeatureParser.GraphicsContext ctx) {
+    public T visitName(TerrainFeatureGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMimic(TerrainFeatureParser.MimicContext ctx) {
+    public T visitGraphics(TerrainFeatureGrammar.GraphicsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPriority(TerrainFeatureParser.PriorityContext ctx) {
+    public T visitMimic(TerrainFeatureGrammar.MimicContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlags(TerrainFeatureParser.FlagsContext ctx) {
+    public T visitPriority(TerrainFeatureGrammar.PriorityContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDigging(TerrainFeatureParser.DiggingContext ctx) {
+    public T visitFlags(TerrainFeatureGrammar.FlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitWalk_message(TerrainFeatureParser.Walk_messageContext ctx) {
+    public T visitDigging(TerrainFeatureGrammar.DiggingContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRun_message(TerrainFeatureParser.Run_messageContext ctx) {
+    public T visitWalk_message(TerrainFeatureGrammar.Walk_messageContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +135,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHurt_message(TerrainFeatureParser.Hurt_messageContext ctx) {
+    public T visitRun_message(TerrainFeatureGrammar.Run_messageContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +146,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDie_message(TerrainFeatureParser.Die_messageContext ctx) {
+    public T visitHurt_message(TerrainFeatureGrammar.Hurt_messageContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +157,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitConfused_message(TerrainFeatureParser.Confused_messageContext ctx) {
+    public T visitDie_message(TerrainFeatureGrammar.Die_messageContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +168,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLook_prefix(TerrainFeatureParser.Look_prefixContext ctx) {
+    public T visitConfused_message(TerrainFeatureGrammar.Confused_messageContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +179,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLook_in_preposition(TerrainFeatureParser.Look_in_prepositionContext ctx) {
+    public T visitLook_prefix(TerrainFeatureGrammar.Look_prefixContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +190,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitResist_flag(TerrainFeatureParser.Resist_flagContext ctx) {
+    public T visitLook_in_preposition(TerrainFeatureGrammar.Look_in_prepositionContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -202,7 +201,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(TerrainFeatureParser.DescContext ctx) {
+    public T visitResist_flag(TerrainFeatureGrammar.Resist_flagContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -213,7 +212,7 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitTerrain(TerrainFeatureParser.TerrainContext ctx) {
+    public T visitDesc(TerrainFeatureGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -224,7 +223,18 @@ public class TerrainFeatureBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(TerrainFeatureParser.FileContext ctx) {
+    public T visitTerrain(TerrainFeatureGrammar.TerrainContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(TerrainFeatureGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

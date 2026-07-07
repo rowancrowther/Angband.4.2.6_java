@@ -17,56 +17,114 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 
-import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureLexer;
-import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureParser;
+import uk.co.jackoftrades.backend.parser.grammars.terrainfeature.TerrainFeatureGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.terrainfeature.TerrainFeatureLexer;
+import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureAssembler;
+import uk.co.jackoftrades.backend.parser.terrainfeature.TerrainFeatureParseRecord;
 import uk.co.jackoftrades.middle.cave.Feature;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into {@link Feature} objects by driving the
- * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * Loads {@code lib/gamedata/terrain.txt} into {@link Feature} objects, the Java port of the C
+ * {@code feat_parser} in {@code src/init.c}. This is the thin, hand-written reader that sits at
+ * the head of the terrain pipeline:
  *
- * @author ClaudeCode
+ * <pre>
+ *   terrain.txt
+ *     &rarr; TerrainFeatureLexer / TerrainFeatureGrammar  (ANTLR-generated)
+ *     &rarr; TerrainFeatureParseRecord                    (raw-String DTO, one per record)
+ *     &rarr; TerrainFeatureAssembler                      (resolves codes/flags, builds Feature)
+ *     &rarr; ParseResult&lt;Feature&gt;
+ * </pre>
+ *
+ * <p>The invariant lex&rarr;parse&rarr;assemble skeleton lives in the shared {@link GrammarDriver};
+ * this class supplies only the three things that genuinely vary per grammar - the lexer/parser
+ * constructors, the {@link #extract} step that pulls the parse records off the {@code file} rule,
+ * and the {@link TerrainFeatureAssembler}. Implementing {@link Reader} keeps
+ * {@link uk.co.jackoftrades.middle.game.globals.GameConstants} agnostic of the grammar behind it.
+ *
+ * @author Rowan Crowther
  */
 public class TerrainReader implements Reader<Feature> {
     /**
-     * Logger used to report file-loading failures.
+     * Logger handed to {@link GrammarDriver} so I/O failures opening the data file are reported
+     * (and rethrown) with the offending filename.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * {@link Reader} entry point: parse the file and discard the error channel, returning only the
+     * successfully assembled features. Callers that need to inspect soft (assembly) errors should
+     * use {@link #parseWithResults} instead.
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * @param filename the terrain data file to load
+     * @return the features that assembled cleanly (bad records are skipped, not thrown)
+     * @throws IOException if the file cannot be opened/read
+     * @author Rowan Crowther
      */
     @NotNull
     @Override
-    public List<uk.co.jackoftrades.middle.cave.Feature> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            TerrainFeatureLexer lexer = new TerrainFeatureLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            TerrainFeatureParser parser = new TerrainFeatureParser(tokens);
-            TerrainFeatureParser.FileContext output = parser.file();
-
-            return output.features;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public List<Feature> parse(@NotNull String filename) throws IOException {
+        return parseWithResults(filename).items();
     }
+
+    /**
+     * Full-fidelity load: drives the grammar through {@link GrammarDriver} and returns both the
+     * assembled {@link Feature} list and the collected soft-error messages. A hard grammar/lexer
+     * error fails the whole file closed (empty items, errors carried); a soft error skips just the
+     * offending record. This two-channel result is what {@code GameConstants.loadTerrainFeatures}
+     * checks via {@link ParseResult#hasErrors()} before accepting the data.
+     *
+     * @param filename the terrain data file to load
+     * @return the assembled features paired with any soft-error messages
+     * @throws IOException if the file cannot be opened/read
+     * @author Rowan Crowther
+     */
+    public ParseResult<Feature> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                TerrainFeatureLexer::new,
+                TerrainFeatureGrammar::new,
+                TerrainReader::extract,
+                new TerrainFeatureAssembler(),
+                logger);
+    }
+
+    /**
+     * The per-grammar residue the {@link GrammarDriver} cannot generalise: run the top-level
+     * {@code file} rule and hand back the raw parse records. Ordering is load-bearing -
+     * {@link ParseErrors#throwIfAny()} must fire <em>after</em> {@code file()} (so lexer/parser
+     * syntax errors abort before any record is trusted) but the driver owns the surrounding
+     * cancellation catch, which is why it passes {@code errorCatcher} in rather than calling
+     * {@code file()} itself. The record-count check is soft: a mismatch is appended to
+     * {@code errors} but the valid records still load.
+     *
+     * @param parser       the grammar positioned at the start of the token stream
+     * @param errorCatcher hard-error channel; {@link ParseErrors#throwIfAny()} aborts the file
+     * @param errors       soft-error channel; the record-count mismatch message is added here
+     * @return the parse records for the assembler to resolve into {@link Feature} objects
+     * @author Rowan Crowther
+     */
+    private static List<TerrainFeatureParseRecord> extract(
+            @NotNull TerrainFeatureGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        TerrainFeatureGrammar.FileContext output = parser.file();
+        List<TerrainFeatureParseRecord> results = output.features;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
+    }
+
 }

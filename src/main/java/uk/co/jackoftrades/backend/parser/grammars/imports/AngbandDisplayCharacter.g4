@@ -83,7 +83,7 @@ GLYPH_ONLY
  * or a new line character.
  */
 fragment GRAPHICS_SYMBOL_FRAGMENT
-        :   ~(':' | '\r' | '\n')
+        :   ~('\r' | '\n')
         ;
 
 /*
@@ -93,7 +93,6 @@ fragment GRAPHICS_SYMBOL_FRAGMENT
  * or after a GLYPH_MODE COLON_SWITCH token.
  */
 mode COLOUR_MODE;
-
 
 /*
  * @author Rowan Crowther
@@ -122,8 +121,10 @@ mode GLYPH_MODE;
  * Wrapper for a GRAPHICS_SYMBOL_FRAGMENT
  */
 GLYPH_VALUES
-        :   GRAPHICS_SYMBOL_FRAGMENT
+        :   GRAPHICS_SYMBOL_FRAGMENT -> mode(POST_GLYPH_MODE)
         ;
+
+mode POST_GLYPH_MODE;
 
 /*
  * @author Rowan Crowther

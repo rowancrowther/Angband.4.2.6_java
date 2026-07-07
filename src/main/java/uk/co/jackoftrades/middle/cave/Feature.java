@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -84,6 +84,7 @@ public class Feature {
      */
     private int shopNum;
     /**
+     *
      * Difficulty of digging through this feature.
      *
      * @author ClaudeCode
@@ -151,7 +152,7 @@ public class Feature {
      *
      * @author ClaudeCode
      */
-    private MonsterRaceFlag resistFlag;
+    private Flag<MonsterRaceFlag> resistFlag;
 
     /**
      * Build a feature definition from its parsed data-file fields.
@@ -161,7 +162,6 @@ public class Feature {
      * @param description       human-readable description
      * @param mimic             terrain this feature mimics, or {@code null}
      * @param priority          drawing priority
-     * @param shopNum           shop number (for shop entrances)
      * @param dig               digging difficulty
      * @param flags             behaviour flags
      * @param displayCharacter  display glyph and colour
@@ -180,7 +180,6 @@ public class Feature {
                    String description,
                    TerrainFlags mimic,
                    int priority,
-                   int shopNum,
                    int dig,
                    Flag<TerrainFeatureFlags> flags,
                    AngbandDisplayCharacter displayCharacter,
@@ -191,13 +190,12 @@ public class Feature {
                    String confusedMsg,
                    String lookPrefix,
                    String lookInPreposition,
-                   MonsterRaceFlag resistFlag) {
+                   Flag<MonsterRaceFlag> resistFlag) {
         this.code = code;
         this.name = name;
         this.description = description;
         this.mimic = mimic;
         this.priority = priority;
-        this.shopNum = shopNum;
         this.dig = dig;
         this.flags = flags;
         this.displayCharacter = displayCharacter;

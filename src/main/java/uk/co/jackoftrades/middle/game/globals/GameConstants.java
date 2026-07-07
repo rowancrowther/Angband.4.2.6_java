@@ -786,7 +786,7 @@ public class GameConstants {
             loadUIEntryBases();         // Dependent on UIEntyRenderers
             loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
             loadPlayerProperties();     // Dependent on UIEntry
-//            loadTerrainFeatures();
+            loadTerrainFeatures();
 //            loadObjectBases();
 //            loadPain();
 //            loadMonsterBases();         // Dependent on MonsterPain
@@ -1347,7 +1347,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "terrain.txt";
 
         try {
-            features = parser.parse(filename);
+            ParseResult<Feature> results = parser.parseWithResults(filename);
+
+            if (results.hasErrors()) {
+                String message = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(message);
+                logger.fatal(message, e);
+                return;
+            }
+
+            features = results.items();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

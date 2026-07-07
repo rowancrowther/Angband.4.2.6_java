@@ -100,10 +100,16 @@ class UIEntryAssemblerTest {
                 rec("n", "", "", "", "", "")), errors);
 
         assertTrue(errors.isEmpty(), errors::toString);
-        assertEquals(3, out.size());
-        assertEquals(UIEntry.StatElemType.STAT, out.get(0).getStatOrElement());
-        assertEquals(UIEntry.StatElemType.ELEMENT, out.get(1).getStatOrElement());
-        assertEquals(UIEntry.StatElemType.NONE, out.get(2).getStatOrElement());
+        // The parameter:stat record expands into one tagged entry per stat (STR..CON), so the three
+        // input records yield 5 + 1 + 1 = 7 entries: the five stats first, then the element, then none.
+        assertEquals(7, out.size());
+        for (int i = 0; i < 5; i++) {
+            assertEquals(UIEntry.StatElemType.STAT, out.get(i).getStatOrElement());
+        }
+        assertEquals("s<STR>", out.get(0).getName());
+        assertEquals("s<CON>", out.get(4).getName());
+        assertEquals(UIEntry.StatElemType.ELEMENT, out.get(5).getStatOrElement());
+        assertEquals(UIEntry.StatElemType.NONE, out.get(6).getStatOrElement());
     }
 
     @Test

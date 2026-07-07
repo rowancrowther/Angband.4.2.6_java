@@ -261,143 +261,6 @@ public class GameConstants {
         data = result.getData();
     }
 
-//    // Level things
-//    private static int levelMonsterMax;
-//
-//    // Monster generation things
-//    private static int allocMonsterChance;
-//    private static int levelMonsterMin;
-//    private static int townMonstersDay;
-//    private static int townMonstersNight;
-//    private static int reproMonstersNight;
-//    private static int oodMonsterChance;
-//    private static int oodMonsterAmount;
-//    private static int monsterGroupMax;
-//    private static int monsterGroupDist;
-//
-//    // Monster gameplay constants
-//    private static int glyphHardness;
-//    private static int reproMonsterRate;
-//    private static int lifeDrainPercent;
-//    private static int fleeRange;
-//    private static int turnRange;
-//
-//    // Dungeon generation constants
-//    private static int levelRoomMax;
-//    private static int levelDoorMax;
-//    private static int wallPierceMax;
-//    private static int tunnGridMax;
-//    private static int roomItemAv;
-//    private static int bothItemAv;
-//    private static int bothGoldAv;
-//    private static int levelPitMax;
-//
-//    // World shape constants
-//    private static int maxDepth;
-//    private static int dayLength;
-//    private static int dungeonHeight;
-//    private static int dungeonWidth;
-//    private static int townHeight;
-//    private static int townWidth;
-//    private static int feelingTotal;
-//    private static int feelingNeed;
-//    private static int stairSkip;
-//    private static int moveEnergy;
-//
-//    // Carry capacity constants
-//    private static int packSize;
-//    private static int quiverSize;
-//    private static int quiverSlotSize;
-//    private static int thrownQuiverMult;
-//    private static int floorSize;
-//
-//    // Store parameters
-//    private static int storeInvenMax;
-//    private static int storeTurns;
-//    private static int storeShuffle;
-//    private static int storeMagicLevel;
-//
-//    // Object creation constants
-//    private static int maxObjDepth;
-//    private static int greatObj;
-//    private static int greatEgo;
-//    private static int fuelTorch;
-//    private static int fuelLamp;
-//    private static int defaultLamp;
-//
-//    // Player constants
-//    private static int maxSight;
-//    private static int maxRange;
-//    private static int startGold;
-//    private static int foodValue;
-//
-//    // non-O melee critical calculations
-//    private static int mCritDebuffToh;
-//    private static int mCritChanceWeightScl;
-//    private static int mCritChanceTohScl;
-//    private static int mCritChanceLevelScl;
-//    private static int mCritChanceTohSkillScl;
-//    private static int mCritChanceOffset;
-//    private static int mCritChanceRange;
-//    private static int mCritPowerWeightScl;
-//    private static int mCritPowerRandom;
-//
-//    // non-O ranged critical calculations
-//    private static int rCritDebuffToh;
-//    private static int rCritChanceWeightScl;
-//    private static int rCritChanceTohScl;
-//    private static int rCritChanceLevelScl;
-//    private static int rCritChanceLaunchedTohSkillScl;
-//    private static int rCritChanceThrownTohSkillScl;
-//    private static int rCritChanceOffset;
-//    private static int rCritChanceRange;
-//    private static int rCritPowerWeightScl;
-//    private static int rCritPowerRandom;
-//
-//    // O melee critical calculations
-//    private static int oMCritDebuffToh;
-//    private static int oMCritPowerTohSclNum;
-//    private static int oMCritPowerTohSclDen;
-//    private static int oMCritChancePowerSclNum;
-//    private static int oMCritChancePowerSclDen;
-//    private static int oMCritChanceAddDen;
-//
-//    private static Rational oMeleeMaxAdded;
-//
-//    // O ranged critical calculations
-//    private static int oRCritDebuffToh;
-//    private static int oRCritPowerLaunchedTohSclNum;
-//    private static int oRCritPowerLaunchedTohSclDen;
-//    private static int oRCritPowerThrownTohSclNum;
-//    private static int oRCritPowerThrownTohSclDen;
-//    private static int oRCritChancePowerSclNum;
-//    private static int oRCritChancePowerSclDen;
-//    private static int oRCritChanceAddDen;
-//
-//    private static Rational oRangedMaxAdded;
-//
-//    /*
-//     * Maps of things
-//     */
-//    private static final HashMap<EquipmentSlotsEnum, Object> slots = new HashMap<>();
-//    private static final HashMap<ObjectFlag, Object> flags = new HashMap<>();
-//    private static final HashMap<ObjectModifier, Object> modifiers = new HashMap<>();
-//    private static final HashMap<EffectEnum, Object> effects = new HashMap<>();
-//    private static final HashMap<TrapEnum, Object> traps = new HashMap<>();
-//    private static final HashMap<TerrainFeatureFlags, Object> terrainFlags = new HashMap<>();
-//    private static final HashMap<MonsterRaceFlag, Object> monsterRaceFlags = new HashMap<>();
-//    private static final HashMap<PlayerFlag, Object> playerInfoFlags = new HashMap<>();
-//
-//    private static final HashMap<TerrainFlags, Feature> terrains = new HashMap<>();
-//
-//    // non-O melee and ranged criticals
-//    private static final ArrayList<CriticalLevel> mCriticalLevels = new ArrayList<>();
-//    private static final ArrayList<CriticalLevel> rCriticalLevels = new ArrayList<>();
-//
-//    // O melee and ranged criticals
-//    private static final ArrayList<O_CriticalLevel> mOCriticalLevels = new ArrayList<>();
-//    private static final ArrayList<O_CriticalLevel> rOCriticalLevels = new ArrayList<>();
-
     /**
      * Worlds is a list of World records. There should be levels from Town (level 0) to Angband 127.
      */
@@ -922,7 +785,7 @@ public class GameConstants {
             loadUIEntryRenderers();
             loadUIEntryBases();         // Dependent on UIEntyRenderers
             loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
-//            loadPlayerProperties();     // Dependent on UIEntry
+            loadPlayerProperties();     // Dependent on UIEntry
 //            loadTerrainFeatures();
 //            loadObjectBases();
 //            loadPain();
@@ -1346,8 +1209,6 @@ public class GameConstants {
 
     /**
      * Load in the PlayerShape information and store it in a List
-     *
-     * @throws IOException an IO error occurred during parsing
      */
     private static void loadPlayerShapes() {
         ShapeReader parser = new ShapeReader();
@@ -1447,8 +1308,6 @@ public class GameConstants {
 
     /**
      * Load in the Slays information and store it in a List
-     *
-     * @throws IOException an IO error occurred during parsing
      */
     private static void loadSlays() {
         SlayReader parser = new SlayReader();
@@ -1505,7 +1364,16 @@ public class GameConstants {
         String filename = GameConstants.ANGBAND_DIR_GAMEDATA + "player_property.txt";
 
         try {
-            playerProperties = parser.parse(filename);
+            ParseResult<PlayerProperty> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(message);
+                logger.fatal(message, e);
+                return;
+            }
+
+            playerProperties = result.items();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
@@ -1520,9 +1388,19 @@ public class GameConstants {
     private static void loadUIEntries() throws IOException {
         UIEntryReader parser = new UIEntryReader();
         String filename = ANGBAND_DIR_GAMEDATA + "ui_entry.txt";
+        ParseResult<UIEntry> result;
 
         try {
-            uiEntries = parser.parse(filename);
+            result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String message = "Invalid " + filename + " file";
+                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
+                logger.error(message);
+                return;
+            }
+
+            uiEntries = result.items();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

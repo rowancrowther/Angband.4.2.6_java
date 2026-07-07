@@ -92,11 +92,13 @@ class UIEntryReaderTest {
     // ---- happy path -------------------------------------------------------------------------
 
     @Test
-    void cleanLoadOfTheRealFileResolvesAll47Entries() throws IOException {
+    void cleanLoadOfTheRealFileResolvesAllEntries() throws IOException {
         ParseResult<UIEntry> result = new UIEntryReader().parseWithResults(REAL_FILE);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(47, result.items().size());
+        // 47 records in the file, but the single stat_mod_ui_compact_0 + parameter:stat entry is
+        // expanded into one tagged entry per stat (STR..CON), so 47 - 1 + 5 = 51 resolved entries.
+        assertEquals(51, result.items().size());
 
         // Generic entry: parameter:element sets the ELEMENT kind, no tag so no concrete element.
         UIEntry generic = byName(result.items(), "resist_ui_compact_0");
@@ -109,9 +111,10 @@ class UIEntryReaderTest {
         assertEquals(UIEntry.StatElemType.NONE, dark.getStatOrElement());
         assertEquals(ElementEnum.ELEM_DARK, dark.getParameter());
 
-        // The stat generic: parameter:stat sets the STAT kind.
-        assertEquals(UIEntry.StatElemType.STAT,
-                byName(result.items(), "stat_mod_ui_compact_0").getStatOrElement());
+        // The stat entry is expanded: the tagless stat_mod_ui_compact_0 no longer exists on its own;
+        // it becomes five tagged entries, each still carrying the STAT kind.
+        UIEntry statStr = byName(result.items(), "stat_mod_ui_compact_0<STR>");
+        assertEquals(UIEntry.StatElemType.STAT, statStr.getStatOrElement());
     }
 
     @Test

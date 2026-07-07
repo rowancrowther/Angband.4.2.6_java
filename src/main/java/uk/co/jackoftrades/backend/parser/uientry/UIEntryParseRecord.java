@@ -40,7 +40,8 @@ import java.util.List;
  *
  * @param name      the entry's symbolic name (e.g. {@code resist_ui_compact_0});
  *                  used to link the entry from {@code bindui} fields and
- *                  {@code template:} lines.
+ *                  {@code template:} lines. This includes the &lt;TAG&gt; when
+ *                  {@code parameter} is equal to stat.
  * @param template  the name of the {@code ui_entry_base.txt} template supplying
  *                  default values for this entry's unset fields, or {@code ""}
  *                  if the entry declares no {@code template:} line.

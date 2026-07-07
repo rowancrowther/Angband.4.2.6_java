@@ -25,6 +25,7 @@ import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
@@ -39,6 +40,15 @@ import java.util.List;
  * element, the {@code renderer} and {@code template} against the
  * {@link GameConstants} registries, and the {@code combine} and {@code flags}
  * names against their enums.
+ * <p>
+ * The mapping is not strictly one entry per record. A record carrying
+ * {@code parameter:stat} is <em>expanded</em> here into one entry per player
+ * stat - {@code stat_mod_ui_compact_0<STR>} through {@code <CON>} - each with the
+ * per-stat priority resolved from the record's priority scheme, mirroring the C
+ * loader's {@code parameter:} expansion in {@code ui-entry.c}. This is what lets a
+ * later {@code bindui} look-up by the full tagged name resolve. Every other record
+ * maps to a single entry. (Element expansion is not yet ported; the specialized
+ * {@code resist_ui_compact_0<TAG>} rows are carried through individually.)
  * <p>
  * Every field the record left blank is treated as optional and defaulted here
  * rather than rejected: an empty {@code parameter} becomes
@@ -58,15 +68,18 @@ import java.util.List;
  */
 public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEntry>> {
     /**
-     * Resolve every {@link UIEntryParseRecord} into a {@link UIEntry}, skipping
-     * (never throwing on) any record whose present fields fail to resolve.
+     * Resolve each {@link UIEntryParseRecord} into one or more {@link UIEntry}
+     * objects, skipping (never throwing on) any record whose present fields fail
+     * to resolve. Most records yield a single entry; a {@code parameter:stat}
+     * record yields one per player stat (see the class comment on expansion).
      *
      * @param records the raw parse records, in file order, from the grammar.
      * @param errors  the soft-error sink; one message is appended, quoting the
      *                record's source line, for each record dropped because a
      *                present field could not be resolved. Mutated in place.
-     * @return the successfully assembled {@link UIEntry} objects, in file order,
-     * omitting any record that was skipped.
+     * @return the successfully assembled {@link UIEntry} objects in file order -
+     * the per-stat entries of an expanded {@code parameter:stat} record appear
+     * consecutively where that record sat - omitting any record that was skipped.
      */
     @Override
     public List<UIEntry> assemble(@NotNull List<UIEntryParseRecord> records,
@@ -163,10 +176,30 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                 }
             }
 
-            results.add(new UIEntry(name, parameter, statElemType,
-                    renderer, combinerName, categories,
-                    priorityNum, priorityStr, flag,
-                    desc, label, label2, label5, template));
+            if (statElemType != UIEntry.StatElemType.STAT) {
+                results.add(new UIEntry(name, parameter, statElemType,
+                        renderer, combinerName, categories,
+                        priorityNum, flag,
+                        desc, label, label2, label5, template));
+            } else {
+                for (Stats stat : Stats.values()) {
+                    int newPriorityNum = 0;
+
+                    if (!stat.getStatString().isEmpty()) {
+                        if (priorityStr.equals("negative_index"))
+                            newPriorityNum = -1 * stat.getValue();
+                        else if (priorityStr.equals("index"))
+                            newPriorityNum = stat.getValue();
+                        else
+                            newPriorityNum = 0;
+
+                        results.add(new UIEntry(name + "<" + stat.getStatString() + ">", parameter, statElemType,
+                                renderer, combinerName, categories,
+                                newPriorityNum, flag,
+                                desc, label, label2, label5, template));
+                    }
+                }
+            }
         }
 
         return results;

@@ -50,12 +50,6 @@ public class UIEntry {
      *
      * @author ClaudeCode
      */
-    private boolean parmIsElement;
-    /**
-     * Whether this entry's parameter is a stat or an element.
-     *
-     * @author ClaudeCode
-     */
     private StatElemType statOrElement;
     /**
      * The renderer used to draw this entry's value.
@@ -75,12 +69,6 @@ public class UIEntry {
      * @author ClaudeCode
      */
     private int priorityNum;
-    /**
-     * Raw (unparsed) priority string from the data file.
-     *
-     * @author ClaudeCode
-     */
-    private String priorityStr;
     /**
      * Behavioural flag for this entry.
      *
@@ -136,7 +124,6 @@ public class UIEntry {
      * @param combineType the value-combining strategy
      * @param categories  categories the entry belongs to
      * @param priorityNum numeric display priority
-     * @param priorityStr raw priority string
      * @param entryFlag   behavioural flag
      * @param description human-readable description
      * @param label       default-width label
@@ -152,7 +139,6 @@ public class UIEntry {
                    CombinerName combineType,
                    List<String> categories,
                    int priorityNum,
-                   String priorityStr,
                    EntryFlag entryFlag,
                    String description,
                    String label,
@@ -165,7 +151,6 @@ public class UIEntry {
         this.renderer = renderer;
         this.combineType = combineType;
         this.priorityNum = priorityNum;
-        this.priorityStr = priorityStr;
         this.entryFlag = entryFlag;
         this.description = description;
         this.label = label;
@@ -211,7 +196,6 @@ public class UIEntry {
                 ", renderer=" + renderer +
                 ", combineType=" + combineType +
                 ", priorityNum=" + priorityNum +
-                ", priorityStr='" + priorityStr + '\'' +
                 ", entryFlag=" + entryFlag +
                 ", description='" + description + '\'' +
                 ", label='" + label + '\'' +
@@ -224,10 +208,6 @@ public class UIEntry {
 
     public ElementEnum getParameter() {
         return parameter;
-    }
-
-    public boolean isParmIsElement() {
-        return parmIsElement;
     }
 
     public StatElemType getStatOrElement() {
@@ -244,10 +224,6 @@ public class UIEntry {
 
     public int getPriorityNum() {
         return priorityNum;
-    }
-
-    public String getPriorityStr() {
-        return priorityStr;
     }
 
     public EntryFlag getEntryFlag() {

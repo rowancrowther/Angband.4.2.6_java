@@ -12,24 +12,23 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerProperty.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playerproperty;
+// Generated from PlayerPropertyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playerproperty;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link PlayerPropertyVisitor},
+ * This class provides an empty implementation of {@link PlayerPropertyGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlayerPropertyVisitor<T> {
+public class PlayerPropertyGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlayerPropertyGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitType(PlayerPropertyParser.TypeContext ctx) {
+    public T visitRecordCount(PlayerPropertyGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(PlayerPropertyParser.CodeContext ctx) {
+    public T visitType(PlayerPropertyGrammar.TypeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBindui(PlayerPropertyParser.BinduiContext ctx) {
+    public T visitCode(PlayerPropertyGrammar.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(PlayerPropertyParser.NameContext ctx) {
+    public T visitBinduiEntry(PlayerPropertyGrammar.BinduiEntryContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(PlayerPropertyParser.DescContext ctx) {
+    public T visitBindUI(PlayerPropertyGrammar.BindUIContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitValue(PlayerPropertyParser.ValueContext ctx) {
+    public T visitName(PlayerPropertyGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitProperty(PlayerPropertyParser.PropertyContext ctx) {
+    public T visitDesc(PlayerPropertyGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,29 @@ public class PlayerPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(PlayerPropertyParser.FileContext ctx) {
+    public T visitValue(PlayerPropertyGrammar.ValueContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitProperty(PlayerPropertyGrammar.PropertyContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(PlayerPropertyGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

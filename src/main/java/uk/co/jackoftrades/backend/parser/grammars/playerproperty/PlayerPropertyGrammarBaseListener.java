@@ -12,31 +12,29 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerProperty.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playerproperty;
-
+// Generated from PlayerPropertyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playerproperty;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link PlayerPropertyListener},
+ * This class provides an empty implementation of {@link PlayerPropertyGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerPropertyBaseListener implements PlayerPropertyListener {
+public class PlayerPropertyGrammarBaseListener implements PlayerPropertyGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterType(PlayerPropertyParser.TypeContext ctx) {
+    public void enterRecordCount(PlayerPropertyGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitType(PlayerPropertyParser.TypeContext ctx) {
+    public void exitRecordCount(PlayerPropertyGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCode(PlayerPropertyParser.CodeContext ctx) {
+    public void enterType(PlayerPropertyGrammar.TypeContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCode(PlayerPropertyParser.CodeContext ctx) {
+    public void exitType(PlayerPropertyGrammar.TypeContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBindui(PlayerPropertyParser.BinduiContext ctx) {
+    public void enterCode(PlayerPropertyGrammar.CodeContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBindui(PlayerPropertyParser.BinduiContext ctx) {
+    public void exitCode(PlayerPropertyGrammar.CodeContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(PlayerPropertyParser.NameContext ctx) {
+    public void enterBinduiEntry(PlayerPropertyGrammar.BinduiEntryContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(PlayerPropertyParser.NameContext ctx) {
+    public void exitBinduiEntry(PlayerPropertyGrammar.BinduiEntryContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(PlayerPropertyParser.DescContext ctx) {
+    public void enterBindUI(PlayerPropertyGrammar.BindUIContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(PlayerPropertyParser.DescContext ctx) {
+    public void exitBindUI(PlayerPropertyGrammar.BindUIContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterValue(PlayerPropertyParser.ValueContext ctx) {
+    public void enterName(PlayerPropertyGrammar.NameContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitValue(PlayerPropertyParser.ValueContext ctx) {
+    public void exitName(PlayerPropertyGrammar.NameContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterProperty(PlayerPropertyParser.PropertyContext ctx) {
+    public void enterDesc(PlayerPropertyGrammar.DescContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitProperty(PlayerPropertyParser.PropertyContext ctx) {
+    public void exitDesc(PlayerPropertyGrammar.DescContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(PlayerPropertyParser.FileContext ctx) {
+    public void enterValue(PlayerPropertyGrammar.ValueContext ctx) {
     }
 
     /**
@@ -171,7 +169,43 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(PlayerPropertyParser.FileContext ctx) {
+    public void exitValue(PlayerPropertyGrammar.ValueContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterProperty(PlayerPropertyGrammar.PropertyContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitProperty(PlayerPropertyGrammar.PropertyContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(PlayerPropertyGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(PlayerPropertyGrammar.FileContext ctx) {
     }
 
     /**
@@ -197,11 +231,16 @@ public class PlayerPropertyBaseListener implements PlayerPropertyListener {
      *
      * <p>The default implementation does nothing.</p>
      */
-    @Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

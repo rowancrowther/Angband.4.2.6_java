@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -20,25 +20,21 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
-import uk.co.jackoftrades.middle.enums.StatElementEnum;
-import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+
+import java.util.List;
 
 public class PlayerProperty {
     private static final Logger logger = LogManager.getLogger();
 
+    public record BindUI(UIEntry uiEntry, int value, boolean special, boolean aux) {
+    }
+
     private PlayerPropertyType playerPropertyType;
     private PlayerFlag pCode;
     private ObjectFlag oCode;
-    private UIEntry uiEntry;
-    private StatElementEnum statElement;
-    private Stats stats;
-    private ElementEnum element;
-    private boolean passType;
-    private int passValue;
-    private boolean special;
+    private List<BindUI> entries;
     private String name;
     private String description;
     private PlayerPropertyValue value;
@@ -46,51 +42,45 @@ public class PlayerProperty {
     public PlayerProperty(PlayerPropertyType playerPropertyType,
                           PlayerFlag pCode,
                           ObjectFlag oCode,
-                          UIEntry uiEntry,
-                          Stats stats,
-                          ElementEnum element,
-                          String binduiExtras,
+                          List<BindUI> entries,
                           String name,
                           String description,
                           PlayerPropertyValue value) {
         this.playerPropertyType = playerPropertyType;
         this.oCode = oCode;
         this.pCode = pCode;
-        this.uiEntry = uiEntry;
-        this.stats = stats;
-        this.element = element;
-        parseBindUIExtras(binduiExtras);
+        this.entries = entries;
         this.name = name;
         this.description = description;
         this.value = value;
     }
 
-    /**
-     * Take an incoming bindUIEntry text string and extract the special, passValue and passType entries
-     *
-     * @param binduiExtras the bindUIEntry text to parse
-     */
-    private void parseBindUIExtras(String binduiExtras) {
-        if (binduiExtras.isEmpty()) return;
+    public PlayerPropertyType getPlayerPropertyType() {
+        return playerPropertyType;
+    }
 
-        // String is of format "':' (0 | 1) ':' (int | 'special')"
-        String toParse = binduiExtras.substring(1);
-        String[] split = toParse.split(":");
-        if (split.length != 2) {
-            IllegalArgumentException exception = new IllegalArgumentException("Invalid bindui extras: " + toParse);
-            logger.fatal(exception.getMessage(), exception);
-            throw exception;
-        }
+    public PlayerFlag getpCode() {
+        return pCode;
+    }
 
-        passType = !(split[0].equals("0"));
+    public ObjectFlag getoCode() {
+        return oCode;
+    }
 
-        if (split[1].equals("special")) {
-            special = true;
-            passValue = 0;
-        } else {
-            special = false;
-            passValue = Integer.parseInt(split[1]);
-        }
+    public List<BindUI> getEntries() {
+        return entries;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public PlayerPropertyValue getValue() {
+        return value;
     }
 
     public enum PlayerPropertyType {

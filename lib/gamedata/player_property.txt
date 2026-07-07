@@ -33,6 +33,8 @@
 # desc - the description of the property
 # value - value for elements; -1 (vulnerability), 1 (resistance) or 3 (immunity)
 
+record-count:44
+
 ## Shapechange player flags
 
 type:player

@@ -17,56 +17,91 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.brand.BrandLexer;
-import uk.co.jackoftrades.backend.parser.brand.BrandParser;
+import uk.co.jackoftrades.backend.parser.brand.BrandAssembler;
+import uk.co.jackoftrades.backend.parser.brand.BrandParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.brand.BrandGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.brand.BrandLexer;
 import uk.co.jackoftrades.middle.objects.Brand;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the brand definitions from their data file into {@link Brand} objects by
- * driving the ANTLR-generated {@code BrandLexer}/{@code BrandParser}. This is the
- * Java port of the C original's {@code brand.txt} parser; it is the thin
- * hand-written bridge between the generated grammar code and the rest of the
- * game, implementing the shared {@link Reader} contract.
+ * Loads {@code brand.txt} into {@link Brand} objects, driving the ANTLR-generated
+ * {@code BrandLexer}/{@code BrandGrammar} through the shared {@link GrammarDriver}
+ * pipeline: lex and parse to {@link BrandParseRecord}s, which {@link BrandAssembler}
+ * then resolves into domain brands. The thin hand-written bridge between the
+ * generated grammar code and the game, implementing the shared {@link Reader}
+ * contract (Java port of C's {@code brand_parser}, {@code src/obj-init.c}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class BrandReader implements Reader<Brand> {
     /**
-     * Logger used to report file-loading failures.
+     * Logger used to report file-loading (IO) failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Parse the file and return just the assembled brands, discarding the soft-
+     * error channel (use {@link #parseWithResults} to inspect errors).
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * @param filename the brand data file to read
+     * @return the brands read from the file
+     * @throws IOException if the file cannot be read
      */
     @Override
     public @NotNull List<Brand> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            BrandLexer lexer = new BrandLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            BrandParser parser = new BrandParser(tokens);
-            BrandParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.brands;
-        } catch (IOException ex) {
-            logger.error("Error while loading file {}", filename, ex);
-            throw ex;
-        }
+    /**
+     * Parse the file into a {@link ParseResult} carrying both the assembled brands
+     * and any soft (recoverable) errors, by handing the grammar-specific pieces to
+     * the shared {@link GrammarDriver}.
+     *
+     * @param filename the brand data file to read
+     * @return the assembled brands plus any soft errors gathered en route
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Brand> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BrandLexer::new,
+                BrandGrammar::new,
+                BrandReader::extract,
+                new BrandAssembler(), logger);
+    }
+
+    /**
+     * The grammar-specific step for {@link GrammarDriver}: run the parser's
+     * {@code file} rule, fail closed on any hard grammar/lexer error via
+     * {@link ParseErrors#throwIfAny()}, check the declared {@code record-count}
+     * against the number actually parsed (a soft error), and hand back the raw
+     * records for the assembler.
+     *
+     * @param parser       the generated Brand parser
+     * @param errorCatcher the shared hard-error channel
+     * @param errors       the soft-error sink
+     * @return the parsed brand records
+     */
+    private static @NotNull List<BrandParseRecord> extract(
+            @NotNull BrandGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        BrandGrammar.FileContext output = parser.file();
+        List<BrandParseRecord> results = output.records;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
     }
 }

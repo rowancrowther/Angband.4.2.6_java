@@ -24,6 +24,8 @@
 #     has to match the first argument to one of the RF() macros in
 #     list-mon-race-flags.h
 
+record-count:10
+
 code:ACID_3
 name:acid
 verb:dissolve

@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Brand.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.brand;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BrandGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.brand;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link BrandVisitor},
+ * This class provides an empty implementation of {@link BrandGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements BrandVisitor<T> {
+public class BrandGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements BrandGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(BrandParser.CodeContext ctx) {
+    public T visitRecordCount(BrandGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(BrandParser.NameContext ctx) {
+    public T visitCode(BrandGrammar.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMultiplier(BrandParser.MultiplierContext ctx) {
+    public T visitName(BrandGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitO_multiplier(BrandParser.O_multiplierContext ctx) {
+    public T visitMultiplier(BrandGrammar.MultiplierContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPower(BrandParser.PowerContext ctx) {
+    public T visitOMultiplier(BrandGrammar.OMultiplierContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitVerb(BrandParser.VerbContext ctx) {
+    public T visitPower(BrandGrammar.PowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitResist_flag(BrandParser.Resist_flagContext ctx) {
+    public T visitVerb(BrandGrammar.VerbContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +114,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitVuln_flag(BrandParser.Vuln_flagContext ctx) {
+    public T visitResistFlag(BrandGrammar.ResistFlagContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +125,7 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBrand(BrandParser.BrandContext ctx) {
+    public T visitVulnFlag(BrandGrammar.VulnFlagContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +136,18 @@ public class BrandBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(BrandParser.FileContext ctx) {
+    public T visitBrand(BrandGrammar.BrandContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(BrandGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

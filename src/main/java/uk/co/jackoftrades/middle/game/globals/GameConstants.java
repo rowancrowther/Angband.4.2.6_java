@@ -791,7 +791,7 @@ public class GameConstants {
             loadPain();
             loadMonsterBases();         // Dependent on MonsterPain
             loadSlays();                // Dependent on MonsterBases
-//            loadBrands();
+            loadBrands();
 //            loadSummons();              // Dependent on MonsterBases
 //            checkSummons();             // Check that the summons list correctly handles the fallback strings
 //            loadCurses();               // Dependent on ObjectBases
@@ -1317,7 +1317,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "brand.txt";
 
         try {
-            brands = parser.parse(filename);
+            ParseResult<Brand> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            brands = result.items();
+            brandMax = brands.size();
         } catch (IOException e) {
             logger.error("Exception while loading file {}", filename, e);
             throw e;

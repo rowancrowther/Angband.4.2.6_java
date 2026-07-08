@@ -792,8 +792,7 @@ public class GameConstants {
             loadMonsterBases();         // Dependent on MonsterPain
             loadSlays();                // Dependent on MonsterBases
             loadBrands();
-//            loadSummons();              // Dependent on MonsterBases
-//            checkSummons();             // Check that the summons list correctly handles the fallback strings
+            loadSummons();              // Dependent on MonsterBases
 //            loadCurses();               // Dependent on ObjectBases
 //            loadPlayerShapes();
 //            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
@@ -1170,23 +1169,6 @@ public class GameConstants {
     }
 
     /**
-     * Check the summons list to ensure that all fallback positions are correctly stored
-     *
-     * @throws IllegalStateException There was no entry where the fallback of one summon was the name of another.
-     */
-    private static void checkSummons() throws IllegalStateException {
-        for (Summon summon : summons) {
-            String fallBack = summon.getFallback();
-            if (!fallBack.isEmpty()) {
-                if (summons.stream().noneMatch(e -> e.getName().equals(fallBack))) {
-                    String errorMessage = "No fallback record of " + fallBack + " found for " + summon.getName();
-                    throw new IllegalStateException(errorMessage);
-                }
-            }
-        }
-    }
-
-    /**
      * Look up a player shape by name.
      *
      * @param name the shape name
@@ -1248,8 +1230,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "summon.txt";
 
         try {
-            summons = parser.parse(filename);
-        } catch (Exception e) {
+            ParseResult<Summon> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            summons = result.items();
+        } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
         }

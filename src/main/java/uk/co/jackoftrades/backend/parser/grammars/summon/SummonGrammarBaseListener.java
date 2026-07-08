@@ -15,13 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BrandGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.grammars;
-
-    import uk.co.jackoftrades.backend.parser.brand.BrandParseRecord;
-
-    import java.util.ArrayList;
-    import java.util.List;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SummonGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.summon;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -29,144 +24,172 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link BrandGrammarListener},
+ * This class provides an empty implementation of {@link SummonGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class BrandGrammarBaseListener implements BrandGrammarListener {
+public class SummonGrammarBaseListener implements SummonGrammarListener {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRecordCount(BrandGrammar.RecordCountContext ctx) { }
+	@Override
+	public void enterRecordCount(SummonGrammar.RecordCountContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitRecordCount(BrandGrammar.RecordCountContext ctx) { }
+	@Override
+	public void exitRecordCount(SummonGrammar.RecordCountContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCode(BrandGrammar.CodeContext ctx) { }
+	@Override
+	public void enterName(SummonGrammar.NameContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCode(BrandGrammar.CodeContext ctx) { }
+	@Override
+	public void exitName(SummonGrammar.NameContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterName(BrandGrammar.NameContext ctx) { }
+	@Override
+	public void enterMsgt(SummonGrammar.MsgtContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitName(BrandGrammar.NameContext ctx) { }
+	@Override
+	public void exitMsgt(SummonGrammar.MsgtContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterMultiplier(BrandGrammar.MultiplierContext ctx) { }
+	@Override
+	public void enterUniques(SummonGrammar.UniquesContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitMultiplier(BrandGrammar.MultiplierContext ctx) { }
+	@Override
+	public void exitUniques(SummonGrammar.UniquesContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterOMultiplier(BrandGrammar.OMultiplierContext ctx) { }
+	@Override
+	public void enterBase(SummonGrammar.BaseContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitOMultiplier(BrandGrammar.OMultiplierContext ctx) { }
+	@Override
+	public void exitBase(SummonGrammar.BaseContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterPower(BrandGrammar.PowerContext ctx) { }
+	@Override
+	public void enterRaceFlag(SummonGrammar.RaceFlagContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitPower(BrandGrammar.PowerContext ctx) { }
+	@Override
+	public void exitRaceFlag(SummonGrammar.RaceFlagContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterVerb(BrandGrammar.VerbContext ctx) { }
+	@Override
+	public void enterFallback(SummonGrammar.FallbackContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitVerb(BrandGrammar.VerbContext ctx) { }
+	@Override
+	public void exitFallback(SummonGrammar.FallbackContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterResistFlag(BrandGrammar.ResistFlagContext ctx) { }
+	@Override
+	public void enterDesc(SummonGrammar.DescContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitResistFlag(BrandGrammar.ResistFlagContext ctx) { }
+	@Override
+	public void exitDesc(SummonGrammar.DescContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterVulnFlag(BrandGrammar.VulnFlagContext ctx) { }
+	@Override
+	public void enterSummon(SummonGrammar.SummonContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitVulnFlag(BrandGrammar.VulnFlagContext ctx) { }
+	@Override
+	public void exitSummon(SummonGrammar.SummonContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBrand(BrandGrammar.BrandContext ctx) { }
+	@Override
+	public void enterFile(SummonGrammar.FileContext ctx) {
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitBrand(BrandGrammar.BrandContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFile(BrandGrammar.FileContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFile(BrandGrammar.FileContext ctx) { }
+	@Override
+	public void exitFile(SummonGrammar.FileContext ctx) {
+	}
 
 	/**
 	 * {@inheritDoc}

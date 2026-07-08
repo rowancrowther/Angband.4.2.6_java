@@ -42,6 +42,8 @@
 # summon (where summoned monsters are chosen from those already on the level
 # rather than newly created).
 
+record-count:17
+
 # Note also that the ANY summon should always be the first in this file.
 
 name:ANY

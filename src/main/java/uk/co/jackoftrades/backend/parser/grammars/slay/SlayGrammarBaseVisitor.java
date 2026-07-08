@@ -12,16 +12,16 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Slay.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.slay;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SlayGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.slay;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link SlayVisitor},
+ * This class provides an empty implementation of {@link SlayGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +29,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements SlayVisitor<T> {
+public class SlayGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements SlayGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(SlayParser.CodeContext ctx) {
+    public T visitRecordCount(SlayGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(SlayParser.NameContext ctx) {
+    public T visitCode(SlayGrammar.CodeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRace_flag(SlayParser.Race_flagContext ctx) {
+    public T visitName(SlayGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBase(SlayParser.BaseContext ctx) {
+    public T visitRaceFlag(SlayGrammar.RaceFlagContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMultiplier(SlayParser.MultiplierContext ctx) {
+    public T visitBase(SlayGrammar.BaseContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitO_multiplier(SlayParser.O_multiplierContext ctx) {
+    public T visitMultiplier(SlayGrammar.MultiplierContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPower(SlayParser.PowerContext ctx) {
+    public T visitOMultiplier(SlayGrammar.OMultiplierContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +114,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMelee_verb(SlayParser.Melee_verbContext ctx) {
+    public T visitPower(SlayGrammar.PowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +125,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRanged_verb(SlayParser.Ranged_verbContext ctx) {
+    public T visitMeleeVerb(SlayGrammar.MeleeVerbContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +136,7 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSlay(SlayParser.SlayContext ctx) {
+    public T visitRangeVerb(SlayGrammar.RangeVerbContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +147,18 @@ public class SlayBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements S
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(SlayParser.FileContext ctx) {
+    public T visitSlay(SlayGrammar.SlayContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(SlayGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

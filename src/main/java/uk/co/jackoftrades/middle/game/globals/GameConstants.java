@@ -790,7 +790,7 @@ public class GameConstants {
             loadObjectBases();
             loadPain();
             loadMonsterBases();         // Dependent on MonsterPain
-//            loadSlays();                // Dependent on MonsterBases
+            loadSlays();                // Dependent on MonsterBases
 //            loadBrands();
 //            loadSummons();              // Dependent on MonsterBases
 //            checkSummons();             // Check that the summons list correctly handles the fallback strings
@@ -1332,7 +1332,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "slay.txt";
 
         try {
-            slays = parser.parse(filename);
+            ParseResult<Slay> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            slays = result.items();
+            slayMax = slays.size();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
         }

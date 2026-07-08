@@ -54,7 +54,7 @@
 //      substituted (no `player_bound_ui`/`bound_ui` usage outside init.c in
 //      this checkout) to confirm the two behave the same way.
 //
-// See "POTENTIAL SOLUTIONS" at the bottom of this file.
+// @author Rowan Crowther
 
 parser grammar PlayerPropertyGrammar;
 options { tokenVocab = PlayerPropertyLexer; }

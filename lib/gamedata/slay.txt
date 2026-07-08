@@ -28,6 +28,8 @@
 # melee-verb: verb used when a susceptible monster is hit in melee
 # range-verb: verb used when a susceptible monster is hit at range
 
+record-count:11
+
 code:EVIL_2
 name:evil creatures
 race-flag:EVIL

@@ -12,11 +12,11 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Slay.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.slay;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SlayGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.slay;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +24,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link SlayListener},
+ * This class provides an empty implementation of {@link SlayGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class SlayBaseListener implements SlayListener {
+public class SlayGrammarBaseListener implements SlayGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCode(SlayParser.CodeContext ctx) {
+    public void enterRecordCount(SlayGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +45,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCode(SlayParser.CodeContext ctx) {
+    public void exitRecordCount(SlayGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +54,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(SlayParser.NameContext ctx) {
+    public void enterCode(SlayGrammar.CodeContext ctx) {
     }
 
     /**
@@ -63,7 +63,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(SlayParser.NameContext ctx) {
+    public void exitCode(SlayGrammar.CodeContext ctx) {
     }
 
     /**
@@ -72,7 +72,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRace_flag(SlayParser.Race_flagContext ctx) {
+    public void enterName(SlayGrammar.NameContext ctx) {
     }
 
     /**
@@ -81,7 +81,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRace_flag(SlayParser.Race_flagContext ctx) {
+    public void exitName(SlayGrammar.NameContext ctx) {
     }
 
     /**
@@ -90,7 +90,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBase(SlayParser.BaseContext ctx) {
+    public void enterRaceFlag(SlayGrammar.RaceFlagContext ctx) {
     }
 
     /**
@@ -99,7 +99,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBase(SlayParser.BaseContext ctx) {
+    public void exitRaceFlag(SlayGrammar.RaceFlagContext ctx) {
     }
 
     /**
@@ -108,7 +108,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMultiplier(SlayParser.MultiplierContext ctx) {
+    public void enterBase(SlayGrammar.BaseContext ctx) {
     }
 
     /**
@@ -117,7 +117,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMultiplier(SlayParser.MultiplierContext ctx) {
+    public void exitBase(SlayGrammar.BaseContext ctx) {
     }
 
     /**
@@ -126,7 +126,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterO_multiplier(SlayParser.O_multiplierContext ctx) {
+    public void enterMultiplier(SlayGrammar.MultiplierContext ctx) {
     }
 
     /**
@@ -135,7 +135,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitO_multiplier(SlayParser.O_multiplierContext ctx) {
+    public void exitMultiplier(SlayGrammar.MultiplierContext ctx) {
     }
 
     /**
@@ -144,7 +144,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPower(SlayParser.PowerContext ctx) {
+    public void enterOMultiplier(SlayGrammar.OMultiplierContext ctx) {
     }
 
     /**
@@ -153,7 +153,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPower(SlayParser.PowerContext ctx) {
+    public void exitOMultiplier(SlayGrammar.OMultiplierContext ctx) {
     }
 
     /**
@@ -162,7 +162,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMelee_verb(SlayParser.Melee_verbContext ctx) {
+    public void enterPower(SlayGrammar.PowerContext ctx) {
     }
 
     /**
@@ -171,7 +171,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMelee_verb(SlayParser.Melee_verbContext ctx) {
+    public void exitPower(SlayGrammar.PowerContext ctx) {
     }
 
     /**
@@ -180,7 +180,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRanged_verb(SlayParser.Ranged_verbContext ctx) {
+    public void enterMeleeVerb(SlayGrammar.MeleeVerbContext ctx) {
     }
 
     /**
@@ -189,7 +189,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRanged_verb(SlayParser.Ranged_verbContext ctx) {
+    public void exitMeleeVerb(SlayGrammar.MeleeVerbContext ctx) {
     }
 
     /**
@@ -198,7 +198,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSlay(SlayParser.SlayContext ctx) {
+    public void enterRangeVerb(SlayGrammar.RangeVerbContext ctx) {
     }
 
     /**
@@ -207,7 +207,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSlay(SlayParser.SlayContext ctx) {
+    public void exitRangeVerb(SlayGrammar.RangeVerbContext ctx) {
     }
 
     /**
@@ -216,7 +216,7 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(SlayParser.FileContext ctx) {
+    public void enterSlay(SlayGrammar.SlayContext ctx) {
     }
 
     /**
@@ -225,7 +225,25 @@ public class SlayBaseListener implements SlayListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(SlayParser.FileContext ctx) {
+    public void exitSlay(SlayGrammar.SlayContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(SlayGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(SlayGrammar.FileContext ctx) {
     }
 
     /**

@@ -1,3 +1,28 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+// Parser for lib/gamedata/monster_base.txt (see MonsterBaseLexer for the token
+// definitions and the C cross-reference). Extraction-only: every rule returns
+// raw strings which MonsterBaseAssembler resolves into a domain MonsterBase
+// (RF_ race flags, the glyph, and the pain: index looked up against pain.txt).
+// Cf. init_parse_mon_base() (src/mon-init.c:1069).
+//
+// @author Rowan Crowther
+
 parser grammar MonsterBaseGrammar;
 
 options { tokenVocab = MonsterBaseLexer; }

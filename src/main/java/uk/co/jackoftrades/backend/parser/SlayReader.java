@@ -17,56 +17,93 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.slay.SlayLexer;
-import uk.co.jackoftrades.backend.parser.slay.SlayParser;
+import org.jspecify.annotations.NonNull;
+import uk.co.jackoftrades.backend.parser.grammars.slay.SlayGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.slay.SlayLexer;
+import uk.co.jackoftrades.backend.parser.slay.SlayAssembler;
+import uk.co.jackoftrades.backend.parser.slay.SlayParseRecord;
 import uk.co.jackoftrades.middle.objects.Slay;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into {@link Slay} objects by driving the
- * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
- * the generated grammar code and the game, implementing the shared
- * {@link Reader} contract (Java port of the equivalent C data-file parser).
+ * Loads {@code slay.txt} into {@link Slay} objects, driving the ANTLR-generated
+ * {@code SlayLexer}/{@code SlayGrammar} through the shared {@link GrammarDriver}
+ * pipeline: lex and parse to {@link SlayParseRecord}s, which {@link SlayAssembler}
+ * then resolves into domain slays. The thin hand-written bridge between the
+ * generated grammar code and the game, implementing the shared {@link Reader}
+ * contract (Java port of C's {@code slay_parser}, {@code src/obj-init.c:851}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class SlayReader implements Reader<Slay> {
     /**
-     * Logger used to report file-loading failures.
+     * Logger used to report file-loading (IO) failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Parse the file and return just the assembled slays, discarding the soft-
+     * error channel (use {@link #parseWithResults} to inspect errors).
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * @param filename the slay data file to read
+     * @return the slays read from the file
+     * @throws IOException if the file cannot be read
      */
     @Override
     public @NotNull List<Slay> parse(@NotNull String filename) throws IOException {
+        return parseWithResults(filename).items();
+    }
 
+    /**
+     * Parse the file into a {@link ParseResult} carrying both the assembled slays
+     * and any soft (recoverable) errors, by handing the grammar-specific pieces
+     * to the shared {@link GrammarDriver}.
+     *
+     * @param filename the slay data file to read
+     * @return the assembled slays plus any soft errors gathered en route
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Slay> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                SlayLexer::new,
+                SlayGrammar::new,
+                SlayReader::extract,
+                new SlayAssembler(), logger);
+    }
 
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            SlayLexer lexer = new SlayLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            SlayParser parser = new SlayParser(tokens);
-            SlayParser.FileContext output = parser.file();
+    /**
+     * The grammar-specific step for {@link GrammarDriver}: run the parser's
+     * {@code file} rule, fail closed on any hard grammar/lexer error via
+     * {@link ParseErrors#throwIfAny()}, check the declared {@code record-count}
+     * against the number actually parsed (a soft error), and hand back the raw
+     * records for the assembler.
+     *
+     * @param parser       the generated Slay parser
+     * @param errorCatcher the shared hard-error channel
+     * @param errors       the soft-error sink
+     * @return the parsed slay records
+     */
+    @Contract("_, _, _ -> new")
+    private static @NonNull List<SlayParseRecord> extract(
+            @NotNull SlayGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        SlayGrammar.FileContext output = parser.file();
+        List<SlayParseRecord> results = output.records;
+        errorCatcher.throwIfAny();
 
-            return output.slays;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
     }
 }

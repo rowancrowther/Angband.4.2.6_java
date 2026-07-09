@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *       it accumulates parser errors rather than throwing on the first one.</li>
  * </ul>
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ParseErrorsTest {
 

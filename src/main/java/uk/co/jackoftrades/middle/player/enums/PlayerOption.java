@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -32,7 +32,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * fresh game starts with. Bundling that triple onto the constant keeps it authoritative in
  * one place. {@code OP_none} is the index-0 placeholder mirroring the C sentinel.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum PlayerOption {
     OP_none("",

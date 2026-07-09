@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.entries.enums;
@@ -21,17 +21,19 @@ package uk.co.jackoftrades.frontend.entries.enums;
  * Sign-display modes for a UI entry's numeric value, choosing
  * whether and when a {@code +}/{@code -} is shown.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum UIEntryEnum {
     /**
-     * Never show a sign. @author ClaudeCode
+     * Never show a sign. @author Rowan Crowther
      */
     UI_ENTRY_NO_SIGN,
-    /** Always show a sign, including {@code +} for positives. @author ClaudeCode */
+    /**
+     * Always show a sign, including {@code +} for positives. @author Rowan Crowther
+     */
     UI_ENTRY_ALWAYS_SIGN,
-    /** Show a sign only for negative values. @author ClaudeCode */
+    /** Show a sign only for negative values. @author Rowan Crowther */
     UI_ENTRY_NEGATIVE_SIGN,
-    /** Use the renderer's default sign behaviour. @author ClaudeCode */
+    /** Use the renderer's default sign behaviour. @author Rowan Crowther */
     UI_ENTRY_SIGN_DEFAULT
 }

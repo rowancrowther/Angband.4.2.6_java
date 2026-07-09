@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -35,45 +35,45 @@ import java.util.ArrayList;
  * combat type) and looks up the appropriate level by hit power at combat time —
  * the Java port of the C original's critical-hit tables.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class CriticalLevelConstants {
     /**
      * Data-file group tag for melee critical levels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String meleeTag = "melee-critical-level";
     /**
      * Data-file group tag for ranged critical levels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String rangedTag = "ranged-critical-level";
     /**
      * Ordered melee critical levels; lookup relies on these being read in
      * ascending cut-off order from the data file.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final ArrayList<CriticalLevel> meleeLevels = new ArrayList<>();
     /**
      * Ordered ranged critical levels; lookup relies on data-file ordering.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final ArrayList<CriticalLevel> rangedLevels = new ArrayList<>();
     /**
      * Logger used to report malformed/invalid critical-level tokens.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Private constructor preventing instantiation; the class is a static table holder.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     private CriticalLevelConstants() {

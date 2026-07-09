@@ -36,13 +36,13 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ObjectBaseReader implements Reader<ObjectBase> {
     /**
      * Logger used to report file-loading failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static final Logger logger = LogManager.getLogger();
 

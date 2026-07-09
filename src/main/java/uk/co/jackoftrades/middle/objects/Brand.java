@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -26,56 +26,56 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
  * rating. This is the Java port of the C original's {@code struct brand}
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Brand {
     /**
      * The brand's code (used for cross-references).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String code;
     /**
      * The brand's display name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The verb describing the brand's damage (e.g. "burns").
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String verb;
     /**
      * Monster flag granting resistance to this brand.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceFlag resistFlag;
     /**
      * Monster flag marking vulnerability to this brand.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceFlag vulnerableFlag;
 
     /**
      * Damage multiplier in the standard combat system.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int multiplier;
     /**
      * Damage multiplier in the O-combat system.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int oMultiplier;
     /**
      * The brand's power rating (for item valuation).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
 
@@ -90,7 +90,7 @@ public class Brand {
      * @param multiplier     standard damage multiplier
      * @param oMultiplier    O-combat damage multiplier
      * @param power          power rating
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Brand(String code, String name, String verb, MonsterRaceFlag resistFlag, MonsterRaceFlag vulnerableFlag, int multiplier, int oMultiplier, int power) {
         this.code = code;
@@ -105,7 +105,7 @@ public class Brand {
 
     /**
      * @return the brand's display name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -113,7 +113,7 @@ public class Brand {
 
     /**
      * @return the brand's code
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getCode() {
         return code;
@@ -121,7 +121,7 @@ public class Brand {
 
     /**
      * @return a debug string listing this brand's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

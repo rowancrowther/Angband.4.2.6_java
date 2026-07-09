@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -34,7 +34,7 @@ import java.util.HashMap;
  * game-event system ({@code src/game-event.c}), decoupling game logic from the
  * UI that reacts to it.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventsHandler {
     /**
@@ -42,7 +42,7 @@ public class EventsHandler {
      *
      * @param handler the event handler
      * @param user    the registering user/context
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private record EventRecord(EventHandlerInterface handler, EventUser user) {
     }
@@ -50,14 +50,14 @@ public class EventsHandler {
     /**
      * The registry of listeners, keyed by event type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final HashMap<GameEventType, ArrayList<EventHandlerInterface>> handlers = new HashMap<>();
 
     /**
      * The lazily-created singleton instance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static EventsHandler instance;
 
@@ -65,7 +65,7 @@ public class EventsHandler {
      * Private constructor: pre-populates an empty listener list for every event
      * type so dispatch never has to null-check.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EventsHandler() {
         for (GameEventType eventType : GameEventType.values()) {
@@ -76,7 +76,7 @@ public class EventsHandler {
     /**
      * Create the singleton instance if it does not yet exist.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void initialise() {
         if (instance == null) instance = new EventsHandler();

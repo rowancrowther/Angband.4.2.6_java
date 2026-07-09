@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -34,7 +34,7 @@ import org.apache.logging.log4j.Logger;
  * parentage options, which lead to social-standing options — so the data is a directed graph
  * of small weighted choices, and each entry carries the edge to its successor chart.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class PlayerHistoryEntry {
     /**

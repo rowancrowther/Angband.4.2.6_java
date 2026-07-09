@@ -55,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@link ParseErrors#throwIfAny()} reports them together — see
  * {@link #twoMalformedRecordsBothReportedThenThrownTogether()}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryGrammarTest {
 

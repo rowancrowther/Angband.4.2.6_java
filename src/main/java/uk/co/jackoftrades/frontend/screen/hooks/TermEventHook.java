@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen.hooks;
@@ -26,7 +26,7 @@ import uk.co.jackoftrades.frontend.screen.enums.TermXtraEventEnum;
  * platform-specific actions (make a noise, flush input, clear, delay, …). Each
  * front end provides its own implementation.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public interface TermEventHook {
     /**
@@ -34,7 +34,7 @@ public interface TermEventHook {
      *
      * @param event the kind of action requested
      * @param value an event-specific parameter (e.g. a delay in milliseconds)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void doSomething(TermXtraEventEnum event, int value);
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave.enums;
@@ -25,7 +25,7 @@ package uk.co.jackoftrades.middle.cave.enums;
  * #getDescription() description} so the flags are self-documenting and are not
  * repeated individually here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum SquareEnum {
     SQUARE_NONE(""),
@@ -55,7 +55,7 @@ public enum SquareEnum {
     /**
      * Human-readable description of what this square flag means.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String description;
 
@@ -63,7 +63,7 @@ public enum SquareEnum {
      * Bind a square flag to its description.
      *
      * @param description the flag's human-readable description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private SquareEnum(String description) {
         this.description = description;
@@ -71,7 +71,7 @@ public enum SquareEnum {
 
     /**
      * @return this flag's human-readable description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -21,15 +21,17 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * Distinguishes a monster's primary (originally-generated) group from a group
  * formed by summoning. Mirrors the C original's group-type distinction.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterGroupType {
     /**
-     * The monster's primary/original group. @author ClaudeCode
+     * The monster's primary/original group. @author Rowan Crowther
      */
     PRIMARY_GROUP,
-    /** A group formed by summoning. @author ClaudeCode */
+    /**
+     * A group formed by summoning. @author Rowan Crowther
+     */
     SUMMON_GROUP,
-    /** Count sentinel. @author ClaudeCode */
+    /** Count sentinel. @author Rowan Crowther */
     GROUP_MAX
 }

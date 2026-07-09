@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -25,7 +25,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * entry appears on and whether enabling it has side effects (e.g. flagging a character
  * as having cheated).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum PlayerOptionTypes {
     /**

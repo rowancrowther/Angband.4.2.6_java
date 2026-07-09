@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen;
@@ -23,31 +23,31 @@ package uk.co.jackoftrades.frontend.screen;
  * the platform {@code RECT} structure used by the original C front ends; edges
  * are stored as {@code long} to match those native coordinate types.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Rect {
     /**
      * X coordinate of the left edge.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private long left;
     /**
      * Y coordinate of the top edge.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private long top;
     /**
      * X coordinate of the right edge.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private long right;
     /**
      * Y coordinate of the bottom edge.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private long bottom;
 
@@ -58,7 +58,7 @@ public class Rect {
      * @param top    top edge Y
      * @param right  right edge X
      * @param bottom bottom edge Y
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Rect(long left, long top, long right, long bottom) {
         this.left = left;
@@ -69,7 +69,7 @@ public class Rect {
 
     /**
      * @return the left edge X coordinate
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public long getLeft() {
         return left;
@@ -77,7 +77,7 @@ public class Rect {
 
     /**
      * @return the top edge Y coordinate
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public long getTop() {
         return top;
@@ -85,7 +85,7 @@ public class Rect {
 
     /**
      * @return the right edge X coordinate
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public long getRight() {
         return right;
@@ -93,7 +93,7 @@ public class Rect {
 
     /**
      * @return the bottom edge Y coordinate
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public long getBottom() {
         return bottom;

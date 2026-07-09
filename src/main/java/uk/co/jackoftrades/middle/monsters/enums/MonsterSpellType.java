@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -28,44 +28,46 @@ import org.jetbrains.annotations.NotNull;
  * archery types. Each constant records whether spells of that type deal damage,
  * used by monster AI to weigh offensive versus utility casting.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterSpellType {
     /**
-     * No spell type. @author ClaudeCode
+     * No spell type. @author Rowan Crowther
      */
     RST_NONE(false),
-    /** A damaging bolt. @author ClaudeCode */
+    /**
+     * A damaging bolt. @author Rowan Crowther
+     */
     RST_BOLT(true),
-    /** A damaging ball. @author ClaudeCode */
+    /** A damaging ball. @author Rowan Crowther */
     RST_BALL(true),
-    /** A damaging breath. @author ClaudeCode */
+    /** A damaging breath. @author Rowan Crowther */
     RST_BREATH(true),
-    /** A damaging direct attack. @author ClaudeCode */
+    /** A damaging direct attack. @author Rowan Crowther */
     RST_DIRECT(true),
-    /** A non-damaging annoyance spell. @author ClaudeCode */
+    /** A non-damaging annoyance spell. @author Rowan Crowther */
     RST_ANNOY(false),
-    /** A self-haste spell. @author ClaudeCode */
+    /** A self-haste spell. @author Rowan Crowther */
     RST_HASTE(false),
-    /** A self-heal spell. @author ClaudeCode */
+    /** A self-heal spell. @author Rowan Crowther */
     RST_HEAL(false),
-    /** A heal-other spell. @author ClaudeCode */
+    /** A heal-other spell. @author Rowan Crowther */
     RST_HEAL_OTHER(false),
-    /** A tactical (repositioning) spell. @author ClaudeCode */
+    /** A tactical (repositioning) spell. @author Rowan Crowther */
     RST_TACTIC(false),
-    /** An escape spell. @author ClaudeCode */
+    /** An escape spell. @author Rowan Crowther */
     RST_ESCAPE(false),
-    /** A summoning spell. @author ClaudeCode */
+    /** A summoning spell. @author Rowan Crowther */
     RST_SUMMON(false),
-    /** An innate (non-magical) ability. @author ClaudeCode */
+    /** An innate (non-magical) ability. @author Rowan Crowther */
     RST_INNATE(false),
-    /** A ranged archery attack. @author ClaudeCode */
+    /** A ranged archery attack. @author Rowan Crowther */
     RST_ARCHERY(false);
 
     /**
      * Whether spells of this type deal damage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final boolean isDamage;
 
@@ -73,7 +75,7 @@ public enum MonsterSpellType {
      * Bind a spell type to whether it is damaging.
      *
      * @param isDamage whether the type deals damage
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     private MonsterSpellType(boolean isDamage) {
@@ -82,7 +84,7 @@ public enum MonsterSpellType {
 
     /**
      * @return whether spells of this type deal damage
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue

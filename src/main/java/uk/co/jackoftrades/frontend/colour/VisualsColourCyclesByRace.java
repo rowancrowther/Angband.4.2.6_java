@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -33,13 +33,13 @@ import java.util.Map;
  * binding side of the colour-cycling system (the cycles themselves live in
  * {@link VisualsCycler}); the Java port of the C original's race→cycle lookup.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class VisualsColourCyclesByRace {
     /**
      * Per-race colour cycle bindings.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Map<MonsterRace, VisualsColourCycle> race = new HashMap<>();
 
@@ -50,7 +50,7 @@ public class VisualsColourCyclesByRace {
      * @param frame       the current animation frame
      * @return the colour for this frame, or {@link ColourType#COLOUR_TYPE_DARK}
      * if the race has no colour cycle
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue

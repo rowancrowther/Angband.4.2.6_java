@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils;
@@ -35,20 +35,20 @@ import java.util.regex.Pattern;
  * the same behaviour over Java {@link String}s so ported code can keep its
  * original shape. Abstract because it is a pure utility holder.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public abstract class StringUtils {
     /**
      * Shared logger (reserved for diagnostics in this utility holder).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
     /**
      * The running program's name, mirroring the C global {@code argv0}; used in
      * messages that need to identify the executable.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static String programmeName;
 

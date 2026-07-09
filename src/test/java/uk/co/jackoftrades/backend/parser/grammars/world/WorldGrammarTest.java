@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * each record carries its own source line number, line numbers survive skipped comment/blank lines,
  * and the file must open with a {@code record-count} directive.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class WorldGrammarTest {
 

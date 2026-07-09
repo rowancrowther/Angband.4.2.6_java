@@ -37,20 +37,20 @@ import java.util.Random;
  * so the whole game draws from one reproducible stream, which is what makes
  * seeded runs (and tests via {@link #stateInit(long)}) repeatable.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class RandomValueUtils {
     /**
      * The single shared PRNG backing every helper here, so all randomness comes
      * from one seedable stream.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Random random = new Random();
     /**
      * Logger used to report illegal argument ranges before throwing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -24,31 +24,31 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
  * flight — the {@link ItemObject} being thrown, whether the player sees it, and
  * its current grid. Consumed by the display layer to animate the missile.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataMissile implements GameEventData {
     /**
      * The missile object in flight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ItemObject itemObject;
     /**
      * Whether the player can see the missile.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean seen;
     /**
      * Current row.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int y;
     /**
      * Current column.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int x;
 
@@ -59,7 +59,7 @@ public class EventDataMissile implements GameEventData {
      * @param seen       whether the player sees it
      * @param y          current row
      * @param x          current column
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataMissile(ItemObject itemObject, boolean seen, int y, int x) {
         this.itemObject = itemObject;
@@ -70,7 +70,7 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the missile object
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ItemObject getItemObject() {
         return itemObject;
@@ -78,7 +78,7 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return whether the player sees the missile
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isSeen() {
         return seen;
@@ -86,7 +86,7 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the current row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getY() {
         return y;
@@ -94,7 +94,7 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the current column
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getX() {
         return x;

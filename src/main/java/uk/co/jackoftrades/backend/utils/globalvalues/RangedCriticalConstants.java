@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -32,81 +32,81 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * constants loader; {@link #setValue(String)} decodes one {@code name:value}
  * line and routes it to the matching setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class RangedCriticalConstants {
     /**
      * The data-file group tag this class consumes ({@code ranged-critical}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String tag = "ranged-critical";
 
     /**
      * To-hit added when calculating critical chance against a debuffed target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int debuffToh;
     /**
      * Scale applied to missile weight in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceWeightScale;
     /**
      * Scale applied to the overall to-hit value in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceTohScale;
     /**
      * Scale applied to player level in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceLevelScale;
     /**
      * Scale applied to the to-hit skill when firing from a launcher (bow/sling).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceLaunchedTohSkill;
     /**
      * Scale applied to the to-hit skill when throwing an object.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceThrownTohSkillScale;
     /**
      * Flat offset added to the computed critical chance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceOffset;
     /**
      * Denominator/range over which the critical chance is evaluated (should be a multiple of 100).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceRange;
     /**
      * Scale applied to missile weight when computing critical power (severity).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerWeightScale;
     /**
      * Maximum of the random term added to critical power.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerRandom;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -117,7 +117,7 @@ public class RangedCriticalConstants {
      * @param value the raw {@code name:value} token from {@code constants.txt}
      * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
      *                                      cannot be parsed, or the name is unrecognised
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String name;
@@ -211,7 +211,7 @@ public class RangedCriticalConstants {
      * Store the debuff to-hit bonus. Accepted without validation.
      *
      * @param debuffToh the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setDebuffToh(int debuffToh) {
         // No tests - run this through without checks
@@ -233,7 +233,7 @@ public class RangedCriticalConstants {
      * Store the weight scale for critical chance. Accepted without validation.
      *
      * @param chanceWeightScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceWeightScale(int chanceWeightScale) {
         // No checks pass this straight through
@@ -255,7 +255,7 @@ public class RangedCriticalConstants {
      * Store the to-hit scale for critical chance. Accepted without validation.
      *
      * @param chanceTohScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceTohScale(int chanceTohScale) {
         // No checks - pass straight through
@@ -277,7 +277,7 @@ public class RangedCriticalConstants {
      * Store the player-level scale for critical chance. Accepted without validation.
      *
      * @param chanceLevelScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceLevelScale(int chanceLevelScale) {
         // No checks - pass straight through
@@ -301,7 +301,7 @@ public class RangedCriticalConstants {
      * Store the launched (launcher) to-hit-skill scale. Accepted without validation.
      *
      * @param chanceLaunchedTohSkill the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceLaunchedTohSkill(int chanceLaunchedTohSkill) {
         // No checks - pass the value straight through
@@ -323,7 +323,7 @@ public class RangedCriticalConstants {
      * Store the thrown to-hit-skill scale. Accepted without validation.
      *
      * @param chanceThrownTohSkillScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceThrownTohSkillScale(int chanceThrownTohSkillScale) {
         // No checks - pass straight through
@@ -345,7 +345,7 @@ public class RangedCriticalConstants {
      * Store the flat critical-chance offset. Accepted without validation.
      *
      * @param chanceOffset the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceOffset(int chanceOffset) {
         // No checks - pass straight through
@@ -373,7 +373,7 @@ public class RangedCriticalConstants {
      * @param chanceRange the proposed range
      * @param name        the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code chanceRange < 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceRange(int chanceRange, String name) {
         if (chanceRange < 0) {
@@ -407,7 +407,7 @@ public class RangedCriticalConstants {
      * Store the weight scale for critical power. Accepted without validation.
      *
      * @param powerWeightScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerWeightScale(int powerWeightScale) {
         // No checks, just pass straight through
@@ -429,7 +429,7 @@ public class RangedCriticalConstants {
      * Store the random-power maximum. Accepted without validation.
      *
      * @param powerRandom the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerRandom(int powerRandom) {
         // No checks, pass straight through

@@ -36,13 +36,13 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterBaseReader implements Reader<MonsterBase> {
     /**
      * Logger used to report file-loading failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

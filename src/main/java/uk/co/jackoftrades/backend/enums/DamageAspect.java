@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.enums;
@@ -28,7 +28,7 @@ package uk.co.jackoftrades.backend.enums;
  * Mirrors the {@code aspect} enumeration used by {@code randcalc()} in the
  * original C source ({@code src/z-rand.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum DamageAspect {
     /**

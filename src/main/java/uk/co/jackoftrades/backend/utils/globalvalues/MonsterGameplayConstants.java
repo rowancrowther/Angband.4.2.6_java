@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -31,49 +31,49 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * of the C constants loader; {@link #setValue(String)} decodes one
  * {@code name:value} line and routes it to a validating setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterGameplayConstants {
     /**
      * The data-file group tag this class consumes ({@code mon-play}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String constantsTag = "mon-play";
     /**
      * Resistance of a glyph of protection to being broken by a monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int glyphHardness;
     /**
      * Breeding-rate control; higher values mean slower monster reproduction.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int reproMonsterRate;
     /**
      * Percentage of the player's experience drained per life-drain hit.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int lifeDrainPercent;
     /**
      * Distance out of the player's sight that terrified monsters will run.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int fleeRange;
     /**
      * Distance from the player at which a slower terrified monster turns to fight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int turnRange;
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -143,7 +143,7 @@ public class MonsterGameplayConstants {
      * @param value the proposed hardness
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setGlyphHardness(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -175,7 +175,7 @@ public class MonsterGameplayConstants {
      * @param value the proposed rate
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setReproMonsterRate(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -204,7 +204,7 @@ public class MonsterGameplayConstants {
      * @param value the proposed percentage
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setLifeDrainPercent(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -233,7 +233,7 @@ public class MonsterGameplayConstants {
      * @param value the proposed range
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setFleeRange(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -262,7 +262,7 @@ public class MonsterGameplayConstants {
      * @param value the proposed range
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setTurnRange(int value, String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {

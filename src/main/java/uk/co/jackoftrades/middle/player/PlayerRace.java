@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -43,7 +43,7 @@ import java.util.Map;
  * keeps all of a race's contributions on a single value object — loaded once from data, then
  * only read.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class PlayerRace {
     /**

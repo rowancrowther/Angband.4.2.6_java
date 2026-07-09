@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -27,7 +27,7 @@ import org.jetbrains.annotations.Contract;
  * kind flags ({@code src/list-kind-flags.h}); the constants are self-describing
  * and documented collectively here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ObjectKindFlag {
     KF_NONE(""),
@@ -57,7 +57,7 @@ public enum ObjectKindFlag {
     /**
      * Optional descriptive string associated with the flag (often empty).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String flag;
 
@@ -65,7 +65,7 @@ public enum ObjectKindFlag {
      * Bind a kind flag to its descriptive string.
      *
      * @param flag the descriptive string
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     ObjectKindFlag(String flag) {
@@ -74,7 +74,7 @@ public enum ObjectKindFlag {
 
     /**
      * @return this flag's descriptive string
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getFlag() {

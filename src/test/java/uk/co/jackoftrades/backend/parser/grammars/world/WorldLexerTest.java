@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * imported {@code CommentsAndEol} comment/EOL rules being skipped (so CRLF gamedata tokenises clean
  * — C9).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class WorldLexerTest {
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -25,43 +25,43 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
  * appear, and a dice expression for how many. This is the Java port of the C
  * original's {@code struct monster_friends} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterFriends {
     /**
      * The name of the companion race (resolved to {@link #race} after loading).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The resolved companion race.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace race;
     /**
      * The group role the companions take.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
     /**
      * Percentage chance the companions appear.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int percentChance;
     /**
      * Number of dice for the companion count.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numberDice;
     /**
      * Sides per die for the companion count.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numberSides;
 
@@ -73,7 +73,7 @@ public class MonsterFriends {
      * @param percentChance appearance chance
      * @param numberDice    dice for the count
      * @param numberSides   sides per die for the count
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterFriends(String name, MonsterGroupRole role, int percentChance, int numberDice,
                           int numberSides) {
@@ -88,7 +88,7 @@ public class MonsterFriends {
      * Set the resolved companion race.
      *
      * @param race the companion race
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setRace(MonsterRace race) {
         this.race = race;

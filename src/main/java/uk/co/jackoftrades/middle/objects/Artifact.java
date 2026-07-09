@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -34,64 +34,64 @@ import java.util.Map;
  * activation, and allocation parameters. This is the Java port of the C
  * original's {@code struct artifact} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Artifact {
     /**
      * The artifact's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
 
     /**
      * Index in the global artifact table.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int index;
 
     /**
      * The base item type value (tval) the artifact is built on.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
      * The base sub-type value (sval).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String sValue;
 
     /**
      * To-hit bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int toHit;
     /**
      * To-damage bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int toDam;
     /**
      * To-armour-class bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int toAC;
     /**
      * Base armour class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ac;
 
@@ -100,106 +100,106 @@ public class Artifact {
     /**
      * Damage dice expression as a string.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String diceString;
 
     /**
      * Weight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Cost/value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cost;
 
     /**
      * Object flags this artifact grants.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
 
     /**
      * Numeric modifiers granted, keyed by modifier.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
      * Per-element relation info.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Brands the artifact carries.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Brand> brands;
     /**
      * Slays the artifact carries.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Slay> slays;
     /**
      * Curses the artifact carries, each with its instance data.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Map<Curse, CurseData>> curses;
 
     /**
      * The artifact's native level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int level;
 
     /**
      * Allocation probability weight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int allocProb;
     /**
      * Minimum allocation depth.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int allocMin;
     /**
      * Maximum allocation depth.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int allocMax;
 
     /**
      * The artifact's activation, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Activation activation;
     /**
      * Message shown when the activation is used.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String activationMessage;
 
     /**
      * Recharge time for the activation, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random time;
 
@@ -230,7 +230,7 @@ public class Artifact {
      * @param activation        activation, if any
      * @param activationMessage activation message
      * @param time              recharge-time dice string
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Artifact(String name, String text, int index, TValue tValue, String sValue, int toHit, int toDam, int toAC,
                     int ac, String diceString, int weight, int cost, Flag<ObjectFlag> flags, Map<ObjectModifier,

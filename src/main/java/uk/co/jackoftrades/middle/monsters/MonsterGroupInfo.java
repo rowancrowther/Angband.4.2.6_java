@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -24,19 +24,19 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
  * the {@link MonsterGroupRole} it plays. This is the Java port of the C
  * original's {@code struct monster_group_info} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterGroupInfo {
     /**
      * The index of the group this monster belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int index;
     /**
      * The role this monster plays in its group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -26,13 +26,13 @@ import java.util.List;
  * (so it looks like an item until disturbed). This is the Java port of the C
  * original's {@code struct monster_mimic} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterMimic {
     /**
      * The object kinds this monster can mimic.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<ObjectKind> kinds;
 
@@ -40,7 +40,7 @@ public class MonsterMimic {
      * Build a mimic entry from its allowed object kinds.
      *
      * @param kinds the object kinds the monster can mimic
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterMimic(List<ObjectKind> kinds) {
         this.kinds = kinds;

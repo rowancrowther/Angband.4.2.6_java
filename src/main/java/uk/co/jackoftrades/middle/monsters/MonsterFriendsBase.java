@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -26,37 +26,37 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
  * the Java port of the C original's {@code struct monster_friends_base}
  * ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterFriendsBase {
     /**
      * The companion monster base type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterBase base;
     /**
      * The group role the companions take.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
     /**
      * Percentage chance the companions appear.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int percentChance;
     /**
      * Number of dice for the companion count.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numberDice;
     /**
      * Sides per die for the companion count.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numberSides;
 
@@ -68,7 +68,7 @@ public class MonsterFriendsBase {
      * @param percentChance appearance chance
      * @param numberDice    dice for the count
      * @param numberSides   sides per die for the count
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterFriendsBase(MonsterBase base, MonsterGroupRole role, int percentChance, int numberDice,
                               int numberSides) {

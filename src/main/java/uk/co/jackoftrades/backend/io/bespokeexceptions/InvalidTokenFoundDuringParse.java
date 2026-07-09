@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.io.bespokeexceptions;
@@ -28,13 +28,13 @@ import org.apache.logging.log4j.Logger;
  * logged on construction so the failure is recorded even if the stack trace is
  * swallowed higher up.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class InvalidTokenFoundDuringParse extends RuntimeException {
     /**
      * Logger used to record the failure as soon as the exception is built.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 
@@ -42,7 +42,7 @@ public class InvalidTokenFoundDuringParse extends RuntimeException {
      * Build the exception, logging the supplied message immediately.
      *
      * @param message description of the offending token / parse failure
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public InvalidTokenFoundDuringParse(String message) {
         super(message);

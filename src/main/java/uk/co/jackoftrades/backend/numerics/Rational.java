@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.numerics;
@@ -32,19 +32,19 @@ import java.util.Objects;
  * equal values share a single canonical representation and never balloon into
  * huge numerator/denominator pairs.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Rational {
     /**
      * The denominator; kept positive and coprime with the numerator after {@link #simplify()}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int denominator;
     /**
      * The numerator; carries the sign of the fraction after {@link #simplify()}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numerator;
 

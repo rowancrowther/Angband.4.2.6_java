@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -49,70 +49,70 @@ import java.util.stream.Stream;
  * {@code struct chunk} ({@code src/cave.h}), which represents both the live cave
  * and the player's remembered copy of it.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Chunk {
     /**
      * Logger used to report out-of-bounds access and similar errors.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The chunk's name (e.g. the level/vault it represents).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The game turn this chunk was generated/last updated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int turn;
     /**
      * The dungeon depth (level) of this chunk.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int depth;
 
     /**
      * The level feeling value (how dangerous/rewarding the level feels).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int feeling;
     /**
      * Accumulated rating of the objects on this level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int objectRating;
     /**
      * Accumulated rating of the monsters on this level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monsterRating;
     /**
      * Whether the level contains a notably good item.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean goodItem;
 
     /**
      * Level height in rows.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int height;
     /**
      * Level width in columns.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int width;
 
@@ -120,96 +120,96 @@ public class Chunk {
     /**
      * How many feeling squares the player has visited so far.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int feelingSquares;
     /**
      * Count of grids carrying each terrain-feature flag (used for level feeling).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private HashMap<TerrainFeatureFlags, Integer> featCount;
 
     /**
      * The grid of squares, indexed {@code [x][y]}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Square[][] squares;
     /**
      * Noise flow map used for monster pathfinding toward sound.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Heatmap noise;
     /**
      * Scent flow map used for monsters that track by smell.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Heatmap scent;
     /**
      * Location of the player's decoy, if one is placed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc decoy;
 
     /**
      * Master list of all objects in this chunk.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Pile objectPile; // Should this be ItemObject[][] objects?
     /**
      * Highest object index in use.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int objMax;
 
     /**
      * The monsters present in this chunk, indexed by monster index.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Monster[] monsters;
     /**
      * Capacity of the {@link #monsters} array (maximum monster index).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monMax;
     /**
      * Current count of live monsters.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monCnt;
     /**
      * Index of the monster currently being processed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monCurrent;
     /**
      * Number of breeding monsters currently on the level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numRepro;
 
     /**
      * The monster groups (packs) on this level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<MonsterGroup> monsterGroups;
 
     /**
      * Connection points used when stitching this chunk into a larger level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Connector> join;
 
@@ -233,7 +233,7 @@ public class Chunk {
      * @param monCnt         live monster count
      * @param monCurrent     index of the monster being processed
      * @param numRepro       number of breeding monsters
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,

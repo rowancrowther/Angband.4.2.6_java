@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * error-path tests build minimal fixtures injecting a single defect each. The reader is fail-closed:
  * any error yields an empty item list plus the collected errors.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ProjectionReaderTest {
 

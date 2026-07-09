@@ -166,7 +166,7 @@ public class Effect {
 //     * Set this effect's typed sub-type payload.
 //     *
 //     * @param value the sub-type payload to store
-//     * @author ClaudeCode
+//     * @author Rowan Crowther
 //     */
 //    public void setWrapperValue(EffectSubTypeWrapper value) {
 //        this.value = value;
@@ -220,7 +220,7 @@ public class Effect {
 //     *
 //     * @param y target row offset
 //     * @param x target column offset
-//     * @author ClaudeCode
+//     * @author Rowan Crowther
 //     */
 //    public void setYX(int y, int x) {
 //        this.y = y;
@@ -245,7 +245,7 @@ public class Effect {
 //     * Set the unparsed dice string for this effect's magnitude.
 //     *
 //     * @param diceString the dice expression string
-//     * @author ClaudeCode
+//     * @author Rowan Crowther
 //     */
 //    public void setDice(String diceString) {
 //        this.diceString = diceString;

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.magic;
@@ -30,43 +30,43 @@ import java.util.List;
  * dungeon-only book, and the spells it contains. This is the Java port of the C
  * original's class spellbook data.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MagicBook {
     /**
      * The object kind (item) that represents this book in the game.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectKind bookType;
     /**
      * The book's display name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String bookName;
     /**
      * Whether this is a dungeon-only book (not sold in town).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean dungeon;
     /**
      * The number of spells the book holds.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numOfSpells;
     /**
      * The magic realm this book's spells belong to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MagicRealm realm;
     /**
      * The spells contained in this book.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MagicSpell> spells;
 
@@ -78,7 +78,7 @@ public class MagicBook {
      * @param bookName    the book's name
      * @param numOfSpells the declared number of spells
      * @param realm       the magic realm
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public MagicBook(ObjectKind bookType, boolean dungeon, String bookName, int numOfSpells, MagicRealm realm) {
@@ -94,7 +94,7 @@ public class MagicBook {
      * Add a spell to this book.
      *
      * @param spell the spell to add
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void addSpell(MagicSpell spell) {
         spells.add(spell);
@@ -102,7 +102,7 @@ public class MagicBook {
 
     /**
      * @return the declared number of spells in this book
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -112,7 +112,7 @@ public class MagicBook {
 
     /**
      * @return the book's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getBookName() {
         return bookName;
@@ -120,7 +120,7 @@ public class MagicBook {
 
     /**
      * @return the object kind backing this book
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectKind getBookKind() {
         return bookType;
@@ -130,7 +130,7 @@ public class MagicBook {
      * Set the object kind backing this book.
      *
      * @param bookType the object kind
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setBookKind(ObjectKind bookType) {
         this.bookType = bookType;
@@ -138,7 +138,7 @@ public class MagicBook {
 
     /**
      * @return whether this is a dungeon-only book
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isDungeon() {
         return dungeon;

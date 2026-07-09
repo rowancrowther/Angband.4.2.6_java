@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -30,7 +30,7 @@ import org.apache.logging.log4j.Logger;
  * <p><b>Status:</b> currently a stub — only the logger is in place while the history system is
  * being ported.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class PlayerHistory {
     /**

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -31,130 +31,130 @@ import java.util.Map;
  * player has learned. This is the Java port of the C original's
  * {@code struct monster_lore} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterLore {
     /**
      * Number of times the monster has been seen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sightings;
     /**
      * Number of times this monster has killed the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int deaths;
     /**
      * Number of player kills of this monster (this life).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int pkills;
     /**
      * Number of times the monster has stolen from the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int thefts;
     /**
      * Total kills of this monster across all lives.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int tkills;
     /**
      * Observed wake-up behaviour counter.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int wake;
     /**
      * Observed "ignore the player" behaviour counter.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ignore;
     /**
      * Number of times observed dropping gold.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int dropGold;
     /**
      * Number of times observed dropping items.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int dropItem;
     /**
      * Number of innate attacks observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int caseInnate;
     /**
      * Number of spells observed cast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int castSpell;
 
     /**
      * The base type the lore relates to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterBase monsterBase;
     /**
      * The blows the player has observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterBlow> blows;
     /**
      * The race flags the player has learned.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flags;
     /**
      * The spell flags the player has learned.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterSpell> spellFlags;
 
     /**
      * Drops the player has observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterDrop> drops;
     /**
      * Companion races the player has observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterFriends> friends;
     /**
      * Companion base types the player has observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterFriendsBase> friendsBase;
     /**
      * Mimic kinds the player has observed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterMimic> mimicKinds;
 
     /**
      * How many times each blow has been observed (drives blow-damage lore).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<MonsterBlow, Integer> timeBlowsSeen;
 
@@ -180,7 +180,7 @@ public class MonsterLore {
      * @param mimicKinds    observed mimic kinds
      * @param timeBlowsSeen per-blow observation counts
      * @param monsterBase   the related base type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterLore(int sightings, int deaths, int pkills, int thefts, int tkills, int wake, int ignore,
                        int dropGold, int dropItem, int caseInnate, int castSpell,

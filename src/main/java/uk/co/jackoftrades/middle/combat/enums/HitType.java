@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.combat.enums;
@@ -22,19 +22,21 @@ package uk.co.jackoftrades.middle.combat.enums;
  * "good hit"/"great hit"/… message and damage multiplier. Ordered from least to
  * most powerful, mirroring the critical message tiers of the C original.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum HitType {
     /**
-     * A good critical hit. @author ClaudeCode
+     * A good critical hit. @author Rowan Crowther
      */
     HIT_GOOD,
-    /** A great critical hit. @author ClaudeCode */
+    /**
+     * A great critical hit. @author Rowan Crowther
+     */
     HIT_GREAT,
-    /** A superb critical hit. @author ClaudeCode */
+    /** A superb critical hit. @author Rowan Crowther */
     HIT_SUPERB,
-    /** A very high "great" critical hit. @author ClaudeCode */
+    /** A very high "great" critical hit. @author Rowan Crowther */
     HIT_HI_GREAT,
-    /** The highest "superb" critical hit. @author ClaudeCode */
+    /** The highest "superb" critical hit. @author Rowan Crowther */
     HIT_HI_SUPERB
 }

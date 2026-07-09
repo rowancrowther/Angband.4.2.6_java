@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -34,52 +34,52 @@ public class Pile {
     /**
      * Logger used to report pile integrity failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
     /**
      * The backing LIFO list of items.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<ItemObject> pile;
 
     /**
      * Diagnostic snapshot of the pile that triggered an integrity failure.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ArrayList<ItemObject> failPile;
     /**
      * Diagnostic snapshot of the object list around a failure.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ArrayList<ItemObject> failObject;
     /**
      * Index of the offending object within {@link #failObject}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int failObjectIndex;
 
     /**
      * Source file recorded for an integrity failure (legacy; see {@link #integrityFail}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static String failFile;
     /**
      * Source line recorded for an integrity failure (legacy).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int failLine;
 
     /**
      * Build an empty pile.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Pile() {
         pile = new ArrayList<>();
@@ -284,7 +284,7 @@ public class Pile {
     /**
      * Test-only helper that empties the pile.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @TestOnly
     public void clear() {

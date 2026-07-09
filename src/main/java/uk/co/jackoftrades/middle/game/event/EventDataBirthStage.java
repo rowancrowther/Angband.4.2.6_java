@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -25,49 +25,49 @@ import java.util.ArrayList;
  * pick from, the default selection, and any extra stage-specific data. Drives the
  * birth UI.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataBirthStage implements GameEventData {
     /**
      * Whether this stage resets earlier choices.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean reset;
     /**
      * A hint prompting the player for this stage's decision.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String hint;
     /**
      * The number of choices available at this stage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int nChoices;
     /**
      * The index of the initially selected choice.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int initialChoice;
     /**
      * The selectable choices for this stage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<String> choices;
     /**
      * Help text for each choice (parallel to {@link #choices}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<String> helpTexts;
     /**
      * Extra stage-specific data, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Object xtra;
 
@@ -81,7 +81,7 @@ public class EventDataBirthStage implements GameEventData {
      * @param choices       the choices
      * @param helpTexts     per-choice help text
      * @param xtra          extra stage-specific data
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataBirthStage(boolean reset,
                                String hint,
@@ -101,7 +101,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return whether this stage resets earlier choices
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isReset() {
         return reset;
@@ -109,7 +109,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the prompt hint
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getHint() {
         return hint;
@@ -117,7 +117,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the number of choices
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getnChoices() {
         return nChoices;
@@ -125,7 +125,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the default-selected choice index
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getInitialChoice() {
         return initialChoice;
@@ -133,7 +133,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the selectable choices
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ArrayList<String> getChoices() {
         return choices;
@@ -141,7 +141,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the per-choice help text
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ArrayList<String> getHelpTexts() {
         return helpTexts;
@@ -149,7 +149,7 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the extra stage-specific data
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Object getXtra() {
         return xtra;

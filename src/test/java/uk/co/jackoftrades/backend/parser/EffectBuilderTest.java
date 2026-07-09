@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * effect type, which must surface as an {@link IllegalArgumentException} (the exception the
  * reader catches per record to report file + line).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class EffectBuilderTest {
 

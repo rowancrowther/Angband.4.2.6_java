@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -34,108 +34,108 @@ import java.util.Objects;
  * {@link Trap} instances referring back to a {@code TrapKind}. This is the Java
  * port of the C original's {@code struct trap_kind} ({@code src/trap.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class TrapKind {
     /**
      * The trap type's internal name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String trapKindName;
     /**
      * The trap's display text/title.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
     /**
      * Human-readable description of the trap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
     /**
      * Message shown when the player saves against (avoids) the trap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String messageOnSave;
     /**
      * Message shown when the player fails to avoid the trap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String messageOnFailure;
     /**
      * Message shown when the trap's extra effect fires.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String messageOnExtraEffect;
 
     /**
      * This trap type's index in the global trap-kind table.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int trapKindIndex;
 
     /**
      * The glyph and colour used to draw this trap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter angbandDisplayCharacter;
 
     /**
      * Rarity weighting controlling how often this trap is chosen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int rarity;
     /**
      * Shallowest dungeon level this trap can appear on.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int minDepth;
     /**
      * Deepest dungeon level this trap can appear on.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int maxDepth;
     /**
      * The trap's power, as a dice/random expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random power;
 
     /**
      * Behavioural flags for this trap type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<TrapEnum> flags;
     /**
      * Object flags that grant a saving throw against this trap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> saveFlags;
 
     /**
      * The primary effect applied when the trap triggers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Effect effect;
     /**
      * An optional secondary ("extra") effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Effect effectXtra;
 
@@ -158,7 +158,7 @@ public class TrapKind {
      * @param saveFlags               object flags granting a save
      * @param effect                  primary effect
      * @param effectXtra              optional secondary effect
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TrapKind(String trapKindName, String text, String description, String messageOnSave,
                     String messageOnFailure, String messageOnExtraEffect, int trapKindIndex,
@@ -185,7 +185,7 @@ public class TrapKind {
 
     /**
      * @return this trap type's human-readable description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;
@@ -196,7 +196,7 @@ public class TrapKind {
      *
      * @param description the trap description to match
      * @return the matching trap kind
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static TrapKind lookupTrap(String description) {
         return GameConstants.lookupTrap(description);
@@ -208,7 +208,7 @@ public class TrapKind {
      *
      * @param o the object to compare against
      * @return true if {@code o} is an equivalent {@code TrapKind}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object o) {
@@ -222,7 +222,7 @@ public class TrapKind {
      * Hash code consistent with {@link #equals(Object)}, combining all fields.
      *
      * @return this trap kind's hash code
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public int hashCode() {

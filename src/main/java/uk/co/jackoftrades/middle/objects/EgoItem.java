@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -32,192 +32,192 @@ import java.util.Map;
  * This is the Java port of the C original's {@code struct ego_item}
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EgoItem {
     /**
      * The ego type's name (e.g. "of Slaying").
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
     /**
      * The item type this ego applies to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue type;
 
     /**
      * Index in the global ego-item table.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int egoIndex;
 
     /**
      * Added cost, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random cost;
 
     /**
      * Object flags this ego adds.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
      * Object flags this ego removes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flagsOff;
     /**
      * Kind flags this ego adds.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFLags;
     /**
      * Kind flags this ego removes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFLagsOff;
 
     /**
      * Modifiers this ego grants, as dice expressions.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Random> modifiers;
     /**
      * Minimum guaranteed values for the granted modifiers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Random> minModifiers;
     /**
      * Per-element relation info added by this ego.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Brands this ego adds (intrinsic flag).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Brand, Boolean> brands;
     /**
      * Slays this ego adds (intrinsic flag).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Slay, Boolean> slays;
     /**
      * Curses this ego adds, with their power.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<CurseData, Integer> curses;
 
     /**
      * Level-feeling rating contribution, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random rating;
     /**
      * Allocation probability, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random allocProb;
     /**
      * Minimum allocation depth.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int allocMin;
     /**
      * Maximum allocation depth.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int allocMax;
 
     /**
      * The base object kinds this ego may be applied to, keyed by type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<TValue, ObjectKind> possItems;
 
     /**
      * To-hit bonus range, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toHit;
     /**
      * To-damage bonus range, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toDam;
     /**
      * To-armour-class bonus range, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toAC;
 
     /**
      * Minimum guaranteed to-hit bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random minToHit;
     /**
      * Minimum guaranteed to-damage bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random minToDam;
     /**
      * Minimum guaranteed to-armour-class bonus.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random minToAC;
 
     /**
      * An activation this ego grants, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Activation activation;
     /**
      * Recharge time for the activation, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random time;
 
     /**
      * Whether the player has ever seen this ego type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean everSeen;
 
@@ -252,7 +252,7 @@ public class EgoItem {
      * @param activation   granted activation
      * @param time         activation recharge time
      * @param everSeen     whether ever seen
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EgoItem(String name, TValue type, int egoIndex,
                    Random cost, Flag<ObjectFlag> flags,

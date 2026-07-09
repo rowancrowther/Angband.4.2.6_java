@@ -57,6 +57,11 @@ options { tokenVocab = EffectBlockLexer; }
  */
 effect
         returns[String type, String wrapper, String radius, String other]
+        @init {
+            $wrapper = "";
+            $radius = "";
+            $other = "";
+        }
         :   EFFECT t=UCASE {
                 $type = $t.getText();
             }
@@ -121,6 +126,10 @@ dice
             String charHolder = "";
             String baseHolder = "";
             String operHolder = "";
+            $diceString = "";
+            $exprChar = "";
+            $baseName = "";
+            $operation = "";
         }
         @after {
             $exprChar  = charHolder;
@@ -203,11 +212,16 @@ effectMsg
 effectBlock
         returns[String typeInit, String subtypeWrapperInit, String radius, String other,
                 String diceString, String yVal, String xVal, String expressionChars, String expressionBase,
-                String expressionOperation, String timeDiceString, String effectMessage]
+                String expressionOperation, String timeDiceString, String effectMessage, int lineNo]
         @init {
             String expressionString = "";
             String baseString = "";
             String opString = "";
+            $diceString = "";
+            $timeDiceString = "";
+            $yVal = "";
+            $xVal = "";
+            $effectMessage = "";
         }
         @after {
             $expressionChars = expressionString;
@@ -215,6 +229,7 @@ effectBlock
             $expressionOperation = opString;
         }
         :   effect {
+                $lineNo = $start.getLine();
                 $typeInit = $effect.type;
                 $subtypeWrapperInit = $effect.wrapper;
                 $radius = $effect.radius;

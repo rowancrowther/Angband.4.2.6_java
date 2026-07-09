@@ -28,7 +28,7 @@ import java.util.List;
  * messages. This is the Java port of the C original's {@code struct activation}
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Activation {
     /**

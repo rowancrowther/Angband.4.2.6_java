@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -24,13 +24,13 @@ package uk.co.jackoftrades.middle.cave;
  * struct ({@code src/cave.h}); higher-level flow code fills and reads {@link
  * #grids}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Heatmap {
     /**
      * Per-grid scalar values, indexed {@code [y][x]}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int[][] grids;
 }

@@ -37,7 +37,7 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ProjectionReader implements Reader<Projection> {
     /**

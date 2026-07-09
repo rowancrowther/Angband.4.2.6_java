@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.effect;
@@ -39,99 +39,102 @@ import java.security.InvalidParameterException;
  * discriminator, and a typed getter that throws if the discriminator does not
  * match — so a mismatched read fails loudly rather than returning a stale value.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EffectSubTypeWrapper {
     /**
      * Logger used to report mismatched-subtype access.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The discriminator: which of the payload fields below is currently live.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EffectSubTypeEnum subType;
+
+
+    private Object nullValue;
 
     /**
      * Payload for {@code EST_PROJ}: the projection type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ProjectionEnum projectionWrapper;
     /**
      * Payload for {@code EST_TMD}: the player timed effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TimedEffect timedWrapper;
     /**
      * Payload for {@code EST_NOURISH}: the nourishment mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EffectNourish nourishWrapper;
     /**
      * Payload for {@code EST_MON_TMD}: the monster timed effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonTimed monTimedWrapper;
     /**
      * Payload for {@code EST_SUMMON}: the summon descriptor.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Summon summonWrapper;
     /**
      * Payload for {@code EST_SUMMON_SPEC}: the specific summon category.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private SummonType summonTypeWrapper;
     /**
      * Payload for {@code EST_STAT}: the affected stat.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Stats statsWrapper;
     /**
      * Payload for {@code EST_ENCHANT}: the enchant mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EffectEnchant enchantWrapper;
     /**
      * Payload for {@code EST_SHAPECHANGE}: the target shape.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private PlayerShape shapeWrapper;
     /**
      * Payload for {@code EST_EARTHQUAKE}: the earthquake targeting mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Earthquake quakeWrapper;
     /**
      * Payload for {@code EST_GLYPH}: the glyph type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private GlyphType glyphType;
     /**
      * Payload for {@code EST_TELEPORT}: the teleport mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TeleportEnum teleportWrapper;
     /**
      * Payload for {@code EST_TELEPORT_TO}: the teleport-to mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TeleportEnum teleportToWrapper;
 
@@ -140,7 +143,7 @@ public class EffectSubTypeWrapper {
      *
      * @param teleportWrapper the teleport mode
      * @param to              true for a "teleport-to" payload, false for plain teleport
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(TeleportEnum teleportWrapper, boolean to) {
         this.setValue(teleportWrapper, to);
@@ -151,7 +154,7 @@ public class EffectSubTypeWrapper {
      *
      * @param teleportWrapper the teleport mode
      * @param to              true for {@code EST_TELEPORT_TO}, false for {@code EST_TELEPORT}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(TeleportEnum teleportWrapper, boolean to) {
         if (to) {
@@ -163,11 +166,21 @@ public class EffectSubTypeWrapper {
         }
     }
 
+    public EffectSubTypeWrapper(EffectSubTypeEnum subType) {
+        if (subType == EffectSubTypeEnum.EST_NONE) {
+            this.subType = subType;
+            this.nullValue = null;
+        } else {
+            this.subType = null;
+            this.nullValue = null;
+        }
+    }
+
     /**
      * Create a glyph-payload wrapper.
      *
      * @param glyphType the glyph type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(GlyphType glyphType) {
         this.glyphType = glyphType;
@@ -178,7 +191,7 @@ public class EffectSubTypeWrapper {
      * Store a glyph payload and set the {@code EST_GLYPH} discriminator.
      *
      * @param glyphWrapper the glyph type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(GlyphType glyphWrapper) {
         this.glyphType = glyphWrapper;
@@ -189,7 +202,7 @@ public class EffectSubTypeWrapper {
      * Create an earthquake-payload wrapper.
      *
      * @param quakeWrapper the earthquake targeting mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(Earthquake quakeWrapper) {
         setValue(quakeWrapper);
@@ -199,7 +212,7 @@ public class EffectSubTypeWrapper {
      * Store an earthquake payload and set the {@code EST_EARTHQUAKE} discriminator.
      *
      * @param quakeWrapper the earthquake targeting mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(Earthquake quakeWrapper) {
         this.quakeWrapper = quakeWrapper;
@@ -210,7 +223,7 @@ public class EffectSubTypeWrapper {
      * Create a shapechange-payload wrapper.
      *
      * @param shapeWrapper the target shape
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(PlayerShape shapeWrapper) {
         setValue(shapeWrapper);
@@ -220,7 +233,7 @@ public class EffectSubTypeWrapper {
      * Store a shape payload and set the {@code EST_SHAPECHANGE} discriminator.
      *
      * @param shapeWrapper the target shape
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(PlayerShape shapeWrapper) {
         this.shapeWrapper = shapeWrapper;
@@ -231,7 +244,7 @@ public class EffectSubTypeWrapper {
      * Create an enchant-payload wrapper.
      *
      * @param enchantWrapper the enchant mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(EffectEnchant enchantWrapper) {
         setValue(enchantWrapper);
@@ -241,7 +254,7 @@ public class EffectSubTypeWrapper {
      * Store an enchant payload and set the {@code EST_ENCHANT} discriminator.
      *
      * @param enchantWrapper the enchant mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(EffectEnchant enchantWrapper) {
         this.enchantWrapper = enchantWrapper;
@@ -252,7 +265,7 @@ public class EffectSubTypeWrapper {
      * Create a stat-payload wrapper.
      *
      * @param statsWrapper the affected stat
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(Stats statsWrapper) {
         setValue(statsWrapper);
@@ -262,7 +275,7 @@ public class EffectSubTypeWrapper {
      * Store a stat payload and set the {@code EST_STAT} discriminator.
      *
      * @param stat the affected stat
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(Stats stat) {
         this.statsWrapper = stat;
@@ -273,7 +286,7 @@ public class EffectSubTypeWrapper {
      * Create a summon-payload wrapper.
      *
      * @param summonWrapper the summon descriptor
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(Summon summonWrapper) {
         setValue(summonWrapper);
@@ -283,7 +296,7 @@ public class EffectSubTypeWrapper {
      * Store a summon payload and set the {@code EST_SUMMON} discriminator.
      *
      * @param summonWrapper the summon descriptor
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(Summon summonWrapper) {
         this.summonWrapper = summonWrapper;
@@ -294,7 +307,7 @@ public class EffectSubTypeWrapper {
      * Create a specific-summon-payload wrapper.
      *
      * @param summonTypeWrapper the specific summon category
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(SummonType summonTypeWrapper) {
         setValue(summonTypeWrapper);
@@ -304,7 +317,7 @@ public class EffectSubTypeWrapper {
      * Store a specific-summon payload and set the {@code EST_SUMMON_SPEC} discriminator.
      *
      * @param summonTypeWrapper the specific summon category
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(SummonType summonTypeWrapper) {
         this.summonTypeWrapper = summonTypeWrapper;
@@ -315,7 +328,7 @@ public class EffectSubTypeWrapper {
      * Create a monster-timed-effect-payload wrapper.
      *
      * @param monTimedWrapper the monster timed effect
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(MonTimed monTimedWrapper) {
         setValue(monTimedWrapper);
@@ -325,7 +338,7 @@ public class EffectSubTypeWrapper {
      * Store a monster-timed payload and set the {@code EST_MON_TMD} discriminator.
      *
      * @param monTimedWrapper the monster timed effect
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(MonTimed monTimedWrapper) {
         this.monTimedWrapper = monTimedWrapper;
@@ -336,7 +349,7 @@ public class EffectSubTypeWrapper {
      * Create a nourish-payload wrapper.
      *
      * @param nourishWrapper the nourishment mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(EffectNourish nourishWrapper) {
         setValue(nourishWrapper);
@@ -346,7 +359,7 @@ public class EffectSubTypeWrapper {
      * Store a nourish payload and set the {@code EST_NOURISH} discriminator.
      *
      * @param effectNourish the nourishment mode
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(EffectNourish effectNourish) {
         this.nourishWrapper = effectNourish;
@@ -357,7 +370,7 @@ public class EffectSubTypeWrapper {
      * Create a projection-payload wrapper.
      *
      * @param projectionWrapper the projection type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(ProjectionEnum projectionWrapper) {
         setValue(projectionWrapper);
@@ -367,7 +380,7 @@ public class EffectSubTypeWrapper {
      * Store a projection payload and set the {@code EST_PROJ} discriminator.
      *
      * @param projectionWrapper the projection type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(ProjectionEnum projectionWrapper) {
         this.projectionWrapper = projectionWrapper;
@@ -378,7 +391,7 @@ public class EffectSubTypeWrapper {
      * Create a timed-effect-payload wrapper.
      *
      * @param timedWrapper the player timed effect
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeWrapper(TimedEffect timedWrapper) {
         setValue(timedWrapper);
@@ -388,7 +401,7 @@ public class EffectSubTypeWrapper {
      * Store a timed-effect payload and set the {@code EST_TMD} discriminator.
      *
      * @param timedWrapper the player timed effect
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValue(TimedEffect timedWrapper) {
         this.timedWrapper = timedWrapper;
@@ -397,7 +410,7 @@ public class EffectSubTypeWrapper {
 
     /**
      * @return the discriminator indicating which payload is currently live
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectSubTypeEnum getSubType() {
         return subType;
@@ -409,7 +422,7 @@ public class EffectSubTypeWrapper {
      * @param subType the expected sub-type (must be {@code EST_PROJ})
      * @return the stored projection type
      * @throws Exception if the live sub-type is not {@code EST_PROJ}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ProjectionEnum getProjectionWrapper(EffectSubTypeEnum subType) throws Exception {
         if (subType != EffectSubTypeEnum.EST_PROJ) {
@@ -425,7 +438,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored player timed effect
      * @throws Exception if the live sub-type is not {@code EST_TMD}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TimedEffect getTimedWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_TMD) {
@@ -441,7 +454,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored nourishment mode
      * @throws Exception if the live sub-type is not {@code EST_NOURISH}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectNourish getNourishWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_NOURISH) {
@@ -457,7 +470,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored monster timed effect
      * @throws Exception if the live sub-type is not {@code EST_MON_TMD}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonTimed getMonTimedWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_MON_TMD) {
@@ -473,7 +486,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored summon descriptor
      * @throws Exception if the live sub-type is not {@code EST_SUMMON}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Summon getSummonWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_SUMMON) {
@@ -489,7 +502,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored specific summon category
      * @throws Exception if the live sub-type is not {@code EST_SUMMON_SPEC}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public SummonType getSummonTypeWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_SUMMON_SPEC) {
@@ -505,7 +518,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored affected stat
      * @throws Exception if the live sub-type is not {@code EST_STAT}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Stats getStatsWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_STAT) {
@@ -521,7 +534,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored enchant mode
      * @throws Exception if the live sub-type is not {@code EST_ENCHANT}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EffectEnchant getEnchantWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_ENCHANT) {
@@ -537,7 +550,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored target shape
      * @throws Exception if the live sub-type is not {@code EST_SHAPECHANGE}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public PlayerShape getShapeWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_SHAPECHANGE) {
@@ -553,7 +566,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored earthquake targeting mode
      * @throws Exception if the live sub-type is not {@code EST_EARTHQUAKE}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Earthquake getQuakeWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_EARTHQUAKE) {
@@ -569,7 +582,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored glyph type
      * @throws Exception if the live sub-type is not {@code EST_GLYPH}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public GlyphType getGlyphType() throws Exception {
         if (subType != EffectSubTypeEnum.EST_GLYPH) {
@@ -585,7 +598,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored teleport mode
      * @throws Exception if the live sub-type is not {@code EST_TELEPORT}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TeleportEnum getTeleportWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_TELEPORT) {
@@ -601,7 +614,7 @@ public class EffectSubTypeWrapper {
     /**
      * @return the stored teleport-to mode
      * @throws Exception if the live sub-type is not {@code EST_TELEPORT_TO}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TeleportEnum getTeleportToWrapper() throws Exception {
         if (subType != EffectSubTypeEnum.EST_TELEPORT_TO) {

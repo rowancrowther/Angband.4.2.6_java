@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils;
@@ -36,26 +36,26 @@ import java.util.List;
  * compile-time safety instead of raw bit indices.
  *
  * @param <E> the enum type whose constants are the individual flags
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Flag<E extends Enum<E>> {
     /**
      * The flags currently switched on.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final EnumSet<E> flagSet;
     /**
      * The full set of every possible flag, cached for full/negate/mask operations.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final EnumSet<E> all;
     /**
      * The enum class, retained so new {@link EnumSet}s can be built generically
      * (e.g. in {@link #copy()} and {@link #mask}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Class<E> eClass;
 

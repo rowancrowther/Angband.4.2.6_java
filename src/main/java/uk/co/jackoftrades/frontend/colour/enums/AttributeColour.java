@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour.enums;
@@ -27,7 +27,7 @@ package uk.co.jackoftrades.frontend.colour.enums;
  * (the {@code L_} prefix denotes the lighter variant), so they are documented
  * collectively here rather than individually.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum AttributeColour {
     COLOUR_DARK, // 0

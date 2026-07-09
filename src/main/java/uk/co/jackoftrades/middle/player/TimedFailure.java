@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -54,7 +54,7 @@ import java.security.InvalidParameterException;
  * throwing) on a mismatch. That turns what would be a silent union-misuse bug in C into
  * an immediate, traceable error in the port.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class TimedFailure {
     /**

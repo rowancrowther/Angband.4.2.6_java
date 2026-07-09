@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen.hooks;
@@ -25,7 +25,7 @@ import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
  * and colour output without knowing the destination — the Java port of the C
  * original's {@code text_out_hook} mechanism ({@code src/z-textblock.c}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public interface TextOutHook {
     /**
@@ -33,7 +33,7 @@ public interface TextOutHook {
      *
      * @param attribute the colour to draw the text in
      * @param string    the text to emit
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     void output(AttributeColour attribute, String string);
 

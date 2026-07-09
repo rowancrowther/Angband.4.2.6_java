@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -31,7 +31,7 @@ import org.jetbrains.annotations.Nullable;
  * port of the C original's {@code TV_*} type values ({@code src/list-tvals.h});
  * the helper predicates classify groups of tvals.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum TValue {
     /**
@@ -223,13 +223,13 @@ public enum TValue {
     /**
      * The display name of this item type.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String name;
     /**
      * Logger used to report unknown tval lookups in {@link #fromName(String)}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -237,7 +237,7 @@ public enum TValue {
      * Bind a tval to its display name.
      *
      * @param name the display name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     TValue(String name) {
         this.name = name;
@@ -254,7 +254,7 @@ public enum TValue {
 
     /**
      * @return whether this tval is a staff
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isStaff() {
         return this == TV_STAFF;
@@ -421,7 +421,7 @@ public enum TValue {
      * @return whether items of this type get a randomised "flavour" (e.g. an
      * unidentified potion's colour) — amulets, rings, the magic devices,
      * potions, mushrooms and scrolls
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean canHaveFlavour() {
         return switch (this) {
@@ -432,7 +432,7 @@ public enum TValue {
 
     /**
      * @return whether this tval is a spellbook of any realm
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isBook() {
         return switch (this) {
@@ -443,7 +443,7 @@ public enum TValue {
 
     /**
      * @return whether this tval is a "zapper" device (wand or staff)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isZapper() {
         return this == TV_WAND || this == TV_STAFF;

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * mode and take an {@code LCASE} lowercase-with-underscore/digit run; the header count is
  * {@code INTEGER}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryBaseLexerTest {
 

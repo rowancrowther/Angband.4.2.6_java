@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -43,7 +43,7 @@ public enum MonsterFlag {
     /**
      * Human-readable description of what this flag means.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String description;
 
@@ -51,7 +51,7 @@ public enum MonsterFlag {
      * Bind a monster flag to its description.
      *
      * @param description the flag's description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MonsterFlag(String description) {
         this.description = description;

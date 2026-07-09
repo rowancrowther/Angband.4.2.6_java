@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend;
@@ -23,26 +23,26 @@ package uk.co.jackoftrades.backend;
  * {@code init_*}/{@code cleanup_*} function with each module so they can be
  * brought up and torn down uniformly during game start-up and shutdown.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public interface AngbandModule {
     /**
      * @return the human-readable name of this module
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String getName();
 
     /**
      * Allocate and prepare this module's state, making it ready for use.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     void init();
 
     /**
      * Release this module's resources so it can be safely discarded or re-initialised.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     void cleanup();
 }

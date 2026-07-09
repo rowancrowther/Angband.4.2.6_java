@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -32,67 +32,67 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * {@link #setValue(String)} decodes one {@code name:value} line and routes it to
  * a validating setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class DungeonGenerationConstants {
     /**
      * The data-file group tag this class consumes ({@code dun-gen}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String tag = "dun-gen";
     /**
      * Maximum number of room centre points (and hence rooms) on a normal level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int centMax;
     /**
      * Maximum number of candidate door locations.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int doorMax;
     /**
      * Maximum number of grids where room walls may be pierced by tunnels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int wallMax;
     /**
      * Maximum number of tunnel grids.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int tunnMax;
     /**
      * Average number of objects placed in rooms.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int amtRoom;
     /**
      * Average number of objects placed across rooms and corridors.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int amtItems;
     /**
      * Average amount of treasure placed across rooms and corridors.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int amtGold;
     /**
      * Maximum number of pits or nests allowed per level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int pitMax;
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -184,7 +184,7 @@ public class DungeonGenerationConstants {
      * @param centMax the proposed maximum
      * @param name    the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code centMax <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setCentMax(int centMax, String name) throws InvalidTokenFoundDuringParse {
         if (centMax <= 0) {
@@ -214,7 +214,7 @@ public class DungeonGenerationConstants {
      * @param doorMax the proposed maximum
      * @param name    the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code doorMax <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setDoorMax(int doorMax, String name) throws InvalidTokenFoundDuringParse {
         if (doorMax <= 0) {
@@ -243,7 +243,7 @@ public class DungeonGenerationConstants {
      * @param wallMax the proposed maximum
      * @param name    the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code wallMax <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setWallMax(int wallMax, String name) throws InvalidTokenFoundDuringParse {
         if (wallMax <= 0) {
@@ -272,7 +272,7 @@ public class DungeonGenerationConstants {
      * @param tunnMax the proposed maximum
      * @param name    the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code tunnMax <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setTunnMax(int tunnMax, String name) throws InvalidTokenFoundDuringParse {
         if (tunnMax <= 0) {
@@ -301,7 +301,7 @@ public class DungeonGenerationConstants {
      * @param amtRoom the proposed average
      * @param name    the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code amtRoom < 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setAmtRoom(int amtRoom, String name) throws IllegalArgumentException {
         if (amtRoom < 0) {
@@ -330,7 +330,7 @@ public class DungeonGenerationConstants {
      * @param amtItems the proposed average
      * @param name     the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code amtItems < 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setAmtItems(int amtItems, String name) throws IllegalArgumentException {
         if (amtItems < 0) {
@@ -359,7 +359,7 @@ public class DungeonGenerationConstants {
      * @param amtGold the proposed average
      * @param name    the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code amtGold < 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setAmtGold(int amtGold, String name) throws IllegalArgumentException {
         if (amtGold < 0) {
@@ -388,7 +388,7 @@ public class DungeonGenerationConstants {
      * @param pitMax the proposed maximum
      * @param name   the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code pitMax < 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPitMax(int pitMax, String name) throws IllegalArgumentException {
         if (pitMax < 0) {

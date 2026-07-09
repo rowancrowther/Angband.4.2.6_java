@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -35,51 +35,51 @@ import java.security.InvalidParameterException;
  * types valid for its discriminator. This is the Java port of the C original's
  * union inside {@code struct obj_property} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ObjectPropertyTypeWrapper {
     /**
      * Logger used to report mismatched-type construction or access.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The discriminator: which kind of property payload is stored.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjPropertyType type;
     /**
      * Payload for a {@code FLAG} property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectFlag flag;
     /**
      * Payload for a {@code STAT}/{@code MOD} property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectModifier modifier;
     /**
      * Payload for an element relation ({@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ElementEnum element;
 
     /**
      * The property's primary numeric value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int value;
     /**
      * An extra numeric parameter for the property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int extraParm;
 
@@ -88,7 +88,7 @@ public class ObjectPropertyTypeWrapper {
      *
      * @param value     the primary value
      * @param extraParm the extra parameter
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setValues(int value, int extraParm) {
         this.value = value;
@@ -101,7 +101,7 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_MOD} or {@code OBJ_PROPERTY_STAT})
      * @return the stored modifier
      * @throws java.security.InvalidParameterException if {@code typeRequested} is neither MOD nor STAT
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectModifier getModifier(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_MOD &&
@@ -121,7 +121,7 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM})
      * @return the stored element
      * @throws java.security.InvalidParameterException if {@code typeRequested} is not an element-relation type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ElementEnum getElement(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_IGNORE &&
@@ -143,7 +143,7 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_FLAG})
      * @return the stored flag
      * @throws java.security.InvalidParameterException if {@code typeRequested} is not {@code OBJ_PROPERTY_FLAG}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectFlag getFlag(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_FLAG) {
@@ -160,7 +160,7 @@ public class ObjectPropertyTypeWrapper {
      * @param type     must be {@code OBJ_PROPERTY_STAT} or {@code OBJ_PROPERTY_MOD}
      * @param modifier the modifier payload
      * @throws java.security.InvalidParameterException if {@code type} is not a stat/mod type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectModifier modifier) {
         switch (type) {
@@ -186,7 +186,7 @@ public class ObjectPropertyTypeWrapper {
      * @param type must be {@code OBJ_PROPERTY_FLAG}
      * @param flag the flag payload
      * @throws InvalidParameterException if {@code type} is not {@code OBJ_PROPERTY_FLAG}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectFlag flag) throws InvalidParameterException {
         if (type == ObjPropertyType.OBJ_PROPERTY_FLAG) {
@@ -207,7 +207,7 @@ public class ObjectPropertyTypeWrapper {
      * @param type    must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}
      * @param element the element payload
      * @throws InvalidParameterException if {@code type} is not an element-relation type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ElementEnum element) throws InvalidParameterException {
         switch (type) {

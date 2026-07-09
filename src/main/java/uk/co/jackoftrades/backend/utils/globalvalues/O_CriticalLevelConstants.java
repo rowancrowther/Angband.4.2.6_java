@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -35,44 +35,44 @@ import java.util.ArrayList;
  * Vanilla system in {@link CriticalLevelConstants}. Each parsed entry becomes an
  * {@link O_CriticalLevel} stored in the appropriate per-combat-type list.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class O_CriticalLevelConstants {
     /**
      * Logger used to report malformed/invalid critical-level tokens.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
     /**
      * Data-file group tag for O-melee critical levels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String meleeTag = "o-melee-critical-level";
     /**
      * Data-file group tag for O-ranged critical levels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String rangedTag = "o-range-critical-level";
     /**
      * Parsed O-melee critical levels, in data-file order.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final ArrayList<O_CriticalLevel> meleeCriticals = new ArrayList<>();
     /**
      * Parsed O-ranged critical levels, in data-file order.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final ArrayList<O_CriticalLevel> rangedCriticals = new ArrayList<>();
 
     /**
      * Private constructor preventing instantiation; the class is a static table holder.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     private O_CriticalLevelConstants() {

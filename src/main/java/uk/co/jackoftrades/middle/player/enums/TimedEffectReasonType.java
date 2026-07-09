@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -38,7 +38,7 @@ import org.jetbrains.annotations.Nullable;
  * silently shift if the list were ever reordered). {@link #fromValue(int)} performs
  * the reverse mapping when reading those raw integers back in.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum TimedEffectReasonType {
     /**

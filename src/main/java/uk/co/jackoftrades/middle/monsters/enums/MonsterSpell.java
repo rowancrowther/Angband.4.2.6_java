@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -29,7 +29,7 @@ import static uk.co.jackoftrades.middle.monsters.enums.MonsterSpellType.*;
  * ({@code src/list-mon-spells.h}); the constants are self-describing and
  * documented collectively here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterSpell {
     RSF_NONE(new MonsterSpellType[]{}),
@@ -149,7 +149,7 @@ public enum MonsterSpell {
     /**
      * The set of spell-type categories this spell belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Flag<MonsterSpellType> spellTypes;
 
@@ -158,7 +158,7 @@ public enum MonsterSpell {
      * given array.
      *
      * @param types the spell-type categories this spell belongs to
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterSpell(MonsterSpellType[] types) {
         spellTypes = new Flag<>(MonsterSpellType.class);
@@ -170,7 +170,7 @@ public enum MonsterSpell {
 
     /**
      * @return the set of spell-type categories this spell belongs to
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterSpellType> getTypes() {
         return spellTypes;

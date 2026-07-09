@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.io;
@@ -38,32 +38,32 @@ public class FileHandler {
     /**
      * Path of the file this handler operates on; may be updated by {@link #fileMove(Path)}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Path filePath;
     /**
      * Active read stream, or {@code null} when the file is not open for reading.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private FileInputStream inputStream;
     /**
      * Active write stream, or {@code null} when the file is not open for writing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private FileOutputStream outputStream;
     /**
      * Default open option retained from construction. Largely vestigial now that
      * the concrete mode is chosen per-{@link #open(FileModeEnum)} call.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final StandardOpenOption option;
     /**
      * Logger used to report I/O failures without throwing to callers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getRootLogger();
 
@@ -140,7 +140,7 @@ public class FileHandler {
      *
      * @return true if the file now exists (created or already present),
      * false if creation failed with an {@link IOException}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean createFile() {
         if (!Files.exists(filePath)){
@@ -225,7 +225,7 @@ public class FileHandler {
      * output stream to avoid holding both handles to the same file. On failure
      * the input stream is left {@code null} so {@link #isOpen()} stays accurate.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void openInputStream() {
         try {
@@ -243,7 +243,7 @@ public class FileHandler {
      *
      * @param append when true the stream appends to existing content; when
      *               false the file is truncated/overwritten
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void openOutputStream(boolean append) {
         try {

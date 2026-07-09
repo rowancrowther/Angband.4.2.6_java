@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -29,45 +29,45 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * Part of the Java port of the C constants loader; {@link #setValue(String)}
  * decodes one {@code name:value} line and routes it to a validating setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class PlayerConstants {
     /**
      * The data-file group tag this class consumes ({@code player}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String tag = "player";
 
     /**
      * Maximum visual range of the player, in grids.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int maxSight = 0;
     /**
      * Maximum missile and spell range of the player, in grids.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int maxRange = 0;
     /**
      * Starting gold (or equivalent equipment value) for a new player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int startGold = 0;
     /**
      * Number of turns that 1% of the player's food capacity sustains them.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int foodValue = 0;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -78,7 +78,7 @@ public class PlayerConstants {
      * @param value the raw {@code name:value} token from {@code constants.txt}
      * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
      *                                      cannot be parsed, or the name is unrecognised
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void setValue(String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
@@ -146,7 +146,7 @@ public class PlayerConstants {
      * @param maxSight the proposed sight range
      * @param name     the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code maxSight <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setMaxSight(int maxSight, String name) throws InvalidTokenFoundDuringParse {
         if (maxSight <= 0) {
@@ -176,7 +176,7 @@ public class PlayerConstants {
      * @param maxRange the proposed range
      * @param name     the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code maxRange <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setMaxRange(int maxRange, String name) throws InvalidTokenFoundDuringParse {
         if (maxRange <= 0) {
@@ -206,7 +206,7 @@ public class PlayerConstants {
      * @param startGold the proposed starting gold
      * @param name      the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code startGold <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setStartGold(int startGold, String name) throws InvalidTokenFoundDuringParse {
         if (startGold <= 0) {
@@ -237,7 +237,7 @@ public class PlayerConstants {
      * @param foodValue the proposed food value
      * @param name      the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code foodValue <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setFoodValue(int foodValue, String name) throws InvalidTokenFoundDuringParse {
         if (foodValue <= 0) {

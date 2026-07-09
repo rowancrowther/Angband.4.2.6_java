@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -27,49 +27,49 @@ import java.util.ArrayList;
  * per-grid visibility, and the blast centre. Consumed by the display layer to
  * animate the blast radius.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataExplosion implements GameEventData {
     /**
      * The projection type of the explosion.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int projType;       // Probably going to be replaced by an enum
     /**
      * Number of grids affected by the blast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numGrids;
     /**
      * Distance from the centre for each affected grid (parallel to {@link #blastGrid}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Integer> distanceToGrid;
     /**
      * Whether the explosion is currently being drawn.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean drawing;
     /**
      * Whether the player sees each affected grid (parallel to {@link #blastGrid}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Boolean> playerSeesGrid;
     /**
      * The grids affected by the blast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Loc> blastGrid;
     /**
      * The centre of the explosion.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc centre;
 
@@ -83,7 +83,7 @@ public class EventDataExplosion implements GameEventData {
      * @param playerSeesGrid per-grid visibility
      * @param blastGrid      the affected grids
      * @param centre         the blast centre
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataExplosion(int projType, int numGrids, ArrayList<Integer> distanceToGrid, boolean drawing,
                               ArrayList<Boolean> playerSeesGrid, ArrayList<Loc> blastGrid, Loc centre) {
@@ -98,7 +98,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the projection type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getProjType() {
         return projType;
@@ -106,7 +106,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the number of affected grids
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getNumGrids() {
         return numGrids;
@@ -114,7 +114,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the per-grid distances from the centre
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ArrayList<Integer> getDistanceToGrid() {
         return distanceToGrid;
@@ -122,7 +122,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return whether the explosion is being drawn
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isDrawing() {
         return drawing;
@@ -130,7 +130,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the per-grid visibility flags
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ArrayList<Boolean> getPlayerSeesGrid() {
         return playerSeesGrid;
@@ -138,7 +138,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the affected grids
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ArrayList<Loc> getBlastGrid() {
         return blastGrid;
@@ -146,7 +146,7 @@ public class EventDataExplosion implements GameEventData {
 
     /**
      * @return the blast centre
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Loc getCentre() {
         return centre;

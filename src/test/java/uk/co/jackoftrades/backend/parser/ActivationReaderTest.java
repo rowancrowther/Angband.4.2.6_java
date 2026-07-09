@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * data file declares its own {@code record-count}, and the reader treats a declared-vs-actual
  * mismatch as a hard error. A clean load therefore <em>is</em> the count assertion.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ActivationReaderTest {
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game;
@@ -33,31 +33,31 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
  * window exists, roughly the Java counterpart of the C original's {@code play_game}
  * / initialisation bootstrap.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class GameEngine {
     /**
      * Logger for start-up diagnostics.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
     /**
      * The lazily-created singleton instance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static GameEngine instance;
     /**
      * The main on-screen surface.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Screen screen;
     /**
      * The JavaFX stage hosting the game.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Stage stage;
 
@@ -66,7 +66,7 @@ public class GameEngine {
      * as screen 0, and run {@link #initGame()}.
      *
      * @param stage the JavaFX stage to host the game
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private GameEngine(Stage stage) {
         this.stage = stage;
@@ -80,7 +80,7 @@ public class GameEngine {
      * Initialise the game's subsystems in order — colours, the events handler and
      * the game constants — updating the status line as each step completes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void initGame() {
         // Initialise the Java classes
@@ -99,7 +99,7 @@ public class GameEngine {
      *
      * @param stage the JavaFX stage to host the game
      * @return the singleton game engine
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static GameEngine getGame(Stage stage) {

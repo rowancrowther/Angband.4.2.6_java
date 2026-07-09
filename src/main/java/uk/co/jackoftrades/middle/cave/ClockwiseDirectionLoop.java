@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -30,26 +30,26 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
  * singleton; {@link #moveNext()} advances the shared cursor and the offset
  * accessors report the current direction's step.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ClockwiseDirectionLoop {
     /**
      * The ring cursor: the direction node currently pointed at.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ClockwiseDirectionLoop.DirectionNode keypadDirection;
     /**
      * The singleton instance (constructing it builds and links the ring).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final ClockwiseDirectionLoop instance = new ClockwiseDirectionLoop();
 
     /**
      * Private constructor: builds and links the clockwise direction ring.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -59,7 +59,7 @@ public class ClockwiseDirectionLoop {
 
     /**
      * @return the singleton clockwise direction loop
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static ClockwiseDirectionLoop getLoop() {
         return instance;
@@ -68,7 +68,7 @@ public class ClockwiseDirectionLoop {
     /**
      * Build the nine direction nodes and link them into the clockwise ring.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void createAndLinkKeypadDirection() {
         ClockwiseDirectionLoop.DirectionNode south = new ClockwiseDirectionLoop.DirectionNode(DirectionEnum.DIR_S, DirectionEnum.DIR_S.ddx(), DirectionEnum.DIR_S.ddy());
@@ -94,7 +94,7 @@ public class ClockwiseDirectionLoop {
 
     /**
      * @return the column step of the current direction
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getXOffset() {
         return keypadDirection.xOff;
@@ -102,7 +102,7 @@ public class ClockwiseDirectionLoop {
 
     /**
      * @return the row step of the current direction
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getYOffset() {
         return keypadDirection.yOff;
@@ -110,7 +110,7 @@ public class ClockwiseDirectionLoop {
 
     /**
      * @return the current direction's step as a {@link Loc}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(" -> new")
     public static @NotNull Loc getGrid() {
@@ -120,7 +120,7 @@ public class ClockwiseDirectionLoop {
     /**
      * Advance the shared cursor to the next direction in the clockwise ring.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void moveNext() {
         keypadDirection = keypadDirection.getNext();
@@ -130,32 +130,32 @@ public class ClockwiseDirectionLoop {
      * One node in the circular direction ring: a direction with its step offsets
      * and a link to the next node clockwise.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static class DirectionNode {
         /**
          * The direction this node represents.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         private final DirectionEnum dir;
         /**
          * Column step for this direction.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         private int xOff;
         /**
          * Row step for this direction.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         private int yOff;
 
         /**
          * The next node clockwise in the ring.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         private ClockwiseDirectionLoop.DirectionNode next;
 
@@ -165,7 +165,7 @@ public class ClockwiseDirectionLoop {
          * @param direction the direction
          * @param xOffset   the column step
          * @param yOffset   the row step
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         public DirectionNode(@NotNull DirectionEnum direction, int xOffset, int yOffset) {
             dir = direction;
@@ -177,7 +177,7 @@ public class ClockwiseDirectionLoop {
          * Link this node to the next one in the ring.
          *
          * @param next the following node
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         public void setNext(@NotNull ClockwiseDirectionLoop.DirectionNode next) {
             this.next = next;
@@ -185,7 +185,7 @@ public class ClockwiseDirectionLoop {
 
         /**
          * @return the next node clockwise in the ring
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(pure = true)

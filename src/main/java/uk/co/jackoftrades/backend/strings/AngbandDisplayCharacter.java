@@ -31,13 +31,13 @@ public class AngbandDisplayCharacter {
     /**
      * The glyph to display.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final char character;
     /**
      * The colour the glyph is drawn in, resolved to a concrete attribute colour.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final AttributeColour attributeColour;
 

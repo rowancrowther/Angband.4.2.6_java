@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave.enums;
@@ -28,51 +28,53 @@ import uk.co.jackoftrades.middle.cave.Loc;
  * increases <em>northward</em> here (N is {@code +1}), matching the offsets
  * encoded below.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum DirectionEnum {
     /**
-     * Unknown/invalid direction (no movement, keypad 0). @author ClaudeCode
+     * Unknown/invalid direction (no movement, keypad 0). @author Rowan Crowther
      */
     DIR_UNKNOWN(0, 0, 0),
-    /** North-west (keypad 7). @author ClaudeCode */
+    /**
+     * North-west (keypad 7). @author Rowan Crowther
+     */
     DIR_NW(7, -1, 1),
-    /** North (keypad 8). @author ClaudeCode */
+    /** North (keypad 8). @author Rowan Crowther */
     DIR_N(8, 0, 1),
-    /** North-east (keypad 9). @author ClaudeCode */
+    /** North-east (keypad 9). @author Rowan Crowther */
     DIR_NE(9, 1, 1),
-    /** West (keypad 4). @author ClaudeCode */
+    /** West (keypad 4). @author Rowan Crowther */
     DIR_W(4, -1, 0),
-    /** "Target" pseudo-direction / centre (keypad 5). @author ClaudeCode */
+    /** "Target" pseudo-direction / centre (keypad 5). @author Rowan Crowther */
     DIR_TARGET(5, 0, 0),
-    /** No direction / centre (keypad 5). @author ClaudeCode */
+    /** No direction / centre (keypad 5). @author Rowan Crowther */
     DIR_NONE(5, 0, 0),
-    /** East (keypad 6). @author ClaudeCode */
+    /** East (keypad 6). @author Rowan Crowther */
     DIR_E(6, 1, 0),
-    /** South-west (keypad 1). @author ClaudeCode */
+    /** South-west (keypad 1). @author Rowan Crowther */
     DIR_SW(1, -1, -1),
-    /** South (keypad 2). @author ClaudeCode */
+    /** South (keypad 2). @author Rowan Crowther */
     DIR_S(2, 0, -1),
-    /** South-east (keypad 3). @author ClaudeCode */
+    /** South-east (keypad 3). @author Rowan Crowther */
     DIR_SE(3, 1, -1),
     ;
 
     /**
      * The numeric-keypad key (1–9) that selects this direction.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int key;
     /**
      * Change in column for one step in this direction.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int xOffset;
     /**
      * Change in row for one step in this direction (north is positive).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int yOffset;
 
@@ -82,7 +84,7 @@ public enum DirectionEnum {
      * @param key     the numpad key
      * @param xOffset the column step
      * @param yOffset the row step
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     DirectionEnum(int key, int xOffset, int yOffset) {
         this.key = key;
@@ -92,7 +94,7 @@ public enum DirectionEnum {
 
     /**
      * @return the column step for this direction (the C {@code ddx} value)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int ddx() {
         return xOffset;
@@ -100,7 +102,7 @@ public enum DirectionEnum {
 
     /**
      * @return the row step for this direction (the C {@code ddy} value)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int ddy() {
         return yOffset;
@@ -108,7 +110,7 @@ public enum DirectionEnum {
 
     /**
      * @return the step offset as a {@link Loc} (the C {@code ddgrid} value)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Loc ddgrid() {
         return new Loc(xOffset, yOffset);
@@ -116,7 +118,7 @@ public enum DirectionEnum {
 
     /**
      * @return the numpad key associated with this direction
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getKey() {
         return key;
@@ -127,7 +129,7 @@ public enum DirectionEnum {
      *
      * @param key the numpad key (1–9)
      * @return the matching direction, or {@link #DIR_UNKNOWN} if none matches
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static DirectionEnum fromKey(int key) {
         for (DirectionEnum d : DirectionEnum.values()) {

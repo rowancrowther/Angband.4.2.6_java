@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -23,55 +23,55 @@ package uk.co.jackoftrades.middle.game.event;
  * the origin {@code (ox, oy)} and current {@code (x, y)} grids. Consumed by the
  * display layer to animate the projectile.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataBolt implements GameEventData {
     /**
      * The projection type being drawn.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int projType;        // Probably going to be replaced by Enum
     /**
      * Whether the bolt is currently being drawn.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean drawing;
     /**
      * Whether the player can see the bolt.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean seen;
     /**
      * Whether this is a beam (true) rather than a single bolt (false).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean beam;
     /**
      * Origin row.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int oy;
     /**
      * Origin column.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ox;
     /**
      * Current row.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int y;
     /**
      * Current column.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int x;
 
@@ -86,7 +86,7 @@ public class EventDataBolt implements GameEventData {
      * @param ox       origin column
      * @param y        current row
      * @param x        current column
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataBolt(int projType, boolean drawing, boolean seen, boolean beam, int oy, int ox, int y, int x) {
         this.projType = projType;
@@ -101,7 +101,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return the projection type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getProjType() {
         return projType;
@@ -109,7 +109,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return whether the bolt is being drawn
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isDrawing() {
         return drawing;
@@ -117,7 +117,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return whether the player sees the bolt
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isSeen() {
         return seen;
@@ -125,7 +125,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return whether this is a beam
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isBeam() {
         return beam;
@@ -133,7 +133,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return the origin row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getOy() {
         return oy;
@@ -141,7 +141,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return the origin column
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getOx() {
         return ox;
@@ -149,7 +149,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return the current row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getY() {
         return y;
@@ -157,7 +157,7 @@ public class EventDataBolt implements GameEventData {
 
     /**
      * @return the current column
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getX() {
         return x;

@@ -793,7 +793,7 @@ public class GameConstants {
             loadSlays();                // Dependent on MonsterBases
             loadBrands();
             loadSummons();              // Dependent on MonsterBases
-//            loadCurses();               // Dependent on ObjectBases
+            loadCurses();               // Dependent on ObjectBases, & Summons
 //            loadPlayerShapes();
 //            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
             loadActivations();
@@ -1209,11 +1209,21 @@ public class GameConstants {
      * @throws IOException an IO error occurred during parsing
      */
     private static void loadCurses() throws IOException {
-        CurseReader curseReader = new CurseReader();
+        CurseReader parser = new CurseReader();
         String filename = ANGBAND_DIR_GAMEDATA + "curse.txt";
 
         try {
-            curses = curseReader.parse(filename);
+            ParseResult<Curse> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            curses = result.items();
+            curseMax = curses.size();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;

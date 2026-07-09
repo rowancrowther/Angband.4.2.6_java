@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -35,215 +35,215 @@ import java.util.List;
  * template behind every live {@link Monster}, and the Java port of the C
  * original's {@code struct monster_race} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterRace {
     /**
      * The monster's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
     /**
      * The plural form of the name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String plural;
 
     /**
      * The base type this race belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterBase base;
 
     /**
      * Average hit points.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int averageHP;
 
     /**
      * Armour class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ac;
 
     /**
      * Sleepiness/alertness (higher = sleeps more deeply).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sleep;
     /**
      * Hearing acuity (range it detects noise).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int hearing;
     /**
      * Sense of smell (range it tracks scent).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int smell;
     /**
      * Base movement speed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int speed;
     /**
      * Light radius the monster emits.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int light;
 
     /**
      * Experience awarded for killing the monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mexp;
 
     /**
      * Frequency of innate (non-spell) attacks.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int freqInnate;
     /**
      * Frequency of spell casting.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int freqSpell;
     /**
      * The monster's spell power.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int spellPower;
 
     /**
      * Race flags this monster has set.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flags;
     /**
      * Race flags explicitly cleared for this monster (overriding its base).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flagsOff;
     /**
      * The spells this monster can cast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterSpell> spells;
 
     /**
      * The monster's melee blows.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterBlow> blow;
 
     /**
      * Native dungeon level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int level;
     /**
      * Rarity weighting for generation.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int rarity;
 
     /**
      * The display glyph and colour.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter adc;
 
     /**
      * Maximum number that may exist at once (1 for uniques).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int maxNum;
     /**
      * Current number alive.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int curNum;
 
     /**
      * Alternate spell-cast messages for this monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterAltmsg> spellMessages;
     /**
      * Possible item drops on death.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterDrop> drops;
 
     /**
      * Companion races that may be generated with this monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterFriends> friends;
     /**
      * Companion base types that may be generated with this monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterFriendsBase> friendsBase;
 
     /**
      * Object kinds this monster can mimic.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<ObjectKind> mimicKinds;
 
     /**
      * Names of the shapes this monster can change into.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<String> shapes;
     /**
      * The number of available shapes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numShapes;
 
     /**
      * The player's accumulated lore about this monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterLore lore;
 
@@ -285,7 +285,7 @@ public class MonsterRace {
      * @param groupName     colour-cycle group name
      * @param cycleName     colour-cycle name
      * @param lore          accumulated lore
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterRace(String name, String text, String plural, MonsterBase base, int averageHP, int ac, int sleep,
                        int hearing, int smell, int speed, int light, int mexp, int freqInnate, int freqSpell,
@@ -334,7 +334,7 @@ public class MonsterRace {
      * Set this race's accumulated lore.
      *
      * @param lore the lore to attach
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setLore(MonsterLore lore) {
         this.lore = lore;
@@ -343,7 +343,7 @@ public class MonsterRace {
     /**
      * Test-only constructor producing a bare race with an empty flag set.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @TestOnly
     public MonsterRace() {
@@ -352,7 +352,7 @@ public class MonsterRace {
 
     /**
      * @return this race's set race flags
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Flag<MonsterRaceFlag> getFlags() {
         return flags;
@@ -360,7 +360,7 @@ public class MonsterRace {
 
     /**
      * @return this race's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -370,7 +370,7 @@ public class MonsterRace {
      * Resolve this race's companion ("friends") entries by pointing each back at
      * this race. Called after all races are loaded.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setFriends() {
         for (MonsterFriends friend : friends) {

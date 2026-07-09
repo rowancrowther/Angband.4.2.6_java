@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -43,7 +43,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
  * <p>Each constant declares its flags as plain arrays which the constructor folds into a
  * {@link uk.co.jackoftrades.backend.utils.Flag} bitset for compact storage and querying.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum TimedEffect {
     TMD_NONE(new PlayerRedraw[]{}, new PlayerUpkeepEnum[]{}),

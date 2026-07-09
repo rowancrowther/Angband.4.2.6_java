@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -29,19 +29,19 @@ import java.util.List;
  * organised into groups in the visuals data file, so a monster race can refer to
  * a cycle by group + cycle name.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class VisualsCycleGroup {
     /**
      * The colour cycles belonging to this group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     List<VisualsColourCycle> cycles;
     /**
      * The name identifying this group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String groupName;
 
@@ -57,7 +57,7 @@ public class VisualsCycleGroup {
      * Set this group's name.
      *
      * @param groupName the group name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public void setGroupName(@NotNull String groupName) {
@@ -68,7 +68,7 @@ public class VisualsCycleGroup {
      * Add a colour cycle to this group.
      *
      * @param cycle the cycle to add
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public void addCycle(@NotNull VisualsColourCycle cycle) {

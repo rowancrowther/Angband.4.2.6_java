@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -24,7 +24,7 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * close parallel of the C original's {@code mon_timed_effect} table ({@code src/mon-timed.c}); the
  * constants are self-describing and documented collectively here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonTimed {
     MON_TMD_NONE(false, MonTimedStack.MTS_NO, MonsterRaceFlag.RF_NONE, 0, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE, MonsterMessage.MON_MSG_NONE),
@@ -43,43 +43,43 @@ public enum MonTimed {
     /**
      * Whether the monster gets a saving throw against this effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean saveThrow;
     /**
      * How re-applying this effect combines with an existing instance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonTimedStack stackStyle;
     /**
      * Race flag that makes a monster immune to this effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceFlag resistFlag;
     /**
      * Duration cap/scaling value for this effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int time;
     /**
      * Message shown when the effect begins.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterMessage messageBegin;
     /**
      * Message shown when the effect ends.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterMessage messageEnd;
     /**
      * Message shown when the effect's duration increases.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterMessage messageIncrease;
 
@@ -93,7 +93,7 @@ public enum MonTimed {
      * @param begin    begin message
      * @param end      end message
      * @param increase increase message
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MonTimed(boolean save, MonTimedStack stc, MonsterRaceFlag flag,
              int time, MonsterMessage begin, MonsterMessage end,

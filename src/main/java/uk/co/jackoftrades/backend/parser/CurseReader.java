@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.curse.CurseLexer;
-import uk.co.jackoftrades.backend.parser.curse.CurseParser;
+import uk.co.jackoftrades.backend.parser.curse.CurseAssembler;
+import uk.co.jackoftrades.backend.parser.curse.CurseParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.curse.CurseGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.curse.CurseLexer;
 import uk.co.jackoftrades.middle.objects.Curse;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -36,13 +36,13 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class CurseReader implements Reader<Curse> {
     /**
      * Logger used to report file-loading failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -54,17 +54,28 @@ public class CurseReader implements Reader<Curse> {
      */
     @Override
     public @NotNull List<Curse> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            CurseLexer lexer = new CurseLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            CurseParser parser = new CurseParser(tokens);
-            CurseParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.curses;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public @NotNull ParseResult<Curse> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                CurseLexer::new,
+                CurseGrammar::new,
+                CurseReader::extract,
+                new CurseAssembler(), logger);
+    }
+
+    private static List<CurseParseRecord> extract(
+            @NotNull CurseGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        CurseGrammar.FileContext output = parser.file();
+        List<CurseParseRecord> records = output.records;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

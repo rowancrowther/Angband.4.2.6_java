@@ -53,7 +53,7 @@ import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MI
  * two items are "similar" enough to stack and how stacks merge/absorb. This is
  * the Java port of the C original's {@code struct object} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ItemObject {
     /**
@@ -61,7 +61,7 @@ public class ItemObject {
      *
      * @param curse     the curse
      * @param curseData its instance data (power/timeout)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public record CurseEntry(Curse curse, CurseData curseData) {
     }
@@ -69,237 +69,237 @@ public class ItemObject {
     /**
      * Logger used to report stack-merge errors.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The object kind this item is an instance of.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectKind kind;
     /**
      * The ego type applied to this item, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EgoItem ego;
     /**
      * The artifact this item is, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Artifact artifact;
 
     /**
      * The player's known/identified view of this item.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ItemObject known;
 
     /**
      * The grid this item lies on (when on the floor).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc location;
 
     /**
      * The item type value (tval).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
      * The sub-type value (sval).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sValue;
 
     /**
      * The item's extra parameter value (pval).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int pValue;
 
     /**
      * The item's weight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Number of damage dice.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int damageDice;
     /**
      * Sides per damage die.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int damageSides;
     /**
      * Base damage, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random baseDamage;
     /**
      * Base armour class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int normalAC;
     /**
      * To-armour-class bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toAC;
     /**
      * To-damage bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toDam;
     /**
      * To-hit bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toHit;
 
     /**
      * The item's object flags.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
      * The item's numeric modifiers (as unparsed dice strings), keyed by modifier.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ObjectModifier, String> modifiers;
     /**
      * Per-element relation info.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
      * Brands on the item (mapped to whether intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Brand, Boolean> brands;
     /**
      * Slays on the item (mapped to whether intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Slay, Boolean> slays;
     /**
      * Curses on the item (mapped to whether intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<CurseEntry, Boolean> curses;
 
     /**
      * Effects this item produces when used.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Effect> effect;
     /**
      * Message shown when the item's effect fires.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String effectMessage;
     /**
      * Activations available on this item.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Activation> activation;
     /**
      * Recharge time, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random time;
     /**
      * Turns until the item can be used again (0 = ready).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int timeout;
 
     /**
      * Quantity in this stack.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int number;
     /**
      * The player's notice flags for this item (worn/assessed/ignore/imagined).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectNotice> notice;
 
     /**
      * Index of the monster holding this item, or 0 if not held.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int heldMIndex;
     /**
      * Index of the monster mimicking this item, or 0 if none.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mimickingMIndex;
 
     /**
      * Where this item came from (for the description history line).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectOriginEnum origin;
     /**
      * The depth at which the item originated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int originDepth;
     /**
      * The monster race that dropped the item, if applicable.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace originRace = new MonsterRace();
 
     /**
      * The player's inscription on the item.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Quark note;
 
     /**
      * Build an empty item (used as a blank slot/placeholder).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ItemObject() {
     }
@@ -343,7 +343,7 @@ public class ItemObject {
      * @param originDepth     origin depth
      * @param originRace      origin monster race
      * @param note            inscription
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ItemObject(ObjectKind kind, EgoItem ego,
                       Artifact artifact, ItemObject known,

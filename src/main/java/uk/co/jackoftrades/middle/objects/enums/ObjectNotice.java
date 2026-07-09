@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -23,17 +23,19 @@ package uk.co.jackoftrades.middle.objects.enums;
  * (hallucinated). Mirrors the C original's {@code OBJ_NOTICE_*} flags
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ObjectNotice {
     /**
-     * The object has been worn/wielded. @author ClaudeCode
+     * The object has been worn/wielded. @author Rowan Crowther
      */
     OBJ_NOTICE_WORN,
-    /** The object has been assessed (its quality judged). @author ClaudeCode */
+    /**
+     * The object has been assessed (its quality judged). @author Rowan Crowther
+     */
     OBJ_NOTICE_ASSESSED,
-    /** The object is marked to be ignored. @author ClaudeCode */
+    /** The object is marked to be ignored. @author Rowan Crowther */
     OBJ_NOTICE_IGNORE,
-    /** The object is imagined (seen only while hallucinating). @author ClaudeCode */
+    /** The object is imagined (seen only while hallucinating). @author Rowan Crowther */
     OBJ_NOTICE_IMAGINED
 }

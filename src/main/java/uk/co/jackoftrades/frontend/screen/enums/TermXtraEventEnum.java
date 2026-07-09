@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen.enums;
@@ -23,33 +23,35 @@ package uk.co.jackoftrades.frontend.screen.enums;
  * ({@code src/z-term.h}). These are the argument to {@link
  * uk.co.jackoftrades.frontend.screen.hooks.TermEventHook}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum TermXtraEventEnum {
     /**
-     * Process a pending input/windowing event. @author ClaudeCode
+     * Process a pending input/windowing event. @author Rowan Crowther
      */
     TERM_XTRA_EVENT,
-    /** Flush all pending input. @author ClaudeCode */
+    /**
+     * Flush all pending input. @author Rowan Crowther
+     */
     TERM_XTRA_FLUSH,
-    /** Clear the whole terminal. @author ClaudeCode */
+    /** Clear the whole terminal. @author Rowan Crowther */
     TERM_XTRA_CLEAR,
-    /** Change the cursor shape/visibility. @author ClaudeCode */
+    /** Change the cursor shape/visibility. @author Rowan Crowther */
     TERM_XTRA_SHAPE,
-    /** Flush a row of pending output to the display. @author ClaudeCode */
+    /** Flush a row of pending output to the display. @author Rowan Crowther */
     TERM_XTRA_FROSH,
-    /** Flush all pending output to the display. @author ClaudeCode */
+    /** Flush all pending output to the display. @author Rowan Crowther */
     TERM_XTRA_FRESH,
-    /** Make a noise (audible bell / sound effect). @author ClaudeCode */
+    /** Make a noise (audible bell / sound effect). @author Rowan Crowther */
     TERM_XTRA_NOISE,
-    /** Notify the front end that the game is idle ("bored"). @author ClaudeCode */
+    /** Notify the front end that the game is idle ("bored"). @author Rowan Crowther */
     TERM_XTRA_BORED,
-    /** React to a change in colours/preferences. @author ClaudeCode */
+    /** React to a change in colours/preferences. @author Rowan Crowther */
     TERM_XTRA_REACT,
-    /** Check/assert that the terminal is still alive. @author ClaudeCode */
+    /** Check/assert that the terminal is still alive. @author Rowan Crowther */
     TERM_XTRA_ALIVE,
-    /** Notify of a level (display activation) change. @author ClaudeCode */
+    /** Notify of a level (display activation) change. @author Rowan Crowther */
     TERM_XTRA_LEVEL,
-    /** Delay for a number of milliseconds. @author ClaudeCode */
+    /** Delay for a number of milliseconds. @author Rowan Crowther */
     TERM_XTRA_DELAY
 }

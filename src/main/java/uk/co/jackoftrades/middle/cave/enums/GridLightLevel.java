@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave.enums;
@@ -22,19 +22,21 @@ package uk.co.jackoftrades.middle.cave.enums;
  * {@code LIGHTING_*} constants of the C original. These select which colour
  * variant a feature uses when displayed (see {@code ColourTranslation}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum GridLightLevel {
     /**
-     * In the player's line of sight (ambient daylight/level light). @author ClaudeCode
+     * In the player's line of sight (ambient daylight/level light). @author Rowan Crowther
      */
     LIGHTING_LOS,
-    /** Lit by the player's torch. @author ClaudeCode */
+    /**
+     * Lit by the player's torch. @author Rowan Crowther
+     */
     LIGHTING_TORCH,
-    /** Permanently lit (e.g. a lit room). @author ClaudeCode */
+    /** Permanently lit (e.g. a lit room). @author Rowan Crowther */
     LIGHTING_LIT,
-    /** Dark / unlit. @author ClaudeCode */
+    /** Dark / unlit. @author Rowan Crowther */
     LIGHTING_DARK,
-    /** Count sentinel (number of lighting states). @author ClaudeCode */
+    /** Count sentinel (number of lighting states). @author Rowan Crowther */
     LIGHTING_MAX
 }

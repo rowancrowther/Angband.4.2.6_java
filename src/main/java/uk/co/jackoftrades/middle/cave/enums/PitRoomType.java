@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave.enums;
@@ -22,17 +22,19 @@ package uk.co.jackoftrades.middle.cave.enums;
  * mirroring the pit-type categories of the C original. Pits hold an ordered line
  * of related monsters; nests hold a themed jumble.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum PitRoomType {
     /**
-     * Not a pit or nest. @author ClaudeCode
+     * Not a pit or nest. @author Rowan Crowther
      */
     PIT_TYPE_NONE,
-    /** A monster pit (ordered line of themed monsters). @author ClaudeCode */
+    /**
+     * A monster pit (ordered line of themed monsters). @author Rowan Crowther
+     */
     PIT_TYPE_PIT,
-    /** A monster nest (themed cluster of monsters). @author ClaudeCode */
+    /** A monster nest (themed cluster of monsters). @author Rowan Crowther */
     PIT_TYPE_NEST,
-    /** Some other special monster-room type. @author ClaudeCode */
+    /** Some other special monster-room type. @author Rowan Crowther */
     PIT_TYPE_OTHER
 }

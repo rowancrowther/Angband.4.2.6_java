@@ -21,7 +21,6 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jspecify.annotations.NonNull;
 import uk.co.jackoftrades.backend.parser.grammars.slay.SlayGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.slay.SlayLexer;
 import uk.co.jackoftrades.backend.parser.slay.SlayAssembler;
@@ -93,7 +92,7 @@ public class SlayReader implements Reader<Slay> {
      * @return the parsed slay records
      */
     @Contract("_, _, _ -> new")
-    private static @NonNull List<SlayParseRecord> extract(
+    private static @NotNull List<SlayParseRecord> extract(
             @NotNull SlayGrammar parser,
             @NotNull ParseErrors errorCatcher,
             @NotNull List<String> errors) {

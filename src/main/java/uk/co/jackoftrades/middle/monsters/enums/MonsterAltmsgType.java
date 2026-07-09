@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -22,15 +22,17 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * whether the monster is seen, unseen, or the spell missed. Mirrors the C
  * original's alternate-message categories ({@code src/mon-spell.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterAltmsgType {
     /**
-     * Message used when the casting monster is seen. @author ClaudeCode
+     * Message used when the casting monster is seen. @author Rowan Crowther
      */
     MON_ALTMSG_SEEN,
-    /** Message used when the casting monster is unseen. @author ClaudeCode */
+    /**
+     * Message used when the casting monster is unseen. @author Rowan Crowther
+     */
     MON_ALTMSG_UNSEEN,
-    /** Message used when the spell misses/fails. @author ClaudeCode */
+    /** Message used when the spell misses/fails. @author Rowan Crowther */
     MON_ALTMSG_MISS
 }

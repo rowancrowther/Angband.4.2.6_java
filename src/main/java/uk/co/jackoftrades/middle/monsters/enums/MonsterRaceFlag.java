@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -25,7 +25,7 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * race flags ({@code src/list-mon-race-flags.h}); the constants are
  * self-describing and documented collectively here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterRaceFlag {
     RF_NONE(MonsterRaceCategory.RFT_NONE, ""),
@@ -117,13 +117,13 @@ public enum MonsterRaceFlag {
     /**
      * The category this flag belongs to (for grouping in lore/display).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceCategory category;
     /**
      * Human-readable description of the property (e.g. the resisted element).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
 
@@ -132,7 +132,7 @@ public enum MonsterRaceFlag {
      *
      * @param category    the flag category
      * @param description the description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MonsterRaceFlag(MonsterRaceCategory category, String description) {
         this.category = category;
@@ -141,7 +141,7 @@ public enum MonsterRaceFlag {
 
     /**
      * @return the category this flag belongs to
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterRaceCategory getCategory() {
         return category;
@@ -149,7 +149,7 @@ public enum MonsterRaceFlag {
 
     /**
      * @return the human-readable description of this flag
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

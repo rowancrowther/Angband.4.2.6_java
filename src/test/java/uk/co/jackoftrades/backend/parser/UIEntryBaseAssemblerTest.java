@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * so {@link #seedRenderers()} loads the real renderer file and injects it into the private static
  * field via reflection — keeping the test self-contained and independent of full-game init order.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryBaseAssemblerTest {
 

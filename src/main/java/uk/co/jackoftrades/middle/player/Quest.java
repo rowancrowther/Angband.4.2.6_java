@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player;
@@ -31,7 +31,7 @@ import uk.co.jackoftrades.middle.monsters.MonsterRace;
  * <p><b>Status:</b> currently a field-only stub; accessors and quest-progress logic are still
  * to be ported.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Quest {
     /**

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.sounds;
@@ -29,7 +29,7 @@ import java.io.File;
  * The constant names are the standard Win32 flag names and are self-describing,
  * so they are documented here as a group rather than individually.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MessageBoxFlags {
     MB_OK(""),
@@ -66,7 +66,7 @@ public enum MessageBoxFlags {
      * The sound file associated with this message-box style, or a {@link File}
      * wrapping an empty path when no sound is configured.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private File file;
 
@@ -74,7 +74,7 @@ public enum MessageBoxFlags {
      * Build the constant, wrapping the given path as its associated sound file.
      *
      * @param path the sound file path, or empty for no sound
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MessageBoxFlags(String path) {
         file = new File(path);
@@ -82,7 +82,7 @@ public enum MessageBoxFlags {
 
     /**
      * @return the {@link File} associated with this message-box style
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public File getFileName() {
         return file;

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -22,25 +22,25 @@ package uk.co.jackoftrades.middle.monsters;
  * (for a generic shapechange) a base race to draw from. This is the Java port of
  * the C original's {@code struct monster_shape} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterShape {
     /**
      * The shape's name (the target race/base name).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The specific race to change into, if named directly.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace race;
     /**
      * The base race to draw a shape from, for generic shapechanges.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace base;
 }

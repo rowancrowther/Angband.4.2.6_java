@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.enums;
@@ -22,27 +22,29 @@ package uk.co.jackoftrades.middle.enums;
  * is moved (self, a target, away, to a location, to another level, …). Mirrors
  * the teleport variants of the C original's effect code.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum TeleportEnum {
     /**
-     * No teleport. @author ClaudeCode
+     * No teleport. @author Rowan Crowther
      */
     TELE_NONE,
-    /** Teleport the subject a random short/medium distance. @author ClaudeCode */
+    /**
+     * Teleport the subject a random short/medium distance. @author Rowan Crowther
+     */
     TELE_TELEPORT,
-    /** Teleport the subject to a chosen location. @author ClaudeCode */
+    /** Teleport the subject to a chosen location. @author Rowan Crowther */
     TELE_TELEPORT_TO,
-    /** Teleport the caster itself. @author ClaudeCode */
+    /** Teleport the caster itself. @author Rowan Crowther */
     TELE_TELEPORT_SELF,
-    /** Teleport the subject to a different dungeon level. @author ClaudeCode */
+    /** Teleport the subject to a different dungeon level. @author Rowan Crowther */
     TELE_TELEPORT_LEVEL,
-    /** Teleport another creature (away from the caster). @author ClaudeCode */
+    /** Teleport another creature (away from the caster). @author Rowan Crowther */
     TELE_TELEPORT_OTHER,
-    /** Teleport the subject far away. @author ClaudeCode */
+    /** Teleport the subject far away. @author Rowan Crowther */
     TELE_TELEPORT_AWAY,
-    /** Teleport the subject to a random location. @author ClaudeCode */
+    /** Teleport the subject to a random location. @author Rowan Crowther */
     TELE_TELEPORT_RANDOM,
-    /** Count sentinel. @author ClaudeCode */
+    /** Count sentinel. @author Rowan Crowther */
     TELE_MAX
 }

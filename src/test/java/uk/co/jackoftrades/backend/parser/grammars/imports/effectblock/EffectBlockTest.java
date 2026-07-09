@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *   <li>the {@code effect-yx:} y-then-x ordering.</li>
  * </ul>
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class EffectBlockTest {
 

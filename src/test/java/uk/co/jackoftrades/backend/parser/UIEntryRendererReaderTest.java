@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * The final test injects several distinct failures at once to confirm every one is logged
  * independently and the valid records still come through.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryRendererReaderTest {
 

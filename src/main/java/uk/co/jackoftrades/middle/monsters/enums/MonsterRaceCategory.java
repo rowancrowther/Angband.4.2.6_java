@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -24,7 +24,7 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * {@code monster_flag_type} ({@code src/list-mon-race-flags.h}); each constant's
  * inline comment gives its meaning.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterRaceCategory {
     RFT_NONE,    /* placeholder flag */

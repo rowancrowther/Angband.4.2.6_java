@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour.enums;
@@ -79,7 +79,7 @@ public enum ColourTranslation {
      * The integer index this translation occupies in a {@code ColourType}
      * translation table.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int value;
 
@@ -87,7 +87,7 @@ public enum ColourTranslation {
      * Bind the constant to its table index.
      *
      * @param value the translation-table index
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     ColourTranslation(int value) {
@@ -96,7 +96,7 @@ public enum ColourTranslation {
 
     /**
      * @return the translation-table index for this constant
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public int getValue() {

@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * field split is the reader's job, not the grammar's), fields keep file order, line numbers survive
  * skipped comment/blank lines, and a category with no fields is a parse error.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class GameConstantsGrammarTest {
 

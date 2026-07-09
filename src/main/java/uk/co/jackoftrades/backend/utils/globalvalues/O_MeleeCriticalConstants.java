@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -31,57 +31,57 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * of these constants are divisors that must be non-zero. Part of the Java port
  * of the C constants loader.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class O_MeleeCriticalConstants {
     /**
      * The data-file group tag this class consumes ({@code o-melee-critical}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String tag = "o-melee-critical";
 
     /**
      * To-hit added when calculating critical power against a debuffed target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int debuffToh;
     /**
      * Numerator of the to-hit-to-power scale factor.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerTohSclNum;
     /**
      * Denominator of the to-hit-to-power scale factor (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerTohSclDen;
     /**
      * Numerator of the power-to-chance scale factor.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chancePowerSclNum;
     /**
      * Denominator of the power-to-chance scale factor (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chancePowerSclDen;
     /**
      * Additive term in the critical-chance denominator (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceAddDen;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -165,7 +165,7 @@ public class O_MeleeCriticalConstants {
      * Store the debuff to-hit bonus. Accepted without validation.
      *
      * @param debuffToh the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setDebuffToh(int debuffToh) {
         // No checks - pass the value through directly
@@ -186,7 +186,7 @@ public class O_MeleeCriticalConstants {
      * Store the power-scale numerator. Accepted without validation.
      *
      * @param powerTohSclNum the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerTohSclNum(int powerTohSclNum) {
         // No checks on this, pass straight through
@@ -211,7 +211,7 @@ public class O_MeleeCriticalConstants {
      *
      * @param powerTohSclDen the value to store
      * @param name           the constant name, used only for error reporting
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerTohSclDen(int powerTohSclDen, String name) {
         // Denominator - can't be zero
@@ -238,7 +238,7 @@ public class O_MeleeCriticalConstants {
      * Store the chance-scale numerator. Accepted without validation.
      *
      * @param chancePowerSclNum the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChancePowerSclNum(int chancePowerSclNum) {
         // No checks - pass the value straight through
@@ -262,7 +262,7 @@ public class O_MeleeCriticalConstants {
      * @param chancePowerSclDen the proposed denominator
      * @param name              the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code chancePowerSclDen == 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChancePowerSclDen(int chancePowerSclDen, String name) {
         // Denominator - can't be zero
@@ -293,7 +293,7 @@ public class O_MeleeCriticalConstants {
      * @param chanceAddDen the proposed value
      * @param name         the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code chanceAddDen == 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceAddDen(int chanceAddDen, String name) {
         // should not be zero as this may cause a divide by zero

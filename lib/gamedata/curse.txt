@@ -91,6 +91,8 @@
 # separate them with '|', and more than one 'conflicts-flags' lines may be
 # used to specify all of the conflicting flags.
 
+record-count:27
+
 name:vulnerability
 combat:0:0:-50
 type:cloak

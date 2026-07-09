@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.combat;
@@ -31,37 +31,37 @@ import uk.co.jackoftrades.middle.enums.MessageType;
  * chosen probabilistically. This is the Java port of the C original's
  * {@code o_critical_level}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class O_CriticalLevel {
     /**
      * The data-file group tag these levels are parsed under.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String tag = "o-melee-critical-level";
     /**
      * 1/chance this level is selected when no earlier level was.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int chance;
     /**
      * Extra damage dice added at this critical level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int addedDice;
     /**
      * The message shown to the player for this critical level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Logger used to report invalid parsed values.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

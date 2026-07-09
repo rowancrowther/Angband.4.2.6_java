@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen.enums;
@@ -22,29 +22,31 @@ package uk.co.jackoftrades.frontend.screen.enums;
  * displayed value in a UI entry (for example merging several sources of the same
  * stat). Mirrors the combiner modes of the C original's UI-entry system.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum CombinerName {
     /**
-     * No combination (single value, or combining disabled). @author ClaudeCode
+     * No combination (single value, or combining disabled). @author Rowan Crowther
      */
     NONE,
-    /** Sum the contributing values. @author ClaudeCode */
+    /**
+     * Sum the contributing values. @author Rowan Crowther
+     */
     ADD,
-    /** Bitwise-OR the contributing values together. @author ClaudeCode */
+    /** Bitwise-OR the contributing values together. @author Rowan Crowther */
     BITWISE_OR,
-    /** Take the first contributing value. @author ClaudeCode */
+    /** Take the first contributing value. @author Rowan Crowther */
     FIRST,
-    /** Take the largest contributing value. @author ClaudeCode */
+    /** Take the largest contributing value. @author Rowan Crowther */
     LARGEST,
-    /** Take the last contributing value. @author ClaudeCode */
+    /** Take the last contributing value. @author Rowan Crowther */
     LAST,
-    /** Logical-OR (true if any contributor is true). @author ClaudeCode */
+    /** Logical-OR (true if any contributor is true). @author Rowan Crowther */
     LOGICAL_OR,
-    /** Logical-OR but with a cancelling rule for opposing values. @author ClaudeCode */
+    /** Logical-OR but with a cancelling rule for opposing values. @author Rowan Crowther */
     LOGICAL_OR_WITH_CANCEL,
-    /** Resistance combination treating zero specially. @author ClaudeCode */
+    /** Resistance combination treating zero specially. @author Rowan Crowther */
     RESIST_0,
-    /** Take the smallest contributing value. @author ClaudeCode */
+    /** Take the smallest contributing value. @author Rowan Crowther */
     SMALLEST
 }

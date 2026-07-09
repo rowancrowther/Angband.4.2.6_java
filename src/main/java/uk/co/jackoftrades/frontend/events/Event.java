@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.events;
@@ -26,13 +26,13 @@ import uk.co.jackoftrades.frontend.events.enums.UiEventType;
  * abstraction ({@code src/ui-event.h}); the shared {@link Flag} captures which
  * event categories are in play.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public interface Event {
     /**
      * The set of event categories this event belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     Flag<UiEventType> uiEventType = new Flag<>(UiEventType.class);
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -40,7 +40,7 @@ import java.util.Map;
  * items ({@link ItemObject}) reference an {@code ObjectKind}. This is the Java
  * port of the C original's {@code struct object_kind} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ObjectKind {
     /**
@@ -48,7 +48,7 @@ public class ObjectKind {
      *
      * @param curse     the curse
      * @param curseData its instance data (power/timeout)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public record CurseEntry(Curse curse, CurseData curseData) {
     }
@@ -56,289 +56,289 @@ public class ObjectKind {
     /**
      * The kind's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
 
     /**
      * The base type this kind belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectBase base;
     /**
      * Index of this kind in the global kind table.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int kindIndex;
 
     /**
      * The item type value (tval).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
      * The sub-type value (sval) as a string.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String sValue;
 
     /**
      * Extra parameter value (the item's "pval"), as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random pVal; // Item extra parameter
 
     /**
      * Base to-hit bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toH;
     /**
      * Base to-damage bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toD;
     /**
      * Base to-armour-class bonus, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random toA;
 
     /**
      * Base armour class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ac;
     /**
      * Base damage, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random baseDamage;
     /**
      * Number of damage dice.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int damageDice;
     /**
      * Sides per damage die.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int damageSides;
     /**
      * Base weight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Base cost/value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cost;
 
     /**
      * Object flags this kind grants.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
      * Kind flags controlling generation/display.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFlags;
 
     /**
      * Numeric modifiers granted, keyed by modifier, as dice expressions.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Random> modifiers;
     /**
      * Per-element relation info (resist/ignore/etc.).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Brands this kind carries (mapped to whether they are intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Brand, Boolean> brands;
     /**
      * Slays this kind carries (mapped to whether they are intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Slay, Boolean> slays;
     /**
      * Curses this kind carries (mapped to whether they are intrinsic).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<CurseEntry, Boolean> curses;
 
     /**
      * The display glyph and colour.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter character;
 
     /**
      * Allocation probability weight.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int alloc_prob;
     /**
      * Minimum depth at which the kind is allocated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int alloc_min;
     /**
      * Maximum depth at which the kind is allocated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int alloc_max;
     /**
      * The kind's native level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int level;
 
     /**
      * Activations this kind provides.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Activation> activations;
     /**
      * Effects this kind produces when used.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Effect> effect;
     /**
      * The kind's power rating.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
     /**
      * Message shown when the kind's effect is used.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String effectMessage;
     /**
      * Message shown when the effect is seen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String visMessage;
     /**
      * Recharge/effect timing, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random time;
     /**
      * Charge count (for wands/staves), as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random charge;
 
     /**
      * Probability used when generating multiple of this kind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int genMultProb;
     /**
      * Stack size when generated, as a dice expression.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random stackSize;
 
     /**
      * The randomised flavour for unidentified instances.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flavour flavour;
 
     /**
      * Inscription note used once the kind is identified.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Quark noteAware;
     /**
      * Inscription note used while the kind is unidentified.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Quark noteUnaware;
 
     /**
      * Whether the player is aware of (has identified) this kind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean aware;
     /**
      * Whether the player has tried this kind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean tried;
 
     /**
      * The player's ignore setting for this kind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ignore;
     /**
      * Whether the player has ever seen this kind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean everseen;
 
     /**
      * Build an empty object kind with fresh collections.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectKind() {
         elInfo = new HashMap<>();
@@ -355,7 +355,7 @@ public class ObjectKind {
      * Set the kind's display glyph/colour.
      *
      * @param character the display character
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setCharacter(AngbandDisplayCharacter character) {
         this.character = character;
@@ -376,7 +376,7 @@ public class ObjectKind {
      * @param sValue    sub-type value
      * @param base      base type
      * @param isDungeon whether this is a dungeon-generated kind
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectKind(AngbandDisplayCharacter adc, int cost,
                       int level, int min, int max,
@@ -464,7 +464,7 @@ public class ObjectKind {
      * @param ignore        ignore setting
      * @param everseen      whether ever seen
      * @param tValue        item type value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectKind(String name, String text, ObjectBase base,
                       int kindIndex, String pVal, String toH,
@@ -544,7 +544,7 @@ public class ObjectKind {
 
     /**
      * @return the kind's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -552,7 +552,7 @@ public class ObjectKind {
 
     /**
      * @return the kind's base type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectBase getBase() {
         return base;
@@ -560,7 +560,7 @@ public class ObjectKind {
 
     /**
      * @param alloc_prob the allocation probability weight
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setAlloc_prob(int alloc_prob) {
         this.alloc_prob = alloc_prob;
@@ -568,7 +568,7 @@ public class ObjectKind {
 
     /**
      * @param alloc_min the minimum allocation depth
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setAlloc_min(int alloc_min) {
         this.alloc_min = alloc_min;
@@ -576,7 +576,7 @@ public class ObjectKind {
 
     /**
      * @param alloc_max the maximum allocation depth
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setAlloc_max(int alloc_max) {
         this.alloc_max = alloc_max;
@@ -584,7 +584,7 @@ public class ObjectKind {
 
     /**
      * @param cost the base cost/value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setCost(int cost) {
         this.cost = cost;
@@ -592,7 +592,7 @@ public class ObjectKind {
 
     /**
      * @return the item type value (tval)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TValue gettValue() {
         return tValue;

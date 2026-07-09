@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -30,76 +30,76 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * pair deliberately tuned so thrown missiles crit more often. All denominators
  * are guarded against zero. Part of the Java port of the C constants loader.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class O_RangedCriticalConstants {
     /**
      * The data-file group tag this class consumes ({@code o-ranged-critical}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String tag = "o-ranged-critical";
 
     /**
      * To-hit added when calculating critical power against a debuffed target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int debufToh;
     /**
      * Numerator of the launched-missile to-hit-to-power scale.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerLaunchedTohScaleNumerator;
     /**
      * Denominator of the launched-missile to-hit-to-power scale (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerLaunchedTohScaleDenominator;
     /**
      * Numerator of the thrown-missile to-hit-to-power scale.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerThrownTohScaleNumerator;
     /**
      * Denominator of the thrown-missile to-hit-to-power scale (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerThrownTohScaleDenominator;
     /**
      * Numerator of the power-to-chance scale factor.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chancePowerScaleNumerator;
     /**
      * Denominator of the power-to-chance scale factor (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chancePowerScaleDenominator;
     /**
      * Additive term in the critical-chance denominator (must be non-zero).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceAddDenominator;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Private constructor preventing instantiation; the class is a static holder.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     private O_RangedCriticalConstants() {
@@ -189,7 +189,7 @@ public class O_RangedCriticalConstants {
      * Store the debuff to-hit bonus. Accepted without validation.
      *
      * @param debufToh the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setDebufToh(int debufToh) {
         // No checks - pass right through
@@ -212,7 +212,7 @@ public class O_RangedCriticalConstants {
      * Store the launched power-scale numerator. Accepted without validation.
      *
      * @param powerLaunchedTohScaleNumerator the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerLaunchedTohScaleNumerator(int powerLaunchedTohScaleNumerator) {
         // No checks on numerators - pass right through
@@ -237,7 +237,7 @@ public class O_RangedCriticalConstants {
      * @param powerLaunchedTohScaleDenominator the proposed denominator
      * @param name                             the constant name, used only for error reporting
      * @throws IllegalArgumentException if the denominator is zero
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerLaunchedTohScaleDenominator(int powerLaunchedTohScaleDenominator, String name) {
         // denominator - must not be zero
@@ -267,7 +267,7 @@ public class O_RangedCriticalConstants {
      * Store the thrown power-scale numerator. Accepted without validation.
      *
      * @param powerThrownTohScaleNumerator the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerThrownTohScaleNumerator(int powerThrownTohScaleNumerator) {
         // No checks needed - pass straight through
@@ -292,7 +292,7 @@ public class O_RangedCriticalConstants {
      * @param powerThrownTohScaleDenominator the proposed denominator
      * @param name                           the constant name, used only for error reporting
      * @throws IllegalArgumentException if the denominator is zero
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerThrownTohScaleDenominator(int powerThrownTohScaleDenominator, String name) {
         // Check that we are not passing through a zero denominator
@@ -320,7 +320,7 @@ public class O_RangedCriticalConstants {
      * Store the chance-scale numerator. Accepted without validation.
      *
      * @param chancePowerScaleNumerator the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChancePowerScaleNumerator(int chancePowerScaleNumerator) {
         // No checks needed - pass right through
@@ -343,7 +343,7 @@ public class O_RangedCriticalConstants {
      * @param chancePowerScaleDenominator the proposed denominator
      * @param name                        the constant name, used only for error reporting
      * @throws IllegalArgumentException if the denominator is zero
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChancePowerScaleDenominator(int chancePowerScaleDenominator, String name) {
         // denominator - check for divide by zero
@@ -373,7 +373,7 @@ public class O_RangedCriticalConstants {
      * @param chanceAddDenominator the proposed value
      * @param name                 the constant name, used only for error reporting
      * @throws IllegalArgumentException if the value is zero
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceAddDenominator(int chanceAddDenominator, String name) {
         if (chanceAddDenominator == 0) {

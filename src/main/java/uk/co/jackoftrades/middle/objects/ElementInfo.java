@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -26,26 +26,26 @@ import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
  * One of these exists per element on an object kind. This is the Java port of the
  * C original's {@code struct element_info} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ElementInfo {
     /**
      * The hates/ignores/random flags for this element.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ElementInfoEnum> flags;
     /**
      * The resistance level against this element.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int resLevel;
 
     /**
      * Build an element-info with an empty flag set.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ElementInfo() {
         this.flags = new Flag<>(ElementInfoEnum.class);
@@ -53,15 +53,18 @@ public class ElementInfo {
 
     /**
      * @return the resistance level against this element
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getResLevel() {
         return resLevel;
     }
 
+    public void setResLevel(int resLevel) {
+        this.resLevel = resLevel;
+    }
     /**
      * @return the hates/ignores/random flags for this element
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Flag<ElementInfoEnum> getFlags() {
         return flags;
@@ -72,7 +75,7 @@ public class ElementInfo {
      *
      * @param info the flag to set
      * @return true if the flag was newly set, false if already set
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean on(ElementInfoEnum info) {
         return flags.on(info);

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -29,52 +29,52 @@ import uk.co.jackoftrades.middle.enums.TrapEnum;
  * disarm/cooldown timeout and per-instance flags). This is the Java port of the
  * C original's {@code struct trap} ({@code src/trap.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Trap {
     /**
      * This trap's index in the level's trap list.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int trapIndex;
     /**
      * The kind/template this trap is an instance of.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TrapKind kind;
 
     /**
      * The grid this trap occupies.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc grid;
 
     /**
      * The trap's current power (affects difficulty/severity).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
     /**
      * Turns until the trap can trigger again (0 means ready/active).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int timeout;
 
     /**
      * Per-instance trap flags.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<TrapEnum> flags;
 
     /**
      * @return the {@link TrapKind} template for this trap
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TrapKind getKind() {
         return kind;
@@ -105,7 +105,7 @@ public class Trap {
 
     /**
      * @return this trap's index in the level's trap list
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -115,7 +115,7 @@ public class Trap {
 
     /**
      * @return turns until the trap can trigger again (0 = ready)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)

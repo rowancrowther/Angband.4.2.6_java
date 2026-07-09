@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * that is a <em>soft</em> error, so the valid records still load alongside it (partial-results
  * contract). Both paths are exercised below.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class WorldReaderTest {
 

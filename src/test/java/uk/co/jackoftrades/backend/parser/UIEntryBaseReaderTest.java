@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * The renderer registry the assembler resolves against is seeded via reflection (see
  * {@link UIEntryBaseAssemblerTest} for the same rationale).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryBaseReaderTest {
 

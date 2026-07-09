@@ -36,13 +36,13 @@ import java.io.IOException;
  * {@link Reader}, because the visuals file produces one aggregate object rather
  * than a list of entries (Java port of the C {@code flavor}/visuals loading).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class VisualsReader {
     /**
      * Logger used to report file-loading failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

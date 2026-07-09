@@ -109,12 +109,11 @@ class MonsterBaseReaderTest {
     void cleanLoadOfTheRealFileYieldsAll56Bases() throws IOException {
         ParseResult<MonsterBase> result = new MonsterBaseReader().parseWithResults(REAL_FILE);
 
-        // The shipped file has a placeholder record-count:0, so the only expected error is the count
-        // mismatch; every one of the 56 bases resolves (all pain indices are 1..12).
+        // Every one of the 56 bases resolves (all pain indices are 1..12) and the header declares
+        // the real count, so the load is completely error-free.
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(56, result.items().size());
         assertEquals("ancient dragon", result.items().get(0).getCodeName());
-        assertTrue(result.errors().stream().allMatch(e -> e.contains("record-count")),
-                () -> "only the count-mismatch error was expected, got: " + result.errors());
     }
 
     @Test

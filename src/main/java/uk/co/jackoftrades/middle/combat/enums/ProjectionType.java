@@ -22,7 +22,7 @@ package uk.co.jackoftrades.middle.combat.enums;
  * the C original's projection-type grouping. This determines how a projection's
  * effect is resolved.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ProjectionType {
     /**
@@ -30,15 +30,15 @@ public enum ProjectionType {
      */
     PT_NONE,
     /**
-     * Acts as a damage element against creatures. @author ClaudeCode
+     * Acts as a damage element against creatures. @author Rowan Crowther
      */
     PT_ELEMENT,
     /**
-     * Affects the environment/terrain rather than a target. @author ClaudeCode
+     * Affects the environment/terrain rather than a target. @author Rowan Crowther
      */
     PT_ENVIRONS,
     /**
-     * Specifically targets/affects monsters. @author ClaudeCode
+     * Specifically targets/affects monsters. @author Rowan Crowther
      */
     PT_MONSTER
 }

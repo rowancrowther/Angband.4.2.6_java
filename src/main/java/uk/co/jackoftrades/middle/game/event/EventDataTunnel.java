@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -23,25 +23,25 @@ package uk.co.jackoftrades.middle.game.event;
  * block" distances to the goal. Emitted for generation-introspection events; a
  * {@code dend} of 0 means the tunnel reached its goal.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataTunnel implements GameEventData {
     /**
      * The total number of tunnelling steps made.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int nstep;      // The total number of tunnelling steps made
     /**
      * The total number of wall piercings for rooms.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int npierce;    // The total number of wall piercings for rooms
     /**
      * The number of times excavated (excluding wall piercings).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int ndug;       // The number of times excavated (excluding wall piercings)
 
@@ -49,7 +49,7 @@ public class EventDataTunnel implements GameEventData {
      * City-block distance between the starting point and the tunnel goal
      * (i.e. {@code abs(start.x-end.x) + abs(start.y-end.y)}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int dstart;     // The 'city block' distance between the starting point and the tunnel goal
     // i.e. ABS(start.x - end.x) + ABS(start.y - end.y)
@@ -57,7 +57,7 @@ public class EventDataTunnel implements GameEventData {
      * City-block distance between the final tunnel point and the goal; 0 means
      * the tunnel reached its goal.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int dend;       // The 'city block' distance between the final point in the tunnel and the goal
     //  dend value of 0 means the tunnel reached its goal
@@ -65,7 +65,7 @@ public class EventDataTunnel implements GameEventData {
     /**
      * Whether the tunnel was cut short by the random early-termination criteria.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean early;  // Whether the tunnel was terminated by the random early termination criteria
 
@@ -78,7 +78,7 @@ public class EventDataTunnel implements GameEventData {
      * @param dstart  start-to-goal distance
      * @param dend    end-to-goal distance (0 = reached goal)
      * @param early   whether it terminated early
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataTunnel(int nstep, int npierce, int ndug, int dstart, int dend, boolean early) {
         this.nstep = nstep;
@@ -91,7 +91,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return the number of tunnelling steps made
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getNstep() {
         return nstep;
@@ -99,7 +99,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return the number of wall piercings made
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getNpierce() {
         return npierce;
@@ -107,7 +107,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return the number of excavations made
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getNdug() {
         return ndug;
@@ -115,7 +115,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return the start-to-goal city-block distance
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getDstart() {
         return dstart;
@@ -123,7 +123,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return the end-to-goal city-block distance (0 = reached goal)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getDend() {
         return dend;
@@ -131,7 +131,7 @@ public class EventDataTunnel implements GameEventData {
 
     /**
      * @return whether the tunnel terminated early
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isEarly() {
         return early;

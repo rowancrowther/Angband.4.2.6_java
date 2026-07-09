@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils;
@@ -30,13 +30,13 @@ import uk.co.jackoftrades.backend.utils.quit.Quit;
  * touching call sites. Abstract because it is a pure utility holder and should
  * never be instantiated.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public abstract class ControlUtils {
     /**
      * Shared logger backing the {@code plog}/{@code plogFmt} helpers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

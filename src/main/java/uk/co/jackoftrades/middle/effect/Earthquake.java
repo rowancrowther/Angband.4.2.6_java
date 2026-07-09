@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.effect;
@@ -25,9 +25,11 @@ package uk.co.jackoftrades.middle.effect;
  */
 public enum Earthquake {
     /**
-     * No special targeting (centred on the caster). @author ClaudeCode
+     * No special targeting (centred on the caster). @author Rowan Crowther
      */
     QUAKE_NONE,
-    /** Centred on a chosen target grid. @author ClaudeCode */
+    /**
+     * Centred on a chosen target grid. @author Rowan Crowther
+     */
     QUAKE_TARGETED
 }

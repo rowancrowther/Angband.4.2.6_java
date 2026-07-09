@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * single sign-capable {@code INTEGER} (C7), hyphenated lowercase names, and that the imported
  * {@code CommentsAndEol} comment/EOL rules are skipped (so CRLF gamedata tokenises clean — C9).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class GameConstantsLexerTest {
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game;
@@ -32,105 +32,105 @@ import uk.co.jackoftrades.middle.enums.MessageType;
  * damage denominator to be given either as a fixed integer or as a dice
  * expression ({@link #diceDenominator}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Projection {
     /**
      * The projection's identity/code.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ProjectionEnum projection;
     /**
      * The projection's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The projection's broad category (element/environs/monster).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ProjectionType type;
     /**
      * General description of the projection.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
     /**
      * Description used when the projection affects the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String playerDescription;
     /**
      * Description used when the player is blind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String blindDescription;
     /**
      * Description used for the "lash" (short beam) form.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String lashDescription;
     /**
      * Numerator of the damage-scaling fraction.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numerator;
     /**
      * Integer denominator of the damage-scaling fraction ({@code -1} when a dice
      * denominator is used instead).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int denominator;
     /**
      * Dice-expression denominator of the damage-scaling fraction (used instead of
      * {@link #denominator} for the dice-based constructor).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random diceDenominator;
     /**
      * Divisor applied to scaled damage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int divisor;
     /**
      * Maximum damage this projection can deal.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int damageCap;
     /**
      * The message shown when this projection is used.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Whether the projection's effect is obvious to the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean isObvious;
     /**
      * Whether the projection wakes sleeping monsters.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean willWake;
     /**
      * The colour used to draw this projection.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType colour;
 
@@ -152,7 +152,7 @@ public class Projection {
      * @param isObvious         whether the effect is obvious
      * @param willwake          whether it wakes monsters
      * @param colour            display colour
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Projection(ProjectionEnum projection,
                       String name,
@@ -205,7 +205,7 @@ public class Projection {
      * @param isObvious         whether the effect is obvious
      * @param willWake          whether it wakes monsters
      * @param colour            display colour
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Projection(ProjectionEnum projection,
                       String name,
@@ -242,7 +242,7 @@ public class Projection {
 
     /**
      * @return the lash-form description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getLashDescription() {
         return lashDescription;
@@ -250,7 +250,7 @@ public class Projection {
 
     /**
      * @return a debug string listing this projection's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.quit;
@@ -28,13 +28,13 @@ import org.jetbrains.annotations.NotNull;
  * {@code System.exit} is currently commented out so that the partially-ported
  * game does not kill the JVM during development/testing.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Quit implements QuitAux {
     /**
      * Logger used to record the quit message before (eventually) exiting.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 

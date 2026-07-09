@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -30,25 +30,25 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * sibling constant classes) so further per-level maxima can be added without
  * restructuring. Part of the Java port of the C constants loader.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class LevelMaxConstants {
     /**
      * The data-file group tag this class consumes ({@code level-max}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String constantsTag = "level-max";
     /**
      * Maximum number of monsters allowed on a single level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int monsters;
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -120,7 +120,7 @@ public class LevelMaxConstants {
      *
      * @param monsters the proposed maximum monsters per level
      * @throws InvalidTokenFoundDuringParse if {@code monsters <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = false)
     private static void setMonsters(int monsters) throws InvalidTokenFoundDuringParse {

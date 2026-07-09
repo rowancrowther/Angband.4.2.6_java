@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * presence, the dedicated lexer modes for dice / expr / effect-msg, and that {@code time:}
  * only ever yields the simple dice token.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class EffectBlockLexerTest {
 

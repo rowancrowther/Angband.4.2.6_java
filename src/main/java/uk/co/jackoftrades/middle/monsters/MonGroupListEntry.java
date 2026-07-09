@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -22,13 +22,13 @@ package uk.co.jackoftrades.middle.monsters;
  * group member. This is the Java port of the C original's {@code mon_group_list_entry}
  * ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonGroupListEntry {
     /**
      * The monster index of this group member.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mIdx;
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.entries.enums;
@@ -21,13 +21,15 @@ package uk.co.jackoftrades.frontend.entries.enums;
  * Behavioural flags for a UI entry definition, mirroring the {@code ENTRY_FLAG_*}
  * constants of the C original's UI-entry system.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum EntryFlag {
     /**
-     * Treat the entry's timed value as auxiliary (secondary) data. @author ClaudeCode
+     * Treat the entry's timed value as auxiliary (secondary) data. @author Rowan Crowther
      */
     ENTRY_FLAG_TIMED_AS_AUX,
-    /** Entry is a template only and is not itself displayed. @author ClaudeCode */
+    /**
+     * Entry is a template only and is not itself displayed. @author Rowan Crowther
+     */
     ENTRY_FLAG_TEMPLATE_ONLY
 }

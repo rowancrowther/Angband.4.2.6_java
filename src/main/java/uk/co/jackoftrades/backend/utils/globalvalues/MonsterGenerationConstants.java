@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -32,73 +32,73 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * {@link LevelMaxConstants#getMaxMonstersPerLevel()}, so that data is expected to
  * be loaded first. Part of the Java port of the C constants loader.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterGenerationConstants {
     /**
      * The data-file group tag this class consumes ({@code mon-gen}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String constantsTag = "mon-gen";
     /**
      * 1-in-{@code chance} probability that a new monster is generated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chance;
     /**
      * Minimum number of monsters generated on a level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int levelMin;
     /**
      * Number of townsfolk generated during the day.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int townDay;
     /**
      * Number of townsfolk generated during the night.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int townNight;
     /**
      * Maximum number of breeding monsters allowed on a level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int reproMax;
     /**
      * 1-in-{@code oodChance} probability that a monster is out of its normal depth.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int oodChance;
     /**
      * Maximum number of levels out of depth a monster may be generated.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int oodAmount;
     /**
      * Maximum number of monsters in a single group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int groupMax;
     /**
      * Maximum distance a group may generate from a related group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int groupDist;
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -119,7 +119,7 @@ public class MonsterGenerationConstants {
      * @param chanceVal the proposed 1-in-N chance
      * @param tag       the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code chanceVal <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChance(int chanceVal, @NotNull String tag) throws IllegalArgumentException {
         if (chanceVal <= 0) {
@@ -213,7 +213,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed minimum
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setLevelMin(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -243,7 +243,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed count
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if out of the allowed range
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setTownDay(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
@@ -274,7 +274,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed count
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if out of the allowed range
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setTownNight(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
@@ -307,7 +307,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed cap
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if out of the allowed range
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setReproMax(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value < 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
@@ -339,7 +339,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed 1-in-N chance
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setOodChance(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -369,7 +369,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed maximum levels out of depth
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setOodAmount(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0) {
@@ -400,7 +400,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed group size
      * @param tag   the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if out of the allowed range
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setGroupMax(int value, @NotNull String tag) throws InvalidTokenFoundDuringParse {
         if (value <= 0 || value > LevelMaxConstants.getMaxMonstersPerLevel()) {
@@ -432,7 +432,7 @@ public class MonsterGenerationConstants {
      * @param value the proposed distance
      * @param tag   the constant name, used only for error reporting
      * @throws IllegalArgumentException if {@code value <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setGroupDist(int value, @NotNull String tag) {
         if (value <= 0) {

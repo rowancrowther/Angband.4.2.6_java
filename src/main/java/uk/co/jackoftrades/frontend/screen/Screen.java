@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen;
@@ -39,81 +39,81 @@ import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
  * platform-specific window code ({@code main-win.c} et al.) — the place where the
  * abstract terminal model meets actual pixels.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Screen {
     /**
      * The current JavaFX scene shown on the stage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Scene mainScene;
     /**
      * Status line label, updated as the game reports progress.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Label statusLabel = new Label("Initialising game...");
     /**
      * Welcome/title label shown on the initial screen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Label welcomeLabel = new Label("Welcome to Java Angband v4.2.6");
     /**
      * The logical terminal this screen draws.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Term term;
     /**
      * Horizontal tile scale (in cells) for the cursor/graphics.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int tileWidth = 1;
     /**
      * Vertical tile scale (in cells) for the cursor/graphics.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int tileHeight = 1;
 
     /**
      * Whether a palette-based colour mode is in use.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean paletted = false;
     /**
      * Whether the display is limited to 16 colours.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean colours16 = false;
 
     /**
      * The 2D graphics context used for all drawing on {@link #canvas}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final GraphicsContext graphicsContext;
     /**
      * The canvas the terminal contents are painted onto.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Canvas canvas;
     /**
      * The JavaFX stage (top-level window) hosting this screen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Stage stage;
     /**
      * The window's menu bar.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MenuBar menuBar;
 
@@ -122,7 +122,7 @@ public class Screen {
      * {@link Term} and {@link TermData}, and perform the initial draw.
      *
      * @param stage the JavaFX stage to host this window
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Screen(@NotNull Stage stage) {
         this.stage = stage;
@@ -140,7 +140,7 @@ public class Screen {
     /**
      * Reset the window to a blank black canvas under the menu bar.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void clear() {
         Canvas canvas = new Canvas(800, 600);
@@ -161,7 +161,7 @@ public class Screen {
      * canvas, the cursor frame and the welcome/status text, then size and centre
      * the stage. Called once at construction and whenever a full repaint is needed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void redraw() {
         menuBar = new MenuBar();
@@ -212,7 +212,7 @@ public class Screen {
      * Update the status line text and repaint the welcome/status area.
      *
      * @param text the new status message
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setStatusLabelText(String text) {
         statusLabel.setText(text);
@@ -229,7 +229,7 @@ public class Screen {
 
     /**
      * @return the status-line label
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Label getStatusLabel() {
         return statusLabel;
@@ -239,7 +239,7 @@ public class Screen {
      * Build the "Window" menu item (currently a no-op action placeholder).
      *
      * @return the configured menu item
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     private @NotNull MenuItem windowMenuItem() {
@@ -253,7 +253,7 @@ public class Screen {
      * Build the "New Game" menu item, which clears the terminal when chosen.
      *
      * @return the configured menu item
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     private @NotNull MenuItem newGameMenuItem() {
@@ -269,7 +269,7 @@ public class Screen {
      * Build the "Exit" menu item, which terminates the JVM when chosen.
      *
      * @return the configured menu item
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     private @NotNull MenuItem exitMenuHandler() {
@@ -288,7 +288,7 @@ public class Screen {
      *
      * @param x the cell column
      * @param y the cell row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void bigcursWin(int x, int y) {
         Rect rect;
@@ -319,7 +319,7 @@ public class Screen {
      *
      * @param x the cell column
      * @param y the cell row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void cursWin(int x, int y) {
     }
@@ -331,7 +331,7 @@ public class Screen {
      *
      * @param rect   the rectangle to frame
      * @param colour the stroke colour
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void frameRect(@NotNull Rect rect, @NotNull Color colour) {
         graphicsContext.setStroke(colour);

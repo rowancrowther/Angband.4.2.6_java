@@ -30,67 +30,67 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
  * stack size. This is the Java port of the C original's {@code struct object_base}
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ObjectBase {
     /**
      * The base type's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
 
     /**
      * The item type value (tval) of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue tVal;
 
     /**
      * Default display colour for kinds of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType attr;
 
     /**
      * Elements this base's items are destroyed by (the {@code HATES_*} flags).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ElementEnum> hatesEl;
 
     /**
      * Object-kind flags shared by kinds of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFlags;
 
     /**
      * Percentage chance an item of this base breaks when thrown ({@code -1} if unset).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int breakPerc;
     /**
      * Maximum stack size for items of this base ({@code -1} if unset).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int maxStack;
     /**
      * Number of distinct sub-values (svals) under this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numSvals;
 
     /**
      * Build an empty object base with fresh flag sets and unset break/stack values.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectBase(TValue tVal, String name, ColourType colour, Flag<ObjectKindFlag> kFlag,
                       Flag<ElementEnum> hatesFlag, int breakChance, int maxStack) {
@@ -105,7 +105,7 @@ public class ObjectBase {
 
     /**
      * @return the base type's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -113,7 +113,7 @@ public class ObjectBase {
 
     /**
      * @return the item type value (tval)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TValue gettVal() {
         return tVal;
@@ -121,7 +121,7 @@ public class ObjectBase {
 
     /**
      * @return the default display colour
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ColourType getAttr() {
         return attr;
@@ -129,7 +129,7 @@ public class ObjectBase {
 
     /**
      * @return the break-on-throw percentage
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getBreakPerc() {
         return breakPerc;
@@ -137,7 +137,7 @@ public class ObjectBase {
 
     /**
      * @return the maximum stack size
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getMaxStack() {
         return maxStack;
@@ -145,7 +145,7 @@ public class ObjectBase {
 
     /**
      * @return a debug string listing this base's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

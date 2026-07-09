@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -33,51 +33,51 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * {@code name:value} line for this group and routes it to the matching
  * validating setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class CarryCapacityConstants {
     /**
      * The data-file group tag this class consumes ({@code carry-cap}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String tag = "carry-cap";
 
     /**
      * Maximum number of pack (inventory) slots the player can carry.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int packSize;
     /**
      * Maximum number of quiver slots available for ammunition.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int quiverSize;
     /**
      * Maximum number of missiles that fit in a single quiver slot.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int quiverSlotSize;
     /**
      * Multiplier applied to non-ammo thrown items when fitting them into a quiver slot.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int thrownQuiverMult;
     /**
      * Maximum number of items that may stack on a single floor grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int floorSize;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -89,7 +89,7 @@ public class CarryCapacityConstants {
      * @param value the raw {@code name:value} token from {@code constants.txt}
      * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
      *                                      cannot be parsed, or the name is not recognised
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
@@ -162,7 +162,7 @@ public class CarryCapacityConstants {
      * @param packSize the proposed pack size
      * @param name     the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code packSize <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPackSize(int packSize, String name) throws InvalidTokenFoundDuringParse {
         if (packSize <= 0) {
@@ -192,7 +192,7 @@ public class CarryCapacityConstants {
      * @param quiverSize the proposed quiver size
      * @param name       the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code quiverSize <= 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setQuiverSize(int quiverSize, String name) throws InvalidTokenFoundDuringParse {
         if (quiverSize <= 0) {
@@ -221,7 +221,7 @@ public class CarryCapacityConstants {
      *
      * @param quiverSlotSize the proposed missiles-per-slot value
      * @param name           the constant name, used only for error reporting
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setQuiverSlotSize(int quiverSlotSize, String name) {
         if (quiverSlotSize < 0) {
@@ -250,7 +250,7 @@ public class CarryCapacityConstants {
      *
      * @param thrownQuiverMult the proposed multiplier
      * @param name             the constant name, used only for error reporting
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setThrownQuiverMult(int thrownQuiverMult, String name) {
         if (thrownQuiverMult < 0) {
@@ -282,7 +282,7 @@ public class CarryCapacityConstants {
      *
      * @param floorSize the proposed maximum items per floor grid
      * @param name      the constant name, used only for error reporting
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setFloorSize(int floorSize, String name) {
         if (floorSize <= 1) {

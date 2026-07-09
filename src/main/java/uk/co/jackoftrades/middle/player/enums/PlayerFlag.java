@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -33,7 +33,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * family (object flags, redraw flags, …) — while the constant ordering is kept
  * identical to the C list so any index-based data/save compatibility is preserved.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum PlayerFlag {
     /**

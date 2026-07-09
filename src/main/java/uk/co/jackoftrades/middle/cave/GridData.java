@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -47,94 +47,94 @@ import java.util.Iterator;
  * {@code map_info()} routine ({@code src/cave-map.c}), which the display layer
  * consults to decide each cell's glyph and colour.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class GridData {
     /**
      * Logger used to report out-of-bounds/invalid grid queries.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The visible monster on this grid, or {@code null} if none is shown.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Monster monster;
     /**
      * Index of a (possibly hallucinated) monster to display.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monsterIndex;
     /**
      * The terrain feature to display (after any mimic resolution).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Feature feature;
     /**
      * The first/topmost object kind on this grid, or {@code null} if none.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectKind firstKind;
     /**
      * The object kinds present on this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<ObjectKind> objectKindList;
     /**
      * The traps shown on this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Trap> trapList = new ArrayList<>();
 
     /**
      * True when more than one object is present (so a "pile" should be shown).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean multipleObjects;
     /**
      * True when there are objects the player knows about but cannot currently see.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean unseenObjects;
     /**
      * True when there is money the player knows about but cannot currently see.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean unseenMoney;
 
     /**
      * The lighting state used to colour this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private GridLightLevel lighting;
     /**
      * Whether this grid is currently in the player's view.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean inView;
     /**
      * Whether the player occupies this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean isPlayer;
     /**
      * Whether the player is hallucinating (which can replace the real contents).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean hallucinate;
 
@@ -148,7 +148,7 @@ public class GridData {
      * @param grid the dungeon grid to describe
      * @throws Exception if the grid is out of bounds, or a monster index exceeds
      *                   the cave's maximum
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void mapInfo(Loc grid) throws Exception {
         if (!GameConstants.cave.inBounds(grid)) {

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -23,13 +23,13 @@ import org.jetbrains.annotations.Contract;
  * {@link GameEventData} payload carrying a single boolean flag — used by events
  * that report a yes/no outcome (e.g. generation success).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataBoolean implements GameEventData {
     /**
      * The boolean value carried by this event.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean value;
 
@@ -37,7 +37,7 @@ public class EventDataBoolean implements GameEventData {
      * Build the payload with an explicit value.
      *
      * @param value the boolean value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataBoolean(boolean value) {
         this.value = value;
@@ -46,7 +46,7 @@ public class EventDataBoolean implements GameEventData {
     /**
      * Build the payload defaulting to {@code false}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataBoolean() {
         this.value = false;
@@ -54,7 +54,7 @@ public class EventDataBoolean implements GameEventData {
 
     /**
      * @return the boolean value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public boolean getValue() {

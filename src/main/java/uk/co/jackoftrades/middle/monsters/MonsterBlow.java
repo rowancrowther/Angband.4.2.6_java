@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -26,31 +26,31 @@ import uk.co.jackoftrades.middle.combat.BlowMethod;
  * player has observed it (for lore). This is the Java port of the C original's
  * {@code struct monster_blow} ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterBlow {
     /**
      * How the blow is delivered (hit, bite, claw, …).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private BlowMethod method;
     /**
      * What the blow does on landing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private BlowEffect effect;
     /**
      * The blow's damage dice.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Random dice;
     /**
      * How many times the player has seen this blow land (for lore).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int timesSeen;
 
@@ -60,7 +60,7 @@ public class MonsterBlow {
      * @param method how the blow is delivered
      * @param effect what the blow does
      * @param dice   the damage dice
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterBlow(BlowMethod method, BlowEffect effect, Random dice) {
         this.method = method;

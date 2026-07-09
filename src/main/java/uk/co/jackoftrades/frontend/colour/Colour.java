@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -30,39 +30,39 @@ import java.util.HashMap;
  * pairing, which lets the player re-map palette entries while keeping the
  * defaults available to restore.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Colour {
     /**
      * Total number of palette slots (basic colours plus shade/extra entries).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public final static int maxColours = 32;
     /**
      * Number of "basic" named colours before the extra/shade entries.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public final static int basicColours = 29;
 
     /**
      * The colours as originally defined, kept so customised colours can be reset.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static HashMap<Integer, Color> originalColours = new HashMap<>();
     /**
      * The colours currently in effect (may differ from the originals after customisation).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static HashMap<Integer, Color> currentColours = new HashMap<>();
 
     /**
      * Private constructor preventing instantiation of this static colour holder.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Colour() {
     }
@@ -71,7 +71,7 @@ public class Colour {
      * Populate both the original and current colour tables from the
      * {@link ColourType} definitions, indexed in declaration order.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void init() {
         int index = 0;

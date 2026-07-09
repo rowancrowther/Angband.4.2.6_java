@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -33,92 +33,92 @@ import java.util.Map;
  * entries it binds to. This is the Java port of the C original's
  * {@code struct obj_property} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ObjectProperty {
     /**
      * Logger (reserved for diagnostics).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The property's category.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjPropertyType type;
     /**
      * The property's sub-type identifier.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String subtype;
     /**
      * How this property is identified by the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String idType;
     /**
      * The typed payload (flag/modifier/element) this property represents.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ObjectPropertyTypeWrapper index;
     /**
      * The property's base power (for item valuation).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
     /**
      * The property's value multiplier.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mult;
     /**
      * Per-item-type multipliers applied to the property's value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<TValue, Integer> typeMults;
     /**
      * The property's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Adjective describing the positive form of the property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String adjective;
     /**
      * Adjective describing the negative form of the property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String negAdjective;
     /**
      * Message shown when the property is noticed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String message;
     /**
      * Human-readable description of the property.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
     /**
      * The UI entries this property contributes to, with their payloads.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<UIEntry, ObjectPropertyTypeWrapper> boundEntries;
 
@@ -138,7 +138,7 @@ public class ObjectProperty {
      * @param message      notice message
      * @param description  description
      * @param boundEntries bound UI entries
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ObjectProperty(ObjPropertyType type, String subtype, String idType, ObjectPropertyTypeWrapper index,
                           int power, int mult, Map<TValue, Integer> typeMults, String name, String adjective,

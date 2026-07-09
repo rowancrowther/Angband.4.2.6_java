@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * resolution, backend-default fallback for every optional field, and skip-and-continue (a record
  * whose required resolution fails is dropped with an error, the rest survive).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryRendererAssemblerTest {
 

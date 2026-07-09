@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -34,32 +34,32 @@ import java.util.List;
  * Java port of the C original's colour-cycling support ({@code src/ui-visuals.c}),
  * used to make certain monsters/terrain shimmer.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class VisualsColourCycle implements Cloneable {
     /**
      * Logger used to report cloning failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The ordered colours this cycle steps through, one per frame.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<ColourType> steps;
     /**
      * The name identifying this cycle within its group.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String cycleName;
     /**
      * The colour used as a marker for an unused/invalid entry.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType invalidColour;
 

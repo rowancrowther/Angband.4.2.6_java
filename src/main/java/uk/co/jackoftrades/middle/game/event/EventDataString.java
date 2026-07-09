@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -21,13 +21,13 @@ package uk.co.jackoftrades.middle.game.event;
  * {@link GameEventData} payload carrying a single string — used by events that
  * report a name or label (e.g. a generation profile or room type).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataString implements GameEventData {
     /**
      * The string value carried by this event.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String string;
 
@@ -35,7 +35,7 @@ public class EventDataString implements GameEventData {
      * Build a string payload.
      *
      * @param string the string value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataString(String string) {
         this.string = string;
@@ -43,7 +43,7 @@ public class EventDataString implements GameEventData {
 
     /**
      * @return the string value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getString() {
         return string;

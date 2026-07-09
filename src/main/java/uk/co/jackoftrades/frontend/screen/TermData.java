@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen;
@@ -28,187 +28,187 @@ import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
  * port of the C original's {@code term_data} struct ({@code src/main-win.c}),
  * which the Windows front end used to track each game window.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class TermData {
     /**
      * The on-screen surface this terminal is drawn onto.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Screen screen;
 
     /**
      * The logical terminal this window backs.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Term t;
 
     /**
      * The window's name/title.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String s;
 
     /**
      * Size of this terminal's key-input queue.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int keys;
 
     /**
      * Number of text rows in this terminal.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int rows;
     /**
      * Number of text columns in this terminal.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cols;
 
     /**
      * Window X position on screen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int posX;
     /**
      * Window Y position on screen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int posY;
     /**
      * Window width in pixels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeWidth;
     /**
      * Window height in pixels.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeHeight;
     /**
      * Left border offset (outer width 1) used when sizing the client area.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeOW1;
     /**
      * Top border offset (outer height 1) used when sizing the client area.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeOH1;
     /**
      * Right border offset (outer width 2) used when sizing the client area.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeOW2;
     /**
      * Bottom border offset (outer height 2) used when sizing the client area.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sizeOH2;
 
     /**
      * Re-entrancy guard set while a resize is being processed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean sizeHack;
     /**
      * Re-entrancy guard set while an "extra" terminal action is being processed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean xtraHack;
 
     /**
      * Whether this window is currently visible.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean visible;
     /**
      * Whether this window is maximized.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean maximized;
     /**
      * Whether the "bizarre" display workaround is enabled for this window.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean bizarre;
 
     /**
      * The font used to render this window's text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Font font;
     /**
      * Character cell width in pixels for the current font.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int fontWidth;
     /**
      * Character cell height in pixels for the current font.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int fontHeight;
 
     /**
      * Tile width in pixels when graphics tiles are in use.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int tileWidth;
     /**
      * Tile height in pixels when graphics tiles are in use.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int tileHeight;
 
     /**
      * Tile width in pixels when drawing the reduced-scale map view.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mapTileWidth;
     /**
      * Tile height in pixels when drawing the reduced-scale map view.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mapTileHeight;
 
     /**
      * Whether the reduced-scale map view is currently active in this window.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean mapActive;
 
     /**
      * Create an empty terminal-window descriptor with a blank title.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public TermData() {
         s = "";
@@ -216,7 +216,7 @@ public class TermData {
 
     /**
      * @return whether the reduced-scale map view is active
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean isMapActive() {
         return mapActive;
@@ -224,7 +224,7 @@ public class TermData {
 
     /**
      * @return the graphics tile width in pixels
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getTileWidth() {
         return tileWidth;
@@ -232,7 +232,7 @@ public class TermData {
 
     /**
      * @return the graphics tile height in pixels
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getTileHeight() {
         return tileHeight;
@@ -240,7 +240,7 @@ public class TermData {
 
     /**
      * @return the bottom border offset
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getSizeOH2() {
         return sizeOH2;
@@ -248,7 +248,7 @@ public class TermData {
 
     /**
      * @return the right border offset
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getSizeOW2() {
         return sizeOW2;
@@ -256,7 +256,7 @@ public class TermData {
 
     /**
      * @return the top border offset
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getSizeOH1() {
         return sizeOH1;
@@ -264,7 +264,7 @@ public class TermData {
 
     /**
      * @return the left border offset
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getSizeOW1() {
         return sizeOW1;
@@ -279,7 +279,7 @@ public class TermData {
      * {@code term_data_link}.
      *
      * @param term the terminal to link, or {@code null} to create a new one
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void termDataLink(Term term) {
         if (term == null) {
@@ -311,7 +311,7 @@ public class TermData {
 
     /**
      * @return the logical {@link Term} bound to this window
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Term getTerm() {
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.magic;
@@ -29,57 +29,57 @@ import java.util.List;
  * casting it). This is the Java port of the C original's {@code struct class_spell}
  * ({@code src/player.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MagicSpell {
     /**
      * The spell's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String spellName;
     /**
      * Human-readable description of the spell's effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String spellDescription;
 
     /**
      * The magic realm this spell belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MagicRealm realm;
     /**
      * The effects produced when the spell is cast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<Effect> effects;
 
     /**
      * Minimum class level required to learn/cast the spell.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int level;
     /**
      * Mana cost to cast the spell.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mana;
     /**
      * Base failure rate (percent) before stat/level adjustment.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int fail;
     /**
      * Experience awarded the first time the spell is cast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int exp;
 
@@ -92,7 +92,7 @@ public class MagicSpell {
      * @param fail      base failure rate
      * @param mana      mana cost
      * @param exp       first-cast experience
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MagicSpell(String spellName, int level, int fail, int mana, int exp) {
         this.spellName = spellName;
@@ -107,7 +107,7 @@ public class MagicSpell {
      * Append an effect to this spell.
      *
      * @param effect the effect to add
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void addEffect(Effect effect) {
         effects.add(effect);
@@ -117,7 +117,7 @@ public class MagicSpell {
      * Set the spell's description.
      *
      * @param spellDescription the description text
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setSpellDescription(String spellDescription) {
         this.spellDescription = spellDescription;
@@ -127,7 +127,7 @@ public class MagicSpell {
      * Set the magic realm this spell belongs to.
      *
      * @param realm the magic realm
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void setRealm(MagicRealm realm) {
         this.realm = realm;

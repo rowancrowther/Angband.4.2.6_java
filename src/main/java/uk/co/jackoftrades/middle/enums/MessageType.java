@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.enums;
@@ -24,7 +24,7 @@ package uk.co.jackoftrades.middle.enums;
  * constants are self-describing and are documented collectively here.
  * {@code MSG_MAX} is the count sentinel.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MessageType {
     MSG_NONE(""),
@@ -186,7 +186,7 @@ public enum MessageType {
     /**
      * The short key identifying this message's configured sound.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String messageString;
 
@@ -194,7 +194,7 @@ public enum MessageType {
      * Bind a message type to its sound key.
      *
      * @param messageString the sound-lookup key
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MessageType(String messageString) {
         this.messageString = messageString;

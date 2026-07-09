@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * stay in the default mode and take a {@code COLOURCHARS} run built from the shared {@code Colours}
  * import; numeric fields are the single sign-capable {@code INTEGER} (C7).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryRendererLexerTest {
 

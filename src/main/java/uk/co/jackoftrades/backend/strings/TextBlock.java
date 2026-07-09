@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.strings;
@@ -38,14 +38,14 @@ public class TextBlock {
      * pairing of glyph and colour is what lets a block carry per-character
      * colouring through wrapping and output.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final ArrayList<AngbandDisplayCharacter> textAndAttributes;
     /**
      * Logger used to report malformed append calls (e.g. mismatched
      * string/colour lengths).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

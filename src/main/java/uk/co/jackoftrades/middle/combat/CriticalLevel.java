@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.combat;
@@ -29,31 +29,31 @@ public class CriticalLevel {
     /**
      * Power cut-off: this level applies when the hit's power is below this value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cutOff;
     /**
      * Damage multiplier applied at this critical level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mult;
     /**
      * Flat damage added at this critical level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int add;
     /**
      * The message shown to the player for this critical level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Logger (reserved for diagnostics).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 
@@ -64,7 +64,7 @@ public class CriticalLevel {
      * @param mult   damage multiplier
      * @param add    flat damage bonus
      * @param msgt   message to display
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public CriticalLevel(int cutOff, int mult, int add, MessageType msgt) {
         this.cutOff = cutOff;
@@ -75,7 +75,7 @@ public class CriticalLevel {
 
     /**
      * @return this level's power cut-off
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getCutOff() {
         return cutOff;
@@ -83,7 +83,7 @@ public class CriticalLevel {
 
     /**
      * @return this level's damage multiplier
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getMult() {
         return mult;
@@ -91,7 +91,7 @@ public class CriticalLevel {
 
     /**
      * @return this level's flat damage bonus
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getAdd() {
         return add;
@@ -99,7 +99,7 @@ public class CriticalLevel {
 
     /**
      * @return this level's display message
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MessageType getMsgt() {
         return msgt;

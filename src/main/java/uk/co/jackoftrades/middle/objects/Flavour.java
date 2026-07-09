@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -26,33 +26,33 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
  * identified. This is the Java port of the C original's {@code struct flavor}
  * ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Flavour {
     /**
      * The flavour text shown for the unidentified object (e.g. "Azure").
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String text;
 
     /**
      * The item type this flavour applies to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private TValue tVal;
     /**
      * The sub-type value this flavour applies to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int sVal;
 
     /**
      * The glyph and colour used to draw the flavoured object.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter displayCharacter;
 }

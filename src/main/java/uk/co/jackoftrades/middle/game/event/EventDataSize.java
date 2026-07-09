@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -21,19 +21,19 @@ package uk.co.jackoftrades.middle.game.event;
  * {@link GameEventData} payload carrying a width/height pair — used by events
  * that report a chosen size (e.g. a room's dimensions during generation).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataSize implements GameEventData {
     /**
      * The width component.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int width;
     /**
      * The height component.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int height;
 
@@ -42,7 +42,7 @@ public class EventDataSize implements GameEventData {
      *
      * @param height the height
      * @param width  the width
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataSize(int height, int width) {
         this.width = width;
@@ -51,7 +51,7 @@ public class EventDataSize implements GameEventData {
 
     /**
      * @return the width
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getWidth() {
         return width;
@@ -59,7 +59,7 @@ public class EventDataSize implements GameEventData {
 
     /**
      * @return the height
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getHeight() {
         return height;

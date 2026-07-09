@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.enums;
@@ -30,7 +30,7 @@ import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
  * the constants are self-describing via their description strings and are
  * documented collectively here. {@code EF_MAX} is the count sentinel.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum EffectEnum {
     EF_NONE(EffectSubTypeEnum.EST_NONE, false, "", 0, EffectInfoEnum.EFINFO_NONE, "", ""),
@@ -151,43 +151,43 @@ public enum EffectEnum {
     /**
      * The effect's sub-type, selecting the family of behaviour it belongs to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final EffectSubTypeEnum subType;
     /**
      * Whether the effect must be aimed at a target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final boolean requiresAiming;
     /**
      * Short label naming the effect's primary numeric parameter (e.g. "dam", "dur").
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String infoLabel;
     /**
      * How many arguments the effect consumes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int numberOfArguments; // May need to change this
     /**
      * The formatting category used when building the effect's description.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final EffectInfoEnum effectInfoEnum;
     /**
      * Description-string template (with {@code %s}/{@code %d} placeholders).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String description;
     /**
      * Menu-format template used when the effect is shown in a selection menu.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String menuFormat;
 
@@ -201,7 +201,7 @@ public enum EffectEnum {
      * @param effectInfoEnum description formatting category
      * @param text           description template
      * @param menuText       menu-format template
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     EffectEnum(EffectSubTypeEnum subType,
@@ -222,7 +222,7 @@ public enum EffectEnum {
 
     /**
      * @return the effect's sub-type
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public EffectSubTypeEnum getSubType() {
@@ -231,7 +231,7 @@ public enum EffectEnum {
 
     /**
      * @return whether the effect must be aimed
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public boolean getAim() {
@@ -240,7 +240,7 @@ public enum EffectEnum {
 
     /**
      * @return the label for the effect's primary parameter
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getInfoLabel() {
@@ -249,7 +249,7 @@ public enum EffectEnum {
 
     /**
      * @return the number of arguments the effect consumes
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public int getNumberOfArguments() {
@@ -258,7 +258,7 @@ public enum EffectEnum {
 
     /**
      * @return the description formatting category
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public EffectInfoEnum getEffectInfo() {
@@ -267,7 +267,7 @@ public enum EffectEnum {
 
     /**
      * @return the description-string template
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getDescription() {
@@ -276,7 +276,7 @@ public enum EffectEnum {
 
     /**
      * @return the menu-format template
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getMenuFormat() {

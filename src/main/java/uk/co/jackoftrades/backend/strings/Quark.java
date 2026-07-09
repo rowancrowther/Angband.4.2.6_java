@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.strings;
@@ -40,26 +40,26 @@ import java.util.Map;
  * maximum so that removing an entry never causes a later {@link #add(String)}
  * to accidentally reuse a stale key.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Quark implements AngbandModule {
     /**
      * This module's display name, set during {@link #init()}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The key-to-string table; insertion-ordered so iteration is stable.
      * {@code null} until {@link #init()} runs and again after {@link #cleanup()}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<Integer, String> quarks;
     /**
      * Logger used to report misuse (e.g. operating on an uninitialised table).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 

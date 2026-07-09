@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -44,69 +44,69 @@ public class MeleeCriticalConstants {
     /**
      * The data-file group tag this class consumes ({@code melee-critical}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static String tag = "melee-critical";
 
     /**
      * To-hit added when calculating critical chance against a debuffed target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int debuffToh;
     /**
      * Scale applied to weapon weight in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceWeightScale;
     /**
      * Scale applied to the overall to-hit value in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceTohScale;
     /**
      * Scale applied to player level in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceLevelScale;
     /**
      * Scale applied to the to-hit skill in the critical-chance formula.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceTohSkillScale;
     /**
      * Flat offset added to the computed critical chance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceOffset;
     /**
      * Denominator/range over which the critical chance is evaluated (should be a multiple of 100).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int chanceRange;
     /**
      * Scale applied to weapon weight when computing critical power (severity).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerWeightScale;
     /**
      * Maximum of the random term added to critical power.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int powerRandom;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -117,7 +117,7 @@ public class MeleeCriticalConstants {
      * @param value the raw {@code name:value} token from {@code constants.txt}
      * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
      *                                      cannot be parsed, or the name is unrecognised
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void setValue(String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
@@ -204,7 +204,7 @@ public class MeleeCriticalConstants {
      * Store the debuff to-hit bonus. Accepted without validation (any value is meaningful).
      *
      * @param debuffToh the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setDebuffToh(int debuffToh) {
         // No checks on this value - just let it through
@@ -226,7 +226,7 @@ public class MeleeCriticalConstants {
      * Store the weight scale for critical chance. Accepted without validation.
      *
      * @param chanceWeightScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceWeightScale(int chanceWeightScale) throws InvalidTokenFoundDuringParse {
         // No checks on this value - just let it through
@@ -248,7 +248,7 @@ public class MeleeCriticalConstants {
      * Store the to-hit scale for critical chance. Accepted without validation.
      *
      * @param chanceTohScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceTohScale(int chanceTohScale) {
         // No checks on this value - just let it through
@@ -270,7 +270,7 @@ public class MeleeCriticalConstants {
      * Store the player-level scale for critical chance. Accepted without validation.
      *
      * @param chanceLevelScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceLevelScale(int chanceLevelScale) {
         // No checks on this value - just let it through
@@ -292,7 +292,7 @@ public class MeleeCriticalConstants {
      * Store the to-hit-skill scale for critical chance. Accepted without validation.
      *
      * @param chanceTohSkillScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceTohSkillScale(int chanceTohSkillScale) {
         // No checks on this value - just let it through
@@ -314,7 +314,7 @@ public class MeleeCriticalConstants {
      * Store the flat critical-chance offset. Accepted without validation.
      *
      * @param chanceOffset the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceOffset(int chanceOffset) {
         // No checks on this value - just let it through
@@ -345,7 +345,7 @@ public class MeleeCriticalConstants {
      * @param chanceRange the proposed range
      * @param name        the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code chanceRange == 0}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setChanceRange(int chanceRange, String name) throws InvalidTokenFoundDuringParse {
         // We must have a non-zero number which is a multiple of 100
@@ -379,7 +379,7 @@ public class MeleeCriticalConstants {
      * Store the weight scale for critical power. Accepted without validation.
      *
      * @param powerWeightScale the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerWeightScale(int powerWeightScale) {
         // No checks on this value - just let it through
@@ -401,7 +401,7 @@ public class MeleeCriticalConstants {
      * Store the random-power maximum. Accepted without validation.
      *
      * @param powerRandom the value to store
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setPowerRandom(int powerRandom) {
         // No checks on this value - just let it through

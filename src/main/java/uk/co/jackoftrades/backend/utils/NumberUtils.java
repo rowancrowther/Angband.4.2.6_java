@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils;
@@ -35,20 +35,20 @@ import java.util.ArrayList;
  * {@link #mean}/{@link #variance} helpers support exact statistical calculations
  * used by the game's data analysis.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public abstract class NumberUtils {
     /**
      * Shared logger (reserved for diagnostics in this utility holder).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Private constructor preventing instantiation of this static-only utility class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private NumberUtils() {
     }

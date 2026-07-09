@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -38,44 +38,44 @@ import java.util.Iterator;
  * Java port of the C original's {@code struct square} and the {@code square_*}
  * predicates ({@code src/cave.h} / {@code src/cave-square.c}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Square {
     /**
      * The terrain feature occupying this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Feature feat;
     /**
      * Per-grid info flags (seen, view, room, vault, generation hints, …).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Flag<SquareEnum> info;
 
     /**
      * Current light intensity of this grid (>0 means lit).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int light;
     /**
      * Occupant index: positive for a monster, negative for the player, 0 if empty.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monsterIndex;
     /**
      * The pile of objects lying on this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Pile objectPile;
     /**
      * The traps present on this grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<Trap> traps;
 
@@ -86,7 +86,7 @@ public class Square {
      * @param feature      the terrain feature
      * @param light        the initial light level
      * @param monsterIndex the occupant index (monster &gt; 0, player &lt; 0, 0 if empty)
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Square(Feature feature, int light, int monsterIndex) {
         this.feat = feature;
@@ -1118,7 +1118,7 @@ public class Square {
      * an empty, dark, unknown square holding the player.
      *
      * @param full whether to build the fully-populated fixture
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @TestOnly
     void setUpTest(boolean full) {

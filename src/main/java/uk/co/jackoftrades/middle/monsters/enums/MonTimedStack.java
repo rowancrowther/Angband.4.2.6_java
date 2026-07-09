@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -29,11 +29,13 @@ public enum MonTimedStack {
      */
     MTS_NONE,
     /**
-     * Re-application does not stack. @author ClaudeCode
+     * Re-application does not stack. @author Rowan Crowther
      */
     MTS_NO,
-    /** Re-application increases the remaining duration. @author ClaudeCode */
+    /**
+     * Re-application increases the remaining duration. @author Rowan Crowther
+     */
     MTS_INCR,
-    /** Count sentinel. @author ClaudeCode */
+    /** Count sentinel. @author Rowan Crowther */
     MTS_MAX
 }

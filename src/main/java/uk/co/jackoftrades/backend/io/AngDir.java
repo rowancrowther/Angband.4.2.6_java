@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.io;
@@ -37,13 +37,13 @@ import java.util.List;
  * the same list but tagged with a {@code "DIR:"} prefix so the simple
  * {@link #read()} iterator can skip over them.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class AngDir {
     /**
      * Path of the directory this handle was opened on.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Path directoryPath;
     /**
@@ -51,31 +51,31 @@ public class AngDir {
      * files are stored by name; sub-directories are stored prefixed with
      * {@code "DIR:" + pathSeparator} so they can be told apart from files.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final List<String> dirFiles;
     /**
      * Name of the first plain (non-directory) file found, or empty if none.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String firstFileName;
     /**
      * True when the very first entry encountered was a sub-directory.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean firstFileIsDirectory;
     /**
      * When true, iteration is intended to yield files only (not directories).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean onlyFiles;
     /**
      * Platform path separator, used to build/detect the {@code "DIR:"} tag.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final char pathSeparator = File.pathSeparatorChar;
 

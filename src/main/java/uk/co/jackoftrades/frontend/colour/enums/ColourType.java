@@ -41,7 +41,7 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * The individual colour constants are self-describing by name, so they are
  * documented collectively here rather than individually.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ColourType {
     COLOUR_TYPE_DARK('d', "Dark",
@@ -193,33 +193,33 @@ public enum ColourType {
     /**
      * Single-character code identifying this colour in data files/preferences.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final char colourCharacter;
     /**
      * Human-readable name of this colour.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String colourName;
     /**
      * Per-context translation table: indexed by {@link ColourTranslation}, gives
      * the {@link AttributeColour} this colour maps to under each rendering mode.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final AttributeColour[] colourTranslate;
     /**
      * Concrete JavaFX colour used when drawing this colour.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final Color colour;
 
     /**
      * Logger used to report out-of-range colour-translation lookups.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -230,7 +230,7 @@ public enum ColourType {
      * @param name   the colour's display name
      * @param table  the 9-entry per-context translation table
      * @param colour the JavaFX colour used to draw it
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     ColourType(char c, String name, AttributeColour[] table, Color colour) {
         colourCharacter = c;
@@ -241,7 +241,7 @@ public enum ColourType {
 
     /**
      * @return the JavaFX {@link Color} used to draw this colour
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Color getColour() {
         return colour;
@@ -293,7 +293,7 @@ public enum ColourType {
      * @param index the rendering-context translation to apply
      * @return the translated attribute colour
      * @throws InvalidTokenFoundDuringParse if {@code index} is {@code ATTR_MAX}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public AttributeColour colourAttribute(ColourTranslation index) {
         if (index == ColourTranslation.ATTR_MAX) {
@@ -388,7 +388,7 @@ public enum ColourType {
      *
      * @param colour the attribute colour to match
      * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public static ColourType findColourType(AttributeColour colour) {
@@ -404,7 +404,7 @@ public enum ColourType {
      *
      * @param colourName the colour name to match
      * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public static ColourType findColourType(@NotNull String colourName) {
@@ -423,7 +423,7 @@ public enum ColourType {
      *
      * @param colChar the colour code to match
      * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static ColourType findColourType(@NotNull char colChar) {
         for (ColourType colourType : ColourType.values()) {

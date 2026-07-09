@@ -37,13 +37,13 @@ import java.util.List;
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ItemObjectReader implements Reader<ItemObject> {
     /**
      * Logger used to report file-loading failures.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
@@ -78,7 +78,7 @@ public class ItemObjectReader implements Reader<ItemObject> {
      * @param filename the name of the file
      * @return the list of object kinds read from the file
      * @throws IOException if the file cannot be read
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public @NotNull List<ObjectKind> parseKinds(@NotNull String filename) throws IOException {
         try {

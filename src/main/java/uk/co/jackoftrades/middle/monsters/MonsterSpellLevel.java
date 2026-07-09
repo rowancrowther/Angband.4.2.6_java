@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -26,61 +26,61 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
  * the messages shown when it is cast (seen, blind, miss, save). This is the Java
  * port of the C original's {@code struct monster_spell_level} ({@code src/mon-spell.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterSpellLevel {
     /**
      * The minimum spell power at which this level applies.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
     /**
      * Lore description of the spell at this level.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String loreDesc;
     /**
      * Colour used for the lore entry normally.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttr;
     /**
      * Colour used for the lore entry when the player resists.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttrResist;
     /**
      * Colour used for the lore entry when the player is immune.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttImmune;
     /**
      * Message shown when the spell is cast and seen.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String message;
     /**
      * Message shown when the spell is cast and the player is blind.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String blindMessage;
     /**
      * Message shown when the spell misses.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String missMessage;
     /**
      * Message shown when the player saves against the spell.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     String saveMessage;
 
@@ -96,7 +96,7 @@ public class MonsterSpellLevel {
      * @param blindMessage   blind-cast message
      * @param missMessage    miss message
      * @param saveMessage    save message
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public MonsterSpellLevel(int power, String loreDesc, ColourType loreAttr, ColourType loreAttrResist,

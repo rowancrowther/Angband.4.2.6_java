@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.player.enums;
@@ -28,7 +28,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * <p>{@code SKILL_NONE} and {@code SKILL_MAX} are the sentinel/count markers carried over
  * from the C enum so any array-sizing or iteration that depended on them still works.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum PlayerSkill {
     /**

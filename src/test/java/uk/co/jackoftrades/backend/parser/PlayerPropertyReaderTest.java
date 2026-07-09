@@ -65,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and entry files and injects them into {@code GameConstants}' private static
  * fields via reflection, independent of full-game init order.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class PlayerPropertyReaderTest {
 

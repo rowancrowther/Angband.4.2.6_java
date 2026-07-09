@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -24,19 +24,19 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
  * types in lists and menus. This is the Java port of the C original's
  * {@code grouper} struct ({@code src/obj-util.c}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Grouper {
     /**
      * The item type this grouper covers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final TValue tValue;
     /**
      * The group's display name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String name;
 

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.numerics;
@@ -24,13 +24,13 @@ public class RandomChance {
     /**
      * The {@code X} in an "X in Y" chance (number of favourable outcomes).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int numerator;
     /**
      * The {@code Y} in an "X in Y" chance (total number of outcomes).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int denominator;
 

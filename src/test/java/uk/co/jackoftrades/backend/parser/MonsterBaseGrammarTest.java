@@ -113,7 +113,7 @@ class MonsterBaseGrammarTest {
     void cleanLoadOfTheRealFileParsesAll56Templates() throws IOException {
         MonsterBaseGrammar.FileContext file = parse(CharStreams.fromFileName(REAL_FILE));
 
-        assertEquals("0", file.declaredRecordCount, "placeholder record-count header captured raw");
+        assertEquals("56", file.declaredRecordCount, "record-count header captured raw");
         assertEquals(56, file.bases.size(), "one record per name: template");
     }
 

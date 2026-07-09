@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * reader/assembler's job. The record's fixed shape is
  * {@code name renderer combine category+ flags desc+}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class UIEntryBaseGrammarTest {
 

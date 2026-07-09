@@ -27,43 +27,43 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
  * This is the Java port of the C original's {@code struct monster_base}
  * ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterBase {
     /**
      * The base's internal code name (used for cross-references).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String codeName;
     /**
      * The base's in-game display name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String inGameName;
     /**
      * Default race flags shared by monsters of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flags;
     /**
      * Default display glyph for monsters of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private char defaultMonsterChar;
     /**
      * The pain-message set used by monsters of this base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterPain pain;
     /**
      * Human-readable description of the base.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
 
@@ -71,7 +71,7 @@ public class MonsterBase {
      * Build a bare base with only a code name; other fields take empty/default values.
      *
      * @param codeName the base's code name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterBase(String codeName) {
         this.codeName = codeName;
@@ -91,7 +91,7 @@ public class MonsterBase {
      * @param defaultMonsterChar default display glyph
      * @param pain               pain-message set
      * @param description        description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterBase(String codeName,
                        String inGameName,
@@ -109,7 +109,7 @@ public class MonsterBase {
 
     /**
      * @return a debug string listing this base's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -124,7 +124,7 @@ public class MonsterBase {
 
     /**
      * @return this base's internal code name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getCodeName() {
         return codeName;

@@ -17,279 +17,390 @@
 
 package uk.co.jackoftrades.middle.objects;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.middle.effect.Expression;
-import uk.co.jackoftrades.middle.enums.EffectBaseType;
-import uk.co.jackoftrades.middle.enums.EffectEnum;
-import uk.co.jackoftrades.middle.enums.ValueEnum;
-import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.effect.Effect;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
 import java.util.List;
 import java.util.Map;
 
 /**
  * The definition of a curse (as loaded from {@code curse.txt}) — a negative
- * property that can attach to objects, with the object bases it can affect, its
- * weight/conflicts, the flags it grants, its effect and timed effect, combat
- * penalties, value modifiers and flavour message. This is the Java port of the C
- * original's {@code struct curse} ({@code src/object.h}); live instances pair a
- * {@code Curse} with {@link CurseData}.
+ * property that can attach to objects. This is the Java port of the C original's
+ * {@code struct curse} ({@code src/object.h}).
+ * <p>
+ * In C a curse is little more than a name plus a nested {@code struct object *obj}
+ * that carries all the mechanical properties. When the game computes an item's
+ * real attributes it walks the item's curses and <em>merges</em> each curse's
+ * {@code obj} onto the item ({@code obj-curse.c}). This class flattens that nested
+ * object into named carriers, choosing types that match how the merge actually
+ * reads them:
+ * <ul>
+ *   <li><b>{@link #effects}</b> — the effect chain (C: {@code curse->obj->effect}).
+ *       All per-effect data (dice, subtype, timing, message, scaling expressions)
+ *       lives inside each {@link Effect}, which is what {@code EffectAssembler}
+ *       produces, so a curse simply holds a list of them.</li>
+ *   <li><b>{@link #modifiers}</b> — the additive numeric bonuses/penalties
+ *       (stats, speed, blows, digging, damage reduction, …). C merges these with
+ *       simple addition ({@code obj-curse.c}: {@code modifiers[k] += ...}), so a
+ *       plain {@code Map<ObjectModifier,Integer>} is the faithful shape.</li>
+ *   <li><b>{@link #elInfo}</b> — the <em>element</em> half of the merge. Per
+ *       element it holds a resistance level (from the {@code values:} line's
+ *       {@code RES_*} tokens) <em>and</em> the hates/ignores flags (from the
+ *       {@code flags:} line's {@code HATES_}/{@code IGNORE_} tokens). Resistances
+ *       do <b>not</b> merge additively — C applies special immunity/vulnerability
+ *       logic ({@code obj-curse.c} ~500-554) that must read a per-element
+ *       {@code res_level}, which is why {@link ElementInfo} indexed by
+ *       {@link ElementEnum} is required and a flat list would lose information.
+ *       Element resistances therefore live here, not among the additive
+ *       {@link ObjectModifier} entries in {@link #modifiers}.</li>
+ * </ul>
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Curse {
     /**
-     * Logger used to report malformed curse definitions.
+     * The curse's name (C: {@code curse->name}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
-    private final static Logger logger = LogManager.getLogger();
+    private final String name;
 
     /**
-     * The curse's name.
+     * The object bases this curse may attach to (C: {@code curse->poss}, the
+     * per-tval possibility array; port {@code types:} line).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
-    private String name;
-    /**
-     * Whether this curse can occur on a randomly-generated (non-artifact) item.
-     *
-     * @author ClaudeCode
-     */
-    private boolean poss;
-    /**
-     * The object bases this curse may attach to.
-     *
-     * @author ClaudeCode
-     */
-    private List<ObjectBase> objectBases;
-    /**
-     * The name of a curse this one conflicts with (cannot co-occur).
-     *
-     * @author ClaudeCode
-     */
-    private String conflict;
-    /**
-     * Weight the curse adds (affects encumbrance/selection).
-     *
-     * @author ClaudeCode
-     */
-    private int weight;
-    /**
-     * The object flags this curse grants.
-     *
-     * @author ClaudeCode
-     */
-    private List<ObjectFlag> flags;
-    /**
-     * Object flags that conflict with this curse.
-     *
-     * @author ClaudeCode
-     */
-    private List<ObjectFlag> conflictFlags;
-    /**
-     * The curse's magnitude dice, if a literal dice expression.
-     *
-     * @author ClaudeCode
-     */
-    private Random dice;
-    /**
-     * The curse's magnitude as a scaling expression, if not literal dice.
-     *
-     * @author ClaudeCode
-     */
-    private Expression diceExpression;
-    /**
-     * A monster race flag associated with the curse's effect.
-     *
-     * @author ClaudeCode
-     */
-    private MonsterRaceFlag monsterRaceFlag;
-    /**
-     * (Unused/legacy) timed effects field.
-     *
-     * @author ClaudeCode
-     */
-    private TimedEffect timedEffects;
-    /**
-     * Timing dice for the curse's recurring effect.
-     *
-     * @author ClaudeCode
-     */
-    private Random time;
-    /**
-     * Human-readable description of the curse.
-     *
-     * @author ClaudeCode
-     */
-    private String description;
-    /**
-     * The effect the curse triggers.
-     *
-     * @author ClaudeCode
-     */
-    private EffectEnum effect;
-    /**
-     * The timed effect the curse inflicts.
-     *
-     * @author ClaudeCode
-     */
-    private TimedEffect timedEffect;
-    /**
-     * To-hit penalty imposed by the curse.
-     *
-     * @author ClaudeCode
-     */
-    private int combatToHit;
-    /**
-     * To-damage penalty imposed by the curse.
-     *
-     * @author ClaudeCode
-     */
-    private int combatDam;
-    /**
-     * Armour-class penalty imposed by the curse.
-     *
-     * @author ClaudeCode
-     */
-    private int combatAC;
-    /**
-     * Scaling expression used to compute curse values.
-     *
-     * @author ClaudeCode
-     */
-    private Expression expression;
-    /**
-     * Modifiers the curse applies to object combat values.
-     *
-     * @author ClaudeCode
-     */
-    private Map<ValueEnum, Integer> valueCollection;
-    /**
-     * Flavour message shown when the curse triggers.
-     *
-     * @author ClaudeCode
-     */
-    private String message;
+    private final List<ObjectBase> objectBases;
 
     /**
-     * Build a curse from its parsed data-file fields. The {@code dice} string is
-     * interpreted as a literal dice expression, an expression placeholder
-     * (prefixed with {@code $}), or empty (no dice).
+     * Weight the curse adds to its host object (C: {@code curse->obj->weight}).
      *
-     * @param name                curse name
-     * @param poss                whether it can occur on random items
-     * @param objectBases         affectable object bases
-     * @param weight              added weight
-     * @param flags               granted object flags
-     * @param conflict            conflicting curse name
-     * @param conflictFlags       conflicting object flags
-     * @param dice                magnitude dice string (or {@code $}-expression)
-     * @param time                timing dice string
-     * @param description         description
-     * @param effect              triggered effect
-     * @param monsterRaceFlag     associated race flag
-     * @param timedEffect         inflicted timed effect
-     * @param combatToHit         to-hit penalty
-     * @param combatDam           to-damage penalty
-     * @param combatAC            armour-class penalty
-     * @param expressionChar      expression placeholder letter
-     * @param expressionEffect    expression base type
-     * @param expressionOperation expression operation chain
-     * @param valueCollection     combat-value modifiers
-     * @param message             trigger message
-     * @author ClaudeCode
+     * @author Rowan Crowther
+     */
+    private final int weight;
+
+    /**
+     * The effect chain the curse triggers (C: {@code curse->obj->effect}). Each
+     * {@link Effect} already carries its own dice/subtype/timing/message, so a
+     * curse simply holds the list.
+     *
+     * @author Rowan Crowther
+     */
+    private final List<Effect> effects;
+
+    /**
+     * The object flags this curse grants (C: {@code curse->obj->flags}). Only the
+     * non-element entries of the {@code flags:} line; {@code HATES_}/{@code IGNORE_}
+     * tokens are routed to {@link #elInfo} instead.
+     *
+     * @author Rowan Crowther
+     */
+    private final List<ObjectFlag> objectFlags;
+
+    /**
+     * The additive numeric modifiers this curse applies to its host object
+     * (C: {@code curse->obj->modifiers}). Populated from the {@code obj_mods}
+     * family of the {@code values:} line; resistances are deliberately excluded
+     * (they live in {@link #elInfo}).
+     *
+     * @author Rowan Crowther
+     */
+    private final Map<ObjectModifier, Integer> modifiers;
+
+    /**
+     * Per-element resistance level and hates/ignores flags this curse imposes
+     * (C: {@code curse->obj->el_info[ELEM_MAX]}). Fed by two data lines: the
+     * {@code RES_*} tokens of the {@code values:} line set {@link ElementInfo}
+     * resistance levels, and the {@code HATES_}/{@code IGNORE_} tokens of the
+     * {@code flags:} line set its flags.
+     *
+     * @author Rowan Crowther
+     */
+    private final Map<ElementEnum, ElementInfo> elInfo;
+
+    /**
+     * To-hit penalty imposed by the curse (C: {@code curse->obj->to_h}).
+     *
+     * @author Rowan Crowther
+     */
+    private final int combatToHit;
+
+    /**
+     * To-damage penalty imposed by the curse (C: {@code curse->obj->to_d}).
+     *
+     * @author Rowan Crowther
+     */
+    private final int combatDam;
+
+    /**
+     * Armour-class penalty imposed by the curse (C: {@code curse->obj->to_a}).
+     *
+     * @author Rowan Crowther
+     */
+    private final int combatAC;
+
+    /**
+     * The curses this one conflicts with (cannot co-occur on the same object).
+     * Resolved from {@link #conflictNames} in a second assembler pass, mirroring
+     * the Summon fallback model — C stores only the delimited name string
+     * ({@code curse->conflict}) and matches by name, holding no pointer.
+     *
+     * @author Rowan Crowther
+     */
+    private List<Curse> conflict;
+
+    /**
+     * The raw names of conflicting curses as read from the data file, retained
+     * for the second-pass resolution into {@link #conflict}.
+     *
+     * @author Rowan Crowther
+     */
+    private final List<String> conflictNames;
+
+    /**
+     * Object flags that conflict with this curse (C:
+     * {@code curse->conflict_flags}).
+     *
+     * @author Rowan Crowther
+     */
+    private final List<ObjectFlag> conflictFlags;
+
+    /**
+     * Human-readable description of the curse (C: {@code curse->desc}).
+     *
+     * @author Rowan Crowther
+     */
+    private final String description;
+
+    /**
+     * Curse-level flavour message shown when the curse triggers (port
+     * {@code msg:} line).
+     *
+     * @author Rowan Crowther
+     */
+    private final String message;
+
+    /**
+     * Build a curse from its assembled fields. This takes already-resolved domain
+     * objects (an {@link Effect} list, an {@link ElementInfo} map, a modifier map)
+     * rather than raw dice and expression strings — the parsing/lookup work lives
+     * in {@code EffectAssembler} and {@code CurseAssembler}. The {@link #conflict}
+     * list is left null here and filled by the assembler's second pass from
+     * {@code conflictNames}.
+     *
+     * @param name          curse name
+     * @param objectBases   affectable object bases ({@code types:} line)
+     * @param weight        added weight
+     * @param effects       triggered effect chain
+     * @param objectFlags   granted object flags (non-element)
+     * @param modifiers     additive numeric modifiers (obj_mods)
+     * @param elInfo        per-element resistances and hates/ignores flags
+     * @param combatToHit   to-hit penalty
+     * @param combatDam     to-damage penalty
+     * @param combatAC      armour-class penalty
+     * @param conflictNames names of conflicting curses (resolved later)
+     * @param conflictFlags conflicting object flags
+     * @param description   description
+     * @param message       trigger message
+     * @author Rowan Crowther
      */
     public Curse(String name,
-                 boolean poss,
                  List<ObjectBase> objectBases,
                  int weight,
-                 List<ObjectFlag> flags,
-                 String conflict,
-                 List<ObjectFlag> conflictFlags,
-                 String dice,
-                 String time,
-                 String description,
-                 EffectEnum effect,
-                 MonsterRaceFlag monsterRaceFlag,
-                 TimedEffect timedEffect,
+                 List<Effect> effects,
+                 List<ObjectFlag> objectFlags,
+                 Map<ObjectModifier, Integer> modifiers,
+                 Map<ElementEnum, ElementInfo> elInfo,
                  int combatToHit,
                  int combatDam,
                  int combatAC,
-                 char expressionChar,
-                 EffectBaseType expressionEffect,
-                 String expressionOperation,
-                 Map<ValueEnum, Integer> valueCollection,
+                 List<String> conflictNames,
+                 List<ObjectFlag> conflictFlags,
+                 String description,
                  String message) {
         this.name = name;
-        this.poss = poss;
         this.objectBases = objectBases;
         this.weight = weight;
-        this.flags = flags;
-        this.conflict = conflict;
-        this.conflictFlags = conflictFlags;
-        if (dice.isBlank()) {
-            this.dice = null;
-            this.diceExpression = null;
-        } else if (!dice.startsWith("$")) {
-            //this.dice = Reader.parseDiceString(dice);
-            this.diceExpression = null;
-        } else {
-            this.dice = null;
-            this.diceExpression = new Expression(dice.substring(1).charAt(0),
-                    expressionEffect, expressionOperation);
-        }
-        if (time.isBlank())
-            this.time = null;
-//        else
-//            this.time = Reader.parseDiceString(time);
-        this.description = description;
-        this.effect = effect;
-        this.monsterRaceFlag = monsterRaceFlag;
-        this.timedEffect = timedEffect;
+        this.effects = effects;
+        this.objectFlags = objectFlags;
+        this.modifiers = modifiers;
+        this.elInfo = elInfo;
         this.combatToHit = combatToHit;
         this.combatDam = combatDam;
         this.combatAC = combatAC;
-        this.expression = new Expression(expressionChar, expressionEffect, expressionOperation);
-        this.valueCollection = valueCollection;
+        this.conflictNames = conflictNames;
+        this.conflictFlags = conflictFlags;
+        this.description = description;
         this.message = message;
     }
 
     /**
      * @return the curse's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
     }
 
     /**
+     * @return the object bases this curse may attach to
+     * @author Rowan Crowther
+     */
+    public List<ObjectBase> getObjectBases() {
+        return objectBases;
+    }
+
+    /**
+     * @return the weight this curse adds to its host object
+     * @author Rowan Crowther
+     */
+    public int getWeight() {
+        return weight;
+    }
+
+    /**
+     * @return the effect chain this curse triggers
+     * @author Rowan Crowther
+     */
+    public List<Effect> getEffects() {
+        return effects;
+    }
+
+    /**
+     * @return the (non-element) object flags this curse grants
+     * @author Rowan Crowther
+     */
+    public List<ObjectFlag> getObjectFlags() {
+        return objectFlags;
+    }
+
+    /**
+     * @return the additive numeric modifiers this curse applies (obj_mods half of
+     * the {@code values:} line); element resistances are held in {@link #getElInfo()}
+     * @author Rowan Crowther
+     */
+    public Map<ObjectModifier, Integer> getModifiers() {
+        return modifiers;
+    }
+
+    /**
+     * @return the per-element resistance levels and hates/ignores flags this curse
+     * imposes (the {@code RES_*} values and {@code HATES_}/{@code IGNORE_} flags)
+     * @author Rowan Crowther
+     */
+    public Map<ElementEnum, ElementInfo> getElInfo() {
+        return elInfo;
+    }
+
+    /**
+     * @return the to-hit penalty imposed by the curse
+     * @author Rowan Crowther
+     */
+    public int getCombatToHit() {
+        return combatToHit;
+    }
+
+    /**
+     * @return the to-damage penalty imposed by the curse
+     * @author Rowan Crowther
+     */
+    public int getCombatDam() {
+        return combatDam;
+    }
+
+    /**
+     * @return the armour-class penalty imposed by the curse
+     * @author Rowan Crowther
+     */
+    public int getCombatAC() {
+        return combatAC;
+    }
+
+    /**
+     * @return the curses this one conflicts with, resolved by the second pass
+     * (may be {@code null} before {@link #setConflict(List)} has run)
+     * @author Rowan Crowther
+     */
+    public List<Curse> getConflict() {
+        return conflict;
+    }
+
+    /**
+     * @return the object flags that conflict with this curse
+     * @author Rowan Crowther
+     */
+    public List<ObjectFlag> getConflictFlags() {
+        return conflictFlags;
+    }
+
+    /**
+     * @return the human-readable description of the curse
+     * @author Rowan Crowther
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @return the flavour message shown when the curse triggers
+     * @author Rowan Crowther
+     */
+    public String getMessage() {
+        return message;
+    }
+
+    /**
+     * @return the raw names of curses this one conflicts with, for second-pass
+     * resolution
+     * @author Rowan Crowther
+     */
+    public List<String> getConflictNames() {
+        return conflictNames;
+    }
+
+    /**
+     * Set the resolved conflicting curses. Called by the assembler's second pass
+     * once every curse has been built and can be looked up by name.
+     *
+     * @param conflict the resolved conflicting curses
+     * @author Rowan Crowther
+     */
+    public void setConflict(List<Curse> conflict) {
+        this.conflict = conflict;
+    }
+
+    /**
+     * @param objectBase the base to test
+     * @return true if this curse may attach to the given object base
+     * @author Rowan Crowther
+     */
+    public boolean canAfflict(ObjectBase objectBase) {
+        return objectBases.contains(objectBase);
+    }
+
+    /**
      * @return a debug string listing this curse's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {
         return "Curse{" +
                 "name='" + name + '\'' +
-                ", poss=" + poss +
                 ", objectBases=" + objectBases +
-                ", conflict='" + conflict + '\'' +
-                ", flags=" + flags +
-                ", conflictFlags=" + conflictFlags +
-                ", dice=" + dice +
-                ", time=" + time +
-                ", description='" + description + '\'' +
-                ", effect=" + effect +
-                ", timedEffect=" + timedEffect +
+                ", weight=" + weight +
+                ", effects=" + effects +
+                ", objectFlags=" + objectFlags +
+                ", modifiers=" + modifiers +
+                ", elInfo=" + elInfo +
                 ", combatToHit=" + combatToHit +
                 ", combatDam=" + combatDam +
                 ", combatAC=" + combatAC +
-                ", expression=" + expression +
-                ", valueCollection=" + valueCollection +
+                ", conflictNames=" + conflictNames +
+                ", conflictFlags=" + conflictFlags +
+                ", description='" + description + '\'' +
                 ", message='" + message + '\'' +
                 '}';
     }

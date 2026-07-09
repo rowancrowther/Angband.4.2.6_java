@@ -30,85 +30,85 @@ import java.util.List;
  * priority (for ordering/space competition), one or more labels for different
  * widths, and an optional {@link UIEntryBase} template it inherits defaults from.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class UIEntry {
     /**
      * The entry's internal name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The element this entry tracks, when its parameter is an element.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ElementEnum parameter;
     /**
      * True if the parameter is an element; false if it is a stat.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private StatElemType statOrElement;
     /**
      * The renderer used to draw this entry's value.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private UIEntryRenderer renderer;
     /**
      * How multiple contributing values for this entry are combined.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private CombinerName combineType;
     /**
      * Numeric display priority (used when space is limited).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int priorityNum;
     /**
      * Behavioural flag for this entry.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private EntryFlag entryFlag;
     /**
      * Human-readable description.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String description;
     /**
      * Default-width label text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String label;
     /**
      * Two-character label variant.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String label2;
     /**
      * Five-character label variant.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String label5;
     /**
      * Categories this entry belongs to (used for grouping on screen).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<String> categories;
     /**
      * The template this entry inherits defaults from, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private UIEntryBase template;
 
@@ -130,7 +130,7 @@ public class UIEntry {
      * @param label5      five-character label variant
      * @param label2      two-character label variant
      * @param template    optional template supplying defaults
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public UIEntry(String name,
                    ElementEnum parameter,
@@ -162,7 +162,7 @@ public class UIEntry {
 
     /**
      * @return this entry's internal name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -171,21 +171,23 @@ public class UIEntry {
     /**
      * Whether a UI entry's parameter refers to a player stat or a damage element.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public enum StatElemType {
         NONE,
         /**
-         * The parameter is a player stat (STR, INT, …). @author ClaudeCode
+         * The parameter is a player stat (STR, INT, …). @author Rowan Crowther
          */
         STAT,
-        /** The parameter is a damage element (fire, cold, …). @author ClaudeCode */
+        /**
+         * The parameter is a damage element (fire, cold, …). @author Rowan Crowther
+         */
         ELEMENT
     }
 
     /**
      * @return a debug string listing this entry's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

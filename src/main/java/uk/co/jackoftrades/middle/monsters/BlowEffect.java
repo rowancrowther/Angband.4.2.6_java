@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -27,67 +27,67 @@ import uk.co.jackoftrades.middle.game.Projection;
  * lash form. This is the Java port of the C original's {@code struct blow_effect}
  * ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class BlowEffect {
     /**
      * The effect's name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * The effect's power rating.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
     /**
      * The effect's evaluation weight (used in danger rating).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int eval;
     /**
      * Human-readable description of the effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String desc;
     /**
      * Lore colour used normally.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttr;
     /**
      * Lore colour used when the player resists.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttrResist;
     /**
      * Lore colour used when the player is immune.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType loreAttrImmune;
     /**
      * The effect type identifier.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String effectType;
     /**
      * The resistance that mitigates the effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String resist;
     /**
      * The projection used when this effect is delivered as a "lash".
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Projection lashType;
 
@@ -104,7 +104,7 @@ public class BlowEffect {
      * @param effectType     effect type identifier
      * @param resist         mitigating resistance
      * @param lashType       lash-form projection
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public BlowEffect(String name, int power, int eval, String desc, ColourType loreAttr, ColourType loreAttrResist,
                       ColourType loreAttrImmune, String effectType, String resist,
@@ -123,7 +123,7 @@ public class BlowEffect {
 
     /**
      * @return this blow effect's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;

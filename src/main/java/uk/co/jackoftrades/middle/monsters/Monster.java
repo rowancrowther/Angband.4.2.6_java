@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -37,132 +37,132 @@ import java.util.Map;
  * Java port of the C original's {@code struct monster} ({@code src/monster.h});
  * contrast with {@link MonsterRace}, which is the shared template.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Monster {
     /**
      * The race this monster currently is.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace monsterRace;
     /**
      * The race this monster originally was (before any shapechange).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRace originalRace;
     /**
      * The monster's current grid location.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc grid;
 
     /**
      * Current hit points.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int hp;
     /**
      * Maximum hit points.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int maxHp;
 
     /**
      * Remaining duration of each active timed effect.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Map<MonTimed, Integer> mTimed;
 
     /**
      * The monster's current speed.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int mSpeed;
     /**
      * Accumulated energy (the monster acts when it has enough).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int energy;
 
     /**
      * Current distance from the player.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cDistance;
 
     /**
      * The monster's transient status flags.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Flag<MonsterFlag> monsterFlag;
 
     /**
      * The object this monster is mimicking, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ItemObject mimickedObject;
     /**
      * Objects this monster is carrying (dropped on death).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<ItemObject> heldObject;
 
     /**
      * The colour this monster is currently drawn in.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ColourType colourAttr;
 
     /**
      * A snapshot of the player state as known/used by this monster.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private PlayerState knownPState;
 
     /**
      * The monster's current target.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Target target;
 
     /**
      * This monster's membership in one or more groups.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<MonsterGroupInfo> groupInfo;
     /**
      * The monster's personal flow/heatmap used for pathfinding.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Heatmap heatmap;
 
     /**
      * The minimum range at which the monster prefers to engage.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int minRange;
     /**
      * The range at which the monster fights most effectively.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int bestRange;
 
@@ -188,7 +188,7 @@ public class Monster {
      * @param heatmap        personal flow map
      * @param minRange       preferred minimum engagement range
      * @param bestRange      most-effective fighting range
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Monster(MonsterRace monsterRace, MonsterRace originalRace, Loc grid, int hp, int maxHp,
                    Map<MonTimed, Integer> mTimed, int mSpeed, int energy, int cDistance, Flag<MonsterFlag> monsterFlag,
@@ -218,7 +218,7 @@ public class Monster {
 
     /**
      * @return this monster's current race
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterRace getMonsterRace() {
         return monsterRace;
@@ -229,7 +229,7 @@ public class Monster {
      *
      * @param flag the flag to test
      * @return true if the flag is set
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public boolean hasMonsterFlag(MonsterFlag flag) {
         return monsterFlag.has(flag);

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.combat;
@@ -28,55 +28,55 @@ import java.util.List;
  * describe it. This is the Java port of the C original's {@code struct blow_method}
  * ({@code src/monster.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class BlowMethod {
     /**
      * The method's name (e.g. "HIT", "BITE").
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * Whether this method can cause cuts.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean cut;
     /**
      * Whether this method can cause stunning.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean stun;
     /**
      * Whether this method can miss (vs. always landing).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean miss;
     /**
      * Whether this method is a physical attack.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean phys;
     /**
      * The message type/category used when reporting this blow.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MessageType mesgT;
     /**
      * Flavour messages describing the blow landing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<String> blowMessage;
     /**
      * Human-readable description of the method.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String desc;
 
@@ -91,7 +91,7 @@ public class BlowMethod {
      * @param mesgT       message category
      * @param blowMessage flavour messages
      * @param desc        description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public BlowMethod(String name, boolean cut, boolean stun, boolean miss, boolean phys, MessageType mesgT,
                       List<String> blowMessage, String desc) {
@@ -107,7 +107,7 @@ public class BlowMethod {
 
     /**
      * @return this blow method's name
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;

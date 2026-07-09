@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.enums;
@@ -22,15 +22,17 @@ package uk.co.jackoftrades.middle.enums;
  * C original's {@code EL_INFO_*} flags ({@code src/object.h}) — whether the
  * material is destroyed by, ignores, or is randomly affected by that element.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ElementInfoEnum {
     /**
-     * The object is damaged/destroyed by this element. @author ClaudeCode
+     * The object is damaged/destroyed by this element. @author Rowan Crowther
      */
     EL_INFO_HATES,
-    /** The object ignores (is unaffected by) this element. @author ClaudeCode */
+    /**
+     * The object ignores (is unaffected by) this element. @author Rowan Crowther
+     */
     EL_INFO_IGNORE,
-    /** The object is randomly affected by this element. @author ClaudeCode */
+    /** The object is randomly affected by this element. @author Rowan Crowther */
     EL_INFO_RANDOM
 }

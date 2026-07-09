@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -22,17 +22,19 @@ package uk.co.jackoftrades.middle.objects.enums;
  * timed delay, or immediately on wielding. Mirrors the C original's
  * {@code OFID_*} identification categories ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ObjectFlagID {
     /**
-     * The flag is never identified this way. @author ClaudeCode
+     * The flag is never identified this way. @author Rowan Crowther
      */
     OFID_NONE,
-    /** Identified through normal use. @author ClaudeCode */
+    /**
+     * Identified through normal use. @author Rowan Crowther
+     */
     OFID_NORMAL,
-    /** Identified after a timed delay of use. @author ClaudeCode */
+    /** Identified after a timed delay of use. @author Rowan Crowther */
     OFID_TIMED,
-    /** Identified immediately on wielding. @author ClaudeCode */
+    /** Identified immediately on wielding. @author Rowan Crowther */
     OFID_WIELD
 }

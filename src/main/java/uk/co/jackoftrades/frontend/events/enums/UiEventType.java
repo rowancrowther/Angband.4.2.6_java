@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.events.enums;
@@ -22,27 +22,29 @@ package uk.co.jackoftrades.frontend.events.enums;
  * {@code EVT_*} event types of the C original's user-interface event system
  * ({@code src/ui-event.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum UiEventType {
     /**
-     * No event / empty event. @author ClaudeCode
+     * No event / empty event. @author Rowan Crowther
      */
     EVT_NONE,
-    /** A keyboard key press. @author ClaudeCode */
+    /**
+     * A keyboard key press. @author Rowan Crowther
+     */
     EVT_KBRD,
-    /** A mouse action (click/move). @author ClaudeCode */
+    /** A mouse action (click/move). @author Rowan Crowther */
     EVT_MOUSE,
-    /** The display was resized. @author ClaudeCode */
+    /** The display was resized. @author Rowan Crowther */
     EVT_RESIZE,
-    /** An on-screen button was activated. @author ClaudeCode */
+    /** An on-screen button was activated. @author Rowan Crowther */
     EVT_BUTTON,
-    /** The user pressed escape / cancelled. @author ClaudeCode */
+    /** The user pressed escape / cancelled. @author Rowan Crowther */
     EVT_ESCAPE,
-    /** A movement command. @author ClaudeCode */
+    /** A movement command. @author Rowan Crowther */
     EVT_MOVE,
-    /** A menu/list selection. @author ClaudeCode */
+    /** A menu/list selection. @author Rowan Crowther */
     EVT_SELECT,
-    /** A switch between contexts/panels. @author ClaudeCode */
+    /** A switch between contexts/panels. @author Rowan Crowther */
     EVT_SWITCH
 }

@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.colour;
@@ -33,20 +33,20 @@ import java.util.List;
  * aggregate object produced by the visuals parser and queried by the rest of the
  * colour-cycling system.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class VisualsCycler {
     /**
      * All colour-cycle groups known to this cycler.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private List<VisualsCycleGroup> groups;
 
     /**
      * Create an empty cycler with no groups.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public VisualsCycler() {
         groups = new ArrayList<>();
@@ -56,7 +56,7 @@ public class VisualsCycler {
      * Register a colour-cycle group.
      *
      * @param group the group to add
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public void addVisualsCycleGroup(@NotNull VisualsCycleGroup group) {
@@ -70,7 +70,7 @@ public class VisualsCycler {
      * @param cycleName the cycle's name within that group
      * @return the matching cycle, or {@code null} if either name is empty or no
      * match is found
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     @Contract(pure = true)
@@ -95,7 +95,7 @@ public class VisualsCycler {
      * @param cycleName the cycle's name within that group
      * @param frame     the animation frame
      * @return the colour for that frame, or {@code null} if the cycle is not found
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     @Contract(pure = true)

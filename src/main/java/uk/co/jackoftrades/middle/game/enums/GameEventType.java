@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.enums;
@@ -26,7 +26,7 @@ package uk.co.jackoftrades.middle.game.enums;
  * {@code game_event_type} ({@code src/game-event.h}); each constant's inline
  * comment gives its meaning.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum GameEventType {
     EVENT_MAP,        /* Some part of the map has changed. */

@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *       malformed level line yields just its own arity error.</li>
  * </ul>
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class GameConstantsReaderTest {
 

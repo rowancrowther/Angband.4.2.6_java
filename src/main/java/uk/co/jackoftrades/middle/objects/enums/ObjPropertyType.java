@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -23,7 +23,7 @@ package uk.co.jackoftrades.middle.objects.enums;
  * original's {@code OBJ_PROPERTY_*} types ({@code src/object.h}); the constants
  * are self-describing. {@code OBJ_PROPERTY_MAX} is the count sentinel.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ObjPropertyType {
     OBJ_PROPERTY_NONE,

@@ -29,50 +29,50 @@ import java.util.List;
  * inherit from. This is the "base" half of the C original's UI-entry system
  * ({@code src/ui-entry.c}), letting many status entries share common settings.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class UIEntryBase {
     /**
      * Logger (reserved for diagnostics).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
     /**
      * The template's name, referenced by entries that use it.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String name;
     /**
      * Default renderer for entries built from this template.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final UIEntryRenderer renderer;
     /**
      * Default value-combining strategy.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final CombinerName combine;
     /**
      * Categories this template belongs to (used to group entries on screen).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final List<String> categories;
     /**
      * Raw flag string applied to entries built from this template.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String flags;
     /**
      * Human-readable description.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String desc;
 
@@ -85,7 +85,7 @@ public class UIEntryBase {
      * @param categories categories the template belongs to
      * @param flags      raw flag string
      * @param desc       description
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine, List<String> categories, String flags, String desc) {
         this.name = name;
@@ -107,7 +107,7 @@ public class UIEntryBase {
 
     /**
      * @return a debug string listing this template's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

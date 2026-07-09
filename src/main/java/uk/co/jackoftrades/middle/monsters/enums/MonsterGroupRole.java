@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters.enums;
@@ -22,21 +22,23 @@ package uk.co.jackoftrades.middle.monsters.enums;
  * group-role constants — used by group AI to decide behaviour (e.g. bodyguards
  * stay near the leader).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum MonsterGroupRole {
     /**
-     * No special group role. @author ClaudeCode
+     * No special group role. @author Rowan Crowther
      */
     MON_GROUP_NONE,
-    /** The group's leader. @author ClaudeCode */
+    /**
+     * The group's leader. @author Rowan Crowther
+     */
     MON_GROUP_LEADER,
-    /** A servant of the leader. @author ClaudeCode */
+    /** A servant of the leader. @author Rowan Crowther */
     MON_GROUP_SERVANT,
-    /** A bodyguard that stays near the leader. @author ClaudeCode */
+    /** A bodyguard that stays near the leader. @author Rowan Crowther */
     MON_GROUP_BODYGUARD,
-    /** An ordinary group member. @author ClaudeCode */
+    /** An ordinary group member. @author Rowan Crowther */
     MON_GROUP_MEMBER,
-    /** A summoned addition to the group. @author ClaudeCode */
+    /** A summoned addition to the group. @author Rowan Crowther */
     MON_GROUP_SUMMON
 }

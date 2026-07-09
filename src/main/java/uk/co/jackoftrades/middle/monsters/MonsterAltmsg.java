@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -26,25 +26,25 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
  * {@link MonsterSpell} it overrides. This is the Java port of the C original's
  * {@code struct monster_altmsg} ({@code src/mon-spell.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterAltmsg {
     /**
      * The alternate message text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String message;
     /**
      * Which situation this alternate message applies to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterAltmsgType msgType;
     /**
      * The spell whose default message this overrides.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     MonsterSpell index;
 
@@ -54,7 +54,7 @@ public class MonsterAltmsg {
      * @param message the message text
      * @param msgType the situation it applies to
      * @param index   the spell it overrides
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public MonsterAltmsg(String message, MonsterAltmsgType msgType, MonsterSpell index) {
         this.message = message;

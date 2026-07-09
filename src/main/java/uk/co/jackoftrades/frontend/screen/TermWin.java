@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.frontend.screen;
@@ -31,68 +31,68 @@ import java.util.ArrayList;
  * terrain layer, each kept in both a working copy and a displayed/"visible" copy
  * so changes can be diffed before being flushed to screen.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class TermWin {
     /**
      * Cursor "used"/off-screen flag (true when the cursor is parked/disabled).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean cu;
     /**
      * Cursor visible flag.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private boolean cv;
     /**
      * Cursor column.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cx;
     /**
      * Cursor row.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cy;
     /**
      * Secondary cursor column (e.g. for a multi-cell/"big" cursor).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cnx;
     /**
      * Secondary cursor row (e.g. for a multi-cell/"big" cursor).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int cny;
 
     /**
      * Working copy of the main (character) layer.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> a;
     /**
      * Displayed/"visible" copy of the main layer, diffed against {@link #a}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> va;
     /**
      * Working copy of the terrain layer.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> ta;
     /**
      * Displayed/"visible" copy of the terrain layer, diffed against {@link #ta}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> vta;
 
@@ -102,7 +102,7 @@ public class TermWin {
      *
      * @param width  the terminal width (currently unused in allocation)
      * @param height the terminal height, controlling how many cells are created
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void init(int width, int height) {
         a = new ArrayList<>();

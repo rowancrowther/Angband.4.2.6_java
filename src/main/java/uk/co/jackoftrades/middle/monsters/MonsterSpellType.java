@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.monsters;
@@ -32,37 +32,37 @@ import java.util.List;
  * is the Java port of the C original's {@code struct monster_spell}
  * ({@code src/mon-spell.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class MonsterSpellType {
     /**
      * Which spell this defines.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterSpell index;
     /**
      * The message/sound category used when casting.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MessageType msgT;
     /**
      * The spell's hit chance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int hit;
     /**
      * The effects produced when the spell is cast.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final List<Effect> effects = new ArrayList<>();
     /**
      * The per-power levels of the spell (lore/messages scale with power).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final List<MonsterSpellLevel> levels = new ArrayList<>();
 
@@ -74,7 +74,7 @@ public class MonsterSpellType {
      * @param hit     hit chance
      * @param effects the spell's effects
      * @param levels  the spell's per-power levels
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public MonsterSpellType(MonsterSpell index, MessageType msgT, int hit, List<Effect> effects,

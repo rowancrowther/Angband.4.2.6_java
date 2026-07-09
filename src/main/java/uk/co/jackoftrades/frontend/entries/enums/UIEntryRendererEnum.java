@@ -30,7 +30,7 @@ import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
  * character per state), so the individual constants are documented collectively
  * here rather than spelling out every table.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum UIEntryRendererEnum {
     UI_ENTRY_RENDERER_NONE(CombinerName.NONE, "", "", "", 0, UIEntryEnum.UI_ENTRY_NO_SIGN),

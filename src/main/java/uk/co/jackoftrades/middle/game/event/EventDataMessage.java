@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -21,19 +21,19 @@ package uk.co.jackoftrades.middle.game.event;
  * {@link GameEventData} payload carrying a message and its type code — used by
  * message/notification events.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataMessage implements GameEventData {
     /**
      * The message type code.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int type;
     /**
      * The message text.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String message;
 
@@ -42,7 +42,7 @@ public class EventDataMessage implements GameEventData {
      *
      * @param type    the message type code
      * @param message the message text
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataMessage(int type, String message) {
         this.type = type;
@@ -51,7 +51,7 @@ public class EventDataMessage implements GameEventData {
 
     /**
      * @return the message type code
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public int getType() {
         return type;
@@ -59,7 +59,7 @@ public class EventDataMessage implements GameEventData {
 
     /**
      * @return the message text
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getMessage() {
         return message;

@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * Symbolic fields (code/msgt) stay in the default mode as {@code TAG}; numeric fields are the single
  * sign-capable {@code INTEGER} (C7).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ProjectionLexerTest {
 

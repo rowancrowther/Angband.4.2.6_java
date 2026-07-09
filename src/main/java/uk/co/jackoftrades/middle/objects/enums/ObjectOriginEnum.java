@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects.enums;
@@ -25,7 +25,7 @@ package uk.co.jackoftrades.middle.objects.enums;
  * ({@code src/list-origins.h}); the constants are self-describing and documented
  * collectively here.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public enum ObjectOriginEnum {
     ORIGIN_NONE(-1, ""),
@@ -59,13 +59,13 @@ public enum ObjectOriginEnum {
      * Number of {@code %s} parameters the {@link #name} template expects
      * ({@code -1} for origins with no displayed history line).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final int numParameters;
     /**
      * The history-line template for this origin (with {@code %s} placeholders).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String name;
 
@@ -74,7 +74,7 @@ public enum ObjectOriginEnum {
      *
      * @param numParameters number of template parameters
      * @param name          the history-line template
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     ObjectOriginEnum(int numParameters, String name) {
         this.numParameters = numParameters;

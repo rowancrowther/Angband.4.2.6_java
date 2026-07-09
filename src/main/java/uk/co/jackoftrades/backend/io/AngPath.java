@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.io;
@@ -26,7 +26,7 @@ public class AngPath {
      * is a stub awaiting the port of the C path-building helpers
      * (e.g. {@code path_build}/{@code path_parse} in {@code src/z-file.c}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String pathString;
 }

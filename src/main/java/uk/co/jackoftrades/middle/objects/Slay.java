@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.objects;
@@ -28,73 +28,73 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
  * the constructor splits out. This is the Java port of the C original's
  * {@code struct slay} ({@code src/object.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Slay {
     /**
      * The slay's code, encoding monster type and level (e.g. {@code EVIL_2}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String code;
     /**
      * The monster race flag this slay targets (parsed from {@link #code}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceFlag monsterType;
     /**
      * The monster level component parsed from {@link #code}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int monsterLevel;
     /**
      * The slay's display name.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String name;
     /**
      * A specific monster base targeted by the slay, if any.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterBase base;
     /**
      * The verb used when the slay triggers in melee.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String meleeVerb;
     /**
      * The verb used when the slay triggers at range.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private String rangedVerb;
     /**
      * The race flag identifying eligible targets.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private MonsterRaceFlag raceFlag;
     /**
      * Damage multiplier in the standard combat system.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int multiplier;
     /**
      * Damage multiplier in the O-combat system.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int oMultiplier;
     /**
      * The slay's power rating (for item valuation).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int power;
 
@@ -111,7 +111,7 @@ public class Slay {
      * @param multiplier  standard damage multiplier
      * @param oMultiplier O-combat damage multiplier
      * @param power       power rating
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Slay(String code, String name, MonsterBase base, String meleeVerb, String rangedVerb,
                 MonsterRaceFlag raceFlag, int multiplier, int oMultiplier, int power) {
@@ -131,7 +131,7 @@ public class Slay {
 
     /**
      * @return the slay's code
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public String getCode() {
         return code;
@@ -139,7 +139,7 @@ public class Slay {
 
     /**
      * @return a debug string listing this slay's fields
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Override
     public String toString() {

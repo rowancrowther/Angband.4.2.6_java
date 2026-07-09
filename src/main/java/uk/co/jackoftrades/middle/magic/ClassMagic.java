@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.magic;
@@ -26,37 +26,37 @@ import java.util.List;
  * use. This is the Java port of the C original's {@code struct class_magic}
  * ({@code src/player.h}).
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class ClassMagic {
     /**
      * The character level at which this class can first cast spells.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int firstSpellLevel;
     /**
      * Weight contributed by each spellbook (affects encumbrance/casting).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int spellWeight;
     /**
      * Number of spellbooks this class uses.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int numBooks;
     /**
      * The spellbooks available to this class.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     List<MagicBook> magicBooks;
     /**
      * Running total of spells across all books (maintained by {@link #addMagicBook}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int totalSpells;
 
@@ -66,7 +66,7 @@ public class ClassMagic {
      * @param firstSpellLevel level at which casting becomes possible
      * @param spellWeight     per-book weight
      * @param numBooks        number of books used
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public ClassMagic(int firstSpellLevel, int spellWeight, int numBooks) {
         this.firstSpellLevel = firstSpellLevel;
@@ -81,7 +81,7 @@ public class ClassMagic {
      * {@link #totalSpells}.
      *
      * @param magicBook the book to add
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public void addMagicBook(MagicBook magicBook) {
         this.magicBooks.add(magicBook);

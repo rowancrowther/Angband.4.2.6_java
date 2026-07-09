@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.cave;
@@ -23,25 +23,25 @@ package uk.co.jackoftrades.middle.cave;
  * Java port of the C original's {@code connector} struct ({@code src/generate.h})
  * used when stitching rooms/chunks together.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class Connector {
     /**
      * The grid where this connection is made.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc grid;
     /**
      * The terrain feature to place at the connection grid.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private int feat;
     /**
      * Extra connection info flags (type still to be determined in the port).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Object info;   // TODO: Change this to a Flag<bitfield> when we find out what bitflags are being used here
 }

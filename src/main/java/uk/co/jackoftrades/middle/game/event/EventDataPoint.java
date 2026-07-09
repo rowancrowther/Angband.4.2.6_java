@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.middle.game.event;
@@ -23,13 +23,13 @@ import uk.co.jackoftrades.middle.cave.Loc;
  * {@link GameEventData} payload carrying a single grid location — used by events
  * that concern one point on the map.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class EventDataPoint implements GameEventData {
     /**
      * The grid location this event refers to.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Loc loc;
 
@@ -37,7 +37,7 @@ public class EventDataPoint implements GameEventData {
      * Wrap an existing location.
      *
      * @param loc the location
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataPoint(Loc loc) {
         this.loc = loc;
@@ -48,7 +48,7 @@ public class EventDataPoint implements GameEventData {
      *
      * @param x column
      * @param y row
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public EventDataPoint(int x, int y) {
         loc = new Loc(x, y);
@@ -56,7 +56,7 @@ public class EventDataPoint implements GameEventData {
 
     /**
      * @return the grid location
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public Loc getLoc() {
         return loc;

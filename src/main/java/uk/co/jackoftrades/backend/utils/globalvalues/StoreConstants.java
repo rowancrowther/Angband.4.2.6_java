@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.utils.globalvalues;
@@ -31,45 +31,45 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
  * constants loader; {@link #setValue(String)} decodes one {@code name:value}
  * line and routes it to a validating setter.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class StoreConstants {
     /**
      * The data-file group tag this class consumes ({@code store}).
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final String tag = "store";
 
     /**
      * Maximum number of distinct items a store may hold.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int invenMax;
     /**
      * Number of game turns between store inventory turnovers.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int turns;
     /**
      * 1-in-{@code shuffle} chance per day that a store's owner changes.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int shuffle;
     /**
      * Dungeon level after which normal-store goods can gain magical bonuses.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static int magicLevel;
 
     /**
      * Logger used to report malformed/invalid constants during parsing.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -80,7 +80,7 @@ public class StoreConstants {
      * @param value the raw {@code name:value} token from {@code constants.txt}
      * @throws InvalidTokenFoundDuringParse if the token is malformed, the integer
      *                                      cannot be parsed, or the name is unrecognised
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static void setValue(@NotNull String value) throws InvalidTokenFoundDuringParse {
         String[] values = value.split(":");
@@ -148,7 +148,7 @@ public class StoreConstants {
      * @param invenMax the proposed maximum item count
      * @param name     the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code invenMax < 1}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setInvenMax(int invenMax, String name) throws InvalidTokenFoundDuringParse {
         if (invenMax < 1) {
@@ -178,7 +178,7 @@ public class StoreConstants {
      * @param turns the proposed turns between turnovers
      * @param name  the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code turns < 1}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setTurns(int turns, String name) throws InvalidTokenFoundDuringParse {
         if (turns < 1) {
@@ -209,7 +209,7 @@ public class StoreConstants {
      * @param shuffle the proposed 1-in-N daily chance
      * @param name    the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code shuffle < 1}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setShuffle(int shuffle, String name) throws InvalidTokenFoundDuringParse {
         if (shuffle < 1) {
@@ -241,7 +241,7 @@ public class StoreConstants {
      * @param magicLevel the proposed threshold level
      * @param name       the constant name, used only for error reporting
      * @throws InvalidTokenFoundDuringParse if {@code magicLevel < 1}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void setMagicLevel(int magicLevel, String name) throws InvalidTokenFoundDuringParse {
         // dungeon levels start at 1

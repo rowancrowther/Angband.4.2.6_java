@@ -12,7 +12,7 @@
  *    and not for profit purposes provided that this copyright and statement
  *    are included in all such copies.  Other copyrights may also apply.
  *
- *    Java code copyright (c) Rowan Crowther 2026
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
 package uk.co.jackoftrades.backend.io;
@@ -36,25 +36,25 @@ import java.nio.file.Paths;
  * the appropriate mode if it is not already open, mirroring the C code's habit
  * of treating an {@code ang_file} as "open on demand".
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class AngFile {
     /**
      * The access mode (read/write/append) this file was created for.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final FileModeEnum mode;
     /**
      * The lower-level handler that owns the actual input/output streams.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final FileHandler fileHandler;
     /**
      * The path/name of the file, retained for reference and reopening.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private final String filename;
 

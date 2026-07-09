@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * record's source line number. All values are verbatim strings; enum resolution and defaulting are
  * the reader's job.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ProjectionGrammarTest {
 

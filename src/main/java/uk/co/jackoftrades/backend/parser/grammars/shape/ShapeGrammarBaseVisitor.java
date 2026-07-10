@@ -17,6 +17,14 @@
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.shape;
 
+import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.backend.parser.shape.ShapeParseRecord;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
@@ -35,241 +43,241 @@ public class ShapeGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> impl
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitRecordCount(ShapeGrammar.RecordCountContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitRecordCount(ShapeGrammar.RecordCountContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitName(ShapeGrammar.NameContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitName(ShapeGrammar.NameContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitCombat(ShapeGrammar.CombatContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitCombat(ShapeGrammar.CombatContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillDisarmP(ShapeGrammar.SkillDisarmPContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillDisarmP(ShapeGrammar.SkillDisarmPContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillDisarmM(ShapeGrammar.SkillDisarmMContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillDisarmM(ShapeGrammar.SkillDisarmMContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillSave(ShapeGrammar.SkillSaveContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillSave(ShapeGrammar.SkillSaveContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillStealth(ShapeGrammar.SkillStealthContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillStealth(ShapeGrammar.SkillStealthContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillSearch(ShapeGrammar.SkillSearchContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillSearch(ShapeGrammar.SkillSearchContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillMelee(ShapeGrammar.SkillMeleeContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillMelee(ShapeGrammar.SkillMeleeContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillThrow(ShapeGrammar.SkillThrowContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillThrow(ShapeGrammar.SkillThrowContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitSkillDig(ShapeGrammar.SkillDigContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitSkillDig(ShapeGrammar.SkillDigContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitObjFlags(ShapeGrammar.ObjFlagsContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitObjFlags(ShapeGrammar.ObjFlagsContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitPlayerFlags(ShapeGrammar.PlayerFlagsContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitPlayerFlags(ShapeGrammar.PlayerFlagsContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitValues(ShapeGrammar.ValuesContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitValues(ShapeGrammar.ValuesContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitBlow(ShapeGrammar.BlowContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitBlow(ShapeGrammar.BlowContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitShape(ShapeGrammar.ShapeContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitShape(ShapeGrammar.ShapeContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitFile(ShapeGrammar.FileContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitFile(ShapeGrammar.FileContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitEffect(ShapeGrammar.EffectContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitEffect(ShapeGrammar.EffectContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitTime(ShapeGrammar.TimeContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitTime(ShapeGrammar.TimeContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitEffectYX(ShapeGrammar.EffectYXContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitEffectYX(ShapeGrammar.EffectYXContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-    @Override
-    public T visitDice(ShapeGrammar.DiceContext ctx) {
-        return visitChildren(ctx);
-    }
+	@Override
+	public T visitDice(ShapeGrammar.DiceContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitExpr(ShapeGrammar.ExprContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitExpr(ShapeGrammar.ExprContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEffectMsg(ShapeGrammar.EffectMsgContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEffectMsg(ShapeGrammar.EffectMsgContext ctx) {
+		return visitChildren(ctx);
+	}
 
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation returns the result of calling
-     * {@link #visitChildren} on {@code ctx}.</p>
-     */
-    @Override
-    public T visitEffectBlock(ShapeGrammar.EffectBlockContext ctx) {
-        return visitChildren(ctx);
-    }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitEffectBlock(ShapeGrammar.EffectBlockContext ctx) {
+		return visitChildren(ctx);
+	}
 }

@@ -17,6 +17,14 @@
 // Generated from ShapeGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.shape;
 
+import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.backend.parser.shape.ShapeParseRecord;
+
+import java.util.List;
+import java.util.Map;
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
@@ -24,7 +32,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link ShapeGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface ShapeGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**

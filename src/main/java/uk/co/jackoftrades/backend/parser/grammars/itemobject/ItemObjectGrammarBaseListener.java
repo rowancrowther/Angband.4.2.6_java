@@ -14,9 +14,16 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+// Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.itemobject;
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ItemObject.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.itemobject;
+import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 import org.antlr.v4.runtime.ParserRuleContext;
@@ -24,19 +31,19 @@ import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link ItemObjectListener},
+ * This class provides an empty implementation of {@link ItemObjectGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ItemObjectBaseListener implements ItemObjectListener {
+public class ItemObjectGrammarBaseListener implements ItemObjectGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(ItemObjectParser.NameContext ctx) {
+    public void enterRecordCount(ItemObjectGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +52,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(ItemObjectParser.NameContext ctx) {
+    public void exitRecordCount(ItemObjectGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +61,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterGraphics(ItemObjectParser.GraphicsContext ctx) {
+    public void enterName(ItemObjectGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +70,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitGraphics(ItemObjectParser.GraphicsContext ctx) {
+    public void exitName(ItemObjectGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +79,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterType(ItemObjectParser.TypeContext ctx) {
+    public void enterTval(ItemObjectGrammar.TvalContext ctx) {
     }
 
     /**
@@ -81,7 +88,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitType(ItemObjectParser.TypeContext ctx) {
+    public void exitTval(ItemObjectGrammar.TvalContext ctx) {
     }
 
     /**
@@ -90,7 +97,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLevel(ItemObjectParser.LevelContext ctx) {
+    public void enterGraphics(ItemObjectGrammar.GraphicsContext ctx) {
     }
 
     /**
@@ -99,7 +106,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLevel(ItemObjectParser.LevelContext ctx) {
+    public void exitGraphics(ItemObjectGrammar.GraphicsContext ctx) {
     }
 
     /**
@@ -108,7 +115,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterWeight(ItemObjectParser.WeightContext ctx) {
+    public void enterLevel(ItemObjectGrammar.LevelContext ctx) {
     }
 
     /**
@@ -117,7 +124,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitWeight(ItemObjectParser.WeightContext ctx) {
+    public void exitLevel(ItemObjectGrammar.LevelContext ctx) {
     }
 
     /**
@@ -126,7 +133,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCost(ItemObjectParser.CostContext ctx) {
+    public void enterWeight(ItemObjectGrammar.WeightContext ctx) {
     }
 
     /**
@@ -135,7 +142,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCost(ItemObjectParser.CostContext ctx) {
+    public void exitWeight(ItemObjectGrammar.WeightContext ctx) {
     }
 
     /**
@@ -144,7 +151,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAttack(ItemObjectParser.AttackContext ctx) {
+    public void enterCost(ItemObjectGrammar.CostContext ctx) {
     }
 
     /**
@@ -153,7 +160,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAttack(ItemObjectParser.AttackContext ctx) {
+    public void exitCost(ItemObjectGrammar.CostContext ctx) {
     }
 
     /**
@@ -162,7 +169,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterArmour(ItemObjectParser.ArmourContext ctx) {
+    public void enterAttack(ItemObjectGrammar.AttackContext ctx) {
     }
 
     /**
@@ -171,7 +178,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitArmour(ItemObjectParser.ArmourContext ctx) {
+    public void exitAttack(ItemObjectGrammar.AttackContext ctx) {
     }
 
     /**
@@ -180,7 +187,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAlloc(ItemObjectParser.AllocContext ctx) {
+    public void enterArmour(ItemObjectGrammar.ArmourContext ctx) {
     }
 
     /**
@@ -189,7 +196,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAlloc(ItemObjectParser.AllocContext ctx) {
+    public void exitArmour(ItemObjectGrammar.ArmourContext ctx) {
     }
 
     /**
@@ -198,7 +205,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCharges(ItemObjectParser.ChargesContext ctx) {
+    public void enterAlloc(ItemObjectGrammar.AllocContext ctx) {
     }
 
     /**
@@ -207,7 +214,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCharges(ItemObjectParser.ChargesContext ctx) {
+    public void exitAlloc(ItemObjectGrammar.AllocContext ctx) {
     }
 
     /**
@@ -216,7 +223,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPile(ItemObjectParser.PileContext ctx) {
+    public void enterCharges(ItemObjectGrammar.ChargesContext ctx) {
     }
 
     /**
@@ -225,7 +232,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPile(ItemObjectParser.PileContext ctx) {
+    public void exitCharges(ItemObjectGrammar.ChargesContext ctx) {
     }
 
     /**
@@ -234,7 +241,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPower(ItemObjectParser.PowerContext ctx) {
+    public void enterPile(ItemObjectGrammar.PileContext ctx) {
     }
 
     /**
@@ -243,7 +250,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPower(ItemObjectParser.PowerContext ctx) {
+    public void exitPile(ItemObjectGrammar.PileContext ctx) {
     }
 
     /**
@@ -252,7 +259,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect(ItemObjectParser.EffectContext ctx) {
+    public void enterPower(ItemObjectGrammar.PowerContext ctx) {
     }
 
     /**
@@ -261,7 +268,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect(ItemObjectParser.EffectContext ctx) {
+    public void exitPower(ItemObjectGrammar.PowerContext ctx) {
     }
 
     /**
@@ -270,7 +277,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDice(ItemObjectParser.DiceContext ctx) {
+    public void enterMsg(ItemObjectGrammar.MsgContext ctx) {
     }
 
     /**
@@ -279,7 +286,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDice(ItemObjectParser.DiceContext ctx) {
+    public void exitMsg(ItemObjectGrammar.MsgContext ctx) {
     }
 
     /**
@@ -288,7 +295,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsg(ItemObjectParser.MsgContext ctx) {
+    public void enterVisMsg(ItemObjectGrammar.VisMsgContext ctx) {
     }
 
     /**
@@ -297,7 +304,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsg(ItemObjectParser.MsgContext ctx) {
+    public void exitVisMsg(ItemObjectGrammar.VisMsgContext ctx) {
     }
 
     /**
@@ -306,7 +313,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterVis_msg(ItemObjectParser.Vis_msgContext ctx) {
+    public void enterFlags(ItemObjectGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -315,7 +322,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitVis_msg(ItemObjectParser.Vis_msgContext ctx) {
+    public void exitFlags(ItemObjectGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -324,7 +331,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTime(ItemObjectParser.TimeContext ctx) {
+    public void enterValues(ItemObjectGrammar.ValuesContext ctx) {
     }
 
     /**
@@ -333,7 +340,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitTime(ItemObjectParser.TimeContext ctx) {
+    public void exitValues(ItemObjectGrammar.ValuesContext ctx) {
     }
 
     /**
@@ -342,7 +349,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect_yx(ItemObjectParser.Effect_yxContext ctx) {
+    public void enterBrand(ItemObjectGrammar.BrandContext ctx) {
     }
 
     /**
@@ -351,7 +358,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect_yx(ItemObjectParser.Effect_yxContext ctx) {
+    public void exitBrand(ItemObjectGrammar.BrandContext ctx) {
     }
 
     /**
@@ -360,7 +367,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterExpr(ItemObjectParser.ExprContext ctx) {
+    public void enterSlay(ItemObjectGrammar.SlayContext ctx) {
     }
 
     /**
@@ -369,7 +376,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitExpr(ItemObjectParser.ExprContext ctx) {
+    public void exitSlay(ItemObjectGrammar.SlayContext ctx) {
     }
 
     /**
@@ -378,7 +385,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect_block(ItemObjectParser.Effect_blockContext ctx) {
+    public void enterCurse(ItemObjectGrammar.CurseContext ctx) {
     }
 
     /**
@@ -387,7 +394,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect_block(ItemObjectParser.Effect_blockContext ctx) {
+    public void exitCurse(ItemObjectGrammar.CurseContext ctx) {
     }
 
     /**
@@ -396,7 +403,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlags(ItemObjectParser.FlagsContext ctx) {
+    public void enterPval(ItemObjectGrammar.PvalContext ctx) {
     }
 
     /**
@@ -405,7 +412,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlags(ItemObjectParser.FlagsContext ctx) {
+    public void exitPval(ItemObjectGrammar.PvalContext ctx) {
     }
 
     /**
@@ -414,7 +421,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterValues(ItemObjectParser.ValuesContext ctx) {
+    public void enterDesc(ItemObjectGrammar.DescContext ctx) {
     }
 
     /**
@@ -423,7 +430,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitValues(ItemObjectParser.ValuesContext ctx) {
+    public void exitDesc(ItemObjectGrammar.DescContext ctx) {
     }
 
     /**
@@ -432,7 +439,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSlay(ItemObjectParser.SlayContext ctx) {
+    public void enterItemObject(ItemObjectGrammar.ItemObjectContext ctx) {
     }
 
     /**
@@ -441,7 +448,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSlay(ItemObjectParser.SlayContext ctx) {
+    public void exitItemObject(ItemObjectGrammar.ItemObjectContext ctx) {
     }
 
     /**
@@ -450,7 +457,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCurse(ItemObjectParser.CurseContext ctx) {
+    public void enterFile(ItemObjectGrammar.FileContext ctx) {
     }
 
     /**
@@ -459,7 +466,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCurse(ItemObjectParser.CurseContext ctx) {
+    public void exitFile(ItemObjectGrammar.FileContext ctx) {
     }
 
     /**
@@ -468,7 +475,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPval(ItemObjectParser.PvalContext ctx) {
+    public void enterEffect(ItemObjectGrammar.EffectContext ctx) {
     }
 
     /**
@@ -477,7 +484,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPval(ItemObjectParser.PvalContext ctx) {
+    public void exitEffect(ItemObjectGrammar.EffectContext ctx) {
     }
 
     /**
@@ -486,7 +493,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(ItemObjectParser.DescContext ctx) {
+    public void enterTime(ItemObjectGrammar.TimeContext ctx) {
     }
 
     /**
@@ -495,7 +502,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(ItemObjectParser.DescContext ctx) {
+    public void exitTime(ItemObjectGrammar.TimeContext ctx) {
     }
 
     /**
@@ -504,7 +511,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterItem_object(ItemObjectParser.Item_objectContext ctx) {
+    public void enterEffectYX(ItemObjectGrammar.EffectYXContext ctx) {
     }
 
     /**
@@ -513,7 +520,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitItem_object(ItemObjectParser.Item_objectContext ctx) {
+    public void exitEffectYX(ItemObjectGrammar.EffectYXContext ctx) {
     }
 
     /**
@@ -522,7 +529,7 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(ItemObjectParser.FileContext ctx) {
+    public void enterDice(ItemObjectGrammar.DiceContext ctx) {
     }
 
     /**
@@ -531,31 +538,96 @@ public class ItemObjectBaseListener implements ItemObjectListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(ItemObjectParser.FileContext ctx) {
+    public void exitDice(ItemObjectGrammar.DiceContext ctx) {
     }
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterExpr(ItemObjectGrammar.ExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitExpr(ItemObjectGrammar.ExprContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectMsg(ItemObjectGrammar.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectMsg(ItemObjectGrammar.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectBlock(ItemObjectGrammar.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectBlock(ItemObjectGrammar.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

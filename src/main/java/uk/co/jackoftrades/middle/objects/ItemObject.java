@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
@@ -356,7 +355,7 @@ public class ItemObject {
                       Map<ElementEnum, ElementInfo> elInfo,
                       Map<Brand, Boolean> brands,
                       Map<Slay, Boolean> slays,
-                      Map<ItemObjectParser.CurseEntry, Boolean> curses,
+                      Map<CurseEntry, Boolean> curses,
                       List<Effect> effect, String effectMessage,
                       List<Activation> activation, String time,
                       int timeout, int number,
@@ -388,12 +387,7 @@ public class ItemObject {
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
-        this.curses = new HashMap<>();
-        for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
-            Boolean b = curses.get(ce);
-            CurseEntry curseEntry = new CurseEntry(ce.curse(), ce.curseData());
-            this.curses.put(curseEntry, b);
-        }
+        this.curses = curses;
         this.effect = effect;
         this.effectMessage = effectMessage;
         this.activation = activation;

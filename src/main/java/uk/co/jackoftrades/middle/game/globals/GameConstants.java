@@ -795,7 +795,7 @@ public class GameConstants {
             loadSummons();              // Dependent on MonsterBases
             loadCurses();               // Dependent on ObjectBases, & Summons
             loadPlayerShapes();
-//            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
+            loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
             loadActivations();
 //            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
 //            loadPlayerHistories();
@@ -1161,8 +1161,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "object.txt";
 
         try {
-            itemObjects = parser.parse(filename);
-            objectKinds = parser.parseKinds(filename);
+            ParseResult<ObjectKind> results = parser.parseWithResults(filename);
+
+            if (results.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            objectKinds = results.items();
+            objectBaseKindMax = objectKinds.size();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
         }

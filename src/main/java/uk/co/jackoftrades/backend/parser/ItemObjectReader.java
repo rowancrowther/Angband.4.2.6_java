@@ -17,29 +17,28 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectLexer;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
-import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.backend.parser.grammars.itemobject.ItemObjectGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.itemobject.ItemObjectLexer;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectAssembler;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParseRecord;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Loads the relevant data-file entries into {@link ItemObject} objects by driving the
+ * Loads the relevant data-file entries into {@link ObjectKind} objects by driving the
  * matching ANTLR-generated lexer/parser. The thin hand-written bridge between
  * the generated grammar code and the game, implementing the shared
  * {@link Reader} contract (Java port of the equivalent C data-file parser).
  *
  * @author Rowan Crowther
  */
-public class ItemObjectReader implements Reader<ItemObject> {
+public class ItemObjectReader implements Reader<ObjectKind> {
     /**
      * Logger used to report file-loading failures.
      *
@@ -54,44 +53,52 @@ public class ItemObjectReader implements Reader<ItemObject> {
      * @return an ArrayList of items read from the file
      */
     @Override
-    public @NotNull List<ItemObject> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ItemObjectLexer lexer = new ItemObjectLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ItemObjectParser parser = new ItemObjectParser(tokens);
-            ItemObjectParser.FileContext output = parser.file();
-
-            return output.itemObjects;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public @NotNull List<ObjectKind> parse(@NotNull String filename) throws IOException {
+        return parseWithResults(filename).items();
     }
 
     /**
-     * Parse the same item-object data file but return the {@link ObjectKind}
-     * view of each entry rather than the {@link ItemObject} view. The data file
-     * defines both aspects of every base item, so this is a second pass over the
-     * same grammar output exposing the "kind" template objects.
+     * Parses the file and returns the full {@link ParseResult} — both the assembled object kinds
+     * and the collected soft/hard error messages — by handing the standard pipeline to
+     * {@link GrammarDriver} (lex, parse, extract records, assemble). {@link #parse} is the
+     * items-only convenience over this.
      *
-     * @param filename the name of the file
-     * @return the list of object kinds read from the file
+     * @param filename the object data file to load
+     * @return the assembled object kinds plus any error messages
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
-    public @NotNull List<ObjectKind> parseKinds(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ItemObjectLexer lexer = new ItemObjectLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ItemObjectParser parser = new ItemObjectParser(tokens);
-            ItemObjectParser.FileContext output = parser.file();
+    public ParseResult<ObjectKind> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ItemObjectLexer::new,
+                ItemObjectGrammar::new,
+                ItemObjectReader::extract,
+                new ItemObjectAssembler(), logger);
+    }
 
-            return output.objectKinds;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the top-level
+     * {@code file} rule, surfaces any hard grammar/lexer errors, soft-checks the declared
+     * {@code record-count:} header against the number of records read, and returns the raw
+     * parse records for the assembler.
+     *
+     * @param parser       the constructed {@code ItemObjectGrammar} positioned at the token stream
+     * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} aborts on a
+     *                     grammar/lexer error before the records are used
+     * @param errors       the soft-error channel; a record-count mismatch is reported here without
+     *                     discarding the records
+     * @return the raw object parse records in source order
+     */
+    private static @NotNull List<ItemObjectParseRecord> extract(
+            @NotNull ItemObjectGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        ItemObjectGrammar.FileContext output = parser.file();
+        List<ItemObjectParseRecord> records = output.itemObjects;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

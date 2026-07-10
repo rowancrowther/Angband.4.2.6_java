@@ -18,7 +18,6 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParser;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
@@ -467,25 +466,25 @@ public class ObjectKind {
      * @author Rowan Crowther
      */
     public ObjectKind(String name, String text, ObjectBase base,
-                      int kindIndex, String pVal, String toH,
-                      String toD, String toA, int ac, String baseDamage,
+                      int kindIndex, Random pVal, Random toH,
+                      Random toD, Random toA, int ac, Random baseDamage,
                       int damageDice, int damageSides,
                       int weight, int cost,
                       Flag<ObjectFlag> flags,
                       Flag<ObjectKindFlag> kindFlags,
-                      Map<ObjectModifier, String> modifiers,
+                      Map<ObjectModifier, Random> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
                       Map<Brand, Boolean> brands,
                       Map<Slay, Boolean> slays,
-                      Map<ItemObjectParser.CurseEntry, Boolean> curses,
+                      Map<CurseEntry, Boolean> curses,
                       AngbandDisplayCharacter character,
                       int alloc_prob, int alloc_min,
                       int alloc_max, int level,
                       List<Activation> activations,
                       List<Effect> effect, String effectMessage,
                       String visMessage, String time,
-                      String charge, int genMultProb,
-                      String stackSize, Flavour flavour,
+                      Random charge, int genMultProb,
+                      Random stackSize, Flavour flavour,
                       Quark noteAware, Quark noteUnaware,
                       boolean aware, boolean tried,
                       int ignore, boolean everseen, TValue tValue) {
@@ -493,28 +492,24 @@ public class ObjectKind {
         this.text = text;
         this.base = base;
         this.kindIndex = kindIndex;
-        this.pVal = Random.parseStr(pVal);
-        this.toH = Random.parseStr(toH);
-        this.toD = Random.parseStr(toD);
-        this.toA = Random.parseStr(toA);
+        this.pVal = pVal;
+        this.toH = toH;
+        this.toD = toD;
+        this.toA = toA;
         this.ac = ac;
-        this.baseDamage = Random.parseStr(baseDamage);
+        this.baseDamage = baseDamage;
         this.damageDice = damageDice;
         this.damageSides = damageSides;
         this.weight = weight;
         this.cost = cost;
         this.flags = flags;
         this.kindFlags = kindFlags;
-        this.modifiers = new HashMap<>();
-        for (ObjectModifier mod : modifiers.keySet()) {
-            Random r = Random.parseStr(modifiers.get(mod));
-            this.modifiers.put(mod, r);
-        }
+        this.modifiers = modifiers;
         this.elInfo = elInfo;
         this.brands = brands;
         this.slays = slays;
         this.curses = new HashMap<>();
-        for (ItemObjectParser.CurseEntry ce : curses.keySet()) {
+        for (CurseEntry ce : curses.keySet()) {
             CurseEntry thisCE = new CurseEntry(ce.curse(), ce.curseData());
             this.curses.put(thisCE, curses.get(ce));
         }
@@ -525,13 +520,12 @@ public class ObjectKind {
         this.level = level;
         this.activations = activations;
         this.effect = effect;
-        this.power = power;
         this.effectMessage = effectMessage;
         this.visMessage = visMessage;
         this.time = Random.parseStr(time);
-        this.charge = Random.parseStr(charge);
+        this.charge = charge;
         this.genMultProb = genMultProb;
-        this.stackSize = Random.parseStr(stackSize);
+        this.stackSize = stackSize;
         this.flavour = flavour;
         this.noteAware = noteAware;
         this.noteUnaware = noteUnaware;

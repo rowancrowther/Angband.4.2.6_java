@@ -14,22 +14,29 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
+// Generated from ItemObjectGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.itemobject;
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ItemObject.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.itemobject;
+import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.backend.parser.itemobject.ItemObjectParseRecord;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link ItemObjectVisitor},
+ * This class provides an empty implementation of {@link ItemObjectGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ItemObjectVisitor<T> {
+public class ItemObjectGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ItemObjectGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +44,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(ItemObjectParser.NameContext ctx) {
+    public T visitRecordCount(ItemObjectGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +55,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGraphics(ItemObjectParser.GraphicsContext ctx) {
+    public T visitName(ItemObjectGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +66,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitType(ItemObjectParser.TypeContext ctx) {
+    public T visitTval(ItemObjectGrammar.TvalContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +77,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLevel(ItemObjectParser.LevelContext ctx) {
+    public T visitGraphics(ItemObjectGrammar.GraphicsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +88,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitWeight(ItemObjectParser.WeightContext ctx) {
+    public T visitLevel(ItemObjectGrammar.LevelContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +99,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCost(ItemObjectParser.CostContext ctx) {
+    public T visitWeight(ItemObjectGrammar.WeightContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +110,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitAttack(ItemObjectParser.AttackContext ctx) {
+    public T visitCost(ItemObjectGrammar.CostContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +121,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitArmour(ItemObjectParser.ArmourContext ctx) {
+    public T visitAttack(ItemObjectGrammar.AttackContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +132,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitAlloc(ItemObjectParser.AllocContext ctx) {
+    public T visitArmour(ItemObjectGrammar.ArmourContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +143,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCharges(ItemObjectParser.ChargesContext ctx) {
+    public T visitAlloc(ItemObjectGrammar.AllocContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +154,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPile(ItemObjectParser.PileContext ctx) {
+    public T visitCharges(ItemObjectGrammar.ChargesContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +165,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPower(ItemObjectParser.PowerContext ctx) {
+    public T visitPile(ItemObjectGrammar.PileContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +176,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffect(ItemObjectParser.EffectContext ctx) {
+    public T visitPower(ItemObjectGrammar.PowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +187,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDice(ItemObjectParser.DiceContext ctx) {
+    public T visitMsg(ItemObjectGrammar.MsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +198,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMsg(ItemObjectParser.MsgContext ctx) {
+    public T visitVisMsg(ItemObjectGrammar.VisMsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -202,7 +209,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitVis_msg(ItemObjectParser.Vis_msgContext ctx) {
+    public T visitFlags(ItemObjectGrammar.FlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -213,7 +220,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitTime(ItemObjectParser.TimeContext ctx) {
+    public T visitValues(ItemObjectGrammar.ValuesContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -224,7 +231,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffect_yx(ItemObjectParser.Effect_yxContext ctx) {
+    public T visitBrand(ItemObjectGrammar.BrandContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -235,7 +242,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitExpr(ItemObjectParser.ExprContext ctx) {
+    public T visitSlay(ItemObjectGrammar.SlayContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -246,7 +253,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitEffect_block(ItemObjectParser.Effect_blockContext ctx) {
+    public T visitCurse(ItemObjectGrammar.CurseContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -257,7 +264,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlags(ItemObjectParser.FlagsContext ctx) {
+    public T visitPval(ItemObjectGrammar.PvalContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -268,7 +275,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitValues(ItemObjectParser.ValuesContext ctx) {
+    public T visitDesc(ItemObjectGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -279,7 +286,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSlay(ItemObjectParser.SlayContext ctx) {
+    public T visitItemObject(ItemObjectGrammar.ItemObjectContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -290,7 +297,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCurse(ItemObjectParser.CurseContext ctx) {
+    public T visitFile(ItemObjectGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -301,7 +308,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPval(ItemObjectParser.PvalContext ctx) {
+    public T visitEffect(ItemObjectGrammar.EffectContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -312,7 +319,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(ItemObjectParser.DescContext ctx) {
+    public T visitTime(ItemObjectGrammar.TimeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -323,7 +330,7 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitItem_object(ItemObjectParser.Item_objectContext ctx) {
+    public T visitEffectYX(ItemObjectGrammar.EffectYXContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -334,7 +341,40 @@ public class ItemObjectBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(ItemObjectParser.FileContext ctx) {
+    public T visitDice(ItemObjectGrammar.DiceContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitExpr(ItemObjectGrammar.ExprContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitEffectMsg(ItemObjectGrammar.EffectMsgContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitEffectBlock(ItemObjectGrammar.EffectBlockContext ctx) {
         return visitChildren(ctx);
     }
 }

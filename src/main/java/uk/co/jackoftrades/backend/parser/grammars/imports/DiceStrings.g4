@@ -119,9 +119,9 @@ fragment SIMPLE_DICE_STRING_BODY
         :   ( // literal base, literal/absent dice-count, literal sides
                 '-'? DICE_INTEGER '+' DICE_INTEGER DICE_D DICE_INTEGER (DICE_M DICE_INTEGER)?
             |   '-'? DICE_INTEGER '+' DICE_D DICE_INTEGER (DICE_M DICE_INTEGER)?
-            |   DICE_INTEGER DICE_D DICE_INTEGER (DICE_M DICE_INTEGER)?
+            |   '-'? DICE_INTEGER DICE_D DICE_INTEGER (DICE_M DICE_INTEGER)?
             |   DICE_D DICE_INTEGER (DICE_M DICE_INTEGER)?
-            |   DICE_INTEGER (DICE_M DICE_INTEGER)?
+            |   '-'? DICE_INTEGER (DICE_M DICE_INTEGER)?
             |   '-'? DICE_INTEGER '+' DICE_M DICE_INTEGER
             |   DICE_M DICE_INTEGER
             )

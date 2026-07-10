@@ -14,358 +14,367 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Shape.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.shape;
-
+// Generated from ShapeGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.shape;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link ShapeListener},
+ * This class provides an empty implementation of {@link ShapeGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ShapeBaseListener implements ShapeListener {
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
+public class ShapeGrammarBaseListener implements ShapeGrammarListener {
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
     @Override
-    public void enterName(ShapeParser.NameContext ctx) {
+    public void enterRecordCount(ShapeGrammar.RecordCountContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitRecordCount(ShapeGrammar.RecordCountContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterName(ShapeGrammar.NameContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitName(ShapeGrammar.NameContext ctx) {
     }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitName(ShapeParser.NameContext ctx) {
-    }
+    public void enterCombat(ShapeGrammar.CombatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterCombat(ShapeParser.CombatContext ctx) {
-    }
+    public void exitCombat(ShapeGrammar.CombatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitCombat(ShapeParser.CombatContext ctx) {
-    }
+    public void enterSkillDisarmP(ShapeGrammar.SkillDisarmPContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_disarm_phys(ShapeParser.Skill_disarm_physContext ctx) {
-    }
+    public void exitSkillDisarmP(ShapeGrammar.SkillDisarmPContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_disarm_phys(ShapeParser.Skill_disarm_physContext ctx) {
-    }
+    public void enterSkillDisarmM(ShapeGrammar.SkillDisarmMContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_disarm_magic(ShapeParser.Skill_disarm_magicContext ctx) {
-    }
+    public void exitSkillDisarmM(ShapeGrammar.SkillDisarmMContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_disarm_magic(ShapeParser.Skill_disarm_magicContext ctx) {
-    }
+    public void enterSkillSave(ShapeGrammar.SkillSaveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_save(ShapeParser.Skill_saveContext ctx) {
-    }
+    public void exitSkillSave(ShapeGrammar.SkillSaveContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_save(ShapeParser.Skill_saveContext ctx) {
-    }
+    public void enterSkillStealth(ShapeGrammar.SkillStealthContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_stealth(ShapeParser.Skill_stealthContext ctx) {
-    }
+    public void exitSkillStealth(ShapeGrammar.SkillStealthContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_stealth(ShapeParser.Skill_stealthContext ctx) {
-    }
+    public void enterSkillSearch(ShapeGrammar.SkillSearchContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_search(ShapeParser.Skill_searchContext ctx) {
-    }
+    public void exitSkillSearch(ShapeGrammar.SkillSearchContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_search(ShapeParser.Skill_searchContext ctx) {
-    }
+    public void enterSkillMelee(ShapeGrammar.SkillMeleeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_melee(ShapeParser.Skill_meleeContext ctx) {
-    }
+    public void exitSkillMelee(ShapeGrammar.SkillMeleeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_melee(ShapeParser.Skill_meleeContext ctx) {
-    }
+    public void enterSkillThrow(ShapeGrammar.SkillThrowContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_throw(ShapeParser.Skill_throwContext ctx) {
-    }
+    public void exitSkillThrow(ShapeGrammar.SkillThrowContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_throw(ShapeParser.Skill_throwContext ctx) {
-    }
+    public void enterSkillDig(ShapeGrammar.SkillDigContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterSkill_dig(ShapeParser.Skill_digContext ctx) {
-    }
+    public void exitSkillDig(ShapeGrammar.SkillDigContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitSkill_dig(ShapeParser.Skill_digContext ctx) {
-    }
+    public void enterObjFlags(ShapeGrammar.ObjFlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterObj_flags(ShapeParser.Obj_flagsContext ctx) {
-    }
+    public void exitObjFlags(ShapeGrammar.ObjFlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitObj_flags(ShapeParser.Obj_flagsContext ctx) {
-    }
+    public void enterPlayerFlags(ShapeGrammar.PlayerFlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterPlayer_flags(ShapeParser.Player_flagsContext ctx) {
-    }
+    public void exitPlayerFlags(ShapeGrammar.PlayerFlagsContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitPlayer_flags(ShapeParser.Player_flagsContext ctx) {
-    }
+    public void enterValues(ShapeGrammar.ValuesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterValues(ShapeParser.ValuesContext ctx) {
-    }
+    public void exitValues(ShapeGrammar.ValuesContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitValues(ShapeParser.ValuesContext ctx) {
-    }
+    public void enterBlow(ShapeGrammar.BlowContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterEffect(ShapeParser.EffectContext ctx) {
-    }
+    public void exitBlow(ShapeGrammar.BlowContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitEffect(ShapeParser.EffectContext ctx) {
-    }
+    public void enterShape(ShapeGrammar.ShapeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterDice(ShapeParser.DiceContext ctx) {
-    }
+    public void exitShape(ShapeGrammar.ShapeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitDice(ShapeParser.DiceContext ctx) {
-    }
+    public void enterFile(ShapeGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterExpr(ShapeParser.ExprContext ctx) {
-    }
+    public void exitFile(ShapeGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitExpr(ShapeParser.ExprContext ctx) {
-    }
+    public void enterEffect(ShapeGrammar.EffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterEffect_msg(ShapeParser.Effect_msgContext ctx) {
-    }
+    public void exitEffect(ShapeGrammar.EffectContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitEffect_msg(ShapeParser.Effect_msgContext ctx) {
-    }
+    public void enterTime(ShapeGrammar.TimeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterEffect_block(ShapeParser.Effect_blockContext ctx) {
-    }
+    public void exitTime(ShapeGrammar.TimeContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitEffect_block(ShapeParser.Effect_blockContext ctx) {
-    }
+    public void enterEffectYX(ShapeGrammar.EffectYXContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterBlow(ShapeParser.BlowContext ctx) {
-    }
+    public void exitEffectYX(ShapeGrammar.EffectYXContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitBlow(ShapeParser.BlowContext ctx) {
-    }
+    public void enterDice(ShapeGrammar.DiceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterShape(ShapeParser.ShapeContext ctx) {
-    }
+    public void exitDice(ShapeGrammar.DiceContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitShape(ShapeParser.ShapeContext ctx) {
-    }
+    public void enterExpr(ShapeGrammar.ExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void enterFile(ShapeParser.FileContext ctx) {
-    }
+    public void exitExpr(ShapeGrammar.ExprContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
-	 */
+     */
     @Override
-    public void exitFile(ShapeParser.FileContext ctx) {
+    public void enterEffectMsg(ShapeGrammar.EffectMsgContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectMsg(ShapeGrammar.EffectMsgContext ctx) {
     }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectBlock(ShapeGrammar.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectBlock(ShapeGrammar.EffectBlockContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

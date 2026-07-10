@@ -91,7 +91,7 @@ public final class GrammarDriver {
         @NotNull
         List<R> extract(@NotNull P parser,
                         @NotNull ParseErrors errorCatcher,
-                        @NotNull List<String> errors);
+                        @NotNull List<String> errors) throws IOException;
     }
 
     /**

@@ -794,7 +794,7 @@ public class GameConstants {
             loadBrands();
             loadSummons();              // Dependent on MonsterBases
             loadCurses();               // Dependent on ObjectBases, & Summons
-//            loadPlayerShapes();
+            loadPlayerShapes();
 //            loadItemObjects();          // Dependent on Summons, Curse, Slay & ObjectBase
             loadActivations();
 //            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
@@ -1192,14 +1192,25 @@ public class GameConstants {
     /**
      * Load in the PlayerShape information and store it in a List
      */
-    private static void loadPlayerShapes() {
+    private static void loadPlayerShapes() throws IOException {
         ShapeReader parser = new ShapeReader();
         String filename = ANGBAND_DIR_GAMEDATA + "shape.txt";
 
         try {
-            playerShapes = parser.parse(filename);
+            ParseResult<PlayerShape> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerShapes = result.items();
+            playerShapeMax = playerShapes.size();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 

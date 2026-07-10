@@ -21,9 +21,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
-import uk.co.jackoftrades.middle.enums.ValueEnum;
+import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 
@@ -71,15 +72,23 @@ public class PlayerShape {
     private Flag<PlayerFlag> pflags;
     //private Map<PlayerSkill, Integer> skillModifiers;
     //private Map<Stats, Integer> statModifiers;
-    /** Miscellaneous modifier-indexed value adjustments applied while in this shape. */
-    private Map<ValueEnum, Integer> valueModifiers;
     /**
-     * Elements resisted while in this shape.
+     * Additive stat/modifier adjustments — the {@code obj_mods} half of the {@code values:}
+     * line (C: {@code player_shape.modifiers}). Keyed by {@link ObjectModifier}; the
+     * {@code RES_}-prefixed resistances of the same line live in {@link #elementValueModifiers}.
      */
-    private List<ElementEnum> resists;
+    private Map<ObjectModifier, Integer> objectValueModifiers;
+    /**
+     * Per-element resistance levels — the {@code RES_} half of the {@code values:} line
+     * (C: {@code player_shape.el_info[].res_level}). Keyed by {@link ElementEnum}; the
+     * additive modifiers of the same line live in {@link #objectValueModifiers}.
+     */
+    private Map<ElementEnum, ElementInfo> elementValueModifiers;
 
-    /** Optional effect fired when the shape is assumed (C: {@code player_shape.effect}). */
-    private Effect effect;
+    /**
+     * Effects fired when this shape is assumed (C: {@code player_shape.effect}); empty if none.
+     */
+    private List<Effect> effect;
 
     /** Number of unarmed blows the shape grants. */
     private int numBlows;
@@ -99,8 +108,6 @@ public class PlayerShape {
      * @param skills         per-skill adjustments
      * @param flags          object flags conferred
      * @param pflags         player flags conferred
-     * @param valueModifiers miscellaneous value adjustments
-     * @param resists        elements resisted
      * @param effect         effect fired on assuming the shape (may be {@code null})
      * @param numBlows       number of unarmed blows granted
      * @param playerBlow     the named unarmed blows
@@ -112,9 +119,9 @@ public class PlayerShape {
                        Map<PlayerSkill, Integer> skills,
                        Flag<ObjectFlag> flags,
                        Flag<PlayerFlag> pflags,
-                       Map<ValueEnum, Integer> valueModifiers,
-                       List<ElementEnum> resists,
-                       Effect effect,
+                       Map<ObjectModifier, Integer> objectValueModifiers,
+                       Map<ElementEnum, ElementInfo> elementValueModifiers,
+                       List<Effect> effect,
                        int numBlows,
                        List<PlayerBlow> playerBlow) {
         this.name = name;
@@ -125,8 +132,8 @@ public class PlayerShape {
         this.skills = skills;
         this.flags = flags;
         this.pflags = pflags;
-        this.valueModifiers = valueModifiers;
-        this.resists = resists;
+        this.objectValueModifiers = objectValueModifiers;
+        this.elementValueModifiers = elementValueModifiers;
         this.effect = effect;
         this.numBlows = numBlows;
         this.playerBlow = playerBlow;
@@ -152,8 +159,6 @@ public class PlayerShape {
                 ", skills=" + skills +
                 ", flags=" + flags +
                 ", pflags=" + pflags +
-                ", valueModifiers=" + valueModifiers +
-                ", resists=" + resists +
                 ", effect=" + effect +
                 ", numBlows=" + numBlows +
                 ", playerBlow=" + playerBlow +
@@ -165,5 +170,85 @@ public class PlayerShape {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return the armour-class bonus granted while in this shape
+     */
+    public int getToAc() {
+        return toAc;
+    }
+
+    /**
+     * @return the to-hit bonus granted while in this shape
+     */
+    public int getToHit() {
+        return toHit;
+    }
+
+    /**
+     * @return the to-damage bonus granted while in this shape
+     */
+    public int getToDam() {
+        return toDam;
+    }
+
+    /**
+     * @return the per-skill adjustments applied while in this shape
+     */
+    public Map<PlayerSkill, Integer> getSkills() {
+        return skills;
+    }
+
+    /**
+     * @return the object flags conferred while in this shape
+     */
+    public Flag<ObjectFlag> getFlags() {
+        return flags;
+    }
+
+    /**
+     * @return the player flags conferred while in this shape
+     */
+    public Flag<PlayerFlag> getPflags() {
+        return pflags;
+    }
+
+    /**
+     * @return the additive stat/modifier adjustments (the {@code obj_mods} half of the
+     * {@code values:} line) applied while in this shape
+     */
+    public Map<ObjectModifier, Integer> getObjectValueModifiers() {
+        return objectValueModifiers;
+    }
+
+    /**
+     * @return the per-element resistance levels (the {@code RES_} half of the
+     * {@code values:} line) applied while in this shape
+     */
+    public Map<ElementEnum, ElementInfo> getElementValueModifiers() {
+        return elementValueModifiers;
+    }
+
+    /**
+     * @return the effects fired when this shape is assumed (empty if the shape has none)
+     */
+    public List<Effect> getEffect() {
+        return effect;
+    }
+
+    /**
+     * @return the number of unarmed blows this shape grants (blow lines counted with
+     * duplicates, which weight selection frequency)
+     */
+    public int getNumBlows() {
+        return numBlows;
+    }
+
+    /**
+     * @return the named unarmed blows available in this shape
+     */
+    public List<PlayerBlow> getPlayerBlow() {
+        return playerBlow;
     }
 }

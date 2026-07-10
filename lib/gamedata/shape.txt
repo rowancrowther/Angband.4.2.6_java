@@ -58,6 +58,8 @@
 # 'blow' is for verbs for how the shapechanged character will hit monsters.
 # Frequencies can be adjusted by having more than one line the same.
 
+record-count:9
+
 name:normal
 
 name:fox

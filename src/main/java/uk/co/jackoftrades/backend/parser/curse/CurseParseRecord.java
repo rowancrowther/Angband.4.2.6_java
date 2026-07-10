@@ -34,7 +34,6 @@ public record CurseParseRecord(String name,
                                String message,
                                List<String> desc,
                                List<String> conflict,
-                               List<String> conflictString,
                                List<String> cFlag,
                                int line) {
 }

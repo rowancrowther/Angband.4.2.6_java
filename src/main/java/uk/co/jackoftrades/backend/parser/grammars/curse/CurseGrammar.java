@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.curse;
 
@@ -1244,7 +1243,7 @@ public class CurseGrammar extends Parser {
 
             ((CurseRecordContext) _localctx).record = new CurseParseRecord(nameInit, curseTypeInit, weightAdjustmentInit,
                     tohInit, todInit, toaInit, effects, flagsListInit, valuesInit,
-                    msgInit, descInit, conflictInit, conflictInit, cFlagsInit, blockLine);
+                    msgInit, descInit, conflictInit, cFlagsInit, blockLine);
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -2272,5 +2271,5 @@ public class CurseGrammar extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

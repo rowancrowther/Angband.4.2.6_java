@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from CurseGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.curse;
 
@@ -25,7 +24,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link CurseGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface CurseGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**

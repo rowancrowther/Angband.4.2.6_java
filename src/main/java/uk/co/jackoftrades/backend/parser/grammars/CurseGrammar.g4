@@ -107,7 +107,7 @@ curseRecord
         @after {
             $record = new CurseParseRecord(nameInit, curseTypeInit, weightAdjustmentInit,
                         tohInit, todInit, toaInit, effects, flagsListInit, valuesInit,
-                        msgInit, descInit, conflictInit, conflictInit, cFlagsInit, blockLine);
+                        msgInit, descInit, conflictInit, cFlagsInit, blockLine);
         }
         :   name { nameInit = $name.nameStr;
                    blockLine = $name.line; }

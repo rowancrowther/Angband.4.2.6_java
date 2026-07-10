@@ -14,7 +14,6 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
 // Generated from CurseLexer.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.curse;
 
@@ -628,5 +627,5 @@ public class CurseLexer extends Lexer {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

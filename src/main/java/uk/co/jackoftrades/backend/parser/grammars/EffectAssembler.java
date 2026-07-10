@@ -118,6 +118,14 @@ public class EffectAssembler {
         String msg = record.effectMessage();
         Random time = Random.parseStr(record.timeDiceString());
 
+        // The evaluated dice value (the Random field) is intentionally left null here.
+        // Dice are not rolled at parse time: an expression such as "$B+1d8" bound to
+        // "B:PLAYER_HP:* 4" must be computed against live game state at the moment the
+        // effect fires (4 * player HP + 1d8), which is a runtime action outside the scope
+        // of file parsing. This mirrors Angband's C, where dice_parse_string only builds a
+        // dice_t skeleton at load and dice_roll/dice_evaluate produce the value at fire time.
+        // We therefore retain only the lossless raw diceString plus the parsed expressions,
+        // to be parsed and evaluated together by the future runtime roll engine.
         return new Effect(effectEnum, null, diceString, yVal, xVal, effectEnum.getSubType(),
                 wrapper, radius, otherParameter, time, expressions, msg);
     }

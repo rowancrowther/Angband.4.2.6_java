@@ -271,6 +271,7 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
             }
             if (illegalValue) continue;
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            if (effects == null) continue;
             List<PlayerBlow> blowList = new ArrayList<>();
             for (String blow : record.blowMethod()) {
                 blowList.add(new PlayerBlow(blow));

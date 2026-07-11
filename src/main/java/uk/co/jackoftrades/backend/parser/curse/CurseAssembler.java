@@ -129,6 +129,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 }
             }
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            boolean badEffect = (effects == null);
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
             List<ObjectFlag> objectFlags = new ArrayList<>();
             boolean illegalFlag = false;
@@ -159,7 +160,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     }
                 }
             }
-            if (illegalFlag) continue;
+            if (illegalFlag || badEffect) continue;
             Map<ObjectModifier, Integer> modifiers = new HashMap<>();
             boolean illegalValue = false;
             // values: line fans out — RES_* set a per-element resistance level on

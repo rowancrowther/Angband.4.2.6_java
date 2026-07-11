@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4 by ANTLR 4.13.2
+// Generated from src/main/java/uk/co/jackoftrades/backend/parser/grammars/ActivationsGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars.activations;
 
 import org.antlr.v4.runtime.*;
@@ -25,15 +25,15 @@ import org.antlr.v4.runtime.atn.ParserATNSimulator;
 import org.antlr.v4.runtime.atn.PredictionContextCache;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.backend.parser.activation.ActivationParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class Activations extends Parser {
+public class ActivationsGrammar extends Parser {
     static {
         RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
     }
@@ -121,7 +121,7 @@ public class Activations extends Parser {
 
     @Override
     public String getGrammarFileName() {
-        return "Activations.g4";
+        return "ActivationsGrammar.g4";
     }
 
     @Override
@@ -139,22 +139,22 @@ public class Activations extends Parser {
         return _ATN;
     }
 
-    public Activations(TokenStream input) {
+    public ActivationsGrammar(TokenStream input) {
         super(input);
         _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
 
     @SuppressWarnings("CheckReturnValue")
     public static class RecordCountContext extends ParserRuleContext {
-        public int count;
+        public String count;
         public Token INTEGER;
 
         public TerminalNode RECORD_COUNT() {
-            return getToken(Activations.RECORD_COUNT, 0);
+            return getToken(ActivationsGrammar.RECORD_COUNT, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(Activations.INTEGER, 0);
+            return getToken(ActivationsGrammar.INTEGER, 0);
         }
 
         public RecordCountContext(ParserRuleContext parent, int invokingState) {
@@ -168,19 +168,14 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterRecordCount(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterRecordCount(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitRecordCount(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitRecordCount(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitRecordCount(this);
         }
     }
 
@@ -194,7 +189,7 @@ public class Activations extends Parser {
                 match(RECORD_COUNT);
                 setState(33);
                 ((RecordCountContext) _localctx).INTEGER = match(INTEGER);
-                ((RecordCountContext) _localctx).count = Integer.parseInt(((RecordCountContext) _localctx).INTEGER.getText());
+                ((RecordCountContext) _localctx).count = ((RecordCountContext) _localctx).INTEGER.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -212,11 +207,11 @@ public class Activations extends Parser {
         public Token NAME_STRING;
 
         public TerminalNode NAME() {
-            return getToken(Activations.NAME, 0);
+            return getToken(ActivationsGrammar.NAME, 0);
         }
 
         public TerminalNode NAME_STRING() {
-            return getToken(Activations.NAME_STRING, 0);
+            return getToken(ActivationsGrammar.NAME_STRING, 0);
         }
 
         public NameContext(ParserRuleContext parent, int invokingState) {
@@ -230,19 +225,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterName(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterName(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitName(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitName(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitName(this);
         }
     }
 
@@ -270,15 +258,15 @@ public class Activations extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class AimContext extends ParserRuleContext {
-        public boolean aimBool;
+        public String aimBool;
         public Token INTEGER;
 
         public TerminalNode AIM() {
-            return getToken(Activations.AIM, 0);
+            return getToken(ActivationsGrammar.AIM, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(Activations.INTEGER, 0);
+            return getToken(ActivationsGrammar.INTEGER, 0);
         }
 
         public AimContext(ParserRuleContext parent, int invokingState) {
@@ -292,19 +280,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterAim(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterAim(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitAim(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitAim(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitAim(this);
         }
     }
 
@@ -318,7 +299,7 @@ public class Activations extends Parser {
                 match(AIM);
                 setState(41);
                 ((AimContext) _localctx).INTEGER = match(INTEGER);
-                ((AimContext) _localctx).aimBool = ((AimContext) _localctx).INTEGER.getText().equals("1");
+                ((AimContext) _localctx).aimBool = ((AimContext) _localctx).INTEGER.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -332,15 +313,15 @@ public class Activations extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class LevelContext extends ParserRuleContext {
-        public int levelInt;
+        public String levelInt;
         public Token INTEGER;
 
         public TerminalNode LEVEL() {
-            return getToken(Activations.LEVEL, 0);
+            return getToken(ActivationsGrammar.LEVEL, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(Activations.INTEGER, 0);
+            return getToken(ActivationsGrammar.INTEGER, 0);
         }
 
         public LevelContext(ParserRuleContext parent, int invokingState) {
@@ -354,19 +335,13 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterLevel(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterLevel(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitLevel(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitLevel(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitLevel(this);
         }
     }
 
@@ -380,7 +355,7 @@ public class Activations extends Parser {
                 match(LEVEL);
                 setState(45);
                 ((LevelContext) _localctx).INTEGER = match(INTEGER);
-                ((LevelContext) _localctx).levelInt = Integer.parseInt(((LevelContext) _localctx).INTEGER.getText());
+                ((LevelContext) _localctx).levelInt = ((LevelContext) _localctx).INTEGER.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -394,15 +369,15 @@ public class Activations extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class PowerContext extends ParserRuleContext {
-        public int powerInt;
+        public String powerInt;
         public Token INTEGER;
 
         public TerminalNode POWER() {
-            return getToken(Activations.POWER, 0);
+            return getToken(ActivationsGrammar.POWER, 0);
         }
 
         public TerminalNode INTEGER() {
-            return getToken(Activations.INTEGER, 0);
+            return getToken(ActivationsGrammar.INTEGER, 0);
         }
 
         public PowerContext(ParserRuleContext parent, int invokingState) {
@@ -416,19 +391,13 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterPower(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterPower(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitPower(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitPower(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitPower(this);
         }
     }
 
@@ -442,7 +411,7 @@ public class Activations extends Parser {
                 match(POWER);
                 setState(49);
                 ((PowerContext) _localctx).INTEGER = match(INTEGER);
-                ((PowerContext) _localctx).powerInt = Integer.parseInt(((PowerContext) _localctx).INTEGER.getText());
+                ((PowerContext) _localctx).powerInt = ((PowerContext) _localctx).INTEGER.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -460,11 +429,11 @@ public class Activations extends Parser {
         public Token DESC_STRING;
 
         public TerminalNode DESC() {
-            return getToken(Activations.DESC, 0);
+            return getToken(ActivationsGrammar.DESC, 0);
         }
 
         public TerminalNode DESC_STRING() {
-            return getToken(Activations.DESC_STRING, 0);
+            return getToken(ActivationsGrammar.DESC_STRING, 0);
         }
 
         public DescContext(ParserRuleContext parent, int invokingState) {
@@ -478,19 +447,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterDesc(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterDesc(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitDesc(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitDesc(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitDesc(this);
         }
     }
 
@@ -522,11 +484,11 @@ public class Activations extends Parser {
         public Token DESC_STRING;
 
         public TerminalNode MSG() {
-            return getToken(Activations.MSG, 0);
+            return getToken(ActivationsGrammar.MSG, 0);
         }
 
         public TerminalNode DESC_STRING() {
-            return getToken(Activations.DESC_STRING, 0);
+            return getToken(ActivationsGrammar.DESC_STRING, 0);
         }
 
         public MsgContext(ParserRuleContext parent, int invokingState) {
@@ -540,19 +502,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterMsg(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterMsg(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitMsg(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitMsg(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitMsg(this);
         }
     }
 
@@ -652,19 +607,14 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterActivation(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterActivation(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitActivation(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitActivation(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitActivation(this);
         }
     }
 
@@ -673,12 +623,12 @@ public class Activations extends Parser {
         enterRule(_localctx, 14, RULE_activation);
 
         String nameInit = "";
-        boolean aimInit = false;
-        int levelInit = 0;
-        int powerInit = 0;
+        String aimInit = "";
+        String levelInit = "";
+        String powerInit = "";
         String messageInit = "";
         String descInit = "";
-        List<List<String>> effectsInit = new ArrayList<>();
+        List<EffectParseRecord> effects = new ArrayList<>();
 
         int _la;
         try {
@@ -724,23 +674,12 @@ public class Activations extends Parser {
                             case EFFECT: {
                                 setState(74);
                                 ((ActivationContext) _localctx).effectBlock = effectBlock();
-
-                                List<String> effectValues = new ArrayList<>();
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.typeInit);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.subtypeWrapperInit);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.radius);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.other);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.diceString);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.yVal);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.xVal);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.expressionChars);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.expressionBase);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.expressionOperation);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.timeDiceString);
-                                effectValues.add(((ActivationContext) _localctx).effectBlock.effectMessage);
-
-                                effectsInit.add(effectValues);
-
+                                effects.add(new EffectParseRecord(((ActivationContext) _localctx).effectBlock.typeInit,
+                                        ((ActivationContext) _localctx).effectBlock.subtypeWrapperInit, ((ActivationContext) _localctx).effectBlock.radius, ((ActivationContext) _localctx).effectBlock.other,
+                                        ((ActivationContext) _localctx).effectBlock.diceString, ((ActivationContext) _localctx).effectBlock.yVal, ((ActivationContext) _localctx).effectBlock.xVal,
+                                        ((ActivationContext) _localctx).effectBlock.expressionChars, ((ActivationContext) _localctx).effectBlock.expressionBase,
+                                        ((ActivationContext) _localctx).effectBlock.expressionOperation, ((ActivationContext) _localctx).effectBlock.timeDiceString,
+                                        ((ActivationContext) _localctx).effectBlock.effectMessage, (((ActivationContext) _localctx).effectBlock != null ? (((ActivationContext) _localctx).effectBlock.start) : null).getLine()));
                             }
                             break;
                             case DESC: {
@@ -763,7 +702,7 @@ public class Activations extends Parser {
             ((ActivationContext) _localctx).activationRecord =
                     new ActivationParseRecord(nameInit,
                             aimInit, levelInit, powerInit,
-                            messageInit, descInit, effectsInit,
+                            messageInit, descInit, effects,
                             _localctx.start.getLine());
 
         } catch (RecognitionException re) {
@@ -779,7 +718,7 @@ public class Activations extends Parser {
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
         public List<ActivationParseRecord> records;
-        public int declaredCount;
+        public String declaredCount;
         public RecordCountContext recordCount;
         public ActivationContext activation;
 
@@ -788,7 +727,7 @@ public class Activations extends Parser {
         }
 
         public TerminalNode EOF() {
-            return getToken(Activations.EOF, 0);
+            return getToken(ActivationsGrammar.EOF, 0);
         }
 
         public List<ActivationContext> activation() {
@@ -810,19 +749,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterFile(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterFile(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitFile(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitFile(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitFile(this);
         }
     }
 
@@ -881,31 +813,31 @@ public class Activations extends Parser {
         public Token oth;
 
         public TerminalNode EFFECT() {
-            return getToken(Activations.EFFECT, 0);
+            return getToken(ActivationsGrammar.EFFECT, 0);
         }
 
         public List<TerminalNode> UCASE() {
-            return getTokens(Activations.UCASE);
+            return getTokens(ActivationsGrammar.UCASE);
         }
 
         public TerminalNode UCASE(int i) {
-            return getToken(Activations.UCASE, i);
+            return getToken(ActivationsGrammar.UCASE, i);
         }
 
         public List<TerminalNode> COLON() {
-            return getTokens(Activations.COLON);
+            return getTokens(ActivationsGrammar.COLON);
         }
 
         public TerminalNode COLON(int i) {
-            return getToken(Activations.COLON, i);
+            return getToken(ActivationsGrammar.COLON, i);
         }
 
         public List<TerminalNode> INTEGER() {
-            return getTokens(Activations.INTEGER);
+            return getTokens(ActivationsGrammar.INTEGER);
         }
 
         public TerminalNode INTEGER(int i) {
-            return getToken(Activations.INTEGER, i);
+            return getToken(ActivationsGrammar.INTEGER, i);
         }
 
         public EffectContext(ParserRuleContext parent, int invokingState) {
@@ -919,25 +851,25 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterEffect(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterEffect(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitEffect(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitEffect(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitEffect(this);
         }
     }
 
     public final EffectContext effect() throws RecognitionException {
         EffectContext _localctx = new EffectContext(_ctx, getState());
         enterRule(_localctx, 18, RULE_effect);
+
+        ((EffectContext) _localctx).wrapper = "";
+        ((EffectContext) _localctx).radius = "";
+        ((EffectContext) _localctx).other = "";
+
         int _la;
         try {
             enterOuterAlt(_localctx, 1);
@@ -1011,11 +943,11 @@ public class Activations extends Parser {
         public Token DICE_SIMPLE_VALUE;
 
         public TerminalNode TIME() {
-            return getToken(Activations.TIME, 0);
+            return getToken(ActivationsGrammar.TIME, 0);
         }
 
         public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(Activations.DICE_SIMPLE_VALUE, 0);
+            return getToken(ActivationsGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
         public TimeContext(ParserRuleContext parent, int invokingState) {
@@ -1029,19 +961,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterTime(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterTime(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitTime(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitTime(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitTime(this);
         }
     }
 
@@ -1077,19 +1002,19 @@ public class Activations extends Parser {
         public Token xVal;
 
         public TerminalNode EFFECT_YX() {
-            return getToken(Activations.EFFECT_YX, 0);
+            return getToken(ActivationsGrammar.EFFECT_YX, 0);
         }
 
         public TerminalNode COLON() {
-            return getToken(Activations.COLON, 0);
+            return getToken(ActivationsGrammar.COLON, 0);
         }
 
         public List<TerminalNode> INTEGER() {
-            return getTokens(Activations.INTEGER);
+            return getTokens(ActivationsGrammar.INTEGER);
         }
 
         public TerminalNode INTEGER(int i) {
-            return getToken(Activations.INTEGER, i);
+            return getToken(ActivationsGrammar.INTEGER, i);
         }
 
         public EffectYXContext(ParserRuleContext parent, int invokingState) {
@@ -1103,19 +1028,14 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterEffectYX(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterEffectYX(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitEffectYX(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitEffectYX(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitEffectYX(this);
         }
     }
 
@@ -1158,15 +1078,15 @@ public class Activations extends Parser {
         public ExprContext expr;
 
         public TerminalNode DICE() {
-            return getToken(Activations.DICE, 0);
+            return getToken(ActivationsGrammar.DICE, 0);
         }
 
         public TerminalNode DICE_SIMPLE_VALUE() {
-            return getToken(Activations.DICE_SIMPLE_VALUE, 0);
+            return getToken(ActivationsGrammar.DICE_SIMPLE_VALUE, 0);
         }
 
         public TerminalNode DICE_COMPLEX_VALUE() {
-            return getToken(Activations.DICE_COMPLEX_VALUE, 0);
+            return getToken(ActivationsGrammar.DICE_COMPLEX_VALUE, 0);
         }
 
         public List<ExprContext> expr() {
@@ -1188,19 +1108,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterDice(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterDice(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitDice(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitDice(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitDice(this);
         }
     }
 
@@ -1211,6 +1124,10 @@ public class Activations extends Parser {
         String charHolder = "";
         String baseHolder = "";
         String operHolder = "";
+        ((DiceContext) _localctx).diceString = "";
+        ((DiceContext) _localctx).exprChar = "";
+        ((DiceContext) _localctx).baseName = "";
+        ((DiceContext) _localctx).operation = "";
 
         int _la;
         try {
@@ -1294,27 +1211,27 @@ public class Activations extends Parser {
         public Token op;
 
         public TerminalNode EXPR() {
-            return getToken(Activations.EXPR, 0);
+            return getToken(ActivationsGrammar.EXPR, 0);
         }
 
         public List<TerminalNode> EXPR_COLON() {
-            return getTokens(Activations.EXPR_COLON);
+            return getTokens(ActivationsGrammar.EXPR_COLON);
         }
 
         public TerminalNode EXPR_COLON(int i) {
-            return getToken(Activations.EXPR_COLON, i);
+            return getToken(ActivationsGrammar.EXPR_COLON, i);
         }
 
         public TerminalNode EXPR_CHAR() {
-            return getToken(Activations.EXPR_CHAR, 0);
+            return getToken(ActivationsGrammar.EXPR_CHAR, 0);
         }
 
         public TerminalNode EXPR_UCASE() {
-            return getToken(Activations.EXPR_UCASE, 0);
+            return getToken(ActivationsGrammar.EXPR_UCASE, 0);
         }
 
         public TerminalNode EXPR_OP() {
-            return getToken(Activations.EXPR_OP, 0);
+            return getToken(ActivationsGrammar.EXPR_OP, 0);
         }
 
         public ExprContext(ParserRuleContext parent, int invokingState) {
@@ -1328,19 +1245,12 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterExpr(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).enterExpr(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitExpr(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitExpr(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener) ((ActivationsGrammarListener) listener).exitExpr(this);
         }
     }
 
@@ -1384,11 +1294,11 @@ public class Activations extends Parser {
         public Token FREE_TEXT;
 
         public TerminalNode EFFECT_MESSAGE() {
-            return getToken(Activations.EFFECT_MESSAGE, 0);
+            return getToken(ActivationsGrammar.EFFECT_MESSAGE, 0);
         }
 
         public TerminalNode FREE_TEXT() {
-            return getToken(Activations.FREE_TEXT, 0);
+            return getToken(ActivationsGrammar.FREE_TEXT, 0);
         }
 
         public EffectMsgContext(ParserRuleContext parent, int invokingState) {
@@ -1402,19 +1312,14 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterEffectMsg(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterEffectMsg(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitEffectMsg(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitEffectMsg(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitEffectMsg(this);
         }
     }
 
@@ -1454,6 +1359,7 @@ public class Activations extends Parser {
         public String expressionOperation;
         public String timeDiceString;
         public String effectMessage;
+        public int lineNo;
         public EffectContext effect;
         public EffectYXContext effectYX;
         public DiceContext dice;
@@ -1491,19 +1397,14 @@ public class Activations extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).enterEffectBlock(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).enterEffectBlock(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof ActivationsListener) ((ActivationsListener) listener).exitEffectBlock(this);
-        }
-
-        @Override
-        public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof ActivationsVisitor)
-                return ((ActivationsVisitor<? extends T>) visitor).visitEffectBlock(this);
-            else return visitor.visitChildren(this);
+            if (listener instanceof ActivationsGrammarListener)
+                ((ActivationsGrammarListener) listener).exitEffectBlock(this);
         }
     }
 
@@ -1514,6 +1415,11 @@ public class Activations extends Parser {
         String expressionString = "";
         String baseString = "";
         String opString = "";
+        ((EffectBlockContext) _localctx).diceString = "";
+        ((EffectBlockContext) _localctx).timeDiceString = "";
+        ((EffectBlockContext) _localctx).yVal = "";
+        ((EffectBlockContext) _localctx).xVal = "";
+        ((EffectBlockContext) _localctx).effectMessage = "";
 
         int _la;
         try {
@@ -1522,6 +1428,7 @@ public class Activations extends Parser {
                 setState(150);
                 ((EffectBlockContext) _localctx).effect = effect();
 
+                ((EffectBlockContext) _localctx).lineNo = _localctx.start.getLine();
                 ((EffectBlockContext) _localctx).typeInit = ((EffectBlockContext) _localctx).effect.type;
                 ((EffectBlockContext) _localctx).subtypeWrapperInit = ((EffectBlockContext) _localctx).effect.wrapper;
                 ((EffectBlockContext) _localctx).radius = ((EffectBlockContext) _localctx).effect.radius;
@@ -1726,5 +1633,5 @@ public class Activations extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-	}
+    }
 }

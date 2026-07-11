@@ -19,6 +19,7 @@ package uk.co.jackoftrades.backend.parser.grammars;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.effect.*;
@@ -26,6 +27,7 @@ import uk.co.jackoftrades.middle.enums.*;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
+import uk.co.jackoftrades.middle.player.PlayerShape;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
@@ -33,16 +35,18 @@ import java.util.List;
 
 public class EffectAssembler {
 
-    @NotNull
+    @Nullable
     @CheckReturnValue
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
                                         @NotNull List<String> errors) {
         List<Effect> effects = new ArrayList<>();
+        boolean failed = false;
         for (EffectParseRecord record : records) {
             Effect e = assembleOne(record, errors, record.line());
-            if (e != null) effects.add(e);
+            if (e == null) failed = true;
+            else effects.add(e);
         }
-        return effects;
+        return failed ? null : effects;
     }
 
     private static Effect assembleOne(@NotNull EffectParseRecord record,
@@ -219,8 +223,12 @@ public class EffectAssembler {
                 }
             }
             case EST_SHAPECHANGE -> {
-                ;
-
+                PlayerShape sp = GameConstants.lookupPlayerShape(value);
+                if (sp != null)
+                    return new EffectSubTypeWrapper(sp);
+                else
+                    errors.add("Effect starting at line: " + line + " has " +
+                            "an unknown player shape: " + value);
             }
             case EST_SUMMON -> {
                 Summon sum = GameConstants.lookupSummon(value);

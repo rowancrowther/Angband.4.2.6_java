@@ -365,6 +365,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             }
             String description = record.desc();
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
+            if (effects == null) continue;
             int dd = attBase == null ? 0 : attBase.getDice();
             int ds = attBase == null ? 0 : attBase.getSides();
 

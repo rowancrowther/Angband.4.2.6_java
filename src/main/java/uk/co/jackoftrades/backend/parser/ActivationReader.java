@@ -17,18 +17,14 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
-import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.parser.activation.ActivationAssembler;
 import uk.co.jackoftrades.backend.parser.activation.ActivationParseRecord;
-import uk.co.jackoftrades.backend.parser.grammars.activations.Activations;
+import uk.co.jackoftrades.backend.parser.grammars.activations.ActivationsGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.activations.ActivationsLexer;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.effect.Effect;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,62 +69,24 @@ public class ActivationReader implements Reader<Activation> {
      * @author Rowan Crowther
      */
     public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
-        List<ActivationParseRecord> records = new ArrayList<>();
-        int recordCount;
-        ParseErrors errorCatcher = null;
-        List<Activation> activations = new ArrayList<>();
+        return GrammarDriver.run(filename,
+                ActivationsLexer::new,
+                ActivationsGrammar::new,
+                ActivationReader::extract,
+                new ActivationAssembler(), logger);
+    }
 
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ActivationsLexer lexer = new ActivationsLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            Activations parser = new Activations(tokens);
+    private static List<ActivationParseRecord> extract(
+            @NotNull ActivationsGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        ActivationsGrammar.FileContext output = parser.file();
+        List<ActivationParseRecord> result = output.records;
+        errorCatcher.throwIfAny();
 
-            // Install the catcher
-            errorCatcher = ParseErrors.install(lexer, parser, filename);
+        String declaredRecordCount = output.declaredCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
-            Activations.FileContext output = parser.file();
-
-            // throw any errors caught
-            errorCatcher.throwIfAny();
-
-            records = output.records;
-            recordCount = output.declaredCount;
-
-            if (records.size() != recordCount) {
-                errorCatcher.add("record-count header declares " + recordCount +
-                        " but file contains " + records.size());
-            }
-
-            int index = 0;
-
-            for (ActivationParseRecord record : records) {
-                try {
-                    String actName = record.getName();
-                    int actIndex = index++;
-                    boolean actAim = record.isAim();
-                    int actLevel = record.getLevel();
-                    int actPower = record.getPower();
-                    List<Effect> actEffects = EffectBuilder.buildEffects(record.getEffects());
-                    String actMessage = record.getMessage();
-                    String actDesc = record.getDesc();
-                    activations.add(new Activation(actName, actIndex, actAim,
-                            actLevel, actPower, actEffects, actMessage, actDesc));
-                } catch (IllegalArgumentException e) {
-                    errorCatcher.add(record.getLineNumber(), e.getMessage());
-                }
-            }
-
-            errorCatcher.throwIfAny();
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        } catch (ParseCancellationException e) {
-            // errorCatcher must be non-null as this line would not be reached
-            // otherwise
-            return new ParseResult<>(List.of(), errorCatcher != null ? errorCatcher.getErrors() : null);
-        }
-
-        return new ParseResult<>(activations, errorCatcher.getErrors());
+        return new ArrayList<>(result);
     }
 }

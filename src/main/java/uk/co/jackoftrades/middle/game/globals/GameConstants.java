@@ -1194,7 +1194,7 @@ public class GameConstants {
             throw e;
         }
 
-        return playerShapes.stream().filter(s -> name.equals(s.getName()))
+        return playerShapes.stream().filter(s -> name.toUpperCase().equals(s.getName().toUpperCase()))
                 .findFirst().orElse(null);
     }
 

@@ -22,7 +22,7 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
 
-import uk.co.jackoftrades.backend.parser.grammars.activations.Activations;
+import uk.co.jackoftrades.backend.parser.grammars.activations.ActivationsGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.activations.ActivationsLexer;
 
 import java.util.List;
@@ -52,7 +52,7 @@ class ParseErrorsTest {
      */
     private static ParseErrors freshCollector(String filename) {
         ActivationsLexer lexer = new ActivationsLexer(CharStreams.fromString(""));
-        Activations parser = new Activations(new CommonTokenStream(lexer));
+        ActivationsGrammar parser = new ActivationsGrammar(new CommonTokenStream(lexer));
         return ParseErrors.install(lexer, parser, filename);
     }
 
@@ -63,7 +63,7 @@ class ParseErrorsTest {
      */
     private static ParseErrors parse(String src, String filename) {
         ActivationsLexer lexer = new ActivationsLexer(CharStreams.fromString(src));
-        Activations parser = new Activations(new CommonTokenStream(lexer));
+        ActivationsGrammar parser = new ActivationsGrammar(new CommonTokenStream(lexer));
         ParseErrors errors = ParseErrors.install(lexer, parser, filename);
         parser.file();
         return errors;

@@ -31,7 +31,7 @@
  * This index is removed, as in Java we are using the object itself from
  * a fixed List, not an array index to a [] array.
  */
-parser grammar Activations;
+parser grammar ActivationsGrammar;
 options { tokenVocab = ActivationsLexer; }
 import EffectBlock;
 
@@ -42,6 +42,7 @@ import EffectBlock;
  */
 @header {
     import uk.co.jackoftrades.backend.parser.activation.ActivationParseRecord;
+    import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
 
     import java.util.List;
     import java.util.ArrayList;
@@ -54,8 +55,8 @@ import EffectBlock;
  * to change this if you add/remove a record from this file.
  */
 recordCount
-        returns[int count]
-        :   RECORD_COUNT INTEGER { $count = Integer.parseInt($INTEGER.getText()); }
+        returns[String count]
+        :   RECORD_COUNT INTEGER { $count = $INTEGER.getText(); }
         ;
 
 /*
@@ -81,8 +82,8 @@ name
  * cf ActivationsLexer.g4 AIM token
  */
 aim
-        returns[boolean aimBool]
-        :   AIM INTEGER { $aimBool = $INTEGER.getText().equals("1"); }
+        returns[String aimBool]
+        :   AIM INTEGER { $aimBool = $INTEGER.getText(); }
         ;
 
 /*
@@ -93,8 +94,8 @@ aim
  * cf ActivationsLexer.g4 LEVEL token
  */
 level
-        returns[int levelInt]
-        :   LEVEL INTEGER { $levelInt = Integer.parseInt($INTEGER.getText()); }
+        returns[String levelInt]
+        :   LEVEL INTEGER { $levelInt = $INTEGER.getText(); }
         ;
 
 /*
@@ -105,8 +106,8 @@ level
  * cf ActivationsLexer.g4 POWER token
  */
 power
-        returns[int powerInt]
-        :   POWER INTEGER { $powerInt = Integer.parseInt($INTEGER.getText()); }
+        returns[String powerInt]
+        :   POWER INTEGER { $powerInt = $INTEGER.getText(); }
         ;
 
 /*
@@ -157,18 +158,18 @@ activation
         returns[ActivationParseRecord activationRecord]
         @init {
             String nameInit = "";
-            boolean aimInit = false;
-            int levelInit = 0;
-            int powerInit = 0;
+            String aimInit = "";
+            String levelInit = "";
+            String powerInit = "";
             String messageInit = "";
             String descInit = "";
-            List<List<String>> effectsInit = new ArrayList<>();
+            List<EffectParseRecord> effects = new ArrayList<>();
         }
         @after {
             $activationRecord =
                 new ActivationParseRecord(nameInit,
                     aimInit, levelInit, powerInit,
-                    messageInit, descInit, effectsInit,
+                    messageInit, descInit, effects,
                     $start.getLine());
         }
         :   name {
@@ -178,24 +179,13 @@ activation
         |   level { levelInit = $level.levelInt; }
         |   power { powerInit = $power.powerInt; }
         |   msg { messageInit = $msg.message; }
-        |   effectBlock {
-                List<String> effectValues = new ArrayList<>();
-                effectValues.add($effectBlock.typeInit);
-                effectValues.add($effectBlock.subtypeWrapperInit);
-                effectValues.add($effectBlock.radius);
-                effectValues.add($effectBlock.other);
-                effectValues.add($effectBlock.diceString);
-                effectValues.add($effectBlock.yVal);
-                effectValues.add($effectBlock.xVal);
-                effectValues.add($effectBlock.expressionChars);
-                effectValues.add($effectBlock.expressionBase);
-                effectValues.add($effectBlock.expressionOperation);
-                effectValues.add($effectBlock.timeDiceString);
-                effectValues.add($effectBlock.effectMessage);
-
-                effectsInit.add(effectValues);
-            }
-        |   desc { descInit = $desc.descStr; })+
+        |   effectBlock { effects.add(new EffectParseRecord($effectBlock.typeInit,
+                $effectBlock.subtypeWrapperInit, $effectBlock.radius, $effectBlock.other,
+                $effectBlock.diceString, $effectBlock.yVal, $effectBlock.xVal,
+                $effectBlock.expressionChars, $effectBlock.expressionBase,
+                $effectBlock.expressionOperation, $effectBlock.timeDiceString,
+                $effectBlock.effectMessage, $effectBlock.start.getLine())); }
+    |   desc { descInit = $desc.descStr; })+
         ;
 
 /*
@@ -205,7 +195,7 @@ activation
  * to allow the ActivationReader to create the activations from it.
  */
 file
-        returns[List<ActivationParseRecord> records, int declaredCount]
+        returns[List<ActivationParseRecord> records, String declaredCount]
         :   {
                 $records = new ArrayList<>();
             }

@@ -26,12 +26,30 @@ import uk.co.jackoftrades.middle.effect.Effect;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Turns the raw {@link ActivationParseRecord}s produced by the grammar into resolved
+ * domain {@link Activation}s (Java port of {@code parse_activation_*} in
+ * {@code src/obj-init.c}). This is where the deferred interpretation happens: the
+ * textual {@code level}/{@code power} fields become integers, the {@code aim} flag
+ * becomes a boolean, and the effect blocks are handed off to {@link EffectAssembler}.
+ *
+ * <p><b>Error policy:</b> soft errors follow the suite's skip-and-continue contract — a
+ * record with a malformed integer or an unassemblable effect is reported into
+ * {@code errors} and dropped ({@code continue}), leaving the remaining activations to
+ * load. Hard grammar/lexer errors are handled upstream by {@code GrammarDriver}.
+ *
+ * @author Rowan Crowther
+ */
 public class ActivationAssembler implements Assembler<ActivationParseRecord, List<Activation>> {
     /**
+     * Assemble the parsed activation records into resolved {@link Activation}s, skipping
+     * (with a logged soft error) any record whose integer fields or effects fail to resolve.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * @param records the raw activation records captured by the grammar
+     * @param errors  the soft-error channel; assembly failures are appended here and the
+     *                offending record is dropped rather than aborting the whole file
+     * @return the successfully assembled activations, in source order
+     * @author Rowan Crowther
      */
     @Override
     public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors) {
@@ -40,6 +58,9 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
         for (ActivationParseRecord record : records) {
             int line = record.line();
             String name = record.name();
+            // C assigns each activation its position in the flat activations[] table
+            // during a final pass (obj-init.c: activations[count].index = count). That
+            // flatten-and-number step isn't ported yet, so index is left 0 for now.
             int index = 0;
             boolean aim = record.aim().equals("1");
             int level = 0;
@@ -62,6 +83,9 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
                     continue;
                 }
             }
+            // EffectAssembler is all-or-nothing: if any single effect in the block
+            // fails to resolve it returns null (not a partial list), so one bad effect
+            // drops the entire activation rather than silently loading it minus a power.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             if (effects == null) continue;
             String message = record.message();

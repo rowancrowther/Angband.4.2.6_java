@@ -61,10 +61,9 @@ public class ActivationReader implements Reader<Activation> {
      * Return an ArrayList of items read from the file, and handle any
      * parse errors found during parsing
      *
-     * @param filename THe name of the file we are parsing
-     * @return A ParseResult record, which consists of two items,
-     * a List<T> of items (activations in this case), and a
-     * String List of errors
+     * @param filename the name of the file we are parsing
+     * @return a ParseResult record, which pairs the list of items read
+     * (activations in this case) with the list of soft error messages
      * @throws IOException when the file could not be found
      * @author Rowan Crowther
      */

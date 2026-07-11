@@ -270,6 +270,9 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
                 }
             }
             if (illegalValue) continue;
+            // EffectAssembler is all-or-nothing: if any single effect in the block fails
+            // to resolve it returns null, so one bad effect drops the entire shape rather
+            // than loading it with an effect silently missing.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             if (effects == null) continue;
             List<PlayerBlow> blowList = new ArrayList<>();

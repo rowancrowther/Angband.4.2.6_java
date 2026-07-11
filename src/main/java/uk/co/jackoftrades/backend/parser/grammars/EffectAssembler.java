@@ -33,8 +33,40 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Resolves the raw {@link EffectParseRecord}s captured from an {@code effect:} block into
+ * domain {@link Effect}s. Effects are shared across many data files (objects, curses, shapes,
+ * activations, …), so this assembler is a static helper the owning assemblers delegate to
+ * rather than a stand-alone {@code Assembler} keyed to one grammar. It ports the interpretation
+ * done by {@code effect_subtype} and the {@code parse_*_effect} handlers in {@code obj-init.c}:
+ * the effect name maps to an {@link EffectEnum}, and the effect's second token is resolved
+ * through {@link #getWrapperSubType} into whichever payload that effect expects (a projection,
+ * timed effect, summon, shape, stat, …), wrapped in a type-safe {@link EffectSubTypeWrapper}.
+ *
+ * <p>Dice and expressions are captured but <em>not</em> evaluated here — see the note in
+ * {@link #assembleOne} — because a die roll must be computed against live game state when the
+ * effect fires, not at load time.
+ *
+ * @author Rowan Crowther
+ */
 public class EffectAssembler {
 
+    /**
+     * Assemble every effect in one block into resolved {@link Effect}s.
+     *
+     * <p><b>All-or-nothing contract:</b> a block is only meaningful as a whole, so if any single
+     * effect fails to resolve this returns {@code null} rather than a partial list. Every calling
+     * assembler treats that {@code null} as a reason to drop the <em>entire owning record</em>
+     * (the activation, curse, object kind or shape) — the alternative, silently loading a record
+     * with one of its effects quietly missing, would produce a subtly wrong game object that is
+     * far harder to diagnose than a reported, dropped record. Per-effect error messages are still
+     * appended to {@code errors} so every failure in the block is surfaced, not just the first.
+     *
+     * @param records the parsed effect blocks for one owning record
+     * @param errors  the soft-error channel; per-effect failures are appended here
+     * @return the resolved effects in order, or {@code null} if any effect failed to resolve
+     * @author Rowan Crowther
+     */
     @Nullable
     @CheckReturnValue
     public static List<Effect> assemble(@NotNull List<EffectParseRecord> records,
@@ -43,6 +75,8 @@ public class EffectAssembler {
         boolean failed = false;
         for (EffectParseRecord record : records) {
             Effect e = assembleOne(record, errors, record.line());
+            // Keep going after a failure so every bad effect in the block is reported,
+            // but remember that the block as a whole must now fail (return null below).
             if (e == null) failed = true;
             else effects.add(e);
         }
@@ -223,6 +257,12 @@ public class EffectAssembler {
                 }
             }
             case EST_SHAPECHANGE -> {
+                // Unlike the enum-backed sub-types above, a shapechange target is a
+                // shape *name* resolved against the loaded shape registry (C's
+                // shape_name_to_idx). The grammar upper-cases every sub-type token,
+                // whereas shape names are stored mixed-case (e.g. "Pukel-man"), so the
+                // registry lookup is deliberately case-insensitive. This therefore
+                // requires the shapes to already be loaded when effects are assembled.
                 PlayerShape sp = GameConstants.lookupPlayerShape(value);
                 if (sp != null)
                     return new EffectSubTypeWrapper(sp);

@@ -128,6 +128,10 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     continue;
                 }
             }
+            // EffectAssembler is all-or-nothing: a null return means at least one effect
+            // in the block failed to resolve, which drops the whole curse rather than
+            // loading it minus an effect. The drop is deferred (see badEffect) so the
+            // flags: line below is still processed and its errors reported in the same pass.
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             boolean badEffect = (effects == null);
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();

@@ -20,8 +20,12 @@ package uk.co.jackoftrades.middle.objects;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.objects.enums.*;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -52,7 +56,7 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private TValue type;
+    private List<ObjectKind> possItems;
 
     /**
      * Index in the global ego-item table.
@@ -66,7 +70,7 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private Random cost;
+    private int cost;
 
     /**
      * Object flags this ego adds.
@@ -86,12 +90,6 @@ public class EgoItem {
      * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFLags;
-    /**
-     * Kind flags this ego removes.
-     *
-     * @author Rowan Crowther
-     */
-    private Flag<ObjectKindFlag> kindFLagsOff;
 
     /**
      * Modifiers this ego grants, as dice expressions.
@@ -104,13 +102,19 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private Map<ObjectModifier, Random> minModifiers;
+    private Map<ObjectModifier, Integer> minModifiers;
     /**
      * Per-element relation info added by this ego.
      *
      * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
+    /**
+     * Per-element relation info added by this ego.
+     *
+     * @author Rowan Crowther
+     */
+    private Map<ElementEnum, ElementInfo> minElInfo;
 
     /**
      * Brands this ego adds (intrinsic flag).
@@ -129,20 +133,20 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private Map<CurseData, Integer> curses;
+    private Map<Curse, CurseData> curses;
 
     /**
-     * Level-feeling rating contribution, as a dice expression.
+     * Level-feeling rating contribution, as an integer expression.
      *
      * @author Rowan Crowther
      */
-    private Random rating;
+    private int rating;
     /**
-     * Allocation probability, as a dice expression.
+     * Allocation probability, as an integer expression.
      *
      * @author Rowan Crowther
      */
-    private Random allocProb;
+    private int allocProb;
     /**
      * Minimum allocation depth.
      *
@@ -155,13 +159,6 @@ public class EgoItem {
      * @author Rowan Crowther
      */
     private int allocMax;
-
-    /**
-     * The base object kinds this ego may be applied to, keyed by type.
-     *
-     * @author Rowan Crowther
-     */
-    private Map<TValue, ObjectKind> possItems;
 
     /**
      * To-hit bonus range, as a dice expression.
@@ -187,19 +184,19 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private Random minToHit;
+    private int minToHit;
     /**
      * Minimum guaranteed to-damage bonus.
      *
      * @author Rowan Crowther
      */
-    private Random minToDam;
+    private int minToDam;
     /**
      * Minimum guaranteed to-armour-class bonus.
      *
      * @author Rowan Crowther
      */
-    private Random minToAC;
+    private int minToAC;
 
     /**
      * An activation this ego grants, if any.
@@ -231,10 +228,8 @@ public class EgoItem {
      * @param flags        added object flags
      * @param flagsOff     removed object flags
      * @param kindFLags    added kind flags
-     * @param kindFLagsOff removed kind flags
      * @param modifiers    granted modifiers
      * @param minModifiers minimum modifier values
-     * @param elInfo       per-element info
      * @param brands       added brands
      * @param slays        added slays
      * @param curses       added curses
@@ -254,31 +249,29 @@ public class EgoItem {
      * @param everSeen     whether ever seen
      * @author Rowan Crowther
      */
-    public EgoItem(String name, TValue type, int egoIndex,
-                   Random cost, Flag<ObjectFlag> flags,
+    public EgoItem(String name, String desc, int egoIndex,
+                   int cost, Flag<ObjectFlag> flags,
                    Flag<ObjectFlag> flagsOff,
                    Flag<ObjectKindFlag> kindFLags,
-                   Flag<ObjectKindFlag> kindFLagsOff,
                    Map<ObjectModifier, Random> modifiers,
-                   Map<ObjectModifier, Random> minModifiers,
+                   Map<ObjectModifier, Integer> minModifiers,
                    Map<ElementEnum, ElementInfo> elInfo,
                    Map<Brand, Boolean> brands,
                    Map<Slay, Boolean> slays,
-                   Map<CurseData, Integer> curses, Random rating,
-                   Random allocProb, int allocMin, int allocMax,
-                   Map<TValue, ObjectKind> possItems, Random toHit,
-                   Random toDam, Random toAC, Random minToHit,
-                   Random minToDam, Random minToAC,
+                   Map<Curse, CurseData> curses, int rating,
+                   int allocProb, int allocMin, int allocMax,
+                   List<ObjectKind> possItems, Random toHit,
+                   Random toDam, Random toAC, int minToHit,
+                   int minToDam, int minToAC,
                    Activation activation, Random time,
                    boolean everSeen) {
         this.name = name;
-        this.type = type;
+        this.text = desc;
         this.egoIndex = egoIndex;
         this.cost = cost;
         this.flags = flags;
         this.flagsOff = flagsOff;
         this.kindFLags = kindFLags;
-        this.kindFLagsOff = kindFLagsOff;
         this.modifiers = modifiers;
         this.minModifiers = minModifiers;
         this.elInfo = elInfo;

@@ -433,13 +433,14 @@ public class GameConstants {
      * Look up an object kind by both its tval (type) and name.
      *
      * @param tval the object type value
-     * @param name the object kind name
+     * @param sval the object s-val
      * @return the matching {@link ObjectKind}, or {@code null} if none matches
      * @throws IllegalStateException if object kinds have not been loaded
      * @author ClaudeCode
      */
+    @CheckReturnValue
     @Nullable
-    public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String name) {
+    public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String sval) {
         if (objectKinds.isEmpty()) {
             String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
@@ -448,8 +449,28 @@ public class GameConstants {
         }
 
         return objectKinds.stream()
-                .filter(e -> name.equals(e.getName()) && tval.equals(e.gettValue()))
+                .filter(e -> sval.equalsIgnoreCase(e.getsValue()) && tval.equals(e.gettValue()))
                 .findFirst().orElse(null);
+    }
+
+    @NotNull
+    @CheckReturnValue
+    public static List<ObjectKind> lookupObjectKind(@NotNull TValue tval) {
+        if (objectKinds.isEmpty()) {
+            String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        List<ObjectKind> results = new ArrayList<>();
+        for (ObjectKind k : objectKinds) {
+            if (tval.equals(k.gettValue())) {
+                results.add(k);
+            }
+        }
+
+        return results;
     }
 
     /**
@@ -797,7 +818,7 @@ public class GameConstants {
             loadPlayerShapes();
             loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
             loadActivations();
-//            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+            loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
 //            loadPlayerHistories();
 //            loadBodies();
 //            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
@@ -1095,7 +1116,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "ego_item.txt";
 
         try {
-            egoItems = reader.parse(filename);
+            ParseResult<EgoItem> results = reader.parseWithResults(filename);
+
+            if (results.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            egoItems = results.items();
+            egoItemKindMax = egoItems.size();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -1147,7 +1178,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "activation.txt";
 
         try {
-            activations = reader.parse(filename);
+            ParseResult<Activation> results = reader.parseWithResult(filename);
+
+            if (results.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            activations = results.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

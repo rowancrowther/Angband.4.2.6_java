@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.egoitem.EgoItemLexer;
-import uk.co.jackoftrades.backend.parser.egoitem.EgoItemParser;
+import uk.co.jackoftrades.backend.parser.egoitem.EgoItemAssembler;
+import uk.co.jackoftrades.backend.parser.egoitem.EgoItemParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.egoitems.EgoItemsGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.egoitems.EgoItemsLexer;
 import uk.co.jackoftrades.middle.objects.EgoItem;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,16 +54,29 @@ public class EgoItemReader implements Reader<EgoItem> {
      */
     @Override
     public @NotNull List<EgoItem> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            EgoItemLexer lexer = new EgoItemLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            EgoItemParser parser = new EgoItemParser(tokens);
-            EgoItemParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.egoItems;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+    public ParseResult<EgoItem> parseWithResults(String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                EgoItemsLexer::new,
+                EgoItemsGrammar::new,
+                EgoItemReader::extract,
+                new EgoItemAssembler(), logger);
+    }
+
+    private static List<EgoItemParseRecord> extract(
+            @NotNull EgoItemsGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        EgoItemsGrammar.FileContext output = parser.file();
+        List<EgoItemParseRecord> result = output.items;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
+
+        return new ArrayList<>(result);
+
     }
 }

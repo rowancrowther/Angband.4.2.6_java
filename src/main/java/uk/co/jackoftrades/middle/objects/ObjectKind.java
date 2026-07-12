@@ -534,6 +534,11 @@ public class ObjectKind {
         this.ignore = ignore;
         this.everseen = everseen;
         this.tValue = tValue;
+        this.sValue = stripToRawSval(name);
+    }
+
+    private String stripToRawSval(String name) {
+        return name.replace("& ", "").replace("~", "");
     }
 
     /**
@@ -590,5 +595,9 @@ public class ObjectKind {
      */
     public TValue gettValue() {
         return tValue;
+    }
+
+    public String getsValue() {
+        return sValue;
     }
 }

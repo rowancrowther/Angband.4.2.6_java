@@ -19,7 +19,7 @@
 # Usage (from project root): bash antlr4_gen.sh <GrammarName> <outputDir>
 # Example: bash antlr4_gen.sh Activations activations
 #
-# Generates <GrammarName>Lexer.g4 (if present) then <GrammarName>.g4 into
+# Generates <GrammarName>Lexer.g4 (if present) then <GrammarName>Grammar.g4 into
 # src/main/java/uk/co/jackoftrades/backend/parser/grammars/<outputDir>/
 # with package uk.co.jackoftrades.backend.parser.grammars.<outputDir>
 
@@ -50,7 +50,7 @@ LIB="$G/imports"
 mkdir -p "$OUT"
 
 LEXER_FILE="$G/${GRAMMAR_NAME}Lexer.g4"
-PARSER_FILE="$G/${GRAMMAR_NAME}.g4"
+PARSER_FILE="$G/${GRAMMAR_NAME}Grammar.g4"
 
 if [ ! -f "$PARSER_FILE" ]; then
     echo "Error: $PARSER_FILE not found. Run from project root."
@@ -62,7 +62,7 @@ if [ -f "$LEXER_FILE" ]; then
     "$JAVA" -cp "$CP" org.antlr.v4.Tool -package "$PKG" -o "$OUT" -lib "$LIB" "$LEXER_FILE"
 fi
 
-echo "Generating ${GRAMMAR_NAME}..."
+echo "Generating ${GRAMMAR_NAME}Grammar..."
 "$JAVA" -cp "$CP" org.antlr.v4.Tool -package "$PKG" -o "$OUT" -lib "$LIB" "$PARSER_FILE"
 
 # The authoritative <GrammarName>Lexer.tokens lives next to the .g4 in $G.

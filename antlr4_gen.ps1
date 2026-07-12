@@ -23,8 +23,8 @@ $LIB    = "$G\imports"
 
 New-Item -ItemType Directory -Force -Path $OUT | Out-Null
 
-if (-not (Test-Path "$G\${GrammarName}.g4")) {
-    Write-Error "$G\${GrammarName}.g4 not found - run from project root."
+if (-not (Test-Path "$G\${GrammarName}Grammar.g4")) {
+    Write-Error "$G\${GrammarName}Grammar.g4 not found - run from project root."
     exit 1
 }
 
@@ -38,8 +38,8 @@ if (Test-Path "${GrammarName}Lexer.g4") {
     if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
 }
 
-Write-Host "Generating ${GrammarName}..."
-& java -cp $CP org.antlr.v4.Tool -package $PKG -o $OUT -lib $LIB "${GrammarName}.g4"
+Write-Host "Generating ${GrammarName}Grammar..."
+& java -cp $CP org.antlr.v4.Tool -package $PKG -o $OUT -lib $LIB "${GrammarName}Grammar.g4"
 if ($LASTEXITCODE -ne 0) { Pop-Location; exit $LASTEXITCODE }
 
 Pop-Location

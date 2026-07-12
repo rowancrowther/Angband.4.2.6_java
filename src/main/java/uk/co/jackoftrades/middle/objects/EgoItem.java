@@ -222,7 +222,6 @@ public class EgoItem {
      * Build an ego-item template from its parsed data-file fields.
      *
      * @param name         ego name
-     * @param type         applicable item type
      * @param egoIndex     ego-table index
      * @param cost         added cost
      * @param flags        added object flags

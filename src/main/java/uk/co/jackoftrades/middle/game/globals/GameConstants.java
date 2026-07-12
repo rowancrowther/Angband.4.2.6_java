@@ -819,7 +819,7 @@ public class GameConstants {
             loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
             loadActivations();
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
-//            loadPlayerHistories();
+            loadPlayerHistories();
 //            loadBodies();
 //            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
 //            loadMagicRealms();
@@ -1102,7 +1102,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "history.txt";
 
         try {
-            playerHistoryCharts = reader.parse(filename);
+            ParseResult<PlayerHistoryChart> results = reader.parseWithResults(filename);
+
+            if (results.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerHistoryCharts = results.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

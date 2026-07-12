@@ -15,28 +15,27 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/History.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.history;
-
+// Generated from HistoryGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.history;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link HistoryListener},
+ * This class provides an empty implementation of {@link HistoryGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class HistoryBaseListener implements HistoryListener {
+public class HistoryGrammarBaseListener implements HistoryGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterChart(HistoryParser.ChartContext ctx) {
+    public void enterRecordCount(HistoryGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +44,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitChart(HistoryParser.ChartContext ctx) {
+    public void exitRecordCount(HistoryGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +53,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPhrase(HistoryParser.PhraseContext ctx) {
+    public void enterChart(HistoryGrammar.ChartContext ctx) {
     }
 
     /**
@@ -63,7 +62,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPhrase(HistoryParser.PhraseContext ctx) {
+    public void exitChart(HistoryGrammar.ChartContext ctx) {
     }
 
     /**
@@ -72,7 +71,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHistory(HistoryParser.HistoryContext ctx) {
+    public void enterPhrase(HistoryGrammar.PhraseContext ctx) {
     }
 
     /**
@@ -81,7 +80,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHistory(HistoryParser.HistoryContext ctx) {
+    public void exitPhrase(HistoryGrammar.PhraseContext ctx) {
     }
 
     /**
@@ -90,7 +89,7 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(HistoryParser.FileContext ctx) {
+    public void enterRecord(HistoryGrammar.RecordContext ctx) {
     }
 
     /**
@@ -99,7 +98,25 @@ public class HistoryBaseListener implements HistoryListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(HistoryParser.FileContext ctx) {
+    public void exitRecord(HistoryGrammar.RecordContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(HistoryGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(HistoryGrammar.FileContext ctx) {
     }
 
     /**

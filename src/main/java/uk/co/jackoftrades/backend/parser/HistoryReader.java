@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.history.HistoryLexer;
-import uk.co.jackoftrades.backend.parser.history.HistoryParser;
+import uk.co.jackoftrades.backend.parser.grammars.history.HistoryGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.history.HistoryLexer;
+import uk.co.jackoftrades.backend.parser.history.HistoryAssembler;
+import uk.co.jackoftrades.backend.parser.history.HistoryParseRecord;
 import uk.co.jackoftrades.middle.player.PlayerHistoryChart;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,53 @@ public class HistoryReader implements Reader<PlayerHistoryChart> {
      */
     @Override
     public @NotNull List<PlayerHistoryChart> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            HistoryLexer lexer = new HistoryLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            HistoryParser parser = new HistoryParser(tokens);
-            HistoryParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.historyCharts;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Parses the file and returns the full {@link ParseResult} — both the assembled history charts
+     * and the collected soft/hard error messages — by handing the standard pipeline to
+     * {@link GrammarDriver} (lex, parse, extract records, assemble). {@link #parse} is the
+     * items-only convenience over this.
+     *
+     * @param filename the history data file to load
+     * @return the assembled history charts plus any error messages
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public ParseResult<PlayerHistoryChart> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                HistoryLexer::new,
+                HistoryGrammar::new,
+                HistoryReader::extract,
+                new HistoryAssembler(), logger);
+    }
+
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the top-level
+     * {@code file} rule, surfaces any hard grammar/lexer errors, soft-checks the declared
+     * {@code record-count:} header against the number of records read, and returns the raw parse
+     * records for the assembler.
+     *
+     * @param parser       the constructed {@code HistoryGrammar} positioned at the token stream
+     * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} aborts on a
+     *                     grammar/lexer error before the records are used
+     * @param errors       the soft-error channel; a record-count mismatch is reported here without
+     *                     discarding the records
+     * @return the raw history parse records in source order
+     * @author Rowan Crowther
+     */
+    private static @NotNull List<HistoryParseRecord> extract(
+            @NotNull HistoryGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        HistoryGrammar.FileContext output = parser.file();
+        List<HistoryParseRecord> records = output.records;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

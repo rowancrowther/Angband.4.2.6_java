@@ -15,40 +15,48 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.grammars;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.body;
 
-            import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
-
-            import java.util.List;
-            import java.util.ArrayList;
-        
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link GameConstantsGrammar}.
+ * by {@link BodyGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  * operations with no return type.
  */
-public interface GameConstantsGrammarVisitor<T> extends ParseTreeVisitor<T> {
+public interface BodyGrammarVisitor<T> extends ParseTreeVisitor<T> {
 	/**
-	 * Visit a parse tree produced by {@link GameConstantsGrammar#field}.
+	 * Visit a parse tree produced by {@link BodyGrammar#recordCount}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitField(GameConstantsGrammar.FieldContext ctx);
+	T visitRecordCount(BodyGrammar.RecordCountContext ctx);
+
 	/**
-	 * Visit a parse tree produced by {@link GameConstantsGrammar#line}.
+	 * Visit a parse tree produced by {@link BodyGrammar#body}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitLine(GameConstantsGrammar.LineContext ctx);
+	T visitBody(BodyGrammar.BodyContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link GameConstantsGrammar#file}.
+	 * Visit a parse tree produced by {@link BodyGrammar#slot}.
 	 * @param ctx the parse tree
 	 * @return the visitor result
 	 */
-	T visitFile(GameConstantsGrammar.FileContext ctx);
+	T visitSlot(BodyGrammar.SlotContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyGrammar#bodyType}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitBodyType(BodyGrammar.BodyTypeContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link BodyGrammar#file}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(BodyGrammar.FileContext ctx);
 }

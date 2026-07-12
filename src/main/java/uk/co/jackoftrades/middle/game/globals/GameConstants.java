@@ -820,7 +820,7 @@ public class GameConstants {
             loadActivations();
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             loadPlayerHistories();
-//            loadBodies();
+            loadBodies();
 //            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
 //            loadMagicRealms();
 //            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
@@ -1088,7 +1088,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "body.txt";
 
         try {
-            playerBodies = reader.parse(filename);
+            ParseResult<PlayerBody> results = reader.parseWithResults(filename);
+
+            if (results.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerBodies = results.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

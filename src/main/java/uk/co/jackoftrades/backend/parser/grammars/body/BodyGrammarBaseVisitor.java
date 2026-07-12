@@ -15,18 +15,13 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsGrammar.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.grammars;
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BodyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.body;
 
-            import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
-
-            import java.util.List;
-            import java.util.ArrayList;
-        
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link GameConstantsGrammarVisitor},
+ * This class provides an empty implementation of {@link BodyGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -34,26 +29,56 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  * operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class GameConstantsGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements GameConstantsGrammarVisitor<T> {
+public class BodyGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements BodyGrammarVisitor<T> {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitField(GameConstantsGrammar.FieldContext ctx) { return visitChildren(ctx); }
+	@Override
+	public T visitRecordCount(BodyGrammar.RecordCountContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitLine(GameConstantsGrammar.LineContext ctx) { return visitChildren(ctx); }
+	@Override
+	public T visitBody(BodyGrammar.BodyContext ctx) {
+		return visitChildren(ctx);
+	}
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation returns the result of calling
 	 * {@link #visitChildren} on {@code ctx}.</p>
 	 */
-	@Override public T visitFile(GameConstantsGrammar.FileContext ctx) { return visitChildren(ctx); }
+	@Override
+	public T visitSlot(BodyGrammar.SlotContext ctx) {
+		return visitChildren(ctx);
+	}
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitBodyType(BodyGrammar.BodyTypeContext ctx) {
+		return visitChildren(ctx);
+	}
+
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation returns the result of calling
+	 * {@link #visitChildren} on {@code ctx}.</p>
+	 */
+	@Override
+	public T visitFile(BodyGrammar.FileContext ctx) {
+		return visitChildren(ctx);
+	}
 }

@@ -37,7 +37,6 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -433,8 +432,9 @@ public class ItemObject {
         Player player = GameConstants.mainPlayer;
 
         // Check for equipped items
-        if (player.getPlayerBody().isEquipped(this)) return false;
-        if (player.getPlayerBody().isEquipped(itm2)) return false;
+        // TODO: re-enable once the per-player equipment runtime is ported
+//        if (player.getPlayerBody().isEquipped(this)) return false;
+//        if (player.getPlayerBody().isEquipped(itm2)) return false;
 
         // Check for mimicked items
         if (this.mimickingMIndex != 0 || itm2.mimickingMIndex != 0) return false;

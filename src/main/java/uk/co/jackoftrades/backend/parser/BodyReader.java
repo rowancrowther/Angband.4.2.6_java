@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.body.BodyLexer;
-import uk.co.jackoftrades.backend.parser.body.BodyParser;
+import uk.co.jackoftrades.backend.parser.body.BodyAssembler;
+import uk.co.jackoftrades.backend.parser.body.BodyParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.body.BodyGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.body.BodyLexer;
 import uk.co.jackoftrades.middle.player.PlayerBody;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,52 @@ public class BodyReader implements Reader<PlayerBody> {
      */
     @Override
     public @NotNull List<PlayerBody> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            BodyLexer lexer = new BodyLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            BodyParser parser = new BodyParser(tokens);
-            BodyParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.bodies;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Parses the file and returns the full {@link ParseResult} — both the assembled bodies and the
+     * collected soft/hard error messages — by handing the standard pipeline to {@link GrammarDriver}
+     * (lex, parse, extract records, assemble). {@link #parse} is the items-only convenience over this.
+     *
+     * @param filename the body data file to load
+     * @return the assembled bodies plus any error messages
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public ParseResult<PlayerBody> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BodyLexer::new,
+                BodyGrammar::new,
+                BodyReader::extract,
+                new BodyAssembler(), logger);
+    }
+
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the top-level
+     * {@code file} rule, surfaces any hard grammar/lexer errors, soft-checks the declared
+     * {@code record-count:} header against the number of bodies read, and returns the raw parse
+     * records for the assembler.
+     *
+     * @param parser       the constructed {@code BodyGrammar} positioned at the token stream
+     * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} aborts on a
+     *                     grammar/lexer error before the records are used
+     * @param errors       the soft-error channel; a record-count mismatch is reported here without
+     *                     discarding the records
+     * @return the raw body parse records in source order
+     * @author Rowan Crowther
+     */
+    private static List<BodyParseRecord> extract(
+            @NotNull BodyGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        BodyGrammar.FileContext output = parser.file();
+        List<BodyParseRecord> records = output.bodies;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

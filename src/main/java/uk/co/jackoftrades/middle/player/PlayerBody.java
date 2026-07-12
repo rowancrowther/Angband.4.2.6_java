@@ -17,82 +17,79 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.backend.parser.body.BodyParser.BodySlot;
-import uk.co.jackoftrades.middle.objects.ItemObject;
-import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.util.List;
 
 /**
- * A body layout — a named arrangement of equipment slots a creature (the player, or a
- * shapechanged form) presents, together with what currently occupies each slot.
+ * A body layout — a named, ordered set of equipment slots a creature presents.
  *
- * <p>Ports the C {@code struct player_body} ({@code player.h}), defined by {@code body.txt}.
- * A body is essentially "the shape of a character's equipment": a humanoid exposes a weapon
- * slot, a bow slot, two ring fingers, an amulet, a light and several armour slots, while an
- * alternate form may differ. Modelling the body as data lets a shapechange swap the entire
- * slot layout at once.
+ * <p>Ports the C {@code struct player_body} ({@code player.h}), defined by {@code body.txt}: a body
+ * name followed by its slots in declared order. This is the immutable <em>template</em>; the runtime
+ * occupant of each slot (C's {@code equip_slot.obj}) is per-player state and lives elsewhere, so it
+ * is deliberately absent here — at character birth C copies the template and allocates a fresh slot
+ * array to hold the worn items.
+ *
+ * <p><b>Slots are index-addressed.</b> The whole gear system reaches equipment by slot number
+ * ({@code slots[i]}); name and type are only lookup keys that resolve to an index (C's
+ * {@code slot_by_name} / {@code slot_by_type}). So the slots are held as an ordered {@link List} and
+ * position is significant — e.g. the two {@code RING} slots ("right hand", "left hand") are distinct
+ * only by their index and name.
  *
  * @author Rowan Crowther
  */
 public class PlayerBody {
-    /**
-     * Identity of a single slot within this body: the slot's category plus its display name.
-     *
-     * <p>Used as the map key so a body can hold several slots of the same category (e.g. two
-     * ring fingers) that remain individually addressable.
-     *
-     * @param equipmentSlot the slot category
-     * @param name          the slot's display label
-     */
-    private record BodySlotEntry(EquipmentSlotsEnum equipmentSlot, String name) {
-    }
 
     /**
      * Display name of this body layout, e.g. {@code "Humanoid"} (C: {@code player_body.name}).
      */
-    private String name;
-    /** Number of equipment slots this body provides (C: {@code player_body.count}). */
-    private int count;
-    /** Each slot mapped to the item occupying it; insertion-ordered so slots stay in declared order. */
-    private Map<BodySlotEntry, ItemObject> equipmentSlots;
+    private final String name;
 
     /**
-     * Builds a body from the parser's slot map, translating each parser {@code BodySlot} into an
-     * internal {@link BodySlotEntry} key.
-     *
-     * <p>A {@link LinkedHashMap} is used deliberately: equipment is displayed in body order, so
-     * the slots' iteration order is significant rather than incidental.
-     *
-     * @param name           the body's display name
-     * @param count          the number of slots
-     * @param equipmentSlots the slots (as parsed) mapped to their initial occupants
+     * The equipment slots in declared (body) order; a slot's index is its identity.
      */
-    public PlayerBody(String name, int count, Map<BodySlot, ItemObject> equipmentSlots) {
+    private final List<EquipSlot> slots;
+
+    /**
+     * Creates an immutable body template.
+     *
+     * @param name  the body's display name
+     * @param slots the equipment slots in declared order (defensively copied and kept immutable)
+     * @author Rowan Crowther
+     */
+    public PlayerBody(String name, List<EquipSlot> slots) {
         this.name = name;
-        this.count = count;
-        this.equipmentSlots = new LinkedHashMap<>();
-        for (BodySlot bodySlot : equipmentSlots.keySet()) {
-            BodySlotEntry bodySlotEntry = new BodySlotEntry(bodySlot.slotType(), bodySlot.name());
-            this.equipmentSlots.put(bodySlotEntry, equipmentSlots.get(bodySlot));
-        }
+        this.slots = List.copyOf(slots);
     }
 
     /**
-     * @return the number of equipment slots this body provides
+     * @return this body's display name
+     * @author Rowan Crowther
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the number of equipment slots this body provides (C: {@code player_body.count})
+     * @author Rowan Crowther
      */
     public int getCount() {
-        return count;
+        return slots.size();
     }
 
     /**
-     * Reports whether a given item is currently equipped in any slot of this body.
-     *
-     * @param item the item to look for
-     * @return {@code true} if the item occupies one of the slots
+     * @return the slots in body order (unmodifiable)
+     * @author Rowan Crowther
      */
-    public boolean isEquipped(ItemObject item) {
-        return equipmentSlots.containsValue(item);
+    public List<EquipSlot> getSlots() {
+        return slots;
+    }
+
+    /**
+     * @param index the slot's position, its C {@code slots[i]} address
+     * @return the slot at the given index
+     * @author Rowan Crowther
+     */
+    public EquipSlot getSlot(int index) {
+        return slots.get(index);
     }
 }

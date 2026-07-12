@@ -8,6 +8,8 @@
 # Note that each body record must take the form of a body-name line,
 # followed by a sequence of alternating slot-type and slot-name lines.
 
+record-count:1
+
 body:Humanoid
 slot:WEAPON:weapon
 slot:BOW:shooting

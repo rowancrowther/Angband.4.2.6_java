@@ -821,7 +821,7 @@ public class GameConstants {
             loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
             loadPlayerHistories();
             loadBodies();
-//            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+            loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
 //            loadMagicRealms();
 //            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
 //            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
@@ -1054,21 +1054,54 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "p_race.txt";
 
         try {
-            playerRaces = parser.parse(filename);
+            ParseResult<PlayerRace> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerRaces = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
     }
 
     /**
-     * Look up a player body type by its count/index.
+     * Look up a player race by its display name, mirroring C's by-name race resolution when a
+     * savefile is loaded ({@code load.c}).
      *
-     * @param number the body's count value
-     * @return the matching {@link PlayerBody}, or {@code null} if none matches
-     * @throws IllegalStateException if player bodies have not been loaded
-     * @author ClaudeCode
+     * @param name the race's display name, e.g. {@code "Half-Troll"}
+     * @return the matching {@link PlayerRace}, or {@code null} if no race has that name
+     * @throws IllegalStateException if player races have not been loaded
+     * @author Rowan Crowther
      */
     @Nullable
+    public static PlayerRace lookupPlayerRace(@NotNull String name) {
+        if (playerRaces == null) {
+            String message = "Invalid attempt to access playerRaces when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerRaces.stream().filter(p -> name.equals(p.getName()))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * Look up a player body layout by its position in load order — the value a race stores as its
+     * body reference (C's {@code bodies[race->body]}). Index 0 is the humanoid body, which is the
+     * only body every race currently uses.
+     *
+     * @param number the body's index in the loaded body list
+     * @return the {@link PlayerBody} at that index (never {@code null})
+     * @throws IllegalStateException     if player bodies have not been loaded
+     * @throws IndexOutOfBoundsException if {@code number} is not a valid body index
+     * @author Rowan Crowther
+     */
     public static PlayerBody lookupPlayerBody(int number) {
         if (playerBodies == null) {
             String message = "Invalid attempt to access playerBodies when it hasn't been initialized";
@@ -1077,10 +1110,13 @@ public class GameConstants {
             throw e;
         }
 
-        return playerBodies.stream()
-                .filter(b -> number == b.getCount())
-                .findFirst()
-                .orElse(null);
+        try {
+            return playerBodies.get(number);
+        } catch (IndexOutOfBoundsException e) {
+            String message = "Body number: " + number + " is out of bounds.";
+            logger.fatal(message, e);
+            throw e;
+        }
     }
 
     private static void loadBodies() {

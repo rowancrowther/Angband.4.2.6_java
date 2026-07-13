@@ -14,14 +14,13 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerRace.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playerrace;
+// Generated from PlayerRaceGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playerrace;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link PlayerRaceVisitor},
+ * This class provides an empty implementation of {@link PlayerRaceGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +28,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlayerRaceVisitor<T> {
+public class PlayerRaceGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements PlayerRaceGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(PlayerRaceParser.NameContext ctx) {
+    public T visitRecordCount(PlayerRaceGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitStats(PlayerRaceParser.StatsContext ctx) {
+    public T visitName(PlayerRaceGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_disarm_phys(PlayerRaceParser.Skill_disarm_physContext ctx) {
+    public T visitStats(PlayerRaceGrammar.StatsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_disarm_magic(PlayerRaceParser.Skill_disarm_magicContext ctx) {
+    public T visitSkillDisarmPhys(PlayerRaceGrammar.SkillDisarmPhysContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_device(PlayerRaceParser.Skill_deviceContext ctx) {
+    public T visitSkillDisarmMagic(PlayerRaceGrammar.SkillDisarmMagicContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_save(PlayerRaceParser.Skill_saveContext ctx) {
+    public T visitSkillDevice(PlayerRaceGrammar.SkillDeviceContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_stealth(PlayerRaceParser.Skill_stealthContext ctx) {
+    public T visitSkillSave(PlayerRaceGrammar.SkillSaveContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_search(PlayerRaceParser.Skill_searchContext ctx) {
+    public T visitSkillStealth(PlayerRaceGrammar.SkillStealthContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_melee(PlayerRaceParser.Skill_meleeContext ctx) {
+    public T visitSkillSearch(PlayerRaceGrammar.SkillSearchContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +135,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_shoot(PlayerRaceParser.Skill_shootContext ctx) {
+    public T visitSkillMelee(PlayerRaceGrammar.SkillMeleeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +146,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_throw(PlayerRaceParser.Skill_throwContext ctx) {
+    public T visitSkillShoot(PlayerRaceGrammar.SkillShootContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +157,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSkill_dig(PlayerRaceParser.Skill_digContext ctx) {
+    public T visitSkillThrow(PlayerRaceGrammar.SkillThrowContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +168,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHitdie(PlayerRaceParser.HitdieContext ctx) {
+    public T visitSkillDig(PlayerRaceGrammar.SkillDigContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +179,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitExp(PlayerRaceParser.ExpContext ctx) {
+    public T visitHitdie(PlayerRaceGrammar.HitdieContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +190,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitInfravision(PlayerRaceParser.InfravisionContext ctx) {
+    public T visitExp(PlayerRaceGrammar.ExpContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -202,7 +201,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHistory(PlayerRaceParser.HistoryContext ctx) {
+    public T visitInfravision(PlayerRaceGrammar.InfravisionContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -213,7 +212,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitAge(PlayerRaceParser.AgeContext ctx) {
+    public T visitHistory(PlayerRaceGrammar.HistoryContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -224,7 +223,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHeight(PlayerRaceParser.HeightContext ctx) {
+    public T visitAge(PlayerRaceGrammar.AgeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -235,7 +234,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitWeight(PlayerRaceParser.WeightContext ctx) {
+    public T visitHeight(PlayerRaceGrammar.HeightContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -246,7 +245,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitObj_flags(PlayerRaceParser.Obj_flagsContext ctx) {
+    public T visitWeight(PlayerRaceGrammar.WeightContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -257,7 +256,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPlayer_flags(PlayerRaceParser.Player_flagsContext ctx) {
+    public T visitObjFlags(PlayerRaceGrammar.ObjFlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -268,7 +267,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitValues(PlayerRaceParser.ValuesContext ctx) {
+    public T visitPlayerFlags(PlayerRaceGrammar.PlayerFlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -279,7 +278,7 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRace(PlayerRaceParser.RaceContext ctx) {
+    public T visitValues(PlayerRaceGrammar.ValuesContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -290,7 +289,18 @@ public class PlayerRaceBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(PlayerRaceParser.FileContext ctx) {
+    public T visitPlayerRace(PlayerRaceGrammar.PlayerRaceContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(PlayerRaceGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

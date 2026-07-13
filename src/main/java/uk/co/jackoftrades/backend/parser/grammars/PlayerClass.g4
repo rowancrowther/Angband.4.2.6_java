@@ -1138,10 +1138,6 @@ SPELL_STRING
 
 // POTENTIAL SOLUTIONS
 //
-//   1. Only worth adding if class.txt ever sets a non-default exp: value -
-//      add an `exp` rule (mirroring PlayerRace.g4's) and an optional
-//      `(exp {...})?` step in `playerClass`, replacing the hardcoded 100.
-//
 //   2. Only worth extending if an equip: line ever needs more than one
 //      birth-option exclusion - widen `eopts` to match a '|'/space-
 //      separated list the same way obj-flags:/player-flags: already do for

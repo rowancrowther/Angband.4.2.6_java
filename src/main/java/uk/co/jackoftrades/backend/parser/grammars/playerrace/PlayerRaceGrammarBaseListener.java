@@ -14,29 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerRace.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playerrace;
-
+// Generated from PlayerRaceGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playerrace;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link PlayerRaceListener},
+ * This class provides an empty implementation of {@link PlayerRaceGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerRaceBaseListener implements PlayerRaceListener {
+public class PlayerRaceGrammarBaseListener implements PlayerRaceGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(PlayerRaceParser.NameContext ctx) {
+    public void enterRecordCount(PlayerRaceGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(PlayerRaceParser.NameContext ctx) {
+    public void exitRecordCount(PlayerRaceGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterStats(PlayerRaceParser.StatsContext ctx) {
+    public void enterName(PlayerRaceGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitStats(PlayerRaceParser.StatsContext ctx) {
+    public void exitName(PlayerRaceGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_disarm_phys(PlayerRaceParser.Skill_disarm_physContext ctx) {
+    public void enterStats(PlayerRaceGrammar.StatsContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_disarm_phys(PlayerRaceParser.Skill_disarm_physContext ctx) {
+    public void exitStats(PlayerRaceGrammar.StatsContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_disarm_magic(PlayerRaceParser.Skill_disarm_magicContext ctx) {
+    public void enterSkillDisarmPhys(PlayerRaceGrammar.SkillDisarmPhysContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_disarm_magic(PlayerRaceParser.Skill_disarm_magicContext ctx) {
+    public void exitSkillDisarmPhys(PlayerRaceGrammar.SkillDisarmPhysContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_device(PlayerRaceParser.Skill_deviceContext ctx) {
+    public void enterSkillDisarmMagic(PlayerRaceGrammar.SkillDisarmMagicContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_device(PlayerRaceParser.Skill_deviceContext ctx) {
+    public void exitSkillDisarmMagic(PlayerRaceGrammar.SkillDisarmMagicContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_save(PlayerRaceParser.Skill_saveContext ctx) {
+    public void enterSkillDevice(PlayerRaceGrammar.SkillDeviceContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_save(PlayerRaceParser.Skill_saveContext ctx) {
+    public void exitSkillDevice(PlayerRaceGrammar.SkillDeviceContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_stealth(PlayerRaceParser.Skill_stealthContext ctx) {
+    public void enterSkillSave(PlayerRaceGrammar.SkillSaveContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_stealth(PlayerRaceParser.Skill_stealthContext ctx) {
+    public void exitSkillSave(PlayerRaceGrammar.SkillSaveContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_search(PlayerRaceParser.Skill_searchContext ctx) {
+    public void enterSkillStealth(PlayerRaceGrammar.SkillStealthContext ctx) {
     }
 
     /**
@@ -171,7 +169,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_search(PlayerRaceParser.Skill_searchContext ctx) {
+    public void exitSkillStealth(PlayerRaceGrammar.SkillStealthContext ctx) {
     }
 
     /**
@@ -180,7 +178,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_melee(PlayerRaceParser.Skill_meleeContext ctx) {
+    public void enterSkillSearch(PlayerRaceGrammar.SkillSearchContext ctx) {
     }
 
     /**
@@ -189,7 +187,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_melee(PlayerRaceParser.Skill_meleeContext ctx) {
+    public void exitSkillSearch(PlayerRaceGrammar.SkillSearchContext ctx) {
     }
 
     /**
@@ -198,7 +196,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_shoot(PlayerRaceParser.Skill_shootContext ctx) {
+    public void enterSkillMelee(PlayerRaceGrammar.SkillMeleeContext ctx) {
     }
 
     /**
@@ -207,7 +205,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_shoot(PlayerRaceParser.Skill_shootContext ctx) {
+    public void exitSkillMelee(PlayerRaceGrammar.SkillMeleeContext ctx) {
     }
 
     /**
@@ -216,7 +214,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_throw(PlayerRaceParser.Skill_throwContext ctx) {
+    public void enterSkillShoot(PlayerRaceGrammar.SkillShootContext ctx) {
     }
 
     /**
@@ -225,7 +223,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_throw(PlayerRaceParser.Skill_throwContext ctx) {
+    public void exitSkillShoot(PlayerRaceGrammar.SkillShootContext ctx) {
     }
 
     /**
@@ -234,7 +232,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkill_dig(PlayerRaceParser.Skill_digContext ctx) {
+    public void enterSkillThrow(PlayerRaceGrammar.SkillThrowContext ctx) {
     }
 
     /**
@@ -243,7 +241,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkill_dig(PlayerRaceParser.Skill_digContext ctx) {
+    public void exitSkillThrow(PlayerRaceGrammar.SkillThrowContext ctx) {
     }
 
     /**
@@ -252,7 +250,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHitdie(PlayerRaceParser.HitdieContext ctx) {
+    public void enterSkillDig(PlayerRaceGrammar.SkillDigContext ctx) {
     }
 
     /**
@@ -261,7 +259,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHitdie(PlayerRaceParser.HitdieContext ctx) {
+    public void exitSkillDig(PlayerRaceGrammar.SkillDigContext ctx) {
     }
 
     /**
@@ -270,7 +268,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterExp(PlayerRaceParser.ExpContext ctx) {
+    public void enterHitdie(PlayerRaceGrammar.HitdieContext ctx) {
     }
 
     /**
@@ -279,7 +277,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitExp(PlayerRaceParser.ExpContext ctx) {
+    public void exitHitdie(PlayerRaceGrammar.HitdieContext ctx) {
     }
 
     /**
@@ -288,7 +286,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterInfravision(PlayerRaceParser.InfravisionContext ctx) {
+    public void enterExp(PlayerRaceGrammar.ExpContext ctx) {
     }
 
     /**
@@ -297,7 +295,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitInfravision(PlayerRaceParser.InfravisionContext ctx) {
+    public void exitExp(PlayerRaceGrammar.ExpContext ctx) {
     }
 
     /**
@@ -306,7 +304,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHistory(PlayerRaceParser.HistoryContext ctx) {
+    public void enterInfravision(PlayerRaceGrammar.InfravisionContext ctx) {
     }
 
     /**
@@ -315,7 +313,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHistory(PlayerRaceParser.HistoryContext ctx) {
+    public void exitInfravision(PlayerRaceGrammar.InfravisionContext ctx) {
     }
 
     /**
@@ -324,7 +322,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAge(PlayerRaceParser.AgeContext ctx) {
+    public void enterHistory(PlayerRaceGrammar.HistoryContext ctx) {
     }
 
     /**
@@ -333,7 +331,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAge(PlayerRaceParser.AgeContext ctx) {
+    public void exitHistory(PlayerRaceGrammar.HistoryContext ctx) {
     }
 
     /**
@@ -342,7 +340,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHeight(PlayerRaceParser.HeightContext ctx) {
+    public void enterAge(PlayerRaceGrammar.AgeContext ctx) {
     }
 
     /**
@@ -351,7 +349,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHeight(PlayerRaceParser.HeightContext ctx) {
+    public void exitAge(PlayerRaceGrammar.AgeContext ctx) {
     }
 
     /**
@@ -360,7 +358,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterWeight(PlayerRaceParser.WeightContext ctx) {
+    public void enterHeight(PlayerRaceGrammar.HeightContext ctx) {
     }
 
     /**
@@ -369,7 +367,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitWeight(PlayerRaceParser.WeightContext ctx) {
+    public void exitHeight(PlayerRaceGrammar.HeightContext ctx) {
     }
 
     /**
@@ -378,7 +376,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterObj_flags(PlayerRaceParser.Obj_flagsContext ctx) {
+    public void enterWeight(PlayerRaceGrammar.WeightContext ctx) {
     }
 
     /**
@@ -387,7 +385,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitObj_flags(PlayerRaceParser.Obj_flagsContext ctx) {
+    public void exitWeight(PlayerRaceGrammar.WeightContext ctx) {
     }
 
     /**
@@ -396,7 +394,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlayer_flags(PlayerRaceParser.Player_flagsContext ctx) {
+    public void enterObjFlags(PlayerRaceGrammar.ObjFlagsContext ctx) {
     }
 
     /**
@@ -405,7 +403,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlayer_flags(PlayerRaceParser.Player_flagsContext ctx) {
+    public void exitObjFlags(PlayerRaceGrammar.ObjFlagsContext ctx) {
     }
 
     /**
@@ -414,7 +412,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterValues(PlayerRaceParser.ValuesContext ctx) {
+    public void enterPlayerFlags(PlayerRaceGrammar.PlayerFlagsContext ctx) {
     }
 
     /**
@@ -423,7 +421,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitValues(PlayerRaceParser.ValuesContext ctx) {
+    public void exitPlayerFlags(PlayerRaceGrammar.PlayerFlagsContext ctx) {
     }
 
     /**
@@ -432,7 +430,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRace(PlayerRaceParser.RaceContext ctx) {
+    public void enterValues(PlayerRaceGrammar.ValuesContext ctx) {
     }
 
     /**
@@ -441,7 +439,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRace(PlayerRaceParser.RaceContext ctx) {
+    public void exitValues(PlayerRaceGrammar.ValuesContext ctx) {
     }
 
     /**
@@ -450,7 +448,7 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(PlayerRaceParser.FileContext ctx) {
+    public void enterPlayerRace(PlayerRaceGrammar.PlayerRaceContext ctx) {
     }
 
     /**
@@ -459,7 +457,25 @@ public class PlayerRaceBaseListener implements PlayerRaceListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(PlayerRaceParser.FileContext ctx) {
+    public void exitPlayerRace(PlayerRaceGrammar.PlayerRaceContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(PlayerRaceGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(PlayerRaceGrammar.FileContext ctx) {
     }
 
     /**

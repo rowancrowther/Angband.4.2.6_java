@@ -57,6 +57,7 @@
 # 'values' is for object modifiers which take a value that races possess
 # innately.
 
+record-count:11
 
 name:Human
 stats:0:0:0:0:0

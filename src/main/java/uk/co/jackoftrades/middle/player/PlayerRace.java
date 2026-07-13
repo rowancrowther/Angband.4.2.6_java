@@ -21,8 +21,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.objects.ElementInfo;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 
@@ -94,8 +95,10 @@ public class PlayerRace {
     /** The background-history chart this race's biography generation starts from. */
     private PlayerHistoryChart history;
 
-    /** Resistance/element modifiers conferred by the race, keyed by {@link ObjectModifier}. */
-    private Map<ObjectModifier, Integer> resists;
+    /**
+     * Resistance/element modifiers conferred by the race, keyed by {@link ElementEnum}.
+     */
+    private Map<ElementEnum, ElementInfo> resists;
 
     /**
      * Builds a race from its parsed attributes; each parameter populates the like-named field
@@ -123,7 +126,7 @@ public class PlayerRace {
     public PlayerRace(String name, int rIndex, int raceMhp, int raceExp, int baseAge, int modAge, int baseHeight,
                       int modHeight, int baseWeight, int modWeight, int infravision, PlayerBody body,
                       Map<Stats, Integer> statsAdj, Map<PlayerSkill, Integer> skillsAdj, Flag<ObjectFlag> oFlags,
-                      Flag<PlayerFlag> pFlags, PlayerHistoryChart history, Map<ObjectModifier, Integer> resists) {
+                      Flag<PlayerFlag> pFlags, PlayerHistoryChart history, Map<ElementEnum, ElementInfo> resists) {
         this.name = name;
         this.rIndex = rIndex;
         this.raceMhp = raceMhp;
@@ -142,5 +145,9 @@ public class PlayerRace {
         this.pFlags = pFlags;
         this.history = history;
         this.resists = resists;
+    }
+
+    public String getName() {
+        return name;
     }
 }

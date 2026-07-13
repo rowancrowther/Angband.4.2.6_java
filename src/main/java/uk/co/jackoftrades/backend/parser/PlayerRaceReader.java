@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.playerrace.PlayerRaceLexer;
-import uk.co.jackoftrades.backend.parser.playerrace.PlayerRaceParser;
+import uk.co.jackoftrades.backend.parser.grammars.playerrace.PlayerRaceGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.playerrace.PlayerRaceLexer;
+import uk.co.jackoftrades.backend.parser.playerrace.PlayerRaceAssembler;
+import uk.co.jackoftrades.backend.parser.playerrace.PlayerRaceParseRecord;
 import uk.co.jackoftrades.middle.player.PlayerRace;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,28 @@ public class PlayerRaceReader implements Reader<PlayerRace> {
      */
     @Override
     public @NotNull List<PlayerRace> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            PlayerRaceLexer lexer = new PlayerRaceLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            PlayerRaceParser parser = new PlayerRaceParser(tokens);
-            PlayerRaceParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.races;
-        } catch (Exception e) {
-            logger.error("Error while loading {}", filename, e);
-            throw e;
-        }
+    public @NotNull ParseResult<PlayerRace> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerRaceLexer::new,
+                PlayerRaceGrammar::new,
+                PlayerRaceReader::extract,
+                new PlayerRaceAssembler(), logger);
+    }
+
+    private static List<PlayerRaceParseRecord> extract(
+            @NotNull PlayerRaceGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        PlayerRaceGrammar.FileContext output = parser.file();
+        List<PlayerRaceParseRecord> result = output.races;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
+
+        return new ArrayList<>(result);
     }
 }

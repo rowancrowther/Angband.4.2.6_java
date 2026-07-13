@@ -822,7 +822,7 @@ public class GameConstants {
             loadPlayerHistories();
             loadBodies();
             loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
-//            loadMagicRealms();
+            loadMagicRealms();
 //            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
 //            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
 //            loadObjectProperties();     // Dependent on UIEntry
@@ -1043,7 +1043,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "realm.txt";
 
         try {
-            realms = parser.parse(filename);
+            ParseResult<MagicRealm> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            realms = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

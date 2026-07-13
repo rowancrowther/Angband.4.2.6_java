@@ -15,28 +15,27 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Realm.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.realm;
-
+// Generated from RealmGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.realm;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link RealmListener},
+ * This class provides an empty implementation of {@link RealmGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class RealmBaseListener implements RealmListener {
+public class RealmGrammarBaseListener implements RealmGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(RealmParser.NameContext ctx) {
+    public void enterRecordCount(RealmGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +44,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(RealmParser.NameContext ctx) {
+    public void exitRecordCount(RealmGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +53,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterStat(RealmParser.StatContext ctx) {
+    public void enterName(RealmGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +62,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitStat(RealmParser.StatContext ctx) {
+    public void exitName(RealmGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +71,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterVerb(RealmParser.VerbContext ctx) {
+    public void enterStat(RealmGrammar.StatContext ctx) {
     }
 
     /**
@@ -81,7 +80,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitVerb(RealmParser.VerbContext ctx) {
+    public void exitStat(RealmGrammar.StatContext ctx) {
     }
 
     /**
@@ -90,7 +89,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpell_noun(RealmParser.Spell_nounContext ctx) {
+    public void enterVerb(RealmGrammar.VerbContext ctx) {
     }
 
     /**
@@ -99,7 +98,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpell_noun(RealmParser.Spell_nounContext ctx) {
+    public void exitVerb(RealmGrammar.VerbContext ctx) {
     }
 
     /**
@@ -108,7 +107,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBook_noun(RealmParser.Book_nounContext ctx) {
+    public void enterSpellNoun(RealmGrammar.SpellNounContext ctx) {
     }
 
     /**
@@ -117,7 +116,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBook_noun(RealmParser.Book_nounContext ctx) {
+    public void exitSpellNoun(RealmGrammar.SpellNounContext ctx) {
     }
 
     /**
@@ -126,7 +125,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRealm(RealmParser.RealmContext ctx) {
+    public void enterBookNoun(RealmGrammar.BookNounContext ctx) {
     }
 
     /**
@@ -135,7 +134,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRealm(RealmParser.RealmContext ctx) {
+    public void exitBookNoun(RealmGrammar.BookNounContext ctx) {
     }
 
     /**
@@ -144,7 +143,7 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(RealmParser.FileContext ctx) {
+    public void enterRealm(RealmGrammar.RealmContext ctx) {
     }
 
     /**
@@ -153,7 +152,25 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(RealmParser.FileContext ctx) {
+    public void exitRealm(RealmGrammar.RealmContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(RealmGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(RealmGrammar.FileContext ctx) {
     }
 
     /**
@@ -180,11 +197,15 @@ public class RealmBaseListener implements RealmListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

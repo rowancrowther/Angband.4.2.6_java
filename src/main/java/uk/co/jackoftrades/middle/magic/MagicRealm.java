@@ -21,10 +21,14 @@ import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 /**
- * A school of magic (e.g. arcane, holy) — the spellcasting "realm" that defines
- * which stat governs casting, the verb used ("cast"/"pray"), the noun for its
- * spells, and the book item type that holds them. This is the Java port of the
- * C original's {@code struct magic_realm} ({@code src/player.h}).
+ * A school of magic — one of the four spellcasting "realms" defined by {@code realm.txt} (arcane,
+ * divine, nature, shadow) — bundling the flavour that varies between them: the {@link Stats stat}
+ * that governs casting, the verb used ("cast", "recite", …), the noun for a casting ("spell",
+ * "prayer", …) and the {@link TValue item type} of the books that hold its spells.
+ *
+ * <p>Java port of the C {@code struct magic_realm} ({@code src/player.h}). That struct also carries a
+ * {@code code} field, but in 4.2.6 nothing ever populates it and {@code lookup_realm} matches realms
+ * by {@code name}, so the port omits it.
  *
  * @author Rowan Crowther
  */
@@ -35,12 +39,6 @@ public class MagicRealm {
      * @author Rowan Crowther
      */
     private String name;
-    /**
-     * Short code identifying the realm.
-     *
-     * @author Rowan Crowther
-     */
-    private String code;
     /**
      * The stat that governs casting in this realm.
      *

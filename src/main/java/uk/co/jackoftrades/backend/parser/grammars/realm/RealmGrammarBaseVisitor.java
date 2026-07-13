@@ -15,21 +15,21 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Realm.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.realm;
+// Generated from RealmGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.realm;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link RealmVisitor},
+ * This class provides an empty implementation of {@link RealmGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements RealmVisitor<T> {
+public class RealmGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements RealmGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +37,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(RealmParser.NameContext ctx) {
+    public T visitRecordCount(RealmGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +48,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitStat(RealmParser.StatContext ctx) {
+    public T visitName(RealmGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +59,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitVerb(RealmParser.VerbContext ctx) {
+    public T visitStat(RealmGrammar.StatContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +70,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSpell_noun(RealmParser.Spell_nounContext ctx) {
+    public T visitVerb(RealmGrammar.VerbContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +81,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBook_noun(RealmParser.Book_nounContext ctx) {
+    public T visitSpellNoun(RealmGrammar.SpellNounContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +92,7 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRealm(RealmParser.RealmContext ctx) {
+    public T visitBookNoun(RealmGrammar.BookNounContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +103,18 @@ public class RealmBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements 
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(RealmParser.FileContext ctx) {
+    public T visitRealm(RealmGrammar.RealmContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(RealmGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

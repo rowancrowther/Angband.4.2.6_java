@@ -6,6 +6,7 @@
 # spell-noun: name of magic effects
 # book-noun: type of book used
 
+record-count:4
 
 name:arcane
 stat:INT

@@ -15,145 +15,122 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererGrammar.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/RealmGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.grammars;
 
-            import java.util.Arrays;
-            import java.util.ArrayList;
-            import java.util.List;
-        
+    import uk.co.jackoftrades.backend.parser.realm.RealmParseRecord;
+
+    import java.util.List;
+    import java.util.ArrayList;
+
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link UIEntryRendererGrammarListener},
+ * This class provides an empty implementation of {@link RealmGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class UIEntryRendererGrammarBaseListener implements UIEntryRendererGrammarListener {
+public class RealmGrammarBaseListener implements RealmGrammarListener {
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterRecordCount(UIEntryRendererGrammar.RecordCountContext ctx) { }
+	@Override public void enterRecordCount(RealmGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitRecordCount(UIEntryRendererGrammar.RecordCountContext ctx) { }
+	@Override public void exitRecordCount(RealmGrammar.RecordCountContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterName(UIEntryRendererGrammar.NameContext ctx) { }
+	@Override public void enterName(RealmGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitName(UIEntryRendererGrammar.NameContext ctx) { }
+	@Override public void exitName(RealmGrammar.NameContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterCode(UIEntryRendererGrammar.CodeContext ctx) { }
+	@Override public void enterStat(RealmGrammar.StatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitCode(UIEntryRendererGrammar.CodeContext ctx) { }
+	@Override public void exitStat(RealmGrammar.StatContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterColours(UIEntryRendererGrammar.ColoursContext ctx) { }
+	@Override public void enterVerb(RealmGrammar.VerbContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitColours(UIEntryRendererGrammar.ColoursContext ctx) { }
+	@Override public void exitVerb(RealmGrammar.VerbContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterLabelcolours(UIEntryRendererGrammar.LabelcoloursContext ctx) { }
+	@Override public void enterSpellNoun(RealmGrammar.SpellNounContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitLabelcolours(UIEntryRendererGrammar.LabelcoloursContext ctx) { }
+	@Override public void exitSpellNoun(RealmGrammar.SpellNounContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSymbols(UIEntryRendererGrammar.SymbolsContext ctx) { }
+	@Override public void enterBookNoun(RealmGrammar.BookNounContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSymbols(UIEntryRendererGrammar.SymbolsContext ctx) { }
+	@Override public void exitBookNoun(RealmGrammar.BookNounContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterNdigit(UIEntryRendererGrammar.NdigitContext ctx) { }
+	@Override public void enterRealm(RealmGrammar.RealmContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitNdigit(UIEntryRendererGrammar.NdigitContext ctx) { }
+	@Override public void exitRealm(RealmGrammar.RealmContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterSign(UIEntryRendererGrammar.SignContext ctx) { }
+	@Override public void enterFile(RealmGrammar.FileContext ctx) { }
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void exitSign(UIEntryRendererGrammar.SignContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterUiEntry(UIEntryRendererGrammar.UiEntryContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitUiEntry(UIEntryRendererGrammar.UiEntryContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterFile(UIEntryRendererGrammar.FileContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitFile(UIEntryRendererGrammar.FileContext ctx) { }
+	@Override public void exitFile(RealmGrammar.FileContext ctx) { }
 
 	/**
 	 * {@inheritDoc}

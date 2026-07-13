@@ -1,0 +1,17 @@
+RECORD_COUNT=1
+NAME=2
+STAT=3
+VERB=4
+SPELL_NOUN=5
+BOOK_NOUN=6
+INTEGER=7
+COMMENT=8
+EOL=9
+STRING=10
+FREE_TEXT_EOL=11
+'record-count:'=1
+'name:'=2
+'stat:'=3
+'verb:'=4
+'spell-noun:'=5
+'book-noun:'=6

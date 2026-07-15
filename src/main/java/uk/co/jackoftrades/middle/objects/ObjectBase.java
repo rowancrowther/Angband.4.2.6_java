@@ -19,9 +19,13 @@ package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The base type of a family of object kinds (as loaded from {@code object_base.txt})
@@ -55,11 +59,15 @@ public class ObjectBase {
     private ColourType attr;
 
     /**
-     * Elements this base's items are destroyed by (the {@code HATES_*} flags).
+     * Per-element info shared by kinds of this base, keyed by element. Replaces the earlier plain
+     * {@code HATES_*} flag set: the constructor folds each hated element in as an entry carrying the
+     * {@link ElementInfoEnum#EL_INFO_HATES} flag, and derived kinds may add further per-element flags
+     * (e.g. dungeon spellbooks setting {@code EL_INFO_IGNORE}). This mirrors C's move from a bitflag
+     * to the richer {@code el_info[]} table.
      *
      * @author Rowan Crowther
      */
-    private Flag<ElementEnum> hatesEl;
+    private Map<ElementEnum, ElementInfo> elementInfo;
 
     /**
      * Object-kind flags shared by kinds of this base.
@@ -88,8 +96,17 @@ public class ObjectBase {
     private int numSvals;
 
     /**
-     * Build an empty object base with fresh flag sets and unset break/stack values.
+     * Build an object base, folding the incoming {@code HATES_*} element flags into the per-element
+     * {@link #elementInfo} table (each hated element gets an entry flagged
+     * {@link ElementInfoEnum#EL_INFO_HATES}).
      *
+     * @param tVal        the item type value
+     * @param name        the base type's name
+     * @param colour      the default display colour
+     * @param kFlag       the object-kind flags shared by this base's kinds
+     * @param hatesFlag   the elements items of this base are destroyed by
+     * @param breakChance the break-on-throw percentage ({@code -1} if unset)
+     * @param maxStack    the maximum stack size ({@code -1} if unset)
      * @author Rowan Crowther
      */
     public ObjectBase(TValue tVal, String name, ColourType colour, Flag<ObjectKindFlag> kFlag,
@@ -98,9 +115,42 @@ public class ObjectBase {
         this.name = name;
         this.attr = colour;
         this.kindFlags = kFlag;
-        this.hatesEl = hatesFlag;
+        this.elementInfo = new HashMap<>();
+        for (ElementEnum element : hatesFlag) {
+            ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
+            info.getFlags().on(ElementInfoEnum.EL_INFO_HATES);
+        }
         this.breakPerc = breakChance;
         this.maxStack = maxStack;
+    }
+
+    /**
+     * Replace this base's per-element info table wholesale.
+     *
+     * @param elementInfo the new element-info map
+     * @author Rowan Crowther
+     */
+    public void setElementInfo(Map<ElementEnum, ElementInfo> elementInfo) {
+        this.elementInfo = elementInfo;
+    }
+
+    /**
+     * @return the number of distinct svals allocated under this base so far
+     * @author Rowan Crowther
+     */
+    public int getNumSvals() {
+        return numSvals;
+    }
+
+    /**
+     * Set the running count of svals allocated under this base. Used as kinds are registered so each
+     * new kind can be handed the next sval (see {@link uk.co.jackoftrades.middle.game.globals.GameConstants#addObjectKind}).
+     *
+     * @param numSvals the new sval count
+     * @author Rowan Crowther
+     */
+    public void setNumSvals(int numSvals) {
+        this.numSvals = numSvals;
     }
 
     /**
@@ -109,6 +159,14 @@ public class ObjectBase {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return this base's per-element info table (keyed by element)
+     * @author Rowan Crowther
+     */
+    public Map<ElementEnum, ElementInfo> getElementMap() {
+        return elementInfo;
     }
 
     /**
@@ -144,6 +202,14 @@ public class ObjectBase {
     }
 
     /**
+     * @return the object-kind flags shared by kinds of this base
+     * @author Rowan Crowther
+     */
+    public Flag<ObjectKindFlag> getKindFlags() {
+        return kindFlags;
+    }
+
+    /**
      * @return a debug string listing this base's fields
      * @author Rowan Crowther
      */
@@ -153,7 +219,6 @@ public class ObjectBase {
                 "name='" + name + '\'' +
                 ", tVal=" + tVal +
                 ", attr=" + attr +
-                ", hatesEl=" + hatesEl +
                 ", kindFlags=" + kindFlags +
                 ", breakPerc=" + breakPerc +
                 ", maxStack=" + maxStack +

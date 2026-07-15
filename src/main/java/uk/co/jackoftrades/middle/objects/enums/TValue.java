@@ -450,18 +450,24 @@ public enum TValue {
     }
 
     /**
-     * Value of for the name string as opposed to the name
+     * Resolves a tval by its enum-style name (e.g. {@code "TV_SWORD"}), tolerating the forms the
+     * data files actually use. The incoming text is upper-cased and its spaces converted to
+     * underscores, so multi-word bases such as {@code "magic book"} match {@code TV_MAGIC_BOOK}; the
+     * British/American {@code ARMOUR}/{@code ARMOR} spelling difference is also bridged. Returns
+     * {@code null} (and logs) when no constant matches.
      *
-     * @param name The name that we are searching for
-     * @return the TValue of the given name, or null if it wasn't
-     * found
+     * @param name the tval name to search for (case- and spacing-insensitive)
+     * @return the matching {@link TValue}, or {@code null} if none matches
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
         String toSearch;
 
-        if (name.toUpperCase().contains("RMOUR"))
+        name = name.toUpperCase().replace(" ", "_");
+
+        if (name.contains("RMOUR"))
             toSearch = name.replace("RMOUR", "RMOR");
         else
             toSearch = name;

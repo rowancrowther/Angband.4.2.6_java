@@ -208,7 +208,7 @@ class EgoItemReaderTest {
 
         List<ObjectKind> poss = field(e, "possItems");
         assertEquals(1, poss.size());
-        assertEquals("Lantern", poss.get(0).getsValue());
+        assertEquals("Lantern", poss.get(0).getsValueName());
         assertSame(GameConstants.lookupObjectKind(TValue.TV_LIGHT, "Lantern"), poss.get(0));
     }
 
@@ -219,7 +219,7 @@ class EgoItemReaderTest {
         List<ObjectKind> poss = field(e, "possItems");
         int haftedKinds = GameConstants.lookupObjectKind(TValue.TV_HAFTED).size();
         assertEquals(haftedKinds + 1, poss.size());
-        assertTrue(poss.stream().anyMatch(k -> "Lantern".equals(k.getsValue())));
+        assertTrue(poss.stream().anyMatch(k -> "Lantern".equals(k.getsValueName())));
     }
 
     // ---- Soft errors: dropped record (skip-and-continue) -----------------

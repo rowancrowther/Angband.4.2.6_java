@@ -35,56 +35,70 @@ public class ClassMagic {
      * @author Rowan Crowther
      */
     private int firstSpellLevel;
+
     /**
      * Weight contributed by each spellbook (affects encumbrance/casting).
      *
      * @author Rowan Crowther
      */
     private int spellWeight;
+
     /**
      * Number of spellbooks this class uses.
      *
      * @author Rowan Crowther
      */
     private int numBooks;
+
     /**
      * The spellbooks available to this class.
      *
      * @author Rowan Crowther
      */
     List<MagicBook> magicBooks;
+
     /**
-     * Running total of spells across all books (maintained by {@link #addMagicBook}).
+     * Total of all spells across all the books for this magic class
      *
      * @author Rowan Crowther
      */
     private int totalSpells;
 
     /**
-     * Build an empty class-magic profile with the given casting parameters.
+     * The shared "no magic" sentinel assigned to non-caster classes (Warrior), so callers can rely
+     * on {@code magic} never being {@code null} and simply test {@link #isCaster()}.
+     *
+     * @author Rowan Crowther
+     */
+    public static final ClassMagic NONE = new ClassMagic(0, 0, 0, List.of());
+
+    /**
+     * @return {@code true} if this class can cast — i.e. it defines at least one spellbook
+     * @author Rowan Crowther
+     */
+    public boolean isCaster() {
+        return numBooks > 0;
+    }
+
+    /**
+     * Build a class-magic profile from its casting parameters and books, summing the books' spell
+     * counts into {@link #totalSpells}.
      *
      * @param firstSpellLevel level at which casting becomes possible
      * @param spellWeight     per-book weight
      * @param numBooks        number of books used
+     * @param books           the spellbooks available to the class (defensively copied)
      * @author Rowan Crowther
      */
-    public ClassMagic(int firstSpellLevel, int spellWeight, int numBooks) {
+    public ClassMagic(int firstSpellLevel, int spellWeight, int numBooks, List<MagicBook> books) {
         this.firstSpellLevel = firstSpellLevel;
         this.spellWeight = spellWeight;
         this.numBooks = numBooks;
-        this.magicBooks = new ArrayList<>();
+        this.magicBooks = new ArrayList<>(books);
         this.totalSpells = 0;
-    }
 
-    /**
-     * Add a spellbook to this profile and accumulate its spell count into
-     * {@link #totalSpells}.
-     *
-     * @param magicBook the book to add
-     * @author Rowan Crowther
-     */
-    public void addMagicBook(MagicBook magicBook) {
-        this.magicBooks.add(magicBook);
-        this.totalSpells += magicBook.getNumOfSpells();
+        for (MagicBook magicBook : magicBooks) {
+            totalSpells += magicBook.getNumOfSpells();
+        }
     }
 }

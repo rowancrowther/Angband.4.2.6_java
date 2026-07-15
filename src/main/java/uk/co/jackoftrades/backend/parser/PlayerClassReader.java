@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassLexer;
-import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassParser;
+import uk.co.jackoftrades.backend.parser.grammars.playerclass.PlayerClassGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.playerclass.PlayerClassLexer;
+import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassAssembler;
+import uk.co.jackoftrades.backend.parser.playerclass.PlayerClassParseRecord;
 import uk.co.jackoftrades.middle.player.PlayerClass;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,39 @@ public class PlayerClassReader implements Reader<PlayerClass> {
      */
     @Override
     public @NotNull List<PlayerClass> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            PlayerClassLexer lexer = new PlayerClassLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            PlayerClassParser parser = new PlayerClassParser(tokens);
-            PlayerClassParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.playerClasses;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult} — the assembled
+     * {@link PlayerClass}es together with any soft errors collected during parsing and assembly.
+     * Prefer this over {@link #parse} when the caller needs to see the errors (e.g. to reject a file
+     * that loaded with problems, as {@code GameConstants} does).
+     *
+     * @param filename the class data file to read
+     * @return the parse result: the classes plus any error messages
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public ParseResult<PlayerClass> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerClassLexer::new,
+                PlayerClassGrammar::new,
+                PlayerClassReader::extract,
+                new PlayerClassAssembler(), logger);
+    }
+
+    private static List<PlayerClassParseRecord> extract(
+            @NotNull PlayerClassGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        PlayerClassGrammar.FileContext output = parser.file();
+        List<PlayerClassParseRecord> results = output.playerClasses;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
     }
 }

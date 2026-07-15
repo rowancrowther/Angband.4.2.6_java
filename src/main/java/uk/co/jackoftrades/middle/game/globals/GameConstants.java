@@ -47,6 +47,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The central global registry of all loaded game data and tunable constants — the
@@ -85,14 +86,13 @@ public class GameConstants {
     private static GameConstantsParseRecord gameConstantsData;
 
     /**
-     * A <code>record</code> used to store String key, String value pairs for the <code>constants.txt</code> file.
-     * Currently only used for the <code>loadGameConstants</code> method. May be extended later.
+     * A tval &rarr; (sval &rarr; kind) index over {@link #objectKinds}, maintained by
+     * {@link #addObjectKind} so a kind can be found by its numeric (tval, sval) in constant time —
+     * the fast path for {@link #lookupObjectKind(TValue, int)}. Cleared and rebuilt by {@link #init()}.
      *
-     * @param key   the String key
-     * @param value the String value
+     * @author Rowan Crowther
      */
-    private record Entry(@NotNull String key, @NotNull String value) {
-    }
+    private static Map<TValue, Map<Integer, ObjectKind>> kindsByTvalSval = new HashMap<>();
 
     /**
      * A <code>record</code> used to store Sting name, int value pairs for the <code>constants.txt</code> file.
@@ -409,6 +409,28 @@ public class GameConstants {
     }
 
     /**
+     * Looks up an object kind by its numeric (tval, sval) via the {@link #kindsByTvalSval} index —
+     * the constant-time counterpart to the name-based {@link #lookupObjectKind(TValue, String)}.
+     *
+     * @param tValue the object type value
+     * @param sValue the numeric sub-type value
+     * @return the matching {@link ObjectKind}, or {@code null} if none is indexed
+     * @throws IllegalStateException if object kinds have not been loaded
+     * @author Rowan Crowther
+     */
+    public static ObjectKind lookupObjectKind(TValue tValue, int sValue) {
+        if (objectKinds.isEmpty()) {
+            String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        Map<Integer, ObjectKind> map = kindsByTvalSval.get(tValue);
+        return map == null ? null : map.get(sValue);
+    }
+
+    /**
      * Get an ObjectKind based on its name
      *
      * @param name the name of the object kind we are searching for
@@ -430,17 +452,20 @@ public class GameConstants {
     }
 
     /**
-     * Look up an object kind by both its tval (type) and name.
+     * Look up an object kind by its tval and an sval <em>reference</em>, resolving the reference the
+     * way the data files use it (C's {@code lookup_sval}): if {@code ref} is all digits it is treated
+     * as a literal numeric sval and dispatched to {@link #lookupObjectKind(TValue, int)}; otherwise it
+     * is matched case-insensitively against each kind's {@link ObjectKind#getsValueName() sval name}.
      *
      * @param tval the object type value
-     * @param sval the object s-val
+     * @param ref  the sval reference — either a decimal sval or a sub-type name
      * @return the matching {@link ObjectKind}, or {@code null} if none matches
      * @throws IllegalStateException if object kinds have not been loaded
      * @author ClaudeCode
      */
     @CheckReturnValue
     @Nullable
-    public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String sval) {
+    public static ObjectKind lookupObjectKind(@NotNull TValue tval, @NotNull String ref) {
         if (objectKinds.isEmpty()) {
             String message = "Invalid attempt to access objectKinds when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
@@ -448,9 +473,14 @@ public class GameConstants {
             throw e;
         }
 
-        return objectKinds.stream()
-                .filter(e -> sval.equalsIgnoreCase(e.getsValue()) && tval.equals(e.gettValue()))
-                .findFirst().orElse(null);
+        try {
+            return lookupObjectKind(tval, Integer.parseInt(ref.trim()));
+        } catch (NumberFormatException NAN) {
+            return objectKinds.stream()
+                    .filter(k -> tval.equals(k.gettValue()) &&
+                            ref.equalsIgnoreCase(k.getsValueName()))
+                    .findFirst().orElse(null);
+        }
     }
 
     @NotNull
@@ -615,12 +645,24 @@ public class GameConstants {
     }
 
     /**
-     * Add a new object kind to the list of object kinds
+     * Register an object kind: allocate it the next sval under its base (svals are 1-based per base),
+     * append it to {@link #objectKinds}, and index it in {@link #kindsByTvalSval} for fast
+     * (tval, sval) lookup. This is the single choke-point that keeps a kind's numeric sval and the
+     * lookup index in step, so synthesised kinds (e.g. spellbooks) register exactly like file-loaded
+     * ones.
      *
-     * @param toAdd the ObjectKind to add
+     * @param toAdd the ObjectKind to register
+     * @author Rowan Crowther
      */
     public static void addObjectKind(ObjectKind toAdd) {
+        ObjectBase base = toAdd.getBase();
+        int sVal = base.getNumSvals() + 1;      // svals are 1-based within each base
+        base.setNumSvals(sVal);
+        toAdd.setsVal(sVal);
         objectKinds.add(toAdd);
+        kindsByTvalSval
+                .computeIfAbsent(toAdd.gettValue(), k -> new HashMap<>())
+                .put(sVal, toAdd);
     }
 
     /**
@@ -800,6 +842,12 @@ public class GameConstants {
      */
     public static void init() {
         try {
+            // Start from an empty kind registry so init() is idempotent: object kinds and their
+            // per-base sval counters are rebuilt from scratch here, so a re-init (e.g. between tests)
+            // does not double-register kinds or keep incrementing svals.
+            objectKinds.clear();
+            kindsByTvalSval.clear();
+
             loadGameConstants();
             loadWorld();                // world arraylist size determines maxRandDepth
             loadProjections();          // projections arrayList size determines projectionTypeMax
@@ -823,7 +871,7 @@ public class GameConstants {
             loadBodies();
             loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
             loadMagicRealms();
-//            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
+            loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
 //            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
 //            loadObjectProperties();     // Dependent on UIEntry
 //            loadPlayerTimedProperties();
@@ -1032,7 +1080,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "class.txt";
 
         try {
-            playerClasses = parser.parse(filename);
+            ParseResult<PlayerClass> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerClasses = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -1273,7 +1330,9 @@ public class GameConstants {
                 return;
             }
 
-            objectKinds = results.items();
+            for (ObjectKind kind : results.items()) {
+                addObjectKind(kind);
+            }
             objectBaseKindMax = objectKinds.size();
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);

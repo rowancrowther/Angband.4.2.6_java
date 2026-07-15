@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
@@ -46,6 +48,12 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class PlayerClass {
+    /**
+     * Logger for this class.
+     *
+     * @author Rowan Crowther
+     */
+    private static final Logger logger = LogManager.getLogger();
     /**
      * Display name of the class, e.g. {@code "Ranger"} (C: {@code player_class.name}).
      */
@@ -106,7 +114,8 @@ public class PlayerClass {
                        Map<PlayerSkill, Integer> classSkills,
                        Map<PlayerSkill, Integer> extraSkills, int hpAdj, int expAdj,
                        Flag<ObjectFlag> oFlags, Flag<PlayerFlag> pFlags, int maxAttacks,
-                       int minWeight, int attMultiplier, List<StartItem> startItems,
+                       int minWeight, int attMultiplier,
+                       List<StartItem> startItems,
                        ClassMagic magic) {
         this.name = name;
         this.titles = titles;

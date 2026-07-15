@@ -126,7 +126,7 @@ COLON
  * An uppercase symbol used to determine TYPE/SUBTYPE in EFFECT lines.
  */
 UCASE
-        :   ('a'..'z' | 'A'..'Z' | '_')+
+        :   ('a'..'z' | 'A'..'Z' | '_' | '-')+
         ;
 
 /*

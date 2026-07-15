@@ -19,7 +19,8 @@ package uk.co.jackoftrades.middle.magic;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,11 +35,13 @@ import java.util.List;
  */
 public class MagicBook {
     /**
-     * The object kind (item) that represents this book in the game.
+     * The item type ({@code tval}) of the book. The concrete object kind is synthesised and
+     * registered separately (see {@link uk.co.jackoftrades.backend.parser.playerclass.ClassSpellBookAssembler}),
+     * so the book itself only needs to remember its type here.
      *
      * @author Rowan Crowther
      */
-    private ObjectKind bookType;
+    private TValue bookType;
     /**
      * The book's display name.
      *
@@ -63,12 +66,83 @@ public class MagicBook {
      * @author Rowan Crowther
      */
     private MagicRealm realm;
+
+    /**
+     * The book's display glyph and colour (from {@code book-graphics:}), or {@code null} when the
+     * book re-references one defined earlier and so omits its own graphics line.
+     *
+     * @author Rowan Crowther
+     */
+    private AngbandDisplayCharacter character;
+
+    /**
+     * The book's base cost in gold (from {@code book-properties:}).
+     *
+     * @author Rowan Crowther
+     */
+    private int cost;
+
+    /**
+     * How commonly the book is generated as loot (from {@code book-properties:}).
+     *
+     * @author Rowan Crowther
+     */
+    private int commonness;
+
+    /**
+     * The shallowest dungeon depth at which the book appears (from {@code book-properties:}).
+     *
+     * @author Rowan Crowther
+     */
+    private int min;
+
+    /**
+     * The deepest dungeon depth at which the book appears (from {@code book-properties:}).
+     *
+     * @author Rowan Crowther
+     */
+    private int max;
+
     /**
      * The spells contained in this book.
      *
      * @author Rowan Crowther
      */
     private List<MagicSpell> spells;
+
+    /**
+     * Build a fully-populated spellbook — the form the class loader produces, with its graphics,
+     * loot properties and resolved spells all supplied up front.
+     *
+     * @param bookType    the book's item type ({@code tval})
+     * @param bookName    the book's display name
+     * @param dungeon     whether it is a dungeon-only book
+     * @param numOfSpells the declared number of spells
+     * @param realm       the magic realm the book's spells belong to
+     * @param character   the display glyph/colour, or {@code null} if inherited from an earlier definition
+     * @param cost        the base cost in gold
+     * @param commonness  the loot-generation commonness
+     * @param min         the shallowest depth of occurrence
+     * @param max         the deepest depth of occurrence
+     * @param spells      the spells contained in the book
+     * @author Rowan Crowther
+     */
+    public MagicBook(TValue bookType, String bookName, boolean dungeon,
+                     int numOfSpells, MagicRealm realm,
+                     AngbandDisplayCharacter character, int cost,
+                     int commonness, int min, int max, List<MagicSpell> spells) {
+        this.bookType = bookType;
+        this.bookName = bookName;
+        this.dungeon = dungeon;
+        this.numOfSpells = numOfSpells;
+        this.realm = realm;
+        this.character = character;
+        this.cost = cost;
+        this.commonness = commonness;
+        this.min = min;
+        this.max = max;
+        this.spells = spells;
+    }
 
     /**
      * Build an empty spellbook; spells are added later via {@link #addSpell(MagicSpell)}.
@@ -81,7 +155,7 @@ public class MagicBook {
      * @author Rowan Crowther
      */
     @Contract(mutates = "this")
-    public MagicBook(ObjectKind bookType, boolean dungeon, String bookName, int numOfSpells, MagicRealm realm) {
+    public MagicBook(TValue bookType, boolean dungeon, String bookName, int numOfSpells, MagicRealm realm) {
         this.bookType = bookType;
         this.bookName = bookName;
         this.dungeon = dungeon;
@@ -119,20 +193,20 @@ public class MagicBook {
     }
 
     /**
-     * @return the object kind backing this book
+     * @return the book's item type ({@code tval})
      * @author Rowan Crowther
      */
-    public ObjectKind getBookKind() {
+    public TValue getBookTValue() {
         return bookType;
     }
 
     /**
-     * Set the object kind backing this book.
+     * Set the book's item type ({@code tval}).
      *
-     * @param bookType the object kind
+     * @param bookType the item type value
      * @author Rowan Crowther
      */
-    public void setBookKind(ObjectKind bookType) {
+    public void setBookKind(TValue bookType) {
         this.bookType = bookType;
     }
 

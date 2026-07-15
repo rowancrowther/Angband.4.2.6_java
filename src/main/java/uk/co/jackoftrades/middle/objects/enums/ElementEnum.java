@@ -25,31 +25,56 @@ package uk.co.jackoftrades.middle.objects.enums;
  * @author Rowan Crowther
  */
 public enum ElementEnum {
-    ELEM_NONE,
-    ELEM_ACID,
-    ELEM_ELEC,
-    ELEM_FIRE,
-    ELEM_COLD,
-    ELEM_POIS,
-    ELEM_LIGHT,
-    ELEM_DARK,
-    ELEM_SOUND,
-    ELEM_SHARD,
-    ELEM_NEXUS,
-    ELEM_NETHER,
-    ELEM_CHAOS,
-    ELEM_DISEN,
-    ELEM_WATER,
-    ELEM_ICE,
-    ELEM_GRAVITY,
-    ELEM_INERTIA,
-    ELEM_FORCE,
-    ELEM_TIME,
-    ELEM_PLASMA,
-    ELEM_METEOR,
-    ELEM_MISSILE,
-    ELEM_MANA,
-    ELEM_HOLY_ORB,
-    ELEM_ARROW,
-    ELEM_MAX
+    ELEM_NONE(false),
+    ELEM_ACID(true),
+    ELEM_ELEC(true),
+    ELEM_FIRE(true),
+    ELEM_COLD(true),
+    ELEM_POIS(false),
+    ELEM_LIGHT(false),
+    ELEM_DARK(false),
+    ELEM_SOUND(false),
+    ELEM_SHARD(false),
+    ELEM_NEXUS(false),
+    ELEM_NETHER(false),
+    ELEM_CHAOS(false),
+    ELEM_DISEN(false),
+    ELEM_WATER(false),
+    ELEM_ICE(false),
+    ELEM_GRAVITY(false),
+    ELEM_INERTIA(false),
+    ELEM_FORCE(false),
+    ELEM_TIME(false),
+    ELEM_PLASMA(false),
+    ELEM_METEOR(false),
+    ELEM_MISSILE(false),
+    ELEM_MANA(false),
+    ELEM_HOLY_ORB(false),
+    ELEM_ARROW(false),
+    ELEM_MAX(false);
+
+    /**
+     * Whether this is a "base" element — the four physical damage types (acid, electricity, fire,
+     * cold) that objects can ignore/be affected by as a group. Ports the {@code base} column of C's
+     * {@code list-elements.h}; used e.g. when a dungeon spellbook is set to ignore every base element.
+     *
+     * @author Rowan Crowther
+     */
+    private final boolean isBase;
+
+    /**
+     * @param isBase whether this element is one of the four base (physical) damage types
+     * @author Rowan Crowther
+     */
+    ElementEnum(boolean isBase) {
+        this.isBase = isBase;
+    }
+
+    /**
+     * @return {@code true} if this is a base (physical) element
+     * @author Rowan Crowther
+     */
+    public boolean isBase() {
+        return isBase;
+    }
 }

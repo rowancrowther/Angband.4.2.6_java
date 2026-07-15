@@ -19,7 +19,6 @@ package uk.co.jackoftrades.middle.magic;
 
 import uk.co.jackoftrades.middle.effect.Effect;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,12 +44,6 @@ public class MagicSpell {
      */
     private String spellDescription;
 
-    /**
-     * The magic realm this spell belongs to.
-     *
-     * @author Rowan Crowther
-     */
-    private MagicRealm realm;
     /**
      * The effects produced when the spell is cast.
      *
@@ -84,52 +77,25 @@ public class MagicSpell {
     private int exp;
 
     /**
-     * Build a spell with its core casting parameters; effects are added later via
-     * {@link #addEffect(Effect)}.
+     * Build a fully-formed spell from its casting parameters, resolved effects and description.
      *
-     * @param spellName the spell's name
-     * @param level     required level
-     * @param fail      base failure rate
-     * @param mana      mana cost
-     * @param exp       first-cast experience
+     * @param spellName        the spell's name
+     * @param level            required level
+     * @param fail             base failure rate
+     * @param mana             mana cost
+     * @param exp              first-cast experience
+     * @param effects          the effects produced when the spell is cast, in order
+     * @param spellDescription the spell's description text
      * @author Rowan Crowther
      */
-    public MagicSpell(String spellName, int level, int fail, int mana, int exp) {
+    public MagicSpell(String spellName, int level, int fail, int mana, int exp,
+                      List<Effect> effects, String spellDescription) {
         this.spellName = spellName;
         this.level = level;
         this.fail = fail;
         this.mana = mana;
         this.exp = exp;
-        effects = new ArrayList<>();
-    }
-
-    /**
-     * Append an effect to this spell.
-     *
-     * @param effect the effect to add
-     * @author Rowan Crowther
-     */
-    public void addEffect(Effect effect) {
-        effects.add(effect);
-    }
-
-    /**
-     * Set the spell's description.
-     *
-     * @param spellDescription the description text
-     * @author Rowan Crowther
-     */
-    public void setSpellDescription(String spellDescription) {
+        this.effects = effects;
         this.spellDescription = spellDescription;
-    }
-
-    /**
-     * Set the magic realm this spell belongs to.
-     *
-     * @param realm the magic realm
-     * @author Rowan Crowther
-     */
-    public void setRealm(MagicRealm realm) {
-        this.realm = realm;
     }
 }

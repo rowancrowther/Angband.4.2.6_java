@@ -19,6 +19,8 @@ package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
+import java.util.List;
+
 /**
  * One entry in a class's (or race's) starting-equipment list — a kind of item the
  * character is granted at birth, with a randomised quantity and optional constraints.
@@ -46,7 +48,7 @@ public class StartItem {
     /** Maximum quantity granted at birth (inclusive). */
     private int max;
     /** Optional ego/exclusion options constraining which exact item is produced (C: {@code start_item.eopts}). */
-    private String eOpts;
+    private List<StartOptionExclusion> eOpts;
 
     /**
      * Creates a starting-item specification.
@@ -57,11 +59,32 @@ public class StartItem {
      * @param max    maximum quantity (inclusive)
      * @param eOpts  ego/exclusion option string, or empty if unconstrained
      */
-    public StartItem(TValue tValue, String sValue, int min, int max, String eOpts) {
+    public StartItem(TValue tValue, String sValue, int min, int max,
+                     List<StartOptionExclusion> eOpts) {
         this.tValue = tValue;
         this.sValue = sValue;
         this.min = min;
         this.max = max;
         this.eOpts = eOpts;
+    }
+
+    public TValue gettValue() {
+        return tValue;
+    }
+
+    public String getsValue() {
+        return sValue;
+    }
+
+    public int getMin() {
+        return min;
+    }
+
+    public int getMax() {
+        return max;
+    }
+
+    public List<StartOptionExclusion> geteOpts() {
+        return eOpts;
     }
 }

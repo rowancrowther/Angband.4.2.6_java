@@ -85,11 +85,22 @@ public class ObjectKind {
      */
     private TValue tValue;
     /**
-     * The sub-type value (sval) as a string.
+     * The sub-type by name — the kind's name with the object-name flavour markers stripped
+     * ({@link #stripToRawSval}). This is the human-readable reference the data files use; the numeric
+     * {@link #sVal} is the resolved index. Kept separate because C's sval is always an int at runtime
+     * but a name-or-digit reference in the data files (see {@code lookup_sval}).
      *
      * @author Rowan Crowther
      */
-    private String sValue;
+    private String sValueName;
+
+    /**
+     * The resolved numeric sub-type value (sval), assigned when the kind is registered under its
+     * base (see {@link uk.co.jackoftrades.middle.game.globals.GameConstants#addObjectKind}).
+     *
+     * @author Rowan Crowther
+     */
+    private int sVal;
 
     /**
      * Extra parameter value (the item's "pval"), as a dice expression.
@@ -372,14 +383,14 @@ public class ObjectKind {
      * @param max       maximum allocation depth
      * @param name      kind name
      * @param tvalue    item type value
-     * @param sValue    sub-type value
+     * @param sValueName    sub-type value
      * @param base      base type
      * @param isDungeon whether this is a dungeon-generated kind
      * @author Rowan Crowther
      */
     public ObjectKind(AngbandDisplayCharacter adc, int cost,
                       int level, int min, int max,
-                      String name, TValue tvalue, String sValue,
+                      String name, TValue tvalue, String sValueName,
                       ObjectBase base, boolean isDungeon
     ) {
         this.name = name;
@@ -392,7 +403,7 @@ public class ObjectKind {
         this.alloc_min = min;
         this.alloc_max = max;
         this.tValue = tvalue;
-        this.sValue = sValue;
+        this.sValueName = sValueName;
         this.base = base;
 
         elInfo = new HashMap<>();
@@ -534,11 +545,37 @@ public class ObjectKind {
         this.ignore = ignore;
         this.everseen = everseen;
         this.tValue = tValue;
-        this.sValue = stripToRawSval(name);
+        this.sValueName = stripToRawSval(name);
     }
 
+    /**
+     * Strips the object-name flavour-template markers ({@code "& "} article slot and {@code "~"}
+     * pluralisation slot) from a kind's name to recover the bare sval reference used elsewhere.
+     *
+     * @param name the templated kind name
+     * @return the name with the {@code &}/{@code ~} markers removed
+     * @author Rowan Crowther
+     */
     private String stripToRawSval(String name) {
         return name.replace("& ", "").replace("~", "");
+    }
+
+    /**
+     * @return the resolved numeric sub-type value (sval)
+     * @author Rowan Crowther
+     */
+    public int getsVal() {
+        return sVal;
+    }
+
+    /**
+     * Set the resolved numeric sval; called when the kind is registered under its base.
+     *
+     * @param sVal the sval to assign
+     * @author Rowan Crowther
+     */
+    public void setsVal(int sVal) {
+        this.sVal = sVal;
     }
 
     /**
@@ -597,7 +634,11 @@ public class ObjectKind {
         return tValue;
     }
 
-    public String getsValue() {
-        return sValue;
+    /**
+     * @return the sub-type by name (the flavour-stripped kind name)
+     * @author Rowan Crowther
+     */
+    public String getsValueName() {
+        return sValueName;
     }
 }

@@ -21,10 +21,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.*;
 
 /**
  * A type-safe wrapper around an {@link EnumSet} that emulates Angband's C
@@ -38,13 +35,14 @@ import java.util.List;
  * @param <E> the enum type whose constants are the individual flags
  * @author Rowan Crowther
  */
-public class Flag<E extends Enum<E>> {
+public class Flag<E extends Enum<E>> implements Iterable<E> {
     /**
      * The flags currently switched on.
      *
      * @author Rowan Crowther
      */
     private final EnumSet<E> flagSet;
+
     /**
      * The full set of every possible flag, cached for full/negate/mask operations.
      *
@@ -102,6 +100,24 @@ public class Flag<E extends Enum<E>> {
         }
 
         return Collections.max(all);
+    }
+
+    /**
+     * Returns an iterator over only the flags currently switched on, in enum
+     * declaration order. This is what makes a {@code Flag} usable in an
+     * enhanced-for loop (e.g. {@code for (E flag : someFlag)}), letting callers
+     * visit the set flags directly instead of probing every enum constant with
+     * {@link #has(Enum)}. The backing set is wrapped read-only, so the returned
+     * iterator cannot mutate this {@code Flag} (its {@code remove()} throws).
+     *
+     * @return a read-only iterator over the flags that are on
+     * @author Rowan Crowther
+     */
+    @Override
+    @CheckReturnValue
+    @Contract(pure = true)
+    public Iterator<E> iterator() {
+        return Collections.unmodifiableSet(flagSet).iterator();
     }
 
     /**

@@ -15,28 +15,27 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerClass.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playerclass;
-
+// Generated from PlayerClassGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playerclass;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link PlayerClassListener},
+ * This class provides an empty implementation of {@link PlayerClassGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerClassBaseListener implements PlayerClassListener {
+public class PlayerClassGrammarBaseListener implements PlayerClassGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(PlayerClassParser.NameContext ctx) {
+    public void enterRecordCount(PlayerClassGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +44,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(PlayerClassParser.NameContext ctx) {
+    public void exitRecordCount(PlayerClassGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +53,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterStats(PlayerClassParser.StatsContext ctx) {
+    public void enterName(PlayerClassGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +62,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitStats(PlayerClassParser.StatsContext ctx) {
+    public void exitName(PlayerClassGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +71,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillDisarmPhys(PlayerClassParser.SkillDisarmPhysContext ctx) {
+    public void enterStats(PlayerClassGrammar.StatsContext ctx) {
     }
 
     /**
@@ -81,7 +80,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillDisarmPhys(PlayerClassParser.SkillDisarmPhysContext ctx) {
+    public void exitStats(PlayerClassGrammar.StatsContext ctx) {
     }
 
     /**
@@ -90,7 +89,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillDisarmMagic(PlayerClassParser.SkillDisarmMagicContext ctx) {
+    public void enterSkillDisarmPhys(PlayerClassGrammar.SkillDisarmPhysContext ctx) {
     }
 
     /**
@@ -99,7 +98,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillDisarmMagic(PlayerClassParser.SkillDisarmMagicContext ctx) {
+    public void exitSkillDisarmPhys(PlayerClassGrammar.SkillDisarmPhysContext ctx) {
     }
 
     /**
@@ -108,7 +107,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillDevice(PlayerClassParser.SkillDeviceContext ctx) {
+    public void enterSkillDisarmMagic(PlayerClassGrammar.SkillDisarmMagicContext ctx) {
     }
 
     /**
@@ -117,7 +116,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillDevice(PlayerClassParser.SkillDeviceContext ctx) {
+    public void exitSkillDisarmMagic(PlayerClassGrammar.SkillDisarmMagicContext ctx) {
     }
 
     /**
@@ -126,7 +125,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillSave(PlayerClassParser.SkillSaveContext ctx) {
+    public void enterSkillDevice(PlayerClassGrammar.SkillDeviceContext ctx) {
     }
 
     /**
@@ -135,7 +134,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillSave(PlayerClassParser.SkillSaveContext ctx) {
+    public void exitSkillDevice(PlayerClassGrammar.SkillDeviceContext ctx) {
     }
 
     /**
@@ -144,7 +143,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillStealth(PlayerClassParser.SkillStealthContext ctx) {
+    public void enterSkillSave(PlayerClassGrammar.SkillSaveContext ctx) {
     }
 
     /**
@@ -153,7 +152,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillStealth(PlayerClassParser.SkillStealthContext ctx) {
+    public void exitSkillSave(PlayerClassGrammar.SkillSaveContext ctx) {
     }
 
     /**
@@ -162,7 +161,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillSearch(PlayerClassParser.SkillSearchContext ctx) {
+    public void enterSkillStealth(PlayerClassGrammar.SkillStealthContext ctx) {
     }
 
     /**
@@ -171,7 +170,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillSearch(PlayerClassParser.SkillSearchContext ctx) {
+    public void exitSkillStealth(PlayerClassGrammar.SkillStealthContext ctx) {
     }
 
     /**
@@ -180,7 +179,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillMelee(PlayerClassParser.SkillMeleeContext ctx) {
+    public void enterSkillSearch(PlayerClassGrammar.SkillSearchContext ctx) {
     }
 
     /**
@@ -189,7 +188,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillMelee(PlayerClassParser.SkillMeleeContext ctx) {
+    public void exitSkillSearch(PlayerClassGrammar.SkillSearchContext ctx) {
     }
 
     /**
@@ -198,7 +197,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillShoot(PlayerClassParser.SkillShootContext ctx) {
+    public void enterSkillMelee(PlayerClassGrammar.SkillMeleeContext ctx) {
     }
 
     /**
@@ -207,7 +206,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillShoot(PlayerClassParser.SkillShootContext ctx) {
+    public void exitSkillMelee(PlayerClassGrammar.SkillMeleeContext ctx) {
     }
 
     /**
@@ -216,7 +215,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillThrow(PlayerClassParser.SkillThrowContext ctx) {
+    public void enterSkillShoot(PlayerClassGrammar.SkillShootContext ctx) {
     }
 
     /**
@@ -225,7 +224,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillThrow(PlayerClassParser.SkillThrowContext ctx) {
+    public void exitSkillShoot(PlayerClassGrammar.SkillShootContext ctx) {
     }
 
     /**
@@ -234,7 +233,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSkillDig(PlayerClassParser.SkillDigContext ctx) {
+    public void enterSkillThrow(PlayerClassGrammar.SkillThrowContext ctx) {
     }
 
     /**
@@ -243,7 +242,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSkillDig(PlayerClassParser.SkillDigContext ctx) {
+    public void exitSkillThrow(PlayerClassGrammar.SkillThrowContext ctx) {
     }
 
     /**
@@ -252,7 +251,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHitdie(PlayerClassParser.HitdieContext ctx) {
+    public void enterSkillDig(PlayerClassGrammar.SkillDigContext ctx) {
     }
 
     /**
@@ -261,7 +260,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHitdie(PlayerClassParser.HitdieContext ctx) {
+    public void exitSkillDig(PlayerClassGrammar.SkillDigContext ctx) {
     }
 
     /**
@@ -270,7 +269,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMaxAttacks(PlayerClassParser.MaxAttacksContext ctx) {
+    public void enterHitdie(PlayerClassGrammar.HitdieContext ctx) {
     }
 
     /**
@@ -279,7 +278,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMaxAttacks(PlayerClassParser.MaxAttacksContext ctx) {
+    public void exitHitdie(PlayerClassGrammar.HitdieContext ctx) {
     }
 
     /**
@@ -288,7 +287,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMinWeight(PlayerClassParser.MinWeightContext ctx) {
+    public void enterMaxAttacks(PlayerClassGrammar.MaxAttacksContext ctx) {
     }
 
     /**
@@ -297,7 +296,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMinWeight(PlayerClassParser.MinWeightContext ctx) {
+    public void exitMaxAttacks(PlayerClassGrammar.MaxAttacksContext ctx) {
     }
 
     /**
@@ -306,7 +305,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterStrengthMultiplier(PlayerClassParser.StrengthMultiplierContext ctx) {
+    public void enterMinWeight(PlayerClassGrammar.MinWeightContext ctx) {
     }
 
     /**
@@ -315,7 +314,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitStrengthMultiplier(PlayerClassParser.StrengthMultiplierContext ctx) {
+    public void exitMinWeight(PlayerClassGrammar.MinWeightContext ctx) {
     }
 
     /**
@@ -324,7 +323,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEquip(PlayerClassParser.EquipContext ctx) {
+    public void enterStrengthMultiplier(PlayerClassGrammar.StrengthMultiplierContext ctx) {
     }
 
     /**
@@ -333,7 +332,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEquip(PlayerClassParser.EquipContext ctx) {
+    public void exitStrengthMultiplier(PlayerClassGrammar.StrengthMultiplierContext ctx) {
     }
 
     /**
@@ -342,7 +341,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEquipBlock(PlayerClassParser.EquipBlockContext ctx) {
+    public void enterTitle(PlayerClassGrammar.TitleContext ctx) {
     }
 
     /**
@@ -351,7 +350,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEquipBlock(PlayerClassParser.EquipBlockContext ctx) {
+    public void exitTitle(PlayerClassGrammar.TitleContext ctx) {
     }
 
     /**
@@ -360,7 +359,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterObjectFlags(PlayerClassParser.ObjectFlagsContext ctx) {
+    public void enterEquip(PlayerClassGrammar.EquipContext ctx) {
     }
 
     /**
@@ -369,7 +368,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitObjectFlags(PlayerClassParser.ObjectFlagsContext ctx) {
+    public void exitEquip(PlayerClassGrammar.EquipContext ctx) {
     }
 
     /**
@@ -378,7 +377,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlayerFlags(PlayerClassParser.PlayerFlagsContext ctx) {
+    public void enterObjFlag(PlayerClassGrammar.ObjFlagContext ctx) {
     }
 
     /**
@@ -387,7 +386,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlayerFlags(PlayerClassParser.PlayerFlagsContext ctx) {
+    public void exitObjFlag(PlayerClassGrammar.ObjFlagContext ctx) {
     }
 
     /**
@@ -396,7 +395,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTitle(PlayerClassParser.TitleContext ctx) {
+    public void enterPlayerFlags(PlayerClassGrammar.PlayerFlagsContext ctx) {
     }
 
     /**
@@ -405,7 +404,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitTitle(PlayerClassParser.TitleContext ctx) {
+    public void exitPlayerFlags(PlayerClassGrammar.PlayerFlagsContext ctx) {
     }
 
     /**
@@ -414,7 +413,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTitleBlock(PlayerClassParser.TitleBlockContext ctx) {
+    public void enterExp(PlayerClassGrammar.ExpContext ctx) {
     }
 
     /**
@@ -423,7 +422,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitTitleBlock(PlayerClassParser.TitleBlockContext ctx) {
+    public void exitExp(PlayerClassGrammar.ExpContext ctx) {
     }
 
     /**
@@ -432,7 +431,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMagic(PlayerClassParser.MagicContext ctx) {
+    public void enterMagic(PlayerClassGrammar.MagicContext ctx) {
     }
 
     /**
@@ -441,7 +440,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMagic(PlayerClassParser.MagicContext ctx) {
+    public void exitMagic(PlayerClassGrammar.MagicContext ctx) {
     }
 
     /**
@@ -450,7 +449,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBook(PlayerClassParser.BookContext ctx) {
+    public void enterMagicBlock(PlayerClassGrammar.MagicBlockContext ctx) {
     }
 
     /**
@@ -459,7 +458,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBook(PlayerClassParser.BookContext ctx) {
+    public void exitMagicBlock(PlayerClassGrammar.MagicBlockContext ctx) {
     }
 
     /**
@@ -468,7 +467,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBookGraphics(PlayerClassParser.BookGraphicsContext ctx) {
+    public void enterBook(PlayerClassGrammar.BookContext ctx) {
     }
 
     /**
@@ -477,7 +476,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBookGraphics(PlayerClassParser.BookGraphicsContext ctx) {
+    public void exitBook(PlayerClassGrammar.BookContext ctx) {
     }
 
     /**
@@ -486,7 +485,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBookProperties(PlayerClassParser.BookPropertiesContext ctx) {
+    public void enterBookGraphics(PlayerClassGrammar.BookGraphicsContext ctx) {
     }
 
     /**
@@ -495,7 +494,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBookProperties(PlayerClassParser.BookPropertiesContext ctx) {
+    public void exitBookGraphics(PlayerClassGrammar.BookGraphicsContext ctx) {
     }
 
     /**
@@ -504,7 +503,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpell(PlayerClassParser.SpellContext ctx) {
+    public void enterBookProperties(PlayerClassGrammar.BookPropertiesContext ctx) {
     }
 
     /**
@@ -513,7 +512,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpell(PlayerClassParser.SpellContext ctx) {
+    public void exitBookProperties(PlayerClassGrammar.BookPropertiesContext ctx) {
     }
 
     /**
@@ -522,7 +521,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffect(PlayerClassParser.EffectContext ctx) {
+    public void enterBookBlock(PlayerClassGrammar.BookBlockContext ctx) {
     }
 
     /**
@@ -531,7 +530,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffect(PlayerClassParser.EffectContext ctx) {
+    public void exitBookBlock(PlayerClassGrammar.BookBlockContext ctx) {
     }
 
     /**
@@ -540,7 +539,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectMsg(PlayerClassParser.EffectMsgContext ctx) {
+    public void enterSpell(PlayerClassGrammar.SpellContext ctx) {
     }
 
     /**
@@ -549,7 +548,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectMsg(PlayerClassParser.EffectMsgContext ctx) {
+    public void exitSpell(PlayerClassGrammar.SpellContext ctx) {
     }
 
     /**
@@ -558,7 +557,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectYX(PlayerClassParser.EffectYXContext ctx) {
+    public void enterDesc(PlayerClassGrammar.DescContext ctx) {
     }
 
     /**
@@ -567,7 +566,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectYX(PlayerClassParser.EffectYXContext ctx) {
+    public void exitDesc(PlayerClassGrammar.DescContext ctx) {
     }
 
     /**
@@ -576,7 +575,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDice(PlayerClassParser.DiceContext ctx) {
+    public void enterSpellBlock(PlayerClassGrammar.SpellBlockContext ctx) {
     }
 
     /**
@@ -585,7 +584,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDice(PlayerClassParser.DiceContext ctx) {
+    public void exitSpellBlock(PlayerClassGrammar.SpellBlockContext ctx) {
     }
 
     /**
@@ -594,7 +593,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectBlock(PlayerClassParser.EffectBlockContext ctx) {
+    public void enterPlayerClass(PlayerClassGrammar.PlayerClassContext ctx) {
     }
 
     /**
@@ -603,7 +602,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectBlock(PlayerClassParser.EffectBlockContext ctx) {
+    public void exitPlayerClass(PlayerClassGrammar.PlayerClassContext ctx) {
     }
 
     /**
@@ -612,7 +611,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterExpr(PlayerClassParser.ExprContext ctx) {
+    public void enterFile(PlayerClassGrammar.FileContext ctx) {
     }
 
     /**
@@ -621,7 +620,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitExpr(PlayerClassParser.ExprContext ctx) {
+    public void exitFile(PlayerClassGrammar.FileContext ctx) {
     }
 
     /**
@@ -630,7 +629,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(PlayerClassParser.DescContext ctx) {
+    public void enterEffect(PlayerClassGrammar.EffectContext ctx) {
     }
 
     /**
@@ -639,7 +638,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(PlayerClassParser.DescContext ctx) {
+    public void exitEffect(PlayerClassGrammar.EffectContext ctx) {
     }
 
     /**
@@ -648,7 +647,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpellBlock(PlayerClassParser.SpellBlockContext ctx) {
+    public void enterTime(PlayerClassGrammar.TimeContext ctx) {
     }
 
     /**
@@ -657,7 +656,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpellBlock(PlayerClassParser.SpellBlockContext ctx) {
+    public void exitTime(PlayerClassGrammar.TimeContext ctx) {
     }
 
     /**
@@ -666,7 +665,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBookBlock(PlayerClassParser.BookBlockContext ctx) {
+    public void enterEffectYX(PlayerClassGrammar.EffectYXContext ctx) {
     }
 
     /**
@@ -675,7 +674,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBookBlock(PlayerClassParser.BookBlockContext ctx) {
+    public void exitEffectYX(PlayerClassGrammar.EffectYXContext ctx) {
     }
 
     /**
@@ -684,7 +683,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlayerClass(PlayerClassParser.PlayerClassContext ctx) {
+    public void enterDice(PlayerClassGrammar.DiceContext ctx) {
     }
 
     /**
@@ -693,7 +692,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlayerClass(PlayerClassParser.PlayerClassContext ctx) {
+    public void exitDice(PlayerClassGrammar.DiceContext ctx) {
     }
 
     /**
@@ -702,7 +701,7 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(PlayerClassParser.FileContext ctx) {
+    public void enterExpr(PlayerClassGrammar.ExprContext ctx) {
     }
 
     /**
@@ -711,31 +710,78 @@ public class PlayerClassBaseListener implements PlayerClassListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(PlayerClassParser.FileContext ctx) {
+    public void exitExpr(PlayerClassGrammar.ExprContext ctx) {
     }
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectMsg(PlayerClassGrammar.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectMsg(PlayerClassGrammar.EffectMsgContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEffectBlock(PlayerClassGrammar.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEffectBlock(PlayerClassGrammar.EffectBlockContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

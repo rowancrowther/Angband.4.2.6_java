@@ -1,5 +1,27 @@
 {
   "worktree": {
     "bgIsolation": "none"
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\.claude\\hooks\\guard-paths.ps1\""
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "powershell -NoProfile -ExecutionPolicy Bypass -File \"C:\\Users\\rowan\\Documents\\IntelliJProjects\\Angband.4.2.6\\.claude\\hooks\\guard-vcs.ps1\""
+          }
+        ]
+      }
+    ]
   }
 }

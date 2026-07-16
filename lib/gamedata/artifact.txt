@@ -101,7 +101,7 @@
 # (3.) Adding a new artifact, WILL now affect savefile compatibility for all
 # savefiles.
 
-
+record-count:138
 
 ### Light Sources ###
 

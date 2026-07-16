@@ -48,6 +48,8 @@ public class Random {
      * @author Rowan Crowther
      */
     private String baseStr;
+
+    private boolean isComplex;
     /**
      * The fixed base (minimum) contribution to the rolled value.
      *
@@ -122,14 +124,15 @@ public class Random {
         this.sides = sides;
         this.mBonus = mBonus;
         this.toNegate = toNegate;
+        negate();
 
-        // The below lines are put in to deal with the issue of negative bases not being caught by the parser.
-        // TODO: Check this in the upcoming Reader sweep
-        if (this.base < 0) {
-            this.toNegate = true;
-            this.base = this.base * -1;
-        }
-        negated = false;
+//        // The below lines are put in to deal with the issue of negative bases not being caught by the parser.
+//        // TODO: Check this in the upcoming Reader sweep
+//        if (this.base < 0) {
+//            this.toNegate = true;
+//            this.base = this.base * -1;
+//        }
+//        negated = false;
     }
 
     /**
@@ -167,6 +170,7 @@ public class Random {
         this.sidesStr = sides;
     }
 
+
     /**
      * Turn a string into a Random
      *
@@ -178,22 +182,43 @@ public class Random {
     public static Random parseStr(@NotNull String randomString) {
         if (randomString.isEmpty()) return null;
 
-        //logger.trace("Parsing random string: " + randomString);
+        boolean negFound = randomString.charAt(0) == '-';
+        boolean complex = randomString.contains("$");
+
+        // neg and complex - not allowed
+        if (negFound && complex) {
+            logger.warn("negated complex variable dice not supported: {}", randomString);
+            return null;
+        }
+
+        // neg & simple
+        if (negFound) {
+            randomString = randomString.substring(1);
+            if (randomString.isEmpty()) return null;
+        }
+
+        // randomString is always positive at this point
 
         RandomReader reader = new RandomReader();
         List<Random> randoms;
         try {
             randoms = reader.parse(randomString);
         } catch (IOException e) {
-            logger.error("Error while reading random {}", randomString, e);
+            logger.error("Error while parsing random string: {}", randomString, e);
             return null;
         }
 
-        if (randoms.isEmpty()) {
-            return null;
+        if (randoms.isEmpty()) return null;
+
+        Random random = randoms.getFirst();
+        if (random == null) return null;
+
+        if (negFound) {
+            random.toNegate = true;
+            random.negate();
         }
 
-        return randoms.getFirst();
+        return random;
     }
 
     /**
@@ -304,9 +329,9 @@ public class Random {
         //if (debug) logger.traceEntry("Random.negate() oldBase: {}", base);
 
         if (toNegate && !negated) {
-            int min = base + dice;
-            int max = base + dice * sides;
-            base = -(min + max);
+            base = base * -1;
+            base = base - mBonus;
+            base = base - (dice * (sides + 1));
             toNegate = false;
             negated = true;
         }

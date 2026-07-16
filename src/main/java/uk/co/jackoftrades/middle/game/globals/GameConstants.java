@@ -872,7 +872,7 @@ public class GameConstants {
             loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
             loadMagicRealms();
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
-//            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+            loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
 //            loadObjectProperties();     // Dependent on UIEntry
 //            loadPlayerTimedProperties();
 //            loadBlowMethods();
@@ -1069,7 +1069,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "artifact.txt";
 
         try {
-            artifacts = parser.parse(filename);
+            ParseResult<Artifact> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

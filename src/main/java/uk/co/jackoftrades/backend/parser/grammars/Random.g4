@@ -66,12 +66,10 @@ dice
             int baseInit = 0;
             int diceInit = 0;
             String sidesStr = "";
-            int sidesInit = 1;
+            int sidesInit = 0;
             int mBonusInit = 0;
         }
         @after {
-            if (sidesInit < 1) sidesInit = 1;
-
             if (baseStr.isEmpty() && sidesStr.isEmpty())
                 $random = new Random(baseInit, mBonusInit, diceInit, sidesInit, false);
             else if (baseStr.isEmpty())
@@ -104,16 +102,19 @@ dice
             }
         |   MINUS base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
                 baseInit = -1 * Integer.parseInt($base.getText());
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
         |   base=DOLLAR_LETTER PLUS D sides=NUMBER M m_bonus=NUMBER {
                 baseStr=$base.getText();
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
         |   base=NUMBER PLUS D sides=NUMBER M m_bonus=NUMBER {
                 baseInit = Integer.parseInt($base.getText());
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
@@ -123,6 +124,7 @@ dice
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
         |   D sides=NUMBER M m_bonus=NUMBER {
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
                 mBonusInit = Integer.parseInt($m_bonus.getText());
             }
@@ -150,10 +152,12 @@ dice
             }
         |   MINUS base=NUMBER PLUS D sides=NUMBER {
                 baseInit = -1 * Integer.parseInt($base.getText());
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
             }
         |   base=NUMBER PLUS D sides=NUMBER {
                 baseInit = Integer.parseInt($base.getText());
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
             }
         |   diceNum=NUMBER D sides=NUMBER {
@@ -161,6 +165,7 @@ dice
                 sidesInit = Integer.parseInt($sides.getText());
             }
         |   D sides=NUMBER {
+                diceInit = 1;
                 sidesInit = Integer.parseInt($sides.getText());
             }
         |   base=DOLLAR_LETTER {

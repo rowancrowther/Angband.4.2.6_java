@@ -66,4 +66,12 @@ public class CurseData {
     public int getTimeout() {
         return timeout;
     }
+
+    public void setPower(int power) {
+        this.power = power;
+    }
+
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
 }

@@ -1,0 +1,14 @@
+RECORD_COUNT=1
+BODY=2
+SLOT=3
+INTEGER=4
+SLOT_NAME=5
+COLON=6
+COMMENT=7
+EOL=8
+STRING=9
+FREE_TEXT_EOL=10
+'record-count:'=1
+'body:'=2
+'slot:'=3
+':'=6

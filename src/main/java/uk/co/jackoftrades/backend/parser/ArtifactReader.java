@@ -17,14 +17,13 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.artifact.ArtifactLexer;
-import uk.co.jackoftrades.backend.parser.artifact.ArtifactParser;
+import uk.co.jackoftrades.backend.parser.artifact.ArtifactAssembler;
+import uk.co.jackoftrades.backend.parser.artifact.ArtifactParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.artifact.ArtifactGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.artifact.ArtifactLexer;
 import uk.co.jackoftrades.middle.objects.Artifact;
 
 import java.io.IOException;
@@ -54,17 +53,28 @@ public class ArtifactReader implements Reader {
      */
     @Override
     public @NotNull List<Artifact> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            ArtifactLexer lexer = new ArtifactLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ArtifactParser parser = new ArtifactParser(tokens);
-            ArtifactParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.artifacts;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public ParseResult<Artifact> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ArtifactLexer::new,
+                ArtifactGrammar::new,
+                ArtifactReader::extract,
+                new ArtifactAssembler(), logger);
+    }
+
+    private static List<ArtifactParseRecord> extract(
+            @NotNull ArtifactGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        ArtifactGrammar.FileContext output = parser.file();
+        List<ArtifactParseRecord> result = output.records;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
+
+        return result;
     }
 }

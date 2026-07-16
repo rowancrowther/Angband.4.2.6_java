@@ -51,13 +51,6 @@ public class Artifact {
     private String text;
 
     /**
-     * Index in the global artifact table.
-     *
-     * @author Rowan Crowther
-     */
-    private int index;
-
-    /**
      * The base item type value (tval) the artifact is built on.
      *
      * @author Rowan Crowther
@@ -203,7 +196,7 @@ public class Artifact {
      */
     private Random time;
 
-    public Artifact(String name, String text, int index, TValue tValue, String sValue,
+    public Artifact(String name, String text, TValue tValue, String sValue,
                     int toHit, int toDam, int toAC, int ac, String diceString,
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
@@ -213,7 +206,6 @@ public class Artifact {
                     String activationMessage, Random time) {
         this.name = name;
         this.text = text;
-        this.index = index;
         this.tValue = tValue;
         this.sValue = sValue;
         this.toHit = toHit;
@@ -237,64 +229,4 @@ public class Artifact {
         this.activationMessage = activationMessage;
         this.time = time;
     }
-//
-//    /**
-//     * Build an artifact from its parsed data-file fields.
-//     *
-//     * @param name              artifact name
-//     * @param text              flavour text
-//     * @param index             artifact-table index
-//     * @param tValue            base item type value
-//     * @param sValue            base sub-type value
-//     * @param toHit             to-hit bonus
-//     * @param toDam             to-damage bonus
-//     * @param toAC              to-AC bonus
-//     * @param ac                base armour class
-//     * @param diceString        damage dice string
-//     * @param weight            weight
-//     * @param cost              cost
-//     * @param flags             object flags
-//     * @param modifiers         numeric modifiers
-//     * @param brands            brands
-//     * @param slays             slays
-//     * @param curses            curses with instance data
-//     * @param level             native level
-//     * @param allocProb         allocation probability
-//     * @param allocMin          minimum allocation depth
-//     * @param allocMax          maximum allocation depth
-//     * @param activation        activation, if any
-//     * @param activationMessage activation message
-//     * @param time              recharge-time dice string
-//     * @author Rowan Crowther
-//     */
-//    public Artifact(String name, String text, int index, TValue tValue, String sValue, int toHit, int toDam, int toAC,
-//                    int ac, String diceString, int weight, int cost, Flag<ObjectFlag> flags, Map<ObjectModifier,
-//                    Integer> modifiers, List<Brand> brands, List<Slay> slays, Map<Curse, CurseData> curses,
-//                    int level, int allocProb, int allocMin, int allocMax, Activation activation,
-//                    String activationMessage, String time) {
-//        this.name = name;
-//        this.text = text;
-//        this.index = index;
-//        this.tValue = tValue;
-//        this.sValue = sValue;
-//        this.toHit = toHit;
-//        this.toDam = toDam;
-//        this.toAC = toAC;
-//        this.ac = ac;
-//        this.diceString = diceString;
-//        this.weight = weight;
-//        this.cost = cost;
-//        this.flags = flags;
-//        this.modifiers = modifiers;
-//        this.brands = brands;
-//        this.slays = slays;
-//        this.curses = curses;
-//        this.level = level;
-//        this.allocProb = allocProb;
-//        this.allocMin = allocMin;
-//        this.allocMax = allocMax;
-//        this.activation = activation;
-//        this.activationMessage = activationMessage;
-//        this.time = Random.parseStr(time);
-//    }
 }

@@ -49,7 +49,6 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             int line = record.line();
             String name = record.name();
             String text = record.desc();
-            int index = 0;
             String tValStr = record.tValue();
             TValue tVal = null;
             if (!tValStr.isEmpty()) {
@@ -208,7 +207,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                                 "an unknown curse: " + key);
                     } else {
                         int p = power;
-                        curses.computeIfAbsent(curse, c -> new CurseData(p, 0));
+                        if (power > 0)
+                            curses.computeIfAbsent(curse, c -> new CurseData(p, 0));
                     }
                 }
             }
@@ -258,7 +258,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 activation = GameConstants.lookupActivation(record.activation());
                 if (activation == null) {
                     errors.add("Artifact at line: " + line + " has " +
-                            "an unknown activation: " + activation);
+                            "an unknown activation: " + record.activation());
                     continue;
                 }
             }
@@ -273,7 +273,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
-            artifacts.add(new Artifact(name, text, index, tVal, sVal, toh, tod, toa,
+            artifacts.add(new Artifact(name, text, tVal, sVal, toh, tod, toa,
                     baseAC, baseDamageString, weight, cost, flags, modifiers, elInfo,
                     brands, slays, curses, level, commonness, min, max, activation,
                     activationMsg, time));

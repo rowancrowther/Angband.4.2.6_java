@@ -81,6 +81,20 @@ class ObjectBaseReaderTest {
         return new ObjectBaseReader().parseWithResults(tempFile(name, content));
     }
 
+    /**
+     * The bases actually declared by the file, i.e. everything the assembler read from records.
+     *
+     * <p>{@link uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseAssembler} appends one
+     * synthetic {@link TValue#TV_NONE} base to every list it builds, which object_base.txt never
+     * declares — see {@link #syntheticNoneBaseIsAppendedToEveryLoad()}. These tests are about the
+     * records, so they filter it out rather than carry a +1 in every count.
+     */
+    private static List<ObjectBase> declared(ParseResult<ObjectBase> result) {
+        return result.items().stream()
+                .filter(b -> b.gettVal() != TValue.TV_NONE)
+                .toList();
+    }
+
     // ---- Happy path: the real shipped file -------------------------------
 
     @Test
@@ -88,7 +102,30 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = new ObjectBaseReader().parseWithResults(REAL_FILE);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(34, result.items().size(), () -> "loaded: " + result.items().size());
+        assertEquals(34, declared(result).size(), () -> "loaded: " + declared(result).size());
+    }
+
+    /**
+     * C allocates {@code kb_info} across every tval, so a zeroed base exists for {@code TV_NONE}
+     * even though no record declares one. object.txt's four "non-kind" records (&lt;pile&gt;,
+     * &lt;unknown item&gt;, &lt;unknown treasure&gt;, &lt;curse object&gt;) are {@code type:none} and
+     * hang off it; without it they resolve to a null base and registration dies.
+     */
+    @Test
+    void syntheticNoneBaseIsAppendedToEveryLoad() throws IOException {
+        ParseResult<ObjectBase> result = new ObjectBaseReader().parseWithResults(REAL_FILE);
+
+        List<ObjectBase> none = result.items().stream()
+                .filter(b -> b.gettVal() == TValue.TV_NONE)
+                .toList();
+
+        assertEquals(1, none.size(), "exactly one synthetic TV_NONE base");
+        ObjectBase base = none.get(0);
+        assertEquals("none", base.getName());
+        assertEquals(ColourType.COLOUR_TYPE_DARK, base.getAttr(), "C's zeroed attr");
+        assertTrue(base.getElementMap().isEmpty(), "no HATES_ elements");
+        assertEquals(0, base.getBreakPerc());
+        assertEquals(0, base.getMaxStack());
     }
 
     // ---- Minimal record + default folding --------------------------------
@@ -101,8 +138,8 @@ class ObjectBaseReaderTest {
                 load("minimal.txt", withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(1, result.items().size());
-        ObjectBase base = result.items().get(0);
+        assertEquals(1, declared(result).size());
+        ObjectBase base = declared(result).get(0);
         assertEquals(TValue.TV_SWORD, base.gettVal());
         assertEquals(10, base.getBreakPerc(), "break chance should fall back to the default 10");
         assertEquals(40, base.getMaxStack(), "max stack should fall back to the default 40");
@@ -180,7 +217,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("bad-tval.txt",
                 withHeader(1, "name:notatval:Thing~\ngraphics:white\n"));
 
-        assertTrue(result.items().isEmpty());
+        assertTrue(declared(result).isEmpty());
         assertTrue(result.errors().stream().anyMatch(
                         e -> e.contains("invalid TValue") && e.contains("NOTATVAL")),
                 result.errors()::toString);
@@ -191,7 +228,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("bad-flag.txt",
                 withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:NOTAFLAG\n"));
 
-        assertTrue(result.items().isEmpty());
+        assertTrue(declared(result).isEmpty());
         assertTrue(result.errors().stream().anyMatch(
                         e -> e.contains("invalid non-HATES_ flag") && e.contains("NOTAFLAG")),
                 result.errors()::toString);
@@ -202,7 +239,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("bad-hates.txt",
                 withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:HATES_NOTANELEMENT\n"));
 
-        assertTrue(result.items().isEmpty());
+        assertTrue(declared(result).isEmpty());
         assertTrue(result.errors().stream().anyMatch(
                         e -> e.contains("invalid HATES_ flag") && e.contains("HATES_NOTANELEMENT")),
                 result.errors()::toString);
@@ -215,7 +252,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("bad-break.txt",
                 withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nbreak:99999999999999999999\n"));
 
-        assertTrue(result.items().isEmpty());
+        assertTrue(declared(result).isEmpty());
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("invalid break chance")),
                 result.errors()::toString);
     }
@@ -228,7 +265,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("bad-count.txt",
                 withHeader(5, "name:sword:Bladed weapon~\ngraphics:white\n"));
 
-        assertEquals(1, result.items().size());
+        assertEquals(1, declared(result).size());
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
                 result.errors()::toString);
     }
@@ -243,7 +280,7 @@ class ObjectBaseReaderTest {
         ParseResult<ObjectBase> result = load("digit-flag.txt",
                 withHeader(1, "name:sword:Bladed weapon~\ngraphics:white\nflags:SHOW_2\n"));
 
-        assertTrue(result.items().isEmpty());
+        assertTrue(declared(result).isEmpty());
         assertTrue(result.errors().stream().anyMatch(
                         e -> e.contains("invalid non-HATES_ flag") && e.contains("SHOW_2")),
                 result.errors()::toString);

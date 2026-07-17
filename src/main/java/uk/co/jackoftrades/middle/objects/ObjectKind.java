@@ -21,9 +21,11 @@ import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
+import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.ArrayList;
@@ -42,16 +44,6 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class ObjectKind {
-    /**
-     * A curse paired with its per-object {@link CurseData} for an object kind.
-     *
-     * @param curse     the curse
-     * @param curseData its instance data (power/timeout)
-     * @author Rowan Crowther
-     */
-    public record CurseEntry(Curse curse, CurseData curseData) {
-    }
-
     /**
      * The kind's name.
      *
@@ -209,7 +201,7 @@ public class ObjectKind {
      *
      * @author Rowan Crowther
      */
-    private Map<CurseEntry, Boolean> curses;
+    private Map<Curse, CurseEntry> curses;
 
     /**
      * The display glyph and colour.
@@ -487,7 +479,7 @@ public class ObjectKind {
                       Map<ElementEnum, ElementInfo> elInfo,
                       Map<Brand, Boolean> brands,
                       Map<Slay, Boolean> slays,
-                      Map<CurseEntry, Boolean> curses,
+                      Map<Curse, CurseEntry> curses,
                       AngbandDisplayCharacter character,
                       int alloc_prob, int alloc_min,
                       int alloc_max, int level,
@@ -520,9 +512,11 @@ public class ObjectKind {
         this.brands = brands;
         this.slays = slays;
         this.curses = new HashMap<>();
-        for (CurseEntry ce : curses.keySet()) {
-            CurseEntry thisCE = new CurseEntry(ce.curse(), ce.curseData());
-            this.curses.put(thisCE, curses.get(ce));
+        for (Curse curse : curses.keySet()) {
+            CurseEntry ce = curses.get(curse);
+            CurseData cd = new CurseData(ce.curseData().getPower(), ce.curseData().getTimeout());
+            CurseEntry thisCE = new CurseEntry(curse, cd);
+            this.curses.put(curse, thisCE);
         }
         this.character = character;
         this.alloc_prob = alloc_prob;
@@ -546,6 +540,33 @@ public class ObjectKind {
         this.everseen = everseen;
         this.tValue = tValue;
         this.sValueName = stripToRawSval(name);
+    }
+
+    public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
+        this.flags = new Flag<>(ObjectFlag.class);
+        this.kindFlags = base.getKindFlags().copy();
+        this.modifiers = new HashMap<>();
+        this.elInfo = new HashMap<>();
+        this.brands = new HashMap<>();
+        this.slays = new HashMap<>();
+        this.curses = new HashMap<>();
+        this.activations = new ArrayList<>();
+        this.effect = new ArrayList<>();
+        this.sValueName = sValName;
+        this.name = "& " + sValName + "~";
+        this.tValue = base.gettVal();
+        this.level = artifact.getLevel();
+
+        this.kindFlags.on(ObjectKindFlag.KF_INSTA_ART);
+        for (ElementEnum ee : base.getElementMap().keySet()) {
+            ElementInfo oldEi = base.getElementMap().get(ee);
+            ElementInfo newEi = oldEi.copy();
+            this.elInfo.put(ee, newEi);
+        }
+
+        this.character = new AngbandDisplayCharacter('*', AttributeColour.COLOUR_RED);
+
+        this.base = base;
     }
 
     /**
@@ -626,6 +647,18 @@ public class ObjectKind {
         this.cost = cost;
     }
 
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    public List<Activation> getActivations() {
+        return activations;
+    }
+
+    public void setTime(Random time) {
+        this.time = time;
+    }
+
     /**
      * @return the item type value (tval)
      * @author Rowan Crowther
@@ -640,5 +673,17 @@ public class ObjectKind {
      */
     public String getsValueName() {
         return sValueName;
+    }
+
+    public Flag<ObjectKindFlag> getKindFlags() {
+        return kindFlags;
+    }
+
+    public int getKindIndex() {
+        return kindIndex;
+    }
+
+    public void setKindIndex(int kindIndex) {
+        this.kindIndex = kindIndex;
     }
 }

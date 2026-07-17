@@ -22,13 +22,14 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -92,6 +93,16 @@ class ItemObjectReaderTest {
         Object old = f.get(null);
         f.set(null, value);
         return old;
+    }
+
+    /**
+     * Reads a private {@link ObjectKind} field — it exposes no getter for {@code curses}.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T kindField(ObjectKind target, String name) throws Exception {
+        Field f = ObjectKind.class.getDeclaredField(name);
+        f.setAccessible(true);
+        return (T) f.get(target);
     }
 
     // ---- fixture helpers -------------------------------------------------
@@ -201,6 +212,46 @@ class ItemObjectReaderTest {
         assertTrue(result.items().isEmpty());
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown curse")),
                 result.errors()::toString);
+    }
+
+    /**
+     * The curse leg's happy path. C keeps {@code int *curses} on a kind — indexed by curse, value =
+     * power, 0 meaning absent (obj-init.c:2130-2132); the port keys by {@link Curse} and carries the
+     * power in the entry's {@link CurseData}, whose timeout stays 0 because timeout is a property of
+     * a live {@code struct object}, not of a data-file record.
+     *
+     * <p>Until this existed the only curse coverage was the unknown-curse error path, so the map's
+     * shape was untested — {@link #powerZeroCurseIsNotRecorded()} covers the other half.
+     */
+    @Test
+    void curseResolvesToAnEntryKeyedByCurseCarryingItsPower() throws Exception {
+        ParseResult<ObjectKind> result = load("cursed.txt", withHeader(1,
+                obj("cursed blade", HEAD + "curse:teleportation:100\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        Map<Curse, Curse.CurseEntry> curses = kindField(result.items().get(0), "curses");
+
+        assertEquals(1, curses.size());
+        Curse curse = curses.keySet().iterator().next();
+        assertEquals("teleportation", curse.getName());
+        assertEquals(curse, curses.get(curse).curse(), "entry's curse must match its key");
+        assertEquals(100, curses.get(curse).curseData().getPower());
+        assertEquals(0, curses.get(curse).curseData().getTimeout(), "timeout is runtime-only");
+    }
+
+    /**
+     * C: {@code /* Only add if it has power. *}{@code /  if (power > 0)} (obj-init.c:2129-2132). A
+     * zero-power curse line is not an error — the curse is simply not recorded on the kind.
+     */
+    @Test
+    void powerZeroCurseIsNotRecorded() throws Exception {
+        ParseResult<ObjectKind> result = load("zero-curse.txt", withHeader(1,
+                obj("uncursed blade", HEAD + "curse:teleportation:0\n")));
+
+        assertFalse(result.hasErrors(), () -> result.errors().toString());
+        assertEquals(1, result.items().size(), "a zero-power curse is not an error; the kind loads");
+        Map<Curse, Curse.CurseEntry> curses = kindField(result.items().get(0), "curses");
+        assertTrue(curses.isEmpty(), () -> "power 0 must not be recorded, got: " + curses);
     }
 
     @Test

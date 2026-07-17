@@ -26,6 +26,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.*;
+import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ import java.util.Map;
  *       half into a {@code Map<}{@link ElementEnum}{@code ,} {@link ElementInfo}{@code >};</li>
  *   <li>flags split between {@link ObjectFlag} ({@code OF_}) and {@link ObjectKindFlag}
  *       ({@code KF_}); brands/slays/curses resolve against their registries, curses becoming
- *       {@link ObjectKind.CurseEntry}s of {@link CurseData} (power, timeout 0 at kind level);</li>
+ *       {@link Curse.CurseEntry}s of {@link CurseData} (power, timeout 0 at kind level);</li>
  *   <li>base damage dice/sides ({@code dd}/{@code ds}) are derived from the attack {@code hd},
  *       and effects are delegated to {@link EffectAssembler}.</li>
  * </ul>
@@ -332,7 +333,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     slays.put(s, true);
             }
             if (illegalSlay) continue;
-            Map<ObjectKind.CurseEntry, Boolean> curses = new HashMap<>();
+            Map<Curse, CurseEntry> curses = new HashMap<>();
             boolean illegalCurse = false;
             for (String curseName : record.curse().keySet()) {
                 Curse curse = GameConstants.lookupCurse(curseName);
@@ -343,9 +344,11 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 } else {
                     try {
                         int power = Integer.parseInt(record.curse().get(curseName));
-                        CurseData curseData = new CurseData(power, 0);
-                        ObjectKind.CurseEntry curseEntry = new ObjectKind.CurseEntry(curse, curseData);
-                        curses.put(curseEntry, true);
+                        if (power > 0) {
+                            CurseData curseData = new CurseData(power, 0);
+                            CurseEntry curseEntry = new CurseEntry(curse, curseData);
+                            curses.put(curse, curseEntry);
+                        }
                     } catch (NumberFormatException e) {
                         errors.add("Object kind starting at line: " + line + " has " +
                                 "an invalid curse power format: " + record.curse().get(curseName));

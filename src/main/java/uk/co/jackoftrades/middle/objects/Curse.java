@@ -61,6 +61,16 @@ import java.util.Map;
  */
 public class Curse {
     /**
+     * A curse paired with its per-object {@link CurseData} for an object kind.
+     *
+     * @param curse     the curse
+     * @param curseData its instance data (power/timeout)
+     * @author Rowan Crowther
+     */
+    public record CurseEntry(Curse curse, CurseData curseData) {
+    }
+
+    /**
      * The curse's name (C: {@code curse->name}).
      *
      * @author Rowan Crowther

@@ -21,6 +21,7 @@ import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -174,15 +175,26 @@ public class UIEntry {
      * @author Rowan Crowther
      */
     public enum StatElemType {
-        NONE,
+        NONE(""),
         /**
          * The parameter is a player stat (STR, INT, …). @author Rowan Crowther
          */
-        STAT,
+        STAT("stat"),
         /**
          * The parameter is a damage element (fire, cold, …). @author Rowan Crowther
          */
-        ELEMENT
+        ELEMENT("element");
+
+        private final String value;
+
+        StatElemType(String value) {
+            this.value = value;
+        }
+
+        public static StatElemType fromValue(String value) {
+            return Arrays.stream(StatElemType.values()).filter(s -> s.value.equals(value))
+                    .findFirst().orElse(null);
+        }
     }
 
     /**

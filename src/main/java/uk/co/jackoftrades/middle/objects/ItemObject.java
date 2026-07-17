@@ -34,6 +34,7 @@ import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
@@ -54,16 +55,6 @@ import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MI
  * @author Rowan Crowther
  */
 public class ItemObject {
-    /**
-     * A curse paired with its instance data, as carried by a live item.
-     *
-     * @param curse     the curse
-     * @param curseData its instance data (power/timeout)
-     * @author Rowan Crowther
-     */
-    public record CurseEntry(Curse curse, CurseData curseData) {
-    }
-
     /**
      * Logger used to report stack-merge errors.
      *

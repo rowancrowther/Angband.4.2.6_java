@@ -20,19 +20,15 @@ package uk.co.jackoftrades.backend.parser.artifact;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
+import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
+import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.*;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftrades.middle.objects.enums.TValue;
+import uk.co.jackoftrades.middle.objects.enums.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Artifact>> {
     /**
@@ -160,6 +156,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     illegalModifier = true;
                 }
             }
+            for (ElementEnum e : Arrays.stream(ElementEnum.values()).filter(b -> b.isBase())
+                    .toList()) {
+                ElementInfo ei = elInfo.computeIfAbsent(e, k -> new ElementInfo());
+                ei.on(ElementInfoEnum.EL_INFO_IGNORE);
+            }
             if (illegalModifier) continue;
             List<Brand> brands = new ArrayList<>();
             boolean illegalBrand = false;
@@ -188,27 +189,27 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             if (illegalSlay) continue;
             boolean illegalCurses = false;
-            Map<Curse, CurseData> curses = new HashMap<>();
+            Map<Curse, Curse.CurseEntry> curses = new HashMap<>();
             for (String key : record.curse().keySet()) {
-                String value = record.curse().get(key);
                 Curse curse = GameConstants.lookupCurse(key);
-                int power = 0;
-                try {
-                    power = Integer.parseInt(value);
-                } catch (NumberFormatException e) {
+                if (curse == null) {
                     errors.add("Artifact at line: " + line + " has " +
-                            "a malformed curse power: " + value);
+                            "an unknown curse: " + key);
                     illegalCurses = true;
-                }
-                if (!illegalCurses) {
-                    if (curse == null) {
-                        illegalCurses = true;
+                } else {
+                    int power = 0;
+                    CurseData curseData;
+                    String value = record.curse().get(key);
+                    try {
+                        power = Integer.parseInt(value);
+                        if (power > 0) {
+                            curseData = new CurseData(power, 0);
+                            curses.put(curse, new Curse.CurseEntry(curse, curseData));
+                        }
+                    } catch (NumberFormatException e) {
                         errors.add("Artifact at line: " + line + " has " +
-                                "an unknown curse: " + key);
-                    } else {
-                        int p = power;
-                        if (power > 0)
-                            curses.computeIfAbsent(curse, c -> new CurseData(p, 0));
+                                "a malformed curse power: " + value);
+                        illegalCurses = true;
                     }
                 }
             }
@@ -273,10 +274,59 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
-            artifacts.add(new Artifact(name, text, tVal, sVal, toh, tod, toa,
+            ObjectBase objectBase = GameConstants.getBaseFromTVal(tVal);
+            if (objectBase == null) {
+                errors.add("Artifact at line: " + line + " has " +
+                        "an unknown object type: " + tVal);
+                continue;
+            }
+
+            ObjectKind objectKind = GameConstants.lookupObjectKind(tVal, sVal);
+
+            boolean specialLight = (objectKind == null && tVal == TValue.TV_LIGHT);
+
+            Activation artActivation = activation;
+            Random artTime = time;
+            Activation kindActivation = null;
+            Random kindTime = null;
+
+            if (specialLight) {
+                kindTime = artTime;
+                artTime = null;
+                kindActivation = artActivation;
+                artActivation = null;
+            }
+
+            Artifact artifact = new Artifact(name, text, tVal, sVal, toh, tod, toa,
                     baseAC, baseDamageString, weight, cost, flags, modifiers, elInfo,
-                    brands, slays, curses, level, commonness, min, max, activation,
-                    activationMsg, time));
+                    brands, slays, curses, level, commonness, min, max, artActivation,
+                    activationMsg, artTime);
+
+            if (objectKind == null) {
+                objectKind = new ObjectKind(artifact, sVal, objectBase);
+                GameConstants.addObjectKind(objectKind);
+                if (objectKind.getKindIndex() >= GameConstants.getObjectBaseKindMax()) {
+                    objectKind.setWeight(weight);
+                    objectKind.setCost(cost);
+                }
+
+                if (kindActivation != null) {
+                    List<Activation> kindActivations = objectKind.getActivations();
+                    kindActivations.add(kindActivation);
+                }
+
+                if (kindTime != null) {
+                    objectKind.setTime(kindTime);
+                }
+            }
+
+            if (!record.glyph().isEmpty()) {
+                if (objectKind.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART)) {
+                    objectKind.setCharacter(new AngbandDisplayCharacter(record.glyph().charAt(0), record.colour()));
+                }
+            }
+
+            artifacts.add(artifact);
         }
 
         return artifacts;

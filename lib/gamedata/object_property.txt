@@ -32,6 +32,8 @@
 #         to more than one user interface element.
 # desc: an extra piece of descriptive text used in object information
 
+record-count:79
+
 name:strength
 type:stat
 code:STR

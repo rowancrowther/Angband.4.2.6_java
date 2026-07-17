@@ -148,7 +148,7 @@ public class Artifact {
      *
      * @author Rowan Crowther
      */
-    private Map<Curse, CurseData> curses;
+    private Map<Curse, Curse.CurseEntry> curses;
 
     /**
      * The artifact's native level.
@@ -201,7 +201,7 @@ public class Artifact {
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
                     Map<ElementEnum, ElementInfo> elInfo, List<Brand> brands,
-                    List<Slay> slays, Map<Curse, CurseData> curses, int level,
+                    List<Slay> slays, Map<Curse, Curse.CurseEntry> curses, int level,
                     int allocProb, int allocMin, int allocMax, Activation activation,
                     String activationMessage, Random time) {
         this.name = name;
@@ -228,5 +228,101 @@ public class Artifact {
         this.activation = activation;
         this.activationMessage = activationMessage;
         this.time = time;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    public TValue gettValue() {
+        return tValue;
+    }
+
+    public String getsValue() {
+        return sValue;
+    }
+
+    public int getToHit() {
+        return toHit;
+    }
+
+    public int getToDam() {
+        return toDam;
+    }
+
+    public int getToAC() {
+        return toAC;
+    }
+
+    public int getAc() {
+        return ac;
+    }
+
+    public String getDiceString() {
+        return diceString;
+    }
+
+    public int getWeight() {
+        return weight;
+    }
+
+    public int getCost() {
+        return cost;
+    }
+
+    public Flag<ObjectFlag> getFlags() {
+        return flags;
+    }
+
+    public Map<ObjectModifier, Integer> getModifiers() {
+        return modifiers;
+    }
+
+    public Map<ElementEnum, ElementInfo> getElInfo() {
+        return elInfo;
+    }
+
+    public List<Brand> getBrands() {
+        return brands;
+    }
+
+    public List<Slay> getSlays() {
+        return slays;
+    }
+
+    public Map<Curse, Curse.CurseEntry> getCurses() {
+        return curses;
+    }
+
+    public int getLevel() {
+        return level;
+    }
+
+    public int getAllocProb() {
+        return allocProb;
+    }
+
+    public int getAllocMin() {
+        return allocMin;
+    }
+
+    public int getAllocMax() {
+        return allocMax;
+    }
+
+    public Activation getActivation() {
+        return activation;
+    }
+
+    public String getActivationMessage() {
+        return activationMessage;
+    }
+
+    public Random getTime() {
+        return time;
     }
 }

@@ -659,6 +659,7 @@ public class GameConstants {
         int sVal = base.getNumSvals() + 1;      // svals are 1-based within each base
         base.setNumSvals(sVal);
         toAdd.setsVal(sVal);
+        toAdd.setKindIndex(objectKinds.size());
         objectKinds.add(toAdd);
         kindsByTvalSval
                 .computeIfAbsent(toAdd.gettValue(), k -> new HashMap<>())
@@ -1325,7 +1326,7 @@ public class GameConstants {
     /**
      * Load in the items from object.txt and store them in a List
      */
-    private static void loadItemObjects() {
+    private static void loadItemObjects() throws IOException {
         ItemObjectReader parser = new ItemObjectReader();
         String filename = ANGBAND_DIR_GAMEDATA + "object.txt";
 
@@ -1343,9 +1344,14 @@ public class GameConstants {
                 addObjectKind(kind);
             }
             objectBaseKindMax = objectKinds.size();
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
+    }
+
+    public static int getObjectKindCount() {
+        return objectKinds.size();
     }
 
     /**

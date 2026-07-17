@@ -100,17 +100,12 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                 }
             }
             String name = record.name();
-            UIEntry.StatElemType statElemType = switch (record.parameter()) {
-                case "stat" -> UIEntry.StatElemType.STAT;
-                case "element" -> UIEntry.StatElemType.ELEMENT;
-                case "" -> UIEntry.StatElemType.NONE;
-                default -> {
-                    errors.add("Block starting on line: " + line +
-                            " has illegal parameter kind: " + record.parameter());
-                    yield null;
-                }
-            };
-            if (statElemType == null) continue;
+            UIEntry.StatElemType statElemType = UIEntry.StatElemType.fromValue(record.parameter());
+            if (statElemType == null) {
+                errors.add("Block starting on line: " + line +
+                        " has illegal parameter kind: " + record.parameter());
+                continue;
+            }
             String rendStr = record.renderer();
             UIEntryRenderer renderer;
             if (!rendStr.isEmpty()) {

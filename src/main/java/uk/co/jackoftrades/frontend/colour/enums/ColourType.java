@@ -275,6 +275,10 @@ public enum ColourType {
      * @return The Colour Type which has colourName for a name, or COLOUR_TYPE_DARK if there is no matching colour type
      */
     public static ColourType getColourType(String colourName) {
+        if (colourName.length() == 1) {
+            return ColourType.findColourType(colourName.charAt(0));
+        }
+
         String upperColourName = colourName.toUpperCase();
         for (ColourType colourType : ColourType.values()) {
             if (upperColourName.equals(colourType.getColourName().toUpperCase())) {

@@ -14,29 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerTimed.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.playertimed;
-
+// Generated from PlayerTimedGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.playertimed;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link PlayerTimedListener},
+ * This class provides an empty implementation of {@link PlayerTimedGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class PlayerTimedBaseListener implements PlayerTimedListener {
+public class PlayerTimedGrammarBaseListener implements PlayerTimedGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(PlayerTimedParser.NameContext ctx) {
+    public void enterRecordCount(PlayerTimedGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(PlayerTimedParser.NameContext ctx) {
+    public void exitRecordCount(PlayerTimedGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(PlayerTimedParser.DescContext ctx) {
+    public void enterName(PlayerTimedGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(PlayerTimedParser.DescContext ctx) {
+    public void exitName(PlayerTimedGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterGrade(PlayerTimedParser.GradeContext ctx) {
+    public void enterDesc(PlayerTimedGrammar.DescContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitGrade(PlayerTimedParser.GradeContext ctx) {
+    public void exitDesc(PlayerTimedGrammar.DescContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterOnEnd(PlayerTimedParser.OnEndContext ctx) {
+    public void enterGrade(PlayerTimedGrammar.GradeContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitOnEnd(PlayerTimedParser.OnEndContext ctx) {
+    public void exitGrade(PlayerTimedGrammar.GradeContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterOnIncrease(PlayerTimedParser.OnIncreaseContext ctx) {
+    public void enterOnEnd(PlayerTimedGrammar.OnEndContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitOnIncrease(PlayerTimedParser.OnIncreaseContext ctx) {
+    public void exitOnEnd(PlayerTimedGrammar.OnEndContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterOnDecrease(PlayerTimedParser.OnDecreaseContext ctx) {
+    public void enterOnIncrease(PlayerTimedGrammar.OnIncreaseContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitOnDecrease(PlayerTimedParser.OnDecreaseContext ctx) {
+    public void exitOnIncrease(PlayerTimedGrammar.OnIncreaseContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsgt(PlayerTimedParser.MsgtContext ctx) {
+    public void enterOnDecrease(PlayerTimedGrammar.OnDecreaseContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsgt(PlayerTimedParser.MsgtContext ctx) {
+    public void exitOnDecrease(PlayerTimedGrammar.OnDecreaseContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFail(PlayerTimedParser.FailContext ctx) {
+    public void enterMsgt(PlayerTimedGrammar.MsgtContext ctx) {
     }
 
     /**
@@ -171,7 +169,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFail(PlayerTimedParser.FailContext ctx) {
+    public void exitMsgt(PlayerTimedGrammar.MsgtContext ctx) {
     }
 
     /**
@@ -180,7 +178,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterOnBeginEffect(PlayerTimedParser.OnBeginEffectContext ctx) {
+    public void enterFail(PlayerTimedGrammar.FailContext ctx) {
     }
 
     /**
@@ -189,7 +187,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitOnBeginEffect(PlayerTimedParser.OnBeginEffectContext ctx) {
+    public void exitFail(PlayerTimedGrammar.FailContext ctx) {
     }
 
     /**
@@ -198,7 +196,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterOnEndEffect(PlayerTimedParser.OnEndEffectContext ctx) {
+    public void enterOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx) {
     }
 
     /**
@@ -207,7 +205,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitOnEndEffect(PlayerTimedParser.OnEndEffectContext ctx) {
+    public void exitOnBeginEffect(PlayerTimedGrammar.OnBeginEffectContext ctx) {
     }
 
     /**
@@ -216,7 +214,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectYX(PlayerTimedParser.EffectYXContext ctx) {
+    public void enterOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx) {
     }
 
     /**
@@ -225,7 +223,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectYX(PlayerTimedParser.EffectYXContext ctx) {
+    public void exitOnEndEffectBlock(PlayerTimedGrammar.OnEndEffectBlockContext ctx) {
     }
 
     /**
@@ -234,7 +232,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectDice(PlayerTimedParser.EffectDiceContext ctx) {
+    public void enterResist(PlayerTimedGrammar.ResistContext ctx) {
     }
 
     /**
@@ -243,7 +241,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectDice(PlayerTimedParser.EffectDiceContext ctx) {
+    public void exitResist(PlayerTimedGrammar.ResistContext ctx) {
     }
 
     /**
@@ -252,7 +250,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterEffectMsg(PlayerTimedParser.EffectMsgContext ctx) {
+    public void enterBrand(PlayerTimedGrammar.BrandContext ctx) {
     }
 
     /**
@@ -261,7 +259,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEffectMsg(PlayerTimedParser.EffectMsgContext ctx) {
+    public void exitBrand(PlayerTimedGrammar.BrandContext ctx) {
     }
 
     /**
@@ -270,7 +268,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterResist(PlayerTimedParser.ResistContext ctx) {
+    public void enterSlay(PlayerTimedGrammar.SlayContext ctx) {
     }
 
     /**
@@ -279,7 +277,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitResist(PlayerTimedParser.ResistContext ctx) {
+    public void exitSlay(PlayerTimedGrammar.SlayContext ctx) {
     }
 
     /**
@@ -288,7 +286,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBrand(PlayerTimedParser.BrandContext ctx) {
+    public void enterFlagSynonym(PlayerTimedGrammar.FlagSynonymContext ctx) {
     }
 
     /**
@@ -297,7 +295,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBrand(PlayerTimedParser.BrandContext ctx) {
+    public void exitFlagSynonym(PlayerTimedGrammar.FlagSynonymContext ctx) {
     }
 
     /**
@@ -306,7 +304,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSlay(PlayerTimedParser.SlayContext ctx) {
+    public void enterLowerBound(PlayerTimedGrammar.LowerBoundContext ctx) {
     }
 
     /**
@@ -315,7 +313,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSlay(PlayerTimedParser.SlayContext ctx) {
+    public void exitLowerBound(PlayerTimedGrammar.LowerBoundContext ctx) {
     }
 
     /**
@@ -324,7 +322,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlagSynonym(PlayerTimedParser.FlagSynonymContext ctx) {
+    public void enterFlags(PlayerTimedGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -333,7 +331,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlagSynonym(PlayerTimedParser.FlagSynonymContext ctx) {
+    public void exitFlags(PlayerTimedGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -342,7 +340,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLowerBound(PlayerTimedParser.LowerBoundContext ctx) {
+    public void enterPlayerTimed(PlayerTimedGrammar.PlayerTimedContext ctx) {
     }
 
     /**
@@ -351,7 +349,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLowerBound(PlayerTimedParser.LowerBoundContext ctx) {
+    public void exitPlayerTimed(PlayerTimedGrammar.PlayerTimedContext ctx) {
     }
 
     /**
@@ -360,7 +358,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlags(PlayerTimedParser.FlagsContext ctx) {
+    public void enterFile(PlayerTimedGrammar.FileContext ctx) {
     }
 
     /**
@@ -369,7 +367,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlags(PlayerTimedParser.FlagsContext ctx) {
+    public void exitFile(PlayerTimedGrammar.FileContext ctx) {
     }
 
     /**
@@ -378,7 +376,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlayerTimed(PlayerTimedParser.PlayerTimedContext ctx) {
+    public void enterEveryRule(ParserRuleContext ctx) {
     }
 
     /**
@@ -387,7 +385,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlayerTimed(PlayerTimedParser.PlayerTimedContext ctx) {
+    public void exitEveryRule(ParserRuleContext ctx) {
     }
 
     /**
@@ -396,7 +394,7 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(PlayerTimedParser.FileContext ctx) {
+    public void visitTerminal(TerminalNode node) {
     }
 
     /**
@@ -405,31 +403,6 @@ public class PlayerTimedBaseListener implements PlayerTimedListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(PlayerTimedParser.FileContext ctx) {
+    public void visitErrorNode(ErrorNode node) {
     }
-
-    /**
-     * {@inheritDoc}
-     *
-     * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
 }

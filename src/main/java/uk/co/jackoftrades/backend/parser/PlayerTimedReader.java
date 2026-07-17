@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.playertimed.PlayerTimedLexer;
-import uk.co.jackoftrades.backend.parser.playertimed.PlayerTimedParser;
+import uk.co.jackoftrades.backend.parser.grammars.playertimed.PlayerTimedGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.playertimed.PlayerTimedLexer;
+import uk.co.jackoftrades.backend.parser.playertimed.PlayerTimedAssembler;
+import uk.co.jackoftrades.backend.parser.playertimed.PlayerTimedParseRecord;
 import uk.co.jackoftrades.middle.player.PlayerTimedEffect;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,28 @@ public class PlayerTimedReader implements Reader<PlayerTimedEffect> {
      */
     @Override
     public @NotNull List<PlayerTimedEffect> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            PlayerTimedLexer lexer = new PlayerTimedLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            PlayerTimedParser parser = new PlayerTimedParser(tokens);
-            PlayerTimedParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.effects;
-        } catch (Exception e) {
-            logger.error("Error while loading {}", filename, e);
-            throw e;
-        }
+    public ParseResult<PlayerTimedEffect> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerTimedLexer::new,
+                PlayerTimedGrammar::new,
+                PlayerTimedReader::extract,
+                new PlayerTimedAssembler(), logger);
+    }
+
+    private static List<PlayerTimedParseRecord> extract(
+            @NotNull PlayerTimedGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) throws IOException {
+        PlayerTimedGrammar.FileContext output = parser.file();
+        List<PlayerTimedParseRecord> records = output.results;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

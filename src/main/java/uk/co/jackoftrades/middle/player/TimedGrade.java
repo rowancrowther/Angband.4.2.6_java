@@ -36,57 +36,10 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
  *
  * @author Rowan Crowther
  */
-public class TimedGrade {
-    /**
-     * This grade's ordinal within its effect; assigned by the parser after construction (see {@link #setGrade}).
-     */
-    private int grade;
-    /** Colour used to render this grade's label. */
-    private ColourType colour;
-    /** Upper bound of the effect value covered by this grade (C: {@code timed_grade.max}). */
-    int max;
-    /** Display name of this grade, e.g. {@code "heavy stun"}. */
-    String name;
-    /** Message shown when the player worsens <em>into</em> this grade. */
-    String upMsg;
-    /** Message shown when the player improves <em>out of</em> this grade. */
-    String downMsg;
-
-    /**
-     * Creates a grade band for a timed effect.
-     *
-     * @param grade   the grade ordinal (the parser passes a placeholder here — see field note)
-     * @param colour  display colour for the label
-     * @param max     upper bound of the effect value this grade covers
-     * @param name    display name
-     * @param upMsg   message on worsening into this grade
-     * @param downMsg message on improving out of this grade
-     */
-    public TimedGrade(int grade, ColourType colour, int max, String name, String upMsg, String downMsg) {
-        this.grade = grade; // handled in the parser, hard coded to 0 in the parser when read in.
-        this.colour = colour;
-        this.max = max;
-        this.name = name;
-        this.upMsg = upMsg;
-        this.downMsg = downMsg;
-    }
-
-    /**
-     * @return this grade's ordinal within its effect
-     */
-    public int getGrade() {
-        return grade;
-    }
-
-    /**
-     * Assigns this grade's ordinal.
-     *
-     * <p>Used by the parser, which constructs each grade with a placeholder {@code 0} and then
-     * sets the real sequential index once the grade's position in the effect is known.
-     *
-     * @param grade the ordinal to assign
-     */
-    public void setGrade(int grade) {
-        this.grade = grade;
-    }
+public record TimedGrade(int Grade,
+                         ColourType colour,
+                         int max,
+                         String status,
+                         String upMsg,
+                         String downMsg) {
 }

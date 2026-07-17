@@ -76,13 +76,15 @@ public class PlayerTimedEffect {
     /** Effect fired when the status ends. */
     private Effect onEndEffect;
     /** Whether re-applying the status refuses to stack with an existing instance. */
-    private boolean NonStacking;
+    private boolean nonStacking;
     /** Minimum value the status can be reduced to while still active. */
     private int lowerBound;
     /** Object flag whose presence duplicates/implies this status (C: object-flag duplicate). */
-    private int ofFlagDup;
-    /** Object flag treated as synonymous with this status. */
     private ObjectFlag oFlagSyn;
+    /**
+     * Object flag treated as synonymous with this status.
+     */
+    private boolean oFlagExactlySyn;
     /** Element temporarily resisted while the status is active. */
     private ElementEnum tempResist;
     /** Brand temporarily added to the player's attacks while the status is active. */
@@ -107,13 +109,15 @@ public class PlayerTimedEffect {
      * @param grade         ordered severity bands
      * @param onBeginEffect effect fired on begin
      * @param onEndEffect   effect fired on end
-     * @param nonStacking   whether re-application refuses to stack
-     * @param lowerBound    minimum value while active
-     * @param ofFlagDup     duplicating object flag
-     * @param oFlagSyn      synonymous object flag
-     * @param tempResist    element temporarily resisted
-     * @param tempBrand     brand temporarily granted
-     * @param tempSlay      slay temporarily granted
+     * @param nonStacking     whether re-application refuses to stack
+     * @param lowerBound      minimum value while active
+     * @param oFlagSyn        the object flag this status duplicates (C {@code oflag_dup}); despite the
+     *                        parameter name it populates {@link #oFlagSyn}
+     * @param oFlagExactlySyn whether the status is an <em>exact</em> synonym of that flag (C
+     *                        {@code oflag_syn}); populates {@link #oFlagExactlySyn}
+     * @param tempResist      element temporarily resisted
+     * @param tempBrand       brand temporarily granted
+     * @param tempSlay        slay temporarily granted
      */
     public PlayerTimedEffect(TimedEffect name, String description,
                              String onEnd, String onIncrease,
@@ -121,7 +125,8 @@ public class PlayerTimedEffect {
                              List<TimedFailure> fail, List<TimedGrade> grade,
                              Effect onBeginEffect, Effect onEndEffect,
                              boolean nonStacking, int lowerBound,
-                             int ofFlagDup, ObjectFlag oFlagSyn,
+                             ObjectFlag oFlagSyn,
+                             boolean oFlagExactlySyn,
                              ElementEnum tempResist, Brand tempBrand,
                              Slay tempSlay) {
         this.name = name;
@@ -134,12 +139,145 @@ public class PlayerTimedEffect {
         this.grade = grade;
         this.onBeginEffect = onBeginEffect;
         this.onEndEffect = onEndEffect;
-        NonStacking = nonStacking;
+        this.nonStacking = nonStacking;
         this.lowerBound = lowerBound;
-        this.ofFlagDup = ofFlagDup;
         this.oFlagSyn = oFlagSyn;
+        this.oFlagExactlySyn = oFlagExactlySyn;
         this.tempResist = tempResist;
         this.tempBrand = tempBrand;
         this.tempSlay = tempSlay;
+    }
+
+    /**
+     * @return the {@link TimedEffect} identity this record defines
+     */
+    public TimedEffect getName() {
+        return name;
+    }
+
+    /**
+     * @return the packed {@code PR_*} redraw flags to raise on a change
+     */
+    public int getFlagRedraw() {
+        return flagRedraw;
+    }
+
+    /**
+     * @return the packed {@code PU_*} update flags to raise on a change
+     */
+    public int getFlagUpdate() {
+        return flagUpdate;
+    }
+
+    /**
+     * @return the human-readable description of the status
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @return the message shown when the status ends
+     */
+    public String getOnEnd() {
+        return onEnd;
+    }
+
+    /**
+     * @return the message shown when the status's level rises
+     */
+    public String getOnIncrease() {
+        return onIncrease;
+    }
+
+    /**
+     * @return the message shown when the status's level falls
+     */
+    public String getOnDecrease() {
+        return onDecrease;
+    }
+
+    /**
+     * @return the message channel used for the change messages
+     */
+    public MessageType getMsgT() {
+        return msgT;
+    }
+
+    /**
+     * @return the conditions under which the status fails to apply
+     */
+    public List<TimedFailure> getFail() {
+        return fail;
+    }
+
+    /**
+     * @return the ordered severity grades of the status
+     */
+    public List<TimedGrade> getGrade() {
+        return grade;
+    }
+
+    /**
+     * @return the effect fired when the status begins, or null if none
+     */
+    public Effect getOnBeginEffect() {
+        return onBeginEffect;
+    }
+
+    /**
+     * @return the effect fired when the status ends, or null if none
+     */
+    public Effect getOnEndEffect() {
+        return onEndEffect;
+    }
+
+    /**
+     * @return whether re-applying the status refuses to stack
+     */
+    public boolean isNonStacking() {
+        return nonStacking;
+    }
+
+    /**
+     * @return the minimum value the status can be reduced to while active
+     */
+    public int getLowerBound() {
+        return lowerBound;
+    }
+
+    /**
+     * @return the object flag this status duplicates (C {@code oflag_dup})
+     */
+    public ObjectFlag getoFlagSyn() {
+        return oFlagSyn;
+    }
+
+    /**
+     * @return whether the status is an exact synonym of {@link #getoFlagSyn()} (C {@code oflag_syn})
+     */
+    public boolean isoFlagExactlySyn() {
+        return oFlagExactlySyn;
+    }
+
+    /**
+     * @return the element temporarily resisted while active, or {@code ELEM_NONE}
+     */
+    public ElementEnum getTempResist() {
+        return tempResist;
+    }
+
+    /**
+     * @return the brand temporarily granted while active, or null
+     */
+    public Brand getTempBrand() {
+        return tempBrand;
+    }
+
+    /**
+     * @return the slay temporarily granted while active, or null
+     */
+    public Slay getTempSlay() {
+        return tempSlay;
     }
 }

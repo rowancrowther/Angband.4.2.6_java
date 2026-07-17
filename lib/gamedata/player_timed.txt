@@ -188,6 +188,8 @@
 #             monster's attack inflicting that status is resisted solely
 #             because the character is already subject to the timed effect)
 
+record-count:53
+
 name:FAST
 desc:haste
 grade:G:10000:Haste:You feel yourself moving faster!

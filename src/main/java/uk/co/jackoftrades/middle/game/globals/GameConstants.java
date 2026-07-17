@@ -875,7 +875,7 @@ public class GameConstants {
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
             loadObjectProperties();     // Dependent on UIEntry
-//            loadPlayerTimedProperties();
+            loadPlayerTimedProperties();
 //            loadBlowMethods();
 //            loadBlowEffects();
 //            loadMonsterSpellTypes();
@@ -1048,7 +1048,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "player_timed.txt";
 
         try {
-            playerTimedEffects = parser.parse(filename);
+            ParseResult<PlayerTimedEffect> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            playerTimedEffects = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

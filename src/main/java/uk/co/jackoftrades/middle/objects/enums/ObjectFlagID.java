@@ -17,10 +17,21 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+import java.util.Arrays;
+
 /**
  * How an object flag becomes known to the player — never, by normal use, after a
  * timed delay, or immediately on wielding. Mirrors the C original's
- * {@code OFID_*} identification categories ({@code src/object.h}).
+ * {@code OFID_*} identification categories ({@code enum object_flag_id} in
+ * {@code src/obj-properties.h}). {@code OFID_NONE} is the zero placeholder a data
+ * file cannot name; unlike {@link ObjectFlagType} there is no {@code OFID_MAX}.
+ *
+ * <p>The string beside each constant is the exact {@code id-type:} token used in
+ * {@code object_property.txt}, matched by {@link #getFlagID}; these mirror the
+ * {@code streq} chain in C's {@code parse_object_property_id_type}
+ * ({@code obj-init.c}). {@code on effect} → {@link #OFID_NORMAL} is the one
+ * mapping that shares nothing with the constant name, so it cannot be derived.
+ * {@code id-type:} is only ever set on {@code type:flag} properties.
  *
  * @author Rowan Crowther
  */
@@ -28,13 +39,52 @@ public enum ObjectFlagID {
     /**
      * The flag is never identified this way. @author Rowan Crowther
      */
-    OFID_NONE,
+    OFID_NONE(""),
     /**
      * Identified through normal use. @author Rowan Crowther
      */
-    OFID_NORMAL,
+    OFID_NORMAL("on effect"),
     /** Identified after a timed delay of use. @author Rowan Crowther */
-    OFID_TIMED,
+    OFID_TIMED("timed"),
     /** Identified immediately on wielding. @author Rowan Crowther */
-    OFID_WIELD
+    OFID_WIELD("on wield");
+
+    /**
+     * The {@code id-type:} token this constant is written as in the data file.
+     *
+     * @author Rowan Crowther
+     */
+    private final String idMethod;
+
+    /**
+     * Bind an identification category to its data-file token.
+     *
+     * @param idMethod the {@code id-type:} token
+     * @author Rowan Crowther
+     */
+    private ObjectFlagID(String idMethod) {
+        this.idMethod = idMethod;
+    }
+
+    /**
+     * @return the {@code id-type:} token for this category
+     * @author Rowan Crowther
+     */
+    public String getIdMethod() {
+        return this.idMethod;
+    }
+
+    /**
+     * Resolve a data-file {@code id-type:} token to its category. Case-sensitive and
+     * exact, mirroring C's {@code streq} dispatch.
+     *
+     * @param idMethod the token from {@code object_property.txt}
+     * @return the matching category, or {@code null} if the token is unrecognised
+     * (C returns {@code PARSE_ERROR_INVALID_ID_TYPE})
+     * @author Rowan Crowther
+     */
+    public static ObjectFlagID getFlagID(String idMethod) {
+        return Arrays.stream(values()).filter(o -> o.getIdMethod().equals(idMethod))
+                .findFirst().orElse(null);
+    }
 }

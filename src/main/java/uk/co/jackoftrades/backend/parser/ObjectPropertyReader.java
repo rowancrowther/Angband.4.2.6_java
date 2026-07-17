@@ -17,14 +17,13 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.objectproperty.ObjectPropertyLexer;
-import uk.co.jackoftrades.backend.parser.objectproperty.ObjectPropertyParser;
+import uk.co.jackoftrades.backend.parser.grammars.objectproperty.ObjectPropertyGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.objectproperty.ObjectPropertyLexer;
+import uk.co.jackoftrades.backend.parser.objectproperty.ObjectPropertyAssembler;
+import uk.co.jackoftrades.backend.parser.objectproperty.ObjectPropertyParseRecord;
 import uk.co.jackoftrades.middle.objects.ObjectProperty;
 
 import java.io.IOException;
@@ -54,16 +53,28 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
      */
     @Override
     public @NotNull List<ObjectProperty> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream input = CharStreams.fromFileName(filename);
-            ObjectPropertyLexer lexer = new ObjectPropertyLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            ObjectPropertyParser parser = new ObjectPropertyParser(tokens);
-            ObjectPropertyParser.FileContext output = parser.file();
-            return output.properties;
-        } catch (Exception ex) {
-            logger.error("Error while loading file {}", filename, ex);
-            throw ex;
-        }
+        return parseWithResults(filename).items();
+    }
+
+    public @NotNull ParseResult<ObjectProperty> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ObjectPropertyLexer::new,
+                ObjectPropertyGrammar::new,
+                ObjectPropertyReader::extract,
+                new ObjectPropertyAssembler(), logger);
+    }
+
+    private static List<ObjectPropertyParseRecord> extract(
+            @NotNull ObjectPropertyGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        ObjectPropertyGrammar.FileContext output = parser.file();
+        List<ObjectPropertyParseRecord> result = output.properties;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
+
+        return result;
     }
 }

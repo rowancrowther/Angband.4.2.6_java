@@ -874,7 +874,7 @@ public class GameConstants {
             loadMagicRealms();
             loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
-//            loadObjectProperties();     // Dependent on UIEntry
+            loadObjectProperties();     // Dependent on UIEntry
 //            loadPlayerTimedProperties();
 //            loadBlowMethods();
 //            loadBlowEffects();
@@ -1059,7 +1059,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "object_property.txt";
 
         try {
-            objectProperties = parser.parse(filename);
+            ParseResult<ObjectProperty> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            objectProperties = result.items();
+            objectPropertyMax = objectProperties.size();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -1079,7 +1089,7 @@ public class GameConstants {
                 return;
             }
 
-
+            artifacts = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

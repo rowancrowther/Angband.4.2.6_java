@@ -128,7 +128,6 @@ public enum TValue {
      * Amor fashioned from dragon scale
      */
     TV_DRAGON_ARMOR("dragon armor"),
-    TV_DRAG_ARMOR("dragon armor"),
 
     /**
      * A form of light, such as torches or an oil lamp
@@ -323,7 +322,7 @@ public enum TValue {
 
     public boolean isBodyArmour() {
         return switch (this) {
-            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR -> true;
+            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR -> true;
             default -> false;
         };
     }
@@ -382,7 +381,7 @@ public enum TValue {
 
     public boolean isArmour() {
         return switch (this) {
-            case TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
+            case TV_DRAGON_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
                  TV_CLOAK, TV_CROWN, TV_HELM, TV_BOOTS, TV_GLOVES -> true;
             default -> false;
         };
@@ -399,7 +398,7 @@ public enum TValue {
         return switch (this) {
             case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }
@@ -408,7 +407,7 @@ public enum TValue {
         return switch (this) {
             case TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }

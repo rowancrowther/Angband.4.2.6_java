@@ -14,29 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectProperty.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.objectproperty;
-
+// Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.objectproperty;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link ObjectPropertyListener},
+ * This class provides an empty implementation of {@link ObjectPropertyGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ObjectPropertyBaseListener implements ObjectPropertyListener {
+public class ObjectPropertyGrammarBaseListener implements ObjectPropertyGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(ObjectPropertyParser.NameContext ctx) {
+    public void enterRecordCount(ObjectPropertyGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(ObjectPropertyParser.NameContext ctx) {
+    public void exitRecordCount(ObjectPropertyGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterType(ObjectPropertyParser.TypeContext ctx) {
+    public void enterName(ObjectPropertyGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitType(ObjectPropertyParser.TypeContext ctx) {
+    public void exitName(ObjectPropertyGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSubType(ObjectPropertyParser.SubTypeContext ctx) {
+    public void enterType(ObjectPropertyGrammar.TypeContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSubType(ObjectPropertyParser.SubTypeContext ctx) {
+    public void exitType(ObjectPropertyGrammar.TypeContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterIdType(ObjectPropertyParser.IdTypeContext ctx) {
+    public void enterSubtype(ObjectPropertyGrammar.SubtypeContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitIdType(ObjectPropertyParser.IdTypeContext ctx) {
+    public void exitSubtype(ObjectPropertyGrammar.SubtypeContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCode(ObjectPropertyParser.CodeContext ctx) {
+    public void enterIdType(ObjectPropertyGrammar.IdTypeContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCode(ObjectPropertyParser.CodeContext ctx) {
+    public void exitIdType(ObjectPropertyGrammar.IdTypeContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPower(ObjectPropertyParser.PowerContext ctx) {
+    public void enterCodeVal(ObjectPropertyGrammar.CodeValContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPower(ObjectPropertyParser.PowerContext ctx) {
+    public void exitCodeVal(ObjectPropertyGrammar.CodeValContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMult(ObjectPropertyParser.MultContext ctx) {
+    public void enterPower(ObjectPropertyGrammar.PowerContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMult(ObjectPropertyParser.MultContext ctx) {
+    public void exitPower(ObjectPropertyGrammar.PowerContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterTypeMult(ObjectPropertyParser.TypeMultContext ctx) {
+    public void enterMult(ObjectPropertyGrammar.MultContext ctx) {
     }
 
     /**
@@ -171,7 +169,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitTypeMult(ObjectPropertyParser.TypeMultContext ctx) {
+    public void exitMult(ObjectPropertyGrammar.MultContext ctx) {
     }
 
     /**
@@ -180,7 +178,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAdjective(ObjectPropertyParser.AdjectiveContext ctx) {
+    public void enterTypeMult(ObjectPropertyGrammar.TypeMultContext ctx) {
     }
 
     /**
@@ -189,7 +187,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAdjective(ObjectPropertyParser.AdjectiveContext ctx) {
+    public void exitTypeMult(ObjectPropertyGrammar.TypeMultContext ctx) {
     }
 
     /**
@@ -198,7 +196,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterNegAdjective(ObjectPropertyParser.NegAdjectiveContext ctx) {
+    public void enterAdjective(ObjectPropertyGrammar.AdjectiveContext ctx) {
     }
 
     /**
@@ -207,7 +205,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitNegAdjective(ObjectPropertyParser.NegAdjectiveContext ctx) {
+    public void exitAdjective(ObjectPropertyGrammar.AdjectiveContext ctx) {
     }
 
     /**
@@ -216,7 +214,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsg(ObjectPropertyParser.MsgContext ctx) {
+    public void enterNegAdjective(ObjectPropertyGrammar.NegAdjectiveContext ctx) {
     }
 
     /**
@@ -225,7 +223,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsg(ObjectPropertyParser.MsgContext ctx) {
+    public void exitNegAdjective(ObjectPropertyGrammar.NegAdjectiveContext ctx) {
     }
 
     /**
@@ -234,7 +232,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBindUI(ObjectPropertyParser.BindUIContext ctx) {
+    public void enterMsg(ObjectPropertyGrammar.MsgContext ctx) {
     }
 
     /**
@@ -243,7 +241,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBindUI(ObjectPropertyParser.BindUIContext ctx) {
+    public void exitMsg(ObjectPropertyGrammar.MsgContext ctx) {
     }
 
     /**
@@ -252,7 +250,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(ObjectPropertyParser.DescContext ctx) {
+    public void enterBindui(ObjectPropertyGrammar.BinduiContext ctx) {
     }
 
     /**
@@ -261,7 +259,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(ObjectPropertyParser.DescContext ctx) {
+    public void exitBindui(ObjectPropertyGrammar.BinduiContext ctx) {
     }
 
     /**
@@ -270,7 +268,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterObjProperty(ObjectPropertyParser.ObjPropertyContext ctx) {
+    public void enterDesc(ObjectPropertyGrammar.DescContext ctx) {
     }
 
     /**
@@ -279,7 +277,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitObjProperty(ObjectPropertyParser.ObjPropertyContext ctx) {
+    public void exitDesc(ObjectPropertyGrammar.DescContext ctx) {
     }
 
     /**
@@ -288,7 +286,7 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(ObjectPropertyParser.FileContext ctx) {
+    public void enterObjectProperty(ObjectPropertyGrammar.ObjectPropertyContext ctx) {
     }
 
     /**
@@ -297,7 +295,25 @@ public class ObjectPropertyBaseListener implements ObjectPropertyListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(ObjectPropertyParser.FileContext ctx) {
+    public void exitObjectProperty(ObjectPropertyGrammar.ObjectPropertyContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(ObjectPropertyGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(ObjectPropertyGrammar.FileContext ctx) {
     }
 
     /**

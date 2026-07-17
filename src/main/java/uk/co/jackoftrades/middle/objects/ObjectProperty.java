@@ -19,10 +19,14 @@ package uk.co.jackoftrades.middle.objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.middle.objects.enums.ObjPropertyType;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagID;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -43,6 +47,9 @@ public class ObjectProperty {
      */
     private static final Logger logger = LogManager.getLogger();
 
+    public record UIBinding(UIEntry entry, @Nullable Integer value, boolean aux) {
+    }
+
     /**
      * The property's category.
      *
@@ -54,13 +61,13 @@ public class ObjectProperty {
      *
      * @author Rowan Crowther
      */
-    private String subtype;
+    private ObjectFlagType subtype;
     /**
      * How this property is identified by the player.
      *
      * @author Rowan Crowther
      */
-    private String idType;
+    private ObjectFlagID idType;
     /**
      * The typed payload (flag/modifier/element) this property represents.
      *
@@ -120,7 +127,7 @@ public class ObjectProperty {
      *
      * @author Rowan Crowther
      */
-    private Map<UIEntry, ObjectPropertyTypeWrapper> boundEntries;
+    private List<UIBinding> boundEntries;
 
     /**
      * Build an object property from its parsed data-file fields.
@@ -140,9 +147,12 @@ public class ObjectProperty {
      * @param boundEntries bound UI entries
      * @author Rowan Crowther
      */
-    public ObjectProperty(ObjPropertyType type, String subtype, String idType, ObjectPropertyTypeWrapper index,
-                          int power, int mult, Map<TValue, Integer> typeMults, String name, String adjective,
-                          String negAdjective, String message, String description, Map<UIEntry, ObjectPropertyTypeWrapper> boundEntries) {
+    public ObjectProperty(ObjPropertyType type, ObjectFlagType subtype,
+                          ObjectFlagID idType, ObjectPropertyTypeWrapper index,
+                          int power, int mult, Map<TValue, Integer> typeMults,
+                          String name, String adjective, String negAdjective,
+                          String message, String description,
+                          List<UIBinding> boundEntries) {
         this.type = type;
         this.subtype = subtype;
         this.idType = idType;

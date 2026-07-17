@@ -14,14 +14,13 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectProperty.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.objectproperty;
+// Generated from ObjectPropertyGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.objectproperty;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link ObjectPropertyVisitor},
+ * This class provides an empty implementation of {@link ObjectPropertyGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +28,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ObjectPropertyVisitor<T> {
+public class ObjectPropertyGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements ObjectPropertyGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(ObjectPropertyParser.NameContext ctx) {
+    public T visitRecordCount(ObjectPropertyGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitType(ObjectPropertyParser.TypeContext ctx) {
+    public T visitName(ObjectPropertyGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSubType(ObjectPropertyParser.SubTypeContext ctx) {
+    public T visitType(ObjectPropertyGrammar.TypeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitIdType(ObjectPropertyParser.IdTypeContext ctx) {
+    public T visitSubtype(ObjectPropertyGrammar.SubtypeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCode(ObjectPropertyParser.CodeContext ctx) {
+    public T visitIdType(ObjectPropertyGrammar.IdTypeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPower(ObjectPropertyParser.PowerContext ctx) {
+    public T visitCodeVal(ObjectPropertyGrammar.CodeValContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMult(ObjectPropertyParser.MultContext ctx) {
+    public T visitPower(ObjectPropertyGrammar.PowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitTypeMult(ObjectPropertyParser.TypeMultContext ctx) {
+    public T visitMult(ObjectPropertyGrammar.MultContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitAdjective(ObjectPropertyParser.AdjectiveContext ctx) {
+    public T visitTypeMult(ObjectPropertyGrammar.TypeMultContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +135,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitNegAdjective(ObjectPropertyParser.NegAdjectiveContext ctx) {
+    public T visitAdjective(ObjectPropertyGrammar.AdjectiveContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -147,7 +146,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMsg(ObjectPropertyParser.MsgContext ctx) {
+    public T visitNegAdjective(ObjectPropertyGrammar.NegAdjectiveContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -158,7 +157,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBindUI(ObjectPropertyParser.BindUIContext ctx) {
+    public T visitMsg(ObjectPropertyGrammar.MsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -169,7 +168,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(ObjectPropertyParser.DescContext ctx) {
+    public T visitBindui(ObjectPropertyGrammar.BinduiContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -180,7 +179,7 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitObjProperty(ObjectPropertyParser.ObjPropertyContext ctx) {
+    public T visitDesc(ObjectPropertyGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -191,7 +190,18 @@ public class ObjectPropertyBaseVisitor<T> extends AbstractParseTreeVisitor<T> im
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(ObjectPropertyParser.FileContext ctx) {
+    public T visitObjectProperty(ObjectPropertyGrammar.ObjectPropertyContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(ObjectPropertyGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

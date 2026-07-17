@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/scratch/antlr_artifact_check/src/uk/co/jackoftrades/backend/parser/grammars/imports/Flags.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/scratch/op_probe/Flags.g4 by ANTLR 4.13.2
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;

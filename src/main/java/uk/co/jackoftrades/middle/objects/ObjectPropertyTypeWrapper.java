@@ -71,31 +71,6 @@ public class ObjectPropertyTypeWrapper {
     private ElementEnum element;
 
     /**
-     * The property's primary numeric value.
-     *
-     * @author Rowan Crowther
-     */
-    private int value;
-    /**
-     * An extra numeric parameter for the property.
-     *
-     * @author Rowan Crowther
-     */
-    private int extraParm;
-
-    /**
-     * Set the property's numeric value and extra parameter.
-     *
-     * @param value     the primary value
-     * @param extraParm the extra parameter
-     * @author Rowan Crowther
-     */
-    public void setValues(int value, int extraParm) {
-        this.value = value;
-        this.extraParm = extraParm;
-    }
-
-    /**
      * Retrieve the modifier payload.
      *
      * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_MOD} or {@code OBJ_PROPERTY_STAT})

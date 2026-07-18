@@ -112,4 +112,73 @@ public class BlowMethod {
     public String getName() {
         return name;
     }
+
+    /**
+     * @return whether this method can inflict cuts on its target
+     * @author Rowan Crowther
+     */
+    public boolean isCut() {
+        return cut;
+    }
+
+    /**
+     * @return whether this method can stun its target
+     * @author Rowan Crowther
+     */
+    public boolean isStun() {
+        return stun;
+    }
+
+    /**
+     * Whether a failed blow of this kind is announced to the player. This is about
+     * <em>reporting</em>, not accuracy: it is false for the methods where a miss would
+     * read oddly (crawling, drooling, gazing, wailing), which simply stay silent.
+     *
+     * @return whether the player is told when this blow misses
+     * @author Rowan Crowther
+     */
+    public boolean isMiss() {
+        return miss;
+    }
+
+    /**
+     * @return whether this method does physical damage
+     * @author Rowan Crowther
+     */
+    public boolean isPhys() {
+        return phys;
+    }
+
+    /**
+     * The message channel this blow is reported on, which drives the sound and colour
+     * the interface gives it. Defaults to {@link MessageType#MSG_GENERIC} for a method
+     * whose data-file entry gave no {@code msg:}.
+     *
+     * @return this blow method's message type
+     * @author Rowan Crowther
+     */
+    public MessageType getMesgT() {
+        return mesgT;
+    }
+
+    /**
+     * The flavour strings narrating a landed blow, one of which is chosen at random when
+     * the blow is described - so this holds every alternative, not a sequence (most
+     * methods ship one, INSULT and MOAN ship eight apiece). The {@code {target}}-style
+     * braces are placeholders still awaiting expansion at display time.
+     *
+     * @return this blow method's action messages, in data-file order; may be empty
+     * @author Rowan Crowther
+     */
+    public List<String> getBlowMessage() {
+        return blowMessage;
+    }
+
+    /**
+     * @return the short phrase naming this method in monster lore, e.g. "hit", "drool on you"
+     * @author Rowan Crowther
+     */
+    public String getDesc() {
+        return desc;
+    }
 }

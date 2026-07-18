@@ -14,97 +14,104 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BlowMethod.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.blowmethod;
+// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link BlowMethodParser}.
+ * by {@link BlowMethodGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  *            operations with no return type.
  */
-public interface BlowMethodVisitor<T> extends ParseTreeVisitor<T> {
+public interface BlowMethodGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#name}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#recordCount}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitName(BlowMethodParser.NameContext ctx);
+    T visitRecordCount(BlowMethodGrammar.RecordCountContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#cut}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#name}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitCut(BlowMethodParser.CutContext ctx);
+    T visitName(BlowMethodGrammar.NameContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#stun}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#cut}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitStun(BlowMethodParser.StunContext ctx);
+    T visitCut(BlowMethodGrammar.CutContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#miss}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#stun}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitMiss(BlowMethodParser.MissContext ctx);
+    T visitStun(BlowMethodGrammar.StunContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#phys}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#miss}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitPhys(BlowMethodParser.PhysContext ctx);
+    T visitMiss(BlowMethodGrammar.MissContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#msg}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#phys}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitMsg(BlowMethodParser.MsgContext ctx);
+    T visitPhys(BlowMethodGrammar.PhysContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#act}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#msg}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitAct(BlowMethodParser.ActContext ctx);
+    T visitMsg(BlowMethodGrammar.MsgContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#desc}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#act}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitDesc(BlowMethodParser.DescContext ctx);
+    T visitAct(BlowMethodGrammar.ActContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#blowMethod}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#desc}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitBlowMethod(BlowMethodParser.BlowMethodContext ctx);
+    T visitDesc(BlowMethodGrammar.DescContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link BlowMethodParser#file}.
+     * Visit a parse tree produced by {@link BlowMethodGrammar#blow}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFile(BlowMethodParser.FileContext ctx);
+    T visitBlow(BlowMethodGrammar.BlowContext ctx);
+
+    /**
+     * Visit a parse tree produced by {@link BlowMethodGrammar#file}.
+     *
+     * @param ctx the parse tree
+     * @return the visitor result
+     */
+    T visitFile(BlowMethodGrammar.FileContext ctx);
 }

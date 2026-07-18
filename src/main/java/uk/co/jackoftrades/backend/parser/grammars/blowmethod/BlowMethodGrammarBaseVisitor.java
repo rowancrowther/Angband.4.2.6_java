@@ -14,14 +14,13 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BlowMethod.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.blowmethod;
+// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link BlowMethodVisitor},
+ * This class provides an empty implementation of {@link BlowMethodGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +28,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements BlowMethodVisitor<T> {
+public class BlowMethodGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements BlowMethodGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(BlowMethodParser.NameContext ctx) {
+    public T visitRecordCount(BlowMethodGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCut(BlowMethodParser.CutContext ctx) {
+    public T visitName(BlowMethodGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitStun(BlowMethodParser.StunContext ctx) {
+    public T visitCut(BlowMethodGrammar.CutContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMiss(BlowMethodParser.MissContext ctx) {
+    public T visitStun(BlowMethodGrammar.StunContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPhys(BlowMethodParser.PhysContext ctx) {
+    public T visitMiss(BlowMethodGrammar.MissContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMsg(BlowMethodParser.MsgContext ctx) {
+    public T visitPhys(BlowMethodGrammar.PhysContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitAct(BlowMethodParser.ActContext ctx) {
+    public T visitMsg(BlowMethodGrammar.MsgContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -114,7 +113,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(BlowMethodParser.DescContext ctx) {
+    public T visitAct(BlowMethodGrammar.ActContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -125,7 +124,7 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBlowMethod(BlowMethodParser.BlowMethodContext ctx) {
+    public T visitDesc(BlowMethodGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -136,7 +135,18 @@ public class BlowMethodBaseVisitor<T> extends AbstractParseTreeVisitor<T> implem
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(BlowMethodParser.FileContext ctx) {
+    public T visitBlow(BlowMethodGrammar.BlowContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(BlowMethodGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

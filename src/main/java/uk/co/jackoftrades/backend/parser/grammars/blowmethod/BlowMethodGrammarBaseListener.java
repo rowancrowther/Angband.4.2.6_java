@@ -14,29 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BlowMethod.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.blowmethod;
-
+// Generated from BlowMethodGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.blowmethod;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link BlowMethodListener},
+ * This class provides an empty implementation of {@link BlowMethodGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class BlowMethodBaseListener implements BlowMethodListener {
+public class BlowMethodGrammarBaseListener implements BlowMethodGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(BlowMethodParser.NameContext ctx) {
+    public void enterRecordCount(BlowMethodGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(BlowMethodParser.NameContext ctx) {
+    public void exitRecordCount(BlowMethodGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCut(BlowMethodParser.CutContext ctx) {
+    public void enterName(BlowMethodGrammar.NameContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCut(BlowMethodParser.CutContext ctx) {
+    public void exitName(BlowMethodGrammar.NameContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterStun(BlowMethodParser.StunContext ctx) {
+    public void enterCut(BlowMethodGrammar.CutContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitStun(BlowMethodParser.StunContext ctx) {
+    public void exitCut(BlowMethodGrammar.CutContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMiss(BlowMethodParser.MissContext ctx) {
+    public void enterStun(BlowMethodGrammar.StunContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMiss(BlowMethodParser.MissContext ctx) {
+    public void exitStun(BlowMethodGrammar.StunContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPhys(BlowMethodParser.PhysContext ctx) {
+    public void enterMiss(BlowMethodGrammar.MissContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPhys(BlowMethodParser.PhysContext ctx) {
+    public void exitMiss(BlowMethodGrammar.MissContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMsg(BlowMethodParser.MsgContext ctx) {
+    public void enterPhys(BlowMethodGrammar.PhysContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMsg(BlowMethodParser.MsgContext ctx) {
+    public void exitPhys(BlowMethodGrammar.PhysContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAct(BlowMethodParser.ActContext ctx) {
+    public void enterMsg(BlowMethodGrammar.MsgContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAct(BlowMethodParser.ActContext ctx) {
+    public void exitMsg(BlowMethodGrammar.MsgContext ctx) {
     }
 
     /**
@@ -162,7 +160,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(BlowMethodParser.DescContext ctx) {
+    public void enterAct(BlowMethodGrammar.ActContext ctx) {
     }
 
     /**
@@ -171,7 +169,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(BlowMethodParser.DescContext ctx) {
+    public void exitAct(BlowMethodGrammar.ActContext ctx) {
     }
 
     /**
@@ -180,7 +178,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBlowMethod(BlowMethodParser.BlowMethodContext ctx) {
+    public void enterDesc(BlowMethodGrammar.DescContext ctx) {
     }
 
     /**
@@ -189,7 +187,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBlowMethod(BlowMethodParser.BlowMethodContext ctx) {
+    public void exitDesc(BlowMethodGrammar.DescContext ctx) {
     }
 
     /**
@@ -198,7 +196,7 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(BlowMethodParser.FileContext ctx) {
+    public void enterBlow(BlowMethodGrammar.BlowContext ctx) {
     }
 
     /**
@@ -207,7 +205,25 @@ public class BlowMethodBaseListener implements BlowMethodListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(BlowMethodParser.FileContext ctx) {
+    public void exitBlow(BlowMethodGrammar.BlowContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(BlowMethodGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(BlowMethodGrammar.FileContext ctx) {
     }
 
     /**

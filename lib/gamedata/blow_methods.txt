@@ -11,6 +11,8 @@
 # act: action string to append
 # desc: monster lore description
 
+record-count:19
+
 name:HIT
 cut:1
 stun:1

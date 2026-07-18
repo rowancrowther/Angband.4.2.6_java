@@ -876,7 +876,7 @@ public class GameConstants {
             loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
             loadObjectProperties();     // Dependent on UIEntry
             loadPlayerTimedProperties();
-//            loadBlowMethods();
+            loadBlowMethods();
 //            loadBlowEffects();
 //            loadMonsterSpellTypes();
 //            loadVisualCyclerTable();
@@ -1037,7 +1037,17 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "blow_methods.txt";
 
         try {
-            blowMethods = parser.parse(filename);
+            ParseResult<BlowMethod> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            blowMethods = result.items();
+            monsterBlowsMethodsMax = blowMethods.size();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }
@@ -1390,7 +1400,7 @@ public class GameConstants {
             throw e;
         }
 
-        return playerShapes.stream().filter(s -> name.toUpperCase().equals(s.getName().toUpperCase()))
+        return playerShapes.stream().filter(s -> name.equalsIgnoreCase(s.getName()))
                 .findFirst().orElse(null);
     }
 

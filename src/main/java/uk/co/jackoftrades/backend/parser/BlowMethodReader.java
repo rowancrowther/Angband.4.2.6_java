@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.blowmethod.BlowMethodLexer;
-import uk.co.jackoftrades.backend.parser.blowmethod.BlowMethodParser;
+import uk.co.jackoftrades.backend.parser.blowmethod.BlowMethodAssembler;
+import uk.co.jackoftrades.backend.parser.blowmethod.BlowMethodParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.blowmethod.BlowMethodGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.blowmethod.BlowMethodLexer;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,59 @@ public class BlowMethodReader implements Reader<BlowMethod> {
      */
     @Override
     public @NotNull List<BlowMethod> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            BlowMethodLexer lexer = new BlowMethodLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            BlowMethodParser parser = new BlowMethodParser(tokens);
-            BlowMethodParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.methods;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Parse the file and return the assembled methods <em>together with</em> any soft
+     * errors gathered on the way, rather than discarding them as {@link #parse} does.
+     * <p>
+     * This is the variant callers should prefer: a blow method whose {@code msg:} does
+     * not resolve is skipped rather than fatal, so the returned list can be short
+     * without anything having been thrown. {@code GameConstants.loadBlowMethods} gates
+     * on {@link ParseResult#hasErrors()} for exactly that reason.
+     *
+     * @param filename the data file to parse
+     * @return the assembled blow methods plus any soft errors
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public ParseResult<BlowMethod> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BlowMethodLexer::new,
+                BlowMethodGrammar::new,
+                BlowMethodReader::extract,
+                new BlowMethodAssembler(), logger);
+    }
+
+    /**
+     * The one grammar-specific step {@link GrammarDriver} cannot perform itself: run the
+     * {@code file} entry rule and pull the parse records off its context.
+     * <p>
+     * The ordering here is load-bearing. {@link ParseErrors#throwIfAny()} fires
+     * immediately after the parse and <em>before</em> the record count is checked, so a
+     * hard lexer/parser failure aborts via {@code ParseCancellationException} rather
+     * than letting a half-built record list be measured against the declared count and
+     * produce a second, misleading error. The count check that follows is soft by
+     * contrast - it only appends to {@code errors}.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the shared hard-error listener installed by the driver
+     * @param errors       the soft-error sink, mutated in place
+     * @return the parsed records, in file order
+     * @author Rowan Crowther
+     */
+    private static List<BlowMethodParseRecord> extract(
+            @NotNull BlowMethodGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        BlowMethodGrammar.FileContext output = parser.file();
+        List<BlowMethodParseRecord> results = output.records;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
     }
 }

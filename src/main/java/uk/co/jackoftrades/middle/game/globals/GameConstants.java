@@ -879,7 +879,7 @@ public class GameConstants {
             loadPlayerTimedProperties();
             loadBlowMethods();
             loadBlowEffects();          // Dependent on Projections
-//            loadMonsterSpellTypes();
+            loadMonsterSpellTypes();
 //            loadVisualCyclerTable();
 //            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
 //            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
@@ -1030,12 +1030,34 @@ public class GameConstants {
         return visualsCyclerTable;
     }
 
+    /**
+     * Load {@code monster_spell.txt} into {@link #monsterSpellTypes}.
+     * <p>
+     * Must run after {@link #loadSummons()}: two of the 91 spells carry a {@code SUMMON} effect,
+     * whose subtype the effect assembler resolves through {@link #lookupSummon}, which throws if
+     * the summon table is still empty. Loading summons in turn needs monster bases, which need
+     * monster pains.
+     * <p>
+     * Note that a file with soft errors logs and returns without populating the field, leaving
+     * it null rather than partially filled - the same shape as the loaders around it.
+     *
+     * @author Rowan Crowther
+     */
     private static void loadMonsterSpellTypes() {
         MonsterSpellReader parser = new MonsterSpellReader();
         String filename = ANGBAND_DIR_GAMEDATA + "monster_spell.txt";
 
         try {
-            monsterSpellTypes = parser.parse(filename);
+            ParseResult<MonsterSpellType> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            monsterSpellTypes = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

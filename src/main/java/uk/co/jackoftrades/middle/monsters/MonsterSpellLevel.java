@@ -58,7 +58,7 @@ public class MonsterSpellLevel {
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttImmune;
+    private ColourType loreAttrImmune;
     /**
      * Message shown when the spell is cast and seen.
      *
@@ -91,7 +91,7 @@ public class MonsterSpellLevel {
      * @param loreDesc       lore description
      * @param loreAttr       normal lore colour
      * @param loreAttrResist resisted lore colour
-     * @param loreAttImmune  immune lore colour
+     * @param loreAttrImmune  immune lore colour
      * @param message        seen-cast message
      * @param blindMessage   blind-cast message
      * @param missMessage    miss message
@@ -100,13 +100,13 @@ public class MonsterSpellLevel {
      */
     @Contract(mutates = "this")
     public MonsterSpellLevel(int power, String loreDesc, ColourType loreAttr, ColourType loreAttrResist,
-                             ColourType loreAttImmune, String message, String blindMessage, String missMessage,
+                             ColourType loreAttrImmune, String message, String blindMessage, String missMessage,
                              String saveMessage) {
         this.power = power;
         this.loreDesc = loreDesc;
         this.loreAttr = loreAttr;
         this.loreAttrResist = loreAttrResist;
-        this.loreAttImmune = loreAttImmune;
+        this.loreAttrImmune = loreAttrImmune;
         this.message = message;
         this.blindMessage = blindMessage;
         this.missMessage = missMessage;

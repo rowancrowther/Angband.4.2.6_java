@@ -33,6 +33,9 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 import java.util.ArrayList;
 import java.util.List;
 
+import static uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper.teleport;
+import static uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper.teleportTo;
+
 /**
  * Resolves the raw {@link EffectParseRecord}s captured from an {@code effect:} block into
  * domain {@link Effect}s. Effects are shared across many data files (objects, curses, shapes,
@@ -99,10 +102,21 @@ public class EffectAssembler {
                     "invalid effect type: " + record.typeInit());
             return null;
         }
-        // Initialise to avoid may not be initialised bug
+        // An effect with no subtype token normally resolves to EST_NONE, and the EST_NONE seed
+        // below is what it keeps - it also avoids a may-not-be-initialised error on the branch.
+        //
+        // TELEPORT and TELEPORT_TO are the exception, and the || below exists solely for them.
+        // Their subtype is a flag rather than a kind, and its absent value carries meaning: [C]
+        // effect_subtype (effects.c) never runs for a missing line, leaving effect->subtype at
+        // zero, which the handlers read as "a monster may not cast this at the player". Letting
+        // those two kinds through the gate with an empty value lets the switch return a
+        // false-valued teleport wrapper instead of a bare EST_NONE, so every TELEPORT effect
+        // comes out the same shape whether or not the data file gave it a subtype.
         EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
-        if (!record.subTypeWrapper().isEmpty()) {
-            wrapper = getWrapperSubType(effectEnum.getSubType(),
+        EffectSubTypeEnum kind = effectEnum.getSubType();
+        if (!record.subTypeWrapper().isEmpty() || kind == EffectSubTypeEnum.EST_TELEPORT
+                || kind == EffectSubTypeEnum.EST_TELEPORT_TO) {
+            wrapper = getWrapperSubType(kind,
                     record.subTypeWrapper(), errors, line);
             if (wrapper == null) return null;
         }
@@ -318,25 +332,25 @@ public class EffectAssembler {
                             "an invalid glyph type: " + value);
                 }
             }
+            // [C] effect_subtype accepts exactly one string here - "AWAY" - and falls through to
+            // its -1 error return for anything else, including "SELF" and "NONE". An absent
+            // subtype is not an error: it is the flag left switched off.
             case EST_TELEPORT -> {
-                TeleportEnum teleportEnum = TeleportEnum.TELE_NONE;
-                try {
-                    teleportEnum = TeleportEnum.valueOf("TELE_" + value);
-                    return new EffectSubTypeWrapper(teleportEnum, false);
-                } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid teleport type: " + value);
-                }
+                if (value.isEmpty()) return teleport(false);
+                if ("AWAY".equals(value)) return teleport(true);
+                errors.add("Effect starting at line: " + line + " has " +
+                        "an invalid teleport type: " + value);
+                return null;
             }
+            // The mirror of the case above, and deliberately not interchangeable with it: [C]
+            // accepts only "SELF" for EF_TELEPORT_TO. monster_spell.txt is the sole data file in
+            // the game that supplies either of these two subtypes.
             case EST_TELEPORT_TO -> {
-                TeleportEnum teleportEnum = TeleportEnum.TELE_NONE;
-                try {
-                    teleportEnum = TeleportEnum.valueOf("TELE_" + value);
-                    return new EffectSubTypeWrapper(teleportEnum, true);
-                } catch (IllegalArgumentException e) {
-                    errors.add("Effect starting at line: " + line + " has " +
-                            "an invalid teleport type: " + value);
-                }
+                if (value.isEmpty()) return teleportTo(false);
+                if ("SELF".equals(value)) return teleportTo(true);
+                errors.add("Effect starting at line: " + line + " has " +
+                        "an invalid teleport to type: " + value);
+                return null;
             }
             case EST_NONE -> {
                 return new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);

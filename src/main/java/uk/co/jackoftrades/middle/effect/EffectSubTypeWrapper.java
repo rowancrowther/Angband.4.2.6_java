@@ -20,7 +20,10 @@ package uk.co.jackoftrades.middle.effect;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
-import uk.co.jackoftrades.middle.enums.*;
+import uk.co.jackoftrades.middle.enums.EffectEnchant;
+import uk.co.jackoftrades.middle.enums.EffectNourish;
+import uk.co.jackoftrades.middle.enums.GlyphType;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
 import uk.co.jackoftrades.middle.player.PlayerShape;
@@ -125,45 +128,134 @@ public class EffectSubTypeWrapper {
      * @author Rowan Crowther
      */
     private GlyphType glyphType;
-    /**
-     * Payload for {@code EST_TELEPORT}: the teleport mode.
-     *
-     * @author Rowan Crowther
-     */
-    private TeleportEnum teleportWrapper;
-    /**
-     * Payload for {@code EST_TELEPORT_TO}: the teleport-to mode.
-     *
-     * @author Rowan Crowther
-     */
-    private TeleportEnum teleportToWrapper;
 
     /**
-     * Create a teleport-payload wrapper.
+     * Payload for {@code EST_TELEPORT}: may a monster use this effect to teleport the player
+     * away?
+     * <p>
+     * Unlike every other payload in this class, the teleport subtype is not a kind but a flag.
+     * The C original's {@code effect_subtype} ({@code effects.c}) returns a literal {@code 1}
+     * for the single string {@code AWAY} and nothing else, and the handler only ever tests it
+     * for truthiness - see the comment and guards at {@code effect-handler-general.c:2502},
+     * {@code :2522} and {@code :2539}. Which <em>sort</em> of teleport happens is decided by the
+     * owning effect ({@code EF_TELEPORT} vs {@code EF_TELEPORT_TO} vs {@code EF_TELEPORT_LEVEL}),
+     * not by this field.
+     * <p>
+     * False is a meaningful value, not merely an unset one: a data file that gives no subtype at
+     * all leaves C's {@code effect->subtype} at zero, i.e. the monster may not cast it.
      *
-     * @param teleportWrapper the teleport mode
-     * @param to              true for a "teleport-to" payload, false for plain teleport
      * @author Rowan Crowther
      */
-    public EffectSubTypeWrapper(TeleportEnum teleportWrapper, boolean to) {
-        this.setValue(teleportWrapper, to);
+    private boolean teleportMonsterMayCast;
+    /**
+     * Payload for {@code EST_TELEPORT_TO}: may a monster use this effect to teleport toward the
+     * player? The mirror of {@link #teleportMonsterMayCast}, set by the single string
+     * {@code SELF} - see {@code effect-handler-general.c:2694}, {@code :2722} and {@code :2761}.
+     * <p>
+     * The two strings are not interchangeable: the C original accepts {@code AWAY} only on
+     * {@code EF_TELEPORT} and {@code SELF} only on {@code EF_TELEPORT_TO}, and rejects anything
+     * else - including the other's string and {@code NONE}.
+     *
+     * @author Rowan Crowther
+     */
+    private boolean teleportToMonsterMayCast;
+
+    /**
+     * Create an {@code EST_TELEPORT} payload.
+     * <p>
+     * A static factory rather than a constructor because the teleport payload needs two
+     * booleans - the flag and the choice of which of the two teleport sub-types to tag - and a
+     * two-boolean constructor signature would be both unreadable at the call site and impossible
+     * to overload against its {@link #teleportTo} twin.
+     *
+     * @param monsterMayCast whether a monster may cast this at the player, i.e. whether the data
+     *                       file supplied {@code AWAY}
+     * @return a wrapper tagged {@code EST_TELEPORT}
+     * @author Rowan Crowther
+     */
+    public static EffectSubTypeWrapper teleport(boolean monsterMayCast) {
+        EffectSubTypeWrapper result = new EffectSubTypeWrapper();
+        result.setValue(monsterMayCast, false);
+        return result;
     }
 
     /**
-     * Store a teleport payload and set the matching discriminator.
+     * Create an {@code EST_TELEPORT_TO} payload. See {@link #teleport} for why this is a factory.
      *
-     * @param teleportWrapper the teleport mode
-     * @param to              true for {@code EST_TELEPORT_TO}, false for {@code EST_TELEPORT}
+     * @param monsterMayCast whether a monster may cast this at the player, i.e. whether the data
+     *                       file supplied {@code SELF}
+     * @return a wrapper tagged {@code EST_TELEPORT_TO}
      * @author Rowan Crowther
      */
-    public void setValue(TeleportEnum teleportWrapper, boolean to) {
+    public static EffectSubTypeWrapper teleportTo(boolean monsterMayCast) {
+        EffectSubTypeWrapper result = new EffectSubTypeWrapper();
+        result.setValue(monsterMayCast, true);
+        return result;
+    }
+
+    /**
+     * Build an untagged, empty wrapper for the teleport factories to populate.
+     * <p>
+     * Private, and deliberately the only way to reach a wrapper whose {@code subType} is null:
+     * {@link #setValue} sets the discriminator on the very next statement in both factories, so
+     * no half-built instance escapes.
+     *
+     * @author Rowan Crowther
+     */
+    private EffectSubTypeWrapper() {
+        this.subType = null;
+        this.nullValue = null;
+    }
+
+    /**
+     * Store a teleport flag and set the discriminator that matches it.
+     *
+     * @param monsterMayCast the flag to store
+     * @param to             true to tag this {@code EST_TELEPORT_TO}, false for
+     *                       {@code EST_TELEPORT}; this selects which effect the payload belongs
+     *                       to, and is not itself part of the ported subtype value
+     * @author Rowan Crowther
+     */
+    private void setValue(boolean monsterMayCast, boolean to) {
         if (to) {
-            this.teleportToWrapper = teleportWrapper;
+            this.teleportToMonsterMayCast = monsterMayCast;
             this.subType = EffectSubTypeEnum.EST_TELEPORT_TO;
         } else {
-            this.teleportWrapper = teleportWrapper;
+            this.teleportMonsterMayCast = monsterMayCast;
             this.subType = EffectSubTypeEnum.EST_TELEPORT;
         }
+    }
+
+    /**
+     * @return whether a monster may use this {@code EST_TELEPORT} effect against the player
+     * @throws Exception if the live sub-type is not {@code EST_TELEPORT}
+     * @author Rowan Crowther
+     */
+    public boolean getTeleportMonsterMayCast() throws Exception {
+        if (this.subType != EffectSubTypeEnum.EST_TELEPORT) {
+            String message = "Invalid subtype, expected EST_TELEPORT, got " + subType.toString();
+            Exception ex = new InvalidParameterException(message);
+            logger.error(message, ex);
+            throw ex;
+        }
+
+        return teleportMonsterMayCast;
+    }
+
+    /**
+     * @return whether a monster may use this {@code EST_TELEPORT_TO} effect against the player
+     * @throws Exception if the live sub-type is not {@code EST_TELEPORT_TO}
+     * @author Rowan Crowther
+     */
+    public boolean getTeleportToMonsterMayCast() throws Exception {
+        if (this.subType != EffectSubTypeEnum.EST_TELEPORT_TO) {
+            String message = "Invalid subtype, expected EST_TELEPORT_TO, got " + subType.toString();
+            Exception ex = new InvalidParameterException(message);
+            logger.error(message, ex);
+            throw ex;
+        }
+
+        return teleportToMonsterMayCast;
     }
 
     public EffectSubTypeWrapper(EffectSubTypeEnum subType) {
@@ -593,37 +685,5 @@ public class EffectSubTypeWrapper {
         }
 
         return glyphType;
-    }
-
-    /**
-     * @return the stored teleport mode
-     * @throws Exception if the live sub-type is not {@code EST_TELEPORT}
-     * @author Rowan Crowther
-     */
-    public TeleportEnum getTeleportWrapper() throws Exception {
-        if (subType != EffectSubTypeEnum.EST_TELEPORT) {
-            String message = "Invalid subtype, expected EST_TELEPORT, got " + subType.toString();
-            Exception ex = new InvalidParameterException(message);
-            logger.error(message, ex);
-            throw ex;
-        }
-
-        return teleportWrapper;
-    }
-
-    /**
-     * @return the stored teleport-to mode
-     * @throws Exception if the live sub-type is not {@code EST_TELEPORT_TO}
-     * @author Rowan Crowther
-     */
-    public TeleportEnum getTeleportToWrapper() throws Exception {
-        if (subType != EffectSubTypeEnum.EST_TELEPORT_TO) {
-            String message = "Invalid subtype, expected EST_TELEPORT_TO, got " + subType.toString();
-            Exception ex = new InvalidParameterException(message);
-            logger.error(message, ex);
-            throw ex;
-        }
-
-        return teleportToWrapper;
     }
 }

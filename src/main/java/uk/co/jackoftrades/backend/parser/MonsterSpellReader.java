@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.monsterspell.MonsterSpellLexer;
-import uk.co.jackoftrades.backend.parser.monsterspell.MonsterSpellParser;
+import uk.co.jackoftrades.backend.parser.grammars.monsterspell.MonsterSpellGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.monsterspell.MonsterSpellLexer;
+import uk.co.jackoftrades.backend.parser.monsterspell.MonsterSpellAssembler;
+import uk.co.jackoftrades.backend.parser.monsterspell.MonsterSpellParseRecord;
 import uk.co.jackoftrades.middle.monsters.MonsterSpellType;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,16 +54,28 @@ public class MonsterSpellReader implements Reader<MonsterSpellType> {
      */
     @Override
     public @NotNull List<MonsterSpellType> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            MonsterSpellLexer lexer = new MonsterSpellLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            MonsterSpellParser parser = new MonsterSpellParser(tokens);
-            MonsterSpellParser.FileContext output = parser.file();
-            return output.spellTypes;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+        return parseWithResults(filename).items();
+    }
+
+    public ParseResult<MonsterSpellType> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                MonsterSpellLexer::new,
+                MonsterSpellGrammar::new,
+                MonsterSpellReader::extract,
+                new MonsterSpellAssembler(), logger);
+    }
+
+    private static List<MonsterSpellParseRecord> extract(
+            @NotNull MonsterSpellGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        MonsterSpellGrammar.FileContext output = parser.file();
+        List<MonsterSpellParseRecord> records = output.monsterSpells;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

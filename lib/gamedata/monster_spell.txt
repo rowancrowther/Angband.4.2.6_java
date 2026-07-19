@@ -136,6 +136,8 @@
 # - {oftype} is like {type}, but with "of" added - e.g. "a whip of fire"
 # - {target} is the target of the spell - player or (rarely) another monster
 
+record-count:91
+
 name:SHRIEK
 msgt:SHRIEK
 hit:100

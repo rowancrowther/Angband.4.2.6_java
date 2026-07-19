@@ -248,6 +248,10 @@ public class Projection {
         return lashDescription;
     }
 
+    public ProjectionEnum getProjection() {
+        return projection;
+    }
+
     /**
      * @return a debug string listing this projection's fields
      * @author Rowan Crowther

@@ -35,6 +35,7 @@ import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.cave.*;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
+import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.*;
@@ -877,7 +878,7 @@ public class GameConstants {
             loadObjectProperties();     // Dependent on UIEntry
             loadPlayerTimedProperties();
             loadBlowMethods();
-//            loadBlowEffects();
+            loadBlowEffects();          // Dependent on Projections
 //            loadMonsterSpellTypes();
 //            loadVisualCyclerTable();
 //            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
@@ -913,15 +914,21 @@ public class GameConstants {
     }
 
     /**
-     * Look up a projection by its lash-form description.
+     * Look up a projection by its code, as used by the {@code lash-type:} directive in
+     * {@code blow_effects.txt}.
+     * <p>
+     * Note this matches on the projection's {@code code:} - its {@link ProjectionEnum} -
+     * and not on its {@code lash-desc:}, which is the flavour text shown to the player
+     * ({@code venom}, {@code razors}) and never appears in another data file. This mirrors
+     * [C] {@code proj_name_to_idx} ({@code src/project.c:60}).
      *
-     * @param lashType the lash description
+     * @param lashType the projection code to find
      * @return the matching {@link Projection}, or {@code null} if none matches
      * @throws IllegalStateException if projections have not been loaded
      * @author ClaudeCode
      */
     @Nullable
-    public static Projection lookupProjectionByLash(String lashType) {
+    public static Projection lookupProjectionByLash(ProjectionEnum lashType) {
         if (projections == null) {
             String message = "Invalid attempt to access projections when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
@@ -929,7 +936,20 @@ public class GameConstants {
             throw e;
         }
 
-        return projections.stream().filter(p -> lashType.equals(p.getLashDescription()))
+        return projections.stream().filter(p -> lashType.equals(p.getProjection()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Projection lookupProjectionByName(String name) {
+        if (projections == null) {
+            String message = "Invalid attempt to access projections when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return projections.stream().filter(p -> name.equals(p.getLashDescription()))
                 .findFirst()
                 .orElse(null);
     }
@@ -1021,12 +1041,31 @@ public class GameConstants {
         }
     }
 
+    /**
+     * Load {@code blow_effects.txt} into {@link #blowEffects}.
+     * <p>
+     * Must run after {@link #loadProjections()}: the assembler resolves each effect's
+     * {@code lash-type:} through {@link #lookupProjectionByLash}, which throws if the
+     * projection table is still empty.
+     *
+     * @author Rowan Crowther
+     */
     private static void loadBlowEffects() {
         BlowEffectReader parser = new BlowEffectReader();
         String filename = ANGBAND_DIR_GAMEDATA + "blow_effects.txt";
 
         try {
-            blowEffects = parser.parse(filename);
+            ParseResult<BlowEffect> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            blowEffects = result.items();
+            monsterBlowsEffectsMax = blowEffects.size();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

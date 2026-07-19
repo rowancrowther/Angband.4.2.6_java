@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.bloweffect.BlowEffectLexer;
-import uk.co.jackoftrades.backend.parser.bloweffect.BlowEffectParser;
+import uk.co.jackoftrades.backend.parser.bloweffect.BlowEffectAssembler;
+import uk.co.jackoftrades.backend.parser.bloweffect.BlowEffectParseRecord;
+import uk.co.jackoftrades.backend.parser.grammars.bloweffect.BlowEffectGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.bloweffect.BlowEffectLexer;
 import uk.co.jackoftrades.middle.monsters.BlowEffect;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,51 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      */
     @Override
     public @NotNull List<BlowEffect> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            BlowEffectLexer lexer = new BlowEffectLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            BlowEffectParser parser = new BlowEffectParser(tokens);
-            BlowEffectParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.blowEffects;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Run the parser and return the assembled effects together with any soft errors, for
+     * callers that need to distinguish a clean load from a partial one.
+     *
+     * @param filename the name of the file
+     * @return the assembled blow effects plus the errors collected while assembling them
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BlowEffectLexer::new,
+                BlowEffectGrammar::new,
+                BlowEffectReader::extract,
+                new BlowEffectAssembler(),
+                logger);
+    }
+
+    /**
+     * Drive the {@code file} rule and hand back its records.
+     * <p>
+     * Syntax errors are fatal and are rethrown before anything is returned, so a caller
+     * never sees a half-read file; the {@code record-count:} header, by contrast, is a
+     * soft check that only adds to {@code errors}.
+     *
+     * @param parser       the parser, positioned at the start of the token stream
+     * @param errorCatcher collector for the lexer/parser syntax errors
+     * @param errors       collector for soft errors, shared with the assembler
+     * @return the parsed records in file order
+     * @author Rowan Crowther
+     */
+    private static List<BlowEffectParseRecord> extract(
+            @NotNull BlowEffectGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        BlowEffectGrammar.FileContext output = parser.file();
+        List<BlowEffectParseRecord> results = output.blowEffects;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
+
+        return new ArrayList<>(results);
     }
 }

@@ -13,6 +13,8 @@
 # resist - which precise flag or resist will protect from the effect
 # lash-type - what projection type this translates to in the lash effect
 
+record-count:30
+
 name:NONE
 power:0
 eval:0

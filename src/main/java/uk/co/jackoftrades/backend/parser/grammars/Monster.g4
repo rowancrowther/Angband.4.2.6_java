@@ -45,7 +45,6 @@ grammar Monster;
     import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
     import uk.co.jackoftrades.middle.objects.ObjectKind;
     import uk.co.jackoftrades.middle.objects.enums.TValue;
-    import uk.co.jackoftrades.frontend.colour.VisualsColourCyclesByRace;
     import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 
 
@@ -93,12 +92,12 @@ colour
         returns[ColourType colourEnum]
         :   COLOUR COLOUR_CHAR {
                 String raw = $COLOUR_CHAR.getText();
-                $colourEnum = ColourType.findColourType(raw.charAt(0));
+                $colourEnum = ColourType.getColourType(raw);
             }
         ;
 
 // "color-cycle:<group>:<cycle name>" - links this monster to a colour-
-// cycling animation group/cycle (see VisualsColourCyclesByRace).
+// cycling animation group/cycle
 colourCycle
         returns[String groupName, String cycleName]
         :   COLOUR_CYCLE group=LCASE COLON cycle=LCASE {

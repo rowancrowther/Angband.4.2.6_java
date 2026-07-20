@@ -14,8 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterNest.g4 by ANTLR 4.13.2
+// Generated from MonsterNest.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.pit;
 
 import org.antlr.v4.runtime.*;
@@ -480,7 +479,7 @@ public class MonsterNestParser extends Parser {
                 match(COLOUR);
                 setState(47);
                 ((ColourContext) _localctx).cc = match(COLOUR_CHAR);
-                ((ColourContext) _localctx).colourType = ColourType.findColourType(((ColourContext) _localctx).cc.getText().charAt(0));
+                ((ColourContext) _localctx).colourType = ColourType.getColourType(((ColourContext) _localctx).cc.getText());
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1532,5 +1531,5 @@ public class MonsterNestParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

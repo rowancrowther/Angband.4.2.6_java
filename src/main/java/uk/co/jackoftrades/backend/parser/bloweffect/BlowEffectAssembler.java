@@ -99,11 +99,36 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
                 }
             }
             String desc = record.desc();
-            // An absent lore colour resolves to COLOUR_TYPE_DARK, which is what [C] gets for
-            // free from the mem_zalloc'd lore_attr fields (0 == COLOUR_DARK).
-            ColourType base = ColourType.getColourType(record.loreColourBase());
-            ColourType resist = ColourType.getColourType(record.loreColourResist());
-            ColourType immune = ColourType.getColourType(record.loreColourImmune());
+            // An absent lore colour is left null - the port models "no lore colour" as null. [C]
+            // instead gets COLOUR_DARK for free from the mem_zalloc'd lore_attr fields (0 ==
+            // COLOUR_DARK); resolving that concrete default is deferred to the renderer.
+            ColourType base = null;
+            if (!record.loreColourBase().isEmpty()) {
+                base = ColourType.getColourType(record.loreColourBase());
+                if (base == null) {
+                    errors.add("Blow Effect at line: " + line + " has " +
+                            "an invalid base colour: " + record.loreColourBase());
+                    continue;
+                }
+            }
+            ColourType resist = null;
+            if (!record.loreColourResist().isEmpty()) {
+                resist = ColourType.getColourType(record.loreColourResist());
+                if (resist == null) {
+                    errors.add("Blow Effect at line: " + line + " has " +
+                            "an invalid resist colour: " + record.loreColourResist());
+                    continue;
+                }
+            }
+            ColourType immune = null;
+            if (!record.loreColourImmune().isEmpty()) {
+                immune = ColourType.getColourType(record.loreColourImmune());
+                if (immune == null) {
+                    errors.add("Blow Effect at line: " + line + " has " +
+                            "an invalid immune colour: " + record.loreColourImmune());
+                    continue;
+                }
+            }
             String effectTypeStr = record.effectType();
             // Null for the eight records that ship no effect-type: line at all (NONE, HURT, the
             // four raw elements, SHATTER, BLACK_BREATH). That is legal, so every test below is

@@ -22,6 +22,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 
 /**
@@ -272,9 +273,10 @@ public enum ColourType {
      * need to match it in the upper (or lower) case to confirm a match, so Umber matched umber and vice versa.
      *
      * @param colourName The colour name we are looking for
-     * @return The Colour Type which has colourName for a name, or COLOUR_TYPE_DARK if there is no matching colour type
+     * @return The Colour Type which has colourName for a name, or null if there is no matching colour type
      */
-    public static ColourType getColourType(String colourName) {
+    @Nullable
+    public static ColourType getColourType(@NotNull String colourName) {
         if (colourName.length() == 1) {
             return ColourType.findColourType(colourName.charAt(0));
         }
@@ -286,7 +288,7 @@ public enum ColourType {
             }
         }
 
-        return COLOUR_TYPE_DARK;
+        return null;
     }
 
     /**
@@ -372,14 +374,17 @@ public enum ColourType {
      * AttributeColour.ColourTable[startColour] n times
      * TODO: Rewrite this. It currently makes no sense, and the code, while simple, needs a bit of explaining
      */
-    public static ColourType getColourType(AttributeColour startColour,
+    @Nullable
+    public static ColourType getColourType(@NotNull AttributeColour startColour,
                                            ColourTranslation translation,
                                            int numOfTranslations) {
         if (translation == ColourTranslation.ATTR_DARK || translation == ColourTranslation.ATTR_MAX)
             return findColourType(startColour);
 
         while (numOfTranslations > 0) {
-            startColour = findColourType(startColour).colourAttribute(translation);
+            ColourType colourType = findColourType(startColour);
+            if (colourType == null) return null;
+            startColour = colourType.colourAttribute(translation);
             numOfTranslations--;
         }
 
@@ -391,25 +396,27 @@ public enum ColourType {
      * attribute colour.
      *
      * @param colour the attribute colour to match
-     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @return the matching colour type, or {@code null} if none matches
      * @author Rowan Crowther
      */
+    @Nullable
     @Contract(pure = true)
     public static ColourType findColourType(AttributeColour colour) {
         for (ColourType colourType : ColourType.values())
             if (colourType.colourTranslate[0] == colour)
                 return colourType;
 
-        return COLOUR_TYPE_DARK;
+        return null;
     }
 
     /**
      * Find the colour type with the given name, case-insensitively.
      *
      * @param colourName the colour name to match
-     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @return the matching colour type, or {@code null} if none matches
      * @author Rowan Crowther
      */
+    @Nullable
     @Contract(pure = true)
     public static ColourType findColourType(@NotNull String colourName) {
         String lcColourName = colourName.toLowerCase();
@@ -419,22 +426,23 @@ public enum ColourType {
                 return colourType;
         }
 
-        return COLOUR_TYPE_DARK;
+        return null;
     }
 
     /**
      * Find the colour type with the given single-character code.
      *
      * @param colChar the colour code to match
-     * @return the matching colour type, or {@link #COLOUR_TYPE_DARK} if none matches
+     * @return the matching colour type, or {@code null} if none matches
      * @author Rowan Crowther
      */
-    public static ColourType findColourType(@NotNull char colChar) {
+    @Nullable
+    private static ColourType findColourType(@NotNull char colChar) {
         for (ColourType colourType : ColourType.values()) {
             if (colourType.getColourCharacter() == colChar)
                 return colourType;
         }
 
-        return COLOUR_TYPE_DARK;
+        return null;
     }
 }

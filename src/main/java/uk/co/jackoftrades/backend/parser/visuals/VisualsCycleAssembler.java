@@ -52,11 +52,12 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * <p>
      * <strong>Reachability of the error paths.</strong> The grammar only lexes valid
      * {@code COLOUR_CODE} characters, so neither soft-error branch fires on real file input: an empty
-     * colour string cannot be produced, and an unrecognised code is a hard parse error upstream. The
-     * empty-colour guard is therefore defensive (reachable only by a hand-built record), and the
-     * {@code catch} around {@link ColourType#findColourType(char)} is effectively dead because that
-     * method returns {@code COLOUR_TYPE_DARK} on a miss rather than throwing - an unknown code is
-     * silently mapped to Dark, not flagged.
+     * colour string cannot be produced, and an unrecognised code is a hard parse error upstream. Both
+     * guards are therefore defensive (reachable only by a hand-built record): an empty colour, or a
+     * code that {@link ColourType#getColourType} cannot resolve (it returns {@code null} on a miss),
+     * is flagged into {@code errors} and the whole record dropped. The lingering
+     * {@code catch (IllegalArgumentException)} is dead - {@code getColourType} signals a miss with
+     * {@code null}, never an exception.
      *
      * @param records the parsed {@code cycle:} blocks
      * @param errors  the shared soft-error sink; a malformed colour appends here and drops its record
@@ -75,13 +76,14 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
             boolean illegalColour = false;
             for (String colour : record.colours()) {
                 if (!colour.isEmpty()) {
-                    try {
-                        colours.add(ColourType.findColourType(colour.charAt(0)));
-                    } catch (IllegalArgumentException e) {
+                    ColourType colourType = ColourType.getColourType(colour);
+                    if (colourType == null) {
                         errors.add("Visuals at line: " + line + " has " +
-                                "an invalid colour: " + colour + " in group: " + group +
-                                " and name: " + name);
+                                "an invalid colour: " + colour + " in group: " +
+                                group + " and name: " + name);
                         illegalColour = true;
+                    } else {
+                        colours.add(colourType);
                     }
                 } else {
                     errors.add("Visuals at line: " + line + " has an invalid colour");

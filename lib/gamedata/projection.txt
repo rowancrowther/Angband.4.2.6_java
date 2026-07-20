@@ -486,7 +486,7 @@ desc:darkness
 player-desc:darkness
 blind-desc:something
 obvious:0
-color:L_DARK
+color:Light Dark
 
 code:KILL_WALL
 type:environs

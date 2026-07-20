@@ -110,6 +110,11 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     continue;
                 }
                 ColourType colourType = ColourType.getColourType(colour);
+                if (colourType == null) {
+                    errors.add("Spell book at line: " + line + " has " +
+                            "an unknown colour type: " + colour);
+                    continue;
+                }
                 adc = new AngbandDisplayCharacter(glyph.charAt(0), colourType);
             }
             int cost = 0;

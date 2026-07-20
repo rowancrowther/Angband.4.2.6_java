@@ -49,12 +49,14 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
     /**
      * Build the flicker table from every parsed block.
      * <p>
-     * Unknown colour codes cannot reach here: the grammar only lexes valid {@code COLOUR_CODE}
-     * characters, so a bad code is a hard parse error upstream, not a soft error. Consequently this
-     * assembler has no soft-error path and never appends to {@code errors}.
+     * Each step colour and the base-attribute key are resolved through
+     * {@link ColourType#getColourType}, which returns {@code null} on an unrecognised code; such a
+     * record is flagged into {@code errors} and skipped. In practice the grammar only lexes valid
+     * {@code COLOUR_CODE} characters, so this soft-error path is defensive - unreachable from a real,
+     * grammar-checked file - but it keeps the assembler safe against a hand-built record.
      *
      * @param records the parsed {@code flicker:} blocks
-     * @param errors  the shared soft-error sink (unused here; see above)
+     * @param errors  the soft-error sink; an unrecognised colour appends here and drops its record
      * @return a one-element list holding the assembled {@link FlickerTable}
      * @author Rowan Crowther
      */
@@ -64,10 +66,25 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
 
         for (VisualsFlickerParseRecord record : records) {
             List<ColourType> steps = new ArrayList<>();
+            boolean illegalColour = false;
             for (String colour : record.colours()) {
-                steps.add(ColourType.getColourType(colour));
+                ColourType colourType = ColourType.getColourType(colour);
+                if (colourType == null) {
+                    errors.add("Flicker table at line: " + record.line() + " has " +
+                            "an illegal colour: " + colour + " name: " +
+                            record.name());
+                    illegalColour = true;
+                } else {
+                    steps.add(ColourType.getColourType(colour));
+                }
             }
+            if (illegalColour) continue;
             ColourType key = ColourType.getColourType(record.colourChar());
+            if (key == null) {
+                errors.add("Flicker table at line: " + record.line() + " has " +
+                        "an illegal colour: " + record.colourChar());
+                continue;
+            }
             ColourCycle value = new ColourCycle(record.colourChar(), steps);
             byAttr.put(key, value);
         }

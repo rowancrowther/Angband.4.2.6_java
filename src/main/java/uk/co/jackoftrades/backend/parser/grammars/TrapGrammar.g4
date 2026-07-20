@@ -222,10 +222,7 @@ graphics
                 char graphicsChr = $GLYPH_VALUES.getText().charAt(0);
                 String colour = $COLOUR_VALUES.getText();
                 ColourType colourType;
-                if (colour.length() > 1)
-                    colourType = ColourType.findColourType(colour);
-                else
-                    colourType = ColourType.findColourType(colour.charAt(0));
+                colourType = ColourType.getColourType(colour);
 
                 $adc = new AngbandDisplayCharacter(graphicsChr, colourType);
             }

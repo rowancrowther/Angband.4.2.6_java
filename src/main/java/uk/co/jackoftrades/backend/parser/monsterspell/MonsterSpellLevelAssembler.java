@@ -36,9 +36,9 @@ import java.util.List;
  * is zero. The grammar reproduces that by making {@code power-cutoff:} optional at the head of a
  * block, which surfaces here as a null or empty {@code power} that defaults to 0.
  * <p>
- * Colours follow the same C default: a level with no {@code lore-color-*} directive keeps the
- * zeroed {@code lore_attr}, which {@code ColourType.getColourType} yields as
- * {@code COLOUR_TYPE_DARK} for an empty string.
+ * A level with no {@code lore-color-*} directive is left with a {@code null} colour - the port
+ * models an absent lore colour as {@code null}. [C] instead keeps the zeroed {@code lore_attr}
+ * (0 == {@code COLOUR_DARK}); mapping that to a concrete default is deferred to the renderer.
  *
  * @author Rowan Crowther
  */
@@ -74,9 +74,33 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
                 }
             }
             String lore = record.loreDesc();
-            ColourType base = ColourType.getColourType(record.loreBaseColour());
-            ColourType resist = ColourType.getColourType(record.loreResistColour());
-            ColourType immune = ColourType.getColourType(record.loreImmuneColour());
+            ColourType base = null;
+            if (!record.loreBaseColour().isEmpty()) {
+                base = ColourType.getColourType(record.loreBaseColour());
+                if (base == null) {
+                    errors.add("Monster spell level at line: " + line + " has " +
+                            "an invalid base colour: " + record.loreBaseColour());
+                    continue;
+                }
+            }
+            ColourType resist = null;
+            if (!record.loreResistColour().isEmpty()) {
+                resist = ColourType.getColourType(record.loreResistColour());
+                if (resist == null) {
+                    errors.add("Monster spell level at line: " + line + " has " +
+                            "an invalid resist colour: " + record.loreResistColour());
+                    continue;
+                }
+            }
+            ColourType immune = null;
+            if (!record.loreImmuneColour().isEmpty()) {
+                immune = ColourType.getColourType(record.loreImmuneColour());
+                if (immune == null) {
+                    errors.add("Monster spell level at line: " + line + " has " +
+                            "an invalid immune colour: " + record.loreImmuneColour());
+                    continue;
+                }
+            }
             String msgSave = record.saveMessage();
             String msgVis = record.visMessage();
             String msgInvis = record.invisMessage();

@@ -353,18 +353,17 @@ class VisualsReaderTest {
         }
 
         @Test
-        void unknownColourCharIsSilentlyTreatedAsDarkWithNoError() {
-            // findColourType(char) never throws - it returns COLOUR_TYPE_DARK on a miss - so the
-            // assembler's catch(IllegalArgumentException) branch is dead and a stray char produces
-            // NO error. This pins current behaviour; it is arguably a gap (an unknown colour ought to
-            // be flagged) rather than a guarantee worth keeping.
+        void unknownColourCharIsASoftErrorAndSkipsTheRecord() {
+            // 'q' is not one of the 28 colour codes. getColourType now returns null on a miss (was
+            // COLOUR_TYPE_DARK), so the assembler flags it and drops the record rather than silently
+            // mapping the step to Dark.
             List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler()
                     .assemble(List.of(record("g", "q", List.of("q"))), errors);
 
-            assertTrue(errors.isEmpty(), errors::toString);
-            assertTrue(out.getFirst().getByGroup("g").containsKey("q"),
-                    "the record still assembles, its single step silently mapped to Dark");
+            assertEquals(1, errors.size(), errors::toString);
+            assertNull(out.getFirst().getByGroup("g"),
+                    "the record with the unknown colour is dropped, so its group is never created");
         }
 
         @Test

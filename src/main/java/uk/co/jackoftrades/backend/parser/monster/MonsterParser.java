@@ -14,8 +14,7 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Monster.g4 by ANTLR 4.13.2
+// Generated from Monster.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.monster;
 
 import org.antlr.v4.runtime.*;
@@ -464,7 +463,7 @@ public class MonsterParser extends Parser {
                 ((ColourContext) _localctx).COLOUR_CHAR = match(COLOUR_CHAR);
 
                 String raw = ((ColourContext) _localctx).COLOUR_CHAR.getText();
-                ((ColourContext) _localctx).colourEnum = ColourType.findColourType(raw.charAt(0));
+                ((ColourContext) _localctx).colourEnum = ColourType.getColourType(raw);
 
             }
         } catch (RecognitionException re) {
@@ -3085,15 +3084,15 @@ public class MonsterParser extends Parser {
 
             // TODO(ClaudeCode): the MonsterRace constructor signature has changed; this call no longer
             // matches. Commented out to keep the build green until the monster parser is re-plumbed.
-            /*AngbandDisplayCharacter adcInit = new AngbandDisplayCharacter(glyphInit, colourTypeInit);
-            ((MonsterContext) _localctx).race = new MonsterRace(nameInit, textInit, pluralInit,
-                    baseInit, averageHPInit, acInit, sleepInit, hearingInit,
-                    smellInit, speedInit, lightInit, mexpInit, freqInnateInit,
-                    freqSpellInit, spellPowerInit, flagsInit, flagsOffInit,
-                    spellsInit, blowsInit, levelInit, rarityInit, adcInit,
-                    maxNumInit, curNumInit, spellMsgInit, dropsInit,
-                    friendsInit, friendsBaseInit, mimicKindsInit, shapesInit,
-                    numShapesInit, groupNameInit, cycleNameInit);*/
+			            /*AngbandDisplayCharacter adcInit = new AngbandDisplayCharacter(glyphInit, colourTypeInit);
+			            ((MonsterContext)_localctx).race =  new MonsterRace(nameInit, textInit, pluralInit,
+			            baseInit, averageHPInit, acInit, sleepInit, hearingInit,
+			            smellInit, speedInit, lightInit, mexpInit, freqInnateInit,
+			            freqSpellInit, spellPowerInit, flagsInit, flagsOffInit,
+			            spellsInit, blowsInit, levelInit, rarityInit, adcInit,
+			            maxNumInit, curNumInit, spellMsgInit, dropsInit,
+			            friendsInit, friendsBaseInit, mimicKindsInit, shapesInit,
+			            numShapesInit, groupNameInit, cycleNameInit);*/
             ((MonsterContext) _localctx).race = null;
 
         } catch (RecognitionException re) {
@@ -3413,5 +3412,5 @@ public class MonsterParser extends Parser {
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-    }
+	}
 }

@@ -96,7 +96,7 @@ objRarity
 // repeat (see `pit`'s coloursInit list).
 colour
         returns[ColourType colourType]
-        :   COLOUR cc=COLOUR_CHAR { $colourType = ColourType.findColourType($cc.getText().charAt(0)); }
+        :   COLOUR cc=COLOUR_CHAR { $colourType = ColourType.getColourType($cc.getText()); }
         ;
 
 // "mon-base:<monster_base.txt name>" - an allowed monster base for this

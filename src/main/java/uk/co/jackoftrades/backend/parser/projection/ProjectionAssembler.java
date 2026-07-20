@@ -214,10 +214,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
                                      @NotNull List<String> errors) {
         ColourType result;
 
-        if (colour.length() == 1)
-            result = ColourType.findColourType(colour.charAt(0));
-        else
-            result = ColourType.findColourType(colour.toLowerCase());
+        result = ColourType.getColourType(colour);
 
         if (result == null) {
             errors.add("Unknown projection colour in Projection block: " + code +

@@ -156,7 +156,8 @@ public class VisualsReader {
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the shared hard-error catcher; {@link ParseErrors#throwIfAny()} fires after
      *                     the parse to fail closed before the records are used
-     * @param errors       the soft-error sink (unused; the flicker assembler has no soft-error path)
+     * @param errors       the soft-error sink (unused here; the flicker assembler's soft errors
+     *                     arise in the assembler, not this extractor)
      * @return the parsed {@code flicker:} records
      * @throws IOException never thrown here, but declared by the {@link GrammarDriver.Extractor} contract
      * @author Rowan Crowther

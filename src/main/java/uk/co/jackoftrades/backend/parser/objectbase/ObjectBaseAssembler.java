@@ -54,11 +54,10 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             }
             String rawColour = record.colour();
             ColourType colour;
-            try {
-                colour = ColourType.getColourType(rawColour);
-            } catch (IllegalArgumentException e) {
-                errors.add("Block starting at line: " + record.line() +
-                        " has an invalid Colour " + rawColour);
+            colour = ColourType.getColourType(rawColour);
+            if (colour == null) {
+                errors.add("Block starting at line: " + record.line() + " has " +
+                        "an invalid colour " + rawColour);
                 continue;
             }
             Flag<ObjectKindFlag> kindFlag = new Flag<>(ObjectKindFlag.class);

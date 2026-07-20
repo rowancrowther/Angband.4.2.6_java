@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.backend.strings;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +30,7 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
  * Class to hold a single character of a particular colour
  */
 public class AngbandDisplayCharacter {
+    private static final Logger logger = LogManager.getLogger();
     /**
      * The glyph to display.
      *
@@ -86,13 +89,16 @@ public class AngbandDisplayCharacter {
      *                  representation of the ColourType, or a name
      *                  of the ColourType
      */
-    public AngbandDisplayCharacter(char character, String colour) {
+    public AngbandDisplayCharacter(char character, @NotNull String colour) {
         ColourType colourType;
 
-        if (colour.length() == 1)
-            colourType = ColourType.findColourType(colour.charAt(0));
-        else
-            colourType = ColourType.findColourType(colour);
+        colourType = ColourType.getColourType(colour);
+
+        if (colourType == null) {
+            IllegalArgumentException e = new IllegalArgumentException("colour type not found");
+            logger.error("colour type not found", e);
+            throw e;
+        }
 
         this.character = character;
         this.attributeColour = colourType.colourAttribute(ColourTranslation.ATTR_FULL);

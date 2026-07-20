@@ -14,10 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Monster.g4 by ANTLR 4.13.2
+// Generated from Monster.g4 by ANTLR 4.13.2
 package uk.co.jackoftrades.backend.parser.monster;
-
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -26,7 +24,7 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * by {@link MonsterParser}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- *            operations with no return type.
+ * operations with no return type.
  */
 public interface MonsterVisitor<T> extends ParseTreeVisitor<T> {
     /**

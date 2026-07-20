@@ -96,8 +96,14 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                 String msgUp = g.msgUp().length() > 1 ? g.msgUp() : null;
                 try {
                     ColourType colourType = ColourType.getColourType(colour);
-                    max = Integer.parseInt(g.max());
-                    grades.add(new TimedGrade(count, colourType, max, status, msgUp, msgDown));
+                    if (colourType == null) {
+                        errors.add("Player Timed record at line: " + line + " has " +
+                                "an invalid colour: " + colour);
+                        illegalGrade = true;
+                    } else {
+                        max = Integer.parseInt(g.max());
+                        grades.add(new TimedGrade(count, colourType, max, status, msgUp, msgDown));
+                    }
                 } catch (NumberFormatException e) {
                     errors.add("Player Timed record at line: " + line + " has " +
                             "a malformed max integer: " + g.max());

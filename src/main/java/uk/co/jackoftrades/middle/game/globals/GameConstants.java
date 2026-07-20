@@ -26,6 +26,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.*;
 import uk.co.jackoftrades.backend.parser.gameconstants.GameConstantsParseRecord;
+import uk.co.jackoftrades.frontend.colour.FlickerTable;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
@@ -299,6 +300,7 @@ public class GameConstants {
     private static List<BlowEffect> blowEffects;
     private static List<MonsterSpellType> monsterSpellTypes;
     private static VisualsCycler visualsCyclerTable = null;
+    private static FlickerTable visualsFlickerTable = null;
     private static List<MonsterRace> monsterRaces;
     private static List<PitProfile> monsterPitProfiles;
     private static List<MonsterLore> monsterLore;
@@ -880,7 +882,7 @@ public class GameConstants {
             loadBlowMethods();
             loadBlowEffects();          // Dependent on Projections
             loadMonsterSpellTypes();
-//            loadVisualCyclerTable();
+            loadVisualTables();
 //            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
 //            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
@@ -969,12 +971,23 @@ public class GameConstants {
         }
     }
 
-    private static void loadVisualCyclerTable() {
+    private static void loadVisualTables() {
         VisualsReader parser = new VisualsReader();
         String filename = ANGBAND_DIR_GAMEDATA + "visuals.txt";
 
         try {
-            visualsCyclerTable = parser.parse(filename);
+            ParseResult<VisualsCycler> cyclers = parser.parseCyclerWithResults(filename);
+            ParseResult<FlickerTable> flickers = parser.parseFlickerWithResults(filename);
+
+            if (cyclers.hasErrors() || flickers.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            visualsCyclerTable = cyclers.items().getFirst();
+            visualsFlickerTable = flickers.items().getFirst();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

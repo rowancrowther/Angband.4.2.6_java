@@ -14,9 +14,8 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Visuals.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.visuals;
+// Generated from VisualsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.visuals;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.atn.ATN;
@@ -27,16 +26,14 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.frontend.colour.VisualsColourCycle;
-import uk.co.jackoftrades.frontend.colour.VisualsCycleGroup;
-import uk.co.jackoftrades.frontend.colour.VisualsCycler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.backend.parser.visuals.VisualsCycleParseRecord;
+import uk.co.jackoftrades.backend.parser.visuals.VisualsFlickerParseRecord;
 
 import java.util.ArrayList;
 import java.util.List;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
-public class VisualsParser extends Parser {
+public class VisualsGrammar extends Parser {
     static {
         RuntimeMetaData.checkVersion("4.13.2", RuntimeMetaData.VERSION);
     }
@@ -45,8 +42,9 @@ public class VisualsParser extends Parser {
     protected static final PredictionContextCache _sharedContextCache =
             new PredictionContextCache();
     public static final int
-            COMMENT = 1, EOL = 2, FLICKER = 3, FLICKER_COLOUR = 4, CYCLE = 5, FANCY = 6, CYCLE_COLOUR = 7,
-            COLON = 8, COLOUR_CHAR = 9, LCASE = 10;
+            FLICKER = 1, FLICKER_COLOUR = 2, CYCLE = 3, CYCLE_COLOUR = 4, COMMENT = 5, EOL = 6,
+            STRING = 7, ROL_EOL = 8, COLOUR_CHAR = 9, SWAP_COLON = 10, COLOUR_EOL = 11, DELIM_COLON = 12,
+            STRING_BETWEEN_COLON = 13, POP_EOL = 14;
     public static final int
             RULE_flicker = 0, RULE_flickerColour = 1, RULE_flickerBlock = 2, RULE_cycle = 3,
             RULE_cycleColour = 4, RULE_cycleBlock = 5, RULE_file = 6;
@@ -62,8 +60,7 @@ public class VisualsParser extends Parser {
 
     private static String[] makeLiteralNames() {
         return new String[]{
-                null, null, null, "'flicker:'", "'flicker-color:'", "'cycle:'", "'fancy:'",
-                "'cycle-color:'", "':'"
+                null, "'flicker:'", "'flicker-color:'", "'cycle:'", "'cycle-color:'"
         };
     }
 
@@ -71,8 +68,9 @@ public class VisualsParser extends Parser {
 
     private static String[] makeSymbolicNames() {
         return new String[]{
-                null, "COMMENT", "EOL", "FLICKER", "FLICKER_COLOUR", "CYCLE", "FANCY",
-                "CYCLE_COLOUR", "COLON", "COLOUR_CHAR", "LCASE"
+                null, "FLICKER", "FLICKER_COLOUR", "CYCLE", "CYCLE_COLOUR", "COMMENT",
+                "EOL", "STRING", "ROL_EOL", "COLOUR_CHAR", "SWAP_COLON", "COLOUR_EOL",
+                "DELIM_COLON", "STRING_BETWEEN_COLON", "POP_EOL"
         };
     }
 
@@ -113,7 +111,7 @@ public class VisualsParser extends Parser {
 
     @Override
     public String getGrammarFileName() {
-        return "Visuals.g4";
+        return "VisualsGrammar.g4";
     }
 
     @Override
@@ -131,27 +129,32 @@ public class VisualsParser extends Parser {
         return _ATN;
     }
 
-    public VisualsParser(TokenStream input) {
+    public VisualsGrammar(TokenStream input) {
         super(input);
         _interp = new ParserATNSimulator(this, _ATN, _decisionToDFA, _sharedContextCache);
     }
 
     @SuppressWarnings("CheckReturnValue")
     public static class FlickerContext extends ParserRuleContext {
+        public String colourChar;
+        public String blockName;
+        public Token COLOUR_CHAR;
+        public Token STRING;
+
         public TerminalNode FLICKER() {
-            return getToken(VisualsParser.FLICKER, 0);
+            return getToken(VisualsGrammar.FLICKER, 0);
         }
 
         public TerminalNode COLOUR_CHAR() {
-            return getToken(VisualsParser.COLOUR_CHAR, 0);
+            return getToken(VisualsGrammar.COLOUR_CHAR, 0);
         }
 
-        public TerminalNode COLON() {
-            return getToken(VisualsParser.COLON, 0);
+        public TerminalNode SWAP_COLON() {
+            return getToken(VisualsGrammar.SWAP_COLON, 0);
         }
 
-        public TerminalNode LCASE() {
-            return getToken(VisualsParser.LCASE, 0);
+        public TerminalNode STRING() {
+            return getToken(VisualsGrammar.STRING, 0);
         }
 
         public FlickerContext(ParserRuleContext parent, int invokingState) {
@@ -165,17 +168,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterFlicker(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterFlicker(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitFlicker(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitFlicker(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor) return ((VisualsVisitor<? extends T>) visitor).visitFlicker(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitFlicker(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -189,11 +193,13 @@ public class VisualsParser extends Parser {
                 setState(14);
                 match(FLICKER);
                 setState(15);
-                match(COLOUR_CHAR);
+                ((FlickerContext) _localctx).COLOUR_CHAR = match(COLOUR_CHAR);
                 setState(16);
-                match(COLON);
+                match(SWAP_COLON);
                 setState(17);
-                match(LCASE);
+                ((FlickerContext) _localctx).STRING = match(STRING);
+                ((FlickerContext) _localctx).colourChar = ((FlickerContext) _localctx).COLOUR_CHAR.getText();
+                ((FlickerContext) _localctx).blockName = ((FlickerContext) _localctx).STRING.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -207,12 +213,15 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FlickerColourContext extends ParserRuleContext {
+        public String colourChar;
+        public Token COLOUR_CHAR;
+
         public TerminalNode FLICKER_COLOUR() {
-            return getToken(VisualsParser.FLICKER_COLOUR, 0);
+            return getToken(VisualsGrammar.FLICKER_COLOUR, 0);
         }
 
         public TerminalNode COLOUR_CHAR() {
-            return getToken(VisualsParser.COLOUR_CHAR, 0);
+            return getToken(VisualsGrammar.COLOUR_CHAR, 0);
         }
 
         public FlickerColourContext(ParserRuleContext parent, int invokingState) {
@@ -226,18 +235,19 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterFlickerColour(this);
+            if (listener instanceof VisualsGrammarListener)
+                ((VisualsGrammarListener) listener).enterFlickerColour(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitFlickerColour(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitFlickerColour(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor)
-                return ((VisualsVisitor<? extends T>) visitor).visitFlickerColour(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitFlickerColour(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -248,10 +258,11 @@ public class VisualsParser extends Parser {
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(19);
-                match(FLICKER_COLOUR);
                 setState(20);
-                match(COLOUR_CHAR);
+                match(FLICKER_COLOUR);
+                setState(21);
+                ((FlickerColourContext) _localctx).COLOUR_CHAR = match(COLOUR_CHAR);
+                ((FlickerColourContext) _localctx).colourChar = ((FlickerColourContext) _localctx).COLOUR_CHAR.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -265,6 +276,10 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FlickerBlockContext extends ParserRuleContext {
+        public VisualsFlickerParseRecord flickerRecord;
+        public FlickerContext flicker;
+        public FlickerColourContext flickerColour;
+
         public FlickerContext flicker() {
             return getRuleContext(FlickerContext.class, 0);
         }
@@ -288,18 +303,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterFlickerBlock(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterFlickerBlock(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitFlickerBlock(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitFlickerBlock(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor)
-                return ((VisualsVisitor<? extends T>) visitor).visitFlickerBlock(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitFlickerBlock(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -307,27 +322,40 @@ public class VisualsParser extends Parser {
     public final FlickerBlockContext flickerBlock() throws RecognitionException {
         FlickerBlockContext _localctx = new FlickerBlockContext(_ctx, getState());
         enterRule(_localctx, 4, RULE_flickerBlock);
+
+        ArrayList<String> colourChars = new ArrayList<>();
+        int line = _localctx.start.getLine();
+        String name = "";
+        String colourChar = "";
+
         int _la;
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(22);
-                flicker();
                 setState(24);
+                ((FlickerBlockContext) _localctx).flicker = flicker();
+                name = ((FlickerBlockContext) _localctx).flicker.blockName;
+                colourChar = ((FlickerBlockContext) _localctx).flicker.colourChar;
+                setState(29);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 do {
                     {
                         {
-                            setState(23);
-                            flickerColour();
+                            setState(26);
+                            ((FlickerBlockContext) _localctx).flickerColour = flickerColour();
+                            colourChars.add(((FlickerBlockContext) _localctx).flickerColour.colourChar);
                         }
                     }
-                    setState(26);
+                    setState(31);
                     _errHandler.sync(this);
                     _la = _input.LA(1);
                 } while (_la == FLICKER_COLOUR);
             }
+            _ctx.stop = _input.LT(-1);
+
+            ((FlickerBlockContext) _localctx).flickerRecord = new VisualsFlickerParseRecord(name, colourChar, colourChars, line);
+
         } catch (RecognitionException re) {
             _localctx.exception = re;
             _errHandler.reportError(this, re);
@@ -340,29 +368,25 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class CycleContext extends ParserRuleContext {
-        public String groupName;
+        public String cycleGroup;
         public String cycleName;
-        public Token LCASE;
-        public Token COLOUR_CHAR;
+        public Token STRING_BETWEEN_COLON;
+        public Token STRING;
 
         public TerminalNode CYCLE() {
-            return getToken(VisualsParser.CYCLE, 0);
+            return getToken(VisualsGrammar.CYCLE, 0);
         }
 
-        public TerminalNode FLICKER() {
-            return getToken(VisualsParser.FLICKER, 0);
+        public TerminalNode STRING_BETWEEN_COLON() {
+            return getToken(VisualsGrammar.STRING_BETWEEN_COLON, 0);
         }
 
-        public TerminalNode FANCY() {
-            return getToken(VisualsParser.FANCY, 0);
+        public TerminalNode DELIM_COLON() {
+            return getToken(VisualsGrammar.DELIM_COLON, 0);
         }
 
-        public TerminalNode LCASE() {
-            return getToken(VisualsParser.LCASE, 0);
-        }
-
-        public TerminalNode COLOUR_CHAR() {
-            return getToken(VisualsParser.COLOUR_CHAR, 0);
+        public TerminalNode STRING() {
+            return getToken(VisualsGrammar.STRING, 0);
         }
 
         public CycleContext(ParserRuleContext parent, int invokingState) {
@@ -376,17 +400,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterCycle(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterCycle(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitCycle(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitCycle(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor) return ((VisualsVisitor<? extends T>) visitor).visitCycle(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitCycle(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -397,44 +422,16 @@ public class VisualsParser extends Parser {
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(28);
-                match(CYCLE);
                 setState(33);
-                _errHandler.sync(this);
-                switch (_input.LA(1)) {
-                    case FLICKER: {
-                        setState(29);
-                        match(FLICKER);
-                        ((CycleContext) _localctx).groupName = "flicker";
-                    }
-                    break;
-                    case FANCY: {
-                        setState(31);
-                        match(FANCY);
-                        ((CycleContext) _localctx).groupName = "fancy";
-                    }
-                    break;
-                    default:
-                        throw new NoViableAltException(this);
-                }
-                setState(39);
-                _errHandler.sync(this);
-                switch (_input.LA(1)) {
-                    case LCASE: {
-                        setState(35);
-                        ((CycleContext) _localctx).LCASE = match(LCASE);
-                        ((CycleContext) _localctx).cycleName = ((CycleContext) _localctx).LCASE.getText();
-                    }
-                    break;
-                    case COLOUR_CHAR: {
-                        setState(37);
-                        ((CycleContext) _localctx).COLOUR_CHAR = match(COLOUR_CHAR);
-                        ((CycleContext) _localctx).cycleName = ((CycleContext) _localctx).COLOUR_CHAR.getText();
-                    }
-                    break;
-                    default:
-                        throw new NoViableAltException(this);
-                }
+                match(CYCLE);
+                setState(34);
+                ((CycleContext) _localctx).STRING_BETWEEN_COLON = match(STRING_BETWEEN_COLON);
+                setState(35);
+                match(DELIM_COLON);
+                setState(36);
+                ((CycleContext) _localctx).STRING = match(STRING);
+                ((CycleContext) _localctx).cycleGroup = ((CycleContext) _localctx).STRING_BETWEEN_COLON.getText();
+                ((CycleContext) _localctx).cycleName = ((CycleContext) _localctx).STRING.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -448,15 +445,15 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class CycleColourContext extends ParserRuleContext {
-        public ColourType colourType;
+        public String colour;
         public Token COLOUR_CHAR;
 
         public TerminalNode CYCLE_COLOUR() {
-            return getToken(VisualsParser.CYCLE_COLOUR, 0);
+            return getToken(VisualsGrammar.CYCLE_COLOUR, 0);
         }
 
         public TerminalNode COLOUR_CHAR() {
-            return getToken(VisualsParser.COLOUR_CHAR, 0);
+            return getToken(VisualsGrammar.COLOUR_CHAR, 0);
         }
 
         public CycleColourContext(ParserRuleContext parent, int invokingState) {
@@ -470,18 +467,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterCycleColour(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterCycleColour(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitCycleColour(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitCycleColour(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor)
-                return ((VisualsVisitor<? extends T>) visitor).visitCycleColour(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitCycleColour(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -492,14 +489,11 @@ public class VisualsParser extends Parser {
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(41);
+                setState(39);
                 match(CYCLE_COLOUR);
-                setState(42);
+                setState(40);
                 ((CycleColourContext) _localctx).COLOUR_CHAR = match(COLOUR_CHAR);
-
-                char rawChar = ((CycleColourContext) _localctx).COLOUR_CHAR.getText().charAt(0);
-                ((CycleColourContext) _localctx).colourType = ColourType.findColourType(rawChar);
-
+                ((CycleColourContext) _localctx).colour = ((CycleColourContext) _localctx).COLOUR_CHAR.getText();
             }
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -513,7 +507,7 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class CycleBlockContext extends ParserRuleContext {
-        public VisualsCycleGroup group;
+        public VisualsCycleParseRecord cycleRecord;
         public CycleContext cycle;
         public CycleColourContext cycleColour;
 
@@ -540,17 +534,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterCycleBlock(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterCycleBlock(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitCycleBlock(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitCycleBlock(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor) return ((VisualsVisitor<? extends T>) visitor).visitCycleBlock(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitCycleBlock(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -559,49 +554,38 @@ public class VisualsParser extends Parser {
         CycleBlockContext _localctx = new CycleBlockContext(_ctx, getState());
         enterRule(_localctx, 10, RULE_cycleBlock);
 
-        String groupName = "";
-        String cycleName = "";
-        List<ColourType> colourTypes = new ArrayList<>();
-        ((CycleBlockContext) _localctx).group = new VisualsCycleGroup();
+        String cycleGroup;
+        String cycleName;
+        ArrayList<String> colours = new ArrayList<>();
+        int line = _localctx.start.getLine();
 
         int _la;
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(45);
+                setState(43);
                 ((CycleBlockContext) _localctx).cycle = cycle();
-
-                groupName = ((CycleBlockContext) _localctx).cycle.groupName;
+                cycleGroup = ((CycleBlockContext) _localctx).cycle.cycleGroup;
                 cycleName = ((CycleBlockContext) _localctx).cycle.cycleName;
-
-                setState(50);
+                setState(48);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 do {
                     {
                         {
-                            setState(47);
+                            setState(45);
                             ((CycleBlockContext) _localctx).cycleColour = cycleColour();
-
-                            ColourType colourType = ((CycleBlockContext) _localctx).cycleColour.colourType;
-                            colourTypes.add(colourType);
-
+                            colours.add(((CycleBlockContext) _localctx).cycleColour.colour);
                         }
                     }
-                    setState(52);
+                    setState(50);
                     _errHandler.sync(this);
                     _la = _input.LA(1);
                 } while (_la == CYCLE_COLOUR);
             }
             _ctx.stop = _input.LT(-1);
 
-            VisualsColourCycle colourCycle = new VisualsColourCycle(cycleName, ColourType.COLOUR_TYPE_DARK);
-
-            for (ColourType colType : colourTypes)
-                colourCycle.addStep(colType);
-
-            _localctx.group.setGroupName(groupName);
-            _localctx.group.addCycle(colourCycle);
+            ((CycleBlockContext) _localctx).cycleRecord = new VisualsCycleParseRecord(cycleGroup, cycleName, colours, line);
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -615,11 +599,13 @@ public class VisualsParser extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
-        public VisualsCycler cycler;
+        public List<VisualsFlickerParseRecord> flickers;
+        public List<VisualsCycleParseRecord> cycles;
+        public FlickerBlockContext flickerBlock;
         public CycleBlockContext cycleBlock;
 
         public TerminalNode EOF() {
-            return getToken(VisualsParser.EOF, 0);
+            return getToken(VisualsGrammar.EOF, 0);
         }
 
         public List<FlickerBlockContext> flickerBlock() {
@@ -649,17 +635,18 @@ public class VisualsParser extends Parser {
 
         @Override
         public void enterRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).enterFile(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).enterFile(this);
         }
 
         @Override
         public void exitRule(ParseTreeListener listener) {
-            if (listener instanceof VisualsListener) ((VisualsListener) listener).exitFile(this);
+            if (listener instanceof VisualsGrammarListener) ((VisualsGrammarListener) listener).exitFile(this);
         }
 
         @Override
         public <T> T accept(ParseTreeVisitor<? extends T> visitor) {
-            if (visitor instanceof VisualsVisitor) return ((VisualsVisitor<? extends T>) visitor).visitFile(this);
+            if (visitor instanceof VisualsGrammarVisitor)
+                return ((VisualsGrammarVisitor<? extends T>) visitor).visitFile(this);
             else return visitor.visitChildren(this);
         }
     }
@@ -667,45 +654,45 @@ public class VisualsParser extends Parser {
     public final FileContext file() throws RecognitionException {
         FileContext _localctx = new FileContext(_ctx, getState());
         enterRule(_localctx, 12, RULE_file);
-
-        ((FileContext) _localctx).cycler = new VisualsCycler();
-
+        ((FileContext) _localctx).flickers = new ArrayList<>();
+        ((FileContext) _localctx).cycles = new ArrayList<>();
         int _la;
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(55);
+                setState(58);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
                 do {
                     {
-                        {
-                            setState(54);
-                            flickerBlock();
+                        setState(58);
+                        _errHandler.sync(this);
+                        switch (_input.LA(1)) {
+                            case FLICKER: {
+                                {
+                                    setState(52);
+                                    ((FileContext) _localctx).flickerBlock = flickerBlock();
+                                    _localctx.flickers.add(((FileContext) _localctx).flickerBlock.flickerRecord);
+                                }
+                            }
+                            break;
+                            case CYCLE: {
+                                {
+                                    setState(55);
+                                    ((FileContext) _localctx).cycleBlock = cycleBlock();
+                                    _localctx.cycles.add(((FileContext) _localctx).cycleBlock.cycleRecord);
+                                }
+                            }
+                            break;
+                            default:
+                                throw new NoViableAltException(this);
                         }
                     }
-                    setState(57);
+                    setState(60);
                     _errHandler.sync(this);
                     _la = _input.LA(1);
-                } while (_la == FLICKER);
+                } while (_la == FLICKER || _la == CYCLE);
                 setState(62);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        {
-                            setState(59);
-                            ((FileContext) _localctx).cycleBlock = cycleBlock();
-
-                            _localctx.cycler.addVisualsCycleGroup(((FileContext) _localctx).cycleBlock.group);
-
-                        }
-                    }
-                    setState(64);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while (_la == CYCLE);
-                setState(66);
                 match(EOF);
             }
         } catch (RecognitionException re) {
@@ -719,47 +706,44 @@ public class VisualsParser extends Parser {
     }
 
     public static final String _serializedATN =
-            "\u0004\u0001\nE\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
+            "\u0004\u0001\u000eA\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001\u0002" +
                     "\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004\u0002" +
                     "\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
-                    "\u0002\u0001\u0002\u0004\u0002\u0019\b\u0002\u000b\u0002\f\u0002\u001a" +
-                    "\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0003\u0003" +
-                    "\"\b\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0003\u0003" +
-                    "(\b\u0003\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005" +
-                    "\u0001\u0005\u0001\u0005\u0001\u0005\u0001\u0005\u0004\u00053\b\u0005" +
-                    "\u000b\u0005\f\u00054\u0001\u0006\u0004\u00068\b\u0006\u000b\u0006\f\u0006" +
-                    "9\u0001\u0006\u0001\u0006\u0001\u0006\u0004\u0006?\b\u0006\u000b\u0006" +
-                    "\f\u0006@\u0001\u0006\u0001\u0006\u0001\u0006\u0000\u0000\u0007\u0000" +
-                    "\u0002\u0004\u0006\b\n\f\u0000\u0000C\u0000\u000e\u0001\u0000\u0000\u0000" +
-                    "\u0002\u0013\u0001\u0000\u0000\u0000\u0004\u0016\u0001\u0000\u0000\u0000" +
-                    "\u0006\u001c\u0001\u0000\u0000\u0000\b)\u0001\u0000\u0000\u0000\n-\u0001" +
-                    "\u0000\u0000\u0000\f7\u0001\u0000\u0000\u0000\u000e\u000f\u0005\u0003" +
-                    "\u0000\u0000\u000f\u0010\u0005\t\u0000\u0000\u0010\u0011\u0005\b\u0000" +
-                    "\u0000\u0011\u0012\u0005\n\u0000\u0000\u0012\u0001\u0001\u0000\u0000\u0000" +
-                    "\u0013\u0014\u0005\u0004\u0000\u0000\u0014\u0015\u0005\t\u0000\u0000\u0015" +
-                    "\u0003\u0001\u0000\u0000\u0000\u0016\u0018\u0003\u0000\u0000\u0000\u0017" +
-                    "\u0019\u0003\u0002\u0001\u0000\u0018\u0017\u0001\u0000\u0000\u0000\u0019" +
-                    "\u001a\u0001\u0000\u0000\u0000\u001a\u0018\u0001\u0000\u0000\u0000\u001a" +
-                    "\u001b\u0001\u0000\u0000\u0000\u001b\u0005\u0001\u0000\u0000\u0000\u001c" +
-                    "!\u0005\u0005\u0000\u0000\u001d\u001e\u0005\u0003\u0000\u0000\u001e\"" +
-                    "\u0006\u0003\uffff\uffff\u0000\u001f \u0005\u0006\u0000\u0000 \"\u0006" +
-                    "\u0003\uffff\uffff\u0000!\u001d\u0001\u0000\u0000\u0000!\u001f\u0001\u0000" +
-                    "\u0000\u0000\"\'\u0001\u0000\u0000\u0000#$\u0005\n\u0000\u0000$(\u0006" +
-                    "\u0003\uffff\uffff\u0000%&\u0005\t\u0000\u0000&(\u0006\u0003\uffff\uffff" +
-                    "\u0000\'#\u0001\u0000\u0000\u0000\'%\u0001\u0000\u0000\u0000(\u0007\u0001" +
-                    "\u0000\u0000\u0000)*\u0005\u0007\u0000\u0000*+\u0005\t\u0000\u0000+,\u0006" +
-                    "\u0004\uffff\uffff\u0000,\t\u0001\u0000\u0000\u0000-.\u0003\u0006\u0003" +
-                    "\u0000.2\u0006\u0005\uffff\uffff\u0000/0\u0003\b\u0004\u000001\u0006\u0005" +
-                    "\uffff\uffff\u000013\u0001\u0000\u0000\u00002/\u0001\u0000\u0000\u0000" +
-                    "34\u0001\u0000\u0000\u000042\u0001\u0000\u0000\u000045\u0001\u0000\u0000" +
-                    "\u00005\u000b\u0001\u0000\u0000\u000068\u0003\u0004\u0002\u000076\u0001" +
-                    "\u0000\u0000\u000089\u0001\u0000\u0000\u000097\u0001\u0000\u0000\u0000" +
-                    "9:\u0001\u0000\u0000\u0000:>\u0001\u0000\u0000\u0000;<\u0003\n\u0005\u0000" +
-                    "<=\u0006\u0006\uffff\uffff\u0000=?\u0001\u0000\u0000\u0000>;\u0001\u0000" +
-                    "\u0000\u0000?@\u0001\u0000\u0000\u0000@>\u0001\u0000\u0000\u0000@A\u0001" +
-                    "\u0000\u0000\u0000AB\u0001\u0000\u0000\u0000BC\u0005\u0000\u0000\u0001" +
-                    "C\r\u0001\u0000\u0000\u0000\u0006\u001a!\'49@";
+                    "\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0001\u0001\u0001\u0001" +
+                    "\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001\u0002\u0001\u0002\u0001" +
+                    "\u0002\u0004\u0002\u001e\b\u0002\u000b\u0002\f\u0002\u001f\u0001\u0003" +
+                    "\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0004" +
+                    "\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0005\u0001\u0005\u0001\u0005" +
+                    "\u0001\u0005\u0001\u0005\u0004\u00051\b\u0005\u000b\u0005\f\u00052\u0001" +
+                    "\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0004" +
+                    "\u0006;\b\u0006\u000b\u0006\f\u0006<\u0001\u0006\u0001\u0006\u0001\u0006" +
+                    "\u0000\u0000\u0007\u0000\u0002\u0004\u0006\b\n\f\u0000\u0000=\u0000\u000e" +
+                    "\u0001\u0000\u0000\u0000\u0002\u0014\u0001\u0000\u0000\u0000\u0004\u0018" +
+                    "\u0001\u0000\u0000\u0000\u0006!\u0001\u0000\u0000\u0000\b\'\u0001\u0000" +
+                    "\u0000\u0000\n+\u0001\u0000\u0000\u0000\f:\u0001\u0000\u0000\u0000\u000e" +
+                    "\u000f\u0005\u0001\u0000\u0000\u000f\u0010\u0005\t\u0000\u0000\u0010\u0011" +
+                    "\u0005\n\u0000\u0000\u0011\u0012\u0005\u0007\u0000\u0000\u0012\u0013\u0006" +
+                    "\u0000\uffff\uffff\u0000\u0013\u0001\u0001\u0000\u0000\u0000\u0014\u0015" +
+                    "\u0005\u0002\u0000\u0000\u0015\u0016\u0005\t\u0000\u0000\u0016\u0017\u0006" +
+                    "\u0001\uffff\uffff\u0000\u0017\u0003\u0001\u0000\u0000\u0000\u0018\u0019" +
+                    "\u0003\u0000\u0000\u0000\u0019\u001d\u0006\u0002\uffff\uffff\u0000\u001a" +
+                    "\u001b\u0003\u0002\u0001\u0000\u001b\u001c\u0006\u0002\uffff\uffff\u0000" +
+                    "\u001c\u001e\u0001\u0000\u0000\u0000\u001d\u001a\u0001\u0000\u0000\u0000" +
+                    "\u001e\u001f\u0001\u0000\u0000\u0000\u001f\u001d\u0001\u0000\u0000\u0000" +
+                    "\u001f \u0001\u0000\u0000\u0000 \u0005\u0001\u0000\u0000\u0000!\"\u0005" +
+                    "\u0003\u0000\u0000\"#\u0005\r\u0000\u0000#$\u0005\f\u0000\u0000$%\u0005" +
+                    "\u0007\u0000\u0000%&\u0006\u0003\uffff\uffff\u0000&\u0007\u0001\u0000" +
+                    "\u0000\u0000\'(\u0005\u0004\u0000\u0000()\u0005\t\u0000\u0000)*\u0006" +
+                    "\u0004\uffff\uffff\u0000*\t\u0001\u0000\u0000\u0000+,\u0003\u0006\u0003" +
+                    "\u0000,0\u0006\u0005\uffff\uffff\u0000-.\u0003\b\u0004\u0000./\u0006\u0005" +
+                    "\uffff\uffff\u0000/1\u0001\u0000\u0000\u00000-\u0001\u0000\u0000\u0000" +
+                    "12\u0001\u0000\u0000\u000020\u0001\u0000\u0000\u000023\u0001\u0000\u0000" +
+                    "\u00003\u000b\u0001\u0000\u0000\u000045\u0003\u0004\u0002\u000056\u0006" +
+                    "\u0006\uffff\uffff\u00006;\u0001\u0000\u0000\u000078\u0003\n\u0005\u0000" +
+                    "89\u0006\u0006\uffff\uffff\u00009;\u0001\u0000\u0000\u0000:4\u0001\u0000" +
+                    "\u0000\u0000:7\u0001\u0000\u0000\u0000;<\u0001\u0000\u0000\u0000<:\u0001" +
+                    "\u0000\u0000\u0000<=\u0001\u0000\u0000\u0000=>\u0001\u0000\u0000\u0000" +
+                    ">?\u0005\u0000\u0000\u0001?\r\u0001\u0000\u0000\u0000\u0004\u001f2:<";
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 

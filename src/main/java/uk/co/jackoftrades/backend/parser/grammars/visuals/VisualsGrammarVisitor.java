@@ -14,73 +14,72 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Visuals.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.visuals;
+// Generated from VisualsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.visuals;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
 /**
  * This interface defines a complete generic visitor for a parse tree produced
- * by {@link VisualsParser}.
+ * by {@link VisualsGrammar}.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
  *            operations with no return type.
  */
-public interface VisualsVisitor<T> extends ParseTreeVisitor<T> {
+public interface VisualsGrammarVisitor<T> extends ParseTreeVisitor<T> {
     /**
-     * Visit a parse tree produced by {@link VisualsParser#flicker}.
+     * Visit a parse tree produced by {@link VisualsGrammar#flicker}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFlicker(VisualsParser.FlickerContext ctx);
+    T visitFlicker(VisualsGrammar.FlickerContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#flickerColour}.
+     * Visit a parse tree produced by {@link VisualsGrammar#flickerColour}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFlickerColour(VisualsParser.FlickerColourContext ctx);
+    T visitFlickerColour(VisualsGrammar.FlickerColourContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#flickerBlock}.
+     * Visit a parse tree produced by {@link VisualsGrammar#flickerBlock}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFlickerBlock(VisualsParser.FlickerBlockContext ctx);
+    T visitFlickerBlock(VisualsGrammar.FlickerBlockContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#cycle}.
+     * Visit a parse tree produced by {@link VisualsGrammar#cycle}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitCycle(VisualsParser.CycleContext ctx);
+    T visitCycle(VisualsGrammar.CycleContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#cycleColour}.
+     * Visit a parse tree produced by {@link VisualsGrammar#cycleColour}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitCycleColour(VisualsParser.CycleColourContext ctx);
+    T visitCycleColour(VisualsGrammar.CycleColourContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#cycleBlock}.
+     * Visit a parse tree produced by {@link VisualsGrammar#cycleBlock}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitCycleBlock(VisualsParser.CycleBlockContext ctx);
+    T visitCycleBlock(VisualsGrammar.CycleBlockContext ctx);
 
     /**
-     * Visit a parse tree produced by {@link VisualsParser#file}.
+     * Visit a parse tree produced by {@link VisualsGrammar#file}.
      *
      * @param ctx the parse tree
      * @return the visitor result
      */
-    T visitFile(VisualsParser.FileContext ctx);
+    T visitFile(VisualsGrammar.FileContext ctx);
 }

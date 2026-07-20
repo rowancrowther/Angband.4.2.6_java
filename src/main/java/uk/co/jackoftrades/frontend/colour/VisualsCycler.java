@@ -17,93 +17,60 @@
 
 package uk.co.jackoftrades.frontend.colour;
 
-import org.jetbrains.annotations.CheckReturnValue;
-import org.jetbrains.annotations.Contract;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * The top-level registry of colour-cycling animations, holding all
- * {@link VisualsCycleGroup}s loaded from the visuals data file and resolving a
- * cycle (or a specific frame's colour) by group + cycle name. This is the
- * aggregate object produced by the visuals parser and queried by the rest of the
- * colour-cycling system.
+ * The named-cycle table: colour cycles keyed by (group, name). This is the tier-1 lookup for
+ * animated colours - a monster with an explicit {@code color-cycle:<group>:<name>} assignment
+ * resolves it here, taking priority over the base-attribute {@link FlickerTable}. Port of the C
+ * {@code visuals_cycler} plus its {@code visuals_cycle_group} buckets ({@code ui-visuals.c}).
+ * <p>
+ * The two-level map mirrors the data file's two-part key: {@code cycle:fancy:rainbow} lands under
+ * group {@code fancy}, name {@code rainbow}. Same {@link ColourCycle} primitive as the flicker
+ * table - only the lookup differs (by name here, by base attribute there). A missing group or name
+ * is a lookup miss, the faithful port of C's {@code BASIC_COLORS} sentinel; C's fixed group/cycle
+ * count ceilings are dropped as allocation artefacts.
  *
  * @author Rowan Crowther
  */
-public class VisualsCycler {
+public final class VisualsCycler {
     /**
-     * All colour-cycle groups known to this cycler.
+     * Cycles nested group-then-name. The outer key is the {@code cycle:} group; the inner map holds
+     * that group's cycles by their block name.
      *
      * @author Rowan Crowther
      */
-    private List<VisualsCycleGroup> groups;
+    private final Map<String, Map<String, ColourCycle>> byGroupThenName;
 
     /**
-     * Create an empty cycler with no groups.
+     * Wrap an already-built group-then-name map. Ownership of the map passes to the cycler.
      *
+     * @param byGroupThenName the nested cycles, as assembled from the {@code cycle:} blocks
      * @author Rowan Crowther
      */
-    public VisualsCycler() {
-        groups = new ArrayList<>();
+    public VisualsCycler(Map<String, Map<String, ColourCycle>> byGroupThenName) {
+        this.byGroupThenName = byGroupThenName;
     }
 
     /**
-     * Register a colour-cycle group.
+     * List the groups present in this cycler (the outer keys, e.g. {@code fancy}, {@code flicker}).
      *
-     * @param group the group to add
+     * @return the group names, in no guaranteed order
      * @author Rowan Crowther
      */
-    @Contract(mutates = "this")
-    public void addVisualsCycleGroup(@NotNull VisualsCycleGroup group) {
-        groups.add(group);
+    public List<String> getKeys() {
+        return byGroupThenName.keySet().stream().toList();
     }
 
     /**
-     * Look up a colour cycle by its group name and cycle name.
+     * Fetch one group's cycles by their block name.
      *
-     * @param groupName the containing group's name
-     * @param cycleName the cycle's name within that group
-     * @return the matching cycle, or {@code null} if either name is empty or no
-     * match is found
+     * @param group the group name to look up
+     * @return the group's name-to-cycle map, or {@code null} if no such group exists
      * @author Rowan Crowther
      */
-    @Nullable
-    @Contract(pure = true)
-    @CheckReturnValue
-    public VisualsColourCycle cycleByName(@NotNull String groupName, @NotNull String cycleName) {
-        if (groupName.isEmpty() || cycleName.isEmpty())
-            return null;
-
-        VisualsCycleGroup group = groups.stream().filter(gr -> groupName.equals(gr.groupName))
-                .findFirst().orElse(null);
-
-        if (group == null) return null;
-
-        return group.cycles.stream().filter(c -> cycleName.equals(c.getCycleName()))
-                .findFirst().orElse(null);
-    }
-
-    /**
-     * Resolve the colour for a given animation frame of a named cycle.
-     *
-     * @param groupName the containing group's name
-     * @param cycleName the cycle's name within that group
-     * @param frame     the animation frame
-     * @return the colour for that frame, or {@code null} if the cycle is not found
-     * @author Rowan Crowther
-     */
-    @Nullable
-    @Contract(pure = true)
-    @CheckReturnValue
-    public ColourType getAttrForFrame(String groupName, String cycleName, int frame) {
-        VisualsColourCycle cycle = cycleByName(groupName, cycleName);
-        if (cycle == null) return null;
-
-        return cycle.attrForFrame(frame);
+    public Map<String, ColourCycle> getByGroup(String group) {
+        return byGroupThenName.get(group);
     }
 }

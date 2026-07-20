@@ -14,29 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Visuals.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.visuals;
-
+// Generated from VisualsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.visuals;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link VisualsListener},
+ * This class provides an empty implementation of {@link VisualsGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class VisualsBaseListener implements VisualsListener {
+public class VisualsGrammarBaseListener implements VisualsGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlicker(VisualsParser.FlickerContext ctx) {
+    public void enterFlicker(VisualsGrammar.FlickerContext ctx) {
     }
 
     /**
@@ -45,7 +43,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlicker(VisualsParser.FlickerContext ctx) {
+    public void exitFlicker(VisualsGrammar.FlickerContext ctx) {
     }
 
     /**
@@ -54,7 +52,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlickerColour(VisualsParser.FlickerColourContext ctx) {
+    public void enterFlickerColour(VisualsGrammar.FlickerColourContext ctx) {
     }
 
     /**
@@ -63,7 +61,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlickerColour(VisualsParser.FlickerColourContext ctx) {
+    public void exitFlickerColour(VisualsGrammar.FlickerColourContext ctx) {
     }
 
     /**
@@ -72,7 +70,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlickerBlock(VisualsParser.FlickerBlockContext ctx) {
+    public void enterFlickerBlock(VisualsGrammar.FlickerBlockContext ctx) {
     }
 
     /**
@@ -81,7 +79,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlickerBlock(VisualsParser.FlickerBlockContext ctx) {
+    public void exitFlickerBlock(VisualsGrammar.FlickerBlockContext ctx) {
     }
 
     /**
@@ -90,7 +88,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCycle(VisualsParser.CycleContext ctx) {
+    public void enterCycle(VisualsGrammar.CycleContext ctx) {
     }
 
     /**
@@ -99,7 +97,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCycle(VisualsParser.CycleContext ctx) {
+    public void exitCycle(VisualsGrammar.CycleContext ctx) {
     }
 
     /**
@@ -108,7 +106,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCycleColour(VisualsParser.CycleColourContext ctx) {
+    public void enterCycleColour(VisualsGrammar.CycleColourContext ctx) {
     }
 
     /**
@@ -117,7 +115,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCycleColour(VisualsParser.CycleColourContext ctx) {
+    public void exitCycleColour(VisualsGrammar.CycleColourContext ctx) {
     }
 
     /**
@@ -126,7 +124,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterCycleBlock(VisualsParser.CycleBlockContext ctx) {
+    public void enterCycleBlock(VisualsGrammar.CycleBlockContext ctx) {
     }
 
     /**
@@ -135,7 +133,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitCycleBlock(VisualsParser.CycleBlockContext ctx) {
+    public void exitCycleBlock(VisualsGrammar.CycleBlockContext ctx) {
     }
 
     /**
@@ -144,7 +142,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(VisualsParser.FileContext ctx) {
+    public void enterFile(VisualsGrammar.FileContext ctx) {
     }
 
     /**
@@ -153,7 +151,7 @@ public class VisualsBaseListener implements VisualsListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(VisualsParser.FileContext ctx) {
+    public void exitFile(VisualsGrammar.FileContext ctx) {
     }
 
     /**

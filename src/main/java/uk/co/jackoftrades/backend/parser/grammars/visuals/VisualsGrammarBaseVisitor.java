@@ -14,14 +14,13 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Visuals.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.visuals;
+// Generated from VisualsGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.visuals;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link VisualsVisitor},
+ * This class provides an empty implementation of {@link VisualsGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
@@ -29,7 +28,7 @@ import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
  *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements VisualsVisitor<T> {
+public class VisualsGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements VisualsGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -37,7 +36,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlicker(VisualsParser.FlickerContext ctx) {
+    public T visitFlicker(VisualsGrammar.FlickerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -48,7 +47,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlickerColour(VisualsParser.FlickerColourContext ctx) {
+    public T visitFlickerColour(VisualsGrammar.FlickerColourContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -59,7 +58,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlickerBlock(VisualsParser.FlickerBlockContext ctx) {
+    public T visitFlickerBlock(VisualsGrammar.FlickerBlockContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -70,7 +69,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCycle(VisualsParser.CycleContext ctx) {
+    public T visitCycle(VisualsGrammar.CycleContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -81,7 +80,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCycleColour(VisualsParser.CycleColourContext ctx) {
+    public T visitCycleColour(VisualsGrammar.CycleColourContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -92,7 +91,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitCycleBlock(VisualsParser.CycleBlockContext ctx) {
+    public T visitCycleBlock(VisualsGrammar.CycleBlockContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -103,7 +102,7 @@ public class VisualsBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(VisualsParser.FileContext ctx) {
+    public T visitFile(VisualsGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

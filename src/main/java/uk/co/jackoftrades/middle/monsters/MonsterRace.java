@@ -20,7 +20,6 @@ package uk.co.jackoftrades.middle.monsters;
 import org.jetbrains.annotations.TestOnly;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.VisualsColourCyclesByRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -327,7 +326,6 @@ public class MonsterRace {
         this.shapes = shapes;
         this.numShapes = numShapes;
         this.lore = lore;
-        VisualsColourCyclesByRace.setCycleForRace(this, groupName, cycleName);
     }
 
     /**

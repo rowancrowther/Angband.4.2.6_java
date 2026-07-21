@@ -14,27 +14,27 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from Monster.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.monster;
+// Generated from MonsterGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.monster;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link MonsterListener},
+ * This class provides an empty implementation of {@link MonsterGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class MonsterBaseListener implements MonsterListener {
+public class MonsterGrammarBaseListener implements MonsterGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(MonsterParser.NameContext ctx) {
+    public void enterRecordCount(MonsterGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -43,7 +43,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(MonsterParser.NameContext ctx) {
+    public void exitRecordCount(MonsterGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -52,7 +52,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPlural(MonsterParser.PluralContext ctx) {
+    public void enterName(MonsterGrammar.NameContext ctx) {
     }
 
     /**
@@ -61,7 +61,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPlural(MonsterParser.PluralContext ctx) {
+    public void exitName(MonsterGrammar.NameContext ctx) {
     }
 
     /**
@@ -70,7 +70,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBase(MonsterParser.BaseContext ctx) {
+    public void enterPlural(MonsterGrammar.PluralContext ctx) {
     }
 
     /**
@@ -79,7 +79,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBase(MonsterParser.BaseContext ctx) {
+    public void exitPlural(MonsterGrammar.PluralContext ctx) {
     }
 
     /**
@@ -88,7 +88,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterGlyph(MonsterParser.GlyphContext ctx) {
+    public void enterBase(MonsterGrammar.BaseContext ctx) {
     }
 
     /**
@@ -97,7 +97,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitGlyph(MonsterParser.GlyphContext ctx) {
+    public void exitBase(MonsterGrammar.BaseContext ctx) {
     }
 
     /**
@@ -106,7 +106,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterColour(MonsterParser.ColourContext ctx) {
+    public void enterGlyph(MonsterGrammar.GlyphContext ctx) {
     }
 
     /**
@@ -115,7 +115,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitColour(MonsterParser.ColourContext ctx) {
+    public void exitGlyph(MonsterGrammar.GlyphContext ctx) {
     }
 
     /**
@@ -124,7 +124,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterColourCycle(MonsterParser.ColourCycleContext ctx) {
+    public void enterColour(MonsterGrammar.ColourContext ctx) {
     }
 
     /**
@@ -133,7 +133,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitColourCycle(MonsterParser.ColourCycleContext ctx) {
+    public void exitColour(MonsterGrammar.ColourContext ctx) {
     }
 
     /**
@@ -142,7 +142,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpeed(MonsterParser.SpeedContext ctx) {
+    public void enterSpeed(MonsterGrammar.SpeedContext ctx) {
     }
 
     /**
@@ -151,7 +151,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpeed(MonsterParser.SpeedContext ctx) {
+    public void exitSpeed(MonsterGrammar.SpeedContext ctx) {
     }
 
     /**
@@ -160,7 +160,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHitPoints(MonsterParser.HitPointsContext ctx) {
+    public void enterHitPoints(MonsterGrammar.HitPointsContext ctx) {
     }
 
     /**
@@ -169,7 +169,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHitPoints(MonsterParser.HitPointsContext ctx) {
+    public void exitHitPoints(MonsterGrammar.HitPointsContext ctx) {
     }
 
     /**
@@ -178,7 +178,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterLight(MonsterParser.LightContext ctx) {
+    public void enterLight(MonsterGrammar.LightContext ctx) {
     }
 
     /**
@@ -187,7 +187,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitLight(MonsterParser.LightContext ctx) {
+    public void exitLight(MonsterGrammar.LightContext ctx) {
     }
 
     /**
@@ -196,7 +196,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterHearing(MonsterParser.HearingContext ctx) {
+    public void enterHearing(MonsterGrammar.HearingContext ctx) {
     }
 
     /**
@@ -205,7 +205,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitHearing(MonsterParser.HearingContext ctx) {
+    public void exitHearing(MonsterGrammar.HearingContext ctx) {
     }
 
     /**
@@ -214,7 +214,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSmell(MonsterParser.SmellContext ctx) {
+    public void enterSmell(MonsterGrammar.SmellContext ctx) {
     }
 
     /**
@@ -223,7 +223,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSmell(MonsterParser.SmellContext ctx) {
+    public void exitSmell(MonsterGrammar.SmellContext ctx) {
     }
 
     /**
@@ -232,7 +232,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterArmourClass(MonsterParser.ArmourClassContext ctx) {
+    public void enterShape(MonsterGrammar.ShapeContext ctx) {
     }
 
     /**
@@ -241,7 +241,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitArmourClass(MonsterParser.ArmourClassContext ctx) {
+    public void exitShape(MonsterGrammar.ShapeContext ctx) {
     }
 
     /**
@@ -250,7 +250,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSleepiness(MonsterParser.SleepinessContext ctx) {
+    public void enterColourCycle(MonsterGrammar.ColourCycleContext ctx) {
     }
 
     /**
@@ -259,7 +259,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSleepiness(MonsterParser.SleepinessContext ctx) {
+    public void exitColourCycle(MonsterGrammar.ColourCycleContext ctx) {
     }
 
     /**
@@ -268,7 +268,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDungeonDepth(MonsterParser.DungeonDepthContext ctx) {
+    public void enterArmourClass(MonsterGrammar.ArmourClassContext ctx) {
     }
 
     /**
@@ -277,7 +277,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDungeonDepth(MonsterParser.DungeonDepthContext ctx) {
+    public void exitArmourClass(MonsterGrammar.ArmourClassContext ctx) {
     }
 
     /**
@@ -286,7 +286,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRarity(MonsterParser.RarityContext ctx) {
+    public void enterSleepiness(MonsterGrammar.SleepinessContext ctx) {
     }
 
     /**
@@ -295,7 +295,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRarity(MonsterParser.RarityContext ctx) {
+    public void exitSleepiness(MonsterGrammar.SleepinessContext ctx) {
     }
 
     /**
@@ -304,7 +304,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterExperience(MonsterParser.ExperienceContext ctx) {
+    public void enterDepthLevel(MonsterGrammar.DepthLevelContext ctx) {
     }
 
     /**
@@ -313,7 +313,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitExperience(MonsterParser.ExperienceContext ctx) {
+    public void exitDepthLevel(MonsterGrammar.DepthLevelContext ctx) {
     }
 
     /**
@@ -322,7 +322,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterBlow(MonsterParser.BlowContext ctx) {
+    public void enterRarity(MonsterGrammar.RarityContext ctx) {
     }
 
     /**
@@ -331,7 +331,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitBlow(MonsterParser.BlowContext ctx) {
+    public void exitRarity(MonsterGrammar.RarityContext ctx) {
     }
 
     /**
@@ -340,7 +340,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlags(MonsterParser.FlagsContext ctx) {
+    public void enterExperience(MonsterGrammar.ExperienceContext ctx) {
     }
 
     /**
@@ -349,7 +349,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlags(MonsterParser.FlagsContext ctx) {
+    public void exitExperience(MonsterGrammar.ExperienceContext ctx) {
     }
 
     /**
@@ -358,7 +358,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlagsOff(MonsterParser.FlagsOffContext ctx) {
+    public void enterBlow(MonsterGrammar.BlowContext ctx) {
     }
 
     /**
@@ -367,7 +367,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlagsOff(MonsterParser.FlagsOffContext ctx) {
+    public void exitBlow(MonsterGrammar.BlowContext ctx) {
     }
 
     /**
@@ -376,7 +376,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterInnateFreq(MonsterParser.InnateFreqContext ctx) {
+    public void enterFlags(MonsterGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -385,7 +385,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitInnateFreq(MonsterParser.InnateFreqContext ctx) {
+    public void exitFlags(MonsterGrammar.FlagsContext ctx) {
     }
 
     /**
@@ -394,7 +394,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpellFreq(MonsterParser.SpellFreqContext ctx) {
+    public void enterFlagsOff(MonsterGrammar.FlagsOffContext ctx) {
     }
 
     /**
@@ -403,7 +403,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpellFreq(MonsterParser.SpellFreqContext ctx) {
+    public void exitFlagsOff(MonsterGrammar.FlagsOffContext ctx) {
     }
 
     /**
@@ -412,7 +412,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpellPower(MonsterParser.SpellPowerContext ctx) {
+    public void enterInnateFreq(MonsterGrammar.InnateFreqContext ctx) {
     }
 
     /**
@@ -421,7 +421,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpellPower(MonsterParser.SpellPowerContext ctx) {
+    public void exitInnateFreq(MonsterGrammar.InnateFreqContext ctx) {
     }
 
     /**
@@ -430,7 +430,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpells(MonsterParser.SpellsContext ctx) {
+    public void enterSpellFreq(MonsterGrammar.SpellFreqContext ctx) {
     }
 
     /**
@@ -439,7 +439,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpells(MonsterParser.SpellsContext ctx) {
+    public void exitSpellFreq(MonsterGrammar.SpellFreqContext ctx) {
     }
 
     /**
@@ -448,7 +448,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMessageVis(MonsterParser.MessageVisContext ctx) {
+    public void enterSpellPower(MonsterGrammar.SpellPowerContext ctx) {
     }
 
     /**
@@ -457,7 +457,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMessageVis(MonsterParser.MessageVisContext ctx) {
+    public void exitSpellPower(MonsterGrammar.SpellPowerContext ctx) {
     }
 
     /**
@@ -466,7 +466,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMessageInvis(MonsterParser.MessageInvisContext ctx) {
+    public void enterSpells(MonsterGrammar.SpellsContext ctx) {
     }
 
     /**
@@ -475,7 +475,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMessageInvis(MonsterParser.MessageInvisContext ctx) {
+    public void exitSpells(MonsterGrammar.SpellsContext ctx) {
     }
 
     /**
@@ -484,7 +484,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMessageMiss(MonsterParser.MessageMissContext ctx) {
+    public void enterMessageVis(MonsterGrammar.MessageVisContext ctx) {
     }
 
     /**
@@ -493,7 +493,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMessageMiss(MonsterParser.MessageMissContext ctx) {
+    public void exitMessageVis(MonsterGrammar.MessageVisContext ctx) {
     }
 
     /**
@@ -502,7 +502,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDesc(MonsterParser.DescContext ctx) {
+    public void enterMessageInvis(MonsterGrammar.MessageInvisContext ctx) {
     }
 
     /**
@@ -511,7 +511,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDesc(MonsterParser.DescContext ctx) {
+    public void exitMessageInvis(MonsterGrammar.MessageInvisContext ctx) {
     }
 
     /**
@@ -520,7 +520,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterShape(MonsterParser.ShapeContext ctx) {
+    public void enterMessageMiss(MonsterGrammar.MessageMissContext ctx) {
     }
 
     /**
@@ -529,7 +529,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitShape(MonsterParser.ShapeContext ctx) {
+    public void exitMessageMiss(MonsterGrammar.MessageMissContext ctx) {
     }
 
     /**
@@ -538,7 +538,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDrop(MonsterParser.DropContext ctx) {
+    public void enterDesc(MonsterGrammar.DescContext ctx) {
     }
 
     /**
@@ -547,7 +547,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDrop(MonsterParser.DropContext ctx) {
+    public void exitDesc(MonsterGrammar.DescContext ctx) {
     }
 
     /**
@@ -556,7 +556,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterDropBase(MonsterParser.DropBaseContext ctx) {
+    public void enterDrop(MonsterGrammar.DropContext ctx) {
     }
 
     /**
@@ -565,7 +565,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitDropBase(MonsterParser.DropBaseContext ctx) {
+    public void exitDrop(MonsterGrammar.DropContext ctx) {
     }
 
     /**
@@ -574,7 +574,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMimic(MonsterParser.MimicContext ctx) {
+    public void enterDropBase(MonsterGrammar.DropBaseContext ctx) {
     }
 
     /**
@@ -583,7 +583,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMimic(MonsterParser.MimicContext ctx) {
+    public void exitDropBase(MonsterGrammar.DropBaseContext ctx) {
     }
 
     /**
@@ -592,7 +592,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFriends(MonsterParser.FriendsContext ctx) {
+    public void enterMimic(MonsterGrammar.MimicContext ctx) {
     }
 
     /**
@@ -601,7 +601,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFriends(MonsterParser.FriendsContext ctx) {
+    public void exitMimic(MonsterGrammar.MimicContext ctx) {
     }
 
     /**
@@ -610,7 +610,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFriendsBase(MonsterParser.FriendsBaseContext ctx) {
+    public void enterFriends(MonsterGrammar.FriendsContext ctx) {
     }
 
     /**
@@ -619,7 +619,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFriendsBase(MonsterParser.FriendsBaseContext ctx) {
+    public void exitFriends(MonsterGrammar.FriendsContext ctx) {
     }
 
     /**
@@ -628,7 +628,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMonster(MonsterParser.MonsterContext ctx) {
+    public void enterFriendsBase(MonsterGrammar.FriendsBaseContext ctx) {
     }
 
     /**
@@ -637,7 +637,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMonster(MonsterParser.MonsterContext ctx) {
+    public void exitFriendsBase(MonsterGrammar.FriendsBaseContext ctx) {
     }
 
     /**
@@ -646,7 +646,7 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(MonsterParser.FileContext ctx) {
+    public void enterMonster(MonsterGrammar.MonsterContext ctx) {
     }
 
     /**
@@ -655,31 +655,60 @@ public class MonsterBaseListener implements MonsterListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(MonsterParser.FileContext ctx) {
+    public void exitMonster(MonsterGrammar.MonsterContext ctx) {
     }
 
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void enterEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(MonsterGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(MonsterGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

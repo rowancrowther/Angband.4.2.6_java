@@ -17,6 +17,10 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 
 /**
@@ -28,6 +32,7 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
  * @author Rowan Crowther
  */
 public class MonsterFriends {
+    private static final Logger logger = LogManager.getLogger();
     /**
      * The name of the companion race (resolved to {@link #race} after loading).
      *
@@ -85,12 +90,31 @@ public class MonsterFriends {
     }
 
     /**
-     * Set the resolved companion race.
+     * Resolve and store this entry's companion race from its name, throwing if no such race exists.
+     * The name is always concrete by this point — a {@code "same"} self-reference was already
+     * substituted for the owning race's name in the assembler — so this is a plain global lookup.
      *
-     * @param race the companion race
+     * @param raceName the companion race's name, resolved via {@link GameConstants#lookupMonsterRace}
+     * @throws IllegalArgumentException if no race matches the name
      * @author Rowan Crowther
      */
-    public void setRace(MonsterRace race) {
-        this.race = race;
+    public void setRace(@NotNull String raceName) {
+        this.race = GameConstants.lookupMonsterRace(raceName);
+
+        if (race == null) {
+            String message = "Monster race not found: " + raceName;
+            IllegalArgumentException e = new IllegalArgumentException(message);
+            logger.error(message, e);
+            throw e;
+        }
+    }
+
+    /**
+     * @return the companion's name as written in {@code monster.txt} (or the owning race's name, if it
+     * was originally the {@code "same"} self-reference)
+     * @author Rowan Crowther
+     */
+    public String getName() {
+        return name;
     }
 }

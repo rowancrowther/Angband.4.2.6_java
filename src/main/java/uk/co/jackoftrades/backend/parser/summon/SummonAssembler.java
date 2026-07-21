@@ -73,7 +73,7 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
             List<MonsterBase> bases = new ArrayList<>();
             boolean illegalBase = false;
             for (String base : record.bases()) {
-                MonsterBase monsterBase = GameConstants.getMonsterBase(base);
+                MonsterBase monsterBase = GameConstants.lookupMonsterBase(base);
                 if (monsterBase == null) {
                     errors.add("Block starting at line: " + line + " has " +
                             "an invalid monster base: " + base);

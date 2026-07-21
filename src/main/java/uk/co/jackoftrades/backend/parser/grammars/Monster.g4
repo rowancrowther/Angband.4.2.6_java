@@ -71,7 +71,7 @@ base
         returns[MonsterBase baseObj]
         :   BASE LCASE {
                 String raw = $LCASE.getText();
-                $baseObj = GameConstants.getMonsterBase(raw);
+                $baseObj = GameConstants.lookupMonsterBase(raw);
             }
         ;
 

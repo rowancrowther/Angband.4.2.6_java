@@ -17,14 +17,20 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.TestOnly;
+import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.colour.ColourCycle;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * The full definition of a kind of monster (as loaded from {@code monster.txt})
@@ -37,6 +43,11 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class MonsterRace {
+    public static final Logger logger = LogManager.getLogger();
+
+    public record MonsterSpellMessages(String visible, String invisible, String miss) {
+    }
+
     /**
      * The monster's name.
      *
@@ -151,7 +162,7 @@ public class MonsterRace {
      *
      * @author Rowan Crowther
      */
-    private List<MonsterSpell> spells;
+    private Flag<MonsterSpell> spells;
 
     /**
      * The monster's melee blows.
@@ -198,7 +209,7 @@ public class MonsterRace {
      *
      * @author Rowan Crowther
      */
-    private List<MonsterAltmsg> spellMessages;
+    private Map<String, MonsterSpellMessage> spellMessages;
     /**
      * Possible item drops on death.
      *
@@ -231,7 +242,7 @@ public class MonsterRace {
      *
      * @author Rowan Crowther
      */
-    private List<String> shapes;
+    private List<MonsterShape> shapes;
     /**
      * The number of available shapes.
      *
@@ -245,6 +256,8 @@ public class MonsterRace {
      * @author Rowan Crowther
      */
     private MonsterLore lore;
+
+    private ColourCycle cycler;
 
     /**
      * Build a fully-specified monster race from its parsed data-file fields, and
@@ -266,14 +279,11 @@ public class MonsterRace {
      * @param freqSpell     spell frequency
      * @param spellPower    spell power
      * @param flags         set race flags
-     * @param flagsOff      cleared race flags
      * @param spells        castable spells
      * @param blow          melee blows
      * @param level         native level
      * @param rarity        rarity weighting
      * @param adc           display glyph/colour
-     * @param maxNum        maximum simultaneous count
-     * @param curNum        current count alive
      * @param spellMessages alternate spell messages
      * @param drops         death drops
      * @param friends       companion races
@@ -281,19 +291,20 @@ public class MonsterRace {
      * @param mimicKinds    mimic object kinds
      * @param shapes        shape names
      * @param numShapes     number of shapes
-     * @param groupName     colour-cycle group name
-     * @param cycleName     colour-cycle name
-     * @param lore          accumulated lore
      * @author Rowan Crowther
      */
-    public MonsterRace(String name, String text, String plural, MonsterBase base, int averageHP, int ac, int sleep,
-                       int hearing, int smell, int speed, int light, int mexp, int freqInnate, int freqSpell,
-                       int spellPower, Flag<MonsterRaceFlag> flags, Flag<MonsterRaceFlag> flagsOff,
-                       List<MonsterSpell> spells, List<MonsterBlow> blow, int level, int rarity,
-                       AngbandDisplayCharacter adc, int maxNum, int curNum, List<MonsterAltmsg> spellMessages,
-                       List<MonsterDrop> drops, List<MonsterFriends> friends, List<MonsterFriendsBase> friendsBase,
-                       List<ObjectKind> mimicKinds, List<String> shapes, int numShapes,
-                       String groupName, String cycleName, MonsterLore lore) {
+    public MonsterRace(String name, String text, String plural, MonsterBase base,
+                       int averageHP, int ac, int sleep, int hearing, int smell,
+                       int speed, int light, int mexp, int freqInnate, int freqSpell,
+                       int spellPower, Flag<MonsterRaceFlag> flags,
+                       Flag<MonsterSpell> spells,
+                       List<MonsterBlow> blow, int level, int rarity,
+                       AngbandDisplayCharacter adc,
+                       Map<String, MonsterSpellMessage> spellMessages,
+                       List<MonsterDrop> drops, List<MonsterFriends> friends,
+                       List<MonsterFriendsBase> friendsBase,
+                       List<ObjectKind> mimicKinds, List<MonsterShape> shapes, int numShapes,
+                       ColourCycle cycler) {
         this.name = name;
         this.text = text;
         this.plural = plural;
@@ -310,14 +321,11 @@ public class MonsterRace {
         this.freqSpell = freqSpell;
         this.spellPower = spellPower;
         this.flags = flags;
-        this.flagsOff = flagsOff;
         this.spells = spells;
         this.blow = blow;
         this.level = level;
         this.rarity = rarity;
         this.adc = adc;
-        this.maxNum = maxNum;
-        this.curNum = curNum;
         this.spellMessages = spellMessages;
         this.drops = drops;
         this.friends = friends;
@@ -325,7 +333,7 @@ public class MonsterRace {
         this.mimicKinds = mimicKinds;
         this.shapes = shapes;
         this.numShapes = numShapes;
-        this.lore = lore;
+        this.cycler = cycler;
     }
 
     /**
@@ -365,14 +373,44 @@ public class MonsterRace {
     }
 
     /**
-     * Resolve this race's companion ("friends") entries by pointing each back at
-     * this race. Called after all races are loaded.
+     * Resolve each companion ("friends") entry to its race by name, now that every race has loaded. A
+     * {@code "same"} self-reference has already been substituted for this race's own name in the
+     * assembler, so every entry here is a concrete race name resolved by a global lookup. This must
+     * run as a second pass because a friend may name a race defined later in {@code monster.txt} (a
+     * forward reference).
      *
      * @author Rowan Crowther
      */
-    public void setFriends() {
-        for (MonsterFriends friend : friends) {
-            friend.setRace(this);
+    public void resolveFriends() {
+        for (MonsterFriends f : friends) {
+            f.setRace(f.getName());
+        }
+    }
+
+    /**
+     * Resolve each shape entry, now that every base and race has loaded. Each shape name is tried
+     * first as a monster base (a generic, whole-family shapechange) and, failing that, as a specific
+     * race; a name that is neither is a fatal data error. Like {@link #resolveFriends()} this is a
+     * second pass, since a shape may name a race defined later in {@code monster.txt}.
+     *
+     * @author Rowan Crowther
+     */
+    public void resolveShapes() {
+        for (MonsterShape s : shapes) {
+            MonsterBase base = GameConstants.lookupMonsterBase(s.getName());
+            if (base == null) {
+                MonsterRace race = GameConstants.lookupMonsterRace(s.getName());
+                if (race == null) {
+                    String message = "Unknown shape name: " + s.getName();
+                    throw new InvalidTokenFoundDuringParse(message);
+                } else {
+                    s.setRace(race);
+                    s.setBase(null);
+                }
+            } else {
+                s.setBase(base);
+                s.setRace(null);
+            }
         }
     }
 }

@@ -129,4 +129,12 @@ public class MonsterBase {
     public String getCodeName() {
         return codeName;
     }
+
+    public Flag<MonsterRaceFlag> getFlags() {
+        return flags;
+    }
+
+    public char getDefaultMonsterChar() {
+        return defaultMonsterChar;
+    }
 }

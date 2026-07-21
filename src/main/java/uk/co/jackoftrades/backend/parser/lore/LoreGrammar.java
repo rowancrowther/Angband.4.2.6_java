@@ -1121,7 +1121,7 @@ public class LoreGrammar extends Parser {
                 Random temp = Random.parseStr(((FriendsBaseContext) _localctx).dice.getText());
                 numberOfDice = temp.getDice();
                 numberOfSides = temp.getSides();
-                base = GameConstants.getMonsterBase(((FriendsBaseContext) _localctx).fName.getText());
+                base = GameConstants.lookupMonsterBase(((FriendsBaseContext) _localctx).fName.getText());
 
                 setState(120);
                 _errHandler.sync(this);

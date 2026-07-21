@@ -70,7 +70,7 @@ race_flag
 // mutually exclusive with `race_flag` (see top-of-file problem #1).
 base
         returns[MonsterBase monBase]
-        :   BASE BASE_FLAG { $monBase = GameConstants.getMonsterBase($BASE_FLAG.getText()); }
+        :   BASE BASE_FLAG { $monBase = GameConstants.lookupMonsterBase($BASE_FLAG.getText()); }
         ;
 
 // "multiplier:<value>" - damage-dice multiplier (normal combat).

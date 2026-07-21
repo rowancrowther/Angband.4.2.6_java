@@ -543,7 +543,7 @@ public class MonsterNestParser extends Parser {
                 ((MonBaseContext) _localctx).STRING = match(STRING);
 
                 String raw = ((MonBaseContext) _localctx).STRING.getText();
-                ((MonBaseContext) _localctx).base = GameConstants.getMonsterBase(raw);
+                ((MonBaseContext) _localctx).base = GameConstants.lookupMonsterBase(raw);
 
             }
         } catch (RecognitionException re) {

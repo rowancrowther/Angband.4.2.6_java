@@ -72,6 +72,8 @@
 # have any of the listed spell flags.
 # As many 'spell-ban' lines as are necessary may be used.
 
+record-count:40
+
 name:Orc
 room:1
 alloc:1:25

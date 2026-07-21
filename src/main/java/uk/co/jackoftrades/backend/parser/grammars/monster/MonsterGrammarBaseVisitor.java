@@ -14,21 +14,21 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from Monster.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.monster;
+// Generated from MonsterGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.monster;
 
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**
- * This class provides an empty implementation of {@link MonsterVisitor},
+ * This class provides an empty implementation of {@link MonsterGrammarVisitor},
  * which can be extended to create a visitor which only needs to handle a subset
  * of the available methods.
  *
  * @param <T> The return type of the visit operation. Use {@link Void} for
- * operations with no return type.
+ *            operations with no return type.
  */
 @SuppressWarnings("CheckReturnValue")
-public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MonsterVisitor<T> {
+public class MonsterGrammarBaseVisitor<T> extends AbstractParseTreeVisitor<T> implements MonsterGrammarVisitor<T> {
     /**
      * {@inheritDoc}
      *
@@ -36,7 +36,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitName(MonsterParser.NameContext ctx) {
+    public T visitRecordCount(MonsterGrammar.RecordCountContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -47,7 +47,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitPlural(MonsterParser.PluralContext ctx) {
+    public T visitName(MonsterGrammar.NameContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -58,7 +58,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBase(MonsterParser.BaseContext ctx) {
+    public T visitPlural(MonsterGrammar.PluralContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -69,7 +69,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitGlyph(MonsterParser.GlyphContext ctx) {
+    public T visitBase(MonsterGrammar.BaseContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -80,7 +80,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitColour(MonsterParser.ColourContext ctx) {
+    public T visitGlyph(MonsterGrammar.GlyphContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -91,7 +91,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitColourCycle(MonsterParser.ColourCycleContext ctx) {
+    public T visitColour(MonsterGrammar.ColourContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -102,7 +102,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSpeed(MonsterParser.SpeedContext ctx) {
+    public T visitSpeed(MonsterGrammar.SpeedContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -113,7 +113,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHitPoints(MonsterParser.HitPointsContext ctx) {
+    public T visitHitPoints(MonsterGrammar.HitPointsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -124,7 +124,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitLight(MonsterParser.LightContext ctx) {
+    public T visitLight(MonsterGrammar.LightContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -135,7 +135,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitHearing(MonsterParser.HearingContext ctx) {
+    public T visitHearing(MonsterGrammar.HearingContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -146,7 +146,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSmell(MonsterParser.SmellContext ctx) {
+    public T visitSmell(MonsterGrammar.SmellContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -157,7 +157,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitArmourClass(MonsterParser.ArmourClassContext ctx) {
+    public T visitShape(MonsterGrammar.ShapeContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -168,7 +168,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSleepiness(MonsterParser.SleepinessContext ctx) {
+    public T visitColourCycle(MonsterGrammar.ColourCycleContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -179,7 +179,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDungeonDepth(MonsterParser.DungeonDepthContext ctx) {
+    public T visitArmourClass(MonsterGrammar.ArmourClassContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -190,7 +190,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitRarity(MonsterParser.RarityContext ctx) {
+    public T visitSleepiness(MonsterGrammar.SleepinessContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -201,7 +201,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitExperience(MonsterParser.ExperienceContext ctx) {
+    public T visitDepthLevel(MonsterGrammar.DepthLevelContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -212,7 +212,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitBlow(MonsterParser.BlowContext ctx) {
+    public T visitRarity(MonsterGrammar.RarityContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -223,7 +223,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlags(MonsterParser.FlagsContext ctx) {
+    public T visitExperience(MonsterGrammar.ExperienceContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -234,7 +234,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFlagsOff(MonsterParser.FlagsOffContext ctx) {
+    public T visitBlow(MonsterGrammar.BlowContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -245,7 +245,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitInnateFreq(MonsterParser.InnateFreqContext ctx) {
+    public T visitFlags(MonsterGrammar.FlagsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -256,7 +256,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSpellFreq(MonsterParser.SpellFreqContext ctx) {
+    public T visitFlagsOff(MonsterGrammar.FlagsOffContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -267,7 +267,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSpellPower(MonsterParser.SpellPowerContext ctx) {
+    public T visitInnateFreq(MonsterGrammar.InnateFreqContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -278,7 +278,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitSpells(MonsterParser.SpellsContext ctx) {
+    public T visitSpellFreq(MonsterGrammar.SpellFreqContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -289,7 +289,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMessageVis(MonsterParser.MessageVisContext ctx) {
+    public T visitSpellPower(MonsterGrammar.SpellPowerContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -300,7 +300,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMessageInvis(MonsterParser.MessageInvisContext ctx) {
+    public T visitSpells(MonsterGrammar.SpellsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -311,7 +311,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMessageMiss(MonsterParser.MessageMissContext ctx) {
+    public T visitMessageVis(MonsterGrammar.MessageVisContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -322,7 +322,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDesc(MonsterParser.DescContext ctx) {
+    public T visitMessageInvis(MonsterGrammar.MessageInvisContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -333,7 +333,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitShape(MonsterParser.ShapeContext ctx) {
+    public T visitMessageMiss(MonsterGrammar.MessageMissContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -344,7 +344,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDrop(MonsterParser.DropContext ctx) {
+    public T visitDesc(MonsterGrammar.DescContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -355,7 +355,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitDropBase(MonsterParser.DropBaseContext ctx) {
+    public T visitDrop(MonsterGrammar.DropContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -366,7 +366,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMimic(MonsterParser.MimicContext ctx) {
+    public T visitDropBase(MonsterGrammar.DropBaseContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -377,7 +377,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFriends(MonsterParser.FriendsContext ctx) {
+    public T visitMimic(MonsterGrammar.MimicContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -388,7 +388,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFriendsBase(MonsterParser.FriendsBaseContext ctx) {
+    public T visitFriends(MonsterGrammar.FriendsContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -399,7 +399,7 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitMonster(MonsterParser.MonsterContext ctx) {
+    public T visitFriendsBase(MonsterGrammar.FriendsBaseContext ctx) {
         return visitChildren(ctx);
     }
 
@@ -410,7 +410,18 @@ public class MonsterBaseVisitor<T> extends AbstractParseTreeVisitor<T> implement
      * {@link #visitChildren} on {@code ctx}.</p>
      */
     @Override
-    public T visitFile(MonsterParser.FileContext ctx) {
+    public T visitMonster(MonsterGrammar.MonsterContext ctx) {
+        return visitChildren(ctx);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation returns the result of calling
+     * {@link #visitChildren} on {@code ctx}.</p>
+     */
+    @Override
+    public T visitFile(MonsterGrammar.FileContext ctx) {
         return visitChildren(ctx);
     }
 }

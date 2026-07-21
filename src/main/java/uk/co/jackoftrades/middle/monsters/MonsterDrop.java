@@ -99,7 +99,7 @@ public class MonsterDrop {
      * @return true if this is a by-base-type drop (no specific kind)
      * @author Rowan Crowther
      */
-    private boolean isBase() {
+    public boolean isBase() {
         return this.kind == null;
     }
 }

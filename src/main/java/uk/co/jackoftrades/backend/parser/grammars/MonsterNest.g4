@@ -105,7 +105,7 @@ monBase
         returns[MonsterBase base]
         :   MON_BASE STRING {
                 String raw = $STRING.getText();
-                $base = GameConstants.getMonsterBase(raw);
+                $base = GameConstants.lookupMonsterBase(raw);
             }
         ;
 

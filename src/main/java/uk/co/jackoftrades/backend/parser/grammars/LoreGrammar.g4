@@ -226,7 +226,7 @@ friendsBase
                 Random temp = Random.parseStr($dice.getText());
                 numberOfDice = temp.getDice();
                 numberOfSides = temp.getSides();
-                base = GameConstants.getMonsterBase($fName.getText());
+                base = GameConstants.lookupMonsterBase($fName.getText());
             } (COLON fRole=FRIENDS_NAME {
                 role = MonsterGroupRole.valueOf("MON_GROUP_" + $fRole.getText().toUpperCase());
             })?

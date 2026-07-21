@@ -312,7 +312,15 @@ public class GameConstants {
     public static final Player mainPlayer = new Player();
 
     /**
-     * Searches for a particular monster race by name
+     * Find a monster race by name, mirroring C's {@code lookup_monster}: an exact case-insensitive
+     * match wins, and failing that the first race whose name <em>contains</em> the query (also
+     * case-insensitive) is returned as the closest match. Used to resolve friend and shape references,
+     * and by the lore and pit parsers.
+     *
+     * @param name the race name to look up
+     * @return the exact match, the closest substring match, or {@code null} if neither exists
+     * @throws IllegalStateException if the monster races have not been loaded yet
+     * @author Rowan Crowther
      */
     @Nullable
     public static MonsterRace lookupMonsterRace(@NotNull String name) {
@@ -323,8 +331,15 @@ public class GameConstants {
             throw e;
         }
 
-        return null;
-        // return monsterRaces.stream().filter(mr -> name.equals(mr.getName())).findFirst().orElse(null);
+        MonsterRace closest = null;
+
+        for (MonsterRace monsterRace : monsterRaces) {
+            if (name.equalsIgnoreCase(monsterRace.getName())) return monsterRace;
+            if (closest == null && monsterRace.getName().toLowerCase().contains(name.toLowerCase()))
+                closest = monsterRace;
+        }
+
+        return closest;
     }
 
     /**
@@ -366,25 +381,6 @@ public class GameConstants {
 
         return summons.stream()
                 .filter(s -> s.getName().equals(summonName))
-                .findFirst()
-                .orElse(null);
-    }
-
-    /**
-     * Find a MonsterBase from its code name
-     *
-     * @param name the code name of the monster base we are searching for
-     * @return either the MonsterBase with the associated code name, or null
-     */
-    @Nullable
-    @CheckReturnValue
-    public static MonsterBase getMonsterBase(@NotNull String name) {
-        if (monsterBases == null) {
-            throw new IllegalStateException("MonsterBase has not been initialized yet");
-        }
-
-        return monsterBases.stream()
-                .filter(e -> e.getCodeName().equals(name))
                 .findFirst()
                 .orElse(null);
     }
@@ -883,7 +879,7 @@ public class GameConstants {
             loadBlowEffects();          // Dependent on Projections
             loadMonsterSpellTypes();
             loadVisualTables();
-//            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
+            loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
 //            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
         } catch (Exception e) {
@@ -961,10 +957,24 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "monster.txt";
 
         try {
-            monsterRaces = parser.parse(filename);
+            ParseResult<MonsterRace> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            monsterRaces = result.items();
+            monsterRaceMax = monsterRaces.size();
+
+            // Second pass: friend and shape references to other races can only be resolved once every
+            // race exists (a monster may reference one defined later in the file). Mirrors C's
+            // finish_parse_monster.
             for (MonsterRace race : monsterRaces) {
-                if (!(race == null))
-                    race.setFriends();
+                race.resolveFriends();
+                race.resolveShapes();
             }
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);

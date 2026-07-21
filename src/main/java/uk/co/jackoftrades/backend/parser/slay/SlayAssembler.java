@@ -87,7 +87,7 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
                     continue;
                 }
             } else if (!rawBase.isEmpty()) {
-                monsterBase = GameConstants.getMonsterBase(rawBase);
+                monsterBase = GameConstants.lookupMonsterBase(rawBase);
                 if (monsterBase == null) {
                     errors.add("Block beginning line: " + line + " has unknown monster base");
                     continue;

@@ -224,9 +224,9 @@
 # find them unless they are invisible and you cannot see invisible, and if you
 # use the * command for targeting mode you can pick them as a target.)
 
-# Explain the other monster and spell flags. But maybe in another file.
+# TODO: Explain the other monster and spell flags. But maybe in another file.
 
-
+record-count:624
 
 ##### Non-race (contains the "player" picture) #####
 
@@ -6805,7 +6805,7 @@ flags:NO_FEAR | NO_CONF | NO_SLEEP
 flags:FORCE_SLEEP | SPIRIT
 spell-freq:6
 spells:WOUND | FORGET | HOLD | SLOW
-desc:A lesser relative of the beholder. A globular body with a large toothy
+desc:A lesser relative of the beholder: a globular body with a large toothy
 desc: mouth, a large central eye, and four smaller eyes on stalks protruding
 desc: from the top of its body.
 
@@ -6835,7 +6835,7 @@ friends:100:2d3:Grizzly bear
 friends:100:2d3:Werebear
 shape:Beorn, the Mountain Bear
 desc:Beorn is only occasionally seen in human form these days, preferring to
-desc: appear in the shape of a giant black bear. He also prefers the company of
+desc: appear in the shape of a giant black bear: he also prefers the company of
 desc: beasts to that of humans.  He has never taken kindly to strangers, even
 desc: in human form.
 
@@ -10770,7 +10770,7 @@ blow:SPORE:EXP_80:5d5
 flags:EVIL
 flags:IM_ACID | IM_COLD | IM_ELEC | IM_FIRE
 flags:FORCE_SLEEP | ATTR_FLICKER
-flags-off:HURT_FIRE
+flags-off: HURT_FIRE
 desc:It is the epitome of all that is evil, in a mold.  Its lifeless form draws
 desc: power from sucking the souls of those that approach it, a nimbus of pure
 desc: evil surrounds it.  Luckily for you, it can't move.
@@ -10822,7 +10822,7 @@ blow:BITE:EXP_40:4d6
 flags:IM_COLD | IM_POIS | IM_NETHER
 innate-freq:6
 spells:BR_DARK | BR_NETH | BR_POIS
-desc:A terrifying sight. A winged creature greater than any bird you have ever
+desc:A terrifying sight: a winged creature greater than any bird you have ever
 desc: seen, and with no feathers on its horrid black leathery wings.  Descended
 desc: from a creature of an older world perhaps, bred by Sauron to be a winged
 desc: steed for his Ringwraiths.
@@ -12457,7 +12457,7 @@ spells:BLINK | WOUND | DRAIN_MANA | FORGET | HEAL | BRAIN_SMASH
 spells:HOLD | SCARE | TELE_TO | TPORT
 spells:BA_NETH
 spells:S_DEMON | S_HI_UNDEAD
-desc:A lich who has reached its ultimate evolutionary stage. A completely
+desc:A lich who has reached its ultimate evolutionary stage: a completely
 desc: immaterial state.
 
 ### Dungeon level 65 ###
@@ -12902,7 +12902,7 @@ flags:SMART | ATTR_FLICKER
 flags:DROP_2 | ONLY_ITEM
 flags:OPEN_DOOR
 flags:UNDEAD | EVIL | COLD_BLOOD | SPIRIT
-flags:HURT_LIGHT | NO_CONF | NO_SLEEP | NO_STUN | NO_HOLD
+flags:HURT_LIGHT| NO_CONF | NO_SLEEP | NO_STUN | NO_HOLD
 flags:IM_FIRE | IM_COLD | IM_POIS | IM_NETHER
 flags:FORCE_SLEEP
 flags-off:HURT_COLD
@@ -14332,7 +14332,7 @@ spells:BA_NETH
 spells:BO_MANA
 spells:S_HI_DEMON | S_HI_DRAGON | S_HI_UNDEAD | S_KIN | S_MONSTERS | S_WRAITH
 friends:50:1d1:Winged Horror
-desc:The most fell of all Sauron's captains. King of Angmar, Sorcerer,
+desc:The most fell of all Sauron's captains: King of Angmar, Sorcerer,
 desc: Ringwraith, Lord of the Nazgûl, a spear of terror in the hand of Sauron,
 desc: shadow of despair.  His spells are lethal and his combat blows crushingly
 desc: hard.  He moves at speed, and commands legions of evil to do his bidding.
@@ -14500,7 +14500,7 @@ flags:FORCE_SLEEP
 innate-freq:5
 spells:BR_COLD | BR_LIGHT | BR_SHAR | BR_SOUN
 desc:The wolfhound of the Valar, Huan has served many masters in his time, from
-desc: Celegorm son of Fëanor to Beren son of Barahir, But now he runs wild and
+desc: Celegorm son of Fëanor to Beren son of Barahir: but now he runs wild and
 desc: acknowledges no master save himself, as he hunts alone for his nemesis -
 desc: Carcharoth, the terrible wolf of Angband.
 
@@ -14728,7 +14728,7 @@ spells:BLIND | CONF | SCARE | WOUND
 spells:BRAIN_SMASH | FORGET
 spells:BR_POIS | BR_CHAO | BR_ACID
 spells:S_DRAGON | S_HI_DEMON | S_HI_UNDEAD
-desc:Sauron's form as a serpent. Poisonous, biting, spitting, and threatening
+desc:Sauron's form as a serpent: poisonous, biting, spitting, and threatening
 desc: to crush you in its mighty coils.
 
 name:Vampire-Sauron

@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.monster.MonsterLexer;
-import uk.co.jackoftrades.backend.parser.monster.MonsterParser;
+import uk.co.jackoftrades.backend.parser.grammars.monster.MonsterGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.monster.MonsterLexer;
+import uk.co.jackoftrades.backend.parser.monster.MonsterAssembler;
+import uk.co.jackoftrades.backend.parser.monster.MonsterParseRecord;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,28 @@ public class MonsterReader implements Reader<MonsterRace> {
      */
     @Override
     public @NotNull List<MonsterRace> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            MonsterLexer lexer = new MonsterLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            MonsterParser parser = new MonsterParser(tokens);
-            MonsterParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.monsterRaces;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    public ParseResult<MonsterRace> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                MonsterLexer::new,
+                MonsterGrammar::new,
+                MonsterReader::extract,
+                new MonsterAssembler(), logger);
+    }
+
+    private static List<MonsterParseRecord> extract(
+            @NotNull MonsterGrammar parser,
+            @NotNull ParseErrors errorCatcher,
+            @NotNull List<String> errors) {
+        MonsterGrammar.FileContext output = parser.file();
+        List<MonsterParseRecord> records = output.monsters;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
+
+        return new ArrayList<>(records);
     }
 }

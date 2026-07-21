@@ -17,17 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.pit.MonsterNestLexer;
-import uk.co.jackoftrades.backend.parser.pit.MonsterNestParser;
+import uk.co.jackoftrades.backend.parser.grammars.pit.PitGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.pit.PitLexer;
+import uk.co.jackoftrades.backend.parser.pit.PitAssembler;
+import uk.co.jackoftrades.backend.parser.pit.PitParseRecord;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -54,17 +54,54 @@ public class PitReader implements Reader<PitProfile> {
      */
     @Override
     public @NotNull List<PitProfile> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            MonsterNestLexer lexer = new MonsterNestLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            MonsterNestParser parser = new MonsterNestParser(tokens);
-            MonsterNestParser.FileContext output = parser.file();
+        return parseWithResults(filename).items();
+    }
 
-            return output.pits;
-        } catch (Exception e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+    /**
+     * Parse the file and return the assembled profiles together with any soft errors gathered along
+     * the way. All the shared plumbing lives in {@link GrammarDriver#run}; this method just supplies
+     * the four pit-specific knobs - the generated lexer/parser constructors, the {@link #extract}
+     * step, and the {@link PitAssembler} - so the reader itself stays a thin wiring layer.
+     *
+     * @param filename the data file to parse
+     * @return the parsed profiles plus any soft errors (empty items if the parse was cancelled)
+     * @throws IOException if the file cannot be read
+     * @author Rowan Crowther
+     */
+    public @NotNull ParseResult<PitProfile> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PitLexer::new,
+                PitGrammar::new,
+                PitReader::extract,
+                new PitAssembler(), logger);
+    }
+
+    /**
+     * The one grammar-specific step {@link GrammarDriver} cannot do itself: run the entry rule and
+     * pull the parse-records out of the pit-shaped {@code FileContext}.
+     *
+     * <p>Order matters. {@link ParseErrors#throwIfAny()} fires immediately after the parse and
+     * before the record-count check, so hard grammar/lexer errors fail closed (an empty result)
+     * rather than letting a half-parsed file be validated. The record-count check is soft: a
+     * mismatched {@code record-count:} header is reported into {@code errors} but does not stop the
+     * records that did parse from loading.
+     *
+     * @param parser       the generated parser, already wired to the token stream
+     * @param errorCatcher the shared error listener, checked here for hard errors
+     * @param errors       the soft-error sink (record-count mismatches are appended here)
+     * @return the parsed pit records
+     * @author Rowan Crowther
+     */
+    private static List<PitParseRecord> extract(@NotNull PitGrammar parser,
+                                                @NotNull ParseErrors errorCatcher,
+                                                @NotNull List<String> errors) {
+        PitGrammar.FileContext output = parser.file();
+        List<PitParseRecord> pits = output.pits;
+        errorCatcher.throwIfAny();
+
+        String declaredRecordCount = output.declaredRecordCount;
+        GrammarDriver.checkRecordCount(declaredRecordCount, pits.size(), errors);
+
+        return new ArrayList<>(pits);
     }
 }

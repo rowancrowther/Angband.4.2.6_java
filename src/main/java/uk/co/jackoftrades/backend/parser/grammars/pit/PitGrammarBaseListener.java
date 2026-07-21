@@ -14,27 +14,28 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from MonsterNest.g4 by ANTLR 4.13.2
-package uk.co.jackoftrades.backend.parser.pit;
+
+// Generated from PitGrammar.g4 by ANTLR 4.13.2
+package uk.co.jackoftrades.backend.parser.grammars.pit;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ErrorNode;
 import org.antlr.v4.runtime.tree.TerminalNode;
 
 /**
- * This class provides an empty implementation of {@link MonsterNestListener},
+ * This class provides an empty implementation of {@link PitGrammarListener},
  * which can be extended to create a listener which only needs to handle a subset
  * of the available methods.
  */
 @SuppressWarnings("CheckReturnValue")
-public class MonsterNestBaseListener implements MonsterNestListener {
+public class PitGrammarBaseListener implements PitGrammarListener {
     /**
      * {@inheritDoc}
      *
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterName(MonsterNestParser.NameContext ctx) {
+    public void enterRecordCount(PitGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -43,7 +44,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitName(MonsterNestParser.NameContext ctx) {
+    public void exitRecordCount(PitGrammar.RecordCountContext ctx) {
     }
 
     /**
@@ -52,7 +53,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterRoom(MonsterNestParser.RoomContext ctx) {
+    public void enterName(PitGrammar.NameContext ctx) {
     }
 
     /**
@@ -61,7 +62,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitRoom(MonsterNestParser.RoomContext ctx) {
+    public void exitName(PitGrammar.NameContext ctx) {
     }
 
     /**
@@ -70,7 +71,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterAlloc(MonsterNestParser.AllocContext ctx) {
+    public void enterRoom(PitGrammar.RoomContext ctx) {
     }
 
     /**
@@ -79,7 +80,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitAlloc(MonsterNestParser.AllocContext ctx) {
+    public void exitRoom(PitGrammar.RoomContext ctx) {
     }
 
     /**
@@ -88,7 +89,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterObjRarity(MonsterNestParser.ObjRarityContext ctx) {
+    public void enterAlloc(PitGrammar.AllocContext ctx) {
     }
 
     /**
@@ -97,7 +98,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitObjRarity(MonsterNestParser.ObjRarityContext ctx) {
+    public void exitAlloc(PitGrammar.AllocContext ctx) {
     }
 
     /**
@@ -106,7 +107,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterColour(MonsterNestParser.ColourContext ctx) {
+    public void enterObjRarity(PitGrammar.ObjRarityContext ctx) {
     }
 
     /**
@@ -115,7 +116,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitColour(MonsterNestParser.ColourContext ctx) {
+    public void exitObjRarity(PitGrammar.ObjRarityContext ctx) {
     }
 
     /**
@@ -124,7 +125,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMonBase(MonsterNestParser.MonBaseContext ctx) {
+    public void enterColour(PitGrammar.ColourContext ctx) {
     }
 
     /**
@@ -133,7 +134,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMonBase(MonsterNestParser.MonBaseContext ctx) {
+    public void exitColour(PitGrammar.ColourContext ctx) {
     }
 
     /**
@@ -142,7 +143,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlagsReq(MonsterNestParser.FlagsReqContext ctx) {
+    public void enterMonBase(PitGrammar.MonBaseContext ctx) {
     }
 
     /**
@@ -151,7 +152,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlagsReq(MonsterNestParser.FlagsReqContext ctx) {
+    public void exitMonBase(PitGrammar.MonBaseContext ctx) {
     }
 
     /**
@@ -160,7 +161,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFlagsBan(MonsterNestParser.FlagsBanContext ctx) {
+    public void enterFlagsReq(PitGrammar.FlagsReqContext ctx) {
     }
 
     /**
@@ -169,7 +170,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFlagsBan(MonsterNestParser.FlagsBanContext ctx) {
+    public void exitFlagsReq(PitGrammar.FlagsReqContext ctx) {
     }
 
     /**
@@ -178,7 +179,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterInnateFreq(MonsterNestParser.InnateFreqContext ctx) {
+    public void enterFlagsBan(PitGrammar.FlagsBanContext ctx) {
     }
 
     /**
@@ -187,7 +188,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitInnateFreq(MonsterNestParser.InnateFreqContext ctx) {
+    public void exitFlagsBan(PitGrammar.FlagsBanContext ctx) {
     }
 
     /**
@@ -196,7 +197,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpellReq(MonsterNestParser.SpellReqContext ctx) {
+    public void enterInnateFreq(PitGrammar.InnateFreqContext ctx) {
     }
 
     /**
@@ -205,7 +206,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpellReq(MonsterNestParser.SpellReqContext ctx) {
+    public void exitInnateFreq(PitGrammar.InnateFreqContext ctx) {
     }
 
     /**
@@ -214,7 +215,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterSpellBan(MonsterNestParser.SpellBanContext ctx) {
+    public void enterSpellReq(PitGrammar.SpellReqContext ctx) {
     }
 
     /**
@@ -223,7 +224,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitSpellBan(MonsterNestParser.SpellBanContext ctx) {
+    public void exitSpellReq(PitGrammar.SpellReqContext ctx) {
     }
 
     /**
@@ -232,7 +233,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterMonBan(MonsterNestParser.MonBanContext ctx) {
+    public void enterSpellBan(PitGrammar.SpellBanContext ctx) {
     }
 
     /**
@@ -241,7 +242,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitMonBan(MonsterNestParser.MonBanContext ctx) {
+    public void exitSpellBan(PitGrammar.SpellBanContext ctx) {
     }
 
     /**
@@ -250,7 +251,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterPit(MonsterNestParser.PitContext ctx) {
+    public void enterMonBan(PitGrammar.MonBanContext ctx) {
     }
 
     /**
@@ -259,7 +260,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitPit(MonsterNestParser.PitContext ctx) {
+    public void exitMonBan(PitGrammar.MonBanContext ctx) {
     }
 
     /**
@@ -268,7 +269,7 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void enterFile(MonsterNestParser.FileContext ctx) {
+    public void enterPitRecord(PitGrammar.PitRecordContext ctx) {
     }
 
     /**
@@ -277,7 +278,25 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitFile(MonsterNestParser.FileContext ctx) {
+    public void exitPitRecord(PitGrammar.PitRecordContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void enterFile(PitGrammar.FileContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void exitFile(PitGrammar.FileContext ctx) {
     }
 
     /**
@@ -295,17 +314,24 @@ public class MonsterNestBaseListener implements MonsterNestListener {
      * <p>The default implementation does nothing.</p>
      */
     @Override
-    public void exitEveryRule(ParserRuleContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitTerminal(TerminalNode node) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void visitErrorNode(ErrorNode node) { }
+    public void exitEveryRule(ParserRuleContext ctx) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitTerminal(TerminalNode node) {
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>The default implementation does nothing.</p>
+     */
+    @Override
+    public void visitErrorNode(ErrorNode node) {
+    }
 }

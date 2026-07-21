@@ -880,7 +880,7 @@ public class GameConstants {
             loadMonsterSpellTypes();
             loadVisualTables();
             loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
-//            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
+            loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
@@ -905,7 +905,16 @@ public class GameConstants {
         String filename = ANGBAND_DIR_GAMEDATA + "pit.txt";
 
         try {
-            monsterPitProfiles = parser.parse(filename);
+            ParseResult<PitProfile> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            monsterPitProfiles = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

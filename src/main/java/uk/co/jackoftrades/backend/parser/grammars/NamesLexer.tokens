@@ -1,0 +1,10 @@
+RECORD_COUNT=1
+SECTION=2
+WORD=3
+INTEGER=4
+COMMENT=5
+EOL=6
+STRING=7
+'record-count:'=1
+'section:'=2
+'word:'=3

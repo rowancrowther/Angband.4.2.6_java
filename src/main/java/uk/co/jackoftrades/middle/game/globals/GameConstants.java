@@ -38,6 +38,7 @@ import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.Hint;
+import uk.co.jackoftrades.middle.game.Name;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.*;
@@ -307,6 +308,7 @@ public class GameConstants {
     private static List<MonsterLore> monsterLore;
     private static List<Quest> quests;
     private static List<Hint> hints;
+    private static List<Name> names;
 
     private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -888,6 +890,7 @@ public class GameConstants {
             loadTraps();
             loadQuests();               // Dependent on Monster
             loadHints();
+            loadNames();
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -910,6 +913,26 @@ public class GameConstants {
             }
 
             hints = result.items();
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    private static void loadNames() {
+        NamesReader parser = new NamesReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "names.txt";
+
+        try {
+            ParseResult<Name> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            names = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

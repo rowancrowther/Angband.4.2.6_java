@@ -1,0 +1,15 @@
+RECORD_COUNT=1
+KIND=2
+FIXED=3
+FLAVOUR=4
+INTEGER=5
+COMMENT=6
+EOL=7
+STRING=8
+COLON=9
+DELIM_EOL=10
+'record-count:'=1
+'kind:'=2
+'fixed:'=3
+'flavor:'=4
+':'=9

@@ -309,6 +309,7 @@ public class GameConstants {
     private static List<Quest> quests;
     private static List<Hint> hints;
     private static List<Name> names;
+    private static List<FlavourKind> flavours;
 
     private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -891,10 +892,31 @@ public class GameConstants {
             loadQuests();               // Dependent on Monster
             loadHints();
             loadNames();
+            loadFlavours();
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadFlavours() {
+        FlavourReader parser = new FlavourReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "flavor.txt";
+
+        try {
+            ParseResult<FlavourKind> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            flavours = result.items();
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

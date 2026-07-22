@@ -37,6 +37,7 @@ import uk.co.jackoftrades.middle.cave.*;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.middle.game.Hint;
 import uk.co.jackoftrades.middle.game.Projection;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.*;
@@ -305,6 +306,7 @@ public class GameConstants {
     private static List<PitProfile> monsterPitProfiles;
     private static List<MonsterLore> monsterLore;
     private static List<Quest> quests;
+    private static List<Hint> hints;
 
     private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -885,10 +887,31 @@ public class GameConstants {
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
             loadTraps();
             loadQuests();               // Dependent on Monster
+            loadHints();
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
+        }
+    }
+
+    private static void loadHints() {
+        HintReader parser = new HintReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "hints.txt";
+
+        try {
+            ParseResult<Hint> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            hints = result.items();
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
         }
     }
 

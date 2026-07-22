@@ -1,0 +1,8 @@
+RECORD_COUNT=1
+HINT=2
+INTEGER=3
+COMMENT=4
+EOL=5
+STRING=6
+'record-count:'=1
+'H:'=2

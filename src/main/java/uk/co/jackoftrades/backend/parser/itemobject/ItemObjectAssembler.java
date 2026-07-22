@@ -23,6 +23,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.*;
@@ -103,7 +104,12 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
                 char c = glyphChar.charAt(0);
-                adc = new AngbandDisplayCharacter(c, glyphColour);
+                ColourType colourType = ColourType.getColourType(glyphColour);
+                if (colourType == null) {
+                    errors.add("Object kind at line: " + line + " has " +
+                            "an invalid colour: " + glyphColour);
+                }
+                adc = new AngbandDisplayCharacter(c, colourType);
             }
             int level = 0;
             if (!record.level().isEmpty()) {

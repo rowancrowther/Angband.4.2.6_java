@@ -305,7 +305,7 @@ public class GameConstants {
     private static List<PitProfile> monsterPitProfiles;
     private static List<MonsterLore> monsterLore;
 
-    private static final List<TrapKind> trapInfo = new ArrayList<>();
+    private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
 
     public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
@@ -882,6 +882,7 @@ public class GameConstants {
             loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
             loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
+            loadTraps();
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -895,6 +896,26 @@ public class GameConstants {
 
         try {
             monsterLore = loreReader.parse(filename);
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    private static void loadTraps() {
+        TrapReader parser = new TrapReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "trap.txt";
+
+        try {
+            ParseResult<TrapKind> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            trapInfo = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

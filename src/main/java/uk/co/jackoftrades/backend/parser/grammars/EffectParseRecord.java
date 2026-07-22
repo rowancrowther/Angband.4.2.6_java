@@ -17,9 +17,17 @@
 
 package uk.co.jackoftrades.backend.parser.grammars;
 
-public record EffectParseRecord(String typeInit, String subTypeWrapper,
-                                String radius, String other, String diceString,
-                                String yVal, String xVal, String expressionChars,
-                                String expressionBases, String expressionOperations,
-                                String timeDiceString, String effectMessage, int line) {
+public record EffectParseRecord(String typeInit,
+                                String subTypeWrapper,
+                                String radius,
+                                String other,
+                                String diceString,
+                                String yVal,
+                                String xVal,
+                                String expressionChars,
+                                String expressionBases,
+                                String expressionOperations,
+                                String timeDiceString,
+                                String effectMessage,
+                                int line) {
 }

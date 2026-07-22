@@ -25,6 +25,8 @@ import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -55,6 +57,13 @@ public class TrapKind {
      * @author Rowan Crowther
      */
     private String description;
+    /**
+     * Message shown to the player when the trap triggers (C {@code msg}, from the {@code msg:}
+     * directive).
+     *
+     * @author Rowan Crowther
+     */
+    private String message;
     /**
      * Message shown when the player saves against (avoids) the trap.
      *
@@ -101,11 +110,12 @@ public class TrapKind {
      */
     private int minDepth;
     /**
-     * Deepest dungeon level this trap can appear on.
+     * Maximum number of this trap allowed on a single level (C {@code max_num}). Unused by the
+     * current game logic — kept for fidelity to the {@code appear:} line.
      *
      * @author Rowan Crowther
      */
-    private int maxDepth;
+    private int maxNum;
     /**
      * The trap's power, as a dice/random expression.
      *
@@ -131,43 +141,49 @@ public class TrapKind {
      *
      * @author Rowan Crowther
      */
-    private Effect effect;
+    private List<Effect> effect;
     /**
      * An optional secondary ("extra") effect.
      *
      * @author Rowan Crowther
      */
-    private Effect effectXtra;
+    private List<Effect> effectXtra;
 
     /**
      * Build a trap-kind template from its parsed data-file fields.
      *
-     * @param trapKindName            internal name
-     * @param text                    display text/title
-     * @param description             human-readable description
+     * @param trapKindName            internal grouping name — C {@code name}, the {@code name:}
+     *                                line's first field; not unique across traps
+     * @param text                    flavour description — C {@code text}, from the {@code desc:}
+     *                                directive
+     * @param description             the trap's short description — C {@code desc}, the
+     *                                {@code name:} line's second field and the {@code lookupTrap} key
+     * @param message                 message shown when the trap triggers (the {@code msg:} line)
      * @param messageOnSave           message on a successful save
      * @param messageOnFailure        message on a failed save
      * @param messageOnExtraEffect    message when the extra effect fires
-     * @param trapKindIndex           index in the trap-kind table
+     * @param trapKindIndex           this trap's index in the trap-kind table (its file position)
      * @param angbandDisplayCharacter display glyph and colour
      * @param rarity                  rarity weighting
      * @param minDepth                shallowest level it appears on
-     * @param maxDepth                deepest level it appears on
-     * @param power                   power as a random expression
-     * @param flags                   behavioural flags
-     * @param saveFlags               object flags granting a save
-     * @param effect                  primary effect
-     * @param effectXtra              optional secondary effect
+     * @param maxNum                  maximum number allowed on a single level (C {@code max_num})
+     * @param power                   power/visibility as a random expression
+     * @param flags                   behavioural trap flags
+     * @param saveFlags               object flags that grant the player a save
+     * @param effect                  primary effect(s) run when the trap triggers
+     * @param effectXtra              optional secondary effect(s), each with a 50% chance to fire
      * @author Rowan Crowther
      */
-    public TrapKind(String trapKindName, String text, String description, String messageOnSave,
-                    String messageOnFailure, String messageOnExtraEffect, int trapKindIndex,
-                    AngbandDisplayCharacter angbandDisplayCharacter, int rarity, int minDepth, int maxDepth,
-                    Random power, Flag<TrapEnum> flags, Flag<ObjectFlag> saveFlags, Effect effect,
-                    Effect effectXtra) {
+    public TrapKind(String trapKindName, String text, String description, String message,
+                    String messageOnSave, String messageOnFailure,
+                    String messageOnExtraEffect, int trapKindIndex,
+                    AngbandDisplayCharacter angbandDisplayCharacter, int rarity, int minDepth, int maxNum,
+                    Random power, Flag<TrapEnum> flags, Flag<ObjectFlag> saveFlags,
+                    List<Effect> effect, List<Effect> effectXtra) {
         this.trapKindName = trapKindName;
         this.text = text;
         this.description = description;
+        this.message = message;
         this.messageOnSave = messageOnSave;
         this.messageOnFailure = messageOnFailure;
         this.messageOnExtraEffect = messageOnExtraEffect;
@@ -175,7 +191,7 @@ public class TrapKind {
         this.angbandDisplayCharacter = angbandDisplayCharacter;
         this.rarity = rarity;
         this.minDepth = minDepth;
-        this.maxDepth = maxDepth;
+        this.maxNum = maxNum;
         this.power = power;
         this.flags = flags;
         this.saveFlags = saveFlags;
@@ -203,6 +219,57 @@ public class TrapKind {
     }
 
     /**
+     * @return this trap type's index in the trap-kind table (its 0-based file position, C
+     * {@code tidx})
+     * @author Rowan Crowther
+     */
+    public int getTrapKindIndex() {
+        return trapKindIndex;
+    }
+
+    /**
+     * @return an unmodifiable view of this trap's secondary ("extra") effects — each has a 50%
+     * chance of also firing when the trap triggers
+     * @author Rowan Crowther
+     */
+    public List<Effect> getEffectXtra() {
+        return Collections.unmodifiableList(effectXtra);
+    }
+
+    /**
+     * @return an unmodifiable view of this trap's primary effects, run in order when it triggers
+     * @author Rowan Crowther
+     */
+    public List<Effect> getEffect() {
+        return Collections.unmodifiableList(effect);
+    }
+
+    /**
+     * @return a defensive copy of this trap's behavioural flags; mutating it does not affect the kind
+     * @author Rowan Crowther
+     */
+    public Flag<TrapEnum> getFlags() {
+        return flags.copy();
+    }
+
+    /**
+     * @return a defensive copy of the object flags that grant the player a saving throw against this
+     * trap
+     * @author Rowan Crowther
+     */
+    public Flag<ObjectFlag> getSaveFlags() {
+        return saveFlags.copy();
+    }
+
+    /**
+     * @return this trap's flavour description text (C {@code text}, from the {@code desc:} directive)
+     * @author Rowan Crowther
+     */
+    public String getText() {
+        return text;
+    }
+
+    /**
      * Value equality across all fields (two trap kinds are equal when every
      * descriptive and behavioural field matches).
      *
@@ -215,7 +282,8 @@ public class TrapKind {
         if (o == null || getClass() != o.getClass()) return false;
 
         TrapKind trapKind = (TrapKind) o;
-        return trapKindIndex == trapKind.trapKindIndex && rarity == trapKind.rarity && minDepth == trapKind.minDepth && maxDepth == trapKind.maxDepth && Objects.equals(trapKindName, trapKind.trapKindName) && Objects.equals(text, trapKind.text) && Objects.equals(getDescription(), trapKind.getDescription()) && Objects.equals(messageOnSave, trapKind.messageOnSave) && Objects.equals(messageOnFailure, trapKind.messageOnFailure) && Objects.equals(messageOnExtraEffect, trapKind.messageOnExtraEffect) && Objects.equals(angbandDisplayCharacter, trapKind.angbandDisplayCharacter) && Objects.equals(power, trapKind.power) && Objects.equals(flags, trapKind.flags) && Objects.equals(saveFlags, trapKind.saveFlags) && Objects.equals(effect, trapKind.effect) && Objects.equals(effectXtra, trapKind.effectXtra);
+        return trapKindIndex == trapKind.trapKindIndex && rarity == trapKind.rarity && minDepth == trapKind.minDepth
+                && maxNum == trapKind.maxNum && Objects.equals(trapKindName, trapKind.trapKindName) && Objects.equals(text, trapKind.text) && Objects.equals(getDescription(), trapKind.getDescription()) && Objects.equals(messageOnSave, trapKind.messageOnSave) && Objects.equals(messageOnFailure, trapKind.messageOnFailure) && Objects.equals(messageOnExtraEffect, trapKind.messageOnExtraEffect) && Objects.equals(angbandDisplayCharacter, trapKind.angbandDisplayCharacter) && Objects.equals(power, trapKind.power) && Objects.equals(flags, trapKind.flags) && Objects.equals(saveFlags, trapKind.saveFlags) && Objects.equals(effect, trapKind.effect) && Objects.equals(effectXtra, trapKind.effectXtra);
     }
 
     /**
@@ -236,7 +304,7 @@ public class TrapKind {
         result = 31 * result + Objects.hashCode(angbandDisplayCharacter);
         result = 31 * result + rarity;
         result = 31 * result + minDepth;
-        result = 31 * result + maxDepth;
+        result = 31 * result + maxNum;
         result = 31 * result + Objects.hashCode(power);
         result = 31 * result + Objects.hashCode(flags);
         result = 31 * result + Objects.hashCode(saveFlags);

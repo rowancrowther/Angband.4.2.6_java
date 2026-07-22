@@ -55,6 +55,8 @@
 #    also triggered 50% of the time.  If they are triggered, the 'msg-xtra'
 #    line is printed, if present.
 
+record-count:40
+
 name:no trap:no trap
 graphics: :w
 

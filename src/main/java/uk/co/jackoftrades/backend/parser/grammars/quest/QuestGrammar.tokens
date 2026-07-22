@@ -1,0 +1,14 @@
+RECORD_COUNT=1
+NAME=2
+LEVEL=3
+RACE=4
+NUMBER=5
+INTEGER=6
+COMMENT=7
+EOL=8
+STRING=9
+'record-count:'=1
+'name:'=2
+'level:'=3
+'race:'=4
+'number:'=5

@@ -304,6 +304,7 @@ public class GameConstants {
     private static List<MonsterRace> monsterRaces;
     private static List<PitProfile> monsterPitProfiles;
     private static List<MonsterLore> monsterLore;
+    private static List<Quest> quests;
 
     private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
@@ -883,6 +884,7 @@ public class GameConstants {
             loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
             loadTraps();
+            loadQuests();               // Dependent on Monster
         } catch (Exception e) {
             String message = "Unable to load data from " + ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
@@ -916,6 +918,26 @@ public class GameConstants {
             }
 
             trapInfo = result.items();
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    private static void loadQuests() {
+        QuestReader parser = new QuestReader();
+        String filename = ANGBAND_DIR_GAMEDATA + "quest.txt";
+
+        try {
+            ParseResult<Quest> result = parser.parseWithResults(filename);
+
+            if (result.hasErrors()) {
+                String errorMessage = "Invalid " + filename + " file";
+                IllegalStateException e = new IllegalStateException(errorMessage);
+                logger.fatal(errorMessage, e);
+                return;
+            }
+
+            quests = result.items();
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

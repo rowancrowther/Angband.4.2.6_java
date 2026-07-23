@@ -56,3 +56,4 @@ bin/
 *.interp
 /.claude/
 /src/main/gen/
+/src/test/java/uk/co/jackoftrades/middle/game/gameengine/CommandQueueTest.java

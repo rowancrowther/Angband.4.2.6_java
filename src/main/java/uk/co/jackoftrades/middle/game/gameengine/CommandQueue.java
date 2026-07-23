@@ -167,6 +167,38 @@ public class CommandQueue {
     }
 
     /**
+     * Carries out every queued command right now, without waiting for input - the port of C's
+     * {@code cmdq_execute}. Pops and dispatches in a loop until {@link #commandPop} reports the
+     * queue is empty.
+     *
+     * @param context the context to carry the commands out in
+     */
+    public void execute(CommandContext context) {
+        while (commandPop(context)) ;
+    }
+
+    /**
+     * Discards all pending commands - the port of C's {@code cmdq_flush} (which sets
+     * {@code cmd_tail = cmd_head}). Leaves the remembered {@link #lastCommand} untouched, so a
+     * later {@code CMD_REPEAT} can still replay it; use {@link #release()} to forget that too.
+     */
+    public void flush() {
+        commandQueue.clear();
+    }
+
+    /**
+     * Empties the queue <em>and</em> forgets the last executed command - the port of C's
+     * {@code cmdq_release}. This is {@link #flush()} plus clearing {@link #lastCommand}, so no
+     * {@code CMD_REPEAT} can replay across the release (C resets {@code last_command}/
+     * {@code last_command_idx} for the same reason). C's per-slot string frees have no counterpart
+     * here - garbage collection reclaims the commands.
+     */
+    public void release() {
+        flush();
+        lastCommand = null;
+    }
+
+    /**
      * Pops the next command and carries it out - the port of C's {@code cmdq_pop}, combining the
      * dequeue with dispatch via {@link CommandProcessor#processCommand}.
      *

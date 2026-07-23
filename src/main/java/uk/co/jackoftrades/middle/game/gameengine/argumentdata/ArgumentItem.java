@@ -36,4 +36,8 @@ public record ArgumentItem(ItemObject object) implements CommandArgumentData {
     public CommandArgumentType type() {
         return CommandArgumentType.arg_ITEM;
     }
+
+    public ItemObject getValue() {
+        return object;
+    }
 }

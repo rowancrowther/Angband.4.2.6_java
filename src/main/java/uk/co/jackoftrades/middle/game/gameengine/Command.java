@@ -27,7 +27,7 @@ import java.util.List;
  * A single queued command: what to do, where, how many times, and with which arguments - the port
  * of C's {@code struct command} (cmd-core.h). Instances flow through the command queue; the game
  * engine pops one, looks its {@link #code} up in the dispatch table, and runs the handler, which
- * pulls whatever it needs from {@link #arg}.
+ * pulls whatever it needs from {@link #args}.
  *
  * @author Rowan Crowther
  */
@@ -65,7 +65,7 @@ public class Command {
      * position (C used a fixed {@code arg[CMD_MAX_ARGS]} array of four; a list is used here since
      * lookup is by name). Initialised empty so arguments can be added before the command runs.
      */
-    private List<CommandArgument> arg = new ArrayList<>();
+    private List<CommandArgument> args = new ArrayList<>();
 
     /**
      * Creates a command.
@@ -81,7 +81,7 @@ public class Command {
         this.code = code;
         this.nrepeats = nrepeats;
         this.background_command = background_command;
-        this.arg = arg;
+        this.args = arg;
     }
 
     /**
@@ -101,7 +101,7 @@ public class Command {
      */
     public Command clone() {
         return new Command(this.context, this.code, this.nrepeats, this.background_command,
-                new ArrayList<>(arg));
+                new ArrayList<>(args));
     }
 
     /**
@@ -161,7 +161,7 @@ public class Command {
     /**
      * @return this command's arguments (matched by name)
      */
-    public List<CommandArgument> getArg() {
-        return arg;
+    public List<CommandArgument> getArgs() {
+        return args;
     }
 }

@@ -18,8 +18,11 @@
 package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
+import uk.co.jackoftrades.middle.game.gameengine.argumentdata.ArgumentItem;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
@@ -45,19 +48,19 @@ import java.util.List;
  */
 public class CommandQueue {
     /**
-     * Whether the most recent command permits being repeated. C sets its {@code repeat_prev_allowed}
-     * true in {@code process_command} on each execution and lets a handler clear it; until that
-     * function is ported this stays false, so the {@code CMD_REPEAT} path is structurally present
-     * but cannot yet fire.
+     * Whether the most recent command permits being repeated - the port of C's
+     * {@code repeat_prev_allowed}. {@link CommandProcessor#processCommand} sets it true on every
+     * execution, and a handler (or {@link #disableRepeat()} / {@link #disableRepeatFloorItem()}) may
+     * clear it; {@link #push(Command)} consults it as the gate a {@code CMD_REPEAT} must pass before
+     * it will replay {@link #lastCommand}.
      */
     private boolean repeatPrevAllowed = false;
 
     /**
-     * Whether an auto-repeat is currently in flight. When set, {@link #commandPop} replays
-     * {@link #lastCommand} instead of consuming a fresh command from the queue - the port of C's
-     * {@code repeating} flag. Like {@link #repeatPrevAllowed} it is not yet driven by anything (the
-     * auto-repeat machinery lives in the unported {@code process_command}), so the replay path is
-     * present but dormant.
+     * Whether an auto-repeat is currently in flight - the port of C's {@code repeating}. When set,
+     * {@link #commandPop} replays {@link #lastCommand} instead of consuming a fresh command from the
+     * queue. {@link #setRepeat(int)} arms it (positive count) and disarms it (zero), and
+     * {@link #cancelRepeat()} clears it.
      */
     private boolean repeating = false;
 
@@ -71,6 +74,15 @@ public class CommandQueue {
      * {@code CMD_REPEAT} can replay it after the queue has drained. Null until one has been executed.
      */
     private Command lastCommand = null;
+
+    /**
+     * The command {@link #commandPop} is currently executing - the deque-world stand-in for C's
+     * {@code cmd_queue[prev_cmd_idx(cmd_tail)]}. C's pop only advances an index, so the executing
+     * command stays reachable in the ring buffer; this port's {@link #getNextCommand} removes it from
+     * the deque, so a reference is held here instead. {@link #setRepeat(int)}, {@link #getNrepeats()}
+     * and {@link #cancelRepeat()} all target this command. Null until the first {@link #commandPop}.
+     */
+    private Command currentCommand = null;
 
     private Player player;
 
@@ -220,28 +232,27 @@ public class CommandQueue {
             cmd = getNextCommand();
             if (cmd == null) return false;
         }
+        currentCommand = cmd;
 
         CommandProcessor.processCommand(commandContext, cmd, this);
         return true;
     }
 
     /**
-     * Sets the repeat count on the most recently queued command and flags the state line for
+     * Sets the repeat count on the currently executing command and flags the state line for
      * redraw - the port of C's {@code cmd_set_repeat}.
      *
-     * <p>Like C (which targets {@code cmd_queue[prev_cmd_idx(cmd_head)]}), this applies to the
-     * command at the back of the queue, i.e. the last one pushed; it is a no-op if the queue is
-     * empty. A positive count turns {@link #repeating} on, zero turns it off, and either way the
-     * {@code PR_STATE} redraw bit is set so the on-screen state indicator refreshes.
+     * <p>Like C (which targets {@code cmd_queue[prev_cmd_idx(cmd_tail)]}), this applies to the
+     * command {@link #commandPop} is running, held here as {@link #currentCommand}; it is a no-op if
+     * nothing is executing. A positive count turns {@link #repeating} on, zero turns it off, and
+     * either way the {@code PR_STATE} redraw bit is set so the on-screen state indicator refreshes.
      *
      * @param numberOfRepeats the repeat count to apply
      */
     public void setRepeat(int numberOfRepeats) {
-        Command cmd = commandQueue.peekLast();
+        if (currentCommand == null) return;
 
-        if (cmd == null) return;
-
-        cmd.setNrepeats(numberOfRepeats);
+        currentCommand.setNrepeats(numberOfRepeats);
         if (numberOfRepeats > 0)
             repeating = true;
         else
@@ -266,5 +277,85 @@ public class CommandQueue {
      */
     public void setRepeatPrevAllowed(boolean repeatPrevAllowed) {
         this.repeatPrevAllowed = repeatPrevAllowed;
+    }
+
+    /**
+     * Cancels any pending repeats on the currently executing command - the port of C's
+     * {@code cmd_cancel_repeat}.
+     *
+     * <p>When the command has repeats left <em>or</em> an auto-repeat is in flight, its count is
+     * zeroed, {@link #repeating} is cleared, and the {@code PR_STATE} redraw bit is set. When there
+     * is nothing to cancel (no count and not repeating) it does nothing, matching C's guard. It is
+     * also a no-op if no command is executing; C never needs that check because its target slot
+     * always exists, whereas {@link #currentCommand} is null until the first {@link #commandPop}.
+     */
+    public void cancelRepeat() {
+        if (currentCommand == null) return;
+
+        if (currentCommand.getNrepeats() != 0 || repeating) {
+            currentCommand.setNrepeats(0);
+            setRepeating(false);
+
+            player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATE);
+        }
+    }
+
+    /**
+     * Returns the number of repeats pending on the currently executing command - the port of C's
+     * {@code cmd_get_nrepeats}. Queried both by the command loop and by outside code (C's world
+     * processing and status line) to tell whether a repeat is in progress. Reports 0 when no command
+     * is executing, where C would read its always-present target slot.
+     *
+     * @return the executing command's pending repeat count, or 0 if none is executing
+     */
+    public int getNrepeats() {
+        if (currentCommand == null) return 0;
+        return currentCommand.getNrepeats();
+    }
+
+    /**
+     * Forbids the user from repeating the current command with {@code CMD_REPEAT} - the port of C's
+     * {@code cmd_disable_repeat}. It simply shuts the {@link #repeatPrevAllowed} gate that
+     * {@link #push(Command)} checks, so a subsequent {@code CMD_REPEAT} push is refused.
+     */
+    public void disableRepeat() {
+        repeatPrevAllowed = false;
+    }
+
+    /**
+     * Forbids repeating the current command if it acted on an item lying on the floor - the port of
+     * C's {@code cmd_disable_repeat_floor_item}, a dangling-reference guard. A floor item may have
+     * moved, merged, or been destroyed by the time a repeat would replay the command, leaving its
+     * reference stale; inventory items are stable and stay repeatable.
+     *
+     * <p>If repeating is already disallowed it returns immediately, before inspecting any arguments -
+     * matching C, whose comment is the point: those object references may already dangle, so they
+     * must not be dereferenced once the gate is shut. Otherwise it walks the command's arguments and,
+     * on the first {@code arg_ITEM} whose object is on the floor (a non-null, non-origin grid;
+     * inventory items carry no grid, C's {@code (0,0)}), shuts the {@link #repeatPrevAllowed} gate.
+     *
+     * <p><b>Divergence from C.</b> C inspects {@code cmd_queue[cmd_head - 1]}, the last-<em>pushed</em>
+     * command. This port inspects {@code [port]} {@link #currentCommand}, the <em>executing</em> one
+     * (C's {@code prev_cmd_idx(cmd_tail)}). The two coincide in the common single-command case, and
+     * {@link #currentCommand} is the command that actually holds the at-risk floor reference. The
+     * literal port - {@code commandQueue.peekLast()} - would be wrong here: {@link #getNextCommand}
+     * removes executed commands from the deque, so during a lone command's execution {@code peekLast}
+     * is null and the guard would silently no-op exactly when it is needed.
+     */
+    public void disableRepeatFloorItem() {
+        if (!repeatPrevAllowed) return;
+
+        if (currentCommand == null) return;
+
+        for (CommandArgument arg : currentCommand.getArgs()) {
+            if (arg.getData() instanceof ArgumentItem argumentItem) {
+                ItemObject obj = argumentItem.getValue();
+                Loc grid = (obj == null) ? null : obj.getGrid();
+                if (grid != null && !grid.isZero()) {
+                    repeatPrevAllowed = false;
+                    break;
+                }
+            }
+        }
     }
 }

@@ -398,6 +398,10 @@ public class ItemObject {
         location = grid;
     }
 
+    public Loc getGrid() {
+        return location;
+    }
+
     public void orNotice(ObjectNotice notice) {
         this.notice.on(notice);
     }
@@ -470,8 +474,7 @@ public class ItemObject {
         } else if (tVal.isEdible() || tVal.isPotion() || tVal.isScroll() || tVal.isRod()) {
             return true;
         } else if (tVal.canHaveCharges() || tVal.isMoney()) {
-            if (this.pValue + itm2.pValue > GameConstants.MAX_PVAL)
-                return false;
+            return this.pValue + itm2.pValue <= GameConstants.MAX_PVAL;
         } else if (tVal.isWeapon() || tVal.isArmour() || tVal.isJewelry() || tVal.isLight()) {
             boolean thisKnown = fullyKnown();
             boolean itm2Known = itm2.fullyKnown();
@@ -488,7 +491,7 @@ public class ItemObject {
 
             // identical modifiers
             for (ObjectModifier mod : ObjectModifier.values()) {
-                if (this.modifiers.get(mod) != itm2.modifiers.get(mod)) return false;
+                if (!this.modifiers.get(mod).equals(itm2.modifiers.get(mod))) return false;
             }
 
             // Same ego item

@@ -259,7 +259,7 @@ public class CommandProcessor {
         }
 
         if (command.getNrepeats() > 0 && oldRepeats == command.getNrepeats()) {
-            command.setNrepeats(oldRepeats - 1);
+            queue.setRepeat(oldRepeats - 1);
         }
     }
 

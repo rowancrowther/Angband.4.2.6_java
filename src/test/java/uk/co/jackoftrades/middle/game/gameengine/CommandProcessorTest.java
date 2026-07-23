@@ -26,6 +26,7 @@ import uk.co.jackoftrades.middle.player.PlayerUpkeep;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -202,5 +203,87 @@ class CommandProcessorTest {
         Command help = new Command(CommandContext.CTX_INIT, CommandCode.CMD_HELP, 0, 0, new ArrayList<>());
         CommandProcessor.processCommand(CommandContext.CTX_GAME, help, new CommandQueue(player));
         assertEquals(CommandContext.CTX_GAME, help.getContext());
+    }
+
+    // ------------------------------------------------------------------ auto-repeat cycle
+
+    /**
+     * Reads the private {@code repeating} flag off a queue, so the auto-repeat cycle tests can
+     * assert on the flag that decides whether {@code commandPop} replays or draws a fresh command.
+     */
+    private static boolean repeating(CommandQueue queue) throws ReflectiveOperationException {
+        Field field = CommandQueue.class.getDeclaredField("repeating");
+        field.setAccessible(true);
+        return field.getBoolean(queue);
+    }
+
+    /**
+     * A {@code CMD_OPEN} command (repeatable, auto-repeat 99 in the table) with the given count.
+     */
+    private static Command openCommand(int nrepeats) {
+        return new Command(CommandContext.CTX_INIT, CommandCode.CMD_OPEN, nrepeats, 0, new ArrayList<>());
+    }
+
+    /**
+     * The first execution of an auto-repeat command arms the repeat from the table's
+     * {@code auto_repeat_n} (99 for {@code CMD_OPEN}) without yet counting itself - C's
+     * {@code cmd_set_repeat(auto_repeat_n)} followed by the guarded "count this execution" step,
+     * which does not fire on the arming turn because {@code oldrepeats (0) != cmd_get_nrepeats() (99)}.
+     */
+    @Test
+    void autoRepeatArmsFromTheCommandTable() throws ReflectiveOperationException {
+        CommandQueue queue = new CommandQueue(player);
+        queue.push(openCommand(0));
+
+        assertTrue(queue.commandPop(CommandContext.CTX_GAME));
+
+        assertEquals(99, queue.getNrepeats(), "the first execution should arm the table's auto-repeat count");
+        assertTrue(repeating(queue), "arming a positive count must set repeating");
+    }
+
+    /**
+     * Once armed, each subsequent {@code commandPop} replays the command and decrements the count via
+     * {@code cmd_set_repeat(oldrepeats - 1)} - the decrement that must route through {@code setRepeat}
+     * so that reaching zero also clears {@code repeating}. Started mid-run at 3 (a non-zero count
+     * skips the re-arm to 99) so the whole countdown can be asserted step by step, ending with the
+     * queue quiescent rather than replaying forever.
+     */
+    @Test
+    void autoRepeatCountsDownThenTerminates() throws ReflectiveOperationException {
+        CommandQueue queue = new CommandQueue(player);
+        queue.push(openCommand(3));
+
+        queue.commandPop(CommandContext.CTX_GAME);   // consume the queued command, 3 -> 2
+        assertEquals(2, queue.getNrepeats());
+        assertTrue(repeating(queue));
+
+        queue.commandPop(CommandContext.CTX_GAME);   // replay, 2 -> 1
+        assertEquals(1, queue.getNrepeats());
+        assertTrue(repeating(queue));
+
+        queue.commandPop(CommandContext.CTX_GAME);   // replay, 1 -> 0: repeating must clear here
+        assertEquals(0, queue.getNrepeats());
+        assertFalse(repeating(queue), "reaching zero must clear repeating so the run can end");
+
+        // Repeating off and the queue drained: the loop stops instead of replaying a zero-count command.
+        assertFalse(queue.commandPop(CommandContext.CTX_GAME), "a finished auto-repeat must not replay");
+    }
+
+    /**
+     * The end-to-end guard: draining a queue holding a full-count auto-repeat command must terminate.
+     * If the decrement stopped routing through {@code setRepeat} (leaving {@code repeating} set at
+     * zero), {@code execute} would replay forever and re-arm to 99 on the zero-count pass - so the
+     * timeout is the real assertion, turning that regression into a failure rather than a hang.
+     */
+    @Test
+    void executeTerminatesOnAnAutoRepeatCommand() {
+        CommandQueue queue = new CommandQueue(player);
+        queue.push(openCommand(0));
+
+        assertTimeoutPreemptively(Duration.ofSeconds(2),
+                () -> queue.execute(CommandContext.CTX_GAME));
+
+        assertEquals(0, queue.getNrepeats(), "the run should have counted all the way down");
+        assertFalse(queue.commandPop(CommandContext.CTX_GAME), "nothing should remain to run");
     }
 }

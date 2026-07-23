@@ -50,7 +50,7 @@ public class CommandProcessor {
      * @return the fully populated command table
      */
     private static Map<CommandCode, CommandInfo> buildTable() {
-        Map<CommandCode, CommandInfo> map = new EnumMap<>(CommandCode.class);
+        final Map<CommandCode, CommandInfo> map = new EnumMap<>(CommandCode.class);
 
         put(map, new CommandInfo(CMD_LOADFILE, "load a savefile", null, false, false, 0));
         put(map, new CommandInfo(CMD_NEWGAME, "start a new game", null, false, false, 0));
@@ -173,6 +173,14 @@ public class CommandProcessor {
         return map;
     }
 
+    public static boolean containsCommand(CommandCode key) {
+        return gameCommands.containsKey(key);
+    }
+
+    public static CommandInfo getCommandInfo(CommandCode code) {
+        return gameCommands.get(code);
+    }
+
     /**
      * Executes a command by looking its code up in the table and invoking the handler. A command
      * whose code has no table entry, or whose entry has no handler yet, is silently ignored -
@@ -197,5 +205,10 @@ public class CommandProcessor {
      */
     private static void put(Map<CommandCode, CommandInfo> map, CommandInfo info) {
         map.put(info.command(), info);
+    }
+
+    public static String getCommandVerb(CommandCode code) {
+        CommandInfo info = gameCommands.get(code);
+        return info.verb();
     }
 }

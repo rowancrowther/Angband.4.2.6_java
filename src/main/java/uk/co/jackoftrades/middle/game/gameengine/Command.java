@@ -66,4 +66,17 @@ public class Command {
      * lookup is by name). Initialised empty so arguments can be added before the command runs.
      */
     List<CommandArgument> arg = new ArrayList<>();
+
+    public Command(CommandContext context, CommandCode code, int nrepeats, int background_command, List<CommandArgument> arg) {
+        this.context = context;
+        this.code = code;
+        this.nrepeats = nrepeats;
+        this.background_command = background_command;
+        this.arg = arg;
+    }
+
+    public Command clone() {
+        return new Command(this.context, this.code, this.nrepeats, this.background_command,
+                new ArrayList<>(arg));
+    }
 }

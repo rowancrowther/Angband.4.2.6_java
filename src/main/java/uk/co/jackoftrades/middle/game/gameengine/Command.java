@@ -67,6 +67,15 @@ public class Command {
      */
     List<CommandArgument> arg = new ArrayList<>();
 
+    /**
+     * Creates a command.
+     *
+     * @param context            the context the command is issued in
+     * @param code               which command to perform
+     * @param nrepeats           how many times to attempt to repeat it
+     * @param background_command the tri-state repeat/bloodlust flag (see {@link #background_command})
+     * @param arg                the command's arguments (matched by name)
+     */
     public Command(CommandContext context, CommandCode code, int nrepeats, int background_command, List<CommandArgument> arg) {
         this.context = context;
         this.code = code;
@@ -75,6 +84,21 @@ public class Command {
         this.arg = arg;
     }
 
+    /**
+     * Returns an independent copy of this command - the port of the copy that C's {@code cmd_copy}
+     * makes when it duplicates a command into the queue.
+     *
+     * <p>The scalar fields are copied and a fresh {@link ArrayList} wraps the arguments, so the two
+     * commands can be executed and mutated (e.g. their {@code nrepeats} decremented) without
+     * affecting one another. The {@link CommandArgument} elements themselves are shared, not deep
+     * copied: their payloads are effectively immutable, so there is nothing to protect against -
+     * which is why C only ever deep-copied string arguments, for heap ownership, not the rest.
+     *
+     * <p>Used by {@link CommandQueue}'s {@code CMD_REPEAT} handling, where the replayed command must
+     * be independent of the retained {@link CommandQueue#lastCommand}.
+     *
+     * @return an independent copy of this command
+     */
     public Command clone() {
         return new Command(this.context, this.code, this.nrepeats, this.background_command,
                 new ArrayList<>(arg));

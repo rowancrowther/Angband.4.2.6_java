@@ -51,6 +51,15 @@ public class CommandQueue {
     private boolean repeatPrevAllowed = false;
 
     /**
+     * Whether an auto-repeat is currently in flight. When set, {@link #commandPop} replays
+     * {@link #lastCommand} instead of consuming a fresh command from the queue - the port of C's
+     * {@code repeating} flag. Like {@link #repeatPrevAllowed} it is not yet driven by anything (the
+     * auto-repeat machinery lives in the unported {@code process_command}), so the replay path is
+     * present but dormant.
+     */
+    private boolean repeating = false;
+
+    /**
      * The pending commands, oldest at the front.
      */
     private final ArrayDeque<Command> commandQueue = new ArrayDeque<>();
@@ -146,5 +155,31 @@ public class CommandQueue {
             return false;
         commandQueue.addLast(lastCommand.clone());
         return true;
+    }
+
+    /**
+     * Pops the next command and carries it out - the port of C's {@code cmdq_pop}, combining the
+     * dequeue with dispatch via {@link CommandProcessor#processCommand}.
+     *
+     * <p>When {@link #repeating} is set, it replays {@link #lastCommand} without touching the queue
+     * (so an in-flight auto-repeat re-runs the same command). Otherwise it consumes the next command
+     * from the front via {@link #getNextCommand}. Either way, if there is nothing to run it returns
+     * {@code false} without dispatching - which is the game loop's signal to stop and wait for input.
+     *
+     * @param commandContext the context to carry the command out in
+     * @return {@code true} if a command was processed, {@code false} if none was available
+     */
+    public boolean commandPop(CommandContext commandContext) {
+        Command cmd;
+
+        if (repeating) {
+            if (lastCommand == null) return false;
+            cmd = lastCommand;
+        } else {
+            cmd = getNextCommand();
+            if (cmd == null) return false;
+        }
+
+        return CommandProcessor.processCommand(commandContext, cmd);
     }
 }

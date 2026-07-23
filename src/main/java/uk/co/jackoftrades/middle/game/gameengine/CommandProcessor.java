@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.game.gameengine;
 
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
+import uk.co.jackoftrades.middle.game.enums.CommandContext;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -173,10 +174,42 @@ public class CommandProcessor {
         return map;
     }
 
+    /**
+     * Reports whether a command code has a dispatch-table row, i.e. is a command the engine
+     * dispatches here - the port's equivalent of C's {@code cmd_idx(code) != -1} validity test.
+     * Codes present in {@link CommandCode} but handled elsewhere (or the {@code CMD_NULL} sentinel)
+     * return {@code false}.
+     *
+     * @param key the command code to test
+     * @return {@code true} if the code has a table row
+     */
     public static boolean containsCommand(CommandCode key) {
         return gameCommands.containsKey(key);
     }
 
+    /**
+     * Carries out a command in the given context - the intended port of C's {@code process_command}
+     * (repeat/energy handling, the bloodlust substitution, then invoking the handler).
+     *
+     * <p><strong>Not yet implemented:</strong> currently a stub that always returns {@code true}.
+     * It exists so {@link CommandQueue#commandPop} can be wired up; the real dispatch presently
+     * lives in {@link #process(Command)} and the two will be reconciled when {@code process_command}
+     * is ported.
+     *
+     * @param context the context to run the command in
+     * @param command the command to carry out
+     * @return {@code true} once a command has been processed
+     */
+    public static boolean processCommand(CommandContext context, Command command) {
+        return true;
+    }
+
+    /**
+     * Returns the dispatch-table row for a command code, or {@code null} if the code has none.
+     *
+     * @param code the command code to look up
+     * @return the {@link CommandInfo} for the code, or {@code null} if it is not dispatchable
+     */
     public static CommandInfo getCommandInfo(CommandCode code) {
         return gameCommands.get(code);
     }
@@ -207,8 +240,16 @@ public class CommandProcessor {
         map.put(info.command(), info);
     }
 
+    /**
+     * Returns the human-readable verb for a command code, or {@code null} if the code has no
+     * dispatch-table row - the port of C's {@code cmd_verb}, which likewise returns {@code NULL}
+     * for an unrecognised code.
+     *
+     * @param code the command code to look up
+     * @return the code's verb, or {@code null} if it is not dispatchable
+     */
     public static String getCommandVerb(CommandCode code) {
         CommandInfo info = gameCommands.get(code);
-        return info.verb();
+        return info == null ? null : info.verb();
     }
 }

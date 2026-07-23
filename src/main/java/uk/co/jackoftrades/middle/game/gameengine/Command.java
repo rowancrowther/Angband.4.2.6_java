@@ -35,17 +35,17 @@ public class Command {
     /**
      * The context this command was issued in (splash, birth, game, store, death).
      */
-    CommandContext context;
+    private CommandContext context;
 
     /**
      * Which command to perform.
      */
-    CommandCode code;
+    private CommandCode code;
 
     /**
      * How many times to attempt to repeat this command.
      */
-    int nrepeats;
+    private int nrepeats;
 
     /**
      * Tri-state flag governing repetition and the bloodlust coercion check, carried over verbatim
@@ -58,14 +58,14 @@ public class Command {
      * The engine tests {@code background_command > 1} to decide whether to skip the bloodlust
      * (berserk-attack) substitution, which is why this is a small counter rather than a boolean.
      */
-    int background_command;
+    private int background_command;
 
     /**
      * This command's arguments, matched by {@link CommandArgument#getName() name} rather than by
      * position (C used a fixed {@code arg[CMD_MAX_ARGS]} array of four; a list is used here since
      * lookup is by name). Initialised empty so arguments can be added before the command runs.
      */
-    List<CommandArgument> arg = new ArrayList<>();
+    private List<CommandArgument> arg = new ArrayList<>();
 
     /**
      * Creates a command.
@@ -95,12 +95,73 @@ public class Command {
      * which is why C only ever deep-copied string arguments, for heap ownership, not the rest.
      *
      * <p>Used by {@link CommandQueue}'s {@code CMD_REPEAT} handling, where the replayed command must
-     * be independent of the retained {@link CommandQueue#lastCommand}.
+     * be independent of the retained lastCommand.
      *
      * @return an independent copy of this command
      */
     public Command clone() {
         return new Command(this.context, this.code, this.nrepeats, this.background_command,
                 new ArrayList<>(arg));
+    }
+
+    /**
+     * @return the context this command is being carried out in
+     */
+    public CommandContext getContext() {
+        return context;
+    }
+
+    /**
+     * Sets the context this command runs in, stamped on at execution - the port of C's
+     * {@code cmd->context = ctx}.
+     *
+     * @param context the execution context
+     */
+    public void setContext(CommandContext context) {
+        this.context = context;
+    }
+
+    /**
+     * @return which command this is
+     */
+    public CommandCode getCode() {
+        return code;
+    }
+
+    /**
+     * @return how many times this command is still to attempt to repeat
+     */
+    public int getNrepeats() {
+        return nrepeats;
+    }
+
+    /**
+     * Sets the remaining repeat count.
+     *
+     * @param nrepeats the number of repeats to attempt
+     */
+    public void setNrepeats(int nrepeats) {
+        this.nrepeats = nrepeats;
+    }
+
+    /**
+     * Records one execution against the repeat count by decrementing it.
+     */
+    public void repeated() {
+        nrepeats--;
+    }
+
+    /**
+     * @return the tri-state repeat/bloodlust flag (see {@link #background_command})
+     */
+    public int getBackground_command() {
+        return background_command;
+    }
+
+    /**
+     * @return this command's arguments (matched by name)
+     */
+    public List<CommandArgument> getArg() {
+        return arg;
     }
 }

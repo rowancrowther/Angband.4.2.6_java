@@ -17,7 +17,9 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.objects.Pile;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
 /**
  * The player's transient runtime bookkeeping — the recomputed-each-session state that is
@@ -41,9 +43,37 @@ public class PlayerUpkeep {
     private Pile objectPile;
 
     /**
+     * Used by the UI to decide whether to start off showing equipment or
+     * inventory listings when offering a choice.
+     */
+    private int command_wrk;
+
+    Flag<PlayerRedraw> redrawFlags = new Flag<>(PlayerRedraw.class);
+
+    /**
      * @return the pile of objects currently under the player
      */
     public Pile getPile() {
         return objectPile;
+    }
+
+    public void setCommand_wrk(int command_wrk) {
+        this.command_wrk = command_wrk;
+    }
+
+    public int getCommand_wrk() {
+        return command_wrk;
+    }
+
+    public Flag<PlayerRedraw> getRedrawFlags() {
+        return redrawFlags.copy();
+    }
+
+    public boolean setRedrawFlagsOn(PlayerRedraw flag) {
+        return redrawFlags.on(flag);
+    }
+
+    public boolean setRedrawFlagsOff(PlayerRedraw flag) {
+        return redrawFlags.off(flag);
     }
 }

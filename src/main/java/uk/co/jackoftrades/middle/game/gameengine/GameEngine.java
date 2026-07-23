@@ -91,6 +91,8 @@ public class GameEngine {
         screen.setStatusLabelText("Initialized game constants...");
         GameConstants.init();
         screen.setStatusLabelText("Select New Game from File menu to start the game...");
+
+        GameState.initGameState();
     }
 
     /**
@@ -104,6 +106,20 @@ public class GameEngine {
     @CheckReturnValue
     public static GameEngine getGame(Stage stage) {
         if (instance == null) instance = new GameEngine(stage);
+        return instance;
+    }
+
+    /**
+     * Get the already-created game engine singleton.
+     *
+     * @return the singleton game engine
+     * @throws IllegalStateException if the engine has not been created yet (see
+     *                               {@link #getGame(Stage)})
+     * @author Rowan Crowther
+     */
+    public static GameEngine getGame() {
+        if (instance == null)
+            throw new IllegalStateException("Game Engine has not been initialized yet");
         return instance;
     }
 }

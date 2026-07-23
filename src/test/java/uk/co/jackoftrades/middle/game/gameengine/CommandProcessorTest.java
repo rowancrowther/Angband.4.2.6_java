@@ -17,10 +17,17 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
+import uk.co.jackoftrades.middle.game.enums.CommandContext;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerUpkeep;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -138,5 +145,62 @@ class CommandProcessorTest {
         assertNull(table.get(CommandCode.CMD_NULL), "CMD_NULL should not be a dispatchable command");
         assertNull(table.get(CommandCode.CMD_BROWSE_SPELL), "CMD_BROWSE_SPELL has no game_cmds[] row in C");
         assertNull(table.get(CommandCode.CMD_IGNORE), "CMD_IGNORE has no game_cmds[] row in C");
+    }
+
+    // ------------------------------------------------------------------ processCommand
+
+    /**
+     * A player built fresh per test and registered as the current {@link GameState} player.
+     */
+    private Player player;
+
+    /**
+     * Registers a usable player as the current {@link GameState} player before each test.
+     * {@code processCommand} reads {@link GameState#getPlayer()} and touches its timed-effect map
+     * and upkeep - both {@code null} on a bare {@link Player}, so they are reflectively initialised
+     * to empty here. See the matching helper in {@code CommandQueueTest}.
+     */
+    @BeforeEach
+    void primePlayer() throws ReflectiveOperationException {
+        player = new Player();
+
+        Field timed = Player.class.getDeclaredField("timed");
+        timed.setAccessible(true);
+        timed.set(player, new HashMap<TimedEffect, Integer>());
+
+        Field upkeep = Player.class.getDeclaredField("playerUpkeep");
+        upkeep.setAccessible(true);
+        upkeep.set(player, new PlayerUpkeep());
+
+        player.setSkipCmdCoercion(0);
+
+        GameState.setPlayer(player);
+    }
+
+    /**
+     * A non-repeatable command must have its {@code nrepeats} cleared - this is the regression guard
+     * for the misplaced {@code else}. In C the {@code nrepeats = 0; repeating = false} clearing hangs
+     * off the outer {@code if (repeat_allowed)}, so it fires for a command that may <em>not</em>
+     * repeat. An earlier port attached that {@code else} to the inner auto-repeat test instead, which
+     * inverted the logic: a non-repeatable command would keep its count (and the final "count this
+     * execution" step would leave it at 4 here, not 0). Asserting 0 pins the corrected structure.
+     */
+    @Test
+    void nonRepeatableCommandClearsNrepeats() {
+        // CMD_HELP is repeatAllowed=false in the table.
+        Command help = new Command(CommandContext.CTX_INIT, CommandCode.CMD_HELP, 5, 0, new ArrayList<>());
+        CommandProcessor.processCommand(CommandContext.CTX_GAME, help, new CommandQueue(player));
+        assertEquals(0, help.getNrepeats(), "a non-repeatable command must have its repeat count cleared");
+    }
+
+    /**
+     * {@code processCommand} stamps the execution context onto the command, mirroring C's
+     * {@code cmd->context = ctx}.
+     */
+    @Test
+    void processCommandSetsTheContext() {
+        Command help = new Command(CommandContext.CTX_INIT, CommandCode.CMD_HELP, 0, 0, new ArrayList<>());
+        CommandProcessor.processCommand(CommandContext.CTX_GAME, help, new CommandQueue(player));
+        assertEquals(CommandContext.CTX_GAME, help.getContext());
     }
 }

@@ -315,9 +315,6 @@ public class GameConstants {
     private static List<TrapKind> trapInfo = new ArrayList<>();
     public static List<ObjectKind> objectKinds = new ArrayList<>();
 
-    public static final Chunk cave = new Chunk("Current Level", 0, 0, 0, 0, 0, false, 10, 10, 4, 3, 3, 1, 1, 15);
-    public static final Player mainPlayer = new Player();
-
     /**
      * Find a monster race by name, mirroring C's {@code lookup_monster}: an exact case-insensitive
      * match wins, and failing that the first race whose name <em>contains</em> the query (also

@@ -25,6 +25,7 @@ import uk.co.jackoftrades.middle.cave.enums.GridLightLevel;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
@@ -151,15 +152,15 @@ public class GridData {
      * @author Rowan Crowther
      */
     private void mapInfo(Loc grid) throws Exception {
-        if (!GameConstants.cave.inBounds(grid)) {
+        if (!GameState.getCave().inBounds(grid)) {
             String message = "Grid location out of bounds! " + grid;
             IndexOutOfBoundsException ex = new IndexOutOfBoundsException(message);
             logger.error(message, ex);
             throw ex;
         }
 
-        Chunk cave = GameConstants.cave;
-        Player player = GameConstants.mainPlayer;
+        Chunk cave = GameState.getCave();
+        Player player = GameState.getPlayer();
         Chunk playerCave = player.getCave();
 
         objectKindList = null;

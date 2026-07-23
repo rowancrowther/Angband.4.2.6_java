@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -420,7 +421,7 @@ public class ItemObject {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean similar(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
-        Player player = GameConstants.mainPlayer;
+        Player player = GameState.getPlayer();
 
         // Check for equipped items
         // TODO: re-enable once the per-player equipment runtime is ported
@@ -646,7 +647,7 @@ public class ItemObject {
         // In c we check that this and item are not null. We don't need to do that here
         if (!item.known.effect.isEmpty()) {
             this.known.effect = this.effect;
-            GameConstants.mainPlayer.knowObject(this);
+            GameState.getPlayer().knowObject(this);
         }
 
         if (item.note != null)
@@ -782,7 +783,7 @@ public class ItemObject {
         int total = this.number + item.number;
 
         this.number = Math.min(total, this.kind.getBase().getMaxStack());
-        Chunk playerCave = GameConstants.mainPlayer.getCave();
+        Chunk playerCave = GameState.getPlayer().getCave();
 
         absorbMerge(item, true);
         if (itemKnown != null) {
@@ -793,6 +794,6 @@ public class ItemObject {
             playerCave.objectDelete(null, itemKnown);
         }
 
-        GameConstants.cave.objectDelete(playerCave, item);
+        GameState.getCave().objectDelete(playerCave, item);
     }
 }

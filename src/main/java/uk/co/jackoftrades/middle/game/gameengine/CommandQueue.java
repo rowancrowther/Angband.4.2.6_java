@@ -20,6 +20,8 @@ package uk.co.jackoftrades.middle.game.gameengine;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -70,13 +72,20 @@ public class CommandQueue {
      */
     private Command lastCommand = null;
 
-    public CommandQueue() {
+    private Player player;
+
+    public CommandQueue(Player player) {
+        this.player = player;
+    }
+
+    public void setPlayer(Player mainPlayer) {
+        this.player = mainPlayer;
     }
 
     /**
      * Removes and returns the next command to carry out, or {@code null} if the queue is empty -
      * the port of C's {@code cmdq_pop} dequeue step (the dispatch itself lives in
-     * {@link CommandProcessor#process}). A non-background command handed out here is recorded as
+     * process. A non-background command handed out here is recorded as
      * {@link #lastCommand}; background commands deliberately do not update it, matching C's
      * {@code if (!cmd->background_command)} guard.
      *
@@ -87,7 +96,7 @@ public class CommandQueue {
         if (nextCommand == null) {
             return null;
         }
-        if (nextCommand.background_command == 0)
+        if (nextCommand.getBackground_command() == 0)
             lastCommand = nextCommand;
         return nextCommand;
     }
@@ -99,7 +108,7 @@ public class CommandQueue {
      * @return the last executed non-background command, or {@code null} if none is available
      */
     public Command viewPrevCommand() {
-        if (lastCommand == null || lastCommand.code == CommandCode.CMD_NULL)
+        if (lastCommand == null || lastCommand.getCode() == CommandCode.CMD_NULL)
             return null;
         return lastCommand;
     }
@@ -146,12 +155,12 @@ public class CommandQueue {
      * @return {@code true} if something was queued, {@code false} if a repeat could not be honoured
      */
     public boolean push(@NotNull Command cmd) {
-        if (cmd.code != CommandCode.CMD_REPEAT) { // an ordinary command, not the CMD_REPEAT marker
+        if (cmd.getCode() != CommandCode.CMD_REPEAT) { // an ordinary command, not the CMD_REPEAT marker
             commandQueue.addLast(cmd);
             return true;
         } else if (!repeatPrevAllowed) // repeating is not currently permitted
             return false;
-        if (lastCommand == null || lastCommand.code == CommandCode.CMD_NULL) // nothing to repeat
+        if (lastCommand == null || lastCommand.getCode() == CommandCode.CMD_NULL) // nothing to repeat
             return false;
         commandQueue.addLast(lastCommand.clone());
         return true;
@@ -180,6 +189,50 @@ public class CommandQueue {
             if (cmd == null) return false;
         }
 
-        return CommandProcessor.processCommand(commandContext, cmd);
+        CommandProcessor.processCommand(commandContext, cmd, this);
+        return true;
+    }
+
+    /**
+     * Sets the repeat count on the most recently queued command and flags the state line for
+     * redraw - the port of C's {@code cmd_set_repeat}.
+     *
+     * <p>Like C (which targets {@code cmd_queue[prev_cmd_idx(cmd_head)]}), this applies to the
+     * command at the back of the queue, i.e. the last one pushed; it is a no-op if the queue is
+     * empty. A positive count turns {@link #repeating} on, zero turns it off, and either way the
+     * {@code PR_STATE} redraw bit is set so the on-screen state indicator refreshes.
+     *
+     * @param numberOfRepeats the repeat count to apply
+     */
+    public void setRepeat(int numberOfRepeats) {
+        Command cmd = commandQueue.peekLast();
+
+        if (cmd == null) return;
+
+        cmd.setNrepeats(numberOfRepeats);
+        if (numberOfRepeats > 0)
+            repeating = true;
+        else
+            repeating = false;
+
+        player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATE);
+    }
+
+    /**
+     * Sets whether an auto-repeat is in flight (see {@link #repeating}).
+     *
+     * @param repeating {@code true} while replaying a command, {@code false} otherwise
+     */
+    public void setRepeating(boolean repeating) {
+        this.repeating = repeating;
+    }
+
+    /**
+     * Sets whether the most recent command may be repeated (see {@link #repeatPrevAllowed}).
+     *
+     * @param repeatPrevAllowed {@code true} to permit {@code CMD_REPEAT} to replay it
+     */
+    public void setRepeatPrevAllowed(boolean repeatPrevAllowed) {
+        this.repeatPrevAllowed = repeatPrevAllowed;
     }
 }

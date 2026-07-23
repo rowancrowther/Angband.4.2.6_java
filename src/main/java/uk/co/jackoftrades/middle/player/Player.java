@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
@@ -189,6 +190,29 @@ public class Player {
 
     public boolean ignoreKnownItemOk(@NotNull ItemObject item) {
         // TODO: Expand this
+        return false;
+    }
+
+    public int getSkipCmdCoercion() {
+        return skipCmdCoercion;
+    }
+
+    public void setSkipCmdCoercion(int skipCmdCoercion) {
+        this.skipCmdCoercion = skipCmdCoercion;
+    }
+
+    public boolean attackRandomMonster() {
+        int index;
+        int direction = RandomValueUtils.randInt0(8);
+
+        if (timed.get(TimedEffect.TMD_CONFUSED) != 0) return false;
+
+        for (index = 0; index < 8; index++, direction++) {
+
+            // DO stuff - this is currently a stub class
+
+        }
+
         return false;
     }
 }

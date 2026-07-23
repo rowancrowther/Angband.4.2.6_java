@@ -27,7 +27,7 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterGroup;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -213,6 +213,9 @@ public class Chunk {
      */
     private ArrayList<Connector> join;
 
+    private Player player;
+    private Chunk currentLevel;
+
     /**
      * Build a chunk of the given dimensions and metadata, allocating a fresh
      * grid of blank {@link Square}s, empty flow maps, an empty object pile and a
@@ -237,7 +240,8 @@ public class Chunk {
      */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
-                 int monCnt, int monCurrent, int numRepro) {
+                 int monCnt, int monCurrent, int numRepro, Player player) {
+        this.currentLevel = GameState.getCave();
         this.name = name;
         this.turn = turn;
         this.depth = depth;
@@ -270,6 +274,8 @@ public class Chunk {
         this.numRepro = numRepro;
         this.monsterGroups = new ArrayList<>();
         this.join = new ArrayList<>();
+        this.player = player;
+        this.currentLevel = currentLevel;
     }
 
     /**
@@ -987,7 +993,7 @@ public class Chunk {
 
         if (!this.isKnown(grid)) return false;
 
-        return !GameConstants.mainPlayer.getCave().getSquare(grid).featIsProjectable();
+        return !player.getCave().getSquare(grid).featIsProjectable();
     }
 
     /**
@@ -1003,7 +1009,7 @@ public class Chunk {
 
         if (!isKnown(grid)) return false;
 
-        return GameConstants.mainPlayer.getCave().squareIsPassable(grid);
+        return player.getCave().squareIsPassable(grid);
     }
 
     /**
@@ -1288,14 +1294,11 @@ public class Chunk {
     public void objectDelete(@Nullable Chunk playerCave, @NotNull ItemObject item) {
         objectPile.excise(item);
 
-        Player player = GameConstants.mainPlayer;
-
         // Remove the object from those tracked by the player upkeep
         if (player.getPlayerUpkeep() != null) player.getPlayerUpkeep().getPile().excise(item);
 
-        Chunk cave = GameConstants.cave;
         if (playerCave != null
-                && cave.objectPile.contains(item)
+                && currentLevel.objectPile.contains(item)
                 && playerCave.objectPile.contains(item)) {
             item.setGrid(Loc.zero);
             item.setHeldMIndex(0);
@@ -1308,8 +1311,8 @@ public class Chunk {
         if (playerCave != null && playerCave.objectPile.contains(item))
             playerCave.objectPile.excise(item);
 
-        if (cave.objectPile.contains(item))
-            cave.objectPile.excise(item);
+        if (currentLevel.objectPile.contains(item))
+            currentLevel.objectPile.excise(item);
     }
 
     /**
@@ -1321,7 +1324,7 @@ public class Chunk {
     public void delistObject(ItemObject item) {
         if (!objectPile.contains(item)) return;
 
-        if (this.equals(GameConstants.cave) && GameConstants.mainPlayer.getCave().objectPile.contains(item))
+        if (this.equals(currentLevel) && player.getCave().objectPile.contains(item))
             return;
 
         objectPile.excise(item);
@@ -1333,7 +1336,7 @@ public class Chunk {
      * @param grid the Loc of the square we are memorizing
      */
     void squareMemorize(@NotNull Loc grid) {
-        if (this != GameConstants.cave) return;
+        if (this != currentLevel) return;
         squareSetKnownFeat(grid, getSquare(grid).getFeature());
     }
 
@@ -1345,9 +1348,9 @@ public class Chunk {
      */
     void squareSetKnownFeat(@NotNull Loc grid, Feature feature) {
         if (!inBounds(grid)) return;
-        if (this != GameConstants.cave) return;
+        if (this != currentLevel) return;
 
-        GameConstants.mainPlayer.getCave().getSquare(grid).setFeature(feature);
+        player.getCave().getSquare(grid).setFeature(feature);
     }
 
     /**
@@ -1360,9 +1363,8 @@ public class Chunk {
     @Contract(pure = true)
     boolean isKnown(@NotNull Loc grid) {
         if (!inBounds(grid)) return false;
-        Player player = GameConstants.mainPlayer;
 
-        if (this != GameConstants.cave && this != player.getCave()) return false;
+        if (this != currentLevel && this != player.getCave()) return false;
 
         if (player.getCave() == null) return false;
 

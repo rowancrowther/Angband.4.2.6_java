@@ -22,6 +22,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.Pile;
@@ -552,8 +553,8 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean isMemoryBad(Chunk c, Loc grid) {
-        Chunk cave = GameConstants.cave;
-        Player mainPlayer = GameConstants.mainPlayer;
+        Chunk cave = GameState.getCave();
+        Player mainPlayer = GameState.getPlayer();
 
         return !c.isKnown(grid) || !(mainPlayer.getCave().getSquare(grid).feat.equals(cave.getSquare(grid).feat));
     }

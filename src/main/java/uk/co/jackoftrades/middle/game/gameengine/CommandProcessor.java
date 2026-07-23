@@ -17,8 +17,11 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -188,20 +191,76 @@ public class CommandProcessor {
     }
 
     /**
-     * Carries out a command in the given context - the intended port of C's {@code process_command}
-     * (repeat/energy handling, the bloodlust substitution, then invoking the handler).
+     * Carries out a command in the given context - the port of C's {@code process_command}.
      *
-     * <p><strong>Not yet implemented:</strong> currently a stub that always returns {@code true}.
-     * It exists so {@link CommandQueue#commandPop} can be wired up; the real dispatch presently
-     * lives in {@link #process(Command)} and the two will be reconciled when {@code process_command}
-     * is ported.
+     * <p>The steps mirror the original: if the player is under {@code TMD_COMMAND} the code is
+     * swapped for {@code CMD_COMMAND_MONSTER}; the command working location is reset; then, for a
+     * dispatchable code, the repeat rules are applied (auto-repeat if the row allows it, otherwise
+     * the repeat state is cleared), the context is stamped on, and the handler is invoked - guarded,
+     * as in C, so a command with no handler yet is skipped. The bloodlust coercion around the
+     * handler occasionally substitutes an attack for the chosen command. Finally, if the handler
+     * left the repeat count unchanged, this execution is counted against it.
+     *
+     * <p>The command and queue are passed in, and the acting player is taken from the swappable
+     * {@link GameState#getPlayer()} seam rather than a hard global, so the method acts on the queue
+     * that invoked it and can be tested in isolation (a test registers its own player via
+     * {@link GameState#setPlayer(Player)}).
      *
      * @param context the context to run the command in
      * @param command the command to carry out
-     * @return {@code true} once a command has been processed
+     * @param queue   the queue the command came from, used to update repeat state
      */
-    public static boolean processCommand(CommandContext context, Command command) {
-        return true;
+    public static void processCommand(CommandContext context, Command command, CommandQueue queue) {
+        Player player = GameState.getPlayer();
+        int oldRepeats = command.getNrepeats();
+
+        CommandCode code = CMD_COMMAND_MONSTER;
+        if (player.getTimedEffect(TimedEffect.TMD_COMMAND) == 0)
+            code = command.getCode();
+
+        player.getPlayerUpkeep().setCommand_wrk(0);
+
+        if (code == null) {
+            return;
+        }
+
+        CommandInfo info = gameCommands.get(code);
+
+        if (info == null) return;
+
+        if (info.repeatAllowed()) {
+            if (info.autoRepeatNumber() > 0 &&
+                    command.getNrepeats() == 0) {
+                queue.setRepeat(info.autoRepeatNumber());
+            }
+        } else {
+            command.setNrepeats(0);
+            queue.setRepeating(false);
+        }
+
+        queue.setRepeatPrevAllowed(true);
+
+        command.setContext(context);
+
+        if (info.function() != null) {
+            if (command.getBackground_command() > 1) {
+                if (player.getSkipCmdCoercion() != 0 && info.canUseEnergy()) {
+                    player.setSkipCmdCoercion(2);
+                }
+            } else if (info.canUseEnergy() && player.getSkipCmdCoercion() == 0) {
+                if (RandomValueUtils.randInt0(200) < player.getTimedEffect(TimedEffect.TMD_BLOODLUST)) {
+                    if (player.attackRandomMonster()) return;
+                } else if (player.getTimedEffect(TimedEffect.TMD_BLOODLUST) != 0) {
+                    player.setSkipCmdCoercion(1);
+                }
+            }
+
+            info.function().handle(command);
+        }
+
+        if (command.getNrepeats() > 0 && oldRepeats == command.getNrepeats()) {
+            command.setNrepeats(oldRepeats - 1);
+        }
     }
 
     /**
@@ -212,19 +271,6 @@ public class CommandProcessor {
      */
     public static CommandInfo getCommandInfo(CommandCode code) {
         return gameCommands.get(code);
-    }
-
-    /**
-     * Executes a command by looking its code up in the table and invoking the handler. A command
-     * whose code has no table entry, or whose entry has no handler yet, is silently ignored -
-     * mirroring C's {@code if (game_cmds[idx].fn)} guard.
-     *
-     * @param cmd the command to execute
-     */
-    public void process(Command cmd) {
-        CommandInfo info = gameCommands.get(cmd.code);
-        if (info != null && info.function() != null)
-            info.function().handle(cmd);
     }
 
     /**

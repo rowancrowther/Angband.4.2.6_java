@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game;
+package uk.co.jackoftrades.middle.game.gameengine;
 
 import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;

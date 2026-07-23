@@ -19,7 +19,7 @@ package uk.co.jackoftrades;
 
 import javafx.application.Application;
 import javafx.stage.Stage;
-import uk.co.jackoftrades.middle.game.GameEngine;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 
 import java.io.IOException;
 

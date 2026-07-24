@@ -18,12 +18,14 @@
 package uk.co.jackoftrades.middle.game.gameengine;
 
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.player.Player;
 
 public class GameState {
     private static Player mainPlayer;
     private static Chunk cave;
     private static CommandQueue commandQueue;
+    private static EventsHandler eventsHandler;
 
     public static Player getPlayer() {
         return GameState.mainPlayer;
@@ -55,5 +57,29 @@ public class GameState {
                 0, false, 10, 10, 4, 3, 3,
                 1, 1, 15, mainPlayer);
         commandQueue = new CommandQueue(mainPlayer);
+        eventsHandler = EventsHandler.getInstance();
+    }
+
+    public static EventsHandler getEventsHandler() {
+        return eventsHandler;
+    }
+
+    public static void setEventsHandler(EventsHandler eventsHandler) {
+        GameState.eventsHandler = eventsHandler;
+    }
+
+    /**
+     * Reports whether the current health-bar target is still valid to fire at - the port of C's
+     * {@code target_okay}. {@link Command#getTarget} calls this before honouring a queued
+     * {@code DIR_TARGET} argument, so a target that has since died or moved out of sight forces a
+     * fresh aim rather than being reused.
+     *
+     * <p>Stub for now: always reports the target as usable until real targeting exists.
+     *
+     * @return {@code true} while the current target may be used
+     */
+    public static boolean targetOkay() {
+        // TODO: Stub function
+        return true;
     }
 }

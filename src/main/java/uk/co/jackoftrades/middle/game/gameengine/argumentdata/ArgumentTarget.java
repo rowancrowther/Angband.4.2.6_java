@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.middle.game.gameengine.argumentdata;
 
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftrades.middle.game.gameengine.CommandArgumentData;
 
@@ -33,7 +34,7 @@ import uk.co.jackoftrades.middle.game.gameengine.CommandArgumentData;
  * @param value the target code
  * @author Rowan Crowther
  */
-public record ArgumentTarget(int value) implements CommandArgumentData {
+public record ArgumentTarget(DirectionEnum value) implements CommandArgumentData {
     @Override
     public CommandArgumentType type() {
         return CommandArgumentType.arg_TARGET;

@@ -28,16 +28,22 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
  * <p>C held a raw {@code struct object *}; the port holds an {@link ItemObject} reference, the
  * item the command acts on (the potion to quaff, the weapon to wield, and so on).
  *
- * @param object the referenced item
+ * @param value the referenced item
  * @author Rowan Crowther
  */
-public record ArgumentItem(ItemObject object) implements CommandArgumentData {
+public record ArgumentItem(ItemObject value) implements CommandArgumentData {
+    /**
+     * The argument-type tag corresponding to this variant, so a value can be matched against a
+     * requested type without a downcast.
+     *
+     * @return this variant's {@link CommandArgumentType}
+     */
     @Override
     public CommandArgumentType type() {
         return CommandArgumentType.arg_ITEM;
     }
 
     public ItemObject getValue() {
-        return object;
+        return value;
     }
 }

@@ -110,7 +110,7 @@ public class Player {
     private PlayerHistory playerHistory;
 
     private PlayerBody body;
-    private ArrayList<PlayerShape> shape;
+    private PlayerShape shape;
 
     private ArrayList<ItemObject> gear;
     private ArrayList<ItemObject> gearKnown;
@@ -132,6 +132,18 @@ public class Player {
 
     public PlayerBody getPlayerBody() {
         return body;
+    }
+
+    /**
+     * Reports whether the player is currently in a non-normal shape - the port of C's
+     * {@code player_is_shapechanged}, which tests {@code p->shape && !streq(p->shape->name,
+     * "normal")}. A shapechanged player is restricted to floor items during selection (see {@link
+     * uk.co.jackoftrades.middle.game.gameengine.Command#getItem}).
+     *
+     * @return {@code true} when the player's shape is anything other than {@code "normal"}
+     */
+    public boolean isShapeChanged() {
+        return !shape.getName().equals("normal");
     }
 
     /**

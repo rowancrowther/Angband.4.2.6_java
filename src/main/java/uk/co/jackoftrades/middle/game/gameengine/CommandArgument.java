@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.game.enums.CommandArgumentType;
 
 /**
@@ -79,5 +80,26 @@ public class CommandArgument {
      */
     public CommandArgumentType getType() {
         return type;
+    }
+
+    /**
+     * Overwrites this argument's fields in place, ignoring any that are {@code null}. Used by {@link
+     * Command}'s {@code setArg*} methods to re-point an existing named argument at a new type and
+     * value rather than allocating a fresh {@link CommandArgument} - the port's stand-in for C
+     * simply reassigning the matching {@code arg[]} slot's union member. Passing {@code null} leaves
+     * the corresponding field untouched, so a caller can update the payload without disturbing the
+     * name.
+     *
+     * @param argumentType the new type tag, or {@code null} to leave it unchanged
+     * @param value        the new payload, or {@code null} to leave it unchanged
+     * @param argName      the new name, or {@code null} to leave it unchanged
+     */
+    public void update(@Nullable CommandArgumentType argumentType, @Nullable CommandArgumentData value, @Nullable String argName) {
+        if (argumentType != null)
+            this.type = argumentType;
+        if (value != null)
+            this.data = value;
+        if (argName != null)
+            this.name = argName;
     }
 }

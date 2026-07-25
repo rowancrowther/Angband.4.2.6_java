@@ -101,4 +101,65 @@ public class ClassMagic {
             totalSpells += magicBook.getNumOfSpells();
         }
     }
+
+    /**
+     * @return the spellbooks available to this class, in class-load order - the order the flattened
+     * spell-index space runs across (see {@link #spellByIndex(int)})
+     * @author Rowan Crowther
+     */
+    public List<MagicBook> getMagicBooks() {
+        return magicBooks;
+    }
+
+    /**
+     * Returns the flattened index of {@code spell} across this class's books - the inverse of
+     * {@link #spellByIndex(int)}. The books form a single index space (book 0's spells first, then
+     * book 1's, and so on), so the result is the number of spells in all earlier books plus the
+     * spell's position within its own book. This is the value {@code Command.getSpell} stores as an
+     * {@code arg_CHOICE} so a queued spell can be re-resolved on a later replay.
+     *
+     * @param spell the spell to locate, matched by identity
+     * @return the spell's flattened index, or {@code -1} if it belongs to none of this class's books
+     * @author Rowan Crowther
+     */
+    public int indexOfSpell(MagicSpell spell) {
+        boolean spellFound = false;
+        int spellIndex = 0;
+        for (MagicBook magicBook : magicBooks) {
+            if (magicBook.getSpells().contains(spell)) {
+                spellFound = true;
+                spellIndex += magicBook.getSpells().indexOf(spell);
+                break;
+            }
+            spellIndex += magicBook.getSpells().size();
+        }
+        if (spellFound)
+            return spellIndex;
+        return -1;
+    }
+
+    /**
+     * Resolves a flattened spell index back to its {@link MagicSpell} - the port of C's
+     * {@code spell_by_index} ({@code player-spell.c}) and the inverse of
+     * {@link #indexOfSpell(MagicSpell)}. The index counts across book boundaries in book order, so
+     * index 0 is the first book's first spell and the count continues into the next book rather than
+     * restarting. An out-of-range index - negative, or at or beyond {@link #totalSpells} - resolves
+     * to {@code null}, matching C's {@code NULL} return.
+     *
+     * @param spellIndex the flattened index into this class's books
+     * @return the spell at that index, or {@code null} if the index is out of range
+     * @author Rowan Crowther
+     */
+    public MagicSpell spellByIndex(int spellIndex) {
+        if (spellIndex < 0 || spellIndex >= totalSpells) return null;
+
+        for (MagicBook magicBook : magicBooks) {
+            if (spellIndex < magicBook.getSpells().size())
+                return magicBook.getSpells().get(spellIndex);
+
+            spellIndex -= magicBook.getSpells().size();
+        }
+
+        return null;
+    }
 }

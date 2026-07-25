@@ -33,8 +33,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Player {
-    // private PlayerRace race;
-    // private PlayerClass class;
+    private PlayerRace race;
+    private PlayerClass playerClass;
 
     private Loc grid;
     private Loc oldGrid;
@@ -226,5 +226,9 @@ public class Player {
         }
 
         return false;
+    }
+
+    public PlayerClass getPlayerClass() {
+        return playerClass;
     }
 }

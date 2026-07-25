@@ -132,4 +132,8 @@ public class PlayerClass {
         this.startItems = startItems;
         this.magic = magic;
     }
+
+    public ClassMagic getMagic() {
+        return magic;
+    }
 }

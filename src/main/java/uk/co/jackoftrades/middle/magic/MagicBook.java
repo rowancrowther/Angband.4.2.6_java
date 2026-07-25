@@ -20,6 +20,8 @@ package uk.co.jackoftrades.middle.magic;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.util.ArrayList;
@@ -42,6 +44,8 @@ public class MagicBook {
      * @author Rowan Crowther
      */
     private TValue bookType;
+
+    private int sVal;
     /**
      * The book's display name.
      *
@@ -144,6 +148,13 @@ public class MagicBook {
         this.spells = spells;
     }
 
+    private void setSVal() {
+        ObjectKind bookKind = GameConstants.lookupObjectKind(bookType, bookName);
+        if (bookKind == null)
+            sVal = -1;
+        sVal = bookKind.getsVal();
+    }
+
     /**
      * Build an empty spellbook; spells are added later via {@link #addSpell(MagicSpell)}.
      *
@@ -216,5 +227,27 @@ public class MagicBook {
      */
     public boolean isDungeon() {
         return dungeon;
+    }
+
+    /**
+     * @return the spells this book holds, in book order (their positions here feed the class's
+     * flattened spell index - see {@link uk.co.jackoftrades.middle.magic.ClassMagic#spellByIndex})
+     * @author Rowan Crowther
+     */
+    public List<MagicSpell> getSpells() {
+        return spells;
+    }
+
+    /**
+     * Returns the resolved sub-type value ({@code sval}) of the object kind that backs this book,
+     * used with {@link #getBookTValue() tval} to match a carried {@link
+     * uk.co.jackoftrades.middle.objects.ItemObject} to its book - the port of C's
+     * {@code player_object_to_book} match key.
+     *
+     * @return the book's sval
+     * @author Rowan Crowther
+     */
+    public int getSval() {
+        return sVal;
     }
 }

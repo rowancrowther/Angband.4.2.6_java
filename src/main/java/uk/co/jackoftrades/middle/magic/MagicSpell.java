@@ -98,4 +98,8 @@ public class MagicSpell {
         this.effects = effects;
         this.spellDescription = spellDescription;
     }
+
+    public String getSpellName() {
+        return spellName;
+    }
 }

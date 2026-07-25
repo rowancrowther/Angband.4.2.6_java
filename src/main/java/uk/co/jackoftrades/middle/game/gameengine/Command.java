@@ -19,11 +19,10 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.inputfromuser.TextUIHook;
 import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
-import uk.co.jackoftrades.middle.game.TextUI;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.bespokeexceptions.CommandArgumentWrongTypeException;
 import uk.co.jackoftrades.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
@@ -31,6 +30,11 @@ import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.argumentdata.*;
+import uk.co.jackoftrades.middle.gameinput.GameInput;
+import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
+import uk.co.jackoftrades.middle.magic.ClassMagic;
+import uk.co.jackoftrades.middle.magic.MagicBook;
+import uk.co.jackoftrades.middle.magic.MagicSpell;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.GetItemFlags;
 import uk.co.jackoftrades.middle.player.Player;
@@ -38,6 +42,7 @@ import uk.co.jackoftrades.middle.player.Player;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 import static uk.co.jackoftrades.middle.game.enums.CommandArgumentType.arg_CHOICE;
@@ -457,7 +462,7 @@ public class Command {
         Optional<DirectionEnum> result = getArgDirection(argName);
         if (result.isPresent() && result.get() != DirectionEnum.DIR_NONE) return result;
 
-        Optional<DirectionEnum> repDir = TextUIHook.getRepDir(allow5);
+        Optional<DirectionEnum> repDir = GameInputHolder.getInstance().getRepDir(allow5);
         if (repDir.isEmpty()) {
             GameState.getCommandQueue().cancelRepeat();
             return Optional.empty();
@@ -502,7 +507,7 @@ public class Command {
             mode.off(GetItemFlags.USE_QUIVER);
         }
 
-        Optional<ItemObject> chosen = TextUIHook.getItem(prompt, reject, this.code, filter, mode);
+        Optional<ItemObject> chosen = GameInputHolder.getInstance().getItem(prompt, reject, this.code, filter, mode);
         if (chosen.isEmpty()) return Optional.empty();
 
         setArgItem(argName, chosen.get());
@@ -538,7 +543,7 @@ public class Command {
         if (initial != null && !initial.isEmpty())
             temp = initial;
 
-        Optional<String> resultFromUser = TextUI.getString(prompt, temp);
+        Optional<String> resultFromUser = GameInputHolder.getInstance().getString(prompt, temp);
 
         if (resultFromUser.isPresent()) {
             setArgString(argName, resultFromUser.get());
@@ -573,7 +578,7 @@ public class Command {
                 return result;
         }
 
-        Optional<DirectionEnum> response = TextUIHook.getAimDir();
+        Optional<DirectionEnum> response = GameInputHolder.getInstance().getAimDir();
 
         if (response.isEmpty()) return Optional.empty();
 
@@ -599,7 +604,7 @@ public class Command {
         Optional<Integer> result = getArgNumber(argName);
         if (result.isPresent()) return result;
 
-        Optional<Integer> amountRec = TextUIHook.getQuantity(null, max);
+        Optional<Integer> amountRec = GameInputHolder.getInstance().getQuantity(null, max);
 
         if (amountRec.isPresent() && amountRec.get() > 0) {
             setArgNumber(argName, amountRec.get());
@@ -607,6 +612,80 @@ public class Command {
         }
 
         return Optional.empty();
+    }
+
+    /**
+     * Gets a spell for this command, taking a queued choice when there is one and otherwise
+     * prompting the player - the port of C's {@code cmd_get_spell}.
+     *
+     * <p>The flow mirrors C exactly. First the fast path: a stored {@code arg_CHOICE} is resolved
+     * through the caster's flattened spell index ({@link ClassMagic#spellByIndex}) and returned only
+     * if it still passes {@code spellFilter}; a missing, out-of-range, or now-rejected choice falls
+     * through. Then, if a {@code "book"} item is already queued, the spell is chosen from just that
+     * book ({@link #getSpellFromBook}); otherwise the full picker runs ({@link
+     * GameInputHolder#getInstance()}'s {@code getSpell}), which also hands back the book the player
+     * settled on. On success the chosen book is stored as the {@code "book"} item argument and the
+     * spell's flattened index ({@link ClassMagic#indexOfSpell}) as {@code argName}'s choice, so a
+     * replay re-resolves the same spell; any abort yields an empty {@link Optional} (C's
+     * {@code CMD_ARG_ABORTED}). Non-casters short-circuit to empty.
+     *
+     * <p>Where C threaded the selection through an {@code int *spell} out-parameter, the port returns
+     * the resolved {@link MagicSpell}; the {@code int} lives only in the queued {@code arg_CHOICE}
+     * round-trip, converted to and from the object at this boundary via the {@link ClassMagic}
+     * helpers.
+     *
+     * @param argName     the name the spell-choice argument is stored under
+     * @param verb        the action the spell is wanted for (e.g. "cast", "study"), shown by the UI
+     * @param bookFilter  the predicate a book must satisfy to be eligible, for the full picker
+     * @param bookError   the message shown when no eligible book exists
+     * @param spellFilter the predicate a spell must satisfy, tested against the player and spell
+     * @param spellError  the message shown when no eligible spell exists
+     * @return the chosen spell, or empty if the player aborted (or is not a caster)
+     */
+    public Optional<MagicSpell> getSpell(String argName, String verb,
+                                         @NotNull Predicate<ItemObject> bookFilter, String bookError,
+                                         @NotNull BiPredicate<Player, MagicSpell> spellFilter, String spellError) {
+        Optional<Integer> result = getArgChoice(argName);
+        ItemObject bookItem;
+        MagicSpell spell;
+        ClassMagic magic = player.getPlayerClass().getMagic();
+        if (magic == null || !magic.isCaster())
+            return Optional.empty();
+
+        if (result.isPresent()) {
+            spell = magic.spellByIndex(result.get());
+            if (spell != null && spellFilter.test(player, spell))
+                return Optional.of(spell);
+        }
+
+        Optional<ItemObject> itemObject = getArgItem("book");
+
+        if (itemObject.isPresent()) {
+            Optional<MagicSpell> spellFromBook = getSpellFromBook(player, verb, itemObject.get(),
+                    spellError, spellFilter);
+            if (spellFromBook.isPresent()) {
+                spell = spellFromBook.get();
+                bookItem = itemObject.get();
+            } else return Optional.empty();
+        } else {
+            Optional<GameInput.SpellSelection> spellReceived = GameInputHolder.getInstance().getSpell(player, verb,
+                    bookFilter, code, bookError, spellFilter, spellError, null);
+            if (spellReceived.isPresent()) {
+                spell = spellReceived.get().spell();
+                bookItem = spellReceived.get().book();
+            } else return Optional.empty();
+        }
+
+        setArgItem("book", bookItem);
+
+        // calculate the spell index
+        int newSpellIndex = magic.indexOfSpell(spell);
+
+        if (newSpellIndex == -1) return Optional.empty();
+
+        setArgChoice(argName, newSpellIndex);
+
+        return Optional.of(spell);
     }
 
     /**
@@ -618,5 +697,100 @@ public class Command {
      */
     private CommandArgument findArg(String argName) {
         return args.stream().filter(a -> a.getName().equals(argName)).findFirst().orElse(null);
+    }
+
+    /**
+     * Asks the input seam to choose a spell from a single, already-known book - the port of C's
+     * {@code get_spell_from_book} call in {@code cmd_get_spell}. A thin pass-through to the installed
+     * {@link GameInput}; kept as its own method so {@link #getSpell}'s book-arg branch reads as one
+     * step and the seam lookup lives in a single place.
+     *
+     * @param player      the caster
+     * @param verb        the action the spell is wanted for (e.g. "cast", "study")
+     * @param book        the book to choose from
+     * @param spellError  the message shown when the book offers no eligible spell
+     * @param spellFilter the predicate a spell must satisfy, tested against the player and spell
+     * @return the chosen spell, or empty if the player aborted
+     */
+    public Optional<MagicSpell> getSpellFromBook(Player player, String verb, ItemObject book,
+                                                 String spellError, BiPredicate<Player, MagicSpell> spellFilter) {
+        return GameInputHolder.getInstance().getSpellFromBook(player, verb, book, spellError, spellFilter);
+    }
+
+    /**
+     * Gets a choice from a list of effects, taking a queued choice when there is one and otherwise
+     * prompting the player - the port of C's {@code cmd_get_effect_from_list}. Used when an effect
+     * offers the player several sub-effects to pick between.
+     *
+     * <p>Unlike {@link #getSpell}, the selection is a plain {@code int} throughout - a list index in
+     * {@code [0, count)}, or the sentinel {@code -2} meaning "choose at random" when
+     * {@code allowRandom} is set - so there is no object to resolve and the value round-trips through
+     * {@code arg_CHOICE} directly. A stored choice is used only if still valid; a missing,
+     * out-of-range, or (when random is disallowed) {@code -2} choice falls through to the prompt.
+     * Whatever is finally settled on is stored back under {@code argName} so a replay reuses it. An
+     * abort - or a prompt result that is still invalid - yields an empty {@link Optional} (C's
+     * {@code CMD_ARG_ABORTED}).
+     *
+     * <p>Where C returned the outcome through an {@code int *choice} out-parameter and a status code,
+     * the port folds both into the return: present is the chosen index (or {@code -2}), empty is the
+     * abort. Note {@code -2} is a valid <em>present</em> value, not a failure - the empty case is
+     * reserved for a genuine abort, which is why {@code Optional<Integer>} and not {@code Optional} of
+     * the {@link Effect} itself.
+     *
+     * @param argName     the name the choice argument is stored under
+     * @param prompt      the prompt to show, or {@code null} for the default
+     * @param effects     the effects to choose among (only its size is read here; the seam shows them)
+     * @param count       how many of the effects to offer, or {@code -1} for all of them
+     * @param allowRandom whether to offer an extra "choose at random" option, whose result is {@code -2}
+     * @return the chosen index (or {@code -2} for random), or empty if the player aborted
+     */
+    public Optional<Integer> getEffectFromList(String argName, String prompt,
+                                               List<Effect> effects, int count, boolean allowRandom) {
+        int selection;
+
+        if (count == -1) {
+            count = effects.size();
+        }
+
+        Optional<Integer> choice = getArgChoice(argName);
+        boolean promptPlayer = choice.isEmpty();
+
+        if (!promptPlayer) {
+            selection = choice.get();
+            if ((selection != -2 || !allowRandom) && (selection < 0 || selection >= count))
+                promptPlayer = true;
+        }
+
+        if (promptPlayer) choice = GameInputHolder.getInstance().getEffectFromList(prompt, effects, count, allowRandom);
+
+        if (choice.isEmpty()) return Optional.empty();
+
+        selection = choice.get();
+        if ((selection == -2 && allowRandom) ||
+                (selection >= 0 && selection < count)) {
+            setArgChoice(argName, selection);
+            return Optional.of(selection);
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Resolves a carried book item to the class {@link MagicBook} it represents - the port of C's
+     * {@code player_object_to_book}. The match is on the item kind's {@code (tval, sval)} against
+     * each of the caster's books, exactly as C compares {@code obj->tval}/{@code obj->sval} to
+     * {@code magic.books[i]}.
+     *
+     * @param player the caster whose books are searched
+     * @param item   the book item to identify
+     * @return the matching {@link MagicBook}, or {@code null} if the item is not one of this class's
+     * books
+     */
+    private MagicBook playerObjectToBook(Player player, ItemObject item) {
+        for (MagicBook book : player.getPlayerClass().getMagic().getMagicBooks()) {
+            if (item.getKind().gettValue() == book.getBookTValue()
+                    && item.getKind().getsVal() == book.getSval())
+                return book;
+        }
+        return null;
     }
 }

@@ -57,6 +57,7 @@ public class GameState {
                 0, false, 10, 10, 4, 3, 3,
                 1, 1, 15, mainPlayer);
         commandQueue = new CommandQueue(mainPlayer);
+        EventsHandler.init();
         eventsHandler = EventsHandler.getInstance();
     }
 

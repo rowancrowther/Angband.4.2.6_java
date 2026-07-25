@@ -116,6 +116,10 @@ public class EventsHandler {
         currentList.remove(handler);
     }
 
+    public static void init() {
+        eventRemoveAllHandlers();
+    }
+
     /**
      * Dispatch an event down the handlers for it, sending the event type and some incoming data
      *

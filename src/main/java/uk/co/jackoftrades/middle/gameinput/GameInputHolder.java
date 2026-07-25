@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.middle.gameinput;
 
+import org.jetbrains.annotations.CheckReturnValue;
+import org.jetbrains.annotations.Contract;
+
 /**
  * The static switchboard for the {@link GameInput} seam: it holds the one implementation currently
  * installed and hands it to callers. This is where C's file-scope {@code get_*_hook} function
@@ -36,6 +39,9 @@ public final class GameInputHolder {
      * The implementation currently answering input requests; never {@code null}.
      */
     private static GameInput instance = new DefaultGameInput();
+
+    private GameInputHolder() {
+    }
 
     /**
      * Installs {@code instance} as the live implementation - used by a front-end at start-up or by a
@@ -58,6 +64,8 @@ public final class GameInputHolder {
     /**
      * @return the implementation currently answering input requests (never {@code null})
      */
+    @Contract(pure = true)
+    @CheckReturnValue
     public static GameInput getInstance() {
         return instance;
     }

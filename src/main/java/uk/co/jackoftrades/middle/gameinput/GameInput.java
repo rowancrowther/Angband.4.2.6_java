@@ -232,14 +232,18 @@ public interface GameInput {
 
     /**
      * Asks the player to choose one effect from a list - the port of C's
-     * {@code get_effect_from_list}. The result is a list index, or {@code -2} when {@code allowRandom}
-     * is set and the player picks the random option; empty is an abort.
+     * {@code get_effect_from_list}. C returned an {@code int}: a list index, {@code -2} for the
+     * random option, or {@code -1} for an abort; the port returns those three outcomes as the
+     * {@link EffectChoice} cases {@link EffectChoice.Index}, {@link EffectChoice.Random} and
+     * {@link EffectChoice.Aborted} respectively.
      *
      * @param prompt      the prompt to show, or {@code null} for the default
      * @param effects     the effects to choose among
      * @param count       how many of the effects to offer, or {@code -1} for all of them
-     * @param allowRandom whether to offer an extra "choose at random" option (its result is {@code -2})
-     * @return the chosen index (or {@code -2} for random), or empty if the player aborted
+     * @param allowRandom whether to offer an extra "choose at random" option
+     * @return the chosen {@link EffectChoice} - an {@link EffectChoice.Index}, or
+     *         {@link EffectChoice.Random} if the player took the random option, or
+     *         {@link EffectChoice.Aborted} if they cancelled
      */
-    Optional<Integer> getEffectFromList(String prompt, List<Effect> effects, int count, boolean allowRandom);
+    EffectChoice getEffectFromList(String prompt, List<Effect> effects, int count, boolean allowRandom);
 }

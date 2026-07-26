@@ -110,11 +110,14 @@ public class DefaultGameInput implements GameInput {
     }
 
     /**
-     * {@inheritDoc} This default always aborts.
+     * {@inheritDoc} With no UI hook, this default mirrors C's non-hook fall-back: it selects
+     * {@link EffectChoice.Random} when {@code allowRandom} is set, and otherwise
+     * {@link EffectChoice.Aborted}.
      */
     @Override
-    public Optional<Integer> getEffectFromList(String prompt, List<Effect> effects, int count, boolean allowRandom) {
-        return Optional.empty();
+    public EffectChoice getEffectFromList(String prompt, List<Effect> effects, int count, boolean allowRandom) {
+        return allowRandom ? new EffectChoice.Random()
+                : new EffectChoice.Aborted();
     }
 
     /**

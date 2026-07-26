@@ -30,6 +30,7 @@ import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.argumentdata.*;
+import uk.co.jackoftrades.middle.gameinput.EffectChoice;
 import uk.co.jackoftrades.middle.gameinput.GameInput;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
@@ -746,8 +747,6 @@ public class Command {
      */
     public Optional<Integer> getEffectFromList(String argName, String prompt,
                                                List<Effect> effects, int count, boolean allowRandom) {
-        int selection;
-
         if (count == -1) {
             count = effects.size();
         }
@@ -755,18 +754,28 @@ public class Command {
         Optional<Integer> choice = getArgChoice(argName);
         boolean promptPlayer = choice.isEmpty();
 
+        int playerSel;
         if (!promptPlayer) {
-            selection = choice.get();
-            if ((selection != -2 || !allowRandom) && (selection < 0 || selection >= count))
+            playerSel = choice.get();
+            if ((playerSel != -2 || !allowRandom) && (playerSel < 0 || playerSel >= count))
                 promptPlayer = true;
         }
 
-        if (promptPlayer) choice = GameInputHolder.getInstance().getEffectFromList(prompt, effects, count, allowRandom);
+        EffectChoice effectChoice = new EffectChoice.Aborted();
+        if (promptPlayer) {
+            effectChoice = GameInputHolder.getInstance().getEffectFromList(prompt, effects, count, allowRandom);
+        }
 
-        if (choice.isEmpty()) return Optional.empty();
+        if (effectChoice instanceof EffectChoice.Aborted()) return Optional.empty();
 
-        selection = choice.get();
-        if ((selection == -2 && allowRandom) ||
+        int selection = 0;
+        boolean isRandom = false;
+        if (effectChoice instanceof EffectChoice.Random()) isRandom = true;
+
+        if (effectChoice instanceof EffectChoice.Index(int i))
+            selection = i;
+
+        if ((isRandom && allowRandom) ||
                 (selection >= 0 && selection < count)) {
             setArgChoice(argName, selection);
             return Optional.of(selection);

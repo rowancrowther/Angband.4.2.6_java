@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.backend.parser.history;
 
+/**
+ * Immutable extraction record for one {@code history.txt} entry: the raw, still-unresolved
+ * fields of a background-history chart link, later turned into the {@code PlayerHistoryChart}
+ * domain type by {@link HistoryAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record HistoryParseRecord(String currentChart,
                                  String nextChart,
                                  String percentage,

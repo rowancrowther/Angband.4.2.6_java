@@ -51,7 +51,7 @@ public class EventDataPoint implements GameEventData {
      * @author Rowan Crowther
      */
     public EventDataPoint(int x, int y) {
-        loc = new Loc(x, y);
+        loc = Loc.row(y).col(x);
     }
 
     /**

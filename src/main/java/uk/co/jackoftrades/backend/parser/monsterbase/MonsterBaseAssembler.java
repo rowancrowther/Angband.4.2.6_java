@@ -28,6 +28,13 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Assembles the raw {@link MonsterBaseParseRecord}s parsed from {@code monster_base.txt} into
+ * the finished {@link MonsterBase} domain objects (reader &rarr; ParseRecord &rarr; assembler
+ * &rarr; domain).
+ *
+ * @author Rowan Crowther
+ */
 public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, List<MonsterBase>> {
     /**
      *

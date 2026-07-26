@@ -113,7 +113,7 @@ public enum DirectionEnum {
      * @author Rowan Crowther
      */
     public Loc ddgrid() {
-        return new Loc(xOffset, yOffset);
+        return Loc.row(yOffset).col(xOffset);
     }
 
     /**

@@ -32,6 +32,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Assembles the raw {@link EgoItemParseRecord}s parsed from {@code ego_item.txt} into the
+ * finished {@link EgoItem} domain objects (reader &rarr; ParseRecord &rarr; assembler &rarr;
+ * domain).
+ *
+ * @author Rowan Crowther
+ */
 public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoItem>> {
     /**
      *

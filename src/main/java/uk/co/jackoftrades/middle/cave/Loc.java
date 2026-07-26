@@ -58,7 +58,7 @@ public class Loc {
      * @param x the x coordinate of this location
      * @param y the y coordinate of this location
      */
-    public Loc(int x, int y) {
+    private Loc(int x, int y) {
         this.x = x;
         this.y = y;
     }
@@ -144,6 +144,12 @@ public class Loc {
         return new Loc(RandomValueUtils.randSpread(x, xSpread), RandomValueUtils.randSpread(y, ySpread));
     }
 
+    public static RowBuilder row(int i) {
+        RowBuilder rowHolder = new RowBuilder();
+        rowHolder.y = i;
+        return rowHolder;
+    }
+
     /**
      * Returns a new location offset from this location by dx and dy
      *
@@ -153,5 +159,13 @@ public class Loc {
      */
     public Loc locOffset(int dx, int dy) {
         return new Loc(x + dx, y + dy);
+    }
+
+    public static class RowBuilder {
+        private int y;
+
+        public Loc col(int x) {
+            return new Loc(x, y);
+        }
     }
 }

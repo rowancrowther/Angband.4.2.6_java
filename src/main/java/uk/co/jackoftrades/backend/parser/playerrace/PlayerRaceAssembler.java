@@ -36,6 +36,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Assembles the raw {@link PlayerRaceParseRecord}s parsed from {@code p_race.txt} into the
+ * finished {@link PlayerRace} domain objects (reader &rarr; ParseRecord &rarr; assembler
+ * &rarr; domain).
+ *
+ * @author Rowan Crowther
+ */
 public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, List<PlayerRace>> {
     /**
      *

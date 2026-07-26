@@ -21,7 +21,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.GetItemFlags;
 
@@ -111,7 +111,7 @@ public class TextUIHook {
      * @return the chosen direction, or empty if the player aborted
      */
     public static Optional<DirectionEnum> getDirection(String prompt, DirectionEnum initial) {
-        EventsHandler.eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         // TODO: Flesh out this stub method
 
@@ -126,7 +126,7 @@ public class TextUIHook {
      * @return the chosen item, or empty if the player aborted
      */
     public static Optional<ItemObject> getItem(String prompt, ItemObject initial) {
-        EventsHandler.eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         // TODO: Flesh out this stub method
 
@@ -142,7 +142,7 @@ public class TextUIHook {
      * @return the entered text, or empty if the player aborted
      */
     public static Optional<String> getString(String prompt, String initial) {
-        EventsHandler.eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         // TODO: Flesh out this stub method
 
@@ -157,7 +157,7 @@ public class TextUIHook {
      * @return the chosen target, or empty if the player aborted
      */
     public static Optional<Integer> getTarget(String prompt, int initial) {
-        EventsHandler.eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         // TODO: Flesh out this stub method
 

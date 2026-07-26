@@ -24,6 +24,13 @@ import uk.co.jackoftrades.middle.game.Name;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Assembles the raw {@link NamesParseRecord}s parsed from {@code names.txt} into the finished
+ * {@link Name} domain objects — the random-name fragment lists (reader &rarr; ParseRecord
+ * &rarr; assembler &rarr; domain).
+ *
+ * @author Rowan Crowther
+ */
 public class NamesAssembler implements Assembler<NamesParseRecord, List<Name>> {
     /**
      *

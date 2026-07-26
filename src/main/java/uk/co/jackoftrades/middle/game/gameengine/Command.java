@@ -28,7 +28,6 @@ import uk.co.jackoftrades.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.argumentdata.*;
 import uk.co.jackoftrades.middle.gameinput.EffectChoice;
 import uk.co.jackoftrades.middle.gameinput.GameInput;
@@ -539,7 +538,7 @@ public class Command {
         if (result.isPresent()) return result;
 
         Message.send("%s", title); // This is currently a stub class
-        EventsHandler.eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         if (initial != null && !initial.isEmpty())
             temp = initial;

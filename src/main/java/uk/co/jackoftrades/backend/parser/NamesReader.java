@@ -30,6 +30,13 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Reads {@code names.txt} — the random-name fragment lists used to generate monster and
+ * artifact names — into {@link Name} records via the {@link Reader} contract, for assembly
+ * by {@link NamesAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public class NamesReader implements Reader<Name> {
     private static final Logger logger = LogManager.getLogger();
 

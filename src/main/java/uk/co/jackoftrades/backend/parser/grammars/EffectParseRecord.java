@@ -17,6 +17,13 @@
 
 package uk.co.jackoftrades.backend.parser.grammars;
 
+/**
+ * Immutable extraction record for one parsed {@code effect:} block (the shared effect/dice
+ * grammar reused across many data files): the raw, still-unresolved fields, later turned into
+ * the {@code Effect} domain type by {@link EffectAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record EffectParseRecord(String typeInit,
                                 String subTypeWrapper,
                                 String radius,

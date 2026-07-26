@@ -18,10 +18,13 @@
 package uk.co.jackoftrades.middle.gameinput;
 
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.magic.MagicSpell;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.GetItemFlags;
@@ -145,8 +148,15 @@ public interface GameInput {
      *
      * @return {@code true} if the player confirmed
      */
-    boolean confirmDebug();
+    default boolean confirmDebug() {
+        Message.send("%s", "You are about to use the dangerous, unsupported, debug commands!");
+        Message.send("%s", "Your machine may crash, and your savefile may become corrupted!");
+        Message.send("%s", "Your experience beyond this point is not guaranteed in any way!");
 
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+
+        return getCheck("Are you sure you want to use the debug commands? ");
+    }
     /**
      * Asks for a repeated-movement direction - the port of C's {@code get_rep_dir}.
      *

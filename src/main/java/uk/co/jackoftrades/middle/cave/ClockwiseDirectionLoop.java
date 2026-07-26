@@ -114,7 +114,7 @@ public class ClockwiseDirectionLoop {
      */
     @Contract(" -> new")
     public static @NotNull Loc getGrid() {
-        return new Loc(getXOffset(), getYOffset());
+        return Loc.row(getYOffset()).col(getXOffset());
     }
 
     /**

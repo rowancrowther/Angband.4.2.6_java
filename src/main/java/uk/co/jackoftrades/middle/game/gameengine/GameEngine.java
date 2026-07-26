@@ -23,6 +23,8 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Screen;
+import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
+import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 /**
@@ -42,10 +44,15 @@ public class GameEngine {
      */
     private static final Logger logger = LogManager.getLogger();
     /**
-     * The lazily-created singleton instance.
+     * The live event bus, held here as the game-wide seam other layers reach through
+     * {@link #getEventsBusHandler()}. Created eagerly (so it is never {@code null}, even
+     * before a game starts) and typed to the {@link EventsHandler} interface so a test
+     * can swap in its own bus via {@link #setEventsBusHandler(EventsHandler)}.
      *
      * @author Rowan Crowther
      */
+    private static EventsHandler eventsBusHandler = new EventsBusHandler();
+
     private static GameEngine instance;
     /**
      * The main on-screen surface.
@@ -91,6 +98,29 @@ public class GameEngine {
         screen.setStatusLabelText("Select New Game from File menu to start the game...");
 
         GameState.initGameState();
+        eventsBusHandler = new EventsBusHandler();
+    }
+
+    /**
+     * The live event bus that game logic signals through. Never {@code null} - the field
+     * is initialised eagerly - so callers can dispatch without a null check.
+     *
+     * @return the current event bus
+     * @author Rowan Crowther
+     */
+    public static EventsHandler getEventsBusHandler() {
+        return eventsBusHandler;
+    }
+
+    /**
+     * Replace the live event bus - the injection seam for tests, which can install their
+     * own {@link EventsBusHandler} (or a spy over one) to observe what gets signalled.
+     *
+     * @param eventsBusHandler the bus to install
+     * @author Rowan Crowther
+     */
+    public static void setEventsBusHandler(EventsHandler eventsBusHandler) {
+        GameEngine.eventsBusHandler = eventsBusHandler;
     }
 
     /**

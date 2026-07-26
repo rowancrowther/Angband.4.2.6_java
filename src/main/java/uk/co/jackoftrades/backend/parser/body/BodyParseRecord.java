@@ -19,6 +19,13 @@ package uk.co.jackoftrades.backend.parser.body;
 
 import java.util.List;
 
+/**
+ * Immutable extraction record for one {@code body.txt} entry: the raw, still-unresolved fields
+ * (body name plus its ordered equip slots) parsed by the grammar, later turned into the
+ * {@code PlayerBody} domain type by {@link BodyAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record BodyParseRecord(String bodyName,
                               List<BodySlotRecord> slots,
                               int line) {

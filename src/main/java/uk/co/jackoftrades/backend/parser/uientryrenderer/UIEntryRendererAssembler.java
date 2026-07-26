@@ -29,6 +29,8 @@ import java.util.List;
 /**
  * Assembler class - takes a list of UIEntryRendererParseRecords and converts them
  * to a List of UIEntryRenderers.
+ *
+ * @author Rowan Crowther
  */
 public class UIEntryRendererAssembler
         implements Assembler<UIEntryRendererParseRecord, List<UIEntryRenderer>> {

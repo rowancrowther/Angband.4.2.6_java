@@ -18,7 +18,6 @@
 package uk.co.jackoftrades.middle.game.gameengine;
 
 import uk.co.jackoftrades.middle.cave.Chunk;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.player.Player;
 
 public class GameState {
@@ -56,7 +55,7 @@ public class GameState {
                 0, false, 10, 10, 4, 3, 3,
                 1, 1, 15, mainPlayer);
         commandQueue = new CommandQueue(mainPlayer);
-        EventsHandler.init();
+        GameEngine.getEventsBusHandler().init();
     }
 
     /**

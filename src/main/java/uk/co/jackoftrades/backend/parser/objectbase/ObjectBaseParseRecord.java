@@ -19,6 +19,13 @@ package uk.co.jackoftrades.backend.parser.objectbase;
 
 import java.util.List;
 
+/**
+ * Immutable extraction record for one {@code object_base.txt} entry: the raw, still-unresolved
+ * fields parsed by the grammar, later turned into the {@code ObjectBase} domain type by
+ * {@link ObjectBaseAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record ObjectBaseParseRecord(String name, String tVal, String colour,
                                     List<String> flags, String breakChance,
                                     String maxStack, int line) {

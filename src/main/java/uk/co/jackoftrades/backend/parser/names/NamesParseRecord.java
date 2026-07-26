@@ -19,6 +19,12 @@ package uk.co.jackoftrades.backend.parser.names;
 
 import java.util.List;
 
+/**
+ * Immutable extraction record for one {@code names.txt} section: a random-name fragment list,
+ * later turned into the {@code Name} domain type by {@link NamesAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record NamesParseRecord(String section,
                                List<String> word) {
 }

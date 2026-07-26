@@ -29,6 +29,13 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Assembles the raw {@link ObjectBaseParseRecord}s parsed from {@code object_base.txt} into the
+ * finished {@link ObjectBase} domain objects (reader &rarr; ParseRecord &rarr; assembler &rarr;
+ * domain).
+ *
+ * @author Rowan Crowther
+ */
 public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, List<ObjectBase>> {
     /**
      *

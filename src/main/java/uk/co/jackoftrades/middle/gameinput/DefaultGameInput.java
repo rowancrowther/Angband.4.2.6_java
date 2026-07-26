@@ -177,19 +177,4 @@ public class DefaultGameInput implements GameInput {
     public void viewAbilityMenu(List<PlayerAbility> abilityList) {
 
     }
-
-    /**
-     * {@inheritDoc} This default cannot faithfully stand in: C's fall-back warns the player and then
-     * defers to {@code get_check}, which needs the message-output seam and {@link #getCheck}. Rather
-     * than silently return a plausible-but-wrong answer, it logs and throws so the gap is loud.
-     *
-     * @throws UnsupportedOperationException always
-     */
-    @Override
-    public boolean confirmDebug() {
-        String message = "confirm_debug fallback needs getCheck + the message-output seam";
-        UnsupportedOperationException uoe = new UnsupportedOperationException(message);
-        logger.warn(message, uoe);
-        throw uoe;
-    }
 }

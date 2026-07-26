@@ -20,6 +20,13 @@ package uk.co.jackoftrades.backend.parser.egoitem;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Immutable extraction record for one {@code ego_item.txt} entry: the raw, still-unresolved
+ * fields parsed by the grammar, later turned into the {@code EgoItem} domain type by
+ * {@link EgoItemAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record EgoItemParseRecord(String name,
                                  String cost, String rating,
                                  String commonness, String lower, String upper,

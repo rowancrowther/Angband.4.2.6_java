@@ -19,6 +19,13 @@ package uk.co.jackoftrades.backend.parser.monsterbase;
 
 import java.util.List;
 
+/**
+ * Immutable extraction record for one {@code monster_base.txt} entry: the raw, still-unresolved
+ * fields parsed by the grammar, later turned into the {@code MonsterBase} domain type by
+ * {@link MonsterBaseAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record MonsterBaseParseRecord(String codeName, String inGameName, List<String> flags,
                                      String glyph, String pain, String description, int line) {
 }

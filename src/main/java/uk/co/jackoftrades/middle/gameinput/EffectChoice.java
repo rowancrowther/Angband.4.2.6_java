@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.gameinput;
 
 public sealed interface EffectChoice permits EffectChoice.Index,
         EffectChoice.Aborted, EffectChoice.Random {
-    public record Index(int value) implements EffectChoice {
+    record Index(int value) implements EffectChoice {
     }
 
     record Random() implements EffectChoice {

@@ -22,6 +22,13 @@ import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Immutable extraction record for one {@code curse.txt} entry: the raw, still-unresolved fields
+ * parsed by the grammar, later turned into the {@code Curse} domain type by
+ * {@link CurseAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record CurseParseRecord(String name,
                                List<String> type,
                                String weightAdjustment,

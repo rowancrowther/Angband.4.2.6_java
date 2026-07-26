@@ -29,6 +29,8 @@ import java.util.List;
  * Interface for all the ANTLR4 parsers. Only one function <code>ArrayList&lt;Object&gt; parse(String filename)</code>.
  * This function should run the file through the generated ANTLR4 code and return an array list of Object, which will
  * be further parsed by the relevant calling class (should be <code>GameConstants</code>).
+ *
+ * @author Rowan Crowther
  */
 public interface Reader<T> {
     /**

@@ -30,6 +30,13 @@ import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.*;
 
+/**
+ * Assembles the raw {@link ArtifactParseRecord}s parsed from {@code artifact.txt} into the
+ * finished {@link Artifact} domain objects, resolving names, base kinds, curses and element
+ * info as it goes (reader &rarr; ParseRecord &rarr; assembler &rarr; domain).
+ *
+ * @author Rowan Crowther
+ */
 public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Artifact>> {
     /**
      *

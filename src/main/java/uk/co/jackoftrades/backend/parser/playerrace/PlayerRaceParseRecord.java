@@ -20,6 +20,13 @@ package uk.co.jackoftrades.backend.parser.playerrace;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Immutable extraction record for one {@code p_race.txt} entry: the raw, still-unresolved
+ * fields parsed by the grammar, later turned into the {@code PlayerRace} domain type by
+ * {@link PlayerRaceAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record PlayerRaceParseRecord(String name,
                                     Map<String, String> stats,
                                     Map<String, String> playerSkills,

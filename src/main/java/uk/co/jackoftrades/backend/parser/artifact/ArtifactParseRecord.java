@@ -20,6 +20,13 @@ package uk.co.jackoftrades.backend.parser.artifact;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Immutable extraction record for one {@code artifact.txt} entry: the raw, still-unresolved
+ * fields parsed by the grammar, later turned into the {@code Artifact} domain type by
+ * {@link ArtifactAssembler}.
+ *
+ * @author Rowan Crowther
+ */
 public record ArtifactParseRecord(String name,
                                   String tValue,
                                   String sValue,

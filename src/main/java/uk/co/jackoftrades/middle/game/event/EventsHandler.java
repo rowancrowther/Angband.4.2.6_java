@@ -26,125 +26,109 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The central event bus: a static registry mapping each {@link GameEventType}
- * to its list of {@link EventHandlerInterface} listeners, with dispatch and a
- * family of {@code eventSignal*} convenience methods that build the appropriate
- * {@link GameEventData} payload. State and behaviour are entirely static - the
- * per-type lists are created once by a static initialiser on class load - mirroring
- * the C original's file-scope {@code event_handlers} array rather than an object.
- * This is the Java port of the C game-event system ({@code src/game-event.c}),
- * decoupling game logic from the UI that reacts to it.
+ * The event bus abstraction: the interface through which game logic broadcasts
+ * {@link GameEventType} notifications to whatever listeners - a front-end, a test spy,
+ * or nothing at all - have registered for them. This is the Java port of the C
+ * game-event system ({@code src/game-event.c}), decoupling the middle layer from the
+ * UI that reacts to it.
+ *
+ * <p>The surface splits in two. Four <em>primitives</em> - {@link #eventAddHandler},
+ * {@link #eventRemoveHandler}, {@link #eventRemoveHandlerType} and
+ * {@link #gameEventDispatch} - are abstract, because they are the only operations that
+ * touch the handler registry: an implementation supplies that state and these four
+ * methods over it. Everything else ({@link #init}, {@link #eventRemoveAllHandlers}, the
+ * {@code eventAddHandlerSet}/{@code eventRemoveHandlerSet} pair and the whole
+ * {@code eventSignal*} family) is a {@code default} method expressed purely in terms of
+ * the primitives - each {@code eventSignal*} builds the appropriate
+ * {@link GameEventData} payload and hands it to {@link #gameEventDispatch}. So a single
+ * concrete class ({@link EventsBusHandler}) need only implement the four primitives to
+ * inherit the entire convenience layer.
+ *
+ * <p>Unlike the C original's file-scope {@code event_handlers} array, this is an
+ * instance abstraction rather than a global: the live bus is held by {@code GameEngine}
+ * and can be swapped (see {@code GameEngine.setEventsBusHandler}), so a test can run
+ * against its own isolated bus or inject a spy to assert what was signalled.
  *
  * @author Rowan Crowther
  */
-public class EventsHandler {
+public interface EventsHandler {
+    /**** Abstract methods ****/
+
     /**
-     * The registry of listeners: each {@link GameEventType} mapped to its list of
-     * registered handlers. This is the Java port of the C original's
-     * {@code event_handlers[N_GAME_EVENTS]} array ({@code src/game-event.c}) - one
-     * handler list per event type.
+     * Register a handler to be dispatched whenever the given event type is signalled -
+     * the port of C's {@code event_add_handler} ({@code src/game-event.c}). One handler
+     * may be registered against several types, and the same handler instance may be
+     * registered more than once against a single type (each registration fires
+     * independently).
      *
-     * <p>The per-type list is a {@link CopyOnWriteArrayList} rather than a plain
-     * {@code ArrayList} to make dispatch re-entrant-safe. {@link #gameEventDispatch}
-     * iterates the list while handlers run, and a handler may register or deregister
-     * another - or itself - as a side effect. Copy-on-write hands the dispatch loop a
-     * stable snapshot for the duration of the walk, so such a mutation cannot raise
-     * {@link java.util.ConcurrentModificationException} the way an {@code ArrayList}'s
-     * fail-fast iterator would; the change instead takes effect on the next dispatch.
+     * @param eventType the event type to listen for
+     * @param handler   the handler to dispatch when that type is signalled
+     * @author Rowan Crowther
+     */
+    void eventAddHandler(GameEventType eventType, EventHandlerInterface handler);
+
+    /**
+     * Deregister a handler from the given event type - the port of C's
+     * {@code event_remove_handler}. Only the first matching registration is removed
+     * (mirroring C, which unlinks the first matching node and returns), and removing a
+     * handler that was never registered is a silent no-op.
      *
-     * <p>This is <em>not</em> a thread-safety choice - the game runs single-threaded -
-     * but the fit is the same one copy-on-write is built for: an observer registry
-     * whose writes are rare (handlers are registered at initialisation and screen
-     * transitions) but whose reads are frequent and hot ({@code EVENT_MAP} alone
-     * fires per changed grid), where copy-on-write reads are lock- and
-     * allocation-free. The write cost - copying the backing array on each
-     * registration - is paid off the hot path and is trivial here, as the lists are
-     * short (typically one handler, at most a few).
+     * @param eventType the event type to stop dispatching the handler for
+     * @param handler   the handler to remove
+     * @author Rowan Crowther
+     */
+    void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler);
+
+    /**
+     * Dispatch an event to every handler registered for its type, passing the type and
+     * payload to each in turn - the port of C's {@code game_event_dispatch}, and the one
+     * primitive every {@code eventSignal*} default method funnels through.
+     *
+     * <p><b>Ordering contract.</b> Handlers fire in registration order (first
+     * registered, first called). This is a deterministic port-specific choice: the C
+     * original prepended to a linked-list head and so dispatched most-recently-registered
+     * first, but that order was an artifact of O(1) head-insertion, not designed
+     * behaviour, and - because dispatch is non-consuming, with every handler always
+     * running - nothing depended on it. Handlers therefore must not rely on firing order
+     * for correctness; the fixed order exists only to make dispatch deterministic and
+     * testable.
+     *
+     * @param eventType the kind of event being dispatched
+     * @param data      the payload handed to each handler, or {@code null} for a bare signal
+     * @author Rowan Crowther
+     */
+    void gameEventDispatch(GameEventType eventType, GameEventData data);
+
+    /**
+     * Clear every handler registered for one event type, leaving that type with an
+     * empty (but still present) list - the port of C's {@code event_remove_handler_type}.
+     * Other event types are untouched.
+     *
+     * @param eventType the event type to clear
+     * @author Rowan Crowther
+     */
+    void eventRemoveHandlerType(GameEventType eventType);
+
+    /**** Default methods ****/
+
+    /**
+     * Reset the registry for a new game: clears every registered handler, leaving each
+     * event type with an empty list. The per-type lists themselves stay in place (the
+     * implementation populates them once when the bus is built), so this only empties
+     * their contents. The port of C's start-of-game handler reset.
      *
      * @author Rowan Crowther
      */
-    private static final HashMap<GameEventType, CopyOnWriteArrayList<EventHandlerInterface>> handlers = new HashMap<>();
-
-    static {
-        for (GameEventType type : GameEventType.values()) {
-            handlers.put(type, new CopyOnWriteArrayList<>());
-        }
-    }
-
-    /**
-     * Add a handler to the events handler
-     *
-     * @param eventType The event type that we are listening for
-     * @param handler   the EventHandlerInterface which will handle the event type
-     */
-    public static void eventAddHandler(GameEventType eventType, EventHandlerInterface handler) {
-        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
-        currentList.add(handler);
-    }
-
-    /**
-     * Removes a handler from the events table
-     *
-     * @param eventType The event type we are going to remove a handler from
-     * @param handler   The event handler we are removing
-     */
-    public static void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler) {
-        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
-        currentList.remove(handler);
-    }
-
-    /**
-     * Reset the registry for a new game: removes every registered handler, leaving
-     * each event type with an empty list. The lists themselves already exist (built
-     * by the static initialiser on class load); this only clears their contents.
-     *
-     * @author Rowan Crowther
-     */
-    public static void init() {
+    default void init() {
         eventRemoveAllHandlers();
-    }
-
-    /**
-     * Dispatch an event to every handler registered for its type, passing the
-     * event type and payload to each.
-     *
-     * <p><b>Ordering contract.</b> Handlers are dispatched in registration order
-     * (first registered, first called). This is a deterministic port-specific
-     * guarantee: the C original prepended to a linked-list head and so dispatched
-     * most-recently-registered first, but that order was an artifact of O(1)
-     * head-insertion, not designed behaviour, and - because dispatch is
-     * non-consuming, with every handler always running - nothing depended on it.
-     * Handlers therefore must not rely on firing order for correctness; the fixed
-     * registration order exists only to make dispatch deterministic and testable
-     * (see {@code EventsHandlerTest.handlersFireInRegistrationOrder}).
-     *
-     * @param eventType the kind of event being triggered
-     * @param data      the payload sent to each handler
-     */
-    public static void gameEventDispatch(GameEventType eventType, GameEventData data) {
-        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
-        for (EventHandlerInterface handler : currentList) {
-            handler.dispatch(eventType, data);
-        }
-    }
-
-    /**
-     * Remove all the handlers of a specified type
-     *
-     * @param eventType The event type we are removing the handlers of
-     */
-    public static void eventRemoveHandlerType(GameEventType eventType) {
-        CopyOnWriteArrayList<EventHandlerInterface> newList = new CopyOnWriteArrayList<>();
-        handlers.put(eventType, newList);
     }
 
     /**
      * Clear down all event handlers
      */
-    public static void eventRemoveAllHandlers() {
+    default void eventRemoveAllHandlers() {
         for (GameEventType eventType : GameEventType.values()) {
             eventRemoveHandlerType(eventType);
         }
@@ -155,14 +139,14 @@ public class EventsHandler {
      * listener to a group of related events in one call. This is the Java port of
      * the C original's {@code event_add_handler_set} ({@code src/game-event.c}):
      * the "set" is a set of event <em>types</em> sharing one handler, not a set of
-     * handlers - each type gets its own registration via {@link #eventAddHandler}.
+     * handlers - each type gets its own registration via .
      * Mirrors the C caller in {@code ui-display.c}, where one {@code update_sidebar}
      * handler is bound across the whole {@code player_events} group at once.
      *
      * @param eventTypes the event types to register the handler against
      * @param record     the handler to register for each of those event types
      */
-    public static void eventAddHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
+    default void eventAddHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
         for (GameEventType eventType : eventTypes) {
             eventAddHandler(eventType, record);
         }
@@ -172,7 +156,7 @@ public class EventsHandler {
      * Deregister a single handler from every event type in a set, the inverse of
      * {@link #eventAddHandlerSet} and the Java port of the C original's
      * {@code event_remove_handler_set} ({@code src/game-event.c}). Each type is
-     * unbound individually via {@link #eventRemoveHandler}. Symmetric with the add
+     * unbound individually via . Symmetric with the add
      * side: passing the same {@code eventTypes} group used to register a handler
      * tears down exactly those bindings, as the C caller does in {@code ui-display.c}
      * by handing the same {@code player_events} group back to remove
@@ -181,7 +165,7 @@ public class EventsHandler {
      * @param eventTypes the event types to remove the handler from
      * @param record     the handler to deregister from each of those event types
      */
-    public static void eventRemoveHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
+    default void eventRemoveHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
         for (GameEventType eventType : eventTypes) {
             eventRemoveHandler(eventType, record);
         }
@@ -192,7 +176,7 @@ public class EventsHandler {
      *
      * @param eventType The event type we are signalling
      */
-    public static void eventSignal(GameEventType eventType) {
+    default void eventSignal(GameEventType eventType) {
         gameEventDispatch(eventType, null);
     }
 
@@ -202,7 +186,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param flag      The boolean value we are sending
      */
-    public static void eventSignalFlag(GameEventType eventType, boolean flag) {
+    default void eventSignalFlag(GameEventType eventType, boolean flag) {
         gameEventDispatch(eventType, new EventDataBoolean(flag));
     }
 
@@ -214,7 +198,7 @@ public class EventsHandler {
      * @param x         The x coordinate of the Loc
      * @param y         The y coordinate of the Loc
      */
-    public static void eventSignalPoint(GameEventType eventType, int x, int y) {
+    default void eventSignalPoint(GameEventType eventType, int x, int y) {
         gameEventDispatch(eventType, new EventDataPoint(x, y));
     }
 
@@ -224,7 +208,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param point     The Loc we are using to signal the event
      */
-    public static void eventSignalPoint(GameEventType eventType, Loc point) {
+    default void eventSignalPoint(GameEventType eventType, Loc point) {
         gameEventDispatch(eventType, new EventDataPoint(point));
     }
 
@@ -234,7 +218,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param string    The String we are using in signalling the event
      */
-    public static void eventSignalString(GameEventType eventType, String string) {
+    default void eventSignalString(GameEventType eventType, String string) {
         gameEventDispatch(eventType, new EventDataString(string));
     }
 
@@ -244,7 +228,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param message   The Message we are using in signalling the event
      */
-    public static void eventSignalMessage(GameEventType eventType, int type, String message) {
+    default void eventSignalMessage(GameEventType eventType, int type, String message) {
         gameEventDispatch(eventType, new EventDataMessage(type, message));
     }
 
@@ -257,7 +241,7 @@ public class EventsHandler {
      *                  stat
      * @param remaining The remaining number of points to spend
      */
-    public static void eventSignalBirthpoints(GameEventType eventType,
+    default void eventSignalBirthpoints(GameEventType eventType,
                                         HashMap<Stats, Integer> stats,
                                         HashMap<Stats, Integer> incPoints,
                                         int remaining) {
@@ -276,7 +260,7 @@ public class EventsHandler {
      * @param blastGrid      The grids we are blasting with this explosion
      * @param centre         The centre of the explosion
      */
-    public static void eventSignalBlast(GameEventType eventType,
+    default void eventSignalBlast(GameEventType eventType,
                                   int projType,
                                   int numGrids,
                                   ArrayList<Integer> distanceToGrid,
@@ -301,7 +285,7 @@ public class EventsHandler {
      * @param y         The target-Y of the bolt?
      * @param x         The target-X of the bolt
      */
-    public static void eventSignalBolt(GameEventType eventType,
+    default void eventSignalBolt(GameEventType eventType,
                                  int projType,
                                  boolean drawing,
                                  boolean seen,
@@ -322,7 +306,7 @@ public class EventsHandler {
      * @param y          The y location of the missile (start/end/current)?
      * @param x          The x location of the missile (start/end/current)?
      */
-    public static void eventSignalMissile(GameEventType eventType,
+    default void eventSignalMissile(GameEventType eventType,
                                     ItemObject itemObject,
                                     boolean seen,
                                     int y,
@@ -337,7 +321,7 @@ public class EventsHandler {
      * @param height    The height of the area/size
      * @param width     The width of the area/size
      */
-    public static void eventSignalSize(GameEventType eventType, int height, int width) {
+    default void eventSignalSize(GameEventType eventType, int height, int width) {
         gameEventDispatch(eventType, new EventDataSize(height, width));
     }
 
@@ -352,7 +336,7 @@ public class EventsHandler {
      * @param dEnd      The city block distance to the goal of the tunnel
      * @param early     Whether the tunnelling has been stopped early
      */
-    public static void eventSignalTunnel(GameEventType eventType, int nStep, int nPierce, int nDug,
+    default void eventSignalTunnel(GameEventType eventType, int nStep, int nPierce, int nDug,
                                    int dStart, int dEnd, boolean early) {
         gameEventDispatch(eventType, new EventDataTunnel(nStep, nPierce, nDug, dStart, dEnd, early));
     }

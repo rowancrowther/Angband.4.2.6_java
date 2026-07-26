@@ -202,7 +202,7 @@ public class EventsHandler {
      * @param eventType The event type we are signalling
      * @param flag      The boolean value we are sending
      */
-    public static void eventSignalFLag(GameEventType eventType, boolean flag) {
+    public static void eventSignalFlag(GameEventType eventType, boolean flag) {
         gameEventDispatch(eventType, new EventDataBoolean(flag));
     }
 

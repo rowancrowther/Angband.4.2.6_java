@@ -22,8 +22,8 @@ import uk.co.jackoftrades.middle.game.enums.GameEventType;
 /**
  * Callback contract for a registered game-event handler. Implementations react to
  * a fired event of a given {@link GameEventType}, given its {@link GameEventData}
- * payload that registered. This is the Java port of the
- * C original's {@code game_event_handler} function pointer ({@code src/game-event.h}).
+ * payload. This is the Java port of the C original's {@code game_event_handler}
+ * function pointer ({@code src/game-event.h}).
  *
  * @author Rowan Crowther
  */

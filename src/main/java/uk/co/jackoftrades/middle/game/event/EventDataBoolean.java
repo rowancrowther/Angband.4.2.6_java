@@ -31,7 +31,7 @@ public class EventDataBoolean implements GameEventData {
      *
      * @author Rowan Crowther
      */
-    public boolean value;
+    private boolean value;
 
     /**
      * Build the payload with an explicit value.

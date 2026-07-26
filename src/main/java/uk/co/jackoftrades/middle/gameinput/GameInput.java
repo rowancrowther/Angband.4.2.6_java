@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.gameinput;
 
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
@@ -25,6 +26,7 @@ import uk.co.jackoftrades.middle.magic.MagicSpell;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.GetItemFlags;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerAbility;
 
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +60,92 @@ public interface GameInput {
      */
     record SpellSelection(ItemObject book, MagicSpell spell) {
     }
+
+    /**
+     * The bounds of the visible map area returned by {@link #getPanel}. C wrote four coordinates
+     * through out-parameters - {@code min_y}/{@code min_x} and {@code max_y}/{@code max_x}; since map
+     * rows grow downward and columns rightward, the minima are the top-left corner and the maxima the
+     * bottom-right, which the port pairs as two {@link Loc}s.
+     *
+     * @param topLeft     the top-left corner (C's {@code min_y}/{@code min_x})
+     * @param bottomRight the bottom-right corner (C's {@code max_y}/{@code max_x})
+     */
+    record Rectangle(Loc topLeft, Loc bottomRight) {
+    }
+
+    /**
+     * Asks the player a yes/no question - the port of C's {@code get_check}. Unlike the value
+     * getters there is no abort channel; declining (or no UI) is simply "no".
+     *
+     * @param prompt the question to put to the player, taking the form "Query? "
+     * @return {@code true} if the player answered yes, {@code false} otherwise
+     */
+    boolean getCheck(String prompt);
+
+    /**
+     * Prompts the player for a single keypress - the port of C's {@code get_com}. C wrote the key
+     * through a {@code char *} out-parameter and returned whether the player accepted; here the key
+     * is the {@link Optional} return.
+     *
+     * @param prompt the prompt to show, taking the form "Command: "
+     * @return the key pressed, or empty if the player escaped
+     */
+    Optional<Character> getCom(String prompt);
+
+    /**
+     * Asks the player to choose a curse to remove from an object - the port of C's {@code get_curse}.
+     * The result is the index of the chosen curse within the object's curses.
+     *
+     * @param object     the cursed object whose curses are offered
+     * @param diceString the spell-strength text shown in the prompt (input only - C threads it into
+     *                   the menu header for display, it is not written back)
+     * @return the chosen curse index, or empty if the player aborted
+     */
+    Optional<Integer> getCurse(ItemObject object, String diceString);
+
+    /**
+     * Reports the bounds of the visible map area (the "panel") - the port of C's {@code get_panel}.
+     * C wrote four coordinates through out-parameters; the port returns them as a {@link Rectangle}.
+     *
+     * @return the panel bounds, or empty when none is available (C's no-op leaves them unset)
+     */
+    Optional<Rectangle> getPanel();
+
+    /**
+     * Tests whether a map grid lies within the visible panel - the port of C's {@code panel_contains}.
+     * There is no abort channel; note the absent-hook fall-back is {@code true}, so non-UI logic
+     * treats every grid as on-panel rather than culling it.
+     *
+     * @param location the grid to test
+     * @return {@code true} if the grid is within the panel
+     */
+    boolean panelContains(Loc location);
+
+    /**
+     * Reports whether the map is currently shown - the port of C's {@code map_is_visible}. As with
+     * {@link #panelContains}, the absent-hook fall-back is {@code true}.
+     *
+     * @return {@code true} if the map is currently visible
+     */
+    boolean mapIsVisible();
+
+    /**
+     * Displays the player's abilities - the port of C's {@code view_ability_menu}. This is a
+     * display-only action with no result; when no UI is installed it does nothing.
+     *
+     * @param abilityList the abilities to show
+     */
+    void viewAbilityMenu(List<PlayerAbility> abilityList);
+
+    /**
+     * Asks the player to confirm enabling the dangerous debug commands - the port of C's
+     * {@code confirm_debug}. Note this hook's C fall-back is not a simple decline: it warns and then
+     * defers to {@link #getCheck}, so an implementation cannot faithfully stand in until the
+     * message-output seam is available.
+     *
+     * @return {@code true} if the player confirmed
+     */
+    boolean confirmDebug();
 
     /**
      * Asks for a repeated-movement direction - the port of C's {@code get_rep_dir}.

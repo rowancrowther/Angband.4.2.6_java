@@ -25,6 +25,7 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
@@ -150,25 +151,38 @@ public class EventsHandler {
     }
 
     /**
-     * Add every handler in a list to the registry for a given event type.
+     * Register a single handler against every event type in a set, binding one
+     * listener to a group of related events in one call. This is the Java port of
+     * the C original's {@code event_add_handler_set} ({@code src/game-event.c}):
+     * the "set" is a set of event <em>types</em> sharing one handler, not a set of
+     * handlers - each type gets its own registration via {@link #eventAddHandler}.
+     * Mirrors the C caller in {@code ui-display.c}, where one {@code update_sidebar}
+     * handler is bound across the whole {@code player_events} group at once.
      *
-     * @param eventType The event type that we are adding this ArrayList to
-     * @param records   An ArrayList of EventHandlerInterfaces
+     * @param eventTypes the event types to register the handler against
+     * @param record     the handler to register for each of those event types
      */
-    public static void eventAddHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records) {
-        for (EventHandlerInterface record : records) {
+    public static void eventAddHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
+        for (GameEventType eventType : eventTypes) {
             eventAddHandler(eventType, record);
         }
     }
 
     /**
-     * Remove all the events in a given list
+     * Deregister a single handler from every event type in a set, the inverse of
+     * {@link #eventAddHandlerSet} and the Java port of the C original's
+     * {@code event_remove_handler_set} ({@code src/game-event.c}). Each type is
+     * unbound individually via {@link #eventRemoveHandler}. Symmetric with the add
+     * side: passing the same {@code eventTypes} group used to register a handler
+     * tears down exactly those bindings, as the C caller does in {@code ui-display.c}
+     * by handing the same {@code player_events} group back to remove
+     * {@code update_sidebar}.
      *
-     * @param eventType The event type of the events we are going to remove
-     * @param records   An ArrayList of EventHandlerInterfaces
+     * @param eventTypes the event types to remove the handler from
+     * @param record     the handler to deregister from each of those event types
      */
-    public static void eventRemoveHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records) {
-        for (EventHandlerInterface record : records) {
+    public static void eventRemoveHandlerSet(List<GameEventType> eventTypes, @NotNull EventHandlerInterface record) {
+        for (GameEventType eventType : eventTypes) {
             eventRemoveHandler(eventType, record);
         }
     }

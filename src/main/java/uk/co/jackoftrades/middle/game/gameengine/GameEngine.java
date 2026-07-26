@@ -23,7 +23,6 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Screen;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 /**
@@ -87,7 +86,6 @@ public class GameEngine {
         Colour.init();
 
         screen.setStatusLabelText("Initializing events handler...");
-        EventsHandler handler = EventsHandler.getInstance();
         screen.setStatusLabelText("Initialized game constants...");
         GameConstants.init();
         screen.setStatusLabelText("Select New Game from File menu to start the game...");

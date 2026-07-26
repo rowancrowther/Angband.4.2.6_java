@@ -25,73 +25,52 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * The central event bus: a singleton registry mapping each {@link GameEventType}
+ * The central event bus: a static registry mapping each {@link GameEventType}
  * to its list of {@link EventHandlerInterface} listeners, with dispatch and a
  * family of {@code eventSignal*} convenience methods that build the appropriate
- * {@link GameEventData} payload. This is the Java port of the C original's
- * game-event system ({@code src/game-event.c}), decoupling game logic from the
- * UI that reacts to it.
+ * {@link GameEventData} payload. State and behaviour are entirely static - the
+ * per-type lists are created once by a static initialiser on class load - mirroring
+ * the C original's file-scope {@code event_handlers} array rather than an object.
+ * This is the Java port of the C game-event system ({@code src/game-event.c}),
+ * decoupling game logic from the UI that reacts to it.
  *
  * @author Rowan Crowther
  */
 public class EventsHandler {
     /**
-     * A handler paired with the user/context it was registered for.
+     * The registry of listeners: each {@link GameEventType} mapped to its list of
+     * registered handlers. This is the Java port of the C original's
+     * {@code event_handlers[N_GAME_EVENTS]} array ({@code src/game-event.c}) - one
+     * handler list per event type.
      *
-     * @param handler the event handler
-     * @param user    the registering user/context
+     * <p>The per-type list is a {@link CopyOnWriteArrayList} rather than a plain
+     * {@code ArrayList} to make dispatch re-entrant-safe. {@link #gameEventDispatch}
+     * iterates the list while handlers run, and a handler may register or deregister
+     * another - or itself - as a side effect. Copy-on-write hands the dispatch loop a
+     * stable snapshot for the duration of the walk, so such a mutation cannot raise
+     * {@link java.util.ConcurrentModificationException} the way an {@code ArrayList}'s
+     * fail-fast iterator would; the change instead takes effect on the next dispatch.
+     *
+     * <p>This is <em>not</em> a thread-safety choice - the game runs single-threaded -
+     * but the fit is the same one copy-on-write is built for: an observer registry
+     * whose writes are rare (handlers are registered at initialisation and screen
+     * transitions) but whose reads are frequent and hot ({@code EVENT_MAP} alone
+     * fires per changed grid), where copy-on-write reads are lock- and
+     * allocation-free. The write cost - copying the backing array on each
+     * registration - is paid off the hot path and is trivial here, as the lists are
+     * short (typically one handler, at most a few).
+     *
      * @author Rowan Crowther
      */
-    private record EventRecord(EventHandlerInterface handler, EventUser user) {
-    }
+    private static final HashMap<GameEventType, CopyOnWriteArrayList<EventHandlerInterface>> handlers = new HashMap<>();
 
-    /**
-     * The registry of listeners, keyed by event type.
-     *
-     * @author Rowan Crowther
-     */
-    private static final HashMap<GameEventType, ArrayList<EventHandlerInterface>> handlers = new HashMap<>();
-
-    /**
-     * The lazily-created singleton instance.
-     *
-     * @author Rowan Crowther
-     */
-    private static EventsHandler instance;
-
-    /**
-     * Private constructor: pre-populates an empty listener list for every event
-     * type so dispatch never has to null-check.
-     *
-     * @author Rowan Crowther
-     */
-    private EventsHandler() {
-        for (GameEventType eventType : GameEventType.values()) {
-            handlers.put(eventType, new ArrayList<>());
+    static {
+        for (GameEventType type : GameEventType.values()) {
+            handlers.put(type, new CopyOnWriteArrayList<>());
         }
-    }
-
-    /**
-     * Create the singleton instance if it does not yet exist.
-     *
-     * @author Rowan Crowther
-     */
-    private static void initialise() {
-        if (instance == null) instance = new EventsHandler();
-    }
-
-    /**
-     * Get an instance of this events handler - note there is only one.
-     *
-     * @return The instance of the events handler
-     */
-    public static EventsHandler getInstance() {
-        if (instance == null)
-            instance = new EventsHandler();
-
-        return instance;
     }
 
     /**
@@ -101,7 +80,7 @@ public class EventsHandler {
      * @param handler   the EventHandlerInterface which will handle the event type
      */
     public static void eventAddHandler(GameEventType eventType, EventHandlerInterface handler) {
-        ArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
+        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
         currentList.add(handler);
     }
 
@@ -112,36 +91,43 @@ public class EventsHandler {
      * @param handler   The event handler we are removing
      */
     public static void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler) {
-        ArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
+        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
         currentList.remove(handler);
     }
 
+    /**
+     * Reset the registry for a new game: removes every registered handler, leaving
+     * each event type with an empty list. The lists themselves already exist (built
+     * by the static initialiser on class load); this only clears their contents.
+     *
+     * @author Rowan Crowther
+     */
     public static void init() {
         eventRemoveAllHandlers();
     }
 
     /**
-     * Dispatch an event down the handlers for it, sending the event type and some incoming data
+     * Dispatch an event to every handler registered for its type, passing the
+     * event type and payload to each.
      *
-     * @param eventType The event time we are triggering
-     * @param data      The data we are sending to the events
-     * @param user      The caller of this event
-     */
-    public static void gameEventDispatch(GameEventType eventType, GameEventData data, EventUser user) {
-        ArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
-        for (EventHandlerInterface handler : currentList) {
-            handler.dispatch(eventType, data, user);
-        }
-    }
-
-    /**
-     * Dispatch an event down the handlers for it, sending the event type and some incoming data
+     * <p><b>Ordering contract.</b> Handlers are dispatched in registration order
+     * (first registered, first called). This is a deterministic port-specific
+     * guarantee: the C original prepended to a linked-list head and so dispatched
+     * most-recently-registered first, but that order was an artifact of O(1)
+     * head-insertion, not designed behaviour, and - because dispatch is
+     * non-consuming, with every handler always running - nothing depended on it.
+     * Handlers therefore must not rely on firing order for correctness; the fixed
+     * registration order exists only to make dispatch deterministic and testable
+     * (see {@code EventsHandlerTest.handlersFireInRegistrationOrder}).
      *
-     * @param eventType The event time we are triggering
-     * @param data      The data we are sending to the events
+     * @param eventType the kind of event being triggered
+     * @param data      the payload sent to each handler
      */
     public static void gameEventDispatch(GameEventType eventType, GameEventData data) {
-        gameEventDispatch(eventType, data, null);
+        CopyOnWriteArrayList<EventHandlerInterface> currentList = handlers.get(eventType);
+        for (EventHandlerInterface handler : currentList) {
+            handler.dispatch(eventType, data);
+        }
     }
 
     /**
@@ -150,7 +136,7 @@ public class EventsHandler {
      * @param eventType The event type we are removing the handlers of
      */
     public static void eventRemoveHandlerType(GameEventType eventType) {
-        ArrayList<EventHandlerInterface> newList = new ArrayList<>();
+        CopyOnWriteArrayList<EventHandlerInterface> newList = new CopyOnWriteArrayList<>();
         handlers.put(eventType, newList);
     }
 
@@ -164,13 +150,12 @@ public class EventsHandler {
     }
 
     /**
-     * Add an ArrayList of EventHandlerInterfaces with a given EventUser to the relavant Event queue in the Handler
+     * Add every handler in a list to the registry for a given event type.
      *
      * @param eventType The event type that we are adding this ArrayList to
      * @param records   An ArrayList of EventHandlerInterfaces
-     * @param user      NOT USED - TODO: Find out if we need to use this
      */
-    public static void eventAddHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records, EventUser user) {
+    public static void eventAddHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records) {
         for (EventHandlerInterface record : records) {
             eventAddHandler(eventType, record);
         }
@@ -181,9 +166,8 @@ public class EventsHandler {
      *
      * @param eventType The event type of the events we are going to remove
      * @param records   An ArrayList of EventHandlerInterfaces
-     * @param user      NOT USED - TODO: Find out if we need to use this
      */
-    public static void eventRemoveHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records, EventUser user) {
+    public static void eventRemoveHandlerSet(GameEventType eventType, @NotNull ArrayList<EventHandlerInterface> records) {
         for (EventHandlerInterface record : records) {
             eventRemoveHandler(eventType, record);
         }

@@ -25,7 +25,6 @@ public class GameState {
     private static Player mainPlayer;
     private static Chunk cave;
     private static CommandQueue commandQueue;
-    private static EventsHandler eventsHandler;
 
     public static Player getPlayer() {
         return GameState.mainPlayer;
@@ -58,15 +57,6 @@ public class GameState {
                 1, 1, 15, mainPlayer);
         commandQueue = new CommandQueue(mainPlayer);
         EventsHandler.init();
-        eventsHandler = EventsHandler.getInstance();
-    }
-
-    public static EventsHandler getEventsHandler() {
-        return eventsHandler;
-    }
-
-    public static void setEventsHandler(EventsHandler eventsHandler) {
-        GameState.eventsHandler = eventsHandler;
     }
 
     /**

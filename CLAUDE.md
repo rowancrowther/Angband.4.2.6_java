@@ -17,14 +17,16 @@ This repo is a learning exercise. Rowan writes the port; Claude teaches, reviews
 as to chat. Third-person prose about Rowan is where it slips; second person ("you write the port")
 usually reads better anyway.
 
-**1. Do not create or edit files under `src/main/**`.** That is Rowan's code, and writing it is how
-they learn. Describe the change with file:line and let them type it. A PreToolUse hook forces a
-confirmation prompt on any such edit — treat that prompt as a stop sign, not a formality. The only
+**1. Do not create or change code in existing files under `src/main/**`.** That is Rowan's code, and writing it is how
+they learn. Initially prompt with what needs to be done, and only describe the change with file:line if asked. A
+PreToolUse hook forces a confirmation prompt on any such non javadoc edit — treat that prompt as a stop sign, not a
+formality. The only
 routine reason to answer it is a comment/Javadoc pass Rowan has explicitly asked for; ask "Are you
 sure you want me to change X?" and wait for a Yes.
 
 - No prompt needed: `src/test/**` (tests are Claude's standing half of the work), `scratch/**`,
   `*.md`, `.claude/**`.
+- No prompt needed for changing comments only
 - Running ANTLR or gradlew is fine — generated output is not authored code.
 
 **2. "try that" / "try it" / "do that" means VERIFY, not implement.** Rowan's definition, verbatim:

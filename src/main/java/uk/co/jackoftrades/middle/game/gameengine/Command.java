@@ -744,42 +744,38 @@ public class Command {
      * @param allowRandom whether to offer an extra "choose at random" option, whose result is {@code -2}
      * @return the chosen index (or {@code -2} for random), or empty if the player aborted
      */
-    public Optional<Integer> getEffectFromList(String argName, String prompt,
+    public EffectChoice getEffectFromList(String argName, String prompt,
                                                List<Effect> effects, int count, boolean allowRandom) {
         if (count == -1) {
             count = effects.size();
         }
+        final int num = count;
 
-        Optional<Integer> choice = getArgChoice(argName);
-        boolean promptPlayer = choice.isEmpty();
+        EffectChoice choice = null;
 
-        int playerSel;
-        if (!promptPlayer) {
-            playerSel = choice.get();
-            if ((playerSel != -2 || !allowRandom) && (playerSel < 0 || playerSel >= count))
-                promptPlayer = true;
+        Optional<Integer> stored = getArgChoice(argName);
+
+        if (stored.isPresent()) {
+            int v = stored.get();
+            if (v == -2 && allowRandom) choice = new EffectChoice.Random();
+            else if (v >= 0 && v < num) choice = new EffectChoice.Index(v);
         }
 
-        EffectChoice effectChoice = new EffectChoice.Aborted();
-        if (promptPlayer) {
-            effectChoice = GameInputHolder.getInstance().getEffectFromList(prompt, effects, count, allowRandom);
+        if (choice == null) {
+            choice = GameInputHolder.getInstance().getEffectFromList(prompt, effects, count, allowRandom);
         }
 
-        if (effectChoice instanceof EffectChoice.Aborted()) return Optional.empty();
-
-        int selection = 0;
-        boolean isRandom = false;
-        if (effectChoice instanceof EffectChoice.Random()) isRandom = true;
-
-        if (effectChoice instanceof EffectChoice.Index(int i))
-            selection = i;
-
-        if ((isRandom && allowRandom) ||
-                (selection >= 0 && selection < count)) {
-            setArgChoice(argName, selection);
-            return Optional.of(selection);
-        }
-        return Optional.empty();
+        return switch (choice) {
+            case EffectChoice.Random r when allowRandom -> {
+                setArgChoice(argName, -2);
+                yield new EffectChoice.Random();
+            }
+            case EffectChoice.Index(int i) when i >= 0 && i < num -> {
+                setArgChoice(argName, i);
+                yield new EffectChoice.Index(i);
+            }
+            default -> new EffectChoice.Aborted();
+        };
     }
 
     /**

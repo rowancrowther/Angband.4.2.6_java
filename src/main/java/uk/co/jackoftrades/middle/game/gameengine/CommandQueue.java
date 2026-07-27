@@ -84,12 +84,30 @@ public class CommandQueue {
      */
     private Command currentCommand = null;
 
+    /**
+     * The player whose on-screen state line this queue flags for redraw when the repeat count
+     * changes - the port's handle on the global {@code player} that C's {@code cmd_set_repeat} and
+     * {@code cmd_cancel_repeat} reach through as {@code player->upkeep->redraw |= PR_STATE}. Held as
+     * an injected, swappable reference (see {@link #setPlayer}) rather than a hard global, so the
+     * queue can be re-pointed at a new player across a game restart and driven by a test's own player.
+     */
     private Player player;
 
+    /**
+     * Creates a queue bound to the player whose state line its repeat changes will redraw.
+     *
+     * @param player the player to flag for {@code PR_STATE} redraws (see {@link #player})
+     */
     public CommandQueue(Player player) {
         this.player = player;
     }
 
+    /**
+     * Re-points the queue at a different player - used when a new game or reload replaces the player
+     * object, so the queue keeps flagging the live player's state line.
+     *
+     * @param mainPlayer the player to bind to
+     */
     public void setPlayer(Player mainPlayer) {
         this.player = mainPlayer;
     }
@@ -97,7 +115,7 @@ public class CommandQueue {
     /**
      * Removes and returns the next command to carry out, or {@code null} if the queue is empty -
      * the port of C's {@code cmdq_pop} dequeue step (the dispatch itself lives in
-     * process. A non-background command handed out here is recorded as
+     * {@link #commandPop}). A non-background command handed out here is recorded as
      * {@link #lastCommand}; background commands deliberately do not update it, matching C's
      * {@code if (!cmd->background_command)} guard.
      *
@@ -123,6 +141,32 @@ public class CommandQueue {
         if (lastCommand == null || lastCommand.getCode() == CommandCode.CMD_NULL)
             return null;
         return lastCommand;
+    }
+
+    /**
+     * Returns the most-recently-pushed command still waiting in the queue, without removing it - the
+     * port of C's {@code cmdq_peek} ({@code cmd-core.c}). It exists for one idiom: a caller pushes a
+     * bare command and then reaches back for it to attach arguments, exactly as C writes
+     * {@code cmdq_push(CMD_FIRE); cmd_set_arg_item(cmdq_peek(), "item", ammo)}. When several commands
+     * are pushed in a row it follows the latest, so each can be decorated in turn (C's
+     * {@code player-path.c} pushes {@code CMD_OPEN}, decorates it, pushes {@code CMD_PATHFIND}, then
+     * decorates <em>that</em>).
+     *
+     * <p>This is a different question from {@link #viewPrevCommand}: that returns the last command
+     * <em>executed</em> (the {@code CMD_REPEAT} source, C's {@code last_command}); this returns the
+     * last command <em>pushed</em> (C's slot before {@code cmd_head}), which has not run yet.
+     *
+     * <p><b>Divergence from C.</b> C reads a fixed ring slot, so {@code cmdq_peek} returns a (possibly
+     * stale) command even when the logical queue is empty. Backed by a deque whose {@link
+     * #getNextCommand} <em>removes</em> executed commands, this returns {@code null} on an empty queue
+     * instead. That is safe - and arguably cleaner - because every C caller peeks immediately after a
+     * push, so the queue is never empty at the call; the executing command, once popped, is reached
+     * through {@link #currentCommand}, not here.
+     *
+     * @return the last-pushed pending command, or {@code null} if the queue is empty
+     */
+    public Command commandQueuePeek() {
+        return commandQueue.peekLast();
     }
 
     /**

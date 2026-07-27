@@ -139,7 +139,7 @@ public interface EventsHandler {
      * listener to a group of related events in one call. This is the Java port of
      * the C original's {@code event_add_handler_set} ({@code src/game-event.c}):
      * the "set" is a set of event <em>types</em> sharing one handler, not a set of
-     * handlers - each type gets its own registration via .
+     * handlers - each type gets its own registration via {@link #eventAddHandler}.
      * Mirrors the C caller in {@code ui-display.c}, where one {@code update_sidebar}
      * handler is bound across the whole {@code player_events} group at once.
      *
@@ -156,7 +156,7 @@ public interface EventsHandler {
      * Deregister a single handler from every event type in a set, the inverse of
      * {@link #eventAddHandlerSet} and the Java port of the C original's
      * {@code event_remove_handler_set} ({@code src/game-event.c}). Each type is
-     * unbound individually via . Symmetric with the add
+     * unbound individually via {@link #eventRemoveHandler}. Symmetric with the add
      * side: passing the same {@code eventTypes} group used to register a handler
      * tears down exactly those bindings, as the C caller does in {@code ui-display.c}
      * by handing the same {@code player_events} group back to remove

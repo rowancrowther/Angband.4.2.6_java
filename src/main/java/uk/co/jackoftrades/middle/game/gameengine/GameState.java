@@ -24,6 +24,23 @@ public class GameState {
     private static Player mainPlayer;
     private static Chunk cave;
     private static CommandQueue commandQueue;
+    private static int turn;
+
+    public int getTurn() {
+        return turn;
+    }
+
+    public void incrementTurn() {
+        turn++;
+    }
+
+    public void resetTurnForNewPlayer() {
+        turn = 0;
+    }
+
+    public void resetTurnFromSave(int savedTurnValue) {
+        turn = savedTurnValue;
+    }
 
     public static Player getPlayer() {
         return GameState.mainPlayer;

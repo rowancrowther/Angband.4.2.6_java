@@ -20,52 +20,144 @@ package uk.co.jackoftrades.middle.game.gameengine;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.player.Player;
 
+/**
+ * The mutable state of the game currently in progress — the port's home for the scattered
+ * file-scope globals that C uses as its single implicit "current game" object.
+ *
+ * <p>In the original these live across several translation units ({@code game-world.c} holds the
+ * turn counter, day count and RNG seeds; birth and save/load touch the character-stage flags),
+ * bound together only by all being globals. The port gathers the data half here, next to the
+ * player, cave and command queue it already tracks, and leaves the turn-loop <em>behaviour</em>
+ * to {@link uk.co.jackoftrades.middle.game.GameWorld}. What belongs here is anything that is part
+ * of "this game right now" and is reset on a new character or restored from a save.
+ *
+ * @author Rowan Crowther
+ */
 public class GameState {
+    /**
+     * The player character being controlled — C's {@code player} global.
+     */
     private static Player mainPlayer;
+    /** The current dungeon level the player occupies — C's {@code cave} global. */
     private static Chunk cave;
+    /** The queue of commands waiting to be executed this session. */
     private static CommandQueue commandQueue;
+    /** The game-turn counter — C's {@code turn} ({@code int32_t}); ticks for every game turn. */
     private static int turn;
+    /**
+     * Days elapsed in game time, driving the day/night cycle — C's {@code daycount}.
+     */
+    private static int dayCount;
+    /**
+     * RNG seed giving this game a consistent set of random artifacts — C's {@code seed_randart}
+     * ({@code uint32_t}, held as a {@code long} here to stay unsigned). Set once at birth and
+     * persisted with the save.
+     */
+    private static long seedRandart;
+    /**
+     * RNG seed giving this game a consistent object-flavour (colour) assignment — C's
+     * {@code seed_flavor}. Set once at birth and persisted with the save.
+     */
+    private static long seedFlavour;
+    /**
+     * True once a character exists — C's {@code character_generated}.
+     */
+    private static boolean characterGenerated;
+    /**
+     * True once that character has a dungeon around them — C's {@code character_dungeon}.
+     */
+    private static boolean characterDungeon;
 
+    /**
+     * @return the current game-turn count
+     */
     public int getTurn() {
         return turn;
     }
 
+    /**
+     * @return the number of game days elapsed
+     */
+    public int getDaycount() {
+        return dayCount;
+    }
+
+    /**
+     * Advances the game clock by one turn.
+     */
     public void incrementTurn() {
         turn++;
     }
 
+    /**
+     * Resets the game clock to zero, as done when a fresh character is born.
+     */
     public void resetTurnForNewPlayer() {
         turn = 0;
     }
 
+    /**
+     * Restores the game clock to a value read back from a save file.
+     *
+     * @param savedTurnValue the turn count recorded in the save
+     */
     public void resetTurnFromSave(int savedTurnValue) {
         turn = savedTurnValue;
     }
 
+    /**
+     * @return the player character currently being controlled
+     */
     public static Player getPlayer() {
         return GameState.mainPlayer;
     }
 
+    /**
+     * Sets the player character for the current game.
+     *
+     * @param mainPlayer the player to make current
+     */
     public static void setPlayer(Player mainPlayer) {
         GameState.mainPlayer = mainPlayer;
     }
 
+    /**
+     * @return the dungeon level the player currently occupies
+     */
     public static Chunk getCave() {
         return GameState.cave;
     }
 
+    /**
+     * Sets the dungeon level the player currently occupies.
+     *
+     * @param cave the level to make current
+     */
     public static void setCave(Chunk cave) {
         GameState.cave = cave;
     }
 
+    /**
+     * Sets the command queue backing this session.
+     *
+     * @param commandQueue the queue to use
+     */
     public static void setCommandQueue(CommandQueue commandQueue) {
         GameState.commandQueue = commandQueue;
     }
 
+    /**
+     * @return the command queue backing this session
+     */
     public static CommandQueue getCommandQueue() {
         return GameState.commandQueue;
     }
 
+    /**
+     * Stands up a fresh game state: a new player, a placeholder current level around them, the
+     * command queue that feeds the engine, and the event bus. Called once when a game begins,
+     * before the turn loop starts.
+     */
     public static void initGameState() {
         mainPlayer = new Player();
         cave = new Chunk("Current Level", 0, 0, 0, 0,

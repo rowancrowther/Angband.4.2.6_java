@@ -25,7 +25,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.effect.Effect;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
@@ -43,7 +43,7 @@ import java.util.Map;
  * <p>This is where interpretation happens:
  * <ul>
  *   <li>{@code type:} resolves to an {@link ObjectBase} by tval
- *       ({@code TValue.valueOf("TV_"+…)} then {@link GameConstants#getBaseFromTVal});</li>
+ *       ({@code TValue.valueOf("TV_"+…)} then {@link ObjectRegistry#getBaseFromTVal});</li>
  *   <li>the rand fields (attack {@code hd}/to-h/to-d, armour to-a, {@code charges}, pile stack,
  *       {@code pval}) become {@link Random}s via {@code Random.parseStr}, while the scalar fields
  *       (level/weight/cost/power, armour base {@code ac}, alloc, pile chance) are parsed as ints;</li>
@@ -87,7 +87,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 String tVal = "TV_" + record.tValue().toUpperCase().replace(" ", "_");
                 try {
                     tValue = TValue.valueOf(tVal);
-                    base = GameConstants.getBaseFromTVal(tValue);
+                    base = ObjectRegistry.getBaseFromTVal(tValue);
                 } catch (IllegalArgumentException e) {
                     errors.add("Object kind starting at line: " + line + " has " +
                             "an unknown type: " + record.tValue());
@@ -318,7 +318,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             Map<Brand, Boolean> brands = new HashMap<>();
             boolean illegalBrand = false;
             for (String brand : record.brand()) {
-                Brand b = GameConstants.lookupBrandCode(brand);
+                Brand b = ObjectRegistry.lookupBrandCode(brand);
                 if (b == null) {
                     errors.add("Object kind starting at line: " + line + " has " +
                             "an unknown brand: " + brand);
@@ -330,7 +330,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             Map<Slay, Boolean> slays = new HashMap<>();
             boolean illegalSlay = false;
             for (String slay : record.slay()) {
-                Slay s = GameConstants.lookupSlay(slay);
+                Slay s = ObjectRegistry.lookupSlay(slay);
                 if (s == null) {
                     errors.add("Object kind starting at line: " + line + " has " +
                             "an unknown slay: " + slay);
@@ -342,7 +342,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             Map<Curse, CurseEntry> curses = new HashMap<>();
             boolean illegalCurse = false;
             for (String curseName : record.curse().keySet()) {
-                Curse curse = GameConstants.lookupCurse(curseName);
+                Curse curse = ObjectRegistry.lookupCurse(curseName);
                 if (curse == null) {
                     errors.add("Object kind starting at line: " + line + " has " +
                             "an unknown curse: " + curseName);

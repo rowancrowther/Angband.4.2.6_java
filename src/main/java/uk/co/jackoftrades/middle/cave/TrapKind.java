@@ -22,7 +22,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
 import java.util.Collections;
@@ -215,7 +215,7 @@ public class TrapKind {
      * @author Rowan Crowther
      */
     public static TrapKind lookupTrap(String description) {
-        return GameConstants.lookupTrap(description);
+        return TerrainRegistry.lookupTrap(description);
     }
 
     /**

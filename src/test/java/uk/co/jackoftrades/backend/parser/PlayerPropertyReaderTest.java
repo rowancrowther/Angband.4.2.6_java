@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -60,9 +59,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * two <em>different</em> soft-error types in a single record and confirms both
  * are reported together.
  *
- * <p>The assembler resolves {@code bindui} targets against the {@code GameConstants}
+ * <p>The assembler resolves {@code bindui} targets against the {@code UIRegistry}
  * UI-entry registry, so {@link #seedRegistries()} loads the real renderer, base
- * and entry files and injects them into {@code GameConstants}' private static
+ * and entry files and injects them into {@code UIRegistry}' private static
  * fields via reflection, independent of full-game init order.
  *
  * @author Rowan Crowther
@@ -91,7 +90,7 @@ class PlayerPropertyReaderTest {
     }
 
     private static void setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         f.set(null, value);
     }

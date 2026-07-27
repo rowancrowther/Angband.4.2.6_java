@@ -15,14 +15,14 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.globals;
+package uk.co.jackoftrades.middle.game.globals.data;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
 
 /**
- * Melee critical level, used to determine the level of the critical, and extra damage
+ * Ranged critical level, used to determine the level of the critical, and extra damage
  * it does. Each record has a power cutoff, and whether that level is triggered or not
- * depends on what the power of the melee attack is
+ * depends on what the power of the ranged attack is
  *
  * @param powerCutoff      Cutoff for power for this level
  * @param damageMultiplier Damage multiplier for this level
@@ -31,6 +31,6 @@ import uk.co.jackoftrades.middle.enums.MessageType;
  *                         when a critical at this level occurs
  * @author Rowan Crowther
  */
-public record MeleeCriticalLevelData(Integer powerCutoff, Integer damageMultiplier, Integer damageAddition,
-                                     MessageType messageType) {
+public record RangedCriticalLevelData(int powerCutoff, int damageMultiplier, int damageAddition,
+                                      MessageType messageType) {
 }

@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * End-to-end throughput tests for {@link TrapReader}: file text -> {@code TrapLexer}/
  * {@code TrapGrammar} -> {@code TrapParseRecord} -> {@code TrapAssembler} -> {@link TrapKind},
- * the exact chain {@code GameConstants.loadTraps()} drives.
+ * the exact chain {@code TerrainDataLoader.loadTraps()} drives.
  *
  * <p>These pin the assembler half: the {@code name:}/{@code desc:} crossover (C wires the name
  * line's second field into {@code desc}/our {@code description} and the {@code desc:} directive
@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * accumulate into lists, that {@code trapKindIndex} is the file position, and both error channels.
  *
  * <p>The shipped {@code trap.txt} uses {@code EF_SUMMON} effects (the summoning runes), which
- * {@code EffectAssembler} resolves via {@link GameConstants#lookupSummon}; loading summons needs
+ * {@code EffectAssembler} resolves via {@link MonsterRegistry#lookupSummon}; loading summons needs
  * monster bases, which need monster pains. Rather than run the whole heavy {@code init()},
  * {@link #seed()} loads {@code pain.txt}, {@code monster_base.txt} and {@code summon.txt} through
  * their readers and injects them into the private static registries by reflection, restoring them
@@ -95,7 +95,7 @@ class TrapReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

@@ -22,7 +22,8 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
@@ -69,7 +70,7 @@ import java.util.Map;
  * <p>
  * <b>Load-order precondition:</b> the shipped {@code curse.txt} uses
  * {@code EF_SUMMON}, which {@code EffectAssembler} resolves via
- * {@link GameConstants#lookupSummon}. The summon registry must therefore be
+ * {@link MonsterRegistry#lookupSummon}. The summon registry must therefore be
  * populated before curse assembly runs (mirroring C's summons-before-curses
  * order).
  *
@@ -103,7 +104,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 ObjectBase objectBase = null;
                 try {
                     TValue tValue = TValue.valueOf("TV_" + base.toUpperCase().replace(" ", "_"));
-                    objectBase = GameConstants.getBaseFromTVal(tValue);
+                    objectBase = ObjectRegistry.getBaseFromTVal(tValue);
                 } catch (IllegalArgumentException ignored) {
                     // falls through to the null check below with the same error
                 }

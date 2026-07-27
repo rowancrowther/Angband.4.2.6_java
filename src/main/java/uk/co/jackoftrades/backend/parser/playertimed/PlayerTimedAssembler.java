@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -51,7 +51,7 @@ import java.util.List;
  * is surfaced in a single pass. Callers decide how to treat a non-empty {@code errors} list.
  *
  * <p><b>Load-order dependency:</b> the {@code ATT_*} statuses resolve a brand/slay code through
- * {@link GameConstants#lookupBrandCode}/{@link GameConstants#lookupSlay}, so {@code brand.txt} and
+ * {@link ObjectRegistry#lookupBrandCode}/{@link ObjectRegistry#lookupSlay}, so {@code brand.txt} and
  * {@code slay.txt} must already be loaded when this runs.
  *
  * @author Rowan Crowther
@@ -197,7 +197,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             String brand = record.brand();
             Brand b = null;
             if (!brand.isEmpty()) {
-                b = GameConstants.lookupBrandCode(brand);
+                b = ObjectRegistry.lookupBrandCode(brand);
                 if (b == null) {
                     errors.add("Player Timed Record at line: " + line + " has " +
                             "an unknown brand: " + brand);
@@ -207,7 +207,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             Slay s = null;
             String slay = record.slay();
             if (!slay.isEmpty()) {
-                s = GameConstants.lookupSlay(slay);
+                s = ObjectRegistry.lookupSlay(slay);
                 if (s == null) {
                     errors.add("Player Timed Record at line: " + line + " has " +
                             "an unknown slay: " + slay);

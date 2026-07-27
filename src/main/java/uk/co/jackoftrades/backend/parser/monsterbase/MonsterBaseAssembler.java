@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.monsterbase;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -78,7 +78,7 @@ public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, L
                         "invalid pain reference: " + record.pain());
                 continue;
             }
-            MonsterPain pain = GameConstants.lookupMonsterPain(type);
+            MonsterPain pain = MonsterRegistry.lookupMonsterPain(type);
             if (pain == null) {
                 errors.add("Block at line: " + line + " has an " +
                         "unknown pain reference: " + record.pain());

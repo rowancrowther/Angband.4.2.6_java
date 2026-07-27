@@ -22,7 +22,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,7 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
 
             String name = record.name();
             String rendererName = record.renderer();
-            UIEntryRenderer renderer = GameConstants.getUIEntryRenderer(rendererName, errors);
+            UIEntryRenderer renderer = UIRegistry.getUIEntryRenderer(rendererName, errors);
             if (renderer == null) {
                 errors.add("Block starting on line: " + line +
                         " has renderer " + rendererName +

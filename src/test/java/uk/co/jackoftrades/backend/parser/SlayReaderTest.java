@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.objects.Slay;
@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and the skip-and-continue soft-error channel that {@code GrammarDriver} threads through
  * {@link ParseResult}, plus the fail-closed hard-error channel.
  *
- * <p>The assembler resolves {@code base:} via {@link GameConstants#getMonsterBase}, which reads the
+ * <p>The assembler resolves {@code base:} via {@link MonsterRegistry#getBaseFromName}, which reads the
  * static {@code monsterBases} list (and throws if it is {@code null}); loading those in turn needs
  * {@code monsterPains}. Rather than run the whole heavy {@code GameConstants.init()}, {@link #seed()}
  * loads {@code pain.txt} then {@code monster_base.txt} directly through their readers and injects the
@@ -84,7 +84,7 @@ class SlayReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import uk.co.jackoftrades.middle.game.globals.GameConstantsData;
+import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 
 import java.io.IOException;
 import java.nio.file.Files;

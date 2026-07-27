@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.objects;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
@@ -144,7 +145,7 @@ public class ObjectBase {
 
     /**
      * Set the running count of svals allocated under this base. Used as kinds are registered so each
-     * new kind can be handed the next sval (see {@link uk.co.jackoftrades.middle.game.globals.GameConstants#addObjectKind}).
+     * new kind can be handed the next sval (see {@link ObjectRegistry#addObjectKind}).
      *
      * @param numSvals the new sval count
      * @author Rowan Crowther

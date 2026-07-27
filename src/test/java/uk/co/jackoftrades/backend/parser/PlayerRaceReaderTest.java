@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>Unlike a self-contained reader, the race assembler resolves two cross-file references at load
  * time — the equipment {@link PlayerBody} (always index 0) and the background
- * {@link PlayerHistoryChart} — through {@link GameConstants}. {@link #seed()} therefore loads the
+ * {@link PlayerHistoryChart} — through {@link PlayerRegistry}. {@link #seed()} therefore loads the
  * real {@code body.txt} and {@code history.txt} through their own readers and injects them into the
  * private static registries by reflection, restoring them afterwards so no global state leaks to
  * other suites.
@@ -83,7 +83,7 @@ class PlayerRaceReaderTest {
 
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
-     * {@link GameConstants} does not leak into other test suites.
+     * the registries do not leak into other test suites.
      *
      * @author Rowan Crowther
      */
@@ -120,7 +120,7 @@ class PlayerRaceReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);
@@ -232,7 +232,7 @@ class PlayerRaceReaderTest {
     @Test
     void everyRaceGetsTheHumanoidBodyNotNull() throws Exception {
         // Guards the lookupPlayerBody(0) fix: it must return the real body, not null.
-        PlayerBody humanoid = GameConstants.lookupPlayerBody(0);
+        PlayerBody humanoid = PlayerRegistry.lookupPlayerBody(0);
         for (PlayerRace r : new PlayerRaceReader().parse(REAL_FILE)) {
             PlayerBody body = field(r, "body");
             assertNotNull(body, () -> r.getName() + " has a null body");

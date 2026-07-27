@@ -24,6 +24,8 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.monsters.*;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -43,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code MonsterGrammar} -> {@link uk.co.jackoftrades.backend.parser.monster.MonsterParseRecord}
  * -> {@link uk.co.jackoftrades.backend.parser.monster.MonsterAssembler} -> {@link MonsterRace}.
  *
- * <p>The monster assembler resolves five registries through {@link GameConstants} — monster bases,
+ * <p>The monster assembler resolves five lookups across {@link MonsterRegistry} and {@link ObjectRegistry} — monster bases,
  * blow methods, blow effects, object kinds (for drops and mimics) and the visuals cycler table — so
  * rather than seed each by reflection, {@link #bootstrap()} runs the whole {@link GameConstants#init()}
  * chain (the same order the game loads them), which every other registry-dependent reader test in this
@@ -119,10 +121,7 @@ class MonsterReaderTest {
      */
     @AfterAll
     static void cleanup() throws Exception {
-        GameConstants.objectKinds.clear();
-        Field f = GameConstants.class.getDeclaredField("kindsByTvalSval");
-        f.setAccessible(true);
-        ((Map<?, ?>) f.get(null)).clear();
+        ObjectRegistry.reset();
     }
 
     // ---- fixture + reflection helpers ------------------------------------
@@ -255,7 +254,7 @@ class MonsterReaderTest {
         assertNotNull(urchin);
 
         // Proof the base is the only source of these two (the urchin record never names them).
-        assertTrue(GameConstants.lookupMonsterBase("townsfolk").getFlags().has(MonsterRaceFlag.RF_SPIRIT));
+        assertTrue(MonsterRegistry.lookupMonsterBase("townsfolk").getFlags().has(MonsterRaceFlag.RF_SPIRIT));
 
         assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_SPIRIT), "inherited from townsfolk base");
         assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_CLEAR_WEB), "inherited from townsfolk base");
@@ -269,7 +268,7 @@ class MonsterReaderTest {
         MonsterRace redMold = byName(real, "red mold");
         assertNotNull(redMold);
 
-        assertTrue(GameConstants.lookupMonsterBase("mold").getFlags().has(MonsterRaceFlag.RF_HURT_FIRE),
+        assertTrue(MonsterRegistry.lookupMonsterBase("mold").getFlags().has(MonsterRaceFlag.RF_HURT_FIRE),
                 "the base carries HURT_FIRE, so there is something to turn off");
 
         assertFalse(redMold.getFlags().has(MonsterRaceFlag.RF_HURT_FIRE), "flags-off:HURT_FIRE removed it");
@@ -312,7 +311,7 @@ class MonsterReaderTest {
 
         BlowEffect effect = declaredField(begBlow, "effect");
         assertNotNull(effect, "an omitted blow effect must default to NONE, not null");
-        assertSame(GameConstants.lookupBlowEffect("NONE"), effect, "the omitted effect is the NONE effect");
+        assertSame(MonsterRegistry.lookupBlowEffect("NONE"), effect, "the omitted effect is the NONE effect");
     }
 
     // ---- friends: two-pass name resolution, Same, substring fallback, role default ----
@@ -323,7 +322,7 @@ class MonsterReaderTest {
         // fully-loaded global registry. filthy street urchin's friends are:
         //   Scrawny cat / Scruffy little dog -- both defined LATER in the file (forward refs) and
         //   case-mismatched vs their lowercase race names -- and Same (the self-reference).
-        MonsterRace urchin = GameConstants.lookupMonsterRace("filthy street urchin");
+        MonsterRace urchin = MonsterRegistry.lookupMonsterRace("filthy street urchin");
         assertNotNull(urchin);
 
         List<?> friends = field(urchin, "friends");
@@ -350,7 +349,7 @@ class MonsterReaderTest {
         // race's own name, so the second pass resolves it back to the urchin with no special-casing
         // in resolveFriends. Found by that substituted name rather than by list position, so this
         // guards the resolution even if the friend order changes.
-        MonsterRace urchin = GameConstants.lookupMonsterRace("filthy street urchin");
+        MonsterRace urchin = MonsterRegistry.lookupMonsterRace("filthy street urchin");
         assertNotNull(urchin);
 
         boolean foundSelf = false;
@@ -366,11 +365,11 @@ class MonsterReaderTest {
     @Test
     void raceLookupIsCaseInsensitiveWithASubstringFallback() {
         // Exact, case-insensitive (C my_stricmp).
-        assertEquals("scrawny cat", GameConstants.lookupMonsterRace("Scrawny Cat").getName());
+        assertEquals("scrawny cat", MonsterRegistry.lookupMonsterRace("Scrawny Cat").getName());
 
         // No race is exactly "spider"; friends:...:spider relies on C's my_stristr fallback, which
         // returns the first race whose name CONTAINS the query -- cave spider (the earliest one).
-        MonsterRace spider = GameConstants.lookupMonsterRace("spider");
+        MonsterRace spider = MonsterRegistry.lookupMonsterRace("spider");
         assertNotNull(spider, "must fall back to a substring match");
         assertEquals("cave spider", spider.getName());
     }
@@ -382,7 +381,7 @@ class MonsterReaderTest {
         // Sauron, the Sorcerer: shape:Wolf-Sauron / Vampire-Sauron / Serpent-Sauron -- each a specific
         // unique race (not a base), and each defined LATER in the file, so this also exercises the
         // deferred forward-ref resolution.
-        MonsterRace sauron = GameConstants.lookupMonsterRace("Sauron, the Sorcerer");
+        MonsterRace sauron = MonsterRegistry.lookupMonsterRace("Sauron, the Sorcerer");
         assertNotNull(sauron);
 
         List<?> shapes = field(sauron, "shapes");
@@ -402,7 +401,7 @@ class MonsterReaderTest {
     void aBaseShapeResolvesToABaseAndNotARace() throws Exception {
         // Maia of Varda: shape:elemental and shape:vortex -- both base families (generic shapechange),
         // resolved by name against the monster bases, never to a race.
-        MonsterRace maia = GameConstants.lookupMonsterRace("Maia of Varda");
+        MonsterRace maia = MonsterRegistry.lookupMonsterRace("Maia of Varda");
         assertNotNull(maia);
 
         List<?> shapes = field(maia, "shapes");

@@ -25,6 +25,8 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
@@ -71,10 +73,7 @@ class PitReaderTest {
      */
     @AfterAll
     static void cleanup() throws Exception {
-        GameConstants.objectKinds.clear();
-        Field f = GameConstants.class.getDeclaredField("kindsByTvalSval");
-        f.setAccessible(true);
-        ((java.util.Map<?, ?>) f.get(null)).clear();
+        ObjectRegistry.reset();
     }
 
     @SuppressWarnings("unchecked")
@@ -85,11 +84,11 @@ class PitReaderTest {
     }
 
     /**
-     * Reads a private static field off {@link GameConstants} (no getter exists for the pit registry).
+     * Reads a private static field off {@link MonsterRegistry} (no getter exists for the pit registry).
      */
     @SuppressWarnings("unchecked")
     private static <T> T staticField(String name) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(name);
+        Field f = MonsterRegistry.class.getDeclaredField(name);
         f.setAccessible(true);
         return (T) f.get(null);
     }

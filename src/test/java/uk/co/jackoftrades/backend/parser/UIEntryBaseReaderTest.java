@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -61,7 +61,7 @@ class UIEntryBaseReaderTest {
     static void seedRenderers() throws Exception {
         List<UIEntryRenderer> renderers = new UIEntryRendererReader()
                 .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
-        Field field = GameConstants.class.getDeclaredField("uiEntryRenderers");
+        Field field = UIRegistry.class.getDeclaredField("uiEntryRenderers");
         field.setAccessible(true);
         field.set(null, renderers);
     }

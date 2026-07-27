@@ -24,7 +24,6 @@ import uk.co.jackoftrades.backend.parser.uientry.UIEntryParseRecord;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
 import java.lang.reflect.Field;
@@ -48,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * skip-and-continue policy (a record whose present field fails to resolve is dropped with an
  * error while the rest survive).
  *
- * <p>The assembler reaches into {@code GameConstants.getUIEntryRenderer}/{@code getUIEntryBase},
+ * <p>The assembler reaches into {@code UIRegistry.getUIEntryRenderer}/{@code getUIEntryBase},
  * which need their registries populated. There is no public setter (the game loads them in
  * {@code GameConstants.init()}), so {@link #seedRegistries()} loads the real renderer and base
  * files and injects them into the private static fields via reflection - keeping the test
@@ -75,7 +74,7 @@ class UIEntryAssemblerTest {
     }
 
     private static void setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         f.set(null, value);
     }

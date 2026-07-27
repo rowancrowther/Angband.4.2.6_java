@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
 import java.util.Objects;
@@ -593,7 +593,7 @@ public class Feature {
      * @author Rowan Crowther
      */
     public Feature getMimic() {
-        return GameConstants.lookupFeature(mimic);
+        return TerrainRegistry.lookupFeature(mimic);
     }
 
     /**

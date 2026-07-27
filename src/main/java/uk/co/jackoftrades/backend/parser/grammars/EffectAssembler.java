@@ -24,7 +24,8 @@ import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.effect.*;
 import uk.co.jackoftrades.middle.enums.*;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
 import uk.co.jackoftrades.middle.player.PlayerShape;
@@ -277,7 +278,7 @@ public class EffectAssembler {
                 // whereas shape names are stored mixed-case (e.g. "Pukel-man"), so the
                 // registry lookup is deliberately case-insensitive. This therefore
                 // requires the shapes to already be loaded when effects are assembled.
-                PlayerShape sp = GameConstants.lookupPlayerShape(value);
+                PlayerShape sp = PlayerRegistry.lookupPlayerShape(value);
                 if (sp != null)
                     return new EffectSubTypeWrapper(sp);
                 else
@@ -285,7 +286,7 @@ public class EffectAssembler {
                             "an unknown player shape: " + value);
             }
             case EST_SUMMON -> {
-                Summon sum = GameConstants.lookupSummon(value);
+                Summon sum = MonsterRegistry.lookupSummon(value);
                 if (sum != null)
                     return new EffectSubTypeWrapper(sum);
                 else

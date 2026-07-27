@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.flavour;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Flavour;
 import uk.co.jackoftrades.middle.objects.FlavourKind;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -86,7 +86,7 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
             boolean badSval = false;
             for (Flavour flavour : flavours) {
                 if (flavour.isFixed()) {
-                    ObjectKind objectKind = GameConstants.lookupObjectKind(tVal, flavour.getsValStr());
+                    ObjectKind objectKind = ObjectRegistry.lookupObjectKind(tVal, flavour.getsValStr());
                     if (objectKind == null) {
                         errors.add("Invalid object sValue found on flavour: " + flavour.getText());
                         badSval = true;

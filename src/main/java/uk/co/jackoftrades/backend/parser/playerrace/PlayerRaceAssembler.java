@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
@@ -147,7 +147,7 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
                     continue;
                 }
             }
-            PlayerBody body = GameConstants.lookupPlayerBody(0);
+            PlayerBody body = PlayerRegistry.lookupPlayerBody(0);
             Map<Stats, Integer> statsAdj = new HashMap<Stats, Integer>();
             boolean statError = false;
             for (String stat : record.stats().keySet()) {
@@ -216,7 +216,7 @@ public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, Lis
             PlayerHistoryChart history;
             try {
                 int historyChart = Integer.parseInt(record.history());
-                history = GameConstants.lookupPlayerHistoryChart(historyChart);
+                history = PlayerRegistry.lookupPlayerHistoryChart(historyChart);
                 if (history == null) {
                     errors.add("Race beginning at line: " + line + " has " +
                             "an invalid history chart value: " + historyChart);

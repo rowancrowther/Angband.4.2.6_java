@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
@@ -59,7 +59,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             for (String tVal : record.tVals()) {
                 try {
                     TValue tValue = TValue.valueOf("TV_" + tVal.toUpperCase().replace(" ", "_"));
-                    List<ObjectKind> o = GameConstants.lookupObjectKind(tValue);
+                    List<ObjectKind> o = ObjectRegistry.lookupObjectKind(tValue);
                     if (!o.isEmpty()) {
                         possItems.addAll(o);
                     } else {
@@ -192,7 +192,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             Map<Brand, Boolean> brands = new HashMap<>();
             boolean illegalBrand = false;
             for (String brand : record.brands()) {
-                Brand b = GameConstants.lookupBrandCode(brand);
+                Brand b = ObjectRegistry.lookupBrandCode(brand);
                 if (b == null) {
                     errors.add("EgoItem beginning at line: " + line + " has " +
                             "an unknown brand: " + brand);
@@ -204,7 +204,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             Map<Slay, Boolean> slays = new HashMap<>();
             boolean illegalSlay = false;
             for (String slay : record.slays()) {
-                Slay s = GameConstants.lookupSlay(slay);
+                Slay s = ObjectRegistry.lookupSlay(slay);
                 if (s == null) {
                     errors.add("EgoItem beginning at line: " + line + " has " +
                             "an unknown slay: " + slay);
@@ -217,7 +217,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             boolean illegalCurse = false;
             for (String key : record.curses().keySet()) {
                 String cursePower = record.curses().get(key);
-                Curse c = GameConstants.lookupCurse(key);
+                Curse c = ObjectRegistry.lookupCurse(key);
                 if (c == null) {
                     errors.add("EgoItem beginning at line:" + line + " has " +
                             "an unknown curse: " + key);
@@ -279,7 +279,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             for (EgoItemParseRecord.ItemRef item : record.itemRefs()) {
                 try {
                     TValue tValue = TValue.valueOf("TV_" + item.tVal().toUpperCase().replace(" ", "_"));
-                    ObjectKind o = GameConstants.lookupObjectKind(tValue, item.sVal());
+                    ObjectKind o = ObjectRegistry.lookupObjectKind(tValue, item.sVal());
                     if (o != null) {
                         possItems.add(o);
                     } else {
@@ -353,7 +353,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             }
             Activation activation = null;
             if (!record.act().isEmpty()) {
-                activation = GameConstants.lookupActivation(record.act());
+                activation = ObjectRegistry.lookupActivation(record.act());
                 if (activation == null) {
                     errors.add("EgoItem beginning at line: " + line + " has " +
                             "an unknown activation type: " + record.act());

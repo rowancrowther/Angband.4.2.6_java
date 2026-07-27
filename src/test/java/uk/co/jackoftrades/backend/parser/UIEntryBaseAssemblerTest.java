@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.parser.uientrybase.UIEntryBaseAssembler;
 import uk.co.jackoftrades.backend.parser.uientrybase.UIEntryBaseParseRecord;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -35,11 +35,11 @@ import static org.junit.jupiter.api.Assertions.*;
  * Unit tests for {@link UIEntryBaseAssembler} (grammar-suite assembler track).
  *
  * <p>These construct {@link UIEntryBaseParseRecord}s directly (no grammar/reader), so they exercise
- * the assembler in isolation: {@code renderer} resolution against the {@link GameConstants} renderer
+ * the assembler in isolation: {@code renderer} resolution against the {@link UIRegistry} renderer
  * registry, {@code combine} enum resolution, and skip-and-continue (a record whose renderer or
  * combiner fails to resolve is dropped with an error, the rest survive).
  *
- * <p>The assembler reaches into {@code GameConstants.getUIEntryRenderer}, which needs the renderer
+ * <p>The assembler reaches into {@code UIRegistry.getUIEntryRenderer}, which needs the renderer
  * registry populated. There is no public setter (the game loads it in {@code GameConstants.init()}),
  * so {@link #seedRenderers()} loads the real renderer file and injects it into the private static
  * field via reflection — keeping the test self-contained and independent of full-game init order.
@@ -57,7 +57,7 @@ class UIEntryBaseAssemblerTest {
     static void seedRenderers() throws Exception {
         List<UIEntryRenderer> renderers = new UIEntryRendererReader()
                 .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
-        Field field = GameConstants.class.getDeclaredField("uiEntryRenderers");
+        Field field = UIRegistry.class.getDeclaredField("uiEntryRenderers");
         field.setAccessible(true);
         field.set(null, renderers);
     }

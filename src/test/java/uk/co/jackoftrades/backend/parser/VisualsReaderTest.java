@@ -86,7 +86,7 @@ class VisualsReaderTest {
 
     /**
      * Reader-level tests: everything here starts from raw file text and exercises the lexer, the
-     * grammar and both assemblers together, exactly as {@code GameConstants.loadVisualTables()}
+     * grammar and both assemblers together, exactly as {@code MonsterDataLoader.loadVisualTables()}
      * does. Grammar-valid input can never carry a soft error (see {@link CycleAssemblerUnit}), so
      * these cases are either fully clean or hard parse failures.
      *

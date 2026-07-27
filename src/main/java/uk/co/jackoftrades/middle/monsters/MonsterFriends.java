@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.monsters;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 
 /**
@@ -94,12 +94,12 @@ public class MonsterFriends {
      * The name is always concrete by this point — a {@code "same"} self-reference was already
      * substituted for the owning race's name in the assembler — so this is a plain global lookup.
      *
-     * @param raceName the companion race's name, resolved via {@link GameConstants#lookupMonsterRace}
+     * @param raceName the companion race's name, resolved via {@link MonsterRegistry#lookupMonsterRace}
      * @throws IllegalArgumentException if no race matches the name
      * @author Rowan Crowther
      */
     public void setRace(@NotNull String raceName) {
-        this.race = GameConstants.lookupMonsterRace(raceName);
+        this.race = MonsterRegistry.lookupMonsterRace(raceName);
 
         if (race == null) {
             String message = "Monster race not found: " + raceName;

@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * </ul>
  *
  * <p>Every record here carries an <em>empty</em> effect list, so the tests stay independent of
- * {@code EffectAssembler} and the {@code GameConstants} registries it consults; effect
+ * {@code EffectAssembler} and the game-data registries it consults; effect
  * resolution has its own coverage.
  *
  * @author Rowan Crowther

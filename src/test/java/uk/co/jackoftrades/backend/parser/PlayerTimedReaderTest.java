@@ -21,7 +21,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -47,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code GrammarDriver} threads through {@link ParseResult}: the soft skip-and-continue
  * {@code errors} list and the hard fail-closed channel.
  *
- * <p>The {@code ATT_*} statuses resolve a brand/slay code through {@link GameConstants}, so
+ * <p>The {@code ATT_*} statuses resolve a brand/slay code through the object registry, so
  * {@link #seed()} loads {@code brand.txt}/{@code slay.txt} directly through their readers and injects
  * them into the private static registries by reflection, restoring them afterwards so no global
  * state leaks to other suites.
@@ -81,7 +80,7 @@ class PlayerTimedReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

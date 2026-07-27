@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.MonsterSpellType;
@@ -86,7 +86,7 @@ class MonsterSpellReaderTest {
 
     /**
      * Seed the globals the effect assembler reaches into. Two of the shipped spells carry a
-     * {@code SUMMON} effect, which resolves through {@link GameConstants#lookupSummon}; loading
+     * {@code SUMMON} effect, which resolves through {@link MonsterRegistry#lookupSummon}; loading
      * summons needs monster bases, which need monster pains. Cheaper than a full
      * {@code GameConstants.init()}, and the same seeding trick {@code CurseReaderTest} uses.
      */
@@ -113,7 +113,7 @@ class MonsterSpellReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

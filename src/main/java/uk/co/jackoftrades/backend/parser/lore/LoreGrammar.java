@@ -30,7 +30,8 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.monsters.*;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -386,8 +387,8 @@ public class LoreGrammar extends Parser {
 
                 String raw = ((BlowContext) _localctx).BLOW_MODE_VALUES.getText();
                 String[] parts = raw.split(":");
-                BlowMethod blowMethod = GameConstants.lookupBlowMethod(parts[0]);
-                BlowEffect blowEffect = GameConstants.lookupBlowEffect(parts[1]);
+                BlowMethod blowMethod = MonsterRegistry.lookupBlowMethod(parts[0]);
+                BlowEffect blowEffect = MonsterRegistry.lookupBlowEffect(parts[1]);
                 Random dice = Random.parseStr(parts[2]);
                 ((BlowContext) _localctx).timesSeen = Integer.parseInt(parts[3]);
 
@@ -660,7 +661,7 @@ public class LoreGrammar extends Parser {
                 ((BaseContext) _localctx).MONSTER_NAME = match(MONSTER_NAME);
 
                 String raw = ((BaseContext) _localctx).MONSTER_NAME.getText();
-                ((BaseContext) _localctx).baseObj = GameConstants.getBaseFromName(raw);
+                ((BaseContext) _localctx).baseObj = MonsterRegistry.getBaseFromName(raw);
 
             }
         } catch (RecognitionException re) {
@@ -772,7 +773,7 @@ public class LoreGrammar extends Parser {
                 ((DropContext) _localctx).mx = match(INTEGER);
 
                 tval = TValue.valueOf("TV_" + ((DropContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
-                sval = GameConstants.lookupObjectKind(tval, ((DropContext) _localctx).STRING.getText());
+                sval = ObjectRegistry.lookupObjectKind(tval, ((DropContext) _localctx).STRING.getText());
                 chance = Integer.parseInt(((DropContext) _localctx).ch.getText());
                 min = Integer.parseInt(((DropContext) _localctx).mn.getText());
                 max = Integer.parseInt(((DropContext) _localctx).mx.getText());
@@ -1121,7 +1122,7 @@ public class LoreGrammar extends Parser {
                 Random temp = Random.parseStr(((FriendsBaseContext) _localctx).dice.getText());
                 numberOfDice = temp.getDice();
                 numberOfSides = temp.getSides();
-                base = GameConstants.lookupMonsterBase(((FriendsBaseContext) _localctx).fName.getText());
+                base = MonsterRegistry.lookupMonsterBase(((FriendsBaseContext) _localctx).fName.getText());
 
                 setState(120);
                 _errHandler.sync(this);
@@ -1221,7 +1222,7 @@ public class LoreGrammar extends Parser {
                 TValue tval = TValue.valueOf("TV_" + ((MimicContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_")
                         .replace("ARMOUR", "ARMOR"));
                 String sval = ((MimicContext) _localctx).STRING.getText();
-                ((MimicContext) _localctx).kind = GameConstants.lookupObjectKind(tval, sval);
+                ((MimicContext) _localctx).kind = ObjectRegistry.lookupObjectKind(tval, sval);
 
             }
         } catch (RecognitionException re) {
@@ -1384,7 +1385,7 @@ public class LoreGrammar extends Parser {
             {
                 setState(128);
                 ((MonsterLoreContext) _localctx).name = name();
-                ((MonsterLoreContext) _localctx).race = GameConstants.lookupMonsterRace(((MonsterLoreContext) _localctx).name.nameString);
+                ((MonsterLoreContext) _localctx).race = MonsterRegistry.lookupMonsterRace(((MonsterLoreContext) _localctx).name.nameString);
                 setState(157);
                 _errHandler.sync(this);
                 _la = _input.LA(1);

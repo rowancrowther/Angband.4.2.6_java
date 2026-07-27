@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.objectproperty;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 import uk.co.jackoftrades.middle.objects.ObjectProperty;
 import uk.co.jackoftrades.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftrades.middle.objects.enums.*;
@@ -211,7 +211,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                 String uiEntryName = record.bindui();
                 if (!record.tag().isEmpty())
                     uiEntryName = uiEntryName + "<" + record.tag() + ">";
-                UIEntry uientry = GameConstants.getUIEntry(uiEntryName);
+                UIEntry uientry = UIRegistry.getUIEntry(uiEntryName);
                 ObjectProperty.UIBinding uibinding = new ObjectProperty.UIBinding(uientry, value, isAux);
                 boundEntries.add(uibinding);
             }

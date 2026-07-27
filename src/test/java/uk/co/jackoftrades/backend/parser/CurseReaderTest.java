@@ -22,7 +22,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 import uk.co.jackoftrades.middle.monsters.Summon;
@@ -50,9 +51,9 @@ import static org.junit.jupiter.api.Assertions.*;
  * error channels {@code GrammarDriver} threads through {@link ParseResult}: the soft
  * skip-and-continue {@code errors} list and the hard fail-closed channel.
  *
- * <p>The curse assembler resolves {@code type:} via {@link GameConstants#lookupObjectBase}, and the
+ * <p>The curse assembler resolves {@code type:} via {@link ObjectRegistry#lookupObjectBase}, and the
  * shipped {@code curse.txt} uses {@code EF_SUMMON}, which {@code EffectAssembler} resolves via
- * {@link GameConstants#lookupSummon}. Loading summons in turn needs monster bases, which need
+ * {@link MonsterRegistry#lookupSummon}. Loading summons in turn needs monster bases, which need
  * monster pains. Rather than run the whole heavy {@code GameConstants.init()}, {@link #seed()}
  * loads {@code pain.txt}, {@code monster_base.txt}, {@code summon.txt} and {@code object_base.txt}
  * directly through their readers and injects the results into the private static registries by
@@ -101,7 +102,7 @@ class CurseReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);
@@ -150,8 +151,8 @@ class CurseReaderTest {
         assertEquals(0, vuln.getCombatToHit());
         assertEquals(0, vuln.getCombatDam());
         assertEquals(-50, vuln.getCombatAC());
-        assertTrue(vuln.canAfflict(GameConstants.getBaseFromTVal(TValue.TV_CLOAK)));
-        assertFalse(vuln.canAfflict(GameConstants.getBaseFromTVal(TValue.TV_BOOTS)));
+        assertTrue(vuln.canAfflict(ObjectRegistry.getBaseFromTVal(TValue.TV_CLOAK)));
+        assertFalse(vuln.canAfflict(ObjectRegistry.getBaseFromTVal(TValue.TV_BOOTS)));
     }
 
     @Test

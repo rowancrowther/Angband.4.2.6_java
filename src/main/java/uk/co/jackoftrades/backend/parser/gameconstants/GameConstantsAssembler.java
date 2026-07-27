@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.globals.*;
+import uk.co.jackoftrades.middle.game.globals.data.*;
 
 import java.util.List;
 

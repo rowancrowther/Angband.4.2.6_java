@@ -25,7 +25,7 @@ import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
@@ -45,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code ArtifactGrammar} -> {@link uk.co.jackoftrades.backend.parser.artifact.ArtifactParseRecord}
  * -> {@link uk.co.jackoftrades.backend.parser.artifact.ArtifactAssembler} -> {@link Artifact}.
  *
- * <p>The artifact assembler resolves four registries through {@link GameConstants} — brands by code,
+ * <p>The artifact assembler resolves four registries through {@link ObjectRegistry} — brands by code,
  * slays by code, curses by name and activations by name — so rather than run the whole heavy
  * {@code GameConstants.init()}, {@link #seed()} loads each dependency directly through its own reader
  * and injects it into the private static registries by reflection, restoring them afterwards so no
@@ -144,16 +144,16 @@ class ArtifactReaderTest {
         savedObjectKinds = setStatic("objectKinds", new ArrayList<ObjectKind>());
         savedKindsByTvalSval = setStatic("kindsByTvalSval", new HashMap<TValue, Map<Integer, ObjectKind>>());
         for (ObjectKind kind : new ItemObjectReader().parse(OBJECT_FILE)) {
-            GameConstants.addObjectKind(kind);
+            ObjectRegistry.addObjectKind(kind);
         }
-        savedObjectBaseKindMax = setStatic("objectBaseKindMax", GameConstants.getObjectKindCount());
+        savedObjectBaseKindMax = setStatic("objectBaseKindMax", ObjectRegistry.getObjectKindCount());
 
         result = new ArtifactReader().parseWithResults(ARTIFACT_FILE);
     }
 
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
-     * {@link GameConstants} does not leak into other test suites.
+     * the registries do not leak into other test suites.
      *
      * @author Rowan Crowther
      */
@@ -196,7 +196,7 @@ class ArtifactReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);
@@ -268,7 +268,7 @@ class ArtifactReaderTest {
         assertNull(field(phial, "activation"), "special light: activation belongs to the kind");
         assertNull(field(phial, "time"), "special light: time belongs to the kind");
 
-        ObjectKind phialKind = GameConstants.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        ObjectKind phialKind = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
         assertNotNull(phialKind, "the Phial's kind is synthesised, so lookup by sval name finds it");
         assertEquals(1, phialKind.getActivations().size());
         assertEquals("ILLUMINATION", phialKind.getActivations().get(0).getName());
@@ -385,16 +385,16 @@ class ArtifactReaderTest {
      */
     @Test
     void exactlyTheFourteenUnresolvableBaseObjectsGetASynthesisedKind() {
-        assertEquals(ORDINARY_KIND_MAX, GameConstants.getObjectBaseKindMax(),
+        assertEquals(ORDINARY_KIND_MAX, ObjectRegistry.getObjectBaseKindMax(),
                 "object.txt's own kind count, i.e. C's ordinary_kind_max");
 
-        List<ObjectKind> synthesised = GameConstants.objectKinds.stream()
+        List<ObjectKind> synthesised = ObjectRegistry.getObjectKinds().stream()
                 .filter(k -> k.getKindIndex() >= ORDINARY_KIND_MAX)
                 .toList();
 
         assertEquals(SYNTHESISED_KINDS, synthesised.size(),
                 () -> "synthesised: " + synthesised.stream().map(ObjectKind::getName).toList());
-        assertEquals(ORDINARY_KIND_MAX + SYNTHESISED_KINDS, GameConstants.objectKinds.size());
+        assertEquals(ORDINARY_KIND_MAX + SYNTHESISED_KINDS, ObjectRegistry.getObjectKindCount());
 
         // kf_on(dummy->kind_flags, KF_INSTA_ART) -- obj-init.c:166.
         for (ObjectKind k : synthesised) {
@@ -411,7 +411,7 @@ class ArtifactReaderTest {
      */
     @Test
     void thePhialsSynthesisedKindTakesItsNameFromTheSvalAndItsFieldsFromTheArtifact() throws Exception {
-        ObjectKind phial = GameConstants.lookupObjectKind(TValue.TV_LIGHT, "Phial");
+        ObjectKind phial = ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Phial");
         assertNotNull(phial);
 
         assertEquals("& Phial~", phial.getName(), "templated from the base-object sval, not the artifact");
@@ -437,7 +437,7 @@ class ArtifactReaderTest {
      */
     @Test
     void grondIsInstaArtButNotSynthesisedSoItsKindKeepsObjectTxtsWeightAndCost() throws Exception {
-        ObjectKind hammer = GameConstants.lookupObjectKind(TValue.TV_HAFTED, "Mighty Hammer");
+        ObjectKind hammer = ObjectRegistry.lookupObjectKind(TValue.TV_HAFTED, "Mighty Hammer");
         assertNotNull(hammer);
 
         assertTrue(hammer.getKindFlags().has(ObjectKindFlag.KF_INSTA_ART), "declared in object.txt");

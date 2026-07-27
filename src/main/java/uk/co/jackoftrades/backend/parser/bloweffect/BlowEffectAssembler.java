@@ -22,7 +22,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.Projection;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftrades.middle.monsters.BlowEffect;
 import uk.co.jackoftrades.middle.monsters.enums.BlowEffectType;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -181,12 +181,12 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
                 ProjectionEnum projEnum;
                 try {
                     projEnum = ProjectionEnum.valueOf("PROJ_" + proj);
-                    lash = GameConstants.lookupProjectionByLash(projEnum);
+                    lash = WorldRegistry.lookupProjectionByLash(projEnum);
                     if (lash == null) {
-                        lash = GameConstants.lookupProjectionByLash(ProjectionEnum.PROJ_MISSILE);
+                        lash = WorldRegistry.lookupProjectionByLash(ProjectionEnum.PROJ_MISSILE);
                     }
                 } catch (IllegalArgumentException e) {
-                    lash = GameConstants.lookupProjectionByLash(ProjectionEnum.PROJ_MISSILE);
+                    lash = WorldRegistry.lookupProjectionByLash(ProjectionEnum.PROJ_MISSILE);
                 }
             }
 

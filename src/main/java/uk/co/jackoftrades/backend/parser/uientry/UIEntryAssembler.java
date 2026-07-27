@@ -27,6 +27,7 @@ import uk.co.jackoftrades.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftrades.frontend.screen.enums.CombinerName;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
 import java.util.ArrayList;
@@ -109,7 +110,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             String rendStr = record.renderer();
             UIEntryRenderer renderer;
             if (!rendStr.isEmpty()) {
-                renderer = GameConstants.getUIEntryRenderer(rendStr, errors);
+                renderer = UIRegistry.getUIEntryRenderer(rendStr, errors);
                 if (renderer == null) continue;
             } else {
                 renderer = null;
@@ -163,7 +164,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             if (record.template().isEmpty())
                 template = null;
             else {
-                template = GameConstants.getUIEntryBase(record.template());
+                template = UIRegistry.getUIEntryBase(record.template());
                 if (template == null) {
                     errors.add("Block starting on line: " + line +
                             " has illegal template name: " + record.template());

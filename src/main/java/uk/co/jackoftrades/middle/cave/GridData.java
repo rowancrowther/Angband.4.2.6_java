@@ -26,7 +26,8 @@ import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -200,7 +201,7 @@ public class GridData {
 
             cave.squareMemorize(grid);
         } else if (!cave.isKnown(grid)) {
-            feature = GameConstants.lookupFeature(TerrainFlags.FEAT_NONE);
+            feature = TerrainRegistry.lookupFeature(TerrainFlags.FEAT_NONE);
         } else if (cave.squareIsGlow(grid)) {
             lighting = GridLightLevel.LIGHTING_LIT;
         }
@@ -228,9 +229,9 @@ public class GridData {
         Iterator<ItemObject> pileIterator = playerCave.getPileIterator(grid);
         while (pileIterator.hasNext()) {
             ItemObject item = pileIterator.next();
-            if (item.getKind().equals(GameConstants.unknownGoldKind)) {
+            if (item.getKind().equals(ObjectRegistry.unknownGoldKind)) {
                 unseenMoney = true;
-            } else if (item.getKind().equals(GameConstants.unknownItemKind)) {
+            } else if (item.getKind().equals(ObjectRegistry.unknownItemKind)) {
                 unseenObjects = true;
             } else if (player.ignoreKnownItemOk(item)) {
                 // Item stays hidden
@@ -253,7 +254,7 @@ public class GridData {
             if (RandomValueUtils.oneIn(128) && !feature.isPermanent())
                 monsterIndex = 1;
             else if (RandomValueUtils.oneIn(128) && !feature.isPermanent())
-                firstKind = GameConstants.objectKinds.getFirst();
+                firstKind = ObjectRegistry.getObjectKinds().getFirst();
             else
                 hallucinate = false;
         }

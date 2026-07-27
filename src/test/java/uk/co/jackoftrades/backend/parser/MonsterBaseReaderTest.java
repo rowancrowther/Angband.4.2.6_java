@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;
 
@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * and the skip-and-continue soft-error channel (including the null-return fix, where an unknown pain
  * index now skips the record instead of building a base with a {@code null} pain set).
  *
- * <p>The assembler resolves {@code pain:} via {@link GameConstants#lookupMonsterPain}, which reads
+ * <p>The assembler resolves {@code pain:} via {@link MonsterRegistry#lookupMonsterPain}, which reads
  * the static {@code monsterPains} list normally populated during {@code GameConstants.init()}. That
  * full init is far too heavy for a unit test (and monster-base loading is not even wired into it
  * yet), so {@link #loadPainSets()} loads {@code pain.txt} directly through {@link PainReader} and
@@ -56,7 +56,7 @@ class MonsterBaseReaderTest {
     private static final String PAIN_FILE = "lib/gamedata/pain.txt";
 
     /**
-     * The value {@code GameConstants.monsterPains} held before this suite overwrote it.
+     * The value {@code MonsterRegistry.monsterPains} held before this suite overwrote it.
      */
     private static Object savedMonsterPains;
 
@@ -67,7 +67,7 @@ class MonsterBaseReaderTest {
     static void loadPainSets() throws Exception {
         List<MonsterPain> pains = new PainReader().parseWithResults(PAIN_FILE).items();
 
-        Field field = GameConstants.class.getDeclaredField("monsterPains");
+        Field field = MonsterRegistry.class.getDeclaredField("monsterPains");
         field.setAccessible(true);
         savedMonsterPains = field.get(null);
         field.set(null, pains);
@@ -75,7 +75,7 @@ class MonsterBaseReaderTest {
 
     @AfterAll
     static void restorePainSets() throws Exception {
-        Field field = GameConstants.class.getDeclaredField("monsterPains");
+        Field field = MonsterRegistry.class.getDeclaredField("monsterPains");
         field.setAccessible(true);
         field.set(null, savedMonsterPains);
     }

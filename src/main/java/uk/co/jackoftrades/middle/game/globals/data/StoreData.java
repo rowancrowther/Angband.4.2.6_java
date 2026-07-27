@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.globals;
+package uk.co.jackoftrades.middle.game.globals.data;
 
 /**
  * Data record for storing 'store' generation data

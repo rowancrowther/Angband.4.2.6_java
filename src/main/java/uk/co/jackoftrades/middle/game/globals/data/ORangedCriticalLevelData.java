@@ -15,21 +15,20 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.globals;
+package uk.co.jackoftrades.middle.game.globals.data;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
 
 /**
- * Level for non-standard (O) melee criticals. These are normally visited in the order they are
- * written in ("It is convenient to put the least likely first"). If no critical level is
- * defined, then no extra damage will occur for a critical
+ * Each of the levels of a ranged critical. They are considered in the order they appear, so the Java
+ * port pust the least likely first canonically. If no critical levels are defined, no extra damage
+ * due to critical hits occurs.
  *
- * @param chance      1/chance that this level of critical occurs
- * @param dice        The number of dice to add for the critical
+ * @param chance      1/chance of this level of critical occurring. Must be positive.
+ * @param dice        The number of dice to add to the critical damage roll
  * @param messageType The resolved {@link MessageType} emitted
  *                    when a critical at this level occurs
- *
  * @author Rowan Crowther
  */
-public record OMeleeCriticalLevelData(int chance, int dice, MessageType messageType) {
+public record ORangedCriticalLevelData(int chance, int dice, MessageType messageType) {
 }

@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringPa
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.ColourCycle;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -397,9 +397,9 @@ public class MonsterRace {
      */
     public void resolveShapes() {
         for (MonsterShape s : shapes) {
-            MonsterBase base = GameConstants.lookupMonsterBase(s.getName());
+            MonsterBase base = MonsterRegistry.lookupMonsterBase(s.getName());
             if (base == null) {
-                MonsterRace race = GameConstants.lookupMonsterRace(s.getName());
+                MonsterRace race = MonsterRegistry.lookupMonsterRace(s.getName());
                 if (race == null) {
                     String message = "Unknown shape name: " + s.getName();
                     throw new InvalidTokenFoundDuringParse(message);

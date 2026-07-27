@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Flavour;
 import uk.co.jackoftrades.middle.objects.FlavourKind;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p><b>Why the heavy seeding.</b> A {@code fixed:} line names its object sub-type by symbol
  * (e.g. {@code fixed:1:Ring of Power:...}), and the assembler resolves that symbol the way C's
  * {@code lookup_sval} does — against the loaded {@code ObjectKind} table
- * ({@link GameConstants#lookupObjectKind(TValue, String)}). Crucially, none of the eight
+ * ({@link ObjectRegistry#lookupObjectKind(TValue, String)}). Crucially, none of the eight
  * {@code fixed:} sval names exist in {@code object.txt}; every one is an artifact base-object
  * ({@code base-object:ring:Ring of Power}, {@code base-object:amulet:Amulet}, ...) that
  * {@code artifact.txt} <em>synthesises</em> a kind for. So {@link #seed()} has to reproduce the
@@ -120,9 +120,9 @@ class FlavourReaderTest {
         savedObjectKinds = setStatic("objectKinds", new ArrayList<ObjectKind>());
         savedKindsByTvalSval = setStatic("kindsByTvalSval", new HashMap<TValue, Map<Integer, ObjectKind>>());
         for (ObjectKind kind : new ItemObjectReader().parse(OBJECT_FILE)) {
-            GameConstants.addObjectKind(kind);
+            ObjectRegistry.addObjectKind(kind);
         }
-        savedObjectBaseKindMax = setStatic("objectBaseKindMax", GameConstants.getObjectKindCount());
+        savedObjectBaseKindMax = setStatic("objectBaseKindMax", ObjectRegistry.getObjectKindCount());
         new ArtifactReader().parse(ARTIFACT_FILE);
 
         result = new FlavourReader().parseWithResults(FLAVOUR_FILE);
@@ -130,7 +130,7 @@ class FlavourReaderTest {
 
     /**
      * Restores the registries mutated by {@link #seed()} so shared static state on
-     * {@link GameConstants} does not leak into other suites.
+     * the registries do not leak into other suites.
      *
      * @author Rowan Crowther
      */
@@ -173,7 +173,7 @@ class FlavourReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);
@@ -248,7 +248,7 @@ class FlavourReaderTest {
         assertEquals("Ring of Power", plainGold.getsValStr());
         assertSame(ColourType.COLOUR_TYPE_YELLOW, plainGold.getColour());
 
-        ObjectKind ringOfPower = GameConstants.lookupObjectKind(TValue.TV_RING, "Ring of Power");
+        ObjectKind ringOfPower = ObjectRegistry.lookupObjectKind(TValue.TV_RING, "Ring of Power");
         assertNotNull(ringOfPower, "the One Ring's base kind is synthesised from artifact.txt");
         assertEquals(ringOfPower.getsVal(), plainGold.getsVal(),
                 "resolved sval must equal the synthesised kind's sval");

@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.sounds;
 
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
 import java.io.File;
 
@@ -42,7 +42,7 @@ public enum MessageBoxFlags {
     MB_ICONHAND(""),
     MB_ICONQUESTION(""),
     MB_ICONEXCLAMATION(""),
-    MB_ICONASTERISK(GameConstants.ANGBAND_DIR_SOUNDS + "Windows Background.wav"),
+    MB_ICONASTERISK(AngbandDirs.ANGBAND_DIR_SOUNDS + "Windows Background.wav"),
     MB_USERICON(""),
     MB_ICONWARNING(""),
     MB_ICONERROR(""),

@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
@@ -172,7 +172,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             List<Brand> brands = new ArrayList<>();
             boolean illegalBrand = false;
             for (String b : record.brand()) {
-                Brand brand = GameConstants.lookupBrandCode(b);
+                Brand brand = ObjectRegistry.lookupBrandCode(b);
                 if (brand != null) {
                     brands.add(brand);
                 } else {
@@ -185,7 +185,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             boolean illegalSlay = false;
             List<Slay> slays = new ArrayList<>();
             for (String s : record.slay()) {
-                Slay slay = GameConstants.lookupSlay(s);
+                Slay slay = ObjectRegistry.lookupSlay(s);
                 if (slay != null) {
                     slays.add(slay);
                 } else {
@@ -198,7 +198,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             boolean illegalCurses = false;
             Map<Curse, Curse.CurseEntry> curses = new HashMap<>();
             for (String key : record.curse().keySet()) {
-                Curse curse = GameConstants.lookupCurse(key);
+                Curse curse = ObjectRegistry.lookupCurse(key);
                 if (curse == null) {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown curse: " + key);
@@ -263,7 +263,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             Activation activation = null;
             if (!record.activation().isEmpty()) {
-                activation = GameConstants.lookupActivation(record.activation());
+                activation = ObjectRegistry.lookupActivation(record.activation());
                 if (activation == null) {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown activation: " + record.activation());
@@ -281,14 +281,14 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
-            ObjectBase objectBase = GameConstants.getBaseFromTVal(tVal);
+            ObjectBase objectBase = ObjectRegistry.getBaseFromTVal(tVal);
             if (objectBase == null) {
                 errors.add("Artifact at line: " + line + " has " +
                         "an unknown object type: " + tVal);
                 continue;
             }
 
-            ObjectKind objectKind = GameConstants.lookupObjectKind(tVal, sVal);
+            ObjectKind objectKind = ObjectRegistry.lookupObjectKind(tVal, sVal);
 
             boolean specialLight = (objectKind == null && tVal == TValue.TV_LIGHT);
 
@@ -311,8 +311,8 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
 
             if (objectKind == null) {
                 objectKind = new ObjectKind(artifact, sVal, objectBase);
-                GameConstants.addObjectKind(objectKind);
-                if (objectKind.getKindIndex() >= GameConstants.getObjectBaseKindMax()) {
+                ObjectRegistry.addObjectKind(objectKind);
+                if (objectKind.getKindIndex() >= ObjectRegistry.getObjectBaseKindMax()) {
                     objectKind.setWeight(weight);
                     objectKind.setCost(cost);
                 }

@@ -24,7 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.CurseData;
 import uk.co.jackoftrades.middle.objects.EgoItem;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
@@ -101,7 +101,7 @@ class EgoItemReaderTest {
 
     /**
      * Restores every registry mutated by {@link #seed()} so the shared static state on
-     * {@link GameConstants} does not leak into other test suites.
+     * the registries do not leak into other test suites.
      *
      * @author Rowan Crowther
      */
@@ -120,7 +120,7 @@ class EgoItemReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);
@@ -186,7 +186,7 @@ class EgoItemReaderTest {
         EgoItem e = loadOne("type.txt", "type:sword\n");
 
         List<ObjectKind> poss = field(e, "possItems");
-        int swordKinds = GameConstants.lookupObjectKind(TValue.TV_SWORD).size();
+        int swordKinds = ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).size();
         assertTrue(swordKinds > 1, "fixture assumes several sword kinds exist");
         assertEquals(swordKinds, poss.size());
         assertTrue(poss.stream().allMatch(k -> k.gettValue() == TValue.TV_SWORD));
@@ -197,8 +197,8 @@ class EgoItemReaderTest {
         EgoItem e = loadOne("types.txt", "type:sword\ntype:hafted\n");
 
         List<ObjectKind> poss = field(e, "possItems");
-        int expected = GameConstants.lookupObjectKind(TValue.TV_SWORD).size()
-                + GameConstants.lookupObjectKind(TValue.TV_HAFTED).size();
+        int expected = ObjectRegistry.lookupObjectKind(TValue.TV_SWORD).size()
+                + ObjectRegistry.lookupObjectKind(TValue.TV_HAFTED).size();
         assertEquals(expected, poss.size());
     }
 
@@ -209,7 +209,7 @@ class EgoItemReaderTest {
         List<ObjectKind> poss = field(e, "possItems");
         assertEquals(1, poss.size());
         assertEquals("Lantern", poss.get(0).getsValueName());
-        assertSame(GameConstants.lookupObjectKind(TValue.TV_LIGHT, "Lantern"), poss.get(0));
+        assertSame(ObjectRegistry.lookupObjectKind(TValue.TV_LIGHT, "Lantern"), poss.get(0));
     }
 
     @Test
@@ -217,7 +217,7 @@ class EgoItemReaderTest {
         EgoItem e = loadOne("merge.txt", "type:hafted\nitem:light:Lantern\n");
 
         List<ObjectKind> poss = field(e, "possItems");
-        int haftedKinds = GameConstants.lookupObjectKind(TValue.TV_HAFTED).size();
+        int haftedKinds = ObjectRegistry.lookupObjectKind(TValue.TV_HAFTED).size();
         assertEquals(haftedKinds + 1, poss.size());
         assertTrue(poss.stream().anyMatch(k -> "Lantern".equals(k.getsValueName())));
     }

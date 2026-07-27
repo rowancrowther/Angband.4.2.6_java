@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 
 import java.io.IOException;
@@ -49,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * results survive.
  *
  * <p>The assembler resolves against the renderer and base registries, so {@link #seedRegistries()}
- * loads the real renderer and base files and injects them into {@code GameConstants}' private static
+ * loads the real renderer and base files and injects them into {@code UIRegistry}' private static
  * fields via reflection, independent of full-game init order.
  *
  * @author Rowan Crowther
@@ -73,7 +72,7 @@ class UIEntryReaderTest {
     }
 
     private static void setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         f.set(null, value);
     }

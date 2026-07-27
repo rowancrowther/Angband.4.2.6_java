@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -201,7 +201,7 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             List<MonsterBase> bases = new ArrayList<>();
             boolean badMonsterBase = false;
             for (String base : record.monsterBases()) {
-                MonsterBase mBase = GameConstants.lookupMonsterBase(base);
+                MonsterBase mBase = MonsterRegistry.lookupMonsterBase(base);
                 if (mBase == null) {
                     errors.add("Pit at line: " + line + " has " +
                             "an unknown monster base: " + base);
@@ -217,7 +217,7 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
             List<MonsterRace> bannedRaces = new ArrayList<>();
             boolean badMonsterRace = false;
             for (String race : record.bannedMonsterBases()) {
-                MonsterRace monRace = GameConstants.lookupMonsterRace(race);
+                MonsterRace monRace = MonsterRegistry.lookupMonsterRace(race);
                 if (monRace == null) {
                     errors.add("Pit at line: " + line + " has " +
                             "an unknown banned monster base: " + race);

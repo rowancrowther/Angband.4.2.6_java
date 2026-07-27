@@ -22,6 +22,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.player.Quest;
 
 import java.io.IOException;
@@ -38,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code QuestAssembler} -&gt; {@link Quest}.
  *
  * <p>The quest assembler resolves each {@code race:} name against the loaded monster races via
- * {@link GameConstants#lookupMonsterRace}, so the registry must be populated first. Rather than
+ * {@link MonsterRegistry#lookupMonsterRace}, so the registry must be populated first. Rather than
  * hand-seed it, the suite runs the full {@link GameConstants#init()} chain in {@link #bootstrap()}
  * (which loads {@code monster.txt} and then, late in the order, {@code quest.txt} itself) - the same
  * bootstrap {@code PitReaderTest} uses for the other monster-dependent reader.
@@ -72,10 +74,7 @@ class QuestReaderTest {
      */
     @AfterAll
     static void cleanup() throws Exception {
-        GameConstants.objectKinds.clear();
-        Field f = GameConstants.class.getDeclaredField("kindsByTvalSval");
-        f.setAccessible(true);
-        ((java.util.Map<?, ?>) f.get(null)).clear();
+        ObjectRegistry.reset();
     }
 
     // ---- fixture helpers -------------------------------------------------

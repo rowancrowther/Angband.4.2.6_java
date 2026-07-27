@@ -25,6 +25,7 @@ import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
@@ -88,7 +89,7 @@ public class ObjectKind {
 
     /**
      * The resolved numeric sub-type value (sval), assigned when the kind is registered under its
-     * base (see {@link uk.co.jackoftrades.middle.game.globals.GameConstants#addObjectKind}).
+     * base (see {@link ObjectRegistry#addObjectKind}).
      *
      * @author Rowan Crowther
      */

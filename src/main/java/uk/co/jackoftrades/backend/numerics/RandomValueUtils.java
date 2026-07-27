@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 
 import java.util.Random;
 
@@ -270,7 +271,7 @@ public class RandomValueUtils {
      * standard deviation max / 4 (allow up to 4 standard deviations)
      */
     public static int mBonus(int max, int level) {
-        int maxRandDepth = GameConstants.getMaxRandDepth();
+        int maxRandDepth = WorldRegistry.getMaxRandDepth();
         if (level >= maxRandDepth) level = maxRandDepth - 1;
 
         int bonus = simulateDivision(max * level, maxRandDepth);

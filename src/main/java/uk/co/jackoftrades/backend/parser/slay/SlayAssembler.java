@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.slay;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Slay;
@@ -87,7 +87,7 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
                     continue;
                 }
             } else if (!rawBase.isEmpty()) {
-                monsterBase = GameConstants.lookupMonsterBase(rawBase);
+                monsterBase = MonsterRegistry.lookupMonsterBase(rawBase);
                 if (monsterBase == null) {
                     errors.add("Block beginning line: " + line + " has unknown monster base");
                     continue;

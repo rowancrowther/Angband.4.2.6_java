@@ -23,7 +23,6 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ObjectProperty;
 import uk.co.jackoftrades.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftrades.middle.objects.enums.*;
@@ -62,9 +61,9 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>{@link ObjectProperty} exposes no getters, so field reads go through the
  * {@link #field(ObjectProperty, String)} reflection helper. The assembler resolves
- * {@code bindui} targets against the {@code GameConstants} UI-entry registry, so
+ * {@code bindui} targets against the {@code UIRegistry} UI-entry registry, so
  * {@link #seedRegistries()} loads the real renderer, base and entry files and
- * injects them into {@code GameConstants}' private static fields via reflection,
+ * injects them into {@code UIRegistry}' private static fields via reflection,
  * independent of full-game init order.
  *
  * @author Rowan Crowther
@@ -93,7 +92,7 @@ class ObjectPropertyReaderTest {
     }
 
     private static void setStatic(String fieldName, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(fieldName);
+        Field f = RegistrySeeding.resolve(fieldName);
         f.setAccessible(true);
         f.set(null, value);
     }

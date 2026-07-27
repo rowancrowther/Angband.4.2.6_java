@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.backend.parser;
 
-import uk.co.jackoftrades.middle.game.globals.GameConstantsData;
+import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 
 import java.util.List;
 

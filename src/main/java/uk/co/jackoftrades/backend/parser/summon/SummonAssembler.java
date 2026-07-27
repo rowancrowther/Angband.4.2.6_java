@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.summon;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.Summon;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -73,7 +73,7 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
             List<MonsterBase> bases = new ArrayList<>();
             boolean illegalBase = false;
             for (String base : record.bases()) {
-                MonsterBase monsterBase = GameConstants.lookupMonsterBase(base);
+                MonsterBase monsterBase = MonsterRegistry.lookupMonsterBase(base);
                 if (monsterBase == null) {
                     errors.add("Block starting at line: " + line + " has " +
                             "an invalid monster base: " + base);

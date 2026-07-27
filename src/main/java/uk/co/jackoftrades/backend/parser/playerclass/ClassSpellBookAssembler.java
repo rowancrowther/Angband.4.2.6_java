@@ -24,6 +24,8 @@ import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.magic.MagicBook;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.magic.MagicSpell;
@@ -41,8 +43,8 @@ import java.util.*;
  * Turns a class's raw {@link ClassSpellBookParseRecord}s into domain {@link MagicBook}s and, as a
  * side effect, registers the {@link ObjectKind} that backs each book. This is the deepest
  * cross-referencing leg of the class loader: for every book it resolves the magic
- * {@link MagicRealm} ({@link GameConstants#lookupRealm}) and the {@link ObjectBase} of the book's
- * tval ({@link GameConstants#getBaseFromTVal}), and it descends into the book's spells through
+ * {@link MagicRealm} ({@link PlayerRegistry#lookupRealm}) and the {@link ObjectBase} of the book's
+ * tval ({@link ObjectRegistry#getBaseFromTVal}), and it descends into the book's spells through
  * {@link ClassSpellAssembler} (which in turn resolves each effect, including {@code SHAPECHANGE}
  * targets, against their registries).
  *
@@ -94,7 +96,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     continue;
                 }
             }
-            MagicRealm realm = GameConstants.lookupRealm(record.realm());
+            MagicRealm realm = PlayerRegistry.lookupRealm(record.realm());
             if (realm == null) {
                 errors.add("Spell book at line: " + line + " has " +
                         "an unknown realm: " + record.realm());
@@ -167,7 +169,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             // not in object.txt, so the kind is built from the base plus this book's properties and
             // registered, making the book an obtainable item. Dungeon books are marked "good" and
             // set to ignore every base element, as in the C original.
-            ObjectBase base = GameConstants.getBaseFromTVal(tValue);
+            ObjectBase base = ObjectRegistry.getBaseFromTVal(tValue);
             if (base == null) {
                 errors.add("Spell book at line: " + line + " has " +
                         "an unknown book tValue: " + bookName);
@@ -198,7 +200,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     null, null, null, null,
                     false, false, 0, false, tValue);
 
-            GameConstants.addObjectKind(kind);
+            ObjectRegistry.addObjectKind(kind);
         }
 
         return magicBooks;

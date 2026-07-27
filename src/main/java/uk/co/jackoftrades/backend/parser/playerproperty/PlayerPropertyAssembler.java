@@ -21,6 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.PlayerProperty;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -128,7 +129,7 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                             "as part of bindui: " + record.bindui());
                     continue;
                 }
-                UIEntry entry = GameConstants.getUIEntry(b.get(0) + b.get(1));
+                UIEntry entry = UIRegistry.getUIEntry(b.get(0) + b.get(1));
                 if (entry == null) {
                     errors.add("Record starting at line: " + line + " has illegal UIEntry: "
                             + record.bindui());

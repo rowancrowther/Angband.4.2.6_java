@@ -23,7 +23,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
 import uk.co.jackoftrades.middle.magic.MagicBook;
 import uk.co.jackoftrades.middle.player.PlayerClass;
@@ -47,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The class assembler is the deepest cross-referencing loader in the port: for casters it
  * descends class -&gt; magic -&gt; book -&gt; spell -&gt; effect, resolving three registries through
- * {@link GameConstants} along the way — magic {@link uk.co.jackoftrades.middle.magic.MagicRealm}s (a
+ * the domain registries along the way — magic {@link uk.co.jackoftrades.middle.magic.MagicRealm}s (a
  * book's {@code realm}), {@link uk.co.jackoftrades.middle.objects.ObjectBase}s (a book's object base,
  * used to synthesise the book's {@link uk.co.jackoftrades.middle.objects.ObjectKind}), and
  * {@link uk.co.jackoftrades.middle.player.PlayerShape}s (every {@code SHAPECHANGE} spell effect).
@@ -114,7 +113,7 @@ class PlayerClassReaderTest {
 
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
-     * {@link GameConstants} does not leak into other test suites.
+     * the registries do not leak into other test suites.
      *
      * @author Rowan Crowther
      */
@@ -148,7 +147,7 @@ class PlayerClassReaderTest {
     }
 
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

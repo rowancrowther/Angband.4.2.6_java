@@ -23,7 +23,7 @@ import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.player.Player;
@@ -1127,7 +1127,7 @@ public class Square {
             objectPile = new Pile();
 
         if (full) {
-            feat = GameConstants.lookupFeature(TerrainFlags.FEAT_FLOOR);
+            feat = TerrainRegistry.lookupFeature(TerrainFlags.FEAT_FLOOR);
             light = 2;
             monsterIndex = 1;
             objectPile.clear();
@@ -1139,7 +1139,7 @@ public class Square {
             info.clear();
             info.negate();
         } else {
-            feat = GameConstants.lookupFeature(TerrainFlags.FEAT_NONE);
+            feat = TerrainRegistry.lookupFeature(TerrainFlags.FEAT_NONE);
             light = 0;
             monsterIndex = -1;
             objectPile.clear();

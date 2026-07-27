@@ -26,6 +26,8 @@ import uk.co.jackoftrades.frontend.colour.ColourCycle;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.monsters.*;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
@@ -81,7 +83,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
             String text = record.desc();
             String plural = record.plural();
             String baseType = record.base();
-            MonsterBase base = GameConstants.lookupMonsterBase(baseType);
+            MonsterBase base = MonsterRegistry.lookupMonsterBase(baseType);
             if (base == null) {
                 errors.add("Monster at line: " + line + " has " +
                         "an invalid monster-base: " + baseType);
@@ -241,7 +243,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
             for (MonsterParseRecord.MonsterBlowParseRecord blow : record.blows()) {
                 BlowEffect effect;
                 Random blowDamage;
-                BlowMethod method = GameConstants.lookupBlowMethod(blow.method());
+                BlowMethod method = MonsterRegistry.lookupBlowMethod(blow.method());
                 if (method == null) {
                     errors.add("Monster at line: " + line + " has " +
                             "an unknown blow method: " + blow.method());
@@ -251,7 +253,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 // effect and an omitted damage to a 0d0 Random, so every assembled blow ends up with a
                 // non-null effect and dice -- matching C's findeff("NONE") and its zeroed dice.
                 if (!blow.effect().isEmpty()) {
-                    effect = GameConstants.lookupBlowEffect(blow.effect());
+                    effect = MonsterRegistry.lookupBlowEffect(blow.effect());
                     if (effect == null) {
                         errors.add("Monster at line: " + line + " has " +
                                 "an unknown blow effect: " + blow.effect());
@@ -268,7 +270,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                         blowDamage = new Random(0, 0, 0, 0, false);
                     }
                 } else {
-                    effect = GameConstants.lookupBlowEffect("NONE");
+                    effect = MonsterRegistry.lookupBlowEffect("NONE");
                     blowDamage = new Random(0, 0, 0, 0, false);
                 }
                 if (!illegalBlows) {
@@ -351,7 +353,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             badDrop = true;
                             continue;
                         }
-                        ObjectKind kind = GameConstants.lookupObjectKind(tValue, dropName);
+                        ObjectKind kind = ObjectRegistry.lookupObjectKind(tValue, dropName);
                         if (kind == null) {
                             errors.add("Monster at line: " + line + " has " +
                                     "an unknown drop base: " + dropName);
@@ -478,7 +480,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             "a friends base chance value out of bounds.");
                     badFriendBase = true;
                 }
-                MonsterBase monsterBase = GameConstants.lookupMonsterBase(baseKind);
+                MonsterBase monsterBase = MonsterRegistry.lookupMonsterBase(baseKind);
                 if (monsterBase == null) {
                     errors.add("Monster at line: " + line + " has " +
                             "a unknown friends base: " + baseKind);
@@ -523,7 +525,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                             "an unknown mimic type value: " + tVal);
                     badMimic = true;
                 } else {
-                    mimicKind = GameConstants.lookupObjectKind(tValue, sVal);
+                    mimicKind = ObjectRegistry.lookupObjectKind(tValue, sVal);
                     if (mimicKind == null) {
                         errors.add("Monster at line: " + line + " has " +
                                 "an unknown mimic name: " + sVal);
@@ -544,7 +546,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
             String cyclerGroup = record.colourCycleGroup();
             String colourCycleName = record.colourCycleName();
             if (!colourCycleName.isEmpty() && !cyclerGroup.isEmpty()) {
-                Map<String, ColourCycle> group = GameConstants.getVisualsCyclerTable().getByGroup(cyclerGroup);
+                Map<String, ColourCycle> group = MonsterRegistry.getVisualsCyclerTable().getByGroup(cyclerGroup);
                 if (group != null) {
                     visualsCycler = group.get(colourCycleName);
                 } else {

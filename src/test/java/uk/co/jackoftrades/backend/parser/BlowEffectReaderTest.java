@@ -22,7 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.Projection;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftrades.middle.monsters.BlowEffect;
 import uk.co.jackoftrades.middle.monsters.enums.BlowEffectType;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -66,7 +66,7 @@ class BlowEffectReaderTest {
 
     /**
      * The assembler resolves {@code lash-type:} through
-     * {@link GameConstants#lookupProjectionByLash}, so the projection table has to be
+     * {@link WorldRegistry#lookupProjectionByLash}, so the projection table has to be
      * populated before any blow effect can be assembled.
      */
     @BeforeAll
@@ -81,12 +81,13 @@ class BlowEffectReaderTest {
     }
 
     /**
-     * Overwrite a private static on {@link GameConstants}, returning the previous value so
+     * Overwrite a private static on the owning registry (resolved via {@link RegistrySeeding}),
+     * returning the previous value so
      * {@link #restore()} can put the real table back and leave the suite's shared statics
      * as they were found.
      */
     private static Object setStatic(String field, Object value) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(field);
+        Field f = RegistrySeeding.resolve(field);
         f.setAccessible(true);
         Object old = f.get(null);
         f.set(null, value);

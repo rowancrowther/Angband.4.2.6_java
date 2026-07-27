@@ -20,6 +20,7 @@ package uk.co.jackoftrades.backend.parser.quest;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.player.Quest;
 
@@ -53,7 +54,7 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      *       is all digits, so the only reachable {@link NumberFormatException} is overflow, not
      *       stray letters;</li>
      *   <li>a {@code race} name that resolves to no monster (see
-     *       {@link GameConstants#lookupMonsterRace}, exact-then-substring, faithful to C
+     *       {@link MonsterRegistry#lookupMonsterRace}, exact-then-substring, faithful to C
      *       {@code lookup_monster});</li>
      *   <li>a {@code number} that overflows {@code int}, as with {@code level}.</li>
      * </ul>
@@ -84,7 +85,7 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
                         "an invalid level integer: " + record.level());
                 continue;
             }
-            MonsterRace race = GameConstants.lookupMonsterRace(record.race());
+            MonsterRace race = MonsterRegistry.lookupMonsterRace(record.race());
             if (race == null) {
                 errors.add("Quest at line: " + line + " has " +
                         "an unknown monster race: " + record.race());

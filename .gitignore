@@ -52,8 +52,11 @@ bin/
 /free software
 /scratch/
 
+### Claude ###
+/.claude/
+CLAUDE.md
+
 ## ANTLR4 ##
 *.interp
-/.claude/
 /src/main/gen/
 /src/test/

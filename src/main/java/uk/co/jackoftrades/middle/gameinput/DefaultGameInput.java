@@ -45,8 +45,9 @@ import java.util.function.Predicate;
  * <p>Each method's parameter and return contract is documented on {@link GameInput}; here every one
  * reproduces C's absent-hook fall-back. Most decline - a value getter returns {@link Optional#empty()}
  * and {@link #getCheck} answers "no" - but the fall-backs are not uniform: {@link #panelContains} and
- * {@link #mapIsVisible} return {@code true}, and {@link #confirmDebug}, whose C fall-back does real
- * work this stub cannot yet reproduce, throws rather than lie.
+ * {@link #mapIsVisible} return {@code true}, and {@link #confirmDebug} is not overridden here at all -
+ * it inherits {@link GameInput}'s generic fall-back (mention the effects, flush, then defer to
+ * {@link #getCheck}), which given this stub's "no" answer declines.
  *
  * @author Rowan Crowther
  */
@@ -175,6 +176,5 @@ public class DefaultGameInput implements GameInput {
      */
     @Override
     public void viewAbilityMenu(List<PlayerAbility> abilityList) {
-
     }
 }

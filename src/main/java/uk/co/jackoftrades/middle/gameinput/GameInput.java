@@ -142,9 +142,10 @@ public interface GameInput {
 
     /**
      * Asks the player to confirm enabling the dangerous debug commands - the port of C's
-     * {@code confirm_debug}. Note this hook's C fall-back is not a simple decline: it warns and then
-     * defers to {@link #getCheck}, so an implementation cannot faithfully stand in until the
-     * message-output seam is available.
+     * {@code confirm_debug}. Unlike the other hooks this one carries its own fall-back: C's absent-hook
+     * path is not a simple decline but a generic procedure, so this {@code default} reproduces it -
+     * warn about the effects, flush the messages, then defer to {@link #getCheck}. An implementation
+     * overrides it only to supply a UI-specific confirmation.
      *
      * @return {@code true} if the player confirmed
      */

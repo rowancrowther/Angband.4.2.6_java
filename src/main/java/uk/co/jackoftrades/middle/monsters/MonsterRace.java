@@ -43,8 +43,25 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class MonsterRace {
+    /**
+     * Log4j logger for this class, used to report data problems encountered while building or
+     * resolving monster races.
+     *
+     * @author Rowan Crowther
+     */
     public static final Logger logger = LogManager.getLogger();
 
+    /**
+     * The three message variants shown when a monster casts a spell, chosen by what the player can
+     * perceive: {@code visible} when the caster is seen, {@code invisible} when only the effect is
+     * noticed, and {@code miss} when the spell fails to connect. Groups the C original's parallel
+     * message strings into a single value.
+     *
+     * @param visible   message shown when the casting monster is visible
+     * @param invisible message shown when the caster is unseen but the spell is noticed
+     * @param miss      message shown when the spell misses or fails
+     * @author Rowan Crowther
+     */
     public record MonsterSpellMessages(String visible, String invisible, String miss) {
     }
 
@@ -257,6 +274,12 @@ public class MonsterRace {
      */
     private MonsterLore lore;
 
+    /**
+     * The colour-cycling animation driving this race's display glyph, resolved by group/cycle name at
+     * construction; {@code null} for a race whose glyph does not animate.
+     *
+     * @author Rowan Crowther
+     */
     private ColourCycle cycler;
 
     /**
@@ -291,6 +314,8 @@ public class MonsterRace {
      * @param mimicKinds    mimic object kinds
      * @param shapes        shape names
      * @param numShapes     number of shapes
+     * @param cycler        colour-cycling animation for the display glyph, or {@code null} if it does
+     *                      not animate
      * @author Rowan Crowther
      */
     public MonsterRace(String name, String text, String plural, MonsterBase base,
@@ -360,8 +385,19 @@ public class MonsterRace {
      * @return this race's set race flags
      * @author Rowan Crowther
      */
-    public Flag<MonsterRaceFlag> getFlags() {
+    private Flag<MonsterRaceFlag> getFlags() {
         return flags;
+    }
+
+    /**
+     * Test whether this race has a given race flag set — the port of C's {@code rf_has}.
+     *
+     * @param flag the race flag to test
+     * @return true if the flag is set on this race
+     * @author Rowan Crowther
+     */
+    public boolean hasMonsterRaceFlag(MonsterRaceFlag flag) {
+        return flags.has(flag);
     }
 
     /**

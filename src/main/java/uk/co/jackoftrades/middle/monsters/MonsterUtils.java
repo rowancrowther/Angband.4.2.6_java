@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+import uk.co.jackoftrades.middle.cave.Chunk;
+
 /**
  * Free-standing helper routines for the monster subsystem — a port landing spot for the utility
  * corners of C's {@code mon-util.c} and friends.
@@ -38,6 +40,24 @@ public class MonsterUtils {
      * @param monster the arena monster to remove (C passes the health-bar trackee)
      */
     public static void killArenaMonster(Monster monster) {
+        // Stub class TODO: implement
+    }
+
+    /**
+     * Recalculate what the player currently knows about a monster — the port of C's
+     * {@code update_mon} ({@code mon-util.c}). Works out whether the monster is visible (by sight,
+     * telepathy, or detection), updates its per-monster visibility flags accordingly, and triggers any
+     * disturbance or redraw the change implies. Called whenever something that could affect a
+     * monster's visibility has changed.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param monster the monster whose visibility is being reassessed
+     * @param cave    the level the monster lives on
+     * @param full    when {@code true}, also recompute the monster's distance from the player before
+     *                reassessing visibility; when {@code false}, reuse the stored distance
+     */
+    public static void updateMonster(Monster monster, Chunk cave, boolean full) {
         // Stub class TODO: implement
     }
 }

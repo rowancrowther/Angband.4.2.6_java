@@ -30,8 +30,11 @@ import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterTurn;
 import uk.co.jackoftrades.middle.monsters.MonsterUtils;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerUtils;
@@ -45,8 +48,7 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
  * <p>This is where the passage of game time and the per-turn processing live: how much energy an
  * actor banks each game turn for its speed, the day/night cycle, and (as the port grows) the
  * {@code process_world} / {@code process_player} / {@code run_game_loop} pass that drives every
- * creature's turn. It is deliberately kept separate from {@link
- * uk.co.jackoftrades.middle.game.gameengine.GameState}: {@code GameState} owns the mutable
+ * creature's turn. It is deliberately kept separate from {@link GameState}: {@code GameState} owns the mutable
  * "current game" <em>data</em> (the turn counter, day count, RNG seeds, character-stage flags),
  * while {@code GameWorld} owns the <em>behaviour</em> that reads and advances it. In C both sat in
  * one file only because C uses file-scope globals as its singleton.
@@ -423,7 +425,80 @@ public class GameWorld {
      * {@code SHOW} flag and the drop status, then runs the update and redraw passes.
      */
     private void processPlayerCleanup() {
-        // STUB: TODO - complete
+        // Significant
+        if (player.getPlayerUpkeep().energyUse()) {
+            // Use some energy
+            player.setEnergy(player.getEnergy() - player.getPlayerUpkeep().getEnergyUse());
+
+            // increment the total energy counter
+            player.setTotalEnergy(player.getTotalEnergy() + player.getPlayerUpkeep().getEnergyUse());
+
+            /*
+             * Since the player used energy, the command wasn't
+             * cancelled.  Therefore, allow the bloodlust check on
+             * the player's next command unless this was a background
+             * command and the last player-issued command passed the
+             * bloodlust check but was cancelled (skip_cmd_coercion is two
+             * in that case).
+             */
+            if (player.getSkipCmdCoercion() != 0) {
+                player.setSkipCmdCoercion(player.getSkipCmdCoercion() - 1);
+            }
+
+            // Has the player taken terrain damage
+            PlayerUtils.takeTerrainDamage(player, player.getGrid());
+
+            // Do nothing else if the player has auto-dropped stuff
+            if (!player.getPlayerUpkeep().getDropping()) {
+                if (player.getTimedEffect(TimedEffect.TMD_IMAGE) != 0)
+                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_MAP);
+
+                // Shimmer multi-hued monsters
+                for (Monster monster : currentCave.getMonsters()) {
+                    if (monster == null)
+                        continue;
+                    if (monster.getMonsterRace() == null)
+                        continue;
+                    if (!monster.getMonsterRace().hasMonsterRaceFlag(MonsterRaceFlag.RF_ATTR_MULTI))
+                        continue;
+                    currentCave.squareLightSpot(monster.getGrid());
+
+                }
+
+                // Clear the NICE flag and show marked monsters
+                for (Monster monster : currentCave.getMonsters()) {
+                    if (monster == null)
+                        continue;
+                    monster.monsterFlagOff(MonsterFlag.MFLAG_NICE);
+                    if (monster.hasMonsterFlag(MonsterFlag.MFLAG_MARK)) {
+                        if (!monster.hasMonsterFlag(MonsterFlag.MFLAG_SHOW)) {
+                            monster.monsterFlagOff(MonsterFlag.MFLAG_MARK);
+                            MonsterUtils.updateMonster(monster, currentCave, false);
+                        }
+                    }
+                }
+            }
+        } else if (player.getSkipCmdCoercion() > 1) {
+            /*
+             * The last command was a backround command executing while
+             * skipping the bloodlust check on the player's next command.
+             * Set skip_cmd_coercion back to one in preparation for the
+             * player's next turn.
+             */
+            player.setSkipCmdCoercion(1);
+        }
+
+        // Clear the SHOW flag and player drop status
+        for (Monster monster : currentCave.getMonsters()) {
+            if (monster != null) {
+                monster.monsterFlagOff(MonsterFlag.MFLAG_SHOW);
+            }
+        }
+        player.getPlayerUpkeep().setDropping(false);
+
+        // HACK! update needed first because inventory may have changed
+        player.updateStuff();
+        player.redrawStuff();
     }
 
     /**
@@ -435,6 +510,6 @@ public class GameWorld {
      * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
      */
     private void processWorld() {
-        // Stub class TODO: implement
+        // Stub class: TODO - Implement
     }
 }

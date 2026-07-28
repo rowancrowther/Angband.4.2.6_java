@@ -234,4 +234,23 @@ public class Monster {
     public boolean hasMonsterFlag(MonsterFlag flag) {
         return monsterFlag.has(flag);
     }
+
+    /**
+     * Clear one of this monster's transient status flags — the port of C's {@code mflag_off}. Leaves
+     * the flag clear whether or not it was previously set.
+     *
+     * @param flag the flag to clear
+     * @author Rowan Crowther
+     */
+    public void monsterFlagOff(MonsterFlag flag) {
+        monsterFlag.off(flag);
+    }
+
+    /**
+     * @return this monster's current grid location
+     * @author Rowan Crowther
+     */
+    public Loc getGrid() {
+        return grid;
+    }
 }

@@ -618,8 +618,8 @@ public class ItemObject {
      */
     private void originCombine(@NotNull ItemObject item) {
         if (!originRace.equals(item.originRace)) {
-            boolean uniqThis = (this.originRace.getFlags().has(MonsterRaceFlag.RF_UNIQUE));
-            boolean uniqItem = (item.originRace != null && item.originRace.getFlags().has(MonsterRaceFlag.RF_UNIQUE));
+            boolean uniqThis = (this.originRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE));
+            boolean uniqItem = (item.originRace != null && item.originRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE));
 
             if (uniqThis && !uniqItem) {
                 // Do nothing - keep a unique rather than destroy it

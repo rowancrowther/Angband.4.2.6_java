@@ -482,4 +482,30 @@ public class Player {
         // Stub class TODO: implement
         return false;
     }
+
+    /**
+     * Sets the running total of energy the player has ever used - the port of writing C's
+     * {@code p->total_energy}. The per-turn cleanup adds each command's energy cost here, tracking the
+     * game's overall pace.
+     *
+     * @param totalEnergy the new cumulative energy total
+     */
+    public void setTotalEnergy(int totalEnergy) {
+        this.totalEnergy = totalEnergy;
+    }
+
+    /**
+     * @return the running total of energy the player has ever used - the port of C's
+     * {@code p->total_energy}
+     */
+    public int getTotalEnergy() {
+        return totalEnergy;
+    }
+
+    /**
+     * @return the player's current grid on the level - the port of C's {@code p->grid}
+     */
+    public Loc getGrid() {
+        return grid;
+    }
 }

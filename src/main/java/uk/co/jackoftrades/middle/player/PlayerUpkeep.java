@@ -268,6 +268,34 @@ public class PlayerUpkeep {
     }
 
     /**
+     * @return the energy spent by the current command - the port of reading C's
+     * {@code upkeep->energy_use}. Unlike {@link #energyUse()}, which reports only whether any energy
+     * was used, this returns the actual amount, for the loop to deduct from the player's energy.
+     */
+    public int getEnergyUse() {
+        return energyUse;
+    }
+
+    /**
+     * @return {@code true} while an auto-drop is in progress - the port of reading C's
+     * {@code upkeep->dropping}. During an auto-drop the per-turn cleanup skips its monster-refresh
+     * work, since the map is about to be redrawn anyway.
+     */
+    public boolean getDropping() {
+        return dropping;
+    }
+
+    /**
+     * Sets (or clears) the auto-drop-in-progress flag - the port of writing C's
+     * {@code upkeep->dropping}. The per-turn cleanup clears it once the drop has been handled.
+     *
+     * @param dropping {@code true} while stuff is being auto-dropped
+     */
+    public void setDropping(boolean dropping) {
+        this.dropping = dropping;
+    }
+
+    /**
      * @return {@code true} when the current level needs regenerating - the port of reading C's
      * {@code upkeep->generate_level}
      */

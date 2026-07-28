@@ -75,8 +75,8 @@ import static org.junit.jupiter.api.Assertions.*;
  * integer too large for {@code int}, which {@link #anOverflowingIntegerIsReportedAsAMalformedInteger()}
  * exercises against {@code speed:}; the other eleven are the same shape and are taken as covered.
  *
- * <p>{@link MonsterRace} exposes only {@code getName()} and {@code getFlags()}, so other field-level
- * assertions read its private fields reflectively through {@link #field}.
+ * <p>{@link MonsterRace} exposes only {@code getName()} and {@code hasMonsterRaceFlag(...)}, so other
+ * field-level assertions read its private fields reflectively through {@link #field}.
  *
  * @author Rowan Crowther
  */
@@ -207,7 +207,7 @@ class MonsterReaderTest {
         assertEquals(3, (int) field(cat, "rarity"));      // rarity:3
         assertEquals(0, (int) field(cat, "mexp"));        // experience:0
 
-        assertTrue(cat.getFlags().has(MonsterRaceFlag.RF_RAND_25));  // flags:RAND_25
+        assertTrue(cat.hasMonsterRaceFlag(MonsterRaceFlag.RF_RAND_25));  // flags:RAND_25
 
         List<?> blows = field(cat, "blow");               // blow:CLAW:HURT:1d1
         assertEquals(1, blows.size());
@@ -223,10 +223,10 @@ class MonsterReaderTest {
         assertNotNull(urchin, "urchin should load once method-only blows (blow:BEG) are handled");
 
         // Two separate flags: lines must accumulate into one flag set, not overwrite.
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_MALE));       // flags:MALE
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_RAND_25));    // flags:RAND_25 | ...
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_OPEN_DOOR));
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_TAKE_ITEM));
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_MALE));       // flags:MALE
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_RAND_25));    // flags:RAND_25 | ...
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_OPEN_DOOR));
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_TAKE_ITEM));
 
         // blow:BEG (method only) and blow:TOUCH:EAT_GOLD (method + effect, no dice).
         assertEquals(2, ((List<?>) field(urchin, "blow")).size());
@@ -256,9 +256,9 @@ class MonsterReaderTest {
         // Proof the base is the only source of these two (the urchin record never names them).
         assertTrue(MonsterRegistry.lookupMonsterBase("townsfolk").getFlags().has(MonsterRaceFlag.RF_SPIRIT));
 
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_SPIRIT), "inherited from townsfolk base");
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_CLEAR_WEB), "inherited from townsfolk base");
-        assertTrue(urchin.getFlags().has(MonsterRaceFlag.RF_MALE), "its own flags:MALE");
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_SPIRIT), "inherited from townsfolk base");
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_CLEAR_WEB), "inherited from townsfolk base");
+        assertTrue(urchin.hasMonsterRaceFlag(MonsterRaceFlag.RF_MALE), "its own flags:MALE");
     }
 
     @Test
@@ -271,9 +271,9 @@ class MonsterReaderTest {
         assertTrue(MonsterRegistry.lookupMonsterBase("mold").getFlags().has(MonsterRaceFlag.RF_HURT_FIRE),
                 "the base carries HURT_FIRE, so there is something to turn off");
 
-        assertFalse(redMold.getFlags().has(MonsterRaceFlag.RF_HURT_FIRE), "flags-off:HURT_FIRE removed it");
-        assertTrue(redMold.getFlags().has(MonsterRaceFlag.RF_IM_POIS), "sibling inherited flag survives");
-        assertTrue(redMold.getFlags().has(MonsterRaceFlag.RF_NEVER_MOVE), "sibling inherited flag survives");
+        assertFalse(redMold.hasMonsterRaceFlag(MonsterRaceFlag.RF_HURT_FIRE), "flags-off:HURT_FIRE removed it");
+        assertTrue(redMold.hasMonsterRaceFlag(MonsterRaceFlag.RF_IM_POIS), "sibling inherited flag survives");
+        assertTrue(redMold.hasMonsterRaceFlag(MonsterRaceFlag.RF_NEVER_MOVE), "sibling inherited flag survives");
     }
 
     @Test

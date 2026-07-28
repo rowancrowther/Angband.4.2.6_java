@@ -27,6 +27,8 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterGroup;
@@ -34,6 +36,7 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -213,7 +216,20 @@ public class Chunk {
      */
     private ArrayList<Connector> join;
 
+    /**
+     * The player associated with this chunk, used by the knowledge accessors that compare this chunk
+     * against the player's remembered cave (see {@link #isKnown} and {@link #squareSetKnownFeat}).
+     *
+     * @author Rowan Crowther
+     */
     private Player player;
+    /**
+     * The live current level — {@link GameState#getCave()} at construction. Several accessors compare
+     * {@code this} against it to tell whether this chunk is the real cave or the player's remembered
+     * copy, since the two share the same {@code Chunk} type.
+     *
+     * @author Rowan Crowther
+     */
     private Chunk currentLevel;
 
     /**
@@ -236,6 +252,7 @@ public class Chunk {
      * @param monCnt         live monster count
      * @param monCurrent     index of the monster being processed
      * @param numRepro       number of breeding monsters
+     * @param player         the player associated with this chunk
      * @author Rowan Crowther
      */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
@@ -1388,5 +1405,32 @@ public class Chunk {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * @return the raw monster array, indexed by monster index — the port of reading C's
+     * {@code cave->monsters}. Index 0 is a reserved dummy and unused slots are {@code null} (C's
+     * empty, {@code race == NULL} slots), so callers iterating this must skip {@code null} entries.
+     * @author Rowan Crowther
+     */
+    public Monster[] getMonsters() {
+        return monsters;
+    }
+
+    /**
+     * Flag a single grid as needing to be relit and redrawn on the map — the port of C's
+     * {@code square_light_spot}. Sets the item-list redraw flag and signals the map-update event for
+     * this grid, so the display recomputes the square (for example to reshow a monster or a light
+     * change) on the next refresh; out-of-bounds grids are ignored.
+     *
+     * @param grid the grid whose display needs refreshing
+     * @author Rowan Crowther
+     */
+    public void squareLightSpot(@NotNull Loc grid) {
+        if (!inBounds(grid)) return;
+
+        player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ITEMLIST);
+        // The data is passed x/y and not y/x on this line as that is what the C does.
+        GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, grid.getX(), grid.getY());
     }
 }

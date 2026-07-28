@@ -25,7 +25,7 @@ import uk.co.jackoftrades.backend.parser.ProjectionReader;
 import uk.co.jackoftrades.backend.parser.QuestReader;
 import uk.co.jackoftrades.backend.parser.WorldReader;
 import uk.co.jackoftrades.middle.cave.World;
-import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftrades.middle.player.Quest;

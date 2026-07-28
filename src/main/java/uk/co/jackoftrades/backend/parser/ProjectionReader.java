@@ -25,7 +25,7 @@ import uk.co.jackoftrades.backend.parser.grammars.projection.ProjectionGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.projection.ProjectionLexer;
 import uk.co.jackoftrades.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftrades.backend.parser.projection.ProjectionParseRecord;
-import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 
 import java.io.IOException;
 import java.util.ArrayList;

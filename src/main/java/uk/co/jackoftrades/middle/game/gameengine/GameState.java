@@ -71,28 +71,28 @@ public class GameState {
     /**
      * @return the current game-turn count
      */
-    public int getTurn() {
+    public static int getTurn() {
         return turn;
     }
 
     /**
      * @return the number of game days elapsed
      */
-    public int getDaycount() {
+    public static int getDaycount() {
         return dayCount;
     }
 
     /**
      * Advances the game clock by one turn.
      */
-    public void incrementTurn() {
+    public static void incrementTurn() {
         turn++;
     }
 
     /**
      * Resets the game clock to zero, as done when a fresh character is born.
      */
-    public void resetTurnForNewPlayer() {
+    public static void resetTurnForNewPlayer() {
         turn = 0;
     }
 
@@ -101,7 +101,7 @@ public class GameState {
      *
      * @param savedTurnValue the turn count recorded in the save
      */
-    public void resetTurnFromSave(int savedTurnValue) {
+    public static void resetTurnFromSave(int savedTurnValue) {
         turn = savedTurnValue;
     }
 

@@ -19,7 +19,25 @@ package uk.co.jackoftrades.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.cave.Generate;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
+import uk.co.jackoftrades.middle.effect.EffectUtil;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.game.enums.CommandCode;
+import uk.co.jackoftrades.middle.game.enums.CommandContext;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.monsters.MonsterTurn;
+import uk.co.jackoftrades.middle.monsters.MonsterUtils;
+import uk.co.jackoftrades.middle.objects.ObjectUtils;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerUtils;
+import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 /**
  * The game-clock and turn-loop machinery — the port of C's {@code game-world.c}.
@@ -40,6 +58,31 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
  * @author Rowan Crowther
  */
 public class GameWorld {
+    /**
+     * The player being driven this game, cached from {@link GameState#getPlayer()} at construction —
+     * the port of C's file-scope {@code player} global. Stands in for the pointer that every
+     * {@code game-world.c} function dereferences.
+     */
+    private Player player;
+    /**
+     * The level the player currently occupies, cached from {@link GameState#getCave()} at
+     * construction — the port of C's file-scope {@code cave} global.
+     *
+     * <p><b>Known limitation:</b> C re-reads its {@code cave} global on every loop iteration, so it
+     * always sees the freshly generated level after {@link Generate#prepareNextLevel(Player)}. This
+     * cached copy goes stale across a level regeneration and must be refreshed (or read live from
+     * {@link GameState#getCave()}) once {@link #processWorld()} does real work.
+     */
+    private Chunk currentCave;
+
+    /**
+     * Whether a playable dungeon level currently exists — the port of C's {@code character_dungeon}
+     * global. Guards the level-teardown path in {@link #runGameLoop()} so {@link #onLeaveLevel()}
+     * runs only when there is a level to leave. Set elsewhere (character birth / save load) once
+     * those subsystems are ported; until then it stays {@code false}.
+     */
+    private boolean characterDungeon;
+
     /**
      * Energy gained per game turn as a function of speed, indexed directly by the speed value
      * (0–199, with 110 being normal speed) — the port of C's {@code extract_energy[200]}.
@@ -90,5 +133,308 @@ public class GameWorld {
     @CheckReturnValue
     private static int turnEnergy(int speed) {
         return extractEnergy[speed] * GameConstants.getWorldMoveEnergy() / 100;
+    }
+
+    /**
+     * Binds this world to the current game by caching the live {@link GameState} player and cave —
+     * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
+     * directly.
+     */
+    public GameWorld() {
+        player = GameState.getPlayer();
+        currentCave = GameState.getCave();
+    }
+
+    /**
+     * The main game loop — the port of C's {@code run_game_loop} ({@code game-world.c}).
+     *
+     * <p>Runs one pass of the game clock: it finishes the player's just-issued command, then keeps
+     * time moving until the player needs to enter another command, the character dies, or the game
+     * stops. It is a pure orchestrator — every step delegates to a subsystem ({@link #processPlayer()},
+     * {@link MonsterTurn#processMonsters(int)}, {@link #processWorld()}) — so the value here is the
+     * <em>scheduling</em>: when each actor gets a turn, and in what order, driven entirely by banked
+     * energy and a handful of upkeep flags.
+     *
+     * <p>The pass has five phases: tidy up after the last command
+     * ({@link #processPlayerCleanup()}); run the player until they spend energy; let a fast (hasted)
+     * player take extra turns ahead of the world while they still have {@code >= move_energy} banked;
+     * then the {@code while (true)} world loop — monsters act, the world is processed every tenth
+     * turn, the player banks energy and the turn counter advances, and a new level is generated when
+     * requested — repeating until the player must act again.
+     *
+     * <p>The recurring {@code break}-versus-{@code return} idiom in the player sub-loops is the
+     * subtle part: {@code break} means the player spent energy and the world should carry on;
+     * {@code return} yields control back to the UI because a player pass used no energy and fresh
+     * input is needed.
+     */
+    public void runGameLoop() {
+        // Tidy up after the player's command
+        processPlayerCleanup();
+
+        // Keep processing the player until they use some energy or
+        // another command is needed
+        while (player.getPlayerUpkeep().isPlaying()) {
+            processPlayer();
+            if (player.getPlayerUpkeep().energyUse())
+                break;
+            else
+                return;
+        }
+
+        // The player may still have enough energy to move, so run a player turn
+        // before processing the rest of the world
+        while (player.getEnergy() >= GameConstants.getWorldMoveEnergy()) {
+            // Do any necessary animations
+            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_ANIMATE);
+
+            // Process monster with more energy first
+            MonsterTurn.processMonsters(player.getEnergy() + 1);
+            if (player.isDead() || !player.getPlayerUpkeep().isPlaying() || player.getPlayerUpkeep().generateLevel())
+                break;
+
+            // process the player until they use some energy
+            while (player.getPlayerUpkeep().isPlaying()) {
+                processPlayer();
+                if (player.getPlayerUpkeep().energyUse())
+                    break;
+                else
+                    return;
+            }
+        }
+
+        // Player turn fully complete, run the main loop until the player input is needed again
+        while (true) {
+            player.noticeStuff();
+            player.handleStuff();
+            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+
+            // Process the rest of the world
+            // Give the player energy & increment turn counter
+            // unless we need to stop playing or generate a new level
+            if (player.isDead() || !player.getPlayerUpkeep().isPlaying())
+                return;
+            else if (!player.getPlayerUpkeep().generateLevel()) {
+                MonsterTurn.processMonsters(0);
+
+                // mark all monsters as ready to act when they have the energy
+                MonsterTurn.resetMonsters();
+
+                // refresh
+                player.noticeStuff();
+                player.handleStuff();
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+
+                if (player.isDead() || !player.getPlayerUpkeep().isPlaying())
+                    return;
+
+                // process the world for the next 10 turns
+                if (GameState.getTurn() % 10 == 0 && !player.getPlayerUpkeep().generateLevel()) {
+                    processWorld();
+
+                    player.noticeStuff();
+                    player.handleStuff();
+                    GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+                    if (player.isDead() || !player.getPlayerUpkeep().isPlaying())
+                        return;
+                }
+
+                // Player gains energy
+                player.setEnergy(player.getEnergy() + turnEnergy(player.getPlayerState().getSpeed()));
+
+                GameState.incrementTurn();
+            }
+
+            // If a new level is requested make one
+            if (player.getPlayerUpkeep().generateLevel()) {
+                boolean arena = false;
+                if (characterDungeon) {
+                    onLeaveLevel();
+                    if (currentCave.getName() != null && "arena".equals(currentCave.getName()))
+                        arena = true;
+                }
+
+                // Create a new cave, and then pull it into the GameWord
+                Generate.prepareNextLevel(player);
+                currentCave = GameState.getCave();
+                onNewLevel();
+
+                player.getPlayerUpkeep().setGenerateLevel(false);
+
+                // Kill arena monster
+                if (arena) {
+                    player.getPlayerUpkeep().setArenaLevel(false);
+                    if (player.getPlayerUpkeep().healthWho())
+                        MonsterUtils.killArenaMonster(player.getPlayerUpkeep().getHealthWho());
+                }
+            }
+
+
+            // If the player has enough energy to move, they do so, after any
+            // monsters with more energy take their turns
+            while (player.getEnergy() >= GameConstants.getWorldMoveEnergy()) {
+                // Animate where required
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_ANIMATE);
+
+                // Monsters with more energy move first
+                MonsterTurn.processMonsters(player.getEnergy() + 1);
+                if (player.isDead() || !player.getPlayerUpkeep().isPlaying() || player.getPlayerUpkeep().generateLevel())
+                    break;
+
+                // Process the player until they use energy
+                while (player.getPlayerUpkeep().isPlaying()) {
+                    processPlayer();
+                    if (player.getPlayerUpkeep().energyUse())
+                        break;
+                    else
+                        return;
+                }
+            }
+        }
+    }
+
+    /**
+     * Housekeeping on arriving on a new level — the port of C's {@code on_new_level}
+     * ({@code game-world.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented. When ported it must, for a genuine level change (not an
+     * arena), cancel the target and health-bar trackee and disturb the player; then track the
+     * player's maximum level and maximum/recall depth; and finally flush messages and signal the
+     * new-level display refresh.
+     */
+    private void onNewLevel() {
+        // Stub class TODO: implement
+    }
+
+    /**
+     * Housekeeping on leaving a level — the port of C's {@code on_leave_level} ({@code game-world.c}).
+     *
+     * <p>Cancels any in-progress command ({@link TimedEffect#TMD_COMMAND}), then runs the pending
+     * notice/update/redraw passes (needed here because leaving may have changed inventory or state)
+     * and flushes queued messages. Note it is deliberately {@code notice → update → redraw}, mirroring
+     * C's three separate calls, rather than the bundled {@link Player#handleStuff()}.
+     *
+     * <p><b>Partial:</b> the {@code cmd_disable_repeat_floor_item} guard is not yet ported.
+     */
+    private void onLeaveLevel() {
+        player.clearTimed(TimedEffect.TMD_COMMAND, false, false);
+
+        // TODO implement
+        // cmdDisableRepeatFloorItem();
+
+        player.noticeStuff();
+        player.updateStuff();
+        player.redrawStuff();
+
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+    }
+
+    /**
+     * Process player commands from the command queue — the port of C's {@code process_player}
+     * ({@code game-world.c}).
+     *
+     * <p>Finishes when a command actually uses energy (any normal game action), when the queue runs
+     * dry and fresh input is needed, or when the character changes level, dies, or the game stops.
+     * Each pass of the {@code do…while} refreshes the display, handles pack overflow, resets the
+     * assumed-free-turn energy, applies the couple of automatic effects that fire before a command
+     * (dwarven ore detection; a forced {@code CMD_SLEEP} while paralyzed or knocked out), then pulls
+     * and dispatches one command via {@link uk.co.jackoftrades.middle.game.gameengine.CommandQueue#commandPop}.
+     * It loops while no energy was spent and the player is neither dead nor awaiting a new level.
+     *
+     * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
+     * {@link PlayerUtils#restingCompleteSpecial(Player)}, {@link ObjectUtils#packOverflow},
+     * {@link EffectUtil#effectSimple} (the ore-detection effect), and
+     * {@link Player#timedGradeEqual(TimedEffect, String)}.
+     */
+    private void processPlayer() {
+        // check for interrupts
+        PlayerUtils.restingCompleteSpecial(player);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_CHECK_INTERRUPT);
+
+        // repeat until energy is reduced
+        do {
+            //refresh
+            player.noticeStuff();
+            player.handleStuff();
+            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+
+            // Pack overflow
+            ObjectUtils.packOverflow(null);
+
+            // Assume free turn
+            player.getPlayerUpkeep().setEnergyUse(0);
+
+            // Detect treasure for dwarves
+            if (player.hasPlayerFlag(PlayerFlag.PF_SEE_ORE)) {
+                // if they are healthy
+                if (player.getTimedEffect(TimedEffect.TMD_IMAGE) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_CONFUSED) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_AMNESIA) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_STUN) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_TERROR) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_AFRAID) == 0) {
+                    EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, null, "0",
+                            EffectSubTypeEnum.EST_NONE, 0, 0, 3, 3, null);
+                }
+            }
+
+            // Paralyzed or knocked out players get no turn
+            if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) != 0 ||
+                    player.timedGradeEqual(TimedEffect.TMD_STUN, "Knocked Out")) {
+                GameState.getCommandQueue().push(CommandCode.CMD_SLEEP);
+            }
+
+            // Prepare for the next command
+            if (GameState.getCommandQueue().getNrepeats() > 0)
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_COMMAND_REPEAT);
+            else {
+                // Check monster recall
+                if (player.getPlayerUpkeep().getMonsterRace() != null)
+                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_MONSTER);
+
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+            }
+
+            // Get a command from the queue if there is one
+            if (!GameState.getCommandQueue().commandPop(CommandContext.CTX_GAME))
+                break;
+
+            if (!player.getPlayerUpkeep().isPlaying())
+                break;
+
+            processPlayerCleanup();
+        } while (!player.getPlayerUpkeep().energyUse() &&
+                !player.isDead() &&
+                !player.getPlayerUpkeep().generateLevel());
+
+        // If needed, notice stuff
+        player.noticeStuff();
+    }
+
+    /**
+     * Tidy up after the player's command — the port of C's {@code process_player_cleanup}
+     * ({@code game-world.c}), called at the top of {@link #runGameLoop()} and after every dispatched
+     * command inside {@link #processPlayer()}.
+     *
+     * <p><b>Stub:</b> not yet implemented. When ported it must, if the command actually used energy,
+     * deduct that energy and add it to the running total, decay the bloodlust skip-coercion counter,
+     * apply any terrain damage, and (unless the player auto-dropped) flag the map for hallucination
+     * and refresh multi-hued / marked monsters. In all cases it clears each monster's per-turn
+     * {@code SHOW} flag and the drop status, then runs the update and redraw passes.
+     */
+    private void processPlayerCleanup() {
+        // STUB: TODO - complete
+    }
+
+    /**
+     * Process the passage of time on the level — the port of C's {@code process_world}
+     * ({@code game-world.c}), run once every ten game turns from {@link #runGameLoop()}.
+     *
+     * <p><b>Stub:</b> not yet implemented. When ported it drives the slow, world-scale clock:
+     * day/night and town-store restocking, the recharge of the player's light and regeneration,
+     * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
+     */
+    private void processWorld() {
+        // Stub class TODO: implement
     }
 }

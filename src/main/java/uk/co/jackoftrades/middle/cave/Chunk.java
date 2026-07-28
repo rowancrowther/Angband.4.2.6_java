@@ -1381,4 +1381,12 @@ public class Chunk {
     public int getMonMax() {
         return monMax;
     }
+
+    /**
+     * @return this level's name, or {@code null} if unnamed - the port of C's {@code c->name}; used
+     * for example to recognise the "arena" level
+     */
+    public String getName() {
+        return name;
+    }
 }

@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game;
+package uk.co.jackoftrades.middle.game.event.projection;
 
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;

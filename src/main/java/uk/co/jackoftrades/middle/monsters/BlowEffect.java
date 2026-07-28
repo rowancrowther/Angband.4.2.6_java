@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.frontend.colour.enums.ColourType;
-import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.monsters.enums.BlowEffectType;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;

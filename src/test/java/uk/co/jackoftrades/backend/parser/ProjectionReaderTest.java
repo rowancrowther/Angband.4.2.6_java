@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 
 import java.io.IOException;
 import java.nio.file.Files;

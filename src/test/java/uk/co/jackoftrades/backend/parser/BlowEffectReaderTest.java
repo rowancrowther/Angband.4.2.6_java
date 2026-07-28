@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
-import uk.co.jackoftrades.middle.game.Projection;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftrades.middle.monsters.BlowEffect;
 import uk.co.jackoftrades.middle.monsters.enums.BlowEffectType;

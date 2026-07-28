@@ -102,7 +102,7 @@ public class PlayerUpkeep {
     /**
      * Pending one-off housekeeping actions such as combining the pack or applying ignore rules ({@code notice}).
      */
-    private Flag<PlayerNotice> noticeFlag = new Flag<>(PlayerNotice.class);
+    private Flag<PlayerNotice> noticeFlags = new Flag<>(PlayerNotice.class);
     /**
      * Derived quantities (HP, mana, view, …) that have gone stale and must be recomputed ({@code update}).
      */
@@ -168,7 +168,7 @@ public class PlayerUpkeep {
     /**
      * Number of items in the equipment ({@code equip_cnt}).
      */
-    private int eqipmentCount;
+    private int equipmentCount;
     /**
      * Number of items in the quiver ({@code quiver_cnt}).
      */
@@ -176,7 +176,7 @@ public class PlayerUpkeep {
     /**
      * Power of the recharge effect in progress ({@code recharge_pow}).
      */
-    private int recoargePower;
+    private int rechargePower;
     /**
      * Pathfinding: number of steps left to walk ({@code step_count}).
      */
@@ -237,5 +237,97 @@ public class PlayerUpkeep {
      */
     public boolean setRedrawFlagsOff(PlayerRedraw flag) {
         return redrawFlags.off(flag);
+    }
+
+    /**
+     * @return {@code true} while a game is actually in progress - the port of reading C's {@code upkeep->playing}
+     */
+    public boolean isPlaying() {
+        return playing;
+    }
+
+    /**
+     * Reports whether the player has spent energy this turn, i.e. whether a turn was actually taken -
+     * the port of testing C's {@code upkeep->energy_use}.
+     *
+     * @return {@code true} if energy was used this turn
+     */
+    public boolean energyUse() {
+        return energyUse != 0;
+    }
+
+    /**
+     * Records the energy spent by the current command - the port of writing C's
+     * {@code upkeep->energy_use}. The player-processing pass sets it to {@code 0} to assume a free
+     * turn, and a command that acts writes its cost here so the loop can tell a turn was taken.
+     *
+     * @param energyUse the energy the current command used ({@code 0} for a free turn)
+     */
+    public void setEnergyUse(int energyUse) {
+        this.energyUse = energyUse;
+    }
+
+    /**
+     * @return {@code true} when the current level needs regenerating - the port of reading C's
+     * {@code upkeep->generate_level}
+     */
+    public boolean generateLevel() {
+        return generateLevel;
+    }
+
+    /**
+     * Requests (or clears the request for) regenerating the current level - the port of writing C's
+     * {@code upkeep->generate_level}. The game loop honours this on its next pass, building a fresh
+     * level via {@link uk.co.jackoftrades.middle.cave.Generate#prepareNextLevel} and clearing the
+     * flag.
+     *
+     * @param generateLevel {@code true} to request a new level
+     */
+    public void setGenerateLevel(boolean generateLevel) {
+        this.generateLevel = generateLevel;
+    }
+
+    /**
+     * @return {@code true} when the current level is an arena - the port of reading C's
+     * {@code upkeep->arena_level}
+     */
+    public boolean isArenaLevel() {
+        return arenaLevel;
+    }
+
+    /**
+     * Marks (or unmarks) the current level as an arena - the port of writing C's
+     * {@code upkeep->arena_level}. Cleared by the game loop once an arena bout has been left behind.
+     *
+     * @param arenaLevel {@code true} if the current level is an arena
+     */
+    public void setArenaLevel(boolean arenaLevel) {
+        this.arenaLevel = arenaLevel;
+    }
+
+    /**
+     * Reports whether a monster is currently on the health bar - the port of testing C's
+     * {@code upkeep->health_who}.
+     *
+     * @return {@code true} if a health-bar trackee is set
+     */
+    public boolean healthWho() {
+        return healthWho != null;
+    }
+
+    /**
+     * @return the monster currently shown on the health bar, or {@code null} if none - the port of
+     * reading C's {@code upkeep->health_who}
+     */
+    public Monster getHealthWho() {
+        return healthWho;
+    }
+
+    /**
+     * @return the monster race currently being recalled, or {@code null} if none - the port of
+     * reading C's {@code upkeep->monster_race}
+     */
+    public MonsterRace getMonsterRace() {
+        return monsterRace;
     }
 }

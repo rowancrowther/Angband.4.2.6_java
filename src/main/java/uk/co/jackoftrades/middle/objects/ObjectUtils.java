@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.player.Player;
+
 /**
  * Free-standing helper routines for the object/inventory subsystem — a port landing spot for the
  * gear-management corners of C's {@code obj-gear.c} and friends.
@@ -41,6 +44,14 @@ public class ObjectUtils {
      *               C does with {@code pack_overflow(NULL)}
      */
     public static void packOverflow(ItemObject object) {
+        // Stub class TODO: implement
+    }
+
+    public static void equipLearnFlag(Player player, ObjectFlag objectFlag) {
+        // Stub class TODO: implement
+    }
+
+    public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
     }
 }

@@ -19,16 +19,24 @@ package uk.co.jackoftrades.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Generate;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 import uk.co.jackoftrades.middle.effect.EffectUtil;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.enums.MessageType;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.event.projection.Source;
+import uk.co.jackoftrades.middle.game.event.projection.SourceWhat;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.game.globals.Food;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterTurn;
@@ -36,11 +44,10 @@ import uk.co.jackoftrades.middle.monsters.MonsterUtils;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerUtils;
-import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.player.enums.*;
 
 /**
  * The game-clock and turn-loop machinery — the port of C's {@code game-world.c}.
@@ -84,6 +91,8 @@ public class GameWorld {
      * those subsystems are ported; until then it stays {@code false}.
      */
     private boolean characterDungeon;
+
+    private int dayCount;
 
     /**
      * Energy gained per game turn as a function of speed, indexed directly by the speed value
@@ -145,6 +154,7 @@ public class GameWorld {
     public GameWorld() {
         player = GameState.getPlayer();
         currentCave = GameState.getCave();
+        dayCount = 0;
     }
 
     /**
@@ -343,13 +353,13 @@ public class GameWorld {
      * It loops while no energy was spent and the player is neither dead nor awaiting a new level.
      *
      * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
-     * {@link PlayerUtils#restingCompleteSpecial(Player)}, {@link ObjectUtils#packOverflow},
+     * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
      * {@link EffectUtil#effectSimple} (the ore-detection effect), and
      * {@link Player#timedGradeEqual(TimedEffect, String)}.
      */
     private void processPlayer() {
         // check for interrupts
-        PlayerUtils.restingCompleteSpecial(player);
+        PlayerUtils.restingCompleteSpecial();
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_CHECK_INTERRUPT);
 
         // repeat until energy is reduced
@@ -446,7 +456,7 @@ public class GameWorld {
             }
 
             // Has the player taken terrain damage
-            PlayerUtils.takeTerrainDamage(player, player.getGrid());
+            PlayerUtils.takeTerrainDamage(player.getGrid());
 
             // Do nothing else if the player has auto-dropped stuff
             if (!player.getPlayerUpkeep().getDropping()) {
@@ -510,6 +520,282 @@ public class GameWorld {
      * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
      */
     private void processWorld() {
-        // Stub class: TODO - Implement
+        int index;
+        int y;
+        int x;
+
+        // Compact the monster list if we're aproaching the limit
+        if (currentCave.monsterCount() + 32 > GameConstants.getLevelMaxMonsters())
+            currentCave.compactMonsters(64);
+
+        // Compact the monster list if it is too sparce
+        if (currentCave.monsterCount() + 32 < currentCave.getMonMax())
+            currentCave.compactMonsters(0);
+
+        // Check the time
+        int turn = GameState.getTurn();
+
+        // Play an ambient sound at regular intervals
+        if ((turn % ((10L * GameConstants.getWorldDayLength()) / 4) == 0))
+            playAmbientSound();
+
+        // Handle stores and sunshine
+        if (player.getDepth() == 0) {
+            // daybreak/nightfall in town
+            if ((turn % ((10L * GameConstants.getWorldDayLength()) / 2)) == 0) {
+                // dawn or dusk
+                boolean dawn = ((turn % (10L * GameConstants.getWorldDayLength())) == 0);
+
+                if (dawn)
+                    Message.message("The sun has risen.");
+                else
+                    Message.message("The sun has fallen.");
+
+                currentCave.illuminate(dawn);
+            }
+        } else {
+            /* Update the stores once a day (while in the dungeon).
+               The changes are not actually made until return to town,
+               to avoid giving details away in the knowledge menu. */
+            if ((turn % (10L * GameConstants.getStoreTurns())) == 0) dayCount++;
+        }
+
+        // Check for light change
+        if (player.hasPlayerFlag(PlayerFlag.PF_UNLIGHT))
+            player.getPlayerUpkeep().updateFlagOn(PlayerUpkeepEnum.PU_BONUS);
+
+        // Check for creature generation
+        if (RandomValueUtils.oneIn(GameConstants.getMonGenChance()))
+            currentCave.pickAndPlaceDistantMonster(player.getGrid(),
+                    GameConstants.getPlayerMaxSight() + 5, true, player.getDepth());
+
+        // Damage or healing over time
+
+        // From poison
+        if (player.getTimedEffect(TimedEffect.TMD_POISONED) != 0) {
+            PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(1), "poison");
+            if (player.isDead()) return;
+        }
+
+        // From cuts etc
+        if (player.getTimedEffect(TimedEffect.TMD_CUT) != 0) {
+            if (player.hasPlayerFlag(PlayerFlag.PF_ROCK))
+                index = 0;
+            else if (player.timedGradeEqual(TimedEffect.TMD_CUT, "Mortal Wound") ||
+                    player.timedGradeEqual(TimedEffect.TMD_CUT, "Deep Gash"))
+                index = 3;
+            else if (player.timedGradeEqual(TimedEffect.TMD_CUT, "Severe Cut"))
+                index = 2;
+            else
+                index = 1;
+
+            PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(index), "a fatal wound");
+            if (player.isDead()) return;
+        }
+
+        // Side effects of losing bloodlust
+        if (player.getTimedEffect(TimedEffect.TMD_BLOODLUST) != 0) {
+            Flag<PlayerOverExertion> overExertionFlag = new Flag<>(PlayerOverExertion.class);
+            overExertionFlag.set(PlayerOverExertion.PY_EXERT_HP,
+                    PlayerOverExertion.PY_EXERT_CUT, PlayerOverExertion.PY_EXERT_SLOW);
+            PlayerUtils.overExert(overExertionFlag,
+                    Math.max(0, 10 - player.getTimedEffect(TimedEffect.TMD_BLOODLUST)),
+                    player.getCurrentHP() / 10);
+            if (player.isDead()) return;
+        }
+
+        // Timed healing
+        if (player.getTimedEffect(TimedEffect.TMD_HEAL) != 0) {
+            boolean ident = false;
+            Source playerSource = new Source(SourceWhat.SRC_PLAYER, null);
+            EffectUtil.effectSimple(EffectEnum.EF_HEAL_HP, playerSource, "30",
+                    EffectSubTypeEnum.EST_NONE, 0, 0, 0, 0, ident);
+        }
+
+        // Black Breath
+        if (player.getTimedEffect(TimedEffect.TMD_BLACKBREATH) != 0) {
+            if (RandomValueUtils.oneIn(2)) {
+                Message.message("The Black Breath sickens you.");
+                player.statDec(Stats.STAT_CON, false);
+            }
+
+            if (RandomValueUtils.oneIn(2)) {
+                Message.message("The Black Breath saps your strength.");
+                player.statDec(Stats.STAT_STR, false);
+            }
+
+            if (RandomValueUtils.oneIn(2)) {
+                // Life drain
+                int drain = 100 + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain();
+                Message.message("The Black Breath dims your life force.");
+                player.expLose(drain, false);
+            }
+        }
+
+        // Check food and regenrate
+
+        // Digest
+        if (!player.timedGradeEqual(TimedEffect.TMD_FOOD, "Full")) {
+            // Digest normally
+            if ((turn % 100) == 0) {
+                // basic digestion rate based on speed
+                int digestAmount = turnEnergy(player.getPlayerState().getSpeed());
+
+                // Adjust for food value
+                digestAmount = (digestAmount * 100) / GameConstants.getPlayerFoodValue();
+
+                // Regenration takes more food
+                if (player.hasObjectFlag(ObjectFlag.OF_REGEN)) digestAmount *= 2;
+
+                // Slow digestion takes less food
+                if (player.hasObjectFlag(ObjectFlag.OF_SLOW_DIGEST)) digestAmount /= 2;
+
+                // Minimal digestion
+                if (digestAmount < 1) digestAmount = 1;
+
+                // Digest some food
+                player.decTimed(TimedEffect.TMD_FOOD, digestAmount, false, true);
+            }
+
+            // Fast metabolism
+            if (player.getTimedEffect(TimedEffect.TMD_HEAL) != 0) {
+                player.decTimed(TimedEffect.TMD_FOOD, 8 * GameConstants.getPlayerFoodValue(), false, true);
+                if (player.getTimedEffect(TimedEffect.TMD_FOOD) < Food.PY_FOOD_HUNGRY.getFoodValue()) {
+                    player.setTimed(TimedEffect.TMD_HEAL, 0, true, true);
+                }
+            }
+
+        } else { // Digest quicker when gorged
+            player.decTimed(TimedEffect.TMD_FOOD, 5000 / GameConstants.getPlayerFoodValue(), false, true);
+            player.getPlayerUpkeep().updateFlagOn(PlayerUpkeepEnum.PU_BONUS);
+        }
+
+        // Faint or starving
+        if (player.timedGradeEqual(TimedEffect.TMD_FOOD, "Faint")) {
+            // Faint occasionally
+            if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 && RandomValueUtils.oneIn(10)) {
+                Message.message("You faint from the lack of food.");
+                PlayerUtils.disturb();
+
+                // Faint - bypass free action
+                player.incTimed(TimedEffect.TMD_PARALYZED, 1 + RandomValueUtils.randInt0(5),
+                        true, true, false);
+            }
+        } else if (player.timedGradeEqual(TimedEffect.TMD_FOOD, "Starving")) {
+            int damage = (Food.PY_FOOD_STARVING.getFoodValue() - player.getTimedEffect(TimedEffect.TMD_FOOD)) / 10;
+
+            PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(damage), "starvation");
+
+            if (player.isDead()) return;
+        }
+
+        // Regenerate HP if needed
+        if (player.getCurrentHP() < player.getMaxHP())
+            PlayerUtils.regenHP();
+
+        // Regenrate or lose mana
+        PlayerUtils.regenMana();
+
+        // Timeout various things
+        decreaseTimeout();
+
+        // Proess light
+        PlayerUtils.updateLight();
+
+        // Update noise and scent if player isn't resting
+        if (!player.isResting()) {
+            makeNoise();
+            updateScent();
+        }
+
+        // Process Inventory
+
+        // Handle experience draining
+        if (player.hasObjectFlag(ObjectFlag.OF_DRAIN_EXP)) {
+            if (player.getExp() > 0 && RandomValueUtils.oneIn(10)) {
+                int damage = RandomValueUtils.damRoll(10, 6) + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain();
+                player.expLose(damage / 10, false);
+            }
+
+            ObjectUtils.equipLearnFlag(player, ObjectFlag.OF_DRAIN_EXP);
+        }
+
+        // Recharge activatable objects and rods
+        rechargeObject();
+
+        // Notice things after time
+        if (turn % 100 == 0)
+            ObjectUtils.equipLearnAfterTime(player);
+
+        // Decrease trap timeouts
+        currentCave.decreaseTrapTimeout();
+
+        // Involuntary movement
+        if (player.getWordRecall() != 0 && !player.getPlayerUpkeep().isArenaLevel()) {
+            player.decrementWordRecall();
+
+            // recalled?
+            if (player.getWordRecall() == 0) {
+                // Disturb and flush command queue to avoid losing an action
+                // on the new level
+                PlayerUtils.disturb();
+                GameState.getCommandQueue().flush();
+
+                // Determine the level
+                if (player.getDepth() != 0) {
+                    Message.messageType(MessageType.MSG_TPLEVEL, "You feel yourself yanked upwards!");
+                    PlayerUtils.dungeonChangeLevel(0);
+                } else {
+                    Message.messageType(MessageType.MSG_TPLEVEL, "You feel yourself yanked downwards!");
+                    player.setRecallDepth();
+                    PlayerUtils.dungeonChangeLevel(player.getRecallDepth());
+                }
+            }
+        }
+
+        // Delayed Deep Descent
+        if (player.getDeepDescent() != 0) {
+            // Count down towards descent
+            player.decrementDeepDescent();
+
+            // Activate descent
+            if (player.getDeepDescent() == 0) {
+                // Calculate the target depth
+                int targetIncrement = (4 / GameConstants.getWorldStairSkip()) + 1;
+                int targetDepth = PlayerUtils.dungeonGetNextLevel(player.getMaxDepth(), targetIncrement);
+                PlayerUtils.disturb();
+
+                // Determine the level
+                if (targetDepth > player.getDepth()) {
+                    Message.messageType(MessageType.MSG_TPLEVEL, "The floor opens beneath you!");
+                    PlayerUtils.dungeonChangeLevel(targetDepth);
+                } else { // Do something disastrous
+                    Message.messageType(MessageType.MSG_TPLEVEL, "You aer thrown back in an explosion");
+                    Source sourceNone = new Source(SourceWhat.SRC_NONE, null);
+                    EffectUtil.effectSimple(EffectEnum.EF_DESTRUCTION, sourceNone, "0",
+                            EffectSubTypeEnum.EST_NONE, 5, 0, 0, 0, null);
+                }
+            }
+        }
+    }
+
+    private void decreaseTimeout() {
+        // Stub class TODO: Implement this
+    }
+
+    private void playAmbientSound() {
+        // Stub class TODO: Implement this
+    }
+
+    private static void makeNoise() {
+        // Stub class TODO: Implement this
+    }
+
+    private static void updateScent() {
+        // Stub class TODO: Implement this
+    }
+
+    private static void rechargeObject() {
+        // Stub class TODO: Implement this
     }
 }

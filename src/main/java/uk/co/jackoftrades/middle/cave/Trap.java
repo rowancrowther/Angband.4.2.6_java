@@ -122,4 +122,8 @@ public class Trap {
     public int getTimeout() {
         return timeout;
     }
+
+    public void decrementTimeout() {
+        timeout--;
+    }
 }

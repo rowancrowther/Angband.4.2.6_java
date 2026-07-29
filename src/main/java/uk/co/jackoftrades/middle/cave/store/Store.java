@@ -15,8 +15,10 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.event.projection;
+package uk.co.jackoftrades.middle.cave.store;
 
-public record Source(SourceWhat what,
-                     SourceWhich which) {
+public class Store {
+    public static void storeUpdate() {
+        // Stub function : TODO: implement this
+    }
 }

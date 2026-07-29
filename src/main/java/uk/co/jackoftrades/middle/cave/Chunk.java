@@ -23,6 +23,8 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
+import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
@@ -32,6 +34,7 @@ import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterGroup;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
@@ -39,6 +42,7 @@ import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.stream.Stream;
@@ -134,7 +138,7 @@ public class Chunk {
     private HashMap<TerrainFeatureFlags, Integer> featCount;
 
     /**
-     * The grid of squares, indexed {@code [x][y]}.
+     * The grid of squares, indexed {@code [y][x]}.
      *
      * @author Rowan Crowther
      */
@@ -1432,5 +1436,126 @@ public class Chunk {
         player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ITEMLIST);
         // The data is passed x/y and not y/x on this line as that is what the C does.
         GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, grid.getX(), grid.getY());
+    }
+
+    public int monsterCount() {
+        return Arrays.stream(monsters).toList().size();
+    }
+
+    public void compactMonsters(int numToCompact) {
+        int monIndex;
+        int numCompacted;
+        int iteration;
+
+        int maxLevel;
+        int minDistance;
+        int chance;
+
+        if (numToCompact != 0)
+            Message.message("Compacting monsters...");
+
+        // Compact at least numToCompact monsters
+        for (numCompacted = 0, iteration = 1;
+             numCompacted < numToCompact;
+             iteration++) {
+            // Get more vicious each iteration
+            maxLevel = 5 * iteration;
+
+            // Get closer each iteration
+            minDistance = 5 * (20 - iteration);
+
+            // Check all the monsters
+            for (Monster monster : monsters) {
+                if (monster == null) continue;
+
+                // skip dead monsters
+                if (monster.getMonsterRace() == null) continue;
+
+                // High level monsters start out immune
+                if (monster.getMonsterRace().getLevel() > maxLevel) continue;
+
+                // Ignore nearby monsters
+                if ((minDistance > 0) && (monster.getcDistance() < minDistance)) continue;
+
+                // Base saving throw
+                chance = 90;
+
+                // Only compact quest monsters in an emergency
+                if (monster.getMonsterRace().hasMonsterRaceFlag(MonsterRaceFlag.RF_QUESTOR) && (iteration < 1000))
+                    chance = 100;
+
+                // Try to save unique monsters
+                if (monster.isUnique()) chance = 99;
+
+                if (RandomValueUtils.randInt0(100) < chance)
+                    continue;
+
+                deleteMonster(monster.getGrid());
+
+                numCompacted++;
+            }
+        }
+
+        // Excise dead monsters (backwards)
+        for (monIndex = monMax; monIndex >= 0; monIndex--) {
+            Monster monster = monsters[monIndex];
+
+            if (monster == null) continue;
+
+            if (monster.getMonsterRace() == null) continue;
+
+            monsterIndexMove(monMax, monIndex);
+
+            monMax--;
+        }
+    }
+
+    public void monsterIndexMove(int fromIndex, int toIndex) {
+        // Stub function : TODO: implement this
+    }
+
+    private void deleteMonster(@NotNull Loc grid) {
+        if (!inBounds(grid)) return;
+
+        Square square = getSquare(grid);
+        if (square.getMonsterIndex() > 0)
+            deleteMonsterIndex(square.getMonsterIndex());
+    }
+
+    private void deleteMonsterIndex(int monsterIndex) {
+        // Stub function : TODO: implement this
+    }
+
+    public void illuminate(boolean daytime) {
+        // Stub function : TODO: implement this
+    }
+
+    public boolean pickAndPlaceDistantMonster(Loc toAvoid, int distance, boolean sleep, int depth) {
+        // Stub function : TODO: implement this
+        return false;
+    }
+
+    public void squareMemorizeTraps(Loc grid) {
+        // Stub function : TODO: implement this
+    }
+
+    public void decreaseTrapTimeout() {
+        for (int y = 0; y < squares.length; y++) {
+            for (int x = 0; x < squares[y].length; x++) {
+                Square square = squares[y][x];
+                boolean changed = false;
+                for (Trap trap : square.getTraps()) {
+                    if (trap.getTimeout() > 0) {
+                        trap.decrementTimeout();
+                        if (trap.getTimeout() == 0) changed = true;
+                    }
+                }
+                if (changed && square.isSeen()) {
+                    squareMemorizeTraps(Loc.row(y).col(x));
+                    squareLightSpot(Loc.row(y).col(x));
+
+                }
+            }
+        }
     }
 }

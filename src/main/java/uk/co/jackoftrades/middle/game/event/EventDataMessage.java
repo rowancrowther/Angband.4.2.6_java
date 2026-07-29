@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.game.event;
 
+import uk.co.jackoftrades.middle.enums.MessageType;
+
 /**
  * {@link GameEventData} payload carrying a message and its type code — used by
  * message/notification events.
@@ -29,7 +31,7 @@ public class EventDataMessage implements GameEventData {
      *
      * @author Rowan Crowther
      */
-    private int type;
+    private MessageType type;
     /**
      * The message text.
      *
@@ -44,7 +46,7 @@ public class EventDataMessage implements GameEventData {
      * @param message the message text
      * @author Rowan Crowther
      */
-    public EventDataMessage(int type, String message) {
+    public EventDataMessage(MessageType type, String message) {
         this.type = type;
         this.message = message;
     }
@@ -53,7 +55,7 @@ public class EventDataMessage implements GameEventData {
      * @return the message type code
      * @author Rowan Crowther
      */
-    public int getType() {
+    public MessageType getType() {
         return type;
     }
 

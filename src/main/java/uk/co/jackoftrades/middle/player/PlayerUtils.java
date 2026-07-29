@@ -17,7 +17,13 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.cave.store.Store;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.player.enums.PlayerOverExertion;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 /**
  * Free-standing player helper routines — the port of C's {@code player-util.c}.
@@ -33,16 +39,20 @@ import uk.co.jackoftrades.middle.cave.Loc;
  * @author Rowan Crowther
  */
 public class PlayerUtils {
+    private static Player player;
+
+    static {
+        player = GameState.getPlayer();
+    }
+
     /**
      * Check whether an in-progress rest should end for a special reason — the port of C's
      * {@code player_resting_complete_special}. Called at the top of the player-processing pass so a
      * rest can be interrupted the moment its stopping condition (e.g. HP/SP restored) is met.
      *
      * <p><b>Stub:</b> not yet implemented — takes no action until the resting subsystem is ported.
-     *
-     * @param player the player whose rest is being checked
      */
-    public static void restingCompleteSpecial(Player player) {
+    public static void restingCompleteSpecial() {
         // Stub class TODO: implement
     }
 
@@ -54,10 +64,83 @@ public class PlayerUtils {
      *
      * <p><b>Stub:</b> not yet implemented.
      *
-     * @param player the player who may be standing on damaging terrain
      * @param grid   the grid to test — normally the player's own location
      */
-    public static void takeTerrainDamage(Player player, Loc grid) {
+    public static void takeTerrainDamage(Loc grid) {
         // Stub class TODO: implement
+    }
+
+    public static void takeHit(int damage, String cause) {
+        // Stub class TODO: implement
+    }
+
+    public static int applyDamageReduction(int damage) {
+        // Hack - apply invulnerability
+        if (player.getTimedEffect(TimedEffect.TMD_INVULN) != 0 && (damage < 9000)) return 0;
+
+        damage -= player.getPlayerState().getPercDamageReduction();
+
+        if (damage > 0 && player.getPlayerState().getPercDamageReduction() != 0) {
+            damage -= (damage * player.getPlayerState().getPercDamageReduction() / 100);
+        }
+
+        return Math.max(damage, 0);
+    }
+
+    public static void overExert(Flag<PlayerOverExertion> flag, int chance, int amount) {
+        // Stub class TODO: implement
+    }
+
+    public static void disturb() {
+        // Stub class TODO: implement
+    }
+
+    public static void regenHP() {
+        // Stub class TODO: implement
+    }
+
+    public static void regenMana() {
+        // Stub class TODO: implement
+    }
+
+    public static void updateLight() {
+        // Stub class TODO: Implement this
+    }
+
+    public static void dungeonChangeLevel(int dungeonLevel) {
+        // Record the new depth
+        player.setDepth(dungeonLevel);
+
+        // Are we returning to town
+        if (dungeonLevel == 0 && GameState.getDaycount() != 0)
+            Store.storeUpdate();
+
+        // Make new level
+        player.getPlayerUpkeep().setGenerateLevel(true);
+
+        // Save the game when we reach the new level
+        player.getPlayerUpkeep().setAutosave(true);
+    }
+
+    public static int dungeonGetNextLevel(int dungeonLevel, int added) {
+        int targetLevel;
+        int index;
+
+        // Get Target Level
+        targetLevel = dungeonLevel + added * GameConstants.getWorldStairSkip();
+
+        // Don't allow levels below dungeon max
+        targetLevel = Math.min(targetLevel, GameConstants.getWorldMaxDepth() - 1);
+
+        // Don't allow levels above the town
+        targetLevel = Math.max(targetLevel, 0);
+
+        // Check intermediate levels for quests
+        for (index = dungeonLevel; index < targetLevel; index++) {
+            if (player.isQuest(index))
+                return index;
+        }
+
+        return targetLevel;
     }
 }

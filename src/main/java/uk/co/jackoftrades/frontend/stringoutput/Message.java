@@ -17,6 +17,10 @@
 
 package uk.co.jackoftrades.frontend.stringoutput;
 
+import uk.co.jackoftrades.middle.enums.MessageType;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+
 /**
  * The engine's outbound message channel - the port of C's {@code msg}/{@code msgt} family. The
  * middle layer calls this to surface a line of text to the player without knowing how the front-end
@@ -39,6 +43,23 @@ public class Message {
      */
     public static void send(String message, Object... args) {
         String toSend = String.format(message, args);
-        // TODO: Flesh out this stub method
+        // TODO: Flesh out this stub
+    }
+
+    public static void message(String message, Object... args) {
+        String toSend = String.format(message, args);
+
+        // Add to the message log TODO: Add in a message log
+
+        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, MessageType.MSG_GENERIC, toSend);
+    }
+
+    public static void messageType(MessageType messageType, String message, Object... args) {
+        String toSend = String.format(message, args);
+
+        // Add to the message log TODO: Add in a message log
+
+        // Add in a sound function
+        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, messageType, toSend);
     }
 }

@@ -449,4 +449,8 @@ public class MonsterRace {
             }
         }
     }
+
+    public int getLevel() {
+        return level;
+    }
 }

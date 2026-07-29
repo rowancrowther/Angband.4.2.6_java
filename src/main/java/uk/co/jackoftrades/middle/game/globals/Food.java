@@ -15,8 +15,28 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.event.projection;
+package uk.co.jackoftrades.middle.game.globals;
 
-public record Source(SourceWhat what,
-                     SourceWhich which) {
+// STUB ENUM - the numbers are random and need changing once the
+// timed_grade struct is implemented
+//
+// TODO: Revisit once timed_grade is implemented
+
+public enum Food {
+    PY_FOOD_STARVING(20),
+    PY_FOOD_FAINT(40),
+    PY_FOOD_WEAK(30),
+    PY_FOOD_HUNGRY(50),
+    PY_FOOD_FULL(95),
+    PY_FOOD_MAX(100);
+
+    final int foodValue;
+
+    Food(int foodValue) {
+        this.foodValue = foodValue;
+    }
+
+    public int getFoodValue() {
+        return foodValue;
+    }
 }

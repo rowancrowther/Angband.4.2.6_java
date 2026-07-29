@@ -358,4 +358,16 @@ public class PlayerUpkeep {
     public MonsterRace getMonsterRace() {
         return monsterRace;
     }
+
+    public void updateFlagOn(PlayerUpkeepEnum flag) {
+        updateFlags.on(flag);
+    }
+
+    public int getRestingCounter() {
+        return restingCounter;
+    }
+
+    public void setAutosave(boolean autosave) {
+        this.autosave = autosave;
+    }
 }

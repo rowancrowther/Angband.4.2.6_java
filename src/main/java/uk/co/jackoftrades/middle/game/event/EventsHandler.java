@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.game.event;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -228,7 +229,7 @@ public interface EventsHandler {
      * @param eventType The event type we are signalling
      * @param message   The Message we are using in signalling the event
      */
-    default void eventSignalMessage(GameEventType eventType, int type, String message) {
+    default void eventSignalMessage(GameEventType eventType, MessageType type, String message) {
         gameEventDispatch(eventType, new EventDataMessage(type, message));
     }
 

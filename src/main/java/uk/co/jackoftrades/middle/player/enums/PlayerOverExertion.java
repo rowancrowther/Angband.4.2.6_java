@@ -15,8 +15,16 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.event.projection;
+package uk.co.jackoftrades.middle.player.enums;
 
-public record Source(SourceWhat what,
-                     SourceWhich which) {
+public enum PlayerOverExertion {
+    PY_EXERT_NONE,
+    PY_EXERT_CON,
+    PY_EXERT_FAINT,
+    PY_EXERT_SCRAMBLE,
+    PY_EXERT_CUT,
+    PY_EXERT_CONF,
+    PY_EXERT_HALLU,
+    PY_EXERT_SLOW,
+    PY_EXERT_HP
 }

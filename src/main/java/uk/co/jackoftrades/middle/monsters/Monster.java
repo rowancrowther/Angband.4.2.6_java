@@ -24,6 +24,7 @@ import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.combat.Target;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
+import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.PlayerState;
 
@@ -252,5 +253,14 @@ public class Monster {
      */
     public Loc getGrid() {
         return grid;
+    }
+
+    public int getcDistance() {
+        return cDistance;
+    }
+
+    public boolean isUnique() {
+        return (originalRace != null) ? originalRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE)
+                : monsterRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE);
     }
 }

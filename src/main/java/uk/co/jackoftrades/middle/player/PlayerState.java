@@ -123,6 +123,10 @@ public class PlayerState {
         return pflags.has(flag);
     }
 
+    public boolean hasOFlag(@NotNull ObjectFlag flag) {
+        return flags.has(flag);
+    }
+
     /**
      * Get the current light value
      *
@@ -139,5 +143,9 @@ public class PlayerState {
      */
     public int getSpeed() {
         return speed;
+    }
+
+    public int getPercDamageReduction() {
+        return perDamRed;
     }
 }

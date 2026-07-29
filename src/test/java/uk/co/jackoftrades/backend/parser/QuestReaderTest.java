@@ -105,7 +105,10 @@ class QuestReaderTest {
 
     @SuppressWarnings("unchecked")
     private static <T> T staticField(String name) throws Exception {
-        Field f = GameConstants.class.getDeclaredField(name);
+        // The registries were split out of GameConstants a slice at a time, so resolve the field
+        // across every holder rather than assuming it still lives on GameConstants (quests moved to
+        // WorldRegistry).
+        Field f = RegistrySeeding.resolve(name);
         f.setAccessible(true);
         return (T) f.get(null);
     }

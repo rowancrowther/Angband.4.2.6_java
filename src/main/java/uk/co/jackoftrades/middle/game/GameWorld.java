@@ -19,10 +19,12 @@ package uk.co.jackoftrades.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.cave.ChunkUtils;
 import uk.co.jackoftrades.middle.cave.Generate;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 import uk.co.jackoftrades.middle.effect.EffectUtil;
@@ -38,16 +40,24 @@ import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.Food;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterTurn;
 import uk.co.jackoftrades.middle.monsters.MonsterUtils;
+import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
+import uk.co.jackoftrades.middle.monsters.enums.MonTimedFlags;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.objects.Curse;
+import uk.co.jackoftrades.middle.objects.CurseData;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.player.EquipSlot;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerUtils;
 import uk.co.jackoftrades.middle.player.enums.*;
+
+import java.util.Map;
 
 /**
  * The game-clock and turn-loop machinery — the port of C's {@code game-world.c}.
@@ -697,7 +707,7 @@ public class GameWorld {
         PlayerUtils.regenMana();
 
         // Timeout various things
-        decreaseTimeout();
+        decreaseTimeouts();
 
         // Proess light
         PlayerUtils.updateLight();
@@ -779,8 +789,94 @@ public class GameWorld {
         }
     }
 
-    private void decreaseTimeout() {
-        // Stub class TODO: Implement this
+    /**
+     * Age the player's timed effects and equipped-item curses by one game turn.
+     * The Java port of the C original's {@code decrease_timeouts}
+     * ({@code src/game-world.c}).
+     *
+     * <p>Two passes run:</p>
+     * <ol>
+     *   <li><b>Timed effects.</b> Every {@link TimedEffect} the player currently
+     *       has is decremented, normally by one. A CON-derived {@code adjust}
+     *       (from {@link StatTables#adjConFix} indexed by the player's CON stat
+     *       index, plus one) sets the faster recovery rate for bleeding
+     *       ({@code TMD_CUT}), poison and stun. Special cases: hunger
+     *       ({@code TMD_FOOD}) is aged elsewhere so decrements by zero here; a
+     *       "Mortal Wound" and {@code PF_ROCK} races do not bleed down; and
+     *       {@code TMD_COMMAND} keeps the commanded monster's timer in step,
+     *       breaking the command outright once the monster leaves line of
+     *       sight.</li>
+     *   <li><b>Curses.</b> For each occupied equipment slot, every active curse
+     *       on the worn item ticks its {@link CurseData} timeout down by one;
+     *       when it reaches zero the curse's effect fires (teaching the player
+     *       the curse if it did anything visible) and the timeout is re-rolled
+     *       from the curse template's interval.</li>
+     * </ol>
+     *
+     * @author Rowan Crowther
+     */
+    private void decreaseTimeouts() {
+        int adjust = (StatTables.adjConFix[player.getPlayerState().getStatInd(Stats.STAT_CON)] + 1);
+
+        // Most timed effects decrement by 1
+        for (TimedEffect effect : TimedEffect.values()) {
+            int decrement = 1;
+            if (player.getTimedEffect(effect) == 0)
+                continue;
+
+            // special cases
+            switch (effect) {
+                case TMD_FOOD -> decrement = 0; // handle separately
+                case TMD_CUT -> {
+                    // Check for truely mortal wounds
+                    if (player.timedGradeEqual(effect, "Mortal Wound"))
+                        decrement = 0;
+                    else
+                        decrement = adjust;
+
+                    // Rock players don't bleed
+                    if (player.hasPlayerFlag(PlayerFlag.PF_ROCK))
+                        decrement = 0;
+                }
+                case TMD_POISONED, TMD_STUN -> decrement = adjust;
+                case TMD_COMMAND -> {
+                    Monster monster = MonsterUtils.getCommandMonster();
+                    if (!ChunkUtils.los(currentCave, player.getGrid(), monster.getGrid())) {
+                        Flag<MonTimedFlags> notify = new Flag<>(MonTimedFlags.class);
+                        notify.on(MonTimedFlags.MON_TMD_FLG_NOTIFY);
+                        monster.clearTimed(MonTimed.MON_TMD_COMMAND, notify);
+                        player.clearTimed(TimedEffect.TMD_COMMAND, true, true);
+                    } else {
+                        monster.decrementTimed(MonTimed.MON_TMD_COMMAND, decrement, new Flag<>(MonTimedFlags.class));
+                    }
+                }
+            }
+
+            // decrement the effect
+            player.decTimed(effect, decrement, false, true);
+        }
+
+        // Curse effects always decrement by 1
+        for (EquipSlot slot : player.getPlayerBody().getSlots()) {
+            CurseData curseData = null;
+            if (slot.getItem() == null) continue;
+
+            Map<Curse.CurseEntry, Boolean> curses = slot.getItem().getCurses();
+            if (!curses.isEmpty()) {
+                for (Curse.CurseEntry curseEntry : curses.keySet()) {
+                    curseData = curseEntry.curseData();
+                    if (curseData.getPower() != 0) {
+                        curseData.decrementTimeout();
+                        if (curseData.getTimeout() == 0) {
+                            Curse curse = curseEntry.curse();
+                            if (ObjectUtils.doCurseEffect(curseEntry, slot.getItem()))
+                                player.learnCurse(curse);
+                            curseEntry.curseData().setTimeout(curse.getObject().getTime().randCalc(0, DamageAspect.RANDOMIZE));
+                        }
+                    }
+                }
+            }
+        }
     }
 
     private void playAmbientSound() {

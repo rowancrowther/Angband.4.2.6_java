@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.middle.objects.Curse;
+import uk.co.jackoftrades.middle.objects.CurseData;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 
 import java.io.IOException;

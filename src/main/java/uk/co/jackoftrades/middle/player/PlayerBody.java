@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -81,7 +82,7 @@ public class PlayerBody {
      * @author Rowan Crowther
      */
     public List<EquipSlot> getSlots() {
-        return slots;
+        return Collections.unmodifiableList(slots);
     }
 
     /**

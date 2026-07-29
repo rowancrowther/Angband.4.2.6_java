@@ -162,6 +162,8 @@ public class Curse {
      */
     private List<Curse> conflict;
 
+    private ItemObject object;
+
     /**
      * The raw names of conflicting curses as read from the data file, retained
      * for the second-pass resolution into {@link #conflict}.
@@ -389,6 +391,16 @@ public class Curse {
      */
     public boolean canAfflict(ObjectBase objectBase) {
         return objectBases.contains(objectBase);
+    }
+
+    /**
+     * @return the template object carrying this curse's gameplay payload (flags,
+     * modifiers, effect and its {@code time} interval) — the port of C's
+     * {@code curse->obj}
+     * @author Rowan Crowther
+     */
+    public ItemObject getObject() {
+        return object;
     }
 
     /**

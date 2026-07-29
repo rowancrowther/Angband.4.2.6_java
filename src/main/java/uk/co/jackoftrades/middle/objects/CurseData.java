@@ -67,11 +67,39 @@ public class CurseData {
         return timeout;
     }
 
+    /**
+     * Set the curse's power on this object. Setting the power to zero is how a
+     * curse is removed from an object (the C original's {@code remove_object_curse}
+     * clears both power and timeout).
+     *
+     * @param power the new curse power
+     * @author Rowan Crowther
+     */
     public void setPower(int power) {
         this.power = power;
     }
 
-    public void setTimeout(int timeout) {
-        this.timeout = timeout;
+    /**
+     * Tick the timeout down by one turn. Called once per game turn while the curse
+     * is active; when the timeout reaches zero the curse's effect fires and the
+     * timeout is re-rolled via {@link #setTimeout(int)}.
+     *
+     * @author Rowan Crowther
+     */
+    public void decrementTimeout() {
+        this.timeout--;
+    }
+
+    /**
+     * Reset the timeout to a freshly rolled value after the curse's effect has
+     * fired. This is an assignment, not a decrement — it re-arms the countdown to
+     * the curse template's next interval (the C original's
+     * {@code timeout = randcalc(c->obj->time, ...)}).
+     *
+     * @param amount the new timeout, in turns
+     * @author Rowan Crowther
+     */
+    public void setTimeout(int amount) {
+        this.timeout = amount;
     }
 }

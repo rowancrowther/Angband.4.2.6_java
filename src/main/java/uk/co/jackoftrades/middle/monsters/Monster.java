@@ -23,6 +23,7 @@ import uk.co.jackoftrades.middle.cave.Heatmap;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.combat.Target;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
+import uk.co.jackoftrades.middle.monsters.enums.MonTimedFlags;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -262,5 +263,68 @@ public class Monster {
     public boolean isUnique() {
         return (originalRace != null) ? originalRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE)
                 : monsterRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE);
+    }
+
+    /**
+     * @param timed the monster timed effect to query
+     * @return the turns remaining on that effect, or {@code 0} if the monster is not under it
+     * @author Rowan Crowther
+     */
+    public int getMonTimed(MonTimed timed) {
+        return mTimed.get(timed);
+    }
+
+    /**
+     * Clear a monster timed effect outright by setting its duration to zero,
+     * delegating to {@link #setTimed}. The port of C's {@code mon_clear_timed}.
+     * A no-op (returns {@code false}) if the effect is not currently active.
+     *
+     * @param timed the monster timed effect to clear
+     * @param flag  behavioural flags controlling messaging/notification
+     * @return {@code true} if the effect was active and has now been cleared
+     * @author Rowan Crowther
+     */
+    public boolean clearTimed(MonTimed timed, Flag<MonTimedFlags> flag) {
+        if (mTimed.get(timed) == 0) {
+            return false;
+        }
+        return setTimed(timed, 0, flag);
+    }
+
+    /**
+     * Set a monster timed effect to an absolute duration, applying any messaging
+     * dictated by {@code flag}. The port of C's {@code mon_set_timed}; the common
+     * sink that {@link #clearTimed} and {@link #decrementTimed} both funnel through.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the monster timed-effect runtime;
+     * reports {@code false} (no change).</p>
+     *
+     * @param timed the monster timed effect to set
+     * @param timer the new duration in turns
+     * @param flag  behavioural flags controlling messaging/notification
+     * @return {@code true} if the effect's value actually changed
+     * @author Rowan Crowther
+     */
+    public boolean setTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
+        // Stub class: TODO: implement
+        return false;
+    }
+
+    /**
+     * Reduce a monster timed effect's duration by a given amount, flooring at zero,
+     * and delegate to {@link #setTimed}. The port of C's {@code mon_dec_timed}. Used
+     * to keep a commanded monster's timer aligned with the player's fading command.
+     *
+     * @param timed the monster timed effect to shorten
+     * @param timer the number of turns to remove
+     * @param flag  behavioural flags controlling messaging/notification
+     * @return {@code true} if the effect's value actually changed
+     * @author Rowan Crowther
+     */
+    public boolean decrementTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
+        int newLevel = mTimed.get(timed) - timer;
+        newLevel = Math.max(0, newLevel);
+
+        return setTimed(timed, newLevel, flag);
     }
 }

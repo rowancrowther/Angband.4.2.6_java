@@ -125,7 +125,7 @@ public enum TValue {
     TV_HARD_ARMOR("hard armor"),
 
     /**
-     * Amor fashioned from dragon scale
+     * Armor fashioned from dragon scale
      */
     TV_DRAGON_ARMOR("dragon armor"),
 

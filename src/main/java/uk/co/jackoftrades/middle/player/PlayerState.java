@@ -128,6 +128,19 @@ public class PlayerState {
     }
 
     /**
+     * Look up a stat's compressed table index — the {@code 0}-based rung into the
+     * {@code adj_*} stat tables, not the raw stat value. The port of indexing C's
+     * {@code state.stat_ind[stat]}.
+     *
+     * @param stat the stat to look up
+     * @return the stat's index into the stat-adjustment tables
+     * @author Rowan Crowther
+     */
+    public int getStatInd(Stats stat) {
+        return statInd.get(stat);
+    }
+
+    /**
      * Get the current light value
      *
      * @return the current light value

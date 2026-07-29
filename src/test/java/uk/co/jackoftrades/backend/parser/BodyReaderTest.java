@@ -89,14 +89,14 @@ class BodyReaderTest {
         // Position is the slot's identity, so the exact index -> (type, name) mapping matters.
         PlayerBody body = new BodyReader().parseWithResults(REAL_FILE).items().get(0);
 
-        assertEquals(EquipmentSlotsEnum.EQUIP_WEAPON, body.getSlot(0).type());
-        assertEquals("weapon", body.getSlot(0).name());
-        assertEquals(EquipmentSlotsEnum.EQUIP_BOW, body.getSlot(1).type());
+        assertEquals(EquipmentSlotsEnum.EQUIP_WEAPON, body.getSlot(0).getType());
+        assertEquals("weapon", body.getSlot(0).getName());
+        assertEquals(EquipmentSlotsEnum.EQUIP_BOW, body.getSlot(1).getType());
         // BODY_ARMOR proves the underscore-bearing slot type lexes and resolves.
-        assertEquals(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, body.getSlot(6).type());
-        assertEquals("body", body.getSlot(6).name());
-        assertEquals(EquipmentSlotsEnum.EQUIP_BOOTS, body.getSlot(11).type());
-        assertEquals("feet", body.getSlot(11).name());
+        assertEquals(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, body.getSlot(6).getType());
+        assertEquals("body", body.getSlot(6).getName());
+        assertEquals(EquipmentSlotsEnum.EQUIP_BOOTS, body.getSlot(11).getType());
+        assertEquals("feet", body.getSlot(11).getName());
     }
 
     @Test
@@ -104,13 +104,13 @@ class BodyReaderTest {
         // Two RING slots are legal; they are distinguished only by index and name.
         PlayerBody body = new BodyReader().parseWithResults(REAL_FILE).items().get(0);
 
-        assertEquals(EquipmentSlotsEnum.EQUIP_RING, body.getSlot(2).type());
-        assertEquals("right hand", body.getSlot(2).name());
-        assertEquals(EquipmentSlotsEnum.EQUIP_RING, body.getSlot(3).type());
-        assertEquals("left hand", body.getSlot(3).name());
+        assertEquals(EquipmentSlotsEnum.EQUIP_RING, body.getSlot(2).getType());
+        assertEquals("right hand", body.getSlot(2).getName());
+        assertEquals(EquipmentSlotsEnum.EQUIP_RING, body.getSlot(3).getType());
+        assertEquals("left hand", body.getSlot(3).getName());
 
         long rings = body.getSlots().stream()
-                .filter(s -> s.type() == EquipmentSlotsEnum.EQUIP_RING).count();
+                .filter(s -> s.getType() == EquipmentSlotsEnum.EQUIP_RING).count();
         assertEquals(2, rings);
     }
 

@@ -18,6 +18,8 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
 
 /**
  * Free-standing helper routines for the monster subsystem — a port landing spot for the utility
@@ -59,5 +61,26 @@ public class MonsterUtils {
      */
     public static void updateMonster(Monster monster, Chunk cave, boolean full) {
         // Stub class TODO: implement
+    }
+
+    /**
+     * Find the monster the player is currently commanding, i.e. the one carrying the
+     * {@code MON_TMD_COMMAND} timed effect. The port of C's {@code get_commanded_monster}.
+     * Scans the current level's monster list and returns the first match.
+     *
+     * @return the commanded monster, or {@code null} if none is under command
+     * @author Rowan Crowther
+     */
+    public static Monster getCommandMonster() {
+        Chunk currentCave = GameState.getCave();
+        for (Monster monster : currentCave.getMonsters()) {
+            if (monster.getMonsterRace() == null)
+                continue;
+
+            if (monster.getMonTimed(MonTimed.MON_TMD_COMMAND) != 0)
+                return monster;
+        }
+
+        return null;
     }
 }

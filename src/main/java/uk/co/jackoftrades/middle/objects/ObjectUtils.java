@@ -54,4 +54,22 @@ public class ObjectUtils {
     public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
     }
+
+    /**
+     * Fire a curse's effect against the player, as the source item's curse timeout
+     * expires. The port of C's {@code do_curse_effect}; the returned flag drives
+     * whether the player then learns the curse's identity.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the effect runtime; reports
+     * {@code false} (nothing happened, so the curse is not revealed).</p>
+     *
+     * @param curseEntry the curse and its per-object instance data
+     * @param item       the worn item the curse is attached to (the effect's source)
+     * @return {@code true} if the effect did something the player would notice
+     * @author Rowan Crowther
+     */
+    public static boolean doCurseEffect(Curse.CurseEntry curseEntry, ItemObject item) {
+        // Stub class TODO: implement
+        return false;
+    }
 }

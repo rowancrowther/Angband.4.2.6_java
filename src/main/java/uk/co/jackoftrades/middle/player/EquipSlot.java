@@ -17,7 +17,32 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 
-public record EquipSlot(EquipmentSlotsEnum type, String name) {
+public class EquipSlot {
+    private EquipmentSlotsEnum type;
+    private String name;
+    private ItemObject item;
+
+    public EquipSlot(EquipmentSlotsEnum type, String name) {
+        this.type = type;
+        this.name = name;
+    }
+
+    /**
+     * @return the item currently worn in this slot, or {@code null} if the slot is empty
+     * @author Rowan Crowther
+     */
+    public ItemObject getItem() {
+        return item;
+    }
+
+    public EquipmentSlotsEnum getType() {
+        return type;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

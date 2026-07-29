@@ -24,6 +24,7 @@ import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -666,6 +667,20 @@ public class Player {
         return exp;
     }
 
+    /**
+     * Reduce the remaining duration of a timed effect by a given amount, delegating
+     * to {@link #setTimed} with the new total. The port of C's {@code player_dec_timed}.
+     *
+     * <p>If the reduction would take the effect to zero or below, the change is
+     * always announced (the {@code notify} argument is forced {@code true}) so the
+     * player is told the effect has worn off.</p>
+     *
+     * @param timedEffect the effect to shorten
+     * @param amount      the number of turns to remove
+     * @param notify      whether to announce a change that leaves the effect still active
+     * @param canDisturb  whether the change may interrupt resting/running
+     * @return {@code true} if the effect's value actually changed
+     */
     public boolean decTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb) {
         int newValue;
 
@@ -683,6 +698,20 @@ public class Player {
         return false;
     }
 
+    /**
+     * Set a timed effect to an absolute duration, applying grade thresholds and any
+     * on-change messaging. The port of C's {@code player_set_timed}; the common sink
+     * that {@link #incTimed} and {@link #decTimed} both funnel through.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the timed-effects runtime; reports
+     * {@code false} (no change).</p>
+     *
+     * @param timedEffect the effect to set
+     * @param amount      the new duration in turns (may be zero or negative to clear it)
+     * @param notify      whether to announce the change to the player
+     * @param canDisturb  whether the change may interrupt resting/running
+     * @return {@code true} if the effect's value actually changed
+     */
     public boolean setTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb) {
         // Stub function TODO: implement
         return false;
@@ -742,5 +771,17 @@ public class Player {
 
     public int getMaxDepth() {
         return maxDepth;
+    }
+
+    /**
+     * Record that the player has learned the identity of a curse, typically because
+     * its effect just fired on a worn item. The port of C's {@code player_learn_curse}.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the object-knowledge runtime.</p>
+     *
+     * @param curse the curse whose nature has now been revealed
+     */
+    public void learnCurse(Curse curse) {
+        // Stub function TODO: implement
     }
 }

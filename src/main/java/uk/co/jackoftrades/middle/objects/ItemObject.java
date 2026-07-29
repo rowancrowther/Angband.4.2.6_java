@@ -39,6 +39,7 @@ import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -798,5 +799,24 @@ public class ItemObject {
         }
 
         GameState.getCave().objectDelete(playerCave, item);
+    }
+
+    /**
+     * @return this object's curses, each mapped to a boolean marking whether the
+     * player is aware of it (unmodifiable) — the port of C's {@code obj->curses}
+     * @author Rowan Crowther
+     */
+    public Map<CurseEntry, Boolean> getCurses() {
+        return Collections.unmodifiableMap(curses);
+    }
+
+    /**
+     * @return the random interval between activations of this object's effect — the
+     * port of C's {@code obj->time}; for a curse template this is the dice re-rolled
+     * into each cursed object's timeout
+     * @author Rowan Crowther
+     */
+    public Random getTime() {
+        return time;
     }
 }

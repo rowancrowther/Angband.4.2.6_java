@@ -256,10 +256,19 @@ public class Monster {
         return grid;
     }
 
+    /**
+     * @return this monster's distance from the player, in grids (C: {@code cdis})
+     * @author Rowan Crowther
+     */
     public int getcDistance() {
         return cDistance;
     }
 
+    /**
+     * @return {@code true} if this monster is a unique — tested against its original race if it has
+     * shapechanged, otherwise its current race
+     * @author Rowan Crowther
+     */
     public boolean isUnique() {
         return (originalRace != null) ? originalRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE)
                 : monsterRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE);

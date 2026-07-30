@@ -230,98 +230,170 @@ public class Artifact {
         this.time = time;
     }
 
+    /**
+     * @return the artifact's display name
+     */
     public String getName() {
         return name;
     }
 
+    /**
+     * @return the artifact's flavour/description text
+     */
     public String getText() {
         return text;
     }
 
+    /**
+     * @return the base type (tval) of the item the artifact is built on
+     */
     public TValue gettValue() {
         return tValue;
     }
 
+    /**
+     * @return the subtype name (sval) of the item the artifact is built on
+     */
     public String getsValue() {
         return sValue;
     }
 
+    /**
+     * @return the to-hit combat bonus
+     */
     public int getToHit() {
         return toHit;
     }
 
+    /**
+     * @return the to-damage combat bonus
+     */
     public int getToDam() {
         return toDam;
     }
 
+    /**
+     * @return the to-armour-class combat bonus
+     */
     public int getToAC() {
         return toAC;
     }
 
+    /**
+     * @return the base armour class
+     */
     public int getAc() {
         return ac;
     }
 
+    /**
+     * @return the unparsed damage dice string for the artifact's weapon
+     */
     public String getDiceString() {
         return diceString;
     }
 
+    /**
+     * @return the artifact's weight (in tenths of a pound)
+     */
     public int getWeight() {
         return weight;
     }
 
+    /**
+     * @return the artifact's base monetary value
+     */
     public int getCost() {
         return cost;
     }
 
+    /**
+     * @return the object flags the artifact grants
+     */
     public Flag<ObjectFlag> getFlags() {
         return flags;
     }
 
+    /**
+     * @return the additive numeric modifiers the artifact grants (obj_mods)
+     */
     public Map<ObjectModifier, Integer> getModifiers() {
         return modifiers;
     }
 
+    /**
+     * @return the per-element resistance levels and hates/ignores flags the artifact imposes
+     */
     public Map<ElementEnum, ElementInfo> getElInfo() {
         return elInfo;
     }
 
+    /**
+     * @return the brands the artifact adds to its attacks
+     */
     public List<Brand> getBrands() {
         return brands;
     }
 
+    /**
+     * @return the slays the artifact adds to its attacks
+     */
     public List<Slay> getSlays() {
         return slays;
     }
 
+    /**
+     * @return the curses attached to the artifact, keyed by curse
+     */
     public Map<Curse, Curse.CurseEntry> getCurses() {
         return curses;
     }
 
+    /**
+     * @return the artifact's native depth/level
+     */
     public int getLevel() {
         return level;
     }
 
+    /**
+     * @return the allocation probability weight used when generating this artifact
+     */
     public int getAllocProb() {
         return allocProb;
     }
 
+    /**
+     * @return the minimum depth at which the artifact may be generated
+     */
     public int getAllocMin() {
         return allocMin;
     }
 
+    /**
+     * @return the maximum depth at which the artifact may be generated
+     */
     public int getAllocMax() {
         return allocMax;
     }
 
+    /**
+     * @return the artifact's activation effect, or {@code null} if it has none
+     */
     public Activation getActivation() {
         return activation;
     }
 
+    /**
+     * @return the message shown when the artifact is activated
+     */
     public String getActivationMessage() {
         return activationMessage;
     }
 
+    /**
+     * @return the recharge interval (dice) for the artifact's activation
+     */
     public Random getTime() {
         return time;
     }

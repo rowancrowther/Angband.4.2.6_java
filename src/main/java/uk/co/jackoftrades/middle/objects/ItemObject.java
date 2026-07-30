@@ -395,34 +395,73 @@ public class ItemObject {
         this.note = note;
     }
 
+    /**
+     * Sets the grid location this object occupies on the floor.
+     *
+     * @param grid the map location, or {@code null} if the object is not on the floor
+     */
     public void setGrid(Loc grid) {
         location = grid;
     }
 
+    /**
+     * @return the grid location this object occupies, or {@code null} if it is not on the floor
+     */
     public Loc getGrid() {
         return location;
     }
 
+    /**
+     * Raises a notice flag on this object, recording something the player has learned or noticed
+     * about it.
+     *
+     * @param notice the {@link ObjectNotice} flag to set
+     */
     public void orNotice(ObjectNotice notice) {
         this.notice.on(notice);
     }
 
+    /**
+     * @return {@code true} if this object is an artifact (has an associated artifact definition)
+     */
     public boolean isArtifact() {
         return artifact != null;
     }
 
+    /**
+     * @return the object kind (base type) this object is an instance of
+     */
     public ObjectKind getKind() {
         return kind;
     }
 
+    /**
+     * Sets the index of the monster currently holding this object.
+     *
+     * @param heldMIndex the holding monster's index (0 if not held by a monster)
+     */
     public void setHeldMIndex(int heldMIndex) {
         this.heldMIndex = heldMIndex;
     }
 
+    /**
+     * Sets the index of the monster this object is mimicking, for a mimic disguised as an item.
+     *
+     * @param mimickingMIndex the mimicking monster's index (0 if this object is not a mimic)
+     */
     public void setMimickingMIndex(int mimickingMIndex) {
         this.mimickingMIndex = mimickingMIndex;
     }
 
+    /**
+     * Tests whether two objects are similar enough to stack, under the given stacking mode — the
+     * port of C's {@code object_similar} ({@code obj-util.c}). The comparison covers kind, ego,
+     * artifact, known/unknown state, curses, runes, effect knowledge and any mode-specific rules.
+     *
+     * @param itm2 the other object to compare against
+     * @param mode the {@link ObjectStackEnum} flags selecting which stacking rules apply
+     * @return {@code true} if the two objects may occupy the same stack
+     */
     @CheckReturnValue
     @Contract(pure = true)
     public boolean similar(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
@@ -818,5 +857,71 @@ public class ItemObject {
      */
     public Random getTime() {
         return time;
+    }
+
+    /**
+     * Decrements this object's recharge timeout by the number of items currently charging, the
+     * port of C's {@code recharge_timeout} ({@code obj-util.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented; currently a no-op returning {@code false}. When ported
+     * it must reduce {@link #timeout} by {@code min(numberCharging(), timeout)} and report whether
+     * the charging count fell (i.e. at least one item in the stack gained a charge).
+     *
+     * @return {@code true} if at least one item obtained a charge this tick
+     */
+    public boolean rechargeTimeout() {
+        // Stub function TODO: Implement
+        return false;
+    }
+
+    /**
+     * Returns how many items in this (possibly stacked) object are still charging — the port of
+     * C's {@code number_charging} ({@code obj-util.c}).
+     *
+     * <p>Derived from the remaining {@link #timeout} and the per-item recharge interval
+     * ({@link #time}, evaluated at its average), clamped to the stack size {@link #number}.
+     * Objects with no recharge interval or no outstanding timeout have nothing charging.
+     *
+     * @return the number of items currently charging (0 if none)
+     */
+    public int numberCharging() {
+        if (time == null) return 0;
+
+        int chargeTime = time.randCalc(0, DamageAspect.AVERAGE);
+
+        // Item has no timeout
+        if (chargeTime <= 0) return 0;
+
+        // No items are charging
+        if (timeout <= 0) return 0;
+
+        // Calculate number charging based on timeout
+        int numCharging = (timeout + chargeTime - 1) / chargeTime;
+
+        // Number charging cannot exceed stack size
+        if (numCharging > number) numCharging = number;
+
+        return numCharging;
+    }
+
+    /**
+     * @return the number of items in this stack
+     */
+    public int getNumber() {
+        return number;
+    }
+
+    /**
+     * @return this object's base type (tval)
+     */
+    public TValue gettValue() {
+        return tValue;
+    }
+
+    /**
+     * @return the turns remaining until this object is ready to use again (0 = ready)
+     */
+    public int getTimeout() {
+        return timeout;
     }
 }

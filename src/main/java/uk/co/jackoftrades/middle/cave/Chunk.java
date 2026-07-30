@@ -36,15 +36,11 @@ import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterGroup;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
-import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
+import java.util.*;
 import java.util.stream.Stream;
 
 /**
@@ -167,7 +163,7 @@ public class Chunk {
      *
      * @author Rowan Crowther
      */
-    private Pile objectPile; // Should this be ItemObject[][] objects?
+    private List<ItemObject> objects; // Should this be ItemObject[][] objects?
     /**
      * Highest object index in use.
      *
@@ -286,7 +282,7 @@ public class Chunk {
         this.noise = new Heatmap();
         this.scent = new Heatmap();
         this.decoy = Loc.zero;
-        this.objectPile = new Pile();
+        this.objects = new ArrayList<>();
         this.objMax = objMax;
         this.monsters = new Monster[monMax];
         this.monMax = monMax;
@@ -1313,14 +1309,14 @@ public class Chunk {
      */
     @Contract(mutates = "this")
     public void objectDelete(@Nullable Chunk playerCave, @NotNull ItemObject item) {
-        objectPile.excise(item);
+        objects.remove(item);
 
         // Remove the object from those tracked by the player upkeep
         if (player.getPlayerUpkeep() != null) player.getPlayerUpkeep().getPile().excise(item);
 
         if (playerCave != null
-                && currentLevel.objectPile.contains(item)
-                && playerCave.objectPile.contains(item)) {
+                && currentLevel.objects.contains(item)
+                && playerCave.objects.contains(item)) {
             item.setGrid(Loc.zero);
             item.setHeldMIndex(0);
             item.setMimickingMIndex(0);
@@ -1329,11 +1325,11 @@ public class Chunk {
             return;
         }
 
-        if (playerCave != null && playerCave.objectPile.contains(item))
-            playerCave.objectPile.excise(item);
+        if (playerCave != null && playerCave.objects.contains(item))
+            playerCave.objects.remove(item);
 
-        if (currentLevel.objectPile.contains(item))
-            currentLevel.objectPile.excise(item);
+        if (currentLevel.objects.contains(item))
+            currentLevel.objects.remove(item);
     }
 
     /**
@@ -1343,12 +1339,12 @@ public class Chunk {
      */
     @Contract(mutates = "this")
     public void delistObject(ItemObject item) {
-        if (!objectPile.contains(item)) return;
+        if (!objects.contains(item)) return;
 
-        if (this.equals(currentLevel) && player.getCave().objectPile.contains(item))
+        if (this.equals(currentLevel) && player.getCave().objects.contains(item))
             return;
 
-        objectPile.excise(item);
+        objects.remove(item);
     }
 
     /**
@@ -1438,10 +1434,25 @@ public class Chunk {
         GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, grid.getX(), grid.getY());
     }
 
+    /**
+     * @return the number of monster slots in this chunk's monster array
+     * @author Rowan Crowther
+     */
     public int monsterCount() {
         return Arrays.stream(monsters).toList().size();
     }
 
+    /**
+     * Culls monsters from the level to free up space, the port of C's {@code compact_monsters}
+     * ({@code mon-make.c}). Passes over the monster list with escalating aggression each iteration —
+     * raising the level cap and shrinking the distance threshold — deleting eligible monsters that
+     * fail a saving throw, with quest monsters and uniques given progressively better odds of
+     * surviving. Finally excises the dead entries and shrinks the array's high-water mark.
+     *
+     * @param numToCompact the minimum number of monsters to remove; {@code 0} simply excises the
+     *                     already-dead entries without a "Compacting monsters..." message
+     * @author Rowan Crowther
+     */
     public void compactMonsters(int numToCompact) {
         int monIndex;
         int numCompacted;
@@ -1510,10 +1521,28 @@ public class Chunk {
         }
     }
 
+    /**
+     * Relocates a monster from one index to another in the monster array, updating all references,
+     * the port of C's {@code monster_index_move} ({@code mon-make.c}). Used when compacting the array.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param fromIndex the monster's current index
+     * @param toIndex   the index to move it to
+     * @author Rowan Crowther
+     */
     public void monsterIndexMove(int fromIndex, int toIndex) {
         // Stub function : TODO: implement this
     }
 
+    /**
+     * Deletes the monster occupying the given grid, if any — the port of C's {@code delete_monster}
+     * ({@code mon-make.c}). Resolves the grid to its square and delegates to
+     * {@link #deleteMonsterIndex(int)}; out-of-bounds grids are ignored.
+     *
+     * @param grid the map location to clear of its monster
+     * @author Rowan Crowther
+     */
     private void deleteMonster(@NotNull Loc grid) {
         if (!inBounds(grid)) return;
 
@@ -1522,23 +1551,71 @@ public class Chunk {
             deleteMonsterIndex(square.getMonsterIndex());
     }
 
+    /**
+     * Deletes the monster at the given array index, freeing its slot and clearing its square — the
+     * port of C's {@code delete_monster_idx} ({@code mon-make.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param monsterIndex the index of the monster to delete
+     * @author Rowan Crowther
+     */
     private void deleteMonsterIndex(int monsterIndex) {
         // Stub function : TODO: implement this
     }
 
+    /**
+     * Lights or darkens the whole level as appropriate — the port of C's {@code cave_illuminate}
+     * ({@code cave.c}). In town this reflects day/night; in the dungeon it handles lit rooms.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param daytime {@code true} if it is daytime (relevant in the town)
+     * @author Rowan Crowther
+     */
     public void illuminate(boolean daytime) {
         // Stub function : TODO: implement this
     }
 
+    /**
+     * Places a new monster on the level at least a given distance from a grid — the port of C's
+     * {@code pick_and_place_distant_monster} ({@code mon-make.c}), used to spawn wandering monsters
+     * away from the player.
+     *
+     * <p><b>Stub:</b> not yet implemented; always reports failure.
+     *
+     * @param toAvoid  the grid to keep the new monster away from
+     * @param distance the minimum distance from {@code toAvoid}
+     * @param sleep    whether the placed monster starts asleep
+     * @param depth    the depth to generate the monster at
+     * @return {@code true} if a monster was placed
+     * @author Rowan Crowther
+     */
     public boolean pickAndPlaceDistantMonster(Loc toAvoid, int distance, boolean sleep, int depth) {
         // Stub function : TODO: implement this
         return false;
     }
 
+    /**
+     * Marks the traps on a square as remembered by the player so they stay drawn — the port of C's
+     * {@code square_memorize_traps} ({@code cave-square.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param grid the grid whose traps to memorize
+     * @author Rowan Crowther
+     */
     public void squareMemorizeTraps(Loc grid) {
         // Stub function : TODO: implement this
     }
 
+    /**
+     * Ticks every trap on the level down by one turn, re-memorising and re-lighting any square whose
+     * trap just became active again (timeout reaching zero) while it is in view. Mirrors the trap
+     * half of C's per-turn trap ageing.
+     *
+     * @author Rowan Crowther
+     */
     public void decreaseTrapTimeout() {
         for (int y = 0; y < squares.length; y++) {
             for (int x = 0; x < squares[y].length; x++) {
@@ -1557,5 +1634,13 @@ public class Chunk {
                 }
             }
         }
+    }
+
+    /**
+     * @return an unmodifiable view of the objects lying on this chunk's floor
+     * @author Rowan Crowther
+     */
+    public List<ItemObject> getObjects() {
+        return Collections.unmodifiableList(objects);
     }
 }

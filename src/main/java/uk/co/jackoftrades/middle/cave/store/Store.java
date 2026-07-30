@@ -17,7 +17,24 @@
 
 package uk.co.jackoftrades.middle.cave.store;
 
+/**
+ * The town stores and their periodic restocking. The Java port of the C original's store
+ * subsystem ({@code store.c}).
+ *
+ * <p><b>Status:</b> currently a stub — only the restock entry point is stubbed in while the store
+ * subsystem is being ported.
+ *
+ * @author Rowan Crowther
+ */
 public class Store {
+    /**
+     * Turns over the town stores' stock — the port of C's {@code store_update} ({@code store.c}),
+     * run on the game's daily/periodic cycle to retire old inventory and introduce new items.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public static void storeUpdate() {
         // Stub function : TODO: implement this
     }

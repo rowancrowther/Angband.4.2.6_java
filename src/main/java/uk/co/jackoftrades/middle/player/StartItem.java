@@ -68,22 +68,37 @@ public class StartItem {
         this.eOpts = eOpts;
     }
 
+    /**
+     * @return the item's base type (tval)
+     */
     public TValue gettValue() {
         return tValue;
     }
 
+    /**
+     * @return the item's subtype name (sval, held unresolved)
+     */
     public String getsValue() {
         return sValue;
     }
 
+    /**
+     * @return the minimum quantity granted at birth (inclusive)
+     */
     public int getMin() {
         return min;
     }
 
+    /**
+     * @return the maximum quantity granted at birth (inclusive)
+     */
     public int getMax() {
         return max;
     }
 
+    /**
+     * @return the ego/exclusion options constraining which exact item is produced
+     */
     public List<StartOptionExclusion> geteOpts() {
         return eOpts;
     }

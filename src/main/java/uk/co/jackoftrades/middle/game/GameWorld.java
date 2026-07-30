@@ -50,6 +50,7 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.CurseData;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.EquipSlot;
@@ -312,6 +313,57 @@ public class GameWorld {
                 }
             }
         }
+    }
+
+    public void rechargeObjects() {
+        int index;
+        boolean dischargedStack;
+        ItemObject object;
+
+        for (ItemObject item : player.getGear()) {
+            if (item.getKind() == null)
+                continue;
+
+            // Recharge equipment
+            if (player.getPlayerBody().itemIsEquipped(item)) {
+                // Recharge activatable objects
+                if (item.rechargeTimeout()) {
+                    // Message if an item recharged
+                    rechargeNotice(item, true);
+
+                    // Window stuff
+                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_EQUIP);
+                }
+            } else {
+                // Recharge the inventory
+                dischargedStack = item.numberCharging() == item.getNumber();
+
+                // Recharge rods, and update if any rods are recharged
+                if (item.gettValue().canHaveTimeout() && item.rechargeTimeout()) {
+                    // entire stack is recharged
+                    if (item.getTimeout() == 0)
+                        rechargeNotice(item, true);
+                    else if (dischargedStack) // Previously exhasted stack has acquired a charge
+                        rechargeNotice(item, false);
+
+                    // Combine pack
+                    player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
+
+                    // Redraw stuff
+                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_INVEN);
+                }
+            }
+        }
+
+        // Recharge other level objects
+        for (ItemObject item : currentCave.getObjects()) {
+            if (item.gettValue().canHaveTimeout())
+                item.rechargeTimeout();
+        }
+    }
+
+    public void rechargeNotice(ItemObject item, boolean all) {
+        // Stub function TODO: Implement
     }
 
     /**
@@ -731,7 +783,7 @@ public class GameWorld {
         }
 
         // Recharge activatable objects and rods
-        rechargeObject();
+        rechargeObjects();
 
         // Notice things after time
         if (turn % 100 == 0)
@@ -888,10 +940,6 @@ public class GameWorld {
     }
 
     private static void updateScent() {
-        // Stub class TODO: Implement this
-    }
-
-    private static void rechargeObject() {
         // Stub class TODO: Implement this
     }
 }

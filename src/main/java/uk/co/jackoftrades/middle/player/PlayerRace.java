@@ -147,6 +147,9 @@ public class PlayerRace {
         this.resists = resists;
     }
 
+    /**
+     * @return the race's display name
+     */
     public String getName() {
         return name;
     }

@@ -450,6 +450,10 @@ public class MonsterRace {
         }
     }
 
+    /**
+     * @return this race's native dungeon depth/level
+     * @author Rowan Crowther
+     */
     public int getLevel() {
         return level;
     }

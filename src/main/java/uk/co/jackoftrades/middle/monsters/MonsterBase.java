@@ -130,10 +130,18 @@ public class MonsterBase {
         return codeName;
     }
 
+    /**
+     * @return the race flags shared by all monsters of this base
+     * @author Rowan Crowther
+     */
     public Flag<MonsterRaceFlag> getFlags() {
         return flags;
     }
 
+    /**
+     * @return the default display glyph for monsters of this base
+     * @author Rowan Crowther
+     */
     public char getDefaultMonsterChar() {
         return defaultMonsterChar;
     }

@@ -123,6 +123,11 @@ public class PlayerState {
         return pflags.has(flag);
     }
 
+    /**
+     * @param flag the object flag to test
+     * @return {@code true} if the player's calculated state carries the given object flag
+     * @author Rowan Crowther
+     */
     public boolean hasOFlag(@NotNull ObjectFlag flag) {
         return flags.has(flag);
     }
@@ -158,6 +163,10 @@ public class PlayerState {
         return speed;
     }
 
+    /**
+     * @return the player's percentage damage reduction (C: {@code state.perc_dam_red})
+     * @author Rowan Crowther
+     */
     public int getPercDamageReduction() {
         return perDamRed;
     }

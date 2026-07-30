@@ -383,6 +383,11 @@ public class Player {
         return state.hasPFlag(flag);
     }
 
+    /**
+     * @param flag the object flag to test
+     * @return {@code true} if the player's calculated state carries the given object flag
+     * @author Rowan Crowther
+     */
     public boolean hasObjectFlag(@NotNull ObjectFlag flag) {
         return state.hasOFlag(flag);
     }
@@ -635,19 +640,47 @@ public class Player {
         return grid;
     }
 
+    /**
+     * @return the player's current dungeon depth (0 = town)
+     * @author Rowan Crowther
+     */
     public int getDepth() {
         return depth;
     }
 
+    /**
+     * @return the player's current hit points
+     * @author Rowan Crowther
+     */
     public int getCurrentHP() {
         return currentHP;
     }
 
+    /**
+     * Reduces a stat, optionally permanently — the port of C's {@code player_stat_dec}
+     * ({@code player.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented; reports no change.
+     *
+     * @param stat      the stat to lower
+     * @param permanant whether the loss also reduces the stat's maximum
+     * @return {@code true} if the stat actually changed
+     * @author Rowan Crowther
+     */
     public boolean statDec(Stats stat, boolean permanant) {
         // Stub function TODO: implement
         return false;
     }
 
+    /**
+     * Removes experience points from the player, optionally reducing the maximum too, then
+     * re-evaluates the character level. The port of C's {@code player_exp_lose} ({@code player.c}).
+     * The loss is capped at the current experience so it cannot go negative.
+     *
+     * @param amount    the experience to remove
+     * @param permanent whether the loss also reduces the player's maximum experience
+     * @author Rowan Crowther
+     */
     public void expLose(int amount, boolean permanent) {
         if (exp < amount) {
             amount = exp;
@@ -659,10 +692,23 @@ public class Player {
         adjustLevel(true);
     }
 
+    /**
+     * Recomputes the player's character level from current experience, applying any level-up or
+     * level-down effects — the port of C's {@code adjust_level} ({@code player.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param verbose whether to announce level changes to the player
+     * @author Rowan Crowther
+     */
     private void adjustLevel(boolean verbose) {
         // Stub function TODO: implement
     }
 
+    /**
+     * @return the player's current experience points
+     * @author Rowan Crowther
+     */
     public int getExp() {
         return exp;
     }
@@ -693,6 +739,20 @@ public class Player {
         return setTimed(timedEffect, newValue, true, canDisturb);
     }
 
+    /**
+     * Extend (or begin) a timed effect by a given amount, delegating to {@link #setTimed} with the
+     * new total. The port of C's {@code player_inc_timed} ({@code player-timed.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented; reports no change.
+     *
+     * @param timedEffect the effect to lengthen
+     * @param amount      the number of turns to add
+     * @param notify      whether to announce the change to the player
+     * @param canDisturb  whether the change may interrupt resting/running
+     * @param check       whether to honour the effect's failure conditions before applying it
+     * @return {@code true} if the effect's value actually changed
+     * @author Rowan Crowther
+     */
     public boolean incTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb, boolean check) {
         // Stub function TODO: implement
         return false;
@@ -717,47 +777,111 @@ public class Player {
         return false;
     }
 
+    /**
+     * @return the player's maximum hit points
+     * @author Rowan Crowther
+     */
     public int getMaxHP() {
         return maxHP;
     }
 
+    /**
+     * @return {@code true} if the player is currently resting — either the resting counter is still
+     * running or a special stop-condition rest is in progress
+     * @author Rowan Crowther
+     */
     public boolean isResting() {
         return (playerUpkeep.getRestingCounter() > 0 || restingIsSpecial(playerUpkeep.getRestingCounter()));
     }
 
+    /**
+     * Tests whether the given resting counter denotes one of the "rest until a condition is met"
+     * sentinel values (as opposed to a fixed turn count) — the port of C's special resting-count
+     * handling.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param restingCounter the resting counter to classify
+     * @return {@code true} if the counter is a special "rest until…" value
+     * @author Rowan Crowther
+     */
     private boolean restingIsSpecial(int restingCounter) {
         // Stub function TODO: implement
         return false;
     }
 
+    /**
+     * @return the turns remaining until Word of Recall activates (0 = inactive)
+     * @author Rowan Crowther
+     */
     public int getWordRecall() {
         return wordRecall;
     }
 
+    /**
+     * Ticks the Word of Recall countdown down by one turn.
+     *
+     * @author Rowan Crowther
+     */
     public void decrementWordRecall() {
         wordRecall--;
     }
 
+    /**
+     * Sets the player's current dungeon depth.
+     *
+     * @param depth the new depth (0 = town)
+     * @author Rowan Crowther
+     */
     public void setDepth(int depth) {
         this.depth = depth;
     }
 
+    /**
+     * @return the depth Word of Recall will return the player to
+     * @author Rowan Crowther
+     */
     public int getRecallDepth() {
         return recallDepth;
     }
 
+    /**
+     * Recomputes and stores the depth Word of Recall should return the player to — the port of C's
+     * recall-depth handling.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public void setRecallDepth() {
         // Stub function TODO: implement
     }
 
+    /**
+     * @return the turns remaining until a Deep Descent triggers (0 = inactive)
+     * @author Rowan Crowther
+     */
     public int getDeepDescent() {
         return deepDescent;
     }
 
+    /**
+     * Ticks the Deep Descent countdown down by one turn.
+     *
+     * @author Rowan Crowther
+     */
     public void decrementDeepDescent() {
         deepDescent--;
     }
 
+    /**
+     * Tests whether a given dungeon level hosts one of the player's outstanding quests — the port of
+     * C's {@code is_quest} ({@code player-quest.c}). The town (level 0) never holds a quest.
+     *
+     * @param level the dungeon level to test
+     * @return {@code true} if a quest target lives on that level
+     * @author Rowan Crowther
+     */
     public boolean isQuest(int level) {
         // No quests on town level
         if (level == 0) return false;
@@ -769,8 +893,20 @@ public class Player {
         return false;
     }
 
+    /**
+     * @return the deepest dungeon level the player has reached
+     * @author Rowan Crowther
+     */
     public int getMaxDepth() {
         return maxDepth;
+    }
+
+    /**
+     * @return the player's carried gear (inventory and equipment)
+     * @author Rowan Crowther
+     */
+    public ArrayList<ItemObject> getGear() {
+        return gear;
     }
 
     /**

@@ -543,6 +543,18 @@ public class ObjectKind {
         this.sValueName = stripToRawSval(name);
     }
 
+    /**
+     * Synthesises the object kind that backs a special (instanced) artifact — the port of C's
+     * {@code write_special_kinds}/{@code special_item} handling. An artifact whose base has no
+     * ordinary kind gets a fresh kind built here: it copies the base's kind-flags and per-element
+     * info, marks itself {@link ObjectKindFlag#KF_INSTA_ART}, takes the artifact's level, and adopts
+     * a red {@code '*'} display glyph and a flavour-templated name derived from {@code sValName}.
+     *
+     * @param artifact the artifact this kind is being created for
+     * @param sValName the subtype name to give the synthesised kind
+     * @param base     the object base whose defaults (kind-flags, elements, tval) are inherited
+     * @author Rowan Crowther
+     */
     public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
         this.flags = new Flag<>(ObjectFlag.class);
         this.kindFlags = base.getKindFlags().copy();
@@ -648,14 +660,26 @@ public class ObjectKind {
         this.cost = cost;
     }
 
+    /**
+     * @param weight the kind's weight (in tenths of a pound)
+     * @author Rowan Crowther
+     */
     public void setWeight(int weight) {
         this.weight = weight;
     }
 
+    /**
+     * @return the activations available on this kind
+     * @author Rowan Crowther
+     */
     public List<Activation> getActivations() {
         return activations;
     }
 
+    /**
+     * @param time the recharge/effect timing dice to assign
+     * @author Rowan Crowther
+     */
     public void setTime(Random time) {
         this.time = time;
     }
@@ -676,14 +700,26 @@ public class ObjectKind {
         return sValueName;
     }
 
+    /**
+     * @return the kind-level flags ({@code KF_*}) set on this kind
+     * @author Rowan Crowther
+     */
     public Flag<ObjectKindFlag> getKindFlags() {
         return kindFlags;
     }
 
+    /**
+     * @return this kind's stable index in the object-kind table
+     * @author Rowan Crowther
+     */
     public int getKindIndex() {
         return kindIndex;
     }
 
+    /**
+     * @param kindIndex this kind's stable index in the object-kind table
+     * @author Rowan Crowther
+     */
     public void setKindIndex(int kindIndex) {
         this.kindIndex = kindIndex;
     }

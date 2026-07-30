@@ -86,6 +86,10 @@ public class MonsterPain {
         return messages.get(level);
     }
 
+    /**
+     * @return a debug string listing this pain record's index and its messages
+     * @author Rowan Crowther
+     */
     @Override
     @Contract(pure = true)
     public String toString() {

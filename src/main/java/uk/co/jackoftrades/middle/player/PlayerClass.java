@@ -133,6 +133,9 @@ public class PlayerClass {
         this.magic = magic;
     }
 
+    /**
+     * @return the class's spellcasting definition, or {@code null} for a non-caster
+     */
     public ClassMagic getMagic() {
         return magic;
     }

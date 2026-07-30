@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.middle.objects.ItemObject;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -59,6 +61,27 @@ public class PlayerBody {
     public PlayerBody(String name, List<EquipSlot> slots) {
         this.name = name;
         this.slots = List.copyOf(slots);
+    }
+
+    /**
+     * Tests whether a given item is currently worn in one of this body's equipment slots — the port
+     * of C's {@code object_is_equipped} ({@code obj-gear.c}). Empty slots are skipped; the match is
+     * by object identity.
+     *
+     * @param item the item to look for
+     * @return {@code true} if the item occupies one of this body's slots
+     * @author Rowan Crowther
+     */
+    public boolean itemIsEquipped(ItemObject item) {
+        for (EquipSlot slot : slots) {
+            if (slot.getItem() == null) continue;
+
+            if (slot.getItem().equals(item)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

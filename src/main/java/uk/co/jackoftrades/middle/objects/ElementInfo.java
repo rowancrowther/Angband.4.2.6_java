@@ -59,6 +59,12 @@ public class ElementInfo {
         return resLevel;
     }
 
+    /**
+     * Sets the resistance level against this element.
+     *
+     * @param resLevel the resistance level to store
+     * @author Rowan Crowther
+     */
     public void setResLevel(int resLevel) {
         this.resLevel = resLevel;
     }

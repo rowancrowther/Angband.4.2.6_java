@@ -144,6 +144,14 @@ public class Loc {
         return new Loc(RandomValueUtils.randSpread(x, xSpread), RandomValueUtils.randSpread(y, ySpread));
     }
 
+    /**
+     * Entry point for the fluent {@code Loc.row(y).col(x)} construction idiom, fixing the row
+     * (y-coordinate) first and returning a builder that then takes the column.
+     *
+     * @param i the row (y-coordinate)
+     * @return a {@link RowBuilder} awaiting the column to complete the {@link Loc}
+     * @author Rowan Crowther
+     */
     public static RowBuilder row(int i) {
         RowBuilder rowHolder = new RowBuilder();
         rowHolder.y = i;
@@ -161,9 +169,25 @@ public class Loc {
         return new Loc(x + dx, y + dy);
     }
 
+    /**
+     * Intermediate builder for the fluent {@code Loc.row(y).col(x)} idiom, holding the row until the
+     * column is supplied.
+     *
+     * @author Rowan Crowther
+     */
     public static class RowBuilder {
+        /**
+         * The row (y-coordinate) fixed by {@link Loc#row(int)}.
+         */
         private int y;
 
+        /**
+         * Completes the location by supplying the column.
+         *
+         * @param x the column (x-coordinate)
+         * @return the {@link Loc} at the previously-fixed row and this column
+         * @author Rowan Crowther
+         */
         public Loc col(int x) {
             return new Loc(x, y);
         }

@@ -259,67 +259,131 @@ public enum TValue {
         return this == TV_STAFF;
     }
 
+    /**
+     * @return whether this tval is a wand
+     * @author Rowan Crowther
+     */
     public boolean isWand() {
         return this == TV_WAND;
     }
 
+    /**
+     * @return whether this tval is a rod
+     * @author Rowan Crowther
+     */
     public boolean isRod() {
         return this == TV_ROD;
     }
 
+    /**
+     * @return whether this tval is a potion
+     * @author Rowan Crowther
+     */
     public boolean isPotion() {
         return this == TV_POTION;
     }
 
+    /**
+     * @return whether this tval is a scroll
+     * @author Rowan Crowther
+     */
     public boolean isScroll() {
         return this == TV_SCROLL;
     }
 
+    /**
+     * @return whether this tval is (non-mushroom) food
+     * @author Rowan Crowther
+     */
     public boolean isFood() {
         return this == TV_FOOD;
     }
 
+    /**
+     * @return whether this tval is a mushroom
+     * @author Rowan Crowther
+     */
     public boolean isMushroom() {
         return this == TV_MUSHROOM;
     }
 
+    /**
+     * @return whether this tval is a light source
+     * @author Rowan Crowther
+     */
     public boolean isLight() {
         return this == TV_LIGHT;
     }
 
+    /**
+     * @return whether this tval is a ring
+     * @author Rowan Crowther
+     */
     public boolean isRing() {
         return this == TV_RING;
     }
 
+    /**
+     * @return whether this tval is a chest
+     * @author Rowan Crowther
+     */
     public boolean isChest() {
         return this == TV_CHEST;
     }
 
+    /**
+     * @return whether this tval is fuel (a flask of oil)
+     * @author Rowan Crowther
+     */
     public boolean isFuel() {
         return this == TV_FLASK;
     }
 
+    /**
+     * @return whether this tval is money (gold)
+     * @author Rowan Crowther
+     */
     public boolean isMoney() {
         return this == TV_GOLD;
     }
 
+    /**
+     * @return whether this tval is a digging tool
+     * @author Rowan Crowther
+     */
     public boolean isDigger() {
         return this == TV_DIGGER;
     }
 
+    /**
+     * @return whether items of this tval can provide nourishment (food, potions, mushrooms)
+     * @author Rowan Crowther
+     */
     public boolean canHaveNourishment() {
         return this == TV_FOOD || this == TV_POTION
                 || this == TV_MUSHROOM;
     }
 
+    /**
+     * @return whether items of this tval hold a number of charges (staves and wands)
+     * @author Rowan Crowther
+     */
     public boolean canHaveCharges() {
         return this == TV_STAFF || this == TV_WAND;
     }
 
+    /**
+     * @return whether items of this tval recharge on a timeout (rods)
+     * @author Rowan Crowther
+     */
     public boolean canHaveTimeout() {
         return this == TV_ROD;
     }
 
+    /**
+     * @return whether this tval is body armour (soft, hard or dragon-scale armour)
+     * @author Rowan Crowther
+     */
     public boolean isBodyArmour() {
         return switch (this) {
             case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR -> true;
@@ -327,10 +391,18 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is head armour (a helm or crown)
+     * @author Rowan Crowther
+     */
     public boolean isHeadArmour() {
         return this == TV_CROWN || this == TV_HELM;
     }
 
+    /**
+     * @return whether this tval is ammunition (shots, arrows or bolts)
+     * @author Rowan Crowther
+     */
     public boolean isAmmo() {
         return switch (this) {
             case TV_SHOT, TV_ARROW, TV_BOLT -> true;
@@ -338,6 +410,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is a sharp missile (an arrow or bolt)
+     * @author Rowan Crowther
+     */
     public boolean isSharpMissile() {
         return switch (this) {
             case TV_ARROW, TV_BOLT -> true;
@@ -345,14 +421,26 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is a crossbow bolt
+     * @author Rowan Crowther
+     */
     public boolean isBolt() {
         return this == TV_BOLT;
     }
 
+    /**
+     * @return whether this tval is a missile launcher (a bow, sling or crossbow)
+     * @author Rowan Crowther
+     */
     public boolean isLauncher() {
         return this == TV_BOW;
     }
 
+    /**
+     * @return whether items of this tval can be "used" (rods, wands, staves, scrolls, potions, food, mushrooms)
+     * @author Rowan Crowther
+     */
     public boolean isUseable() {
         return switch (this) {
             case TV_ROD, TV_WAND, TV_STAFF, TV_SCROLL, TV_POTION, TV_FOOD, TV_MUSHROOM -> true;
@@ -360,6 +448,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether use of this tval can fail based on the device skill (staves, wands, rods)
+     * @author Rowan Crowther
+     */
     public boolean canHaveFailure() {
         return switch (this) {
             case TV_STAFF, TV_WAND, TV_ROD -> true;
@@ -367,10 +459,18 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is jewelry (a ring or amulet)
+     * @author Rowan Crowther
+     */
     public boolean isJewelry() {
         return this == TV_RING || this == TV_AMULET;
     }
 
+    /**
+     * @return whether this tval is a weapon (melee weapon, launcher or ammunition)
+     * @author Rowan Crowther
+     */
     public boolean isWeapon() {
         return switch (this) {
             case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER, TV_BOW,
@@ -379,6 +479,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is any kind of armour (body, shield, cloak, headgear, boots or gloves)
+     * @author Rowan Crowther
+     */
     public boolean isArmour() {
         return switch (this) {
             case TV_DRAGON_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
@@ -387,6 +491,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is a melee weapon (sword, hafted, polearm or digger)
+     * @author Rowan Crowther
+     */
     public boolean isMeleeWeapon() {
         return switch (this) {
             case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER -> true;
@@ -394,6 +502,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether items of this tval have a variable power/pval (weapons, armour, lights and jewelry)
+     * @author Rowan Crowther
+     */
     public boolean hasVariablePower() {
         return switch (this) {
             case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
@@ -403,6 +515,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether items of this tval can be worn or wielded (weapons, armour, lights and jewelry)
+     * @author Rowan Crowther
+     */
     public boolean isWearable() {
         return switch (this) {
             case TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
@@ -412,6 +528,10 @@ public enum TValue {
         };
     }
 
+    /**
+     * @return whether this tval is edible (food or mushroom)
+     * @author Rowan Crowther
+     */
     public boolean isEdible() {
         return this == TV_FOOD || this == TV_MUSHROOM;
     }

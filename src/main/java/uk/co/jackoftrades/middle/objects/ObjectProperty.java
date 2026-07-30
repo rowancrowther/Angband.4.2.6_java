@@ -47,6 +47,14 @@ public class ObjectProperty {
      */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * One binding of this property to a UI display slot (a {@code bindui:} line).
+     *
+     * @param entry the UI entry this property is displayed in
+     * @param value the value threshold associated with the binding, or {@code null} if unbounded
+     * @param aux   whether this is an auxiliary binding variant
+     * @author Rowan Crowther
+     */
     public record UIBinding(UIEntry entry, @Nullable Integer value, boolean aux) {
     }
 

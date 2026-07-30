@@ -47,10 +47,31 @@ public class ObjectUtils {
         // Stub class TODO: implement
     }
 
+    /**
+     * Marks a single object flag as learned on all of the player's worn equipment — the port of
+     * C's {@code equip_learn_flag} ({@code obj-knowledge.c}). Called when an event reveals a flag
+     * (e.g. taking damage of a resisted element), so any equipped item carrying it becomes known.
+     *
+     * <p><b>Stub:</b> not yet implemented — takes no action until the knowledge subsystem is ported.
+     *
+     * @param player     the player whose equipment is checked
+     * @param objectFlag the object flag to mark as learned
+     * @author Rowan Crowther
+     */
     public static void equipLearnFlag(Player player, ObjectFlag objectFlag) {
         // Stub class TODO: implement
     }
 
+    /**
+     * Learns the timed/after-time properties of the player's worn equipment — the port of C's
+     * {@code equip_learn_after_time} ({@code obj-knowledge.c}), run periodically so flags that are
+     * only revealed through prolonged wear become known.
+     *
+     * <p><b>Stub:</b> not yet implemented — takes no action until the knowledge subsystem is ported.
+     *
+     * @param player the player whose equipment is checked
+     * @author Rowan Crowther
+     */
     public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
     }

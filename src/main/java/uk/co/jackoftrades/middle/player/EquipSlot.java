@@ -20,11 +20,30 @@ package uk.co.jackoftrades.middle.player;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 
+/**
+ * One equipment slot in a {@link PlayerBody} — a wearable position (weapon, body armour, a ring
+ * finger, …) that may hold a single item. The Java port of the C original's {@code struct
+ * equip_slot} ({@code player.h}).
+ *
+ * @author Rowan Crowther
+ */
 public class EquipSlot {
+    /**
+     * The kind of slot this is (which body position it represents).
+     */
     private EquipmentSlotsEnum type;
+    /** The slot's display name, e.g. {@code "wielding"} or {@code "on left hand"}. */
     private String name;
+    /** The item currently worn in this slot, or {@code null} if empty. */
     private ItemObject item;
 
+    /**
+     * Creates an empty equipment slot of the given kind.
+     *
+     * @param type the slot kind (body position)
+     * @param name the slot's display name
+     * @author Rowan Crowther
+     */
     public EquipSlot(EquipmentSlotsEnum type, String name) {
         this.type = type;
         this.name = name;
@@ -38,10 +57,18 @@ public class EquipSlot {
         return item;
     }
 
+    /**
+     * @return the kind of slot this is (its body position)
+     * @author Rowan Crowther
+     */
     public EquipmentSlotsEnum getType() {
         return type;
     }
 
+    /**
+     * @return the slot's display name
+     * @author Rowan Crowther
+     */
     public String getName() {
         return name;
     }

@@ -70,10 +70,29 @@ public class PlayerUtils {
         // Stub class TODO: implement
     }
 
+    /**
+     * Applies damage to the player from a named source, handling death if it is fatal — the port of
+     * C's {@code take_hit} ({@code player-util.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param damage the amount of damage to inflict
+     * @param cause  the death-message cause, used if the hit is fatal
+     * @author Rowan Crowther
+     */
     public static void takeHit(int damage, String cause) {
         // Stub class TODO: implement
     }
 
+    /**
+     * Reduces an incoming damage figure by the player's protections — the port of C's percentage
+     * damage-reduction handling. Invulnerability nullifies non-massive hits outright; otherwise the
+     * player's percentage reduction is applied, and the result is floored at zero.
+     *
+     * @param damage the raw incoming damage
+     * @return the damage remaining after reduction (never negative)
+     * @author Rowan Crowther
+     */
     public static int applyDamageReduction(int damage) {
         // Hack - apply invulnerability
         if (player.getTimedEffect(TimedEffect.TMD_INVULN) != 0 && (damage < 9000)) return 0;
@@ -87,26 +106,78 @@ public class PlayerUtils {
         return Math.max(damage, 0);
     }
 
+    /**
+     * Applies the cost of over-exerting the player (e.g. casting a spell without enough mana) — the
+     * port of C's {@code player_over_exert} ({@code player-util.c}). The {@code flag} selects which
+     * penalties (mana loss, stun, HP damage, fainting) may apply, each with the given probability.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param flag   the set of over-exertion penalties permitted
+     * @param chance the percentage chance each penalty triggers
+     * @param amount the magnitude of the penalty
+     * @author Rowan Crowther
+     */
     public static void overExert(Flag<PlayerOverExertion> flag, int chance, int amount) {
         // Stub class TODO: implement
     }
 
+    /**
+     * Interrupts the player's current rest/run/repeat and refreshes state — the port of C's
+     * {@code disturb} ({@code player-util.c}), called when something demands the player's attention.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public static void disturb() {
         // Stub class TODO: implement
     }
 
+    /**
+     * Regenerates the player's hit points for the turn — the port of C's HP regeneration in
+     * {@code player-util.c}.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public static void regenHP() {
         // Stub class TODO: implement
     }
 
+    /**
+     * Regenerates the player's spell points (mana) for the turn — the port of C's mana regeneration
+     * in {@code player-util.c}.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public static void regenMana() {
         // Stub class TODO: implement
     }
 
+    /**
+     * Recomputes the player's light radius from equipped light sources and effects — the port of C's
+     * light-update handling.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @author Rowan Crowther
+     */
     public static void updateLight() {
         // Stub class TODO: Implement this
     }
 
+    /**
+     * Moves the player to a new dungeon depth — the port of C's {@code dungeon_change_level}
+     * ({@code player-util.c}). Records the new depth, restocks the stores when returning to town
+     * after the first day, flags a fresh level for generation, and requests an autosave.
+     *
+     * @param dungeonLevel the depth to descend/ascend to (0 = town)
+     * @author Rowan Crowther
+     */
     public static void dungeonChangeLevel(int dungeonLevel) {
         // Record the new depth
         player.setDepth(dungeonLevel);
@@ -122,6 +193,17 @@ public class PlayerUtils {
         player.getPlayerUpkeep().setAutosave(true);
     }
 
+    /**
+     * Works out the depth the player would actually arrive at when descending, honouring the
+     * force-descend stair-skip, the dungeon's depth bounds, and any intervening quest level — the
+     * port of C's {@code dungeon_get_next_level} ({@code player-util.c}). If a quest sits between the
+     * current and target depths, the player is stopped at the quest level.
+     *
+     * @param dungeonLevel the current depth
+     * @param added        the number of levels to move (may be scaled by the stair-skip)
+     * @return the resulting depth, clamped to the dungeon's limits and to any intervening quest
+     * @author Rowan Crowther
+     */
     public static int dungeonGetNextLevel(int dungeonLevel, int added) {
         int targetLevel;
         int index;

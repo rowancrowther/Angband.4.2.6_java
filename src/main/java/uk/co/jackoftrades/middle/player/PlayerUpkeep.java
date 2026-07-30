@@ -359,14 +359,41 @@ public class PlayerUpkeep {
         return monsterRace;
     }
 
+    /**
+     * Raises an update ({@code PU_*}) flag, marking a derived quantity for recalculation on the next
+     * update pass.
+     *
+     * @param flag the {@link PlayerUpkeepEnum} recalculation to request
+     * @author Rowan Crowther
+     */
     public void updateFlagOn(PlayerUpkeepEnum flag) {
         updateFlags.on(flag);
     }
 
+    /**
+     * Raises a notice ({@code PN_*}) flag, queuing a housekeeping action for the next notice pass.
+     *
+     * @param flag the {@link PlayerNotice} action to request
+     * @author Rowan Crowther
+     */
+    public void noticeFlagOn(PlayerNotice flag) {
+        noticeFlags.on(flag);
+    }
+
+    /**
+     * @return the number of turns of rest remaining (the resting countdown)
+     * @author Rowan Crowther
+     */
     public int getRestingCounter() {
         return restingCounter;
     }
 
+    /**
+     * Sets whether the game should autosave at the next opportunity (e.g. on reaching a new level).
+     *
+     * @param autosave {@code true} to request an autosave
+     * @author Rowan Crowther
+     */
     public void setAutosave(boolean autosave) {
         this.autosave = autosave;
     }

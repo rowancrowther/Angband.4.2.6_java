@@ -123,6 +123,12 @@ public class Trap {
         return timeout;
     }
 
+    /**
+     * Ticks this trap's timeout down by one turn. While the timeout is above zero the trap is
+     * dormant; it becomes active again when the countdown reaches zero.
+     *
+     * @author Rowan Crowther
+     */
     public void decrementTimeout() {
         timeout--;
     }

@@ -173,4 +173,12 @@ public class Quark implements AngbandModule {
     public void cleanup() {
         quarks = null;
     }
+
+    public boolean containsText(String text) {
+        for (Integer key : quarks.keySet()) {
+            if (quarks.get(key).equals(text)) return true;
+        }
+
+        return false;
+    }
 }

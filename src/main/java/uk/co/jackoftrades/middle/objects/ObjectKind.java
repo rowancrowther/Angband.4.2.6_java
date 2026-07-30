@@ -19,7 +19,6 @@ package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
 import uk.co.jackoftrades.middle.Activation;
@@ -304,13 +303,13 @@ public class ObjectKind {
      *
      * @author Rowan Crowther
      */
-    private Quark noteAware;
+    private String noteAware;
     /**
      * Inscription note used while the kind is unidentified.
      *
      * @author Rowan Crowther
      */
-    private Quark noteUnaware;
+    private String noteUnaware;
 
     /**
      * Whether the player is aware of (has identified) this kind.
@@ -489,7 +488,7 @@ public class ObjectKind {
                       String visMessage, String time,
                       Random charge, int genMultProb,
                       Random stackSize, Flavour flavour,
-                      Quark noteAware, Quark noteUnaware,
+                      String noteAware, String noteUnaware,
                       boolean aware, boolean tried,
                       int ignore, boolean everseen, TValue tValue) {
         this.name = name;
@@ -723,6 +722,4 @@ public class ObjectKind {
     public void setKindIndex(int kindIndex) {
         this.kindIndex = kindIndex;
     }
-
-
 }

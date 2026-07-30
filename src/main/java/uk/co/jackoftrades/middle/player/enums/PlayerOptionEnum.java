@@ -34,7 +34,7 @@ package uk.co.jackoftrades.middle.player.enums;
  *
  * @author Rowan Crowther
  */
-public enum PlayerOption {
+public enum PlayerOptionEnum {
     OP_none("",
             PlayerOptionTypes.SPECIAL, false),
     OP_rogue_like_commands("Use the roguelike command keyset",
@@ -144,9 +144,21 @@ public enum PlayerOption {
      * @param playerOptionType the option's category
      * @param normal           the default value used for a new character
      */
-    private PlayerOption(String description, PlayerOptionTypes playerOptionType, boolean normal) {
+    private PlayerOptionEnum(String description, PlayerOptionTypes playerOptionType, boolean normal) {
         this.description = description;
         this.playerOptionType = playerOptionType;
         this.normal = normal;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public PlayerOptionTypes getPlayerOptionType() {
+        return playerOptionType;
+    }
+
+    public boolean isNormal() {
+        return normal;
     }
 }

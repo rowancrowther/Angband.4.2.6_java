@@ -34,7 +34,7 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.player.enums.PlayerOption;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
@@ -191,7 +191,7 @@ public class GridData {
                             ? GridLightLevel.LIGHTING_LOS
                             : GridLightLevel.LIGHTING_DARK;
                 } else if (lit) {
-                    lighting = player.opt(PlayerOption.OP_view_yellow_light)
+                    lighting = player.opt(PlayerOptionEnum.OP_view_yellow_light)
                             ? GridLightLevel.LIGHTING_TORCH
                             : GridLightLevel.LIGHTING_LOS;
                 }

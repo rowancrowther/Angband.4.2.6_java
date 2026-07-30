@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.middle.game.enums.Options;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 
 /**
  * A single birth-option constraint on a piece of starting equipment (the {@code eopts} field of a
@@ -33,5 +33,5 @@ import uk.co.jackoftrades.middle.game.enums.Options;
  * @param negated {@code true} if the {@code NOT-} prefix was present, inverting the test
  * @author Rowan Crowther
  */
-public record StartOptionExclusion(Options option, boolean negated) {
+public record StartOptionExclusion(PlayerOptionEnum option, boolean negated) {
 }

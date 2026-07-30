@@ -46,6 +46,23 @@ public class Message {
         // TODO: Flesh out this stub
     }
 
+    /**
+     * Formats a message and announces it to the player — the port of C's {@code msg}
+     * ({@code z-msg.c}), which is itself {@code msgt} with no sound attached.
+     *
+     * <p>The message is raised as an {@link GameEventType#EVENT_MESSAGE} carrying
+     * {@link MessageType#MSG_GENERIC}, leaving it to the front-end to decide how it is shown. Use
+     * {@link #messageType} instead when the message should be tagged with a specific type so the
+     * front-end can colour it or play a sound.
+     *
+     * <p>Text that did not come from a literal here should be passed as a {@code "%s"} argument
+     * rather than as the pattern itself, so a stray {@code %} in an object or monster name is not
+     * read as a format directive.
+     *
+     * @param message the message text, or a {@link String#format} pattern when {@code args} is given
+     * @param args    optional format arguments substituted into {@code message}
+     * @author Rowan Crowther
+     */
     public static void message(String message, Object... args) {
         String toSend = String.format(message, args);
 
@@ -54,6 +71,18 @@ public class Message {
         GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, MessageType.MSG_GENERIC, toSend);
     }
 
+    /**
+     * Formats a message and announces it under a specific message type — the port of C's
+     * {@code msgt} ({@code z-msg.c}).
+     *
+     * <p>Identical to {@link #message} except that the type travels with the message, letting the
+     * front-end colour it by category and play the matching sound.
+     *
+     * @param messageType the category to tag the message with
+     * @param message     the message text, or a {@link String#format} pattern when {@code args} is given
+     * @param args        optional format arguments substituted into {@code message}
+     * @author Rowan Crowther
+     */
     public static void messageType(MessageType messageType, String message, Object... args) {
         String toSend = String.format(message, args);
 

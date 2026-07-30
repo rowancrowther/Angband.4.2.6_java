@@ -52,6 +52,7 @@ import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.CurseData;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
+import uk.co.jackoftrades.middle.objects.enums.ObjectDescription;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.EquipSlot;
 import uk.co.jackoftrades.middle.player.Player;
@@ -315,12 +316,41 @@ public class GameWorld {
         }
     }
 
+    /**
+     * Advances the recharge timers on everything that has one — the port of C's
+     * {@code recharge_objects} ({@code game-world.c:197-251}), run once per game turn.
+     *
+     * <p>Three groups are handled, and the differences between them are the point of the method.
+     *
+     * <p><b>Worn equipment</b> recharges unconditionally: an activatable item is the only thing in a
+     * slot that can be on cooldown, so no type test is needed. Anything that becomes ready is
+     * announced and the equipment display is marked dirty.
+     *
+     * <p><b>Carried items</b> are filtered to types that can hold a timeout — in practice rods,
+     * whose stacks recharge one item at a time. Because a stack is a single object with a pooled
+     * timeout, "did anything become ready" is not simply "did the timer reach zero": a stack of
+     * three rods with one charge left still has two charging. So the count of charging items is
+     * taken <em>before</em> the tick, and two separate cases are reported — the timer reaching zero
+     * means the whole stack is ready ({@code all} true), while a stack that was fully exhausted
+     * beforehand and is now not means one rod has come back ({@code all} false). Only that second
+     * case needs the earlier reading, which is why it is captured up front. A recharge here also
+     * requests a pack combine, since a newly charged rod may now stack with others.
+     *
+     * <p><b>Objects lying on the floor</b> tick down too, so rods dropped and picked up later are
+     * not frozen mid-recharge, but nothing is announced: the player cannot see them.
+     *
+     * <p>The equipped/carried split is a single pass over the gear list in both trees, because C
+     * keeps worn and carried objects on one {@code player->gear} chain and distinguishes them by
+     * asking which slot holds them. Items with no kind are skipped; C asserts on them instead
+     * ({@code game-world.c:206}), the port simply passes over them.
+     *
+     * @author Rowan Crowther
+     */
     public void rechargeObjects() {
-        int index;
         boolean dischargedStack;
-        ItemObject object;
 
         for (ItemObject item : player.getGear()) {
+            // Skip items with null kinds
             if (item.getKind() == null)
                 continue;
 
@@ -329,7 +359,7 @@ public class GameWorld {
                 // Recharge activatable objects
                 if (item.rechargeTimeout()) {
                     // Message if an item recharged
-                    rechargeNotice(item, true);
+                    rechargedNotice(item, true);
 
                     // Window stuff
                     player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_EQUIP);
@@ -342,9 +372,9 @@ public class GameWorld {
                 if (item.gettValue().canHaveTimeout() && item.rechargeTimeout()) {
                     // entire stack is recharged
                     if (item.getTimeout() == 0)
-                        rechargeNotice(item, true);
+                        rechargedNotice(item, true);
                     else if (dischargedStack) // Previously exhasted stack has acquired a charge
-                        rechargeNotice(item, false);
+                        rechargedNotice(item, false);
 
                     // Combine pack
                     player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
@@ -362,8 +392,58 @@ public class GameWorld {
         }
     }
 
-    public void rechargeNotice(ItemObject item, boolean all) {
-        // Stub function TODO: Implement
+    /**
+     * Tells the player that an item has finished recharging — the port of C's
+     * {@code recharged_notice} ({@code game-world.c:147-190}).
+     *
+     * <p>The player is only told if they asked to be. Either the {@code notify_recharge} option is
+     * on, in which case every recharge is announced, or the item itself carries {@code "!!"}
+     * somewhere in its inscription — the long-standing convention for "tell me when this is ready".
+     * C finds it by walking the inscription for a {@code '!'} followed by another
+     * ({@code game-world.c:157-172}); that loop is a substring search, so {@code "@w1!!"} and
+     * {@code "!!kill"} both qualify, not just a bare {@code "!!"}. If neither applies the method
+     * returns without describing the item, which is the common case and worth keeping cheap.
+     *
+     * <p>When it does report, it first disturbs the player, so a recharge interrupts resting or
+     * running rather than scrolling past unseen. The wording distinguishes three cases: a stack
+     * reports whether all of it or only one item recharged (hence {@code all}), a singleton artifact
+     * takes "The" because its name is already definite, and any other singleton takes "Your".
+     *
+     * @param item the object that has just recharged
+     * @param all  {@code true} if the whole stack is now charged, {@code false} if a previously
+     *             exhausted stack has regained its first charge
+     * @author Rowan Crowther
+     */
+    private void rechargedNotice(ItemObject item, boolean all) {
+        boolean notify = false;
+
+        String itemNote = item.getNote();
+
+        if (player.getPlayerOptions().has(PlayerOptionEnum.OP_notify_recharge))
+            notify = true;
+        else if (itemNote != null && itemNote.contains("!!")) {
+            notify = true;
+        }
+
+        if (!notify) return;
+
+        // Describe (briefly)
+        Flag<ObjectDescription> flag = new Flag<>(ObjectDescription.class);
+        String oName = ObjectUtils.objectDesc(item, flag, player);
+
+        // Disturb the player
+        PlayerUtils.disturb();
+
+        // Notify the player
+        if (item.getNumber() > 1) {
+            if (all)
+                Message.message("Your %s have recharged.", oName);
+            else
+                Message.message("One of your %s has recharged.", oName);
+        } else if (item.isArtifact())
+            Message.message("The %s has recharged.", oName);
+        else
+            Message.message("Your %s has recharged.", oName);
     }
 
     /**
@@ -694,7 +774,7 @@ public class GameWorld {
             }
         }
 
-        // Check food and regenrate
+        // Check food and regenerate
 
         // Digest
         if (!player.timedGradeEqual(TimedEffect.TMD_FOOD, "Full")) {

@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.player.enums;
 
 /**
- * The categories a {@link PlayerOption} can belong to, controlling how and where an
+ * The categories a {@link PlayerOptionEnum} can belong to, controlling how and where an
  * option is presented and how it is treated by birth and scoring.
  *
  * <p>Mirrors the C option-page groupings. The category decides which options menu an

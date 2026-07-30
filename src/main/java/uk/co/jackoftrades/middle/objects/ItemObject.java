@@ -24,7 +24,6 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.backend.strings.Quark;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.cave.Chunk;
@@ -285,7 +284,7 @@ public class ItemObject {
      *
      * @author Rowan Crowther
      */
-    private Quark note;
+    private String note;
 
     /**
      * Build an empty item (used as a blank slot/placeholder).
@@ -354,7 +353,7 @@ public class ItemObject {
                       Flag<ObjectNotice> notice, int heldMIndex,
                       int mimickingMIndex,
                       ObjectOriginEnum origin, int originDepth,
-                      MonsterRace originRace, Quark note) {
+                      MonsterRace originRace, String note) {
         this.kind = kind;
         this.ego = ego;
         this.artifact = artifact;
@@ -463,14 +462,12 @@ public class ItemObject {
      * @return {@code true} if the two objects may occupy the same stack
      */
     @CheckReturnValue
-    @Contract(pure = true)
     public boolean similar(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
         Player player = GameState.getPlayer();
 
         // Check for equipped items
-        // TODO: re-enable once the per-player equipment runtime is ported
-//        if (player.getPlayerBody().isEquipped(this)) return false;
-//        if (player.getPlayerBody().isEquipped(itm2)) return false;
+        if (player.getPlayerBody().itemIsEquipped(this)) return false;
+        if (player.getPlayerBody().itemIsEquipped(itm2)) return false;
 
         // Check for mimicked items
         if (this.mimickingMIndex != 0 || itm2.mimickingMIndex != 0) return false;
@@ -496,13 +493,12 @@ public class ItemObject {
             Flag<ElementInfoEnum> thisELFlags = this.elInfo.get(e).getFlags();
             Flag<ElementInfoEnum> itm2ELFlags = itm2.elInfo.get(e).getFlags();
 
-            if (!thisELFlags.has(ElementInfoEnum.EL_INFO_HATES)) thisELFlags.on(ElementInfoEnum.EL_INFO_HATES);
-            if (!thisELFlags.has(ElementInfoEnum.EL_INFO_IGNORE)) thisELFlags.on(ElementInfoEnum.EL_INFO_IGNORE);
+            boolean thisHates = thisELFlags.has(ElementInfoEnum.EL_INFO_HATES);
+            boolean thisIgnores = thisELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
+            boolean itm2Hates = itm2ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
+            boolean itm2Ignores = itm2ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
 
-            if (!itm2ELFlags.has(ElementInfoEnum.EL_INFO_HATES)) itm2ELFlags.on(ElementInfoEnum.EL_INFO_HATES);
-            if (!itm2ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE)) itm2ELFlags.on(ElementInfoEnum.EL_INFO_IGNORE);
-
-            if (thisELFlags.equals(itm2ELFlags)) return false;
+            if (thisHates != itm2Hates || thisIgnores != itm2Ignores) return false;
         }
 
         if (this.artifact != null || itm2.artifact != null) return false;
@@ -679,7 +675,6 @@ public class ItemObject {
      * Allows one item to absorb a similar item.
      * <br/><br/>
      * The note merging should work no matter if there is none, one or two null values
-     * TODO: Check this out once you understand the quark situation
      * <br/><br/>
      * These assumptions are enforced by the mergeable() code
      *
@@ -693,8 +688,8 @@ public class ItemObject {
             GameState.getPlayer().knowObject(this);
         }
 
-        if (item.note != null)
-            this.note.merge(item.note);
+        if (item.note != null && !item.note.isEmpty())
+            this.note = item.note;
 
         if (combineChargesTimeouts) {
             if (this.tValue.canHaveTimeout())
@@ -923,5 +918,20 @@ public class ItemObject {
      */
     public int getTimeout() {
         return timeout;
+    }
+
+    /**
+     * Returns the player's inscription on this object, or {@code null} if it carries none.
+     *
+     * <p>C stores this as {@code quark_t note} ({@code object.h:472}) — an index into the global
+     * quark table, where {@code 0} means "no inscription" and the text is fetched with
+     * {@code quark_str}. The port holds the text directly, so {@code null} is the equivalent of
+     * C's {@code 0} and callers test it rather than the index.
+     *
+     * @return the inscription, or {@code null} if the object is uninscribed
+     * @author Rowan Crowther
+     */
+    public String getNote() {
+        return note;
     }
 }

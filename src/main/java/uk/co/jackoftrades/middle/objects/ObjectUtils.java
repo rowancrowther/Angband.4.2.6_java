@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectDescription;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.Player;
 
@@ -74,6 +76,36 @@ public class ObjectUtils {
      */
     public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
+    }
+
+    /**
+     * Builds the display name of an object as this player would see it — the port of C's
+     * {@code object_desc} ({@code obj-desc.c}), which writes into a caller-supplied buffer where the
+     * port returns a string.
+     *
+     * <p>The {@code description} flags select how much of the name to include. C treats them as a
+     * bit mask ({@code obj-desc.h:26-42}), so an empty set is C's {@code ODESC_BASE == 0x00} — the
+     * bare name with no combat bonuses, charges or inscription — and callers OR in extras such as
+     * {@code ODESC_COMBAT} or {@code ODESC_PREFIX} from there.
+     *
+     * <p>The player is a parameter rather than a global because the name depends on what they know:
+     * an unidentified potion shows its flavour, an unlearned ego stays anonymous.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the object-naming and knowledge runtimes;
+     * returns an empty string, so callers currently produce messages with a blank where the item
+     * name belongs. Note that C's {@code ODESC_ALTNUM} passes a count through the high 16 bits of
+     * the mode word, which a flag set cannot carry — it will need a separate parameter when this is
+     * ported.
+     *
+     * @param item        the object to name
+     * @param description the {@link ObjectDescription} flags selecting how much detail to include
+     * @param player      the player whose knowledge governs what the name reveals
+     * @return the object's display name
+     * @author Rowan Crowther
+     */
+    public static String objectDesc(ItemObject item, Flag<ObjectDescription> description, Player player) {
+        // Stub class TODO: implement
+        return "";
     }
 
     /**

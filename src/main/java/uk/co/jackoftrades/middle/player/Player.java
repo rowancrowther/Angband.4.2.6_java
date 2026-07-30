@@ -28,7 +28,7 @@ import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.player.enums.PlayerOption;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
@@ -429,7 +429,7 @@ public class Player {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    public boolean opt(@NotNull PlayerOption type) {
+    public boolean opt(@NotNull PlayerOptionEnum type) {
         return options.has(type);
     }
 
@@ -919,5 +919,13 @@ public class Player {
      */
     public void learnCurse(Curse curse) {
         // Stub function TODO: implement
+    }
+
+    /**
+     * @return this player's option settings, the port of C's {@code player->opts}
+     * @author Rowan Crowther
+     */
+    public PlayerOptions getPlayerOptions() {
+        return options;
     }
 }

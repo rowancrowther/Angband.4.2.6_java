@@ -334,11 +334,11 @@ class PlayerClassReaderTest {
 
     @Test
     void nonBirthEquipOptionIsRejected() throws IOException {
-        // use_sound is an OP_INTERFACE option, not a birth option; only birth options are valid here.
+        // use_sound is an INTERFACE option, not a birth option; only birth options are valid here.
         ParseResult<PlayerClass> r = load("nonbirth-opt.txt",
                 withHeader(1, "name:Adventurer\nequip:food:Ration of Food:1:1:use_sound\n"));
 
-        assertTrue(hasError(r, "Non-birth options are not supported: OPT_use_sound"),
+        assertTrue(hasError(r, "Non-birth options are not supported: OP_use_sound"),
                 r.errors()::toString);
     }
 
@@ -471,7 +471,7 @@ class PlayerClassReaderTest {
                         + "equip:food:Ration of Food:1:1:use_sound\n"));
 
         assertTrue(hasError(r, "invalid TValue: notatval"), r.errors()::toString);
-        assertTrue(hasError(r, "Non-birth options are not supported: OPT_use_sound"),
+        assertTrue(hasError(r, "Non-birth options are not supported: OP_use_sound"),
                 r.errors()::toString);
     }
 }

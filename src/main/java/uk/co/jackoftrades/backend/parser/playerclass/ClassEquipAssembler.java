@@ -20,11 +20,11 @@ package uk.co.jackoftrades.backend.parser.playerclass;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.game.enums.OptionType;
-import uk.co.jackoftrades.middle.game.enums.Options;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.StartItem;
 import uk.co.jackoftrades.middle.player.StartOptionExclusion;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionTypes;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -96,7 +96,7 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * Parses the {@code eopts} clause of an {@code equip:} line into a list of
      * {@link StartOptionExclusion}s — the birth options that suppress (or, when {@code NOT-}
      * prefixed, require) this item. The literal {@code none} and empty tokens are ignored; the
-     * clause may separate options with spaces or {@code |}. Only {@link uk.co.jackoftrades.middle.game.enums.OptionType#OP_BIRTH}
+     * clause may separate options with spaces or {@code |}.
      * options are valid here, so a non-birth or unknown option is reported and skipped, mirroring
      * C's rejection of non-birth options in {@code init_equip}.
      *
@@ -117,11 +117,11 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
 
             boolean negated = part.startsWith("NOT-");
             String suffix = negated ? part.substring(4) : part;
-            String partFlag = "OPT_" + suffix;
-            Options partOption;
+            String partFlag = "OP_" + suffix;
+            PlayerOptionEnum partOption;
             try {
-                partOption = Options.valueOf(partFlag);
-                if (partOption.getType() != OptionType.OP_BIRTH) {
+                partOption = PlayerOptionEnum.valueOf(partFlag);
+                if (partOption.getPlayerOptionType() != PlayerOptionTypes.BIRTH) {
                     errors.add("Non-birth options are not supported: " + partFlag);
                     continue;
                 } else

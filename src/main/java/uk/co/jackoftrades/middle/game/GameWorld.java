@@ -1093,8 +1093,81 @@ public class GameWorld {
         }
     }
 
-    private static void updateScent() {
-        // Stub class TODO: Implement this
+    /**
+     * Ages the level's scent trails and lays down fresh scent around the player. Ports C's
+     * {@code update_scent} ({@code src/game-world.c}).
+     * <p>
+     * Scent is how perceptive monsters track the player, and it is deliberately weaker than sound
+     * (see {@link #makeNoise()}): it reaches only a small area, and monsters can use it to home in
+     * but not to flee. Each grid's scent is valued by <em>age</em> — every call ages all existing
+     * scent by one ({@link Chunk#updateScent()}), and lower numbers are fresher. A monster's
+     * "smell" is the oldest scent it can still detect. Grids the player has never occupied stay at
+     * {@code 0}, as does the player's own grid (harmless, since nothing smells the player's grid).
+     * <p>
+     * New scent is stamped over the 5x5 block centred on the player using the fixed {@code
+     * scentStrength} template (freshest {@code 0} at the centre, rising to {@code 2} at the edges).
+     * A block grid only receives scent if it is a valid, scent-carrying grid <em>and</em> it either
+     * is the player's own grid or is adjacent to an already-closer scent grid ({@code newScent - 1})
+     * — the adjacency test that keeps scent spreading along open floor rather than leaking through
+     * walls. A player under {@link TimedEffect#TMD_COVERTRACKS} lays no new scent at all, so the
+     * method returns after only the aging pass.
+     *
+     * @author Rowan Crowther
+     */
+    private void updateScent() {
+        int[][] scentStrength = {
+                {2, 2, 2, 2, 2},
+                {2, 1, 1, 1, 2},
+                {2, 1, 0, 1, 2},
+                {2, 1, 1, 1, 2},
+                {2, 2, 2, 2, 2},
+        };
+
+        // Update scent for all grids
+        currentCave.updateScent();
+
+        // scentless player
+        if (player.getTimedEffect(TimedEffect.TMD_COVERTRACKS) != 0) return;
+
+        // Lay down new scent around player
+        for (int y = 0; y < 5; y++) {
+            for (int x = 0; x < 5; x++) {
+                boolean addScent = false;
+
+                int newScent = scentStrength[y][x];
+
+                // Get the initial square
+                Loc scent = Loc.row(y + player.getGrid().getY() - 2).col(x + player.getGrid().getX() - 2);
+
+                // Ignore invalid or non-scent-carrying squares
+                if (!currentCave.inBounds(scent)) continue;
+                if (currentCave.squareIsNoScent(scent)) continue;
+
+                // Check scent is spreading on floors, not going through walls
+                for (DirectionEnum direction : DirectionEnum.values()) {
+                    if (!direction.isStandard())
+                        continue;
+
+                    Loc adj = scent.sum(Loc.row(direction.ddy()).col(direction.ddx()));
+
+                    if (!currentCave.inBounds(adj)) continue;
+
+                    // Player grid is always valid
+                    if (y == 2 && x == 2)
+                        addScent = true;
+
+                    // adjacent to a closer grid, so valid
+                    if (currentCave.getScent().getValue(adj) == newScent - 1)
+                        addScent = true;
+                }
+
+                // Not valid
+                if (!addScent)
+                    continue;
+
+                currentCave.getScent().setValue(scent, newScent);
+            }
+        }
     }
 
     /**

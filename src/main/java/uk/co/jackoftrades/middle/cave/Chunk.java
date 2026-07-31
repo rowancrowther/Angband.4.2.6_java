@@ -413,7 +413,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsNoScent(@NotNull Loc grid) {
+    public boolean squareIsNoScent(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).featIsNoScent();
     }
 
@@ -1658,6 +1658,26 @@ public class Chunk {
     }
 
     /**
+     * Ages every scent trail on the level by one turn, making all existing scent one step staler.
+     * Ports the "update scent for all grids" loop that opens C's {@code update_scent} ({@code
+     * src/game-world.c}): only grids that already carry scent ({@code > 0}) are incremented, so
+     * never-visited grids stay at the {@code 0} baseline, and only the interior is scanned (the
+     * outermost ring is skipped, matching the {@code 1 .. dimension - 2} bounds in C).
+     *
+     * @author Rowan Crowther
+     */
+    public void updateScent() {
+        // ignore outside boundary of cave
+        for (int y = 1; y < height - 1; y++) {
+            for (int x = 1; x < width - 1; x++) {
+                if (scent.getValue(y, x) > 0) {
+                    scent.setValue(y, x, scent.getValue(y, x) + 1);
+                }
+            }
+        }
+    }
+
+    /**
      * Returns this chunk's sound map — the per-grid noise distances from the player used by
      * monster hearing to home in along passable terrain. Ports access to C's {@code
      * cave->noise} ({@code src/cave.h}).
@@ -1667,5 +1687,17 @@ public class Chunk {
      */
     public Heatmap getNoise() {
         return noise;
+    }
+
+    /**
+     * Returns this chunk's scent map — the per-grid age of the player's scent trail, read by
+     * monster smell to track the player along open floor. Ports access to C's {@code cave->scent}
+     * ({@code src/cave.h}).
+     *
+     * @return the scent {@link Heatmap} for this chunk
+     * @author Rowan Crowther
+     */
+    public Heatmap getScent() {
+        return scent;
     }
 }

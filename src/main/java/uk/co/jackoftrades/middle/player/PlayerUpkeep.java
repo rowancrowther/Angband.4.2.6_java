@@ -370,6 +370,10 @@ public class PlayerUpkeep {
         updateFlags.on(flag);
     }
 
+    public void updateFlagsOn(PlayerUpkeepEnum... flags) {
+        updateFlags.set(flags);
+    }
+
     /**
      * Raises a notice ({@code PN_*}) flag, queuing a housekeeping action for the next notice pass.
      *
@@ -396,5 +400,10 @@ public class PlayerUpkeep {
      */
     public void setAutosave(boolean autosave) {
         this.autosave = autosave;
+    }
+
+    public void healthTrack(Monster monster) {
+        healthWho = monster;
+        setRedrawFlagsOn(PlayerRedraw.PR_HEALTH);
     }
 }

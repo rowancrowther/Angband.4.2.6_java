@@ -40,4 +40,8 @@ public class Target {
      * @author Rowan Crowther
      */
     private Monster monster;
+
+    public static void setMonster(Monster monster) {
+        // Stub class TODO: Implement
+    }
 }

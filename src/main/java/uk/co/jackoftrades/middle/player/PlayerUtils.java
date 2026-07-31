@@ -225,4 +225,8 @@ public class PlayerUtils {
 
         return targetLevel;
     }
+
+    public static void search() {
+        // Stub function TODO: Implement
+    }
 }

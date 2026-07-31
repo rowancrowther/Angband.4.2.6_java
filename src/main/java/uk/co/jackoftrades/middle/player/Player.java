@@ -928,4 +928,15 @@ public class Player {
     public PlayerOptions getPlayerOptions() {
         return options;
     }
+
+    public void updateMaxLevel() {
+        this.maxLevel = Math.max(this.maxLevel, this.level);
+    }
+
+    public void updateDungeonDepth() {
+        if (maxDepth < depth) {
+            maxDepth = depth;
+            recallDepth = depth;
+        }
+    }
 }

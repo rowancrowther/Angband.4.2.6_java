@@ -1700,4 +1700,8 @@ public class Chunk {
     public Heatmap getScent() {
         return scent;
     }
+
+    public void displayFeeling(boolean objectOnly) {
+        // Stub class TODO: Implement
+    }
 }

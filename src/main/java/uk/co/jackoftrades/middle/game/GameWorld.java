@@ -28,6 +28,7 @@ import uk.co.jackoftrades.middle.cave.ChunkUtils;
 import uk.co.jackoftrades.middle.cave.Generate;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftrades.middle.combat.Target;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 import uk.co.jackoftrades.middle.effect.EffectUtil;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
@@ -451,15 +452,79 @@ public class GameWorld {
 
     /**
      * Housekeeping on arriving on a new level — the port of C's {@code on_new_level}
-     * ({@code game-world.c}).
+     * ({@code game-world.c}). Called from {@link #runGameLoop()} immediately after the new level has
+     * been generated and {@link #currentCave} refreshed, so it reads the already-current level rather
+     * than regenerating anything.
      *
-     * <p><b>Stub:</b> not yet implemented. When ported it must, for a genuine level change (not an
-     * arena), cancel the target and health-bar trackee and disturb the player; then track the
-     * player's maximum level and maximum/recall depth; and finally flush messages and signal the
-     * new-level display refresh.
+     * <p>For a genuine level change (not an arena, which is not really a new level) it plays the
+     * ambient sound for the new location, cancels the target and the health-bar trackee, then — for
+     * every arrival — disturbs the player and advances the tracked maximum player level and maximum /
+     * recall depth. It flushes queued messages, signals the new-level display, marks the player for a
+     * bonus/HP/spell/inventory recalculation and an inventory combine, runs the notice/update/redraw
+     * passes, and signals a refresh.
+     *
+     * <p>Arena levels return here. Otherwise, if the player is in the dungeon (depth {@code != 0}) the
+     * level feeling is announced, the surroundings are searched, and the player's energy is raised to
+     * at least {@link GameConstants#getWorldMoveEnergy() move-energy} so they can act on arrival —
+     * without ever <em>reducing</em> a higher value carried over from a savefile (hence
+     * {@link Math#max}, matching C's {@code if (energy < move_energy) energy = move_energy}).
+     *
+     * @author Rowan Crowther
      */
     private void onNewLevel() {
-        // Stub class TODO: implement
+        // Arena levels are not really a level change
+        if (!player.getPlayerUpkeep().isArenaLevel()) {
+            // Play ambient sound on a change of level
+            playAmbientSound();
+
+            // Cancel the target
+            Target.setMonster(null);
+
+            // Cancel the health bar
+            player.getPlayerUpkeep().healthTrack(null);
+        }
+
+        // Disturb
+        PlayerUtils.disturb();
+
+        // Track maximum player level
+        player.updateMaxLevel();
+
+        // Track maximum dungeon level
+        player.updateDungeonDepth();
+
+        // Flush messages
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
+
+        // Update display
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_NEW_LEVEL_DISPLAY);
+
+        // Update player
+        player.getPlayerUpkeep().updateFlagsOn(PlayerUpkeepEnum.PU_BONUS, PlayerUpkeepEnum.PU_HP,
+                PlayerUpkeepEnum.PU_SPELLS, PlayerUpkeepEnum.PU_INVEN);
+        player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
+        player.noticeStuff();
+        player.updateStuff();
+        player.redrawStuff();
+
+        // Refresh
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+
+        if (player.getPlayerUpkeep().isArenaLevel()) return;
+
+        // Announce or repeat feeling
+        //
+        // currentCave was refreshed in the calling function so is safe to call here
+        if (player.getDepth() != 0)
+            currentCave.displayFeeling(false);
+
+        // Check the surroundings
+        PlayerUtils.search();
+
+        // Give player minimum energy to start a new level (they arrive exhausted from
+        // the stairs?) but do not reduce a higher level from savefile for a level in
+        // progress.
+        player.setEnergy(Math.max(player.getEnergy(), GameConstants.getWorldMoveEnergy()));
     }
 
     /**

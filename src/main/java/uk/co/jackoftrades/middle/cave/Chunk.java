@@ -1575,6 +1575,7 @@ public class Chunk {
      */
     public void illuminate(boolean daytime) {
         // Stub function : TODO: implement this
+        // TODO: When implementing this call GameWorld.isDaytime as opposed to taking in a boolean
     }
 
     /**

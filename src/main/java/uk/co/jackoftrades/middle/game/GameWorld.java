@@ -1096,4 +1096,22 @@ public class GameWorld {
     private static void updateScent() {
         // Stub class TODO: Implement this
     }
+
+    /**
+     * Reports whether it is currently daytime in the game world. Ports C's {@code is_daytime}
+     * ({@code src/game-world.c}).
+     * <p>
+     * A full day is {@code 10 * day_length} game turns. The current turn's position within that
+     * cycle is taken modulo the day length; the first half is day and the second half is night.
+     * The {@code 10L} keeps the arithmetic in {@code long} so the modulus does not overflow as the
+     * turn count grows. This is a pure query on the global turn counter, used across the game (town
+     * lighting, level generation, feature projection) to decide whether the surface is lit.
+     *
+     * @return {@code true} during the first half of the day/night cycle, {@code false} otherwise
+     * @author Rowan Crowther
+     */
+    public static boolean isDaytime() {
+        int turn = GameState.getTurn();
+        return ((turn % (10L * GameConstants.getWorldDayLength())) < ((10L * GameConstants.getWorldDayLength()) / 2));
+    }
 }

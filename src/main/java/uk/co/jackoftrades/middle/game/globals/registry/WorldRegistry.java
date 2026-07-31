@@ -29,6 +29,7 @@ import uk.co.jackoftrades.middle.player.Quest;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Runtime holder for the world/level-generation game data — the {@link World} levels (the tower of
@@ -189,5 +190,49 @@ public class WorldRegistry {
         }
 
         return worlds.size();
+    }
+
+    /**
+     * Finds the world level with the given name. Ports C's {@code level_by_name}
+     * ({@code src/game-world.c}), which walks the {@code world} linked list looking for a
+     * name match.
+     *
+     * @param name the level name to search for
+     * @return the matching {@link World}, or {@link Optional#empty()} if no level has that name
+     * @throws IllegalStateException if the world list has not been initialised
+     * @author Rowan Crowther
+     */
+    @CheckReturnValue
+    public static Optional<World> getLevelByName(String name) {
+        if (worlds == null) {
+            IllegalStateException e = new IllegalStateException("Worlds hasn't been initialized");
+            logger.fatal("Worlds hasn't been initialized", e);
+            throw e;
+        }
+
+        return worlds.stream().filter(w -> w.levelName().equals(name))
+                .findFirst();
+    }
+
+    /**
+     * Finds the world level at the given depth. Ports C's {@code level_by_depth}
+     * ({@code src/game-world.c}), which walks the {@code world} linked list looking for the level
+     * whose depth matches. In the port a level's depth is its {@link World#levelNumber()}.
+     *
+     * @param depth the dungeon depth to search for
+     * @return the matching {@link World}, or {@link Optional#empty()} if no level is at that depth
+     * @throws IllegalStateException if the world list has not been initialised
+     * @author Rowan Crowther
+     */
+    @CheckReturnValue
+    public static Optional<World> getLevelByDepth(int depth) {
+        if (worlds == null) {
+            IllegalStateException e = new IllegalStateException("Worlds hasn't been initialized");
+            logger.fatal("Worlds hasn't been initialized", e);
+            throw e;
+        }
+
+        return worlds.stream().filter(w -> w.levelNumber() == depth)
+                .findFirst();
     }
 }

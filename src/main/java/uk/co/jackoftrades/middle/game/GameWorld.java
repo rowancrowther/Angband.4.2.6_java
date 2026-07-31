@@ -530,23 +530,27 @@ public class GameWorld {
     /**
      * Housekeeping on leaving a level — the port of C's {@code on_leave_level} ({@code game-world.c}).
      *
-     * <p>Cancels any in-progress command ({@link TimedEffect#TMD_COMMAND}), then runs the pending
-     * notice/update/redraw passes (needed here because leaving may have changed inventory or state)
-     * and flushes queued messages. Note it is deliberately {@code notice → update → redraw}, mirroring
-     * C's three separate calls, rather than the bundled {@link Player#handleStuff()}.
-     *
-     * <p><b>Partial:</b> the {@code cmd_disable_repeat_floor_item} guard is not yet ported.
+     * <p>Cancels any in-progress command ({@link TimedEffect#TMD_COMMAND}) and forbids repeating the
+     * last command if it acted on a floor item — via {@link
+     * uk.co.jackoftrades.middle.game.gameengine.CommandQueue#disableRepeatFloorItem()}, since leaving
+     * the level may leave that item's reference dangling. It then runs the pending notice/update/redraw
+     * passes (needed here because leaving may have changed inventory or state) and flushes queued
+     * messages. Note it is deliberately {@code notice → update → redraw}, mirroring C's three separate
+     * calls, rather than the bundled {@link Player#handleStuff()}.
      */
     private void onLeaveLevel() {
+        // Cancel any command
         player.clearTimed(TimedEffect.TMD_COMMAND, false, false);
 
-        // TODO implement
-        // cmdDisableRepeatFloorItem();
+        // Don't allow command repeat if move away from item used.
+        GameState.getCommandQueue().disableRepeatFloorItem();
 
+        // Any pending processing
         player.noticeStuff();
         player.updateStuff();
         player.redrawStuff();
 
+        // Flush messages
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
     }
 

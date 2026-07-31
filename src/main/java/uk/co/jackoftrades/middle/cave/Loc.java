@@ -24,12 +24,16 @@ import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 
 /**
- * An immutable-ish grid coordinate (column {@code x}, row {@code y}) in the
+ * An immutable grid coordinate (column {@code x}, row {@code y}) in the
  * dungeon. This is the Java port of the C original's {@code struct loc}
- * ({@code src/loc.h}); the helper methods ({@link #sum}, {@link #diff},
- * {@link #nextGrid}, {@link #randLoc}, {@link #locOffset}) reproduce the
+ * ({@code src/z-type.h}); the helper methods ({@link #sum}, {@link #diff},
+ * {@link #nextGrid}, {@link #rand}, {@link #offset}) reproduce the
  * {@code loc_*} coordinate arithmetic used throughout level generation and
  * movement.
+ * <p>
+ * Both coordinates are final and every operation returns a new instance rather than
+ * mutating in place, so a {@code Loc} is safe to use as a key in a hashed collection:
+ * it cannot change identity after being stored.
  *
  * @author Rowan Crowther
  */
@@ -39,24 +43,32 @@ public class Loc {
      *
      * @author Rowan Crowther
      */
-    private int x;
+    private final int x;
     /**
      * Row (vertical) coordinate.
      *
      * @author Rowan Crowther
      */
-    private int y;
+    private final int y;
 
     /**
-     * Quick pointer to a location which is the origin (0, 0)
+     * The origin (0, 0), shared rather than reallocated at each use. Safe to share
+     * because {@link Loc} is immutable.
+     * <p>
+     * Note that much of the C original overloads (0, 0) to mean "no location" as well as
+     * the literal top-left grid — see {@link #isZero()} and the {@code loc_is_zero} checks
+     * it ports. Treat a bare {@code zero} as a sentinel with care.
      */
-    public static Loc zero = new Loc(0, 0);
+    public static final Loc zero = new Loc(0, 0);
 
     /**
-     * Constructor
+     * Private because instances are obtained through the fluent {@link #row(int)} idiom or
+     * derived from an existing location, which keeps the (x, y) argument order from being
+     * transposed at the call site — a standing hazard in the C original, where
+     * {@code loc(x, y)} takes column first but the grids it indexes are row-major.
      *
-     * @param x the x coordinate of this location
-     * @param y the y coordinate of this location
+     * @param x the x coordinate (column) of this location
+     * @param y the y coordinate (row) of this location
      */
     private Loc(int x, int y) {
         this.x = x;
@@ -82,7 +94,12 @@ public class Loc {
     }
 
     /**
-     * Returns a grid which is the result of moving one grid in the given direction
+     * Returns a grid which is the result of moving one grid in the given direction.
+     * Ports {@code next_grid} ({@code src/cave.h}), with the C {@code int dir} replaced by
+     * {@link DirectionEnum} so an out-of-range direction cannot be passed.
+     * <p>
+     * Performs no bounds checking — the result may lie outside the dungeon, so callers
+     * stepping towards an edge must test it before indexing a grid array.
      *
      * @param direction The direction enum of the direction to move in
      * @return a new grid one step away from this grid in the given direction
@@ -94,17 +111,32 @@ public class Loc {
     }
 
     /**
-     * Returns true if the incoming location is equivalent to this one, false otherwise
+     * Value equality: two locations are equal exactly when both coordinates match.
+     * <p>
+     * This is the port of {@code loc_eq} ({@code src/z-type.c}). Overriding it — rather
+     * than merely overloading {@code equals(Loc)} — is what makes {@code Loc} usable in
+     * collections at all, because {@code List.contains}, {@code HashSet} and
+     * {@code HashMap} all dispatch through {@code equals(Object)}. An overload is
+     * invisible to them, and they would silently fall back to reference identity.
      *
-     * @param other the incoming location to compare with this one
-     * @return true if these two locations are equivalent, false otherwise
+     * @param obj the object to compare against this location; may be null
+     * @return true if {@code obj} is a {@link Loc} with the same {@code x} and {@code y};
+     * false otherwise, including when {@code obj} is null or of an unrelated type
+     * @see #hashCode()
+     * @author Rowan Crowther
      */
-    public boolean equals(@NotNull Loc other) {
-        return this.x == other.x && this.y == other.y;
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Loc other) {
+            return this.x == other.x && this.y == other.y;
+        }
+        return false;
     }
 
     /**
-     * Determines if this location is the origin location (0, 0)
+     * Determines if this location is the origin location (0, 0). Ports
+     * {@code loc_is_zero} ({@code src/z-type.c}), which likewise defers to an equality
+     * check against the origin rather than testing the fields directly.
      *
      * @return true if this is equivalent to the origin location, false otherwise
      */
@@ -113,7 +145,11 @@ public class Loc {
     }
 
     /**
-     * Adds two locations together and return the result
+     * Adds two locations together and returns the result. Ports {@code loc_sum}
+     * ({@code src/z-type.c}).
+     * <p>
+     * The second operand is usually an offset rather than a position — this is how the C
+     * applies the {@code ddgrid} direction deltas when walking a grid's eight neighbours.
      *
      * @param other The location to sum with this one
      * @return A location which consists of (x1 + x2, y1 + y2)
@@ -123,7 +159,11 @@ public class Loc {
     }
 
     /**
-     * Create a location which is the difference between the two points this (x1, y1) and other (x2, y2)
+     * Create a location which is the difference between the two points this (x1, y1) and other (x2, y2).
+     * Ports {@code loc_diff} ({@code src/z-type.c}).
+     * <p>
+     * The result is a displacement, not a position, and its coordinates are routinely
+     * negative — one of the few ways a {@link Loc} legitimately leaves the dungeon bounds.
      *
      * @param other the other point to work out the difference from this point
      * @return A new location (x1 - x2, y1 - y2).
@@ -133,14 +173,18 @@ public class Loc {
     }
 
     /**
-     * Create a random location with the given spread variables on x and y
+     * Create a random location with the given spread variables on x and y. Ports
+     * {@code rand_loc} ({@code src/z-type.c}).
+     * <p>
+     * Draws each axis independently, so the result is uniform over the enclosing
+     * rectangle, not over a circle around this point.
      *
      * @param xSpread The x spread value - new value should be between this.x - xSpread and this.x + xSpread
      * @param ySpread The y spread value - new value should be between this.y - ySpread and this.y + ySpread
      * @return A random location where new.x is between this.x - xSpread and this.x + xSpread
      * and new.y is between this.y - ySpread and this.y + ySpread
      */
-    public Loc randLoc(int xSpread, int ySpread) {
+    public Loc rand(int xSpread, int ySpread) {
         return new Loc(RandomValueUtils.randSpread(x, xSpread), RandomValueUtils.randSpread(y, ySpread));
     }
 
@@ -159,13 +203,15 @@ public class Loc {
     }
 
     /**
-     * Returns a new location offset from this location by dx and dy
+     * Returns a new location offset from this location by dx and dy. Ports
+     * {@code loc_offset} ({@code src/z-type.c}); equivalent to {@link #sum} with the
+     * offset supplied as loose coordinates rather than as a {@link Loc}.
      *
      * @param dx The amount that the x coordinate is offset
      * @param dy The amount that the y coordinate is offset
      * @return A new location of the form (x + dx, y + dy)
      */
-    public Loc locOffset(int dx, int dy) {
+    public Loc offset(int dx, int dy) {
         return new Loc(x + dx, y + dy);
     }
 
@@ -191,5 +237,33 @@ public class Loc {
         public Loc col(int x) {
             return new Loc(x, y);
         }
+    }
+
+    /**
+     * Hashes the coordinate pair by multiplying {@code x} by the 32-bit golden-ratio
+     * constant (Knuth's multiplicative hashing constant) and adding {@code y}.
+     * <p>
+     * The constant is odd, so multiplying by it is a bijection modulo 2<sup>32</sup> and
+     * no information about {@code x} is lost; its evenly spread bits scatter adjacent
+     * columns far apart. That matters because the natural key set here is a dense
+     * rectangular block of small coordinates, which is the worst case for the
+     * conventional {@code 31 * x + y}: that formula gives {@code (1, 0)} and
+     * {@code (0, 31)} the same hash, and dungeon rows run well past 31.
+     * <p>
+     * Deliberately avoids {@code Objects.hash(x, y)}, which allocates a varargs array and
+     * boxes both coordinates on every call. This method allocates nothing, which matters
+     * in the level-generation and pathfinding loops that hash grids heavily.
+     * <p>
+     * Note that {@code 0x9E3779B1} is a negative {@code int} — hex literals may set the
+     * sign bit, unlike decimal ones. That is harmless here: the arithmetic wraps modulo
+     * 2<sup>32</sup> regardless of sign.
+     *
+     * @return a hash code consistent with {@link #equals(Object)}
+     * @author Rowan Crowther
+     * @see #equals(Object)
+     */
+    @Override
+    public int hashCode() {
+        return x * 0x9E3779B1 + y;
     }
 }

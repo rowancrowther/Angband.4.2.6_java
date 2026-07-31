@@ -279,8 +279,8 @@ public class Chunk {
             }
         }
 
-        this.noise = new Heatmap();
-        this.scent = new Heatmap();
+        this.noise = new Heatmap(width, height);
+        this.scent = new Heatmap(width, height);
         this.decoy = Loc.zero;
         this.objects = new ArrayList<>();
         this.objMax = objMax;
@@ -304,8 +304,8 @@ public class Chunk {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean inBounds(@NotNull Loc grid) {
-        return grid.getX() >= 0 && grid.getX() <= width
-                && grid.getY() >= 0 && grid.getY() <= height;
+        return grid.getX() >= 0 && grid.getX() < width
+                && grid.getY() >= 0 && grid.getY() < height;
     }
 
     /**
@@ -316,7 +316,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean inBoundsFully(@NotNull Loc grid) {
+    public boolean inBoundsFully(@NotNull Loc grid) {
         return grid.getX() > 0 && grid.getX() < width - 1
                 && grid.getY() > 0 && grid.getY() < height - 1;
     }
@@ -401,7 +401,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private boolean squareIsNoFlow(@NotNull Loc grid) {
+    public boolean squareIsNoFlow(@NotNull Loc grid) {
         return inBounds(grid) && getSquare(grid).featIsNoFlow();
     }
 
@@ -1269,7 +1269,7 @@ public class Chunk {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    private int getWidth() {
+    public int getWidth() {
         return width;
     }
 
@@ -1279,7 +1279,7 @@ public class Chunk {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    private int getHeight() {
+    public int getHeight() {
         return height;
     }
 
@@ -1642,5 +1642,29 @@ public class Chunk {
      */
     public List<ItemObject> getObjects() {
         return Collections.unmodifiableList(objects);
+    }
+
+    /**
+     * Clears this chunk's sound map back to silence by replacing it with a fresh {@link
+     * Heatmap} (every grid {@code 0}). Ports the "set all the grids to silence" loop that opens
+     * C's {@code make_noise} ({@code src/game-world.c}); a new zeroed map is equivalent to
+     * zeroing the interior in place, since only interior grids are ever read.
+     *
+     * @author Rowan Crowther
+     */
+    public void resetNoise() {
+        noise = new Heatmap(width, height);
+    }
+
+    /**
+     * Returns this chunk's sound map — the per-grid noise distances from the player used by
+     * monster hearing to home in along passable terrain. Ports access to C's {@code
+     * cave->noise} ({@code src/cave.h}).
+     *
+     * @return the noise {@link Heatmap} for this chunk
+     * @author Rowan Crowther
+     */
+    public Heatmap getNoise() {
+        return noise;
     }
 }

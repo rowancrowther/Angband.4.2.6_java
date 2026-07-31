@@ -26,6 +26,8 @@ import uk.co.jackoftrades.frontend.stringoutput.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.ChunkUtils;
 import uk.co.jackoftrades.middle.cave.Generate;
+import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeEnum;
 import uk.co.jackoftrades.middle.effect.EffectUtil;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
@@ -59,6 +61,7 @@ import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerUtils;
 import uk.co.jackoftrades.middle.player.enums.*;
 
+import java.util.ArrayDeque;
 import java.util.Map;
 
 /**
@@ -1015,8 +1018,79 @@ public class GameWorld {
         // Stub class TODO: Implement this
     }
 
-    private static void makeNoise() {
-        // Stub class TODO: Implement this
+    /**
+     * Rebuilds the level's sound map so monsters can hear and home in on the player. Ports C's
+     * {@code make_noise} ({@code src/game-world.c}).
+     * <p>
+     * Every grid is assigned a noise "distance": the player's grid is {@code 0} and each
+     * grid's value grows with its flow-distance from the player along sound-carrying terrain.
+     * Monsters later track the player by stepping towards adjacent grids with lower noise,
+     * following twisty tunnels and mazes rather than straight-line distance. A monster's
+     * hearing is the largest noise value it can still detect.
+     * <p>
+     * The fill is a breadth-first flood from the player. The {@link ArrayDeque} is used as a
+     * FIFO queue ({@code addLast} to enqueue, {@code pop}/{@code removeFirst} to dequeue), and
+     * the noise level is only incremented once the front of the queue reaches the current
+     * level — the sentinel-free "re-queue and bump" step that keeps the flood in level order.
+     * {@link TimedEffect#TMD_COVERTRACKS} coarsens the increment from 1 to 4, shrinking the
+     * range at which the noise stays low enough to be heard. Features that do not transmit
+     * sound ({@link Chunk#squareIsNoFlow}) block propagation.
+     *
+     * @author Rowan Crowther
+     */
+    private void makeNoise() {
+        Loc next = player.getGrid();
+        int noise = 0;
+        int noiseIncrement = (player.getTimedEffect(TimedEffect.TMD_COVERTRACKS) != 0) ? 4 : 1;
+        ArrayDeque<Loc> queue = new ArrayDeque<>();
+
+        // Set all the grids to silence
+        currentCave.resetNoise();
+
+        // Player makes noise
+        currentCave.getNoise().setValue(next, noise);
+        queue.addLast(next);
+        noise += noiseIncrement;
+
+        // Propogate noise
+        while (!queue.isEmpty()) {
+            // Get the next grid
+            next = queue.pop();
+
+            // If we've reached the current noise level, put it back and step
+            if (currentCave.getNoise().getValue(next) == noise) {
+                queue.addLast(next);
+                noise += noiseIncrement;
+                continue;
+            }
+
+            // Assign noise to the children and enquire them
+            for (DirectionEnum direction : DirectionEnum.values()) {
+                // Child location
+                if (!direction.isStandard())
+                    continue;
+
+                Loc grid = next.sum(Loc.row(direction.ddy()).col(direction.ddx()));
+
+                // TODO: Replace this by Square.
+                if (!currentCave.inBounds(grid)) continue;
+
+                // Ignore features that don't transmit sound
+                if (currentCave.squareIsNoFlow(grid)) continue;
+
+                // Skip grids that already have noise
+                if (currentCave.getNoise().getValue(grid) != 0) continue;
+
+                // Skip the player grid
+                if (grid.equals(player.getGrid())) continue;
+
+                // Save the noise
+                currentCave.getNoise().setValue(grid, noise);
+
+                // Enqueue that entry
+                queue.addLast(grid);
+            }
+        }
     }
 
     private static void updateScent() {

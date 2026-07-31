@@ -34,29 +34,29 @@ public enum DirectionEnum {
     /**
      * Unknown/invalid direction (no movement, keypad 0). @author Rowan Crowther
      */
-    DIR_UNKNOWN(0, 0, 0),
+    DIR_UNKNOWN(0, 0, 0, false),
     /**
      * North-west (keypad 7). @author Rowan Crowther
      */
-    DIR_NW(7, -1, 1),
+    DIR_NW(7, -1, 1, true),
     /** North (keypad 8). @author Rowan Crowther */
-    DIR_N(8, 0, 1),
+    DIR_N(8, 0, 1, true),
     /** North-east (keypad 9). @author Rowan Crowther */
-    DIR_NE(9, 1, 1),
+    DIR_NE(9, 1, 1, true),
     /** West (keypad 4). @author Rowan Crowther */
-    DIR_W(4, -1, 0),
+    DIR_W(4, -1, 0, true),
     /** "Target" pseudo-direction / centre (keypad 5). @author Rowan Crowther */
-    DIR_TARGET(5, 0, 0),
+    DIR_TARGET(5, 0, 0, false),
     /** No direction / centre (keypad 5). @author Rowan Crowther */
-    DIR_NONE(5, 0, 0),
+    DIR_NONE(5, 0, 0, false),
     /** East (keypad 6). @author Rowan Crowther */
-    DIR_E(6, 1, 0),
+    DIR_E(6, 1, 0, true),
     /** South-west (keypad 1). @author Rowan Crowther */
-    DIR_SW(1, -1, -1),
+    DIR_SW(1, -1, -1, true),
     /** South (keypad 2). @author Rowan Crowther */
-    DIR_S(2, 0, -1),
+    DIR_S(2, 0, -1, true),
     /** South-east (keypad 3). @author Rowan Crowther */
-    DIR_SE(3, 1, -1),
+    DIR_SE(3, 1, -1, true),
     ;
 
     /**
@@ -78,6 +78,8 @@ public enum DirectionEnum {
      */
     private final int yOffset;
 
+    private final boolean standard;
+
     /**
      * Bind a direction to its keypad key and step offsets.
      *
@@ -86,10 +88,11 @@ public enum DirectionEnum {
      * @param yOffset the row step
      * @author Rowan Crowther
      */
-    DirectionEnum(int key, int xOffset, int yOffset) {
+    DirectionEnum(int key, int xOffset, int yOffset, boolean standard) {
         this.key = key;
         this.xOffset = xOffset;
         this.yOffset = yOffset;
+        this.standard = standard;
     }
 
     /**
@@ -139,5 +142,18 @@ public enum DirectionEnum {
         }
 
         return DIR_UNKNOWN;
+    }
+
+    /**
+     * Reports whether this is one of the eight "standard" grid directions — the four cardinals
+     * and four diagonals that make up C's {@code ddgrid_ddd} neighbour set. Non-standard entries
+     * (e.g. {@link #DIR_UNKNOWN} or a no-move centre) are excluded, letting callers iterate
+     * {@link #values()} and skip anything that is not a real one-step neighbour offset.
+     *
+     * @return true if this direction is a standard eight-way neighbour step
+     * @author Rowan Crowther
+     */
+    public boolean isStandard() {
+        return standard;
     }
 }

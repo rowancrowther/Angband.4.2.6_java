@@ -37,7 +37,7 @@ import java.util.Map;
  * object into named carriers, choosing types that match how the merge actually
  * reads them:
  * <ul>
- *   <li><b>{@link #effects}</b> — the effect chain (C: {@code curse->obj->effect}).
+ *   <li><b>{@link #effect}</b> — the effect chain (C: {@code curse->obj->effect}).
  *       All per-effect data (dice, subtype, timing, message, scaling expressions)
  *       lives inside each {@link Effect}, which is what {@code EffectAssembler}
  *       produces, so a curse simply holds a list of them.</li>
@@ -65,30 +65,23 @@ public class Curse {
      *
      * @param curse     the curse
      * @param curseData its instance data (power/timeout)
-     * @author Rowan Crowther
      */
     public record CurseEntry(Curse curse, CurseData curseData) {
     }
 
     /**
      * The curse's name (C: {@code curse->name}).
-     *
-     * @author Rowan Crowther
      */
     private final String name;
 
     /**
      * The object bases this curse may attach to (C: {@code curse->poss}, the
      * per-tval possibility array; port {@code types:} line).
-     *
-     * @author Rowan Crowther
      */
     private final List<ObjectBase> objectBases;
 
     /**
      * Weight the curse adds to its host object (C: {@code curse->obj->weight}).
-     *
-     * @author Rowan Crowther
      */
     private final int weight;
 
@@ -96,17 +89,13 @@ public class Curse {
      * The effect chain the curse triggers (C: {@code curse->obj->effect}). Each
      * {@link Effect} already carries its own dice/subtype/timing/message, so a
      * curse simply holds the list.
-     *
-     * @author Rowan Crowther
      */
-    private final List<Effect> effects;
+    private final Effect effect;
 
     /**
      * The object flags this curse grants (C: {@code curse->obj->flags}). Only the
      * non-element entries of the {@code flags:} line; {@code HATES_}/{@code IGNORE_}
      * tokens are routed to {@link #elInfo} instead.
-     *
-     * @author Rowan Crowther
      */
     private final List<ObjectFlag> objectFlags;
 
@@ -115,8 +104,6 @@ public class Curse {
      * (C: {@code curse->obj->modifiers}). Populated from the {@code obj_mods}
      * family of the {@code values:} line; resistances are deliberately excluded
      * (they live in {@link #elInfo}).
-     *
-     * @author Rowan Crowther
      */
     private final Map<ObjectModifier, Integer> modifiers;
 
@@ -126,29 +113,21 @@ public class Curse {
      * {@code RES_*} tokens of the {@code values:} line set {@link ElementInfo}
      * resistance levels, and the {@code HATES_}/{@code IGNORE_} tokens of the
      * {@code flags:} line set its flags.
-     *
-     * @author Rowan Crowther
      */
     private final Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * To-hit penalty imposed by the curse (C: {@code curse->obj->to_h}).
-     *
-     * @author Rowan Crowther
      */
     private final int combatToHit;
 
     /**
      * To-damage penalty imposed by the curse (C: {@code curse->obj->to_d}).
-     *
-     * @author Rowan Crowther
      */
     private final int combatDam;
 
     /**
      * Armour-class penalty imposed by the curse (C: {@code curse->obj->to_a}).
-     *
-     * @author Rowan Crowther
      */
     private final int combatAC;
 
@@ -157,41 +136,29 @@ public class Curse {
      * Resolved from {@link #conflictNames} in a second assembler pass, mirroring
      * the Summon fallback model — C stores only the delimited name string
      * ({@code curse->conflict}) and matches by name, holding no pointer.
-     *
-     * @author Rowan Crowther
      */
     private List<Curse> conflict;
-
-    private ItemObject object;
 
     /**
      * The raw names of conflicting curses as read from the data file, retained
      * for the second-pass resolution into {@link #conflict}.
-     *
-     * @author Rowan Crowther
      */
     private final List<String> conflictNames;
 
     /**
      * Object flags that conflict with this curse (C:
      * {@code curse->conflict_flags}).
-     *
-     * @author Rowan Crowther
      */
     private final List<ObjectFlag> conflictFlags;
 
     /**
      * Human-readable description of the curse (C: {@code curse->desc}).
-     *
-     * @author Rowan Crowther
      */
     private final String description;
 
     /**
      * Curse-level flavour message shown when the curse triggers (port
      * {@code msg:} line).
-     *
-     * @author Rowan Crowther
      */
     private final String message;
 
@@ -206,7 +173,7 @@ public class Curse {
      * @param name          curse name
      * @param objectBases   affectable object bases ({@code types:} line)
      * @param weight        added weight
-     * @param effects       triggered effect chain
+     * @param effect        triggered effect chain
      * @param objectFlags   granted object flags (non-element)
      * @param modifiers     additive numeric modifiers (obj_mods)
      * @param elInfo        per-element resistances and hates/ignores flags
@@ -222,7 +189,7 @@ public class Curse {
     public Curse(String name,
                  List<ObjectBase> objectBases,
                  int weight,
-                 List<Effect> effects,
+                 Effect effect,
                  List<ObjectFlag> objectFlags,
                  Map<ObjectModifier, Integer> modifiers,
                  Map<ElementEnum, ElementInfo> elInfo,
@@ -236,7 +203,7 @@ public class Curse {
         this.name = name;
         this.objectBases = objectBases;
         this.weight = weight;
-        this.effects = effects;
+        this.effect = effect;
         this.objectFlags = objectFlags;
         this.modifiers = modifiers;
         this.elInfo = elInfo;
@@ -277,8 +244,8 @@ public class Curse {
      * @return the effect chain this curse triggers
      * @author Rowan Crowther
      */
-    public List<Effect> getEffects() {
-        return effects;
+    public Effect getEffect() {
+        return effect;
     }
 
     /**
@@ -394,16 +361,6 @@ public class Curse {
     }
 
     /**
-     * @return the template object carrying this curse's gameplay payload (flags,
-     * modifiers, effect and its {@code time} interval) — the port of C's
-     * {@code curse->obj}
-     * @author Rowan Crowther
-     */
-    public ItemObject getObject() {
-        return object;
-    }
-
-    /**
      * @return a debug string listing this curse's fields
      * @author Rowan Crowther
      */
@@ -413,7 +370,7 @@ public class Curse {
                 "name='" + name + '\'' +
                 ", objectBases=" + objectBases +
                 ", weight=" + weight +
-                ", effects=" + effects +
+                ", effects=" + effect +
                 ", objectFlags=" + objectFlags +
                 ", modifiers=" + modifiers +
                 ", elInfo=" + elInfo +

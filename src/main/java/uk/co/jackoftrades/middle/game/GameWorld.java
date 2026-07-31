@@ -155,6 +155,7 @@ public class GameWorld {
      * @param speed the actor's speed, used directly as the index into {@link #extractEnergy}
      *              (0–199, 110 = normal)
      * @return the energy banked this game turn at that speed
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -166,6 +167,8 @@ public class GameWorld {
      * Binds this world to the current game by caching the live {@link GameState} player and cave —
      * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
      * directly.
+     *
+     * @author Rowan Crowther
      */
     public GameWorld() {
         player = GameState.getPlayer();
@@ -194,6 +197,8 @@ public class GameWorld {
      * subtle part: {@code break} means the player spent energy and the world should carry on;
      * {@code return} yields control back to the UI because a player pass used no energy and fresh
      * input is needed.
+     *
+     * @author Rowan Crowther
      */
     public void runGameLoop() {
         // Tidy up after the player's command
@@ -537,6 +542,8 @@ public class GameWorld {
      * passes (needed here because leaving may have changed inventory or state) and flushes queued
      * messages. Note it is deliberately {@code notice → update → redraw}, mirroring C's three separate
      * calls, rather than the bundled {@link Player#handleStuff()}.
+     *
+     * @author Rowan Crowther
      */
     private void onLeaveLevel() {
         // Cancel any command
@@ -570,6 +577,8 @@ public class GameWorld {
      * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
      * {@link EffectUtil#effectSimple} (the ore-detection effect), and
      * {@link Player#timedGradeEqual(TimedEffect, String)}.
+     *
+     * @author Rowan Crowther
      */
     private void processPlayer() {
         // check for interrupts
@@ -647,6 +656,8 @@ public class GameWorld {
      * apply any terrain damage, and (unless the player auto-dropped) flag the map for hallucination
      * and refresh multi-hued / marked monsters. In all cases it clears each monster's per-turn
      * {@code SHOW} flag and the drop status, then runs the update and redraw passes.
+     *
+     * @author Rowan Crowther
      */
     private void processPlayerCleanup() {
         // Significant
@@ -732,6 +743,8 @@ public class GameWorld {
      * <p><b>Stub:</b> not yet implemented. When ported it drives the slow, world-scale clock:
      * day/night and town-store restocking, the recharge of the player's light and regeneration,
      * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
+     *
+     * @author Rowan Crowther
      */
     private void processWorld() {
         int index;

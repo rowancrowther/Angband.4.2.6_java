@@ -163,18 +163,18 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                     illegalModifier = true;
                 }
             }
-            for (ElementEnum e : Arrays.stream(ElementEnum.values()).filter(b -> b.isBase())
+            for (ElementEnum e : Arrays.stream(ElementEnum.values()).filter(ElementEnum::isBase)
                     .toList()) {
                 ElementInfo ei = elInfo.computeIfAbsent(e, k -> new ElementInfo());
                 ei.on(ElementInfoEnum.EL_INFO_IGNORE);
             }
             if (illegalModifier) continue;
-            List<Brand> brands = new ArrayList<>();
+            Map<Brand, Boolean> brands = new HashMap<>();
             boolean illegalBrand = false;
             for (String b : record.brand()) {
                 Brand brand = ObjectRegistry.lookupBrandCode(b);
                 if (brand != null) {
-                    brands.add(brand);
+                    brands.put(brand, true);
                 } else {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown brand: " + b);
@@ -183,11 +183,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             if (illegalBrand) continue;
             boolean illegalSlay = false;
-            List<Slay> slays = new ArrayList<>();
+            Map<Slay, Boolean> slays = new HashMap<>();
             for (String s : record.slay()) {
                 Slay slay = ObjectRegistry.lookupSlay(s);
                 if (slay != null) {
-                    slays.add(slay);
+                    slays.put(slay, true);
                 } else {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown slay: " + s);
@@ -196,7 +196,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             if (illegalSlay) continue;
             boolean illegalCurses = false;
-            Map<Curse, Curse.CurseEntry> curses = new HashMap<>();
+            Map<Curse, CurseData> curses = new HashMap<>();
             for (String key : record.curse().keySet()) {
                 Curse curse = ObjectRegistry.lookupCurse(key);
                 if (curse == null) {
@@ -211,7 +211,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                         power = Integer.parseInt(value);
                         if (power > 0) {
                             curseData = new CurseData(power, 0);
-                            curses.put(curse, new Curse.CurseEntry(curse, curseData));
+                            curses.put(curse, curseData);
                         }
                     } catch (NumberFormatException e) {
                         errors.add("Artifact at line: " + line + " has " +
@@ -281,12 +281,18 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 }
             }
 
-            ObjectBase objectBase = ObjectRegistry.getBaseFromTVal(tVal);
+            ObjectBase objectBase;
+            if (tVal != null)
+                objectBase = ObjectRegistry.getBaseFromTVal(tVal);
+            else
+                objectBase = null;
+
             if (objectBase == null) {
                 errors.add("Artifact at line: " + line + " has " +
                         "an unknown object type: " + tVal);
                 continue;
             }
+
 
             ObjectKind objectKind = ObjectRegistry.lookupObjectKind(tVal, sVal);
 

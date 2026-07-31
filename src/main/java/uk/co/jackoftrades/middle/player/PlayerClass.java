@@ -86,7 +86,7 @@ public class PlayerClass {
     private int attMultiplier;
 
     /** The equipment a character of this class begins with (see {@link StartItem}). */
-    List<StartItem> startItems;
+    private List<StartItem> startItems;
 
     /** Spellcasting definition for the class, or {@code null} for a non-caster (see {@link ClassMagic}). */
     private ClassMagic magic;

@@ -254,9 +254,10 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 sb.append(desc);
             String description = sb.toString();
             String message = record.message();
+            Effect result = effects.isEmpty() ? null : effects.get(0);
 
             results.add(new Curse(name, types, weightAdjustment,
-                    effects, objectFlags, modifiers, elInfo,
+                    result, objectFlags, modifiers, elInfo,
                     toh, tod, toa, conflictingCurses, cFlags,
                     description, message));
         }

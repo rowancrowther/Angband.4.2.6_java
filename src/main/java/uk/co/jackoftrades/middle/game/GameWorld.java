@@ -1088,7 +1088,7 @@ public class GameWorld {
                             Curse curse = curseEntry.curse();
                             if (ObjectUtils.doCurseEffect(curseEntry, slot.getItem()))
                                 player.learnCurse(curse);
-                            curseEntry.curseData().setTimeout(curse.getObject().getTime().randCalc(0, DamageAspect.RANDOMIZE));
+                            curseEntry.curseData().setTimeout(curse.getEffect().getTime().randCalc(0, DamageAspect.RANDOMIZE));
                         }
                     }
                 }

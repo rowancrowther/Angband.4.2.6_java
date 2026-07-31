@@ -241,7 +241,11 @@ public class Effect {
         return index.getDescription();
     }
 
-//    /**
+    public Random getTime() {
+        return time;
+    }
+
+    //    /**
 //     * Set the unparsed dice string for this effect's magnitude.
 //     *
 //     * @param diceString the dice expression string

@@ -55,7 +55,7 @@ public class ClassMagic {
      *
      * @author Rowan Crowther
      */
-    List<MagicBook> magicBooks;
+    private List<MagicBook> magicBooks;
 
     /**
      * Total of all spells across all the books for this magic class

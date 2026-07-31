@@ -27,7 +27,6 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
-import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.ArrayList;
@@ -339,7 +338,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     slays.put(s, true);
             }
             if (illegalSlay) continue;
-            Map<Curse, CurseEntry> curses = new HashMap<>();
+            Map<Curse, CurseData> curses = new HashMap<>();
             boolean illegalCurse = false;
             for (String curseName : record.curse().keySet()) {
                 Curse curse = ObjectRegistry.lookupCurse(curseName);
@@ -352,8 +351,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                         int power = Integer.parseInt(record.curse().get(curseName));
                         if (power > 0) {
                             CurseData curseData = new CurseData(power, 0);
-                            CurseEntry curseEntry = new CurseEntry(curse, curseData);
-                            curses.put(curse, curseEntry);
+                            curses.put(curse, curseData);
                         }
                     } catch (NumberFormatException e) {
                         errors.add("Object kind starting at line: " + line + " has " +

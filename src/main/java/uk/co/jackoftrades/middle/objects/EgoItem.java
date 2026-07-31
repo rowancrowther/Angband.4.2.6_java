@@ -109,12 +109,6 @@ public class EgoItem {
      * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
-    /**
-     * Per-element relation info added by this ego.
-     *
-     * @author Rowan Crowther
-     */
-    private Map<ElementEnum, ElementInfo> minElInfo;
 
     /**
      * Brands this ego adds (intrinsic flag).

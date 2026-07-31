@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.frontend.screen.enums;
 
+import uk.co.jackoftrades.backend.utils.Combiner;
+import uk.co.jackoftrades.backend.utils.combiners.AddCombiner;
+
 /**
  * The strategies for combining multiple contributing values into a single
  * displayed value in a UI entry (for example merging several sources of the same
@@ -28,25 +31,52 @@ public enum CombinerName {
     /**
      * No combination (single value, or combining disabled). @author Rowan Crowther
      */
-    NONE,
+    NONE(null),
     /**
      * Sum the contributing values. @author Rowan Crowther
      */
-    ADD,
+    ADD(new AddCombiner()),
     /** Bitwise-OR the contributing values together. @author Rowan Crowther */
-    BITWISE_OR,
+    BITWISE_OR(null),
     /** Take the first contributing value. @author Rowan Crowther */
-    FIRST,
+    FIRST(null),
     /** Take the largest contributing value. @author Rowan Crowther */
-    LARGEST,
+    LARGEST(null),
     /** Take the last contributing value. @author Rowan Crowther */
-    LAST,
+    LAST(null),
     /** Logical-OR (true if any contributor is true). @author Rowan Crowther */
-    LOGICAL_OR,
+    LOGICAL_OR(null),
     /** Logical-OR but with a cancelling rule for opposing values. @author Rowan Crowther */
-    LOGICAL_OR_WITH_CANCEL,
+    LOGICAL_OR_WITH_CANCEL(null),
     /** Resistance combination treating zero specially. @author Rowan Crowther */
-    RESIST_0,
+    RESIST_0(null),
     /** Take the smallest contributing value. @author Rowan Crowther */
-    SMALLEST
+    SMALLEST(null);
+
+    private final Combiner combiner;
+
+    private CombinerName(Combiner combiner) {
+        this.combiner = combiner;
+    }
+
+    public Combiner init(int v, int a) {
+        Combiner result;
+
+        try {
+            switch (this.combiner.getClass().getSimpleName()) {
+                case "AddCombiner":
+                    result = (AddCombiner) this.combiner.clone();
+                    break;
+
+                default:
+                    return null;
+            }
+
+            result.init(v, a);
+
+            return result;
+        } catch (CloneNotSupportedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }

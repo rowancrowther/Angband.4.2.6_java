@@ -25,7 +25,6 @@ import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.ArrayList;
@@ -201,7 +200,7 @@ public class ObjectKind {
      *
      * @author Rowan Crowther
      */
-    private Map<Curse, CurseEntry> curses;
+    private Map<Curse, CurseData> curses;
 
     /**
      * The display glyph and colour.
@@ -479,7 +478,7 @@ public class ObjectKind {
                       Map<ElementEnum, ElementInfo> elInfo,
                       Map<Brand, Boolean> brands,
                       Map<Slay, Boolean> slays,
-                      Map<Curse, CurseEntry> curses,
+                      Map<Curse, CurseData> curses,
                       AngbandDisplayCharacter character,
                       int alloc_prob, int alloc_min,
                       int alloc_max, int level,
@@ -513,10 +512,9 @@ public class ObjectKind {
         this.slays = slays;
         this.curses = new HashMap<>();
         for (Curse curse : curses.keySet()) {
-            CurseEntry ce = curses.get(curse);
-            CurseData cd = new CurseData(ce.curseData().getPower(), ce.curseData().getTimeout());
-            CurseEntry thisCE = new CurseEntry(curse, cd);
-            this.curses.put(curse, thisCE);
+            CurseData value = curses.get(curse);
+            CurseData cd = new CurseData(value.getPower(), value.getTimeout());
+            this.curses.put(curse, cd);
         }
         this.character = character;
         this.alloc_prob = alloc_prob;

@@ -25,7 +25,6 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -136,19 +135,19 @@ public class Artifact {
      *
      * @author Rowan Crowther
      */
-    private List<Brand> brands;
+    private Map<Brand, Boolean> brands;
     /**
      * Slays the artifact carries.
      *
      * @author Rowan Crowther
      */
-    private List<Slay> slays;
+    private Map<Slay, Boolean> slays;
     /**
      * Curses the artifact carries, each with its instance data.
      *
      * @author Rowan Crowther
      */
-    private Map<Curse, Curse.CurseEntry> curses;
+    private Map<Curse, CurseData> curses;
 
     /**
      * The artifact's native level.
@@ -200,8 +199,8 @@ public class Artifact {
                     int toHit, int toDam, int toAC, int ac, String diceString,
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
-                    Map<ElementEnum, ElementInfo> elInfo, List<Brand> brands,
-                    List<Slay> slays, Map<Curse, Curse.CurseEntry> curses, int level,
+                    Map<ElementEnum, ElementInfo> elInfo, Map<Brand, Boolean> brands,
+                    Map<Slay, Boolean> slays, Map<Curse, CurseData> curses, int level,
                     int allocProb, int allocMin, int allocMax, Activation activation,
                     String activationMessage, Random time) {
         this.name = name;
@@ -331,21 +330,21 @@ public class Artifact {
     /**
      * @return the brands the artifact adds to its attacks
      */
-    public List<Brand> getBrands() {
+    public Map<Brand, Boolean> getBrands() {
         return brands;
     }
 
     /**
      * @return the slays the artifact adds to its attacks
      */
-    public List<Slay> getSlays() {
+    public Map<Slay, Boolean> getSlays() {
         return slays;
     }
 
     /**
      * @return the curses attached to the artifact, keyed by curse
      */
-    public Map<Curse, Curse.CurseEntry> getCurses() {
+    public Map<Curse, CurseData> getCurses() {
         return curses;
     }
 

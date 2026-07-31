@@ -27,10 +27,7 @@ import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * The template for a kind of object (as loaded from {@code object.txt}) — e.g.
@@ -188,13 +185,13 @@ public class ObjectKind {
      *
      * @author Rowan Crowther
      */
-    private Map<Brand, Boolean> brands;
+    private Set<Brand> brands;
     /**
      * Slays this kind carries (mapped to whether they are intrinsic).
      *
      * @author Rowan Crowther
      */
-    private Map<Slay, Boolean> slays;
+    private Set<Slay> slays;
     /**
      * Curses this kind carries (mapped to whether they are intrinsic).
      *
@@ -347,8 +344,8 @@ public class ObjectKind {
         flags = new Flag<>(ObjectFlag.class);
         activations = new ArrayList<>();
         effect = new ArrayList<>();
-        brands = new HashMap<>();
-        slays = new HashMap<>();
+        brands = new HashSet<>();
+        slays = new HashSet<>();
         curses = new HashMap<>();
     }
 
@@ -411,8 +408,8 @@ public class ObjectKind {
 
         modifiers = new HashMap<>();
         flags = new Flag<>(ObjectFlag.class);
-        brands = new HashMap<>();
-        slays = new HashMap<>();
+        brands = new HashSet<>();
+        slays = new HashSet<>();
         curses = new HashMap<>();
         activations = new ArrayList<>();
         effect = new ArrayList<>();
@@ -476,8 +473,7 @@ public class ObjectKind {
                       Flag<ObjectKindFlag> kindFlags,
                       Map<ObjectModifier, Random> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
-                      Map<Brand, Boolean> brands,
-                      Map<Slay, Boolean> slays,
+                      Set<Brand> brands, Set<Slay> slays,
                       Map<Curse, CurseData> curses,
                       AngbandDisplayCharacter character,
                       int alloc_prob, int alloc_min,
@@ -557,8 +553,8 @@ public class ObjectKind {
         this.kindFlags = base.getKindFlags().copy();
         this.modifiers = new HashMap<>();
         this.elInfo = new HashMap<>();
-        this.brands = new HashMap<>();
-        this.slays = new HashMap<>();
+        this.brands = new HashSet<>();
+        this.slays = new HashSet<>();
         this.curses = new HashMap<>();
         this.activations = new ArrayList<>();
         this.effect = new ArrayList<>();

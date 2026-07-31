@@ -26,6 +26,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A unique artifact definition (as loaded from {@code artifact.txt}) — a one-of-a-kind
@@ -135,13 +136,13 @@ public class Artifact {
      *
      * @author Rowan Crowther
      */
-    private Map<Brand, Boolean> brands;
+    private Set<Brand> brands;
     /**
      * Slays the artifact carries.
      *
      * @author Rowan Crowther
      */
-    private Map<Slay, Boolean> slays;
+    private Set<Slay> slays;
     /**
      * Curses the artifact carries, each with its instance data.
      *
@@ -199,8 +200,8 @@ public class Artifact {
                     int toHit, int toDam, int toAC, int ac, String diceString,
                     int weight, int cost, Flag<ObjectFlag> flags,
                     Map<ObjectModifier, Integer> modifiers,
-                    Map<ElementEnum, ElementInfo> elInfo, Map<Brand, Boolean> brands,
-                    Map<Slay, Boolean> slays, Map<Curse, CurseData> curses, int level,
+                    Map<ElementEnum, ElementInfo> elInfo, Set<Brand> brands,
+                    Set<Slay> slays, Map<Curse, CurseData> curses, int level,
                     int allocProb, int allocMin, int allocMax, Activation activation,
                     String activationMessage, Random time) {
         this.name = name;
@@ -330,14 +331,14 @@ public class Artifact {
     /**
      * @return the brands the artifact adds to its attacks
      */
-    public Map<Brand, Boolean> getBrands() {
+    public Set<Brand> getBrands() {
         return brands;
     }
 
     /**
      * @return the slays the artifact adds to its attacks
      */
-    public Map<Slay, Boolean> getSlays() {
+    public Set<Slay> getSlays() {
         return slays;
     }
 

@@ -29,10 +29,7 @@ import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Turns the raw {@link ItemObjectParseRecord}s from {@code ItemObjectGrammar} into domain
@@ -314,7 +311,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 }
             }
             if (illegalEFlag) continue;
-            Map<Brand, Boolean> brands = new HashMap<>();
+            Set<Brand> brands = new HashSet<>();
             boolean illegalBrand = false;
             for (String brand : record.brand()) {
                 Brand b = ObjectRegistry.lookupBrandCode(brand);
@@ -323,10 +320,10 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                             "an unknown brand: " + brand);
                     illegalBrand = true;
                 } else
-                    brands.put(b, true);
+                    brands.add(b);
             }
             if (illegalBrand) continue;
-            Map<Slay, Boolean> slays = new HashMap<>();
+            Set<Slay> slays = new HashSet<>();
             boolean illegalSlay = false;
             for (String slay : record.slay()) {
                 Slay s = ObjectRegistry.lookupSlay(slay);
@@ -335,7 +332,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                             "an unknown slay: " + slay);
                     illegalSlay = true;
                 } else
-                    slays.put(s, true);
+                    slays.add(s);
             }
             if (illegalSlay) continue;
             Map<Curse, CurseData> curses = new HashMap<>();

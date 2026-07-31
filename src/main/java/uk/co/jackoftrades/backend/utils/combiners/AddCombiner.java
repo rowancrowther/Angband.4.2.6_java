@@ -124,7 +124,7 @@ public class AddCombiner implements Combiner, Cloneable {
         int result;
         UIEntryCombinerState returnValue = new UIEntryCombinerState();
 
-        if (values.size() > n || auxs.size() > n) {
+        if (values.size() < n || auxs.size() < n) {
             return null;
         }
 

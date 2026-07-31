@@ -33,10 +33,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -280,10 +277,10 @@ class ArtifactReaderTest {
         // ---- Angrist: the brand/slay leg resolved against the seeded registries ----
         Artifact angrist = byName("'Angrist'");
         assertNotNull(angrist);
-        List<Brand> brands = field(angrist, "brands");         // brand:ACID_3
-        List<Slay> slays = field(angrist, "slays");            // slay:EVIL_2 / TROLL_3 / ORC_3
+        Set<Brand> brands = field(angrist, "brands");          // brand:ACID_3
+        Set<Slay> slays = field(angrist, "slays");             // slay:EVIL_2 / TROLL_3 / ORC_3
         assertEquals(1, brands.size());
-        assertEquals("ACID_3", brands.getFirst().getCode());
+        assertTrue(brands.stream().anyMatch(b -> b.getCode().equals("ACID_3")));
         assertEquals(3, slays.size());
 
         // ---- Calris: the two legs the port most recently fixed — RES_* element info, and a
@@ -302,13 +299,12 @@ class ArtifactReaderTest {
         // curse:air swing:30 -- the one curse line in the file. C keeps `int *curses` indexed by
         // curse holding the power (obj-init.c:3019-3021); the port keys by Curse and carries the
         // power in the entry's CurseData, whose timeout stays 0 until the item is in the world.
-        Map<Curse, Curse.CurseEntry> curses = field(calris, "curses");
+        Map<Curse, CurseData> curses = field(calris, "curses");
         assertEquals(1, curses.size());
         Curse curse = curses.keySet().iterator().next();
         assertEquals("air swing", curse.getName());
-        assertEquals(curse, curses.get(curse).curse(), "entry's curse must match its key");
-        assertEquals(30, curses.get(curse).curseData().getPower());
-        assertEquals(0, curses.get(curse).curseData().getTimeout(), "timeout is runtime-only");
+        assertEquals(30, curses.get(curse).getPower());
+        assertEquals(0, curses.get(curse).getTimeout(), "timeout is runtime-only");
     }
 
     // =====================================================================

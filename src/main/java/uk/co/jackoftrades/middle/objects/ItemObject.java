@@ -41,6 +41,7 @@ import uk.co.jackoftrades.middle.player.Player;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
 
@@ -189,13 +190,13 @@ public class ItemObject {
      *
      * @author Rowan Crowther
      */
-    private Map<Brand, Boolean> brands;
+    private Set<Brand> brands;
     /**
      * Slays on the item (mapped to whether intrinsic).
      *
      * @author Rowan Crowther
      */
-    private Map<Slay, Boolean> slays;
+    private Set<Slay> slays;
     /**
      * Curses on the item (mapped to whether intrinsic).
      *
@@ -344,8 +345,7 @@ public class ItemObject {
                       Flag<ObjectFlag> flags,
                       Map<ObjectModifier, String> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
-                      Map<Brand, Boolean> brands,
-                      Map<Slay, Boolean> slays,
+                      Set<Brand> brands, Set<Slay> slays,
                       Map<CurseEntry, Boolean> curses,
                       List<Effect> effect, String effectMessage,
                       List<Activation> activation, String time,

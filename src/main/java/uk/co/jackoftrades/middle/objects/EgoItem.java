@@ -27,6 +27,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * An ego item template (as loaded from {@code ego_item.txt}) — a named modifier
@@ -115,13 +116,13 @@ public class EgoItem {
      *
      * @author Rowan Crowther
      */
-    private Map<Brand, Boolean> brands;
+    private Set<Brand> brands;
     /**
      * Slays this ego adds (intrinsic flag).
      *
      * @author Rowan Crowther
      */
-    private Map<Slay, Boolean> slays;
+    private Set<Slay> slays;
     /**
      * Curses this ego adds, with their power.
      *
@@ -249,8 +250,8 @@ public class EgoItem {
                    Map<ObjectModifier, Random> modifiers,
                    Map<ObjectModifier, Integer> minModifiers,
                    Map<ElementEnum, ElementInfo> elInfo,
-                   Map<Brand, Boolean> brands,
-                   Map<Slay, Boolean> slays,
+                   Set<Brand> brands,
+                   Set<Slay> slays,
                    Map<Curse, CurseData> curses, int rating,
                    int allocProb, int allocMin, int allocMax,
                    List<ObjectKind> possItems, Random toHit,

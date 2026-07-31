@@ -37,6 +37,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -386,8 +387,8 @@ class EgoItemReaderTest {
         EgoItem e = loadOne("bsc.txt",
                 "type:sword\nbrand:ACID_3\nslay:EVIL_2\ncurse:vulnerability:10\n");
 
-        Map<?, ?> brands = field(e, "brands");
-        Map<?, ?> slays = field(e, "slays");
+        Set<?> brands = field(e, "brands");
+        Set<?> slays = field(e, "slays");
         Map<?, CurseData> curses = field(e, "curses");
         assertEquals(1, brands.size());
         assertEquals(1, slays.size());

@@ -229,14 +229,13 @@ class ItemObjectReaderTest {
                 obj("cursed blade", HEAD + "curse:teleportation:100\n")));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        Map<Curse, Curse.CurseEntry> curses = kindField(result.items().get(0), "curses");
+        Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
 
         assertEquals(1, curses.size());
         Curse curse = curses.keySet().iterator().next();
         assertEquals("teleportation", curse.getName());
-        assertEquals(curse, curses.get(curse).curse(), "entry's curse must match its key");
-        assertEquals(100, curses.get(curse).curseData().getPower());
-        assertEquals(0, curses.get(curse).curseData().getTimeout(), "timeout is runtime-only");
+        assertEquals(100, curses.get(curse).getPower());
+        assertEquals(0, curses.get(curse).getTimeout(), "timeout is runtime-only");
     }
 
     /**

@@ -118,7 +118,7 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
 
         UIEntryCombinerState result = new UIEntryCombinerState();
 
-        if (values.size() > n || auxs.size() > n) {
+        if (values.size() < n || auxs.size() < n) {
             return null;
         }
 

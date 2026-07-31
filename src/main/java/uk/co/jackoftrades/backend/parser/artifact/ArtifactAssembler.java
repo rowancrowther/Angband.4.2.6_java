@@ -169,12 +169,12 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
                 ei.on(ElementInfoEnum.EL_INFO_IGNORE);
             }
             if (illegalModifier) continue;
-            Map<Brand, Boolean> brands = new HashMap<>();
+            Set<Brand> brands = new HashSet<>();
             boolean illegalBrand = false;
             for (String b : record.brand()) {
                 Brand brand = ObjectRegistry.lookupBrandCode(b);
                 if (brand != null) {
-                    brands.put(brand, true);
+                    brands.add(brand);
                 } else {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown brand: " + b);
@@ -183,11 +183,11 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             }
             if (illegalBrand) continue;
             boolean illegalSlay = false;
-            Map<Slay, Boolean> slays = new HashMap<>();
+            Set<Slay> slays = new HashSet<>();
             for (String s : record.slay()) {
                 Slay slay = ObjectRegistry.lookupSlay(s);
                 if (slay != null) {
-                    slays.put(slay, true);
+                    slays.add(slay);
                 } else {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown slay: " + s);

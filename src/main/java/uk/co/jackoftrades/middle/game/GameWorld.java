@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.stringoutput.Message;
+import uk.co.jackoftrades.frontend.outputtouser.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.ChunkUtils;
 import uk.co.jackoftrades.middle.cave.Generate;
@@ -1014,8 +1014,36 @@ public class GameWorld {
         }
     }
 
+    /**
+     * Plays the ambient background sound appropriate to where the player is. Ports C's
+     * {@code play_ambient_sound} ({@code src/game-world.c}).
+     * <p>
+     * In the town (depth {@code 0}) the sound depends on the time of day — {@link
+     * MessageType#MSG_AMBIENT_DAY} or {@link MessageType#MSG_AMBIENT_NITE} via {@link #isDaytime()}.
+     * In the dungeon it depends on depth, in bands of 20 levels: {@code MSG_AMBIENT_DNG1} for the
+     * first band (depth {@code 1}–{@code 20}) up to {@code MSG_AMBIENT_DNG5} beyond depth {@code 80}.
+     * Each is emitted through {@link Message#sound}, which the front end hooks to play the audio.
+     * This is purely a sound cue — it changes no game state.
+     *
+     * @author Rowan Crowther
+     */
     private void playAmbientSound() {
-        // Stub class TODO: Implement this
+        if (player.getDepth() == 0) {
+            if (isDaytime())
+                Message.sound(MessageType.MSG_AMBIENT_DAY, player);
+            else
+                Message.sound(MessageType.MSG_AMBIENT_NITE, player);
+        } else if (player.getDepth() <= 20) {
+            Message.sound(MessageType.MSG_AMBIENT_DNG1, player);
+        } else if (player.getDepth() <= 40) {
+            Message.sound(MessageType.MSG_AMBIENT_DNG2, player);
+        } else if (player.getDepth() <= 60) {
+            Message.sound(MessageType.MSG_AMBIENT_DNG3, player);
+        } else if (player.getDepth() <= 80) {
+            Message.sound(MessageType.MSG_AMBIENT_DNG4, player);
+        } else {
+            Message.sound(MessageType.MSG_AMBIENT_DNG5, player);
+        }
     }
 
     /**

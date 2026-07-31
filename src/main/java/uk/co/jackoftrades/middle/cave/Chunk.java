@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
-import uk.co.jackoftrades.frontend.stringoutput.Message;
+import uk.co.jackoftrades.frontend.outputtouser.Message;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;

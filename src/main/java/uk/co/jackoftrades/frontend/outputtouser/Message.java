@@ -15,11 +15,13 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.stringoutput;
+package uk.co.jackoftrades.frontend.outputtouser;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 
 /**
  * The engine's outbound message channel - the port of C's {@code msg}/{@code msgt} family. The
@@ -90,5 +92,25 @@ public class Message {
 
         // Add in a sound function
         GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_MESSAGE, messageType, toSend);
+    }
+
+    /**
+     * Makes a noise without any accompanying text — the port of C's {@code sound} ({@code
+     * src/message.c}). Front-end sound modules hook the {@link GameEventType#EVENT_SOUND} event to
+     * play the matching audio.
+     * <p>
+     * Does nothing unless the player has the {@code use_sound} option switched on (C's {@code
+     * OPT(player, use_sound)} guard); when enabled it signals an {@link GameEventType#EVENT_SOUND}
+     * carrying the sound's {@link MessageType} and no message text.
+     *
+     * @param messageType the sound category to play
+     * @param player      the player whose sound option gates the event
+     * @author Rowan Crowther
+     */
+    public static void sound(MessageType messageType, Player player) {
+        if (!player.getPlayerOptions().has(PlayerOptionEnum.OP_use_sound))
+            return;
+
+        GameEngine.getEventsBusHandler().eventSignalMessage(GameEventType.EVENT_SOUND, messageType, null);
     }
 }

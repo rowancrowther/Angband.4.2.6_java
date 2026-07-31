@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.gameinput;
 
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.stringoutput.Message;
+import uk.co.jackoftrades.frontend.outputtouser.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;

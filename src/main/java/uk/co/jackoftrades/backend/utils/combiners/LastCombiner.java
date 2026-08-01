@@ -69,14 +69,27 @@ public class LastCombiner implements Combiner, Cloneable {
 
     /**
      * Completes the streaming fold. LAST needs no finishing step (the C original
-     * uses {@code dummy_combine_finish}), so this hands back the state holding the
-     * most recent contribution.
+     * uses {@code dummy_combine_finish}), so the accumulated channels are already
+     * the answer and nothing is computed here.
      *
-     * @return the state holding the last contribution
+     * <p>The result is a fresh {@link UIEntryCombinerState} rather than this
+     * combiner's own, so a caller cannot reach through the returned object and
+     * disturb a fold that may still be running. Repeated calls are therefore
+     * independent snapshots, and writing to one is invisible to both the combiner
+     * and any other snapshot.
+     *
+     * @return a snapshot of the last contribution
      */
     @Override
     public UIEntryCombinerState finish() {
-        return state;
+        UIEntryCombinerState finalState = new UIEntryCombinerState();
+
+        finalState.setAccum(state.getAccum());
+        finalState.setAccumAux(state.getAccumAux());
+        finalState.setNegAccum(state.getNegAccum());
+        finalState.setNegAccumAux(state.getNegAccumAux());
+
+        return finalState;
     }
 
     /**

@@ -111,14 +111,27 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
 
     /**
      * Completes the streaming fold. LOGICAL_OR needs no finishing step (the C
-     * original uses {@code dummy_combine_finish}), so this hands back the state
-     * holding the OR-ed value and auxiliary channels.
+     * original uses {@code dummy_combine_finish}), so the accumulated channels are
+     * already the answer and nothing is computed here - unlike
+     * {@link LogicalOrWithCancelCombiner}, whose accumulator is an intermediate
+     * encoding that {@code finish} has to collapse.
      *
-     * @return the combined state after all contributions
+     * <p>The result is a fresh {@link UIEntryCombinerState} rather than this
+     * combiner's own, so a caller cannot reach through the returned object and
+     * disturb a fold that may still be running. Repeated calls are therefore
+     * independent snapshots, and writing to one is invisible to both the combiner
+     * and any other snapshot.
+     *
+     * @return a snapshot of the OR-ed value and auxiliary channels
      */
     @Override
     public UIEntryCombinerState finish() {
-        return state;
+        UIEntryCombinerState newState = new UIEntryCombinerState();
+        newState.setNegAccum(state.getNegAccum());
+        newState.setNegAccumAux(state.getNegAccumAux());
+        newState.setAccum(state.getAccum());
+        newState.setAccumAux(state.getAccumAux());
+        return newState;
     }
 
     /**

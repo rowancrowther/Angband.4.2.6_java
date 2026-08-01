@@ -117,14 +117,27 @@ public class LargestCombiner implements Cloneable, Combiner {
 
     /**
      * Completes the streaming fold. LARGEST needs no finishing step (the C
-     * original uses {@code dummy_combine_finish}), so this hands back the state
-     * holding the maximum value and auxiliary channels.
+     * original uses {@code dummy_combine_finish}), so the accumulated channels are
+     * already the answer and nothing is computed here.
      *
-     * @return the combined state after all contributions
+     * <p>The result is a fresh {@link UIEntryCombinerState} rather than this
+     * combiner's own, so a caller cannot reach through the returned object and
+     * disturb a fold that may still be running. Repeated calls are therefore
+     * independent snapshots, and writing to one is invisible to both the combiner
+     * and any other snapshot.
+     *
+     * @return a snapshot of the maximum value and auxiliary channels
      */
     @Override
     public UIEntryCombinerState finish() {
-        return state;
+        UIEntryCombinerState finalState = new UIEntryCombinerState();
+
+        finalState.setAccum(state.getAccum());
+        finalState.setAccumAux(state.getAccumAux());
+        finalState.setNegAccum(state.getNegAccum());
+        finalState.setNegAccumAux(state.getNegAccumAux());
+
+        return finalState;
     }
 
     /**

@@ -47,7 +47,7 @@ public enum CombinerName {
     /** Logical-OR (true if any contributor is true). @author Rowan Crowther */
     LOGICAL_OR(new LogicalOrCombiner()),
     /** Logical-OR but with a cancelling rule for opposing values. @author Rowan Crowther */
-    LOGICAL_OR_WITH_CANCEL(null),
+    LOGICAL_OR_WITH_CANCEL(new LogicalOrWithCancelCombiner()),
     /** Resistance combination treating zero specially. @author Rowan Crowther */
     RESIST_0(null),
     /** Take the smallest contributing value. @author Rowan Crowther */

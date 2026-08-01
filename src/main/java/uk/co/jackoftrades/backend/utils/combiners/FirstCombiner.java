@@ -68,13 +68,27 @@ public class FirstCombiner implements Combiner, Cloneable {
 
     /**
      * Completes the streaming fold. FIRST needs no finishing step (the C original
-     * uses {@code dummy_combine_finish}), so this hands back the seeded state.
+     * uses {@code dummy_combine_finish}), so the seeded channels are already the
+     * answer and nothing is computed here.
      *
-     * @return the state holding the first contribution
+     * <p>The result is a fresh {@link UIEntryCombinerState} rather than this
+     * combiner's own, so a caller cannot reach through the returned object and
+     * disturb a fold that may still be running. Repeated calls are therefore
+     * independent snapshots, and writing to one is invisible to both the combiner
+     * and any other snapshot.
+     *
+     * @return a snapshot of the first contribution
      */
     @Override
     public UIEntryCombinerState finish() {
-        return state;
+        UIEntryCombinerState finalState = new UIEntryCombinerState();
+
+        finalState.setAccum(state.getAccum());
+        finalState.setAccumAux(state.getAccumAux());
+        finalState.setNegAccum(state.getNegAccum());
+        finalState.setNegAccumAux(state.getNegAccumAux());
+
+        return finalState;
     }
 
     /**

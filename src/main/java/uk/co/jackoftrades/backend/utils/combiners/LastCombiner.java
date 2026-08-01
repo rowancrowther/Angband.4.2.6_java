@@ -120,13 +120,41 @@ public class LastCombiner implements Combiner, Cloneable {
     }
 
     /**
-     * Returns a shallow clone of this combiner, as declared by {@link Combiner}.
+     * Returns an independent copy of this combiner, as declared by
+     * {@link Combiner}. The copy gets its own {@link UIEntryCombinerState} holding
+     * the same four channels, so folding through one combiner cannot disturb the
+     * other; a shallow field copy would share the one state object and defeat the
+     * point of cloning at all.
      *
-     * @return a shallow copy of this instance
-     * @throws CloneNotSupportedException if cloning is not supported
+     * <p>Cloning exists only because the port keeps the fold state inside the
+     * combiner. The C original passes a caller-owned
+     * {@code struct ui_entry_combiner_state} into every function, leaving the
+     * combiners themselves stateless and freely shareable, so it needs no
+     * equivalent.
+     *
+     * <p>A combiner that has not been {@link #init(int, int) init}-ed yet has no
+     * state to copy, so the clone is a fresh instance - which is the case
+     * {@code CombinerName} actually exercises, since it clones an un-initialised
+     * prototype per fold.
+     *
+     * @return an independent copy of this combiner
      */
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    public final Combiner clone() {
+        if (state == null) {
+            return new LastCombiner();
+        }
+
+        UIEntryCombinerState thisState = state;
+        UIEntryCombinerState newState = new UIEntryCombinerState();
+        newState.setAccum(thisState.getAccum());
+        newState.setAccumAux(thisState.getAccumAux());
+        newState.setNegAccum(thisState.getNegAccum());
+        newState.setNegAccumAux(thisState.getNegAccumAux());
+
+        LastCombiner result = new LastCombiner();
+        result.state = newState;
+
+        return result;
     }
 }

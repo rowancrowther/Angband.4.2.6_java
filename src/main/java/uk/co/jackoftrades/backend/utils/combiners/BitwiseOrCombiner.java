@@ -103,11 +103,18 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * <p>Unlike the streaming path this does not touch or depend on the instance
      * {@code state}; it returns a fresh result.
      *
+     * <p>Note that {@code n}, not the list size, bounds the fold - matching the C's
+     * {@code for (i = 1; i < n; ++i)} over a bare {@code const int *} - so any tail
+     * beyond {@code n} is ignored rather than OR-ed in. The under-length guard has
+     * no counterpart in the C, whose pointers carry no length to check; it is a
+     * port-level defence, and returns {@code null} to stay consistent with the rest
+     * of the combiner family.
+     *
      * @param n      the number of contributions to combine
-     * @param values the value channel of each contribution (at most {@code n} long)
-     * @param auxs   the auxiliary channel of each contribution (at most {@code n} long)
+     * @param values the value channel of each contribution (at least {@code n} long)
+     * @param auxs   the auxiliary channel of each contribution (at least {@code n} long)
      * @return a state holding the combined value and auxiliary channels, or
-     * {@code null} if either input list is longer than {@code n}
+     * {@code null} if either input list is shorter than {@code n}
      */
     @Override
     public UIEntryCombinerState vec(int n, List<Integer> values, List<Integer> auxs) {
@@ -141,14 +148,42 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
     }
 
     /**
-     * Returns a shallow clone of this combiner, as declared by {@link Combiner}.
+     * Returns an independent copy of this combiner, as declared by
+     * {@link Combiner}. The copy gets its own {@link UIEntryCombinerState} holding
+     * the same four channels, so folding through one combiner cannot disturb the
+     * other; a shallow field copy would share the one state object and defeat the
+     * point of cloning at all.
      *
-     * @return a shallow copy of this instance
-     * @throws CloneNotSupportedException if cloning is not supported
+     * <p>Cloning exists only because the port keeps the fold state inside the
+     * combiner. The C original passes a caller-owned
+     * {@code struct ui_entry_combiner_state} into every function, leaving the
+     * combiners themselves stateless and freely shareable, so it needs no
+     * equivalent.
+     *
+     * <p>A combiner that has not been {@link #init(int, int) init}-ed yet has no
+     * state to copy, so the clone is a fresh instance - which is the case
+     * {@code CombinerName} actually exercises, since it clones an un-initialised
+     * prototype per fold.
+     *
+     * @return an independent copy of this combiner
      */
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    public final Combiner clone() {
+        if (state == null) {
+            return new BitwiseOrCombiner();
+        }
+
+        UIEntryCombinerState thisState = state;
+        UIEntryCombinerState newState = new UIEntryCombinerState();
+        newState.setAccum(thisState.getAccum());
+        newState.setAccumAux(thisState.getAccumAux());
+        newState.setNegAccum(thisState.getNegAccum());
+        newState.setNegAccumAux(thisState.getNegAccumAux());
+
+        BitwiseOrCombiner result = new BitwiseOrCombiner();
+        result.state = newState;
+
+        return result;
     }
 
     /**

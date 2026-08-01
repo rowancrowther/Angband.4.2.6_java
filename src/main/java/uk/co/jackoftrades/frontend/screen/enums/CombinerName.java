@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.frontend.screen.enums;
 
 import uk.co.jackoftrades.backend.utils.Combiner;
-import uk.co.jackoftrades.backend.utils.combiners.AddCombiner;
+import uk.co.jackoftrades.backend.utils.combiners.*;
 
 /**
  * The strategies for combining multiple contributing values into a single
@@ -37,15 +37,15 @@ public enum CombinerName {
      */
     ADD(new AddCombiner()),
     /** Bitwise-OR the contributing values together. @author Rowan Crowther */
-    BITWISE_OR(null),
+    BITWISE_OR(new BitwiseOrCombiner()),
     /** Take the first contributing value. @author Rowan Crowther */
-    FIRST(null),
+    FIRST(new FirstCombiner()),
     /** Take the largest contributing value. @author Rowan Crowther */
-    LARGEST(null),
+    LARGEST(new LargestCombiner()),
     /** Take the last contributing value. @author Rowan Crowther */
-    LAST(null),
+    LAST(new LastCombiner()),
     /** Logical-OR (true if any contributor is true). @author Rowan Crowther */
-    LOGICAL_OR(null),
+    LOGICAL_OR(new LogicalOrCombiner()),
     /** Logical-OR but with a cancelling rule for opposing values. @author Rowan Crowther */
     LOGICAL_OR_WITH_CANCEL(null),
     /** Resistance combination treating zero specially. @author Rowan Crowther */
@@ -60,23 +60,8 @@ public enum CombinerName {
     }
 
     public Combiner init(int v, int a) {
-        Combiner result;
-
-        try {
-            switch (this.combiner.getClass().getSimpleName()) {
-                case "AddCombiner":
-                    result = (AddCombiner) this.combiner.clone();
-                    break;
-
-                default:
-                    return null;
-            }
-
-            result.init(v, a);
-
-            return result;
-        } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e);
-        }
+        Combiner result = this.combiner.clone();
+        result.init(v, a);
+        return result;
     }
 }

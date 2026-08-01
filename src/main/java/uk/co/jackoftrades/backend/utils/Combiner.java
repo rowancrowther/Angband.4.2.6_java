@@ -32,5 +32,5 @@ public interface Combiner extends Cloneable {
 
     UIEntryCombinerState vec(int n, List<Integer> values, List<Integer> auxs);
 
-    Object clone() throws CloneNotSupportedException;
+    Combiner clone();
 }

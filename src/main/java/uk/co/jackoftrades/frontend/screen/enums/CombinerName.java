@@ -49,7 +49,7 @@ public enum CombinerName {
     /** Logical-OR but with a cancelling rule for opposing values. @author Rowan Crowther */
     LOGICAL_OR_WITH_CANCEL(new LogicalOrWithCancelCombiner()),
     /** Resistance combination treating zero specially. @author Rowan Crowther */
-    RESIST_0(null),
+    RESIST_0(new Resist0Combiner()),
     /** Take the smallest contributing value. @author Rowan Crowther */
     SMALLEST(null);
 

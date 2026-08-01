@@ -51,7 +51,7 @@ public enum CombinerName {
     /** Resistance combination treating zero specially. @author Rowan Crowther */
     RESIST_0(new Resist0Combiner()),
     /** Take the smallest contributing value. @author Rowan Crowther */
-    SMALLEST(null);
+    SMALLEST(new SmallestCombiner());
 
     private final Combiner combiner;
 

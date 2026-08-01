@@ -463,7 +463,7 @@ public class Resist0Combiner implements Combiner, Cloneable {
      * @return an independent copy of this combiner
      */
     @Override
-    public Combiner clone() {
+    public final Combiner clone() {
         if (state == null)
             return new Resist0Combiner();
 

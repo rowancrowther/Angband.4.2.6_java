@@ -55,7 +55,7 @@ public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Ar
             String tValStr = record.tValue();
             TValue tVal = null;
             if (!tValStr.isEmpty()) {
-                tVal = TValue.fromName("TV_" + tValStr);
+                tVal = TValue.fromName(tValStr);
                 if (tVal == null) {
                     errors.add("Artifact at line: " + line + " has " +
                             "an unknown base-obj tvalue: " + tValStr);

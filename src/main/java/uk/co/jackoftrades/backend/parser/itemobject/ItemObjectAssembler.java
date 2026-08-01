@@ -80,7 +80,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             ObjectBase base = null;
             TValue tValue = null;
             if (!record.tValue().isEmpty()) {
-                String tVal = "TV_" + record.tValue().toUpperCase().replace(" ", "_");
+                String tVal = record.tValue().toUpperCase().replace(" ", "_");
                 try {
                     tValue = TValue.valueOf(tVal);
                     base = ObjectRegistry.getBaseFromTVal(tValue);

@@ -77,7 +77,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
 
         for (ClassSpellBookParseRecord record : records) {
             int line = record.line();
-            String tValueString = "TV_" + record.oBase();
+            String tValueString = record.oBase();
             TValue tValue = TValue.fromName(tValueString);
             if (tValue == null) {
                 errors.add("Spell book at line: " + line + " has " +

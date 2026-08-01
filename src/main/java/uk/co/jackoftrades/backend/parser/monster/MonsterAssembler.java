@@ -346,7 +346,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 String maxStr = drop.max();
                 if (!chance.isEmpty() && !minStr.isEmpty() && !maxStr.isEmpty()) {
                     try {
-                        TValue tValue = TValue.fromName("TV_" + dropTvalStr);
+                        TValue tValue = TValue.fromName(dropTvalStr);
                         if (tValue == null) {
                             errors.add("Monster at line: " + line + " has " +
                                     "an unknown TV type: " + dropTvalStr);
@@ -380,7 +380,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 String maxStr = dropBase.max();
                 if (!chance.isEmpty() && !minStr.isEmpty() && !maxStr.isEmpty()) {
                     try {
-                        TValue tValue = TValue.fromName("TV_" + dropTvalStr);
+                        TValue tValue = TValue.fromName(dropTvalStr);
                         if (tValue == null) {
                             errors.add("Monster at line: " + line + " has " +
                                     "an unknown TV type: " + dropTvalStr);
@@ -519,7 +519,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 ObjectKind mimicKind = null;
                 String tVal = mimic.tVal();
                 String sVal = mimic.sVal();
-                TValue tValue = TValue.fromName("TV_" + tVal);
+                TValue tValue = TValue.fromName(tVal);
                 if (tValue == null) {
                     errors.add("Monster at line: " + line + " has " +
                             "an unknown mimic type value: " + tVal);

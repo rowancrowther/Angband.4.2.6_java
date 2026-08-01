@@ -53,7 +53,7 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             if (rawTVal.contains(" ")) rawTVal = rawTVal.replace(" ", "_");
             TValue tVal;
             try {
-                tVal = TValue.valueOf("TV_" + rawTVal);
+                tVal = TValue.valueOf(rawTVal);
             } catch (IllegalArgumentException e) {
                 errors.add("Block starting at line: " + record.line() +
                         " has an invalid TValue " + rawTVal);

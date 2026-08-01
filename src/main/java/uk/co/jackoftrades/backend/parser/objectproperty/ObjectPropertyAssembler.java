@@ -162,7 +162,7 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
             for (String key : record.typeMult().keySet()) {
                 String value = record.typeMult().get(key);
                 try {
-                    TValue tValue = TValue.fromName("TV_" + key);
+                    TValue tValue = TValue.fromName(key);
                     int multVal = Integer.parseInt(value);
                     typeMults.put(tValue, multVal);
                 } catch (NumberFormatException e) {

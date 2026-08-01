@@ -149,7 +149,7 @@ drop
         }
         :   DROP TVAL COLON STRING COLON ch=INTEGER COLON mn=INTEGER COLON mx=INTEGER
             {
-                tval = TValue.valueOf("TV_" + $TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
+                tval = TValue.valueOf($TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
                 sval = GameConstants.lookupObjectKind(tval, $STRING.getText());
                 chance = Integer.parseInt($ch.getText());
                 min = Integer.parseInt($mn.getText());
@@ -170,7 +170,7 @@ dropBase
         }
         :   DROP_BASE TVAL COLON ch=INTEGER COLON mn=INTEGER COLON mx=INTEGER
             {
-                tval = TValue.valueOf("TV_" + $TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
+                tval = TValue.valueOf($TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
                 chance = Integer.parseInt($ch.getText());
                 min = Integer.parseInt($mn.getText());
                 max = Integer.parseInt($mx.getText());
@@ -238,7 +238,7 @@ friendsBase
 mimic
         returns[ObjectKind kind]
         :   MIMIC TVAL COLON STRING {
-                TValue tval = TValue.valueOf("TV_" + $TVAL.getText().toUpperCase().replace(" ", "_")
+                TValue tval = TValue.valueOf($TVAL.getText().toUpperCase().replace(" ", "_")
                                     .replace("ARMOUR", "ARMOR"));
                 String sval = $STRING.getText();
                 $kind = GameConstants.lookupObjectKind(tval, sval);

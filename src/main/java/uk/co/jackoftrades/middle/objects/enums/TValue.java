@@ -17,12 +17,15 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.objects.ObjectKind;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The item "type value" (tval) of an object — its broad category (chest, weapon,
@@ -67,7 +70,7 @@ public enum TValue {
     /**
      * A type of digging implement, such as shovel or pick
      */
-    TV_DIGGER("digger"),
+    TV_DIGGING("digger"),
 
     /**
      * A weapon with a haft such as a halberd
@@ -127,7 +130,7 @@ public enum TValue {
     /**
      * Armor fashioned from dragon scale
      */
-    TV_DRAGON_ARMOR("dragon armor"),
+    TV_DRAG_ARMOR("dragon armor"),
 
     /**
      * A form of light, such as torches or an oil lamp
@@ -212,12 +215,7 @@ public enum TValue {
     /**
      * Gold, gold, gold, gold, Gold, gold, gold, gold (repeat ad nauseam)
      */
-    TV_GOLD("gold"),
-
-    /**
-     * Marker for the largest TValue (probably not needed)
-     */
-    TV_MAX("");
+    TV_GOLD("gold");
 
     /**
      * The display name of this item type.
@@ -225,13 +223,6 @@ public enum TValue {
      * @author Rowan Crowther
      */
     private final String name;
-    /**
-     * Logger used to report unknown tval lookups in {@link #fromName(String)}.
-     *
-     * @author Rowan Crowther
-     */
-    private static final Logger logger = LogManager.getLogger();
-
     /**
      * Bind a tval to its display name.
      *
@@ -243,9 +234,13 @@ public enum TValue {
     }
 
     /**
-     * Get the string name of this TValue
+     * Get the string name of this TValue — the text the data files use for it, which is the
+     * {@code string_name} column of C's {@code list-tvals.h} and the column {@code tval_find_idx}
+     * matches against. For most tvals it is the identifier lower-cased, but not for
+     * {@link #TV_DIGGING} ({@code "digger"}) or {@link #TV_DRAG_ARMOR} ({@code "dragon armor"}).
      *
      * @return The type name of this TValue
+     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -352,7 +347,7 @@ public enum TValue {
      * @author Rowan Crowther
      */
     public boolean isDigger() {
-        return this == TV_DIGGER;
+        return this == TV_DIGGING;
     }
 
     /**
@@ -386,7 +381,7 @@ public enum TValue {
      */
     public boolean isBodyArmour() {
         return switch (this) {
-            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR -> true;
+            case TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR -> true;
             default -> false;
         };
     }
@@ -473,7 +468,7 @@ public enum TValue {
      */
     public boolean isWeapon() {
         return switch (this) {
-            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER, TV_BOW,
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING, TV_BOW,
                  TV_BOLT, TV_ARROW, TV_SHOT -> true;
             default -> false;
         };
@@ -485,7 +480,7 @@ public enum TValue {
      */
     public boolean isArmour() {
         return switch (this) {
-            case TV_DRAGON_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
+            case TV_DRAG_ARMOR, TV_HARD_ARMOR, TV_SOFT_ARMOR, TV_SHIELD,
                  TV_CLOAK, TV_CROWN, TV_HELM, TV_BOOTS, TV_GLOVES -> true;
             default -> false;
         };
@@ -497,7 +492,7 @@ public enum TValue {
      */
     public boolean isMeleeWeapon() {
         return switch (this) {
-            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGER -> true;
+            case TV_SWORD, TV_HAFTED, TV_POLEARM, TV_DIGGING -> true;
             default -> false;
         };
     }
@@ -508,9 +503,9 @@ public enum TValue {
      */
     public boolean hasVariablePower() {
         return switch (this) {
-            case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
+            case TV_SHOT, TV_ARROW, TV_BOLT, TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }
@@ -521,9 +516,9 @@ public enum TValue {
      */
     public boolean isWearable() {
         return switch (this) {
-            case TV_BOW, TV_DIGGER, TV_HAFTED, TV_POLEARM,
+            case TV_BOW, TV_DIGGING, TV_HAFTED, TV_POLEARM,
                  TV_SWORD, TV_BOOTS, TV_GLOVES, TV_HELM, TV_CROWN, TV_SHIELD, TV_CLOAK,
-                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAGON_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
+                 TV_SOFT_ARMOR, TV_HARD_ARMOR, TV_DRAG_ARMOR, TV_LIGHT, TV_RING, TV_AMULET -> true;
             default -> false;
         };
     }
@@ -569,14 +564,41 @@ public enum TValue {
     }
 
     /**
-     * Resolves a tval by its enum-style name (e.g. {@code "TV_SWORD"}), tolerating the forms the
-     * data files actually use. The incoming text is upper-cased and its spaces converted to
-     * underscores, so multi-word bases such as {@code "magic book"} match {@code TV_MAGIC_BOOK}; the
-     * British/American {@code ARMOUR}/{@code ARMOR} spelling difference is also bridged. Returns
-     * {@code null} (and logs) when no constant matches.
+     * Resolves a tval from its data-file text — the port of C's {@code tval_find_idx}
+     * ({@code obj-tval.c}). Three forms are accepted, tried in C's order:
      *
-     * @param name the tval name to search for (case- and spacing-insensitive)
-     * @return the matching {@link TValue}, or {@code null} if none matches
+     * <ol>
+     *     <li><b>A number.</b> {@code "5"} gives the tval with that value, as C's {@code strtoul}
+     *     fast path does. Surrounding whitespace is ignored, so {@code " 5 "} also resolves, but
+     *     any other trailing text is rejected — {@code "5x"} gives {@code null}, which is what C's
+     *     {@code contains_only_spaces} guard is there to enforce.</li>
+     *     <li><b>A display name.</b> {@code "magic book"}, {@code "digger"}, case-insensitively.
+     *     This is the form every {@code lib/gamedata} file uses. It is matched against
+     *     {@link #getName()} rather than the constant's identifier because two rows differ between
+     *     the two: {@link #TV_DIGGING} is written {@code "digger"}, and {@link #TV_DRAG_ARMOR} is
+     *     written {@code "dragon armor"}.</li>
+     *     <li><b>An underscored name.</b> {@code "soft_armor"} or {@code "SOFT_ARMOR"} — the display
+     *     name with its spaces turned into underscores, which is how the constants themselves are
+     *     spelled. A convenience for port-side callers, with no equivalent in C. The {@code TV_}
+     *     prefix is supplied here, so a caller must <em>not</em> pass one of its own: a literal
+     *     {@code "TV_SWORD"} does not resolve.</li>
+     * </ol>
+     *
+     * <p>British spellings are bridged before anything else, so {@code "dragon armour"} — used by
+     * three artifacts in {@code artifact.txt} — reaches {@link #TV_DRAG_ARMOR}. The rewrite has to
+     * precede the name match rather than follow it, exactly as C calls {@code de_armour} before
+     * looping over {@code tval_names[]}; on the {@code dragon armour} row the later identifier
+     * match cannot rescue it, because the constant is {@code DRAG_ARMOR} and not
+     * {@code DRAGON_ARMOR}.
+     *
+     * <p>Note that {@code "none"} and {@code "0"} are <em>successful</em> lookups returning
+     * {@link #TV_NONE}: that is a real tval, carried by curse objects and by the synthesised
+     * artifact kinds. Only text that resolves to no tval at all returns {@code null}, which is this
+     * port's equivalent of C returning {@code -1}. Failures are silent — every caller already
+     * reports them against the offending data-file line.
+     *
+     * @param name the tval text to resolve: a number, a display name, or an enum identifier
+     * @return the matching {@link TValue}, or {@code null} if the text resolves to no tval
      * @author Rowan Crowther
      */
     @CheckReturnValue
@@ -584,18 +606,106 @@ public enum TValue {
     public static @Nullable TValue fromName(@NotNull String name) {
         String toSearch;
 
-        name = name.toUpperCase().replace(" ", "_");
-
-        if (name.contains("RMOUR"))
-            toSearch = name.replace("RMOUR", "RMOR");
-        else
+        if (name.toUpperCase().contains("RMOUR")) {
+            toSearch = name.replace("RMOUR", "RMOR")
+                    .replace("rmour", "rmor");
+        } else
             toSearch = name;
+
+        String isNumber = toSearch.trim();
+
+        try {
+            int value = Integer.parseInt(isNumber);
+            return fromName(value);
+        } catch (NumberFormatException e) {
+            // Fall through to name lookup
+        }
+
+        for (TValue value : TValue.values()) {
+            if (value.getName().equalsIgnoreCase(toSearch))
+                return value;
+        }
+
+        toSearch = "TV_" + toSearch.toUpperCase().replace(" ", "_");
 
         try {
             return TValue.valueOf(toSearch);
         } catch (IllegalArgumentException e) {
-            logger.error("Unknown TValue: {}", toSearch, e);
             return null;
         }
+    }
+
+    /**
+     * Resolves a tval from its numeric value — the raw {@code TV_*} integer that C stores in
+     * {@code object->tval}. Each constant's {@link #ordinal()} <em>is</em> its C value, because this
+     * enum is declared in {@code list-tvals.h} order; that correspondence is what makes this lookup
+     * a simple index, and it is the reason the declaration order above must not be disturbed.
+     *
+     * <p>Both bounds mirror C's guard in {@code tval_find_idx}: negatives are rejected, and so is
+     * anything from the constant count upwards — C tests {@code r < TV_MAX}, and since this port
+     * has no {@code TV_MAX} constant, {@code values().length} plays that role.
+     *
+     * @param i the numeric tval, from {@code 0} ({@link #TV_NONE}) to {@code values().length - 1}
+     * @return the tval with that value, or {@code null} if {@code i} falls outside that range
+     * @author Rowan Crowther
+     */
+    public static TValue fromName(int i) {
+        if (i < 0 || i >= TValue.values().length)
+            return null;
+
+        return TValue.values()[i];
+    }
+
+    /**
+     * Counts the object kinds ({@code object.txt}) carrying the named tval — the port of C's
+     * {@code tval_sval_count}. Its one caller in C sizes the money table during object generation
+     * ({@code obj-make.c}), which asks for {@code "gold"}.
+     *
+     * <p>Kinds with no tval are skipped, matching C's {@code if (!kind->tval) continue;}. In C that
+     * test excludes tval {@code 0}, so both {@link #TV_NONE} and the port-only {@code null} are
+     * passed over here — which means asking for {@code "none"} counts nothing, as it does in C.
+     * An unresolvable name likewise counts nothing, C returning 0 for a tval of {@code -1}.
+     *
+     * @param name the tval text, in any of the forms {@link #fromName(String)} accepts
+     * @return how many object kinds carry that tval; {@code 0} if the name resolves to none
+     * @author Rowan Crowther
+     */
+    public static int tValSValCount(String name) {
+        TValue tValue = fromName(name);
+        if (tValue == null) return 0;
+
+        return (int) ObjectRegistry.getObjectKinds().stream()
+                .filter(t -> t.gettValue() != null && t.gettValue() != TV_NONE && tValue == t.gettValue())
+                .count();
+    }
+
+    /**
+     * Lists the svals of every object kind ({@code object.txt}) carrying the named tval — the port
+     * of C's {@code tval_sval_list}. Kinds come back in registry order, so the size of the result
+     * agrees with {@link #tValSValCount(String)} for the same name.
+     *
+     * <p>C writes into a buffer the caller allocates, and takes a {@code max_size} so it cannot
+     * overrun it; a {@link List} grows on demand, so that parameter has no purpose here and is
+     * dropped. The {@code !kind->tval} skip is kept, and a name that resolves to no tval yields an
+     * empty list rather than {@code null}, mirroring C's early {@code return 0}.
+     *
+     * @param name the tval text, in any of the forms {@link #fromName(String)} accepts
+     * @return the svals of the matching kinds, empty if the name resolves to none
+     * @author Rowan Crowther
+     */
+    @NotNull
+    public static List<Integer> tvalSvalList(String name) {
+        TValue tValue = fromName(name);
+        List<Integer> list = new ArrayList<>();
+
+        if (tValue == null) return list;
+
+        for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+            if (kind.gettValue() == null || kind.gettValue() == TV_NONE) continue;
+            if (kind.gettValue() != tValue) continue;
+            list.add(kind.getsVal());
+        }
+
+        return list;
     }
 }

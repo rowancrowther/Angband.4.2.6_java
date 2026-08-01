@@ -66,7 +66,7 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
             String tValString = record.tVal();
             // fromName matches on the enum constant name (TV_RING, ...), so the
             // data-file tval ("ring") needs the TV_ prefix, as every caller adds.
-            TValue tVal = TValue.fromName("TV_" + tValString);
+            TValue tVal = TValue.fromName(tValString);
             if (tVal == null) {
                 errors.add("Kind at line: " + line + " has " +
                         "an unknown tValue: " + tValString);

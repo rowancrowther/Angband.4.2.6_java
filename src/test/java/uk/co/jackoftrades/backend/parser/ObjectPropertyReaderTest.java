@@ -230,7 +230,7 @@ class ObjectPropertyReaderTest {
         @SuppressWarnings("unchecked")
         Map<TValue, Integer> typeMults =
                 (Map<TValue, Integer>) field(byName(result.items(), "dexterity"), "typeMults");
-        assertEquals(Map.of(TValue.TV_GLOVES, 2, TValue.TV_DRAGON_ARMOR, 3), typeMults);
+        assertEquals(Map.of(TValue.TV_GLOVES, 2, TValue.TV_DRAG_ARMOR, 3), typeMults);
     }
 
     // ---- bindui: tag, aux, value -----------------------------------------------------------

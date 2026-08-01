@@ -55,7 +55,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             boolean illegalTValue = false;
             for (String tVal : record.tVals()) {
                 try {
-                    TValue tValue = TValue.valueOf("TV_" + tVal.toUpperCase().replace(" ", "_"));
+                    TValue tValue = TValue.valueOf(tVal.toUpperCase().replace(" ", "_"));
                     List<ObjectKind> o = ObjectRegistry.lookupObjectKind(tValue);
                     if (!o.isEmpty()) {
                         possItems.addAll(o);
@@ -275,7 +275,7 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             boolean illegalTvalSvalPair = false;
             for (EgoItemParseRecord.ItemRef item : record.itemRefs()) {
                 try {
-                    TValue tValue = TValue.valueOf("TV_" + item.tVal().toUpperCase().replace(" ", "_"));
+                    TValue tValue = TValue.valueOf(item.tVal().toUpperCase().replace(" ", "_"));
                     ObjectKind o = ObjectRegistry.lookupObjectKind(tValue, item.sVal());
                     if (o != null) {
                         possItems.add(o);

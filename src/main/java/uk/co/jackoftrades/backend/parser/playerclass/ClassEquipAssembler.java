@@ -57,7 +57,7 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
 
         for (ClassEquipParseRecord record : records) {
             int line = record.line();
-            TValue tVal = TValue.fromName("TV_" + record.tValue());
+            TValue tVal = TValue.fromName(record.tValue());
             if (tVal == null) {
                 errors.add("Starting equipment at line: " + line + " has " +
                         "an invalid TValue: " + record.tValue());

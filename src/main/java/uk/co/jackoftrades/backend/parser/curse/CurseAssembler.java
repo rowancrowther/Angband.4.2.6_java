@@ -103,7 +103,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             for (String base : record.type()) {
                 ObjectBase objectBase = null;
                 try {
-                    TValue tValue = TValue.valueOf("TV_" + base.toUpperCase().replace(" ", "_"));
+                    TValue tValue = TValue.valueOf(base.toUpperCase().replace(" ", "_"));
                     objectBase = ObjectRegistry.getBaseFromTVal(tValue);
                 } catch (IllegalArgumentException ignored) {
                     // falls through to the null check below with the same error

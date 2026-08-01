@@ -165,7 +165,7 @@ class ObjectBaseReaderTest {
                 withHeader(1, "name:dragon armor:Dragon Armor~\ngraphics:white\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(TValue.TV_DRAGON_ARMOR, result.items().get(0).gettVal());
+        assertEquals(TValue.TV_DRAG_ARMOR, result.items().get(0).gettVal());
     }
 
     @Test

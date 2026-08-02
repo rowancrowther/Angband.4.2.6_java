@@ -364,7 +364,7 @@ class MonsterSpellReaderTest {
      *   4. repeatedLoreAndMessageLinesDoNotBreakTheRecord - assert the lore reads
      *      "do something and then something else" and the vis message "{name} acts. Twice.".
      *   5. Colour resolution - assert loreAttr is the Orange ColourType, and that a level with no
-     *      lore-color-* line falls to COLOUR_TYPE_DARK, matching C's zeroed lore_attr.
+     *      lore-color-* line falls to COLOUR_DARK, matching C's zeroed lore_attr.
      *   6. teleportAwayAndTeleportToSelfBothResolve - reach the effect's EffectSubTypeWrapper and
      *      assert getTeleportMonsterMayCast() / getTeleportToMonsterMayCast() are true, and that
      *      the discriminator is EST_TELEPORT / EST_TELEPORT_TO respectively. This is the one that

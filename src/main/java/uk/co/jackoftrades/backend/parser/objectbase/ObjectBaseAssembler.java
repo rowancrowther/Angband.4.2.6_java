@@ -111,7 +111,7 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             results.add(new ObjectBase(tVal, name, colour, kindFlag, hatesFlag, breakChance, maxStack));
         }
 
-        results.add(new ObjectBase(TValue.TV_NONE, "none", ColourEnum.COLOUR_TYPE_DARK,
+        results.add(new ObjectBase(TValue.TV_NONE, "none", ColourEnum.COLOUR_DARK,
                 new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 0));
 
         return results;

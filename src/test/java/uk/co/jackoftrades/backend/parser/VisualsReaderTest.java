@@ -355,7 +355,7 @@ class VisualsReaderTest {
         @Test
         void unknownColourCharIsASoftErrorAndSkipsTheRecord() {
             // 'q' is not one of the 28 colour codes. getColourType now returns null on a miss (was
-            // COLOUR_TYPE_DARK), so the assembler flags it and drops the record rather than silently
+            // COLOUR_DARK), so the assembler flags it and drops the record rather than silently
             // mapping the step to Dark.
             List<String> errors = new ArrayList<>();
             List<VisualsCycler> out = new VisualsCycleAssembler()

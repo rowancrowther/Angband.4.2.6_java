@@ -63,32 +63,19 @@ public class TermXtraWin implements TermEventHook {
      */
     public void doSomething(@NotNull TermXtraEventEnum event, int value) {
         switch (event) {
-            case TERM_XTRA_NOISE:
-                termXtraWinNoise(MessageBoxFlags.MB_ICONASTERISK);
-                break;
+            case TERM_XTRA_NOISE -> termXtraWinNoise(MessageBoxFlags.MB_ICONASTERISK);
 
-            case TERM_XTRA_BORED:
-                termXtraWinEvent(0);
-                break;
+            case TERM_XTRA_BORED -> termXtraWinEvent(0);
 
-            case TERM_XTRA_EVENT:
-                termXtraWinEvent(value);
+            case TERM_XTRA_EVENT -> termXtraWinEvent(value);
 
-            case TERM_XTRA_FLUSH:
-                termXtraWinFlush();
-                break;
+            case TERM_XTRA_FLUSH -> termXtraWinFlush();
 
-            case TERM_XTRA_CLEAR:
-                termXtraWinClear();
-                break;
+            case TERM_XTRA_CLEAR -> termXtraWinClear();
 
-            case TERM_XTRA_REACT:
-                termXtraWinReact();
-                break;
+            case TERM_XTRA_REACT -> termXtraWinReact();
 
-            case TERM_XTRA_DELAY:
-                termXtraDelay(value);
-                break;
+            case TERM_XTRA_DELAY -> termXtraDelay(value);
         }
     }
 

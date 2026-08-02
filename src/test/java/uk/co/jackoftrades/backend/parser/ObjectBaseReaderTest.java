@@ -122,7 +122,7 @@ class ObjectBaseReaderTest {
         assertEquals(1, none.size(), "exactly one synthetic TV_NONE base");
         ObjectBase base = none.get(0);
         assertEquals("none", base.getName());
-        assertEquals(ColourEnum.COLOUR_TYPE_DARK, base.getAttr(), "C's zeroed attr");
+        assertEquals(ColourEnum.COLOUR_DARK, base.getAttr(), "C's zeroed attr");
         assertTrue(base.getElementMap().isEmpty(), "no HATES_ elements");
         assertEquals(0, base.getBreakPerc());
         assertEquals(0, base.getMaxStack());
@@ -189,7 +189,7 @@ class ObjectBaseReaderTest {
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         ColourEnum attr = result.items().get(0).getAttr();
         assertEquals(ColourEnum.fromCode("slate"), attr);
-        assertNotEquals(ColourEnum.COLOUR_TYPE_DARK, attr, "colour should resolve, not fall back to DARK");
+        assertNotEquals(ColourEnum.COLOUR_DARK, attr, "colour should resolve, not fall back to DARK");
     }
 
     // ---- Repeated flags: lines merge (asserted on the parse record) ------

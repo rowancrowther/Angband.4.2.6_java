@@ -2326,7 +2326,7 @@ public class MonsterParser extends Parser {
 		            int levelInit = 0;
 		            int rarityInit = 0;
 		            char glyphInit = ' ';
-		            ColourType colourTypeInit = ColourType.COLOUR_TYPE_DARK;
+		            ColourType colourTypeInit = ColourType.COLOUR_DARK;
 		            int maxNumInit = 0;
 		            int curNumInit = 0;
 		            List<MonsterAltmsg> spellMsgInit = new ArrayList<>();

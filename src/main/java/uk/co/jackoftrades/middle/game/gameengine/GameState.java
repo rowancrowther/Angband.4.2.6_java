@@ -160,6 +160,8 @@ public class GameState {
      */
     public static void initGameState() {
         mainPlayer = new Player();
+        // Create a stub cave to allow the game to run until the actual code for this
+        // is implemented TODO: Implement
         cave = new Chunk("Current Level", 0, 0, 0, 0,
                 0, false, 10, 10, 4, 3, 3,
                 1, 1, 15, mainPlayer);

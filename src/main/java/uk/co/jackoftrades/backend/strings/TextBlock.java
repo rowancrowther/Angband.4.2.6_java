@@ -117,7 +117,7 @@ public class TextBlock {
      */
     @Contract(mutates = "this")
     public void append(@NotNull String fmt, Object... objects) {
-        append(ColourEnum.COLOUR_TYPE_WHITE, fmt, objects);
+        append(ColourEnum.COLOUR_WHITE, fmt, objects);
     }
 
     /**

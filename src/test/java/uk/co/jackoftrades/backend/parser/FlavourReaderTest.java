@@ -246,7 +246,7 @@ class FlavourReaderTest {
         assertTrue(plainGold.isFixed());
         assertEquals(1, plainGold.getIndex());
         assertEquals("Ring of Power", plainGold.getsValStr());
-        assertSame(ColourEnum.COLOUR_TYPE_YELLOW, plainGold.getColour());
+        assertSame(ColourEnum.COLOUR_YELLOW, plainGold.getColour());
 
         ObjectKind ringOfPower = ObjectRegistry.lookupObjectKind(TValue.TV_RING, "Ring of Power");
         assertNotNull(ringOfPower, "the One Ring's base kind is synthesised from artifact.txt");
@@ -265,7 +265,7 @@ class FlavourReaderTest {
         assertFalse(alexandrite.isFixed());
         assertNull(alexandrite.getsValStr());
         assertEquals(0, alexandrite.getsVal(), "SV_UNKNOWN is 0 in 4.2.6");
-        assertSame(ColourEnum.COLOUR_TYPE_GREEN, alexandrite.getColour());
+        assertSame(ColourEnum.COLOUR_GREEN, alexandrite.getColour());
     }
 
     /**
@@ -280,7 +280,7 @@ class FlavourReaderTest {
         for (Flavour f : scrolls.getFlavours()) {
             assertNull(f.getText(), () -> "scroll flavour " + f.getIndex() + " should have no text");
             assertFalse(f.isFixed());
-            assertSame(ColourEnum.COLOUR_TYPE_WHITE, f.getColour());
+            assertSame(ColourEnum.COLOUR_WHITE, f.getColour());
         }
     }
 

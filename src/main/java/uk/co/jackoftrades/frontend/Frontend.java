@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.frontend;
 
+import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Window;
 
 import java.util.ArrayList;
@@ -31,5 +32,9 @@ public class Frontend {
         Window main = new Window();
         windows.add(main);
         activeWindow = main;
+    }
+
+    public void init() {
+        Colour.init();
     }
 }

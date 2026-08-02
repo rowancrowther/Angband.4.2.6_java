@@ -111,10 +111,10 @@ public class TermWin {
         vta = new ArrayList<>();
 
         for (int index = 0; index < height; index++) {
-            a.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_TYPE_WHITE));
-            va.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_TYPE_WHITE));
-            ta.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_TYPE_WHITE));
-            vta.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_TYPE_WHITE));
+            a.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE));
+            va.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE));
+            ta.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE));
+            vta.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE));
         }
     }
 }

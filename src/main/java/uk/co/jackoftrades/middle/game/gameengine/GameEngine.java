@@ -21,7 +21,6 @@ import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
-import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
@@ -87,9 +86,6 @@ public class GameEngine {
      * @author Rowan Crowther
      */
     private void initGame() {
-        // Initialise the Java classes
-        Colour.init();
-
         screen.setStatusLabelText("Initializing events handler...");
         screen.setStatusLabelText("Initialized game constants...");
         GameConstants.init();

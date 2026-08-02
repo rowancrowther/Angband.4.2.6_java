@@ -572,7 +572,7 @@ public class ObjectKind {
             this.elInfo.put(ee, newEi);
         }
 
-        this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_TYPE_RED);
+        this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED);
 
         this.base = base;
     }

@@ -150,7 +150,8 @@ class ItemObjectReaderTest {
                 obj("weird", "type:no such tval\ngraphics:|:w\n")));
 
         assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("unknown type")),
+        assertTrue(result.errors().stream().anyMatch(
+                        e -> e.contains("unknown tVal") && e.contains("no such tval")),
                 result.errors()::toString);
     }
 

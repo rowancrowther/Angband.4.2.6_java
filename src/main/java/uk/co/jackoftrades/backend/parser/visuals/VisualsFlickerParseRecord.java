@@ -23,7 +23,7 @@ import java.util.List;
  * The raw, unassembled form of one {@code flicker:} block from visuals.txt. A block is a
  * {@code flicker:<code>:<name>} header followed by one or more {@code flicker-color:<code>} step
  * lines; this record carries those parts verbatim so {@code VisualsFlickerAssembler} can resolve the
- * codes to {@code ColourType}s and install the cycle in the {@code FlickerTable} under its base
+ * codes to {@code ColourEnum}s and install the cycle in the {@code FlickerTable} under its base
  * attribute.
  * <p>
  * Note the two colour-bearing fields are <em>not</em> the same axis. {@code colourChar} is the
@@ -35,7 +35,7 @@ import java.util.List;
  * @param name       the free-text label after the base code in the {@code flicker:} header (e.g.
  *                   {@code "black light-dark light-red"}); descriptive only, not a lookup key
  * @param colourChar the base-attribute colour code (the header's own code); the {@code FlickerTable}
- *                   key, still as a {@code String} awaiting {@code ColourType} resolution
+ *                   key, still as a {@code String} awaiting {@code ColourEnum} resolution
  * @param colours    the ordered {@code flicker-color:} step codes, one single-character colour code
  *                   per entry, still as {@code String}s
  * @param line       the source line of the {@code flicker:} header, used for error reporting

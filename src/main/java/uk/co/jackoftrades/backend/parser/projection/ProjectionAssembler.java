@@ -22,7 +22,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.enums.MessageType;
@@ -85,7 +85,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
             boolean projObvious = record.obvious().equals("1");
             boolean projWillWake = record.willWake().equals("1");
             String colour = record.colour();
-            ColourType projColour = resolveColour(line, colour, codeString, errors);
+            ColourEnum projColour = resolveColour(line, colour, codeString, errors);
 
             if (projCode == null || projType == null || projColour == null)
                 continue;
@@ -194,7 +194,7 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
     /**
      * Resolve a potentially mixed case string tag into a
-     * {@link ColourType} value.
+     * {@link ColourEnum} value.
      *
      * @param line   the line that the projection block with this code in resides
      *               on in the lib/gamedata file.
@@ -203,18 +203,18 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *               that this resolution occurs within.
      * @param errors a list of errors to handle any further
      *               errors arising during the resolution process.
-     * @return a {@link ColourType} whose name matches the case-insensitive name
-     * of a {@link ColourType}, or the case-sensitive single character colour
+     * @return a {@link ColourEnum} whose name matches the case-insensitive name
+     * of a {@link ColourEnum}, or the case-sensitive single character colour
      * letter code, or {@code null} if neither match.
      * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
-    private ColourType resolveColour(int line, @NotNull String colour, @NotNull String code,
+    private ColourEnum resolveColour(int line, @NotNull String colour, @NotNull String code,
                                      @NotNull List<String> errors) {
-        ColourType result;
+        ColourEnum result;
 
-        result = ColourType.getColourType(colour);
+        result = ColourEnum.fromCode(colour);
 
         if (result == null) {
             errors.add("Unknown projection colour in Projection block: " + code +

@@ -144,20 +144,30 @@ public class GameConstants {
      * @author Rowan Crowther
      */
     public static void init() {
+        String loader = "";
         try {
             // Start from an empty kind registry so init() is idempotent: object kinds and their
             // per-base sval counters are rebuilt from scratch here, so a re-init (e.g. between tests)
             // does not double-register kinds or keep incrementing svals.
             ObjectRegistry.reset();
 
+            loader = "Constants";
             loadGameConstants();
+            loader = "World";
             WorldDataLoader.loadWorld();                // world arraylist size determines maxRandDepth
+            loader = "Projections";
             WorldDataLoader.loadProjections();          // projections arrayList size determines projectionTypeMax
+            loader = "UIEntryRenderers";
             UIDataLoader.loadUIEntryRenderers();
+            loader = "UIEntryBases";
             UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
+            loader = "UIEntries";
             UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+            loader = "PkayerProperties";
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry
+            loader = "TerrainFeatures";
             TerrainDataLoader.loadTerrainFeatures();
+            loader = "ObjectBases";
             ObjectDataLoader.loadObjectBases();
             MonsterDataLoader.loadPain();
             MonsterDataLoader.loadMonsterBases();         // Dependent on MonsterPain
@@ -190,7 +200,7 @@ public class GameConstants {
             MiscDataLoader.loadNames();
             MiscDataLoader.loadFlavours();
         } catch (Exception e) {
-            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
+            String message = "Unable to load " + loader + " data from " + AngbandDirs.ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }

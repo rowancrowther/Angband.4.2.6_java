@@ -19,7 +19,6 @@ package uk.co.jackoftrades.middle.game.globals.loaders;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.ParseResult;
 import uk.co.jackoftrades.backend.parser.UIEntryBaseReader;
 import uk.co.jackoftrades.backend.parser.UIEntryReader;
@@ -46,12 +45,16 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class UIDataLoader {
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(UIDataLoader.class);
 
     /**
      * Load the UI entries from {@code ui_entry.txt} into {@link UIRegistry}. Must run after the entry
-     * bases and renderers it references. A file with soft errors is logged and skipped; any other
-     * exception during parsing is logged and rethrown.
+     * bases and renderers it references.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the entries that did
+     * assemble are registered regardless, per the partial-results contract. The catch is on
+     * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so an unresolvable
+     * base or renderer stops the load here rather than leaving the renderer subsystem half-built.
      *
      * @throws IOException if an IO error occurs while reading the file
      */
@@ -63,12 +66,7 @@ public class UIDataLoader {
         try {
             result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String message = "Invalid " + filename + " file";
-                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
-                logger.error(message);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             UIRegistry.setUIEntries(result.items());
         } catch (Exception e) {
@@ -78,7 +76,13 @@ public class UIDataLoader {
     }
 
     /**
-     * Load in the UI Bases information and store it in a List
+     * Load the UI entry bases from {@code ui_entry_base.txt} into {@link UIRegistry}. Must run
+     * before {@link #loadUIEntries()}, which resolves each entry to one of these bases.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
+     * assemble are registered regardless, per the partial-results contract. The catch is on
+     * {@code Exception} and <em>rethrows</em>; a missing base here would resurface as an
+     * unresolvable reference while loading the entries, so it is stopped at source.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -89,12 +93,7 @@ public class UIDataLoader {
         try {
             ParseResult<UIEntryBase> result = reader.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String message = "Invalid lib/gamedata/ui_entry_base.txt file";
-                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
-                logger.error(message, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             UIRegistry.setUIEntryBases(result.items());
         } catch (Exception e) {
@@ -104,7 +103,12 @@ public class UIDataLoader {
     }
 
     /**
-     * Load in the UI Entry Renderer information and store it in a List.
+     * Load the UI entry renderers from {@code ui_entry_renderer.txt} into {@link UIRegistry}. Must
+     * run before {@link #loadUIEntries()}, which resolves each entry to one of these renderers.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the renderers that
+     * did assemble are registered regardless, per the partial-results contract. The catch is on
+     * {@code Exception} and <em>rethrows</em>, for the same reason as the bases above.
      *
      * @throws IOException an error occurred during the parsing - log it and rethrow it
      */
@@ -115,12 +119,7 @@ public class UIDataLoader {
         try {
             ParseResult<UIEntryRenderer> result = reader.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String message = "Invalid lib/gamedata/ui_entry_renderer.txt file";
-                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
-                logger.error(message, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             UIRegistry.setUIEntryRenderers(result.items());
         } catch (Exception e) {

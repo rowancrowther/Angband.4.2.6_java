@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.bloweffect;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
@@ -102,27 +102,27 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
             // An absent lore colour is left null - the port models "no lore colour" as null. [C]
             // instead gets COLOUR_DARK for free from the mem_zalloc'd lore_attr fields (0 ==
             // COLOUR_DARK); resolving that concrete default is deferred to the renderer.
-            ColourType base = null;
+            ColourEnum base = null;
             if (!record.loreColourBase().isEmpty()) {
-                base = ColourType.getColourType(record.loreColourBase());
+                base = ColourEnum.fromCode(record.loreColourBase());
                 if (base == null) {
                     errors.add("Blow Effect at line: " + line + " has " +
                             "an invalid base colour: " + record.loreColourBase());
                     continue;
                 }
             }
-            ColourType resist = null;
+            ColourEnum resist = null;
             if (!record.loreColourResist().isEmpty()) {
-                resist = ColourType.getColourType(record.loreColourResist());
+                resist = ColourEnum.fromCode(record.loreColourResist());
                 if (resist == null) {
                     errors.add("Blow Effect at line: " + line + " has " +
                             "an invalid resist colour: " + record.loreColourResist());
                     continue;
                 }
             }
-            ColourType immune = null;
+            ColourEnum immune = null;
             if (!record.loreColourImmune().isEmpty()) {
-                immune = ColourType.getColourType(record.loreColourImmune());
+                immune = ColourEnum.fromCode(record.loreColourImmune());
                 if (immune == null) {
                     errors.add("Blow Effect at line: " + line + " has " +
                             "an invalid immune colour: " + record.loreColourImmune());

@@ -42,29 +42,29 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class TerrainDataLoader {
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(TerrainDataLoader.class);
 
     /**
-     * Load the trap kinds from {@code trap.txt} into {@link TerrainRegistry}. A file with soft errors
-     * is logged and skipped, leaving the trap registry unpopulated rather than partially filled.
+     * Load the trap kinds from {@code trap.txt} into {@link TerrainRegistry}.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the records that did
+     * assemble are registered regardless, per the partial-results contract: a single unusable record
+     * costs that record, not the whole file. Nothing else loads from the trap registry, so a wholly
+     * empty parse is left to surface at the point of use rather than stopping the load here.
      */
-    public static void loadTraps() {
+    public static void loadTraps() throws IOException {
         TrapReader parser = new TrapReader();
         String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "trap.txt";
 
         try {
             ParseResult<TrapKind> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             TerrainRegistry.setTrapInfo(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 
@@ -80,12 +80,7 @@ public class TerrainDataLoader {
         try {
             ParseResult<Feature> results = parser.parseWithResults(filename);
 
-            if (results.hasErrors()) {
-                String message = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(message);
-                logger.fatal(message, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, results, logger);
 
             TerrainRegistry.setFeatures(results.items());
         } catch (Exception e) {

@@ -21,7 +21,7 @@
  * Standalone lexer grammar for the Angband colour vocabulary - the single
  * source of truth for the game's colour table as it appears in the gamedata
  * files. Ported from the C original's colour table (src/ui-prefs.c's
- * color_table, mirrored in the Java port by ColourType).
+ * color_table, mirrored in the Java port by ColourEnum).
  *
  * It has no @header instructions or java-domain-type coupling - it exports
  * only fragments, so importing it contributes NO token types of its own.
@@ -42,7 +42,7 @@ lexer grammar Colours;
  * @author Rowan Crowther
  *
  * The 28 printable single-character colour codes, in canonical colour-table
- * order. Each maps to one ColourType constant:
+ * order. Each maps to one ColourEnum constant:
  *
  *   d Dark          w White         s Slate         o Orange
  *   r Red           g Green         b Blue          u Umber
@@ -67,8 +67,8 @@ fragment COLOUR_CODE
  * The full colour names, accepted in both minuscule (as written in most
  * gamedata) and Title case (as written in a few preference-style lines).
  * Ordered to mirror COLOUR_CODE above, including Shade, whose code has no
- * printable form. ColourType.getColourType/findColourType resolve either
- * case, so the two variants are equivalent to the consuming grammar.
+ * printable form. ColourEnum.fromCode resolves either case, so the two
+ * variants are equivalent to the consuming grammar.
  */
 fragment COLOUR_NAME
         :   (   'dark' | 'white' | 'slate' | 'orange' | 'red' | 'green' | 'blue'

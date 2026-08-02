@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.colour.enums;
+package uk.co.jackoftrades.frontend.swing.colour;
 
 import org.jetbrains.annotations.Contract;
 
@@ -67,16 +67,10 @@ public enum ColourTranslation {
     /**
      * Miscellaneous colours
      */
-    ATTR_MISC(8),
+    ATTR_MISC(8);
 
     /**
-     * The maximum number of colour translations. If the index to ColourType.colourTable[] is greater or equal to this,
-     * or less than 0, an index out of bounds error will be thrown.
-     */
-    ATTR_MAX(9);
-
-    /**
-     * The integer index this translation occupies in a {@code ColourType}
+     * The integer index this translation occupies in a {@code ColourEnum}
      * translation table.
      *
      * @author Rowan Crowther

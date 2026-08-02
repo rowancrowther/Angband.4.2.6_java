@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.flavour;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.objects.Flavour;
 
 import java.util.ArrayList;
@@ -64,7 +64,7 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
                             "a malformed integer: " + record.index());
                     continue;
                 }
-                ColourType colour = ColourType.getColourType(record.attr());
+                ColourEnum colour = ColourEnum.fromCode(record.attr());
                 if (colour == null) {
                     errors.add("Flavour at line: " + line + " has " +
                             "an unknown colour: " + record.attr());
@@ -82,7 +82,7 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
                             "a malformed integer: " + record.index());
                     continue;
                 }
-                ColourType colour = ColourType.getColourType(record.attr());
+                ColourEnum colour = ColourEnum.fromCode(record.attr());
                 if (colour == null) {
                     errors.add("Fixed at line: " + line + " has " +
                             "an unknown colour: " + record.attr());

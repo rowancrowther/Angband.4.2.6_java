@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -216,6 +218,8 @@ public enum TValue {
      * Gold, gold, gold, gold, Gold, gold, gold, gold (repeat ad nauseam)
      */
     TV_GOLD("gold");
+
+    private static final Logger logger = LogManager.getLogger(TValue.class);
 
     /**
      * The display name of this item type.
@@ -605,6 +609,7 @@ public enum TValue {
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
         String toSearch;
+        logger.debug("Trying to parse {} as a TV name", name);
 
         if (name.toUpperCase().contains("RMOUR")) {
             toSearch = name.replace("RMOUR", "RMOR")

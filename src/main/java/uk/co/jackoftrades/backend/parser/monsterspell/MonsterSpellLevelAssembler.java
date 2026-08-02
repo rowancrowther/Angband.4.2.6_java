@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.monsterspell;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.monsters.MonsterSpellLevel;
 
 import java.util.ArrayList;
@@ -74,27 +74,27 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
                 }
             }
             String lore = record.loreDesc();
-            ColourType base = null;
+            ColourEnum base = null;
             if (!record.loreBaseColour().isEmpty()) {
-                base = ColourType.getColourType(record.loreBaseColour());
+                base = ColourEnum.fromCode(record.loreBaseColour());
                 if (base == null) {
                     errors.add("Monster spell level at line: " + line + " has " +
                             "an invalid base colour: " + record.loreBaseColour());
                     continue;
                 }
             }
-            ColourType resist = null;
+            ColourEnum resist = null;
             if (!record.loreResistColour().isEmpty()) {
-                resist = ColourType.getColourType(record.loreResistColour());
+                resist = ColourEnum.fromCode(record.loreResistColour());
                 if (resist == null) {
                     errors.add("Monster spell level at line: " + line + " has " +
                             "an invalid resist colour: " + record.loreResistColour());
                     continue;
                 }
             }
-            ColourType immune = null;
+            ColourEnum immune = null;
             if (!record.loreImmuneColour().isEmpty()) {
-                immune = ColourType.getColourType(record.loreImmuneColour());
+                immune = ColourEnum.fromCode(record.loreImmuneColour());
                 if (immune == null) {
                     errors.add("Monster spell level at line: " + line + " has " +
                             "an invalid immune colour: " + record.loreImmuneColour());

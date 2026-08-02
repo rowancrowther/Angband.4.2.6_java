@@ -17,12 +17,12 @@
 
 package uk.co.jackoftrades.frontend.colour;
 
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.List;
 
 /**
- * One animated colour cycle: an ordered list of {@link ColourType} frames plus a name. This is the
+ * One animated colour cycle: an ordered list of {@link ColourEnum} frames plus a name. This is the
  * single primitive underpinning <em>both</em> visuals mechanisms - a named cycle in a
  * {@link VisualsCycler} and a base-attribute entry in a {@link FlickerTable} are the same object,
  * differing only in how they are looked up. Port of the C {@code visuals_color_cycle}
@@ -53,7 +53,7 @@ public final class ColourCycle {
      *
      * @author Rowan Crowther
      */
-    private final List<ColourType> steps;
+    private final List<ColourEnum> steps;
 
     /**
      * Build an immutable cycle from a name and its frames.
@@ -62,7 +62,7 @@ public final class ColourCycle {
      * @param steps the ordered frames; defensively copied, so the caller may keep mutating its list
      * @author Rowan Crowther
      */
-    public ColourCycle(String name, List<ColourType> steps) {
+    public ColourCycle(String name, List<ColourEnum> steps) {
         this.name = name;
         this.steps = List.copyOf(steps);
     }

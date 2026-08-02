@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.monsters.enums.BlowEffectType;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -62,19 +62,19 @@ public class BlowEffect {
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttr;
+    private ColourEnum loreAttr;
     /**
      * Lore colour used when the player resists.
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttrResist;
+    private ColourEnum loreAttrResist;
     /**
      * Lore colour used when the player is immune.
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttrImmune;
+    private ColourEnum loreAttrImmune;
     /**
      * What kind of player attribute protects against this effect, and so which of the two
      * resist fields below carries a value. {@code null} for the effects that name no
@@ -127,8 +127,8 @@ public class BlowEffect {
      * @param lashType          lash-form projection
      * @author Rowan Crowther
      */
-    public BlowEffect(String name, int power, int eval, String desc, ColourType loreAttr, ColourType loreAttrResist,
-                      ColourType loreAttrImmune, BlowEffectType effectType, ObjectFlag objectFlagResist, ElementEnum elementEnumResist,
+    public BlowEffect(String name, int power, int eval, String desc, ColourEnum loreAttr, ColourEnum loreAttrResist,
+                      ColourEnum loreAttrImmune, BlowEffectType effectType, ObjectFlag objectFlagResist, ElementEnum elementEnumResist,
                       Projection lashType) {
         this.name = name;
         this.power = power;
@@ -179,7 +179,7 @@ public class BlowEffect {
      * @return the lore colour used when the player has no protection
      * @author Rowan Crowther
      */
-    public ColourType getLoreAttr() {
+    public ColourEnum getLoreAttr() {
         return loreAttr;
     }
 
@@ -187,7 +187,7 @@ public class BlowEffect {
      * @return the lore colour used when the player resists
      * @author Rowan Crowther
      */
-    public ColourType getLoreAttrResist() {
+    public ColourEnum getLoreAttrResist() {
         return loreAttrResist;
     }
 
@@ -195,7 +195,7 @@ public class BlowEffect {
      * @return the lore colour used when the player is immune
      * @author Rowan Crowther
      */
-    public ColourType getLoreAttrImmune() {
+    public ColourEnum getLoreAttrImmune() {
         return loreAttrImmune;
     }
 

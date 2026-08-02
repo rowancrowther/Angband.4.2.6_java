@@ -55,7 +55,13 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             boolean illegalTValue = false;
             for (String tVal : record.tVals()) {
                 try {
-                    TValue tValue = TValue.valueOf(tVal.toUpperCase().replace(" ", "_"));
+                    TValue tValue = TValue.fromName(tVal);
+                    if (tValue == null) {
+                        errors.add("EgoItem beginning at line: " + line + " has " +
+                                "an unknown TValue: " + tVal);
+                        illegalTValue = true;
+                        continue;
+                    }
                     List<ObjectKind> o = ObjectRegistry.lookupObjectKind(tValue);
                     if (!o.isEmpty()) {
                         possItems.addAll(o);
@@ -275,7 +281,13 @@ public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoI
             boolean illegalTvalSvalPair = false;
             for (EgoItemParseRecord.ItemRef item : record.itemRefs()) {
                 try {
-                    TValue tValue = TValue.valueOf(item.tVal().toUpperCase().replace(" ", "_"));
+                    TValue tValue = TValue.fromName(item.tVal());
+                    if (tValue == null) {
+                        errors.add("EgoItem beginning at line: " + line + " has " +
+                                "an unknown TValue " + item.tVal());
+                        illegalTvalSvalPair = true;
+                        continue;
+                    }
                     ObjectKind o = ObjectRegistry.lookupObjectKind(tValue, item.sVal());
                     if (o != null) {
                         possItems.add(o);

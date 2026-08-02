@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.objectbase;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
@@ -49,19 +49,17 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
 
         for (ObjectBaseParseRecord record : records) {
             String name = record.name();
-            String rawTVal = record.tVal().trim().toUpperCase();
-            if (rawTVal.contains(" ")) rawTVal = rawTVal.replace(" ", "_");
+            String rawTVal = record.tVal().trim();
             TValue tVal;
-            try {
-                tVal = TValue.valueOf(rawTVal);
-            } catch (IllegalArgumentException e) {
+            tVal = TValue.fromName(rawTVal);
+            if (tVal == null) {
                 errors.add("Block starting at line: " + record.line() +
                         " has an invalid TValue " + rawTVal);
                 continue;
             }
             String rawColour = record.colour();
-            ColourType colour;
-            colour = ColourType.getColourType(rawColour);
+            ColourEnum colour;
+            colour = ColourEnum.fromCode(rawColour);
             if (colour == null) {
                 errors.add("Block starting at line: " + record.line() + " has " +
                         "an invalid colour " + rawColour);
@@ -113,7 +111,7 @@ public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, Lis
             results.add(new ObjectBase(tVal, name, colour, kindFlag, hatesFlag, breakChance, maxStack));
         }
 
-        results.add(new ObjectBase(TValue.TV_NONE, "none", ColourType.COLOUR_TYPE_DARK,
+        results.add(new ObjectBase(TValue.TV_NONE, "none", ColourEnum.COLOUR_TYPE_DARK,
                 new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 0));
 
         return results;

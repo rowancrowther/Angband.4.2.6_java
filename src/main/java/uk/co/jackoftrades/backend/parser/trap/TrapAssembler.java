@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
@@ -43,7 +43,7 @@ import java.util.List;
  *       field becomes {@link TrapKind}'s {@code description} (C {@code desc}, the
  *       {@code lookupTrap} key) while the {@code desc:} directive becomes its {@code text}
  *       (C {@code text});</li>
- *   <li>{@code graphics:} resolves its colour through {@link ColourType} into an
+ *   <li>{@code graphics:} resolves its colour through {@link ColourEnum} into an
  *       {@link AngbandDisplayCharacter}; {@code visibility:} becomes the {@code power}
  *       {@link Random}; the {@code appear:} triple becomes {@code rarity}/{@code minDepth}/
  *       {@code maxNum};</li>
@@ -94,7 +94,7 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
             String colour = record.colour();
             // Check that they both exist
             if (!glyph.isEmpty() && !colour.isEmpty()) {
-                ColourType colourType = ColourType.getColourType(colour);
+                ColourEnum colourType = ColourEnum.fromCode(colour);
                 if (colourType == null) {
                     errors.add("Trap at line: " + line + " has " +
                             "an unknown colour: " + colour);

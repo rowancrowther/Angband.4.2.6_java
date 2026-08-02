@@ -45,11 +45,18 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class ObjectDataLoader {
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(ObjectDataLoader.class);
 
     /**
      * Load the object properties from {@code object_property.txt} into {@link ObjectRegistry}. Must
      * run after the UI entries, which the property assembler resolves {@code bindui} targets against.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the properties that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>swallowed</em>; only the renderer reads these, so the cost is a blank entry on
+     * the character sheet rather than a failed load.
+     *
+     * @author Rowan Crowther
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();
@@ -58,12 +65,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectProperty> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setObjectProperties(result.items());
         } catch (IOException e) {
@@ -76,6 +78,14 @@ public class ObjectDataLoader {
      * {@link uk.co.jackoftrades.middle.objects.ObjectKind} for each into the shared object-kind table.
      * Must run after item objects (so the ordinary kinds are already registered) and after
      * activations, brands, slays and curses, which artifacts reference.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the artifacts that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>swallowed</em>. Note the synthesis side effect: a dropped artifact also means
+     * its special object kind is never added, so the kind table silently differs from the C
+     * original's - worth remembering when comparing counts.
+     *
+     * @author Rowan Crowther
      */
     public static void loadArtifacts() {
         ArtifactReader parser = new ArtifactReader();
@@ -84,12 +94,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<Artifact> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setArtifacts(result.items());
         } catch (IOException e) {
@@ -98,7 +103,15 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load the ego items into the relevant list
+     * Load the ego items from {@code ego_item.txt} into {@link ObjectRegistry}. Must run after
+     * activations, brands, slays and curses, and after the object kinds its {@code poss-items:}
+     * lines resolve against.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the ego items that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>swallowed</em>, leaving item generation with fewer ego types to choose from.
+     *
+     * @author Rowan Crowther
      */
     public static void loadEgoItems() {
         EgoItemReader reader = new EgoItemReader();
@@ -107,12 +120,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<EgoItem> results = reader.parseWithResults(filename);
 
-            if (results.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, results, logger);
 
             ObjectRegistry.setEgoItems(results.items());
         } catch (IOException e) {
@@ -121,7 +129,15 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load in the activations from activation.txt and store them in a List
+     * Load the activations from {@code activation.txt} into {@link ObjectRegistry}. Must run before
+     * ego items and artifacts, which name an activation directly.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the activations that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>swallowed</em>; a dropped activation surfaces as an unresolved name in the two
+     * loaders that follow.
+     *
+     * @author Rowan Crowther
      */
     public static void loadActivations() {
         ActivationReader reader = new ActivationReader();
@@ -130,12 +146,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<Activation> results = reader.parseWithResult(filename);
 
-            if (results.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, results, logger);
 
             ObjectRegistry.setActivations(results.items());
         } catch (IOException e) {
@@ -144,7 +155,18 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load in the items from object.txt and store them in a List
+     * Load the object kinds from {@code object.txt} into {@link ObjectRegistry}. Must run after
+     * object bases, summons, curses, brands and slays, and before the artifacts, ego items,
+     * flavours and player classes that resolve a kind.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the kinds that did
+     * assemble are registered regardless, per the partial-results contract - note this loader adds
+     * kinds one at a time rather than setting a list, so a partial parse leaves a genuinely partial
+     * table. An IO failure is logged and <em>rethrown</em>: this is the widest dependency in the
+     * suite, and continuing without it turns one failure into many.
+     *
+     * @throws IOException an IO error occurred during parsing
+     * @author Rowan Crowther
      */
     public static void loadItemObjects() throws IOException {
         ItemObjectReader parser = new ItemObjectReader();
@@ -153,12 +175,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectKind> results = parser.parseWithResults(filename);
 
-            if (results.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, results, logger);
 
             for (ObjectKind kind : results.items()) {
                 ObjectRegistry.addObjectKind(kind);
@@ -172,7 +189,13 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load in the Curses information and store it in a List
+     * Load the curses from {@code curse.txt} into {@link ObjectRegistry}. Must run after object
+     * bases and summons, and before the object kinds, ego items and artifacts that carry a curse.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the curses that did
+     * assemble are registered regardless, per the partial-results contract. The catch is on
+     * {@code Exception} rather than {@code IOException} and <em>rethrows</em>, so any failure stops
+     * the load.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -183,12 +206,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<Curse> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setCurses(result.items());
         } catch (Exception e) {
@@ -198,7 +216,12 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load in the Brand information and store it in a List
+     * Load the brands from {@code brand.txt} into {@link ObjectRegistry}. Must run before the
+     * object kinds, ego items and artifacts that name a brand.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the brands that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>, since three later loaders resolve against this list.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -209,12 +232,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<Brand> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setBrands(result.items());
         } catch (IOException e) {
@@ -224,30 +242,49 @@ public class ObjectDataLoader {
     }
 
     /**
-     * Load in the Slays information and store it in a List
+     * Load the slays from {@code slay.txt} into {@link ObjectRegistry}. Must run after monster
+     * bases, whose names each slay targets, and before the object kinds, ego items and artifacts
+     * that name a slay.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the slays that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>, matching brands - the symmetric loader beside it - since three later
+     * loaders resolve against this list. (It previously caught {@code Exception} without
+     * rethrowing, which swallowed unchecked exceptions too; that made it the one loader out of step
+     * with its neighbours.)
+     *
+     * @throws IOException an IO error occurred during parsing
+     * @author Rowan Crowther
      */
-    public static void loadSlays() {
+    public static void loadSlays() throws IOException {
         SlayReader parser = new SlayReader();
         String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "slay.txt";
 
         try {
             ParseResult<Slay> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setSlays(result.items());
-        } catch (Exception e) {
+        } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
+            throw e;
         }
     }
 
     /**
-     * Load in the ObjectBase information and store it in a List
+     * Load the object bases (the per-tval defaults every object kind inherits) from
+     * {@code object_base.txt} into {@link ObjectRegistry}. The first object-side loader to run, and
+     * a prerequisite for curses, object kinds and everything downstream of them.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>.
+     * <p>
+     * This is the loader whose earlier swallow-and-skip behaviour proved the case for the
+     * partial-results contract: a rejected file left {@link ObjectRegistry} holding {@code null}
+     * rather than an empty list, and the failure surfaced fifteen loaders later as an
+     * {@code IllegalStateException} from an unrelated assembler.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -258,12 +295,7 @@ public class ObjectDataLoader {
         try {
             ParseResult<ObjectBase> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setObjectBases(result.items());
         } catch (IOException e) {

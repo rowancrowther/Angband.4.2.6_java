@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.playertimed;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
@@ -95,7 +95,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                 String msgDown = g.msgDown().length() > 1 ? g.msgDown() : null;
                 String msgUp = g.msgUp().length() > 1 ? g.msgUp() : null;
                 try {
-                    ColourType colourType = ColourType.getColourType(colour);
+                    ColourEnum colourType = ColourEnum.fromCode(colour);
                     if (colourType == null) {
                         errors.add("Player Timed record at line: " + line + " has " +
                                 "an invalid colour: " + colour);

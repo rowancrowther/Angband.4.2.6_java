@@ -216,7 +216,9 @@ public class PlayerUpkeep {
      * @return a copy of the current {@code PR_*} redraw flags
      */
     public Flag<PlayerRedraw> getRedrawFlags() {
-        return redrawFlags.copy();
+        Flag<PlayerRedraw> flag = new Flag<>(PlayerRedraw.class);
+        flag.copyFrom(redrawFlags);
+        return flag;
     }
 
     /**

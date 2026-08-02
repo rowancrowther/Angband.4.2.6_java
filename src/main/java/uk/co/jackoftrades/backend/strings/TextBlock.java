@@ -24,7 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.AngFile;
 import uk.co.jackoftrades.backend.io.enums.FileTypeEnum;
-import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -78,10 +78,10 @@ public class TextBlock {
      * Add a character/colour combination to the end of the text block
      *
      * @param c   the character we are adding in
-     * @param col the AttributeColour we are adding in
+     * @param col the ColourEnum we are adding in
      */
     @Contract(mutates = "this")
-    public void append(char c, @NotNull AttributeColour col) {
+    public void append(char c, @NotNull ColourEnum col) {
         AngbandDisplayCharacter a = new AngbandDisplayCharacter(c, col);
         textAndAttributes.add(a);
     }
@@ -117,18 +117,18 @@ public class TextBlock {
      */
     @Contract(mutates = "this")
     public void append(@NotNull String fmt, Object... objects) {
-        append(AttributeColour.COLOUR_WHITE, fmt, objects);
+        append(ColourEnum.COLOUR_TYPE_WHITE, fmt, objects);
     }
 
     /**
-     * Append a formatted string entirely in a specific AttributeColour
+     * Append a formatted string entirely in a specific ColourEnum
      *
-     * @param col     the AttributeColour to use in appending this string
+     * @param col     the ColourEnum to use in appending this string
      * @param fmt     the string to format
      * @param objects the objects to format the string with
      */
     @Contract(mutates = "this")
-    public void append(@NotNull AttributeColour col, @NotNull String fmt, Object... objects) {
+    public void append(@NotNull ColourEnum col, @NotNull String fmt, Object... objects) {
         String formattedString = fmt.formatted(objects);
         for (char ch : formattedString.toCharArray()) {
             append(ch, col);
@@ -249,7 +249,7 @@ public class TextBlock {
      * @param colours The colours we are using to append, linked to the characters in the string
      */
     @Contract(mutates = "this")
-    public void append(@NotNull String string, @NotNull List<AttributeColour> colours) {
+    public void append(@NotNull String string, @NotNull List<ColourEnum> colours) {
         if (string.length() != colours.size()) {
             String message = "Invalid string/list input to TextBlock creator. String was of length " + string.length() +
                     " and colours array was of length " + colours.size();

@@ -22,9 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
-import uk.co.jackoftrades.frontend.colour.enums.ColourTranslation;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 /**
  * Class to hold a single character of a particular colour
@@ -42,43 +40,30 @@ public class AngbandDisplayCharacter {
      *
      * @author Rowan Crowther
      */
-    private final AttributeColour attributeColour;
+    private final ColourEnum attributeColour;
 
     /**
      * Constructor (the only way to set field values
      *
      * @param character  The character of this DisplayCharacter
-     * @param colourType The ColourType in which this colour needs to be displayed in a screen
+     * @param colourType The ColourEnum in which this colour needs to be displayed in a screen
      */
     @CheckReturnValue
     @Contract(mutates = "this")
-    public AngbandDisplayCharacter(char character, @NotNull ColourType colourType) {
+    public AngbandDisplayCharacter(char character, @NotNull ColourEnum colourType) {
         this.character = character;
-        this.attributeColour = colourType.colourAttribute(ColourTranslation.ATTR_FULL);
-    }
-
-    /**
-     * Constructor (the only way to set field values
-     *
-     * @param character       The character of this DisplayCharacter
-     * @param attributeColour The AttributeColour in which this colour needs to be displayed in a screen
-     */
-    @CheckReturnValue
-    @Contract(mutates = "this")
-    public AngbandDisplayCharacter(char character, @NotNull AttributeColour attributeColour) {
-        this.character = character;
-        this.attributeColour = attributeColour;
+        this.attributeColour = colourType;
     }
 
     /**
      * Constructor
      *
      * @param character The character of this DisplayCharacter
-     * @param colour    the character representation of this AttributeColour
+     * @param colour    the character representation of this ColourEnum
      */
     public AngbandDisplayCharacter(char character, char colour) {
         this.character = character;
-        this.attributeColour = ColourType.getAttributeColour(colour);
+        this.attributeColour = ColourEnum.fromCode(colour);
     }
 
     /**
@@ -86,22 +71,12 @@ public class AngbandDisplayCharacter {
      *
      * @param character The character glyph for this DisplayCharacter
      * @param colour    A string containing either a single character
-     *                  representation of the ColourType, or a name
-     *                  of the ColourType
+     *                  representation of the ColourEnum, or a name
+     *                  of the ColourEnum
      */
     public AngbandDisplayCharacter(char character, @NotNull String colour) {
-        ColourType colourType;
-
-        colourType = ColourType.getColourType(colour);
-
-        if (colourType == null) {
-            IllegalArgumentException e = new IllegalArgumentException("colour type not found");
-            logger.error("colour type not found", e);
-            throw e;
-        }
-
         this.character = character;
-        this.attributeColour = colourType.colourAttribute(ColourTranslation.ATTR_FULL);
+        this.attributeColour = ColourEnum.fromCode(colour);
     }
 
     /**
@@ -116,11 +91,11 @@ public class AngbandDisplayCharacter {
 
     /**
      * Getter for the colour
-     * @return the colour of this character as an AttributeColour
+     * @return the colour of this character as an ColourEnum
      */
     @CheckReturnValue
     @Contract(pure = true)
-    public AttributeColour getAttributeColour() {
+    public ColourEnum getAttributeColour() {
         return attributeColour;
     }
 

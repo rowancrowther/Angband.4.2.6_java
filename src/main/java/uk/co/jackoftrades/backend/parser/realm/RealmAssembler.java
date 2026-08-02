@@ -71,9 +71,9 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
             String verb = record.verb();
             String spellNoun = record.spellNoun();
             TValue tValue;
-            try {
-                tValue = TValue.valueOf("TV_" + record.bookNoun().replace(" ", "_").toUpperCase());
-            } catch (IllegalArgumentException e) {
+
+            tValue = TValue.fromName(record.bookNoun());
+            if (tValue == null) {
                 errors.add("Record at line: " + line + " has " +
                         "an unknown book noun: " + record.bookNoun());
                 continue;

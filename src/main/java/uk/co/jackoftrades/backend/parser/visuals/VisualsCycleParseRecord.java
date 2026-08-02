@@ -23,7 +23,7 @@ import java.util.List;
  * The raw, unassembled form of one {@code cycle:} block from visuals.txt - the grammar's output
  * before any colour resolution. A block is a {@code cycle:<group>:<name>} header followed by one or
  * more {@code cycle-color:<code>} step lines; this record carries those parts verbatim, as text, so
- * {@code VisualsCycleAssembler} can turn each colour code into a {@code ColourType} and bucket the
+ * {@code VisualsCycleAssembler} can turn each colour code into a {@code ColourEnum} and bucket the
  * result into the {@code VisualsCycler} keyed group-then-name.
  * <p>
  * Ports the parse-time half of the C {@code visuals_cycler} loader ({@code ui-visuals.c}), which
@@ -33,7 +33,7 @@ import java.util.List;
  *                {@code flicker}); the outer selection key in {@code VisualsCycler}
  * @param name    the cycle's name (the second field, e.g. {@code rainbow}); the inner key
  * @param colours the ordered {@code cycle-color:} step codes, one single-character colour code per
- *                entry, still as {@code String}s awaiting {@code ColourType} resolution
+ *                entry, still as {@code String}s awaiting {@code ColourEnum} resolution
  * @param line    the source line of the {@code cycle:} header, used for error reporting
  * @author Rowan Crowther
  */

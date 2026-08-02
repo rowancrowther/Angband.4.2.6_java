@@ -47,12 +47,15 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class MiscDataLoader {
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(MiscDataLoader.class);
 
     /**
      * Load the object flavours from {@code flavor.txt} into {@link MiscRegistry}. Must run after the
      * object kinds are loaded, since the flavour assembler resolves each flavour to an object kind.
-     * A file with soft errors is logged and skipped, leaving the flavour list unpopulated.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the flavours that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>: the registry is left unset and the failure surfaces at first use.
      *
      * @author Rowan Crowther
      */
@@ -63,12 +66,7 @@ public class MiscDataLoader {
         try {
             ParseResult<FlavourKind> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MiscRegistry.setFlavours(result.items());
         } catch (IOException e) {
@@ -78,8 +76,11 @@ public class MiscDataLoader {
 
     /**
      * Load the loading hints from {@code hints.txt} into {@link MiscRegistry}. Self-contained (no
-     * cross-slice dependency). A file with soft errors is logged and skipped, leaving the hint list
-     * unpopulated.
+     * cross-slice dependency).
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the hints that did
+     * assemble are registered regardless, per the partial-results contract. Nothing else loads from
+     * the hint list, so an empty parse is harmless. An IO failure is logged and <em>swallowed</em>.
      *
      * @author Rowan Crowther
      */
@@ -90,12 +91,7 @@ public class MiscDataLoader {
         try {
             ParseResult<Hint> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MiscRegistry.setHints(result.items());
         } catch (IOException e) {
@@ -105,8 +101,11 @@ public class MiscDataLoader {
 
     /**
      * Load the random name lists from {@code names.txt} into {@link MiscRegistry}. Self-contained
-     * (no cross-slice dependency). A file with soft errors is logged and skipped, leaving the name
-     * list unpopulated.
+     * (no cross-slice dependency).
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the name lists that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>swallowed</em>; character generation is the first thing to notice.
      *
      * @author Rowan Crowther
      */
@@ -117,12 +116,7 @@ public class MiscDataLoader {
         try {
             ParseResult<Name> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MiscRegistry.setNames(result.items());
         } catch (IOException e) {

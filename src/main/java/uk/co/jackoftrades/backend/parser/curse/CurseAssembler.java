@@ -102,12 +102,10 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             // not its display name — resolve the tval, then fetch the base for it.
             for (String base : record.type()) {
                 ObjectBase objectBase = null;
-                try {
-                    TValue tValue = TValue.valueOf(base.toUpperCase().replace(" ", "_"));
+                TValue tValue = TValue.fromName(base);
+                if (tValue != null)
                     objectBase = ObjectRegistry.getBaseFromTVal(tValue);
-                } catch (IllegalArgumentException ignored) {
-                    // falls through to the null check below with the same error
-                }
+
                 if (objectBase == null) {
                     errors.add("Curse starting at line: " + line + " has " +
                             "an unknown type: " + base);

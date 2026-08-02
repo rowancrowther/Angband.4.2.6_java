@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 /**
  * One severity grade of a timed effect — a named band within a status's range, with its own
@@ -37,7 +37,7 @@ import uk.co.jackoftrades.frontend.colour.enums.ColourType;
  * @author Rowan Crowther
  */
 public record TimedGrade(int Grade,
-                         ColourType colour,
+                         ColourEnum colour,
                          int max,
                          String status,
                          String upMsg,

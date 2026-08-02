@@ -86,7 +86,9 @@ public class ElementInfo {
      */
     public ElementInfo copy() {
         ElementInfo ei = new ElementInfo();
-        ei.flags = this.flags.copy();
+        Flag<ElementInfoEnum> copy = new Flag<>(ElementInfoEnum.class);
+        copy.copyFrom(flags);
+        ei.flags = copy;
         ei.resLevel = this.resLevel;
         return ei;
     }

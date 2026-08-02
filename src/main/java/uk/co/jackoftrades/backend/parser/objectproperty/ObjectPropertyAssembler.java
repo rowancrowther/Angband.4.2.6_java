@@ -163,16 +163,16 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
                 String value = record.typeMult().get(key);
                 try {
                     TValue tValue = TValue.fromName(key);
+                    if (tValue == null) {
+                        errors.add("Object Property at line: " + line + " has " +
+                                "an invalid type-mult type: " + key);
+                        continue;
+                    }
                     int multVal = Integer.parseInt(value);
                     typeMults.put(tValue, multVal);
                 } catch (NumberFormatException e) {
                     errors.add("Object Property at line: " + line + " has " +
                             "a malformed type-mult integer: " + value);
-                    continue;
-                } catch (IllegalArgumentException e) {
-                    errors.add("Object Property at line: " + line + " has " +
-                            "an invalid type-mult type: " + key);
-                    continue;
                 }
             }
             String name = record.name();

@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
@@ -144,7 +144,7 @@ class PitReaderTest {
         // Warriors: three colours, two banned spells.
         PitProfile warriors = byName(pits, "Warriors");
         assertNotNull(warriors);
-        List<ColourType> cols = field(warriors, "colours");
+        List<ColourEnum> cols = field(warriors, "colours");
         assertEquals(3, cols.size());
         Flag<MonsterSpell> banned = field(warriors, "forbiddenSpellFlags");
         assertTrue(banned.has(MonsterSpell.RSF_DARKNESS), "DARKNESS should be banned");

@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
@@ -111,7 +111,7 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                             " an illegal glyph:" + glyph);
                     continue;
                 }
-                ColourType colourType = ColourType.getColourType(colour);
+                ColourEnum colourType = ColourEnum.fromCode(colour);
                 if (colourType == null) {
                     errors.add("Spell book at line: " + line + " has " +
                             "an unknown colour type: " + colour);
@@ -176,7 +176,9 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                 continue;
             }
 
-            Flag<ObjectKindFlag> oFlags = base.getKindFlags().copy();
+            Flag<ObjectKindFlag> oFlags = new Flag<>(ObjectKindFlag.class);
+
+            oFlags.copyFrom(base.getKindFlags());
             Map<ElementEnum, ElementInfo> eFlags = new HashMap<>();
 
             if (dungeon) {

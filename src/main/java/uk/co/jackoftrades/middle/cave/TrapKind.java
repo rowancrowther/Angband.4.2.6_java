@@ -249,7 +249,9 @@ public class TrapKind {
      * @author Rowan Crowther
      */
     public Flag<TrapEnum> getFlags() {
-        return flags.copy();
+        Flag<TrapEnum> flag = new Flag<>(TrapEnum.class);
+        flag.copyFrom(flags);
+        return flag;
     }
 
     /**
@@ -258,7 +260,9 @@ public class TrapKind {
      * @author Rowan Crowther
      */
     public Flag<ObjectFlag> getSaveFlags() {
-        return saveFlags.copy();
+        Flag<ObjectFlag> flag = new Flag<>(ObjectFlag.class);
+        flag.copyFrom(saveFlags);
+        return flag;
     }
 
     /**

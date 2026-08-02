@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.pit;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
@@ -36,7 +36,7 @@ import java.util.List;
  * Turns the raw {@link PitParseRecord}s parsed from {@code pit.txt} into finished
  * {@link PitProfile}s, resolving each record's text fields to their typed forms: room-type digits
  * to {@link PitRoomType}, numeric fields to {@code int}, flag/spell codes to their enums, colour
- * codes to {@link ColourType}, and monster names to their {@link MonsterBase}/{@link MonsterRace}
+ * codes to {@link ColourEnum}, and monster names to their {@link MonsterBase}/{@link MonsterRace}
  * registry objects.
  *
  * <p><strong>Skip-and-continue contract.</strong> Resolution is fail-soft per record: any
@@ -181,12 +181,12 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
                 }
             }
             if (badBannedSpell) continue;
-            // color: each entry is a single-character colour code; getColourType resolves a
+            // color: each entry is a single-character colour code; ColourEnum.fromCode resolves a
             // one-char string via the colour table and returns null for anything unrecognised.
-            List<ColourType> colours = new ArrayList<>();
+            List<ColourEnum> colours = new ArrayList<>();
             boolean badColour = false;
             for (String colourString : record.colours()) {
-                ColourType colourType = ColourType.getColourType(colourString);
+                ColourEnum colourType = ColourEnum.fromCode(colourString);
                 if (colourType == null) {
                     errors.add("Pit at line: " + line + " has " +
                             "an unknown colour: " + colourString);

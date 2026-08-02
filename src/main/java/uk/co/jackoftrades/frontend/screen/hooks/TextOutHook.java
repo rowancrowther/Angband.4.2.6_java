@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.screen.hooks;
 
-import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 /**
  * Sink for coloured text emitted by the game. Abstracts "where text goes" (a
@@ -35,7 +35,7 @@ public interface TextOutHook {
      * @param string    the text to emit
      * @author Rowan Crowther
      */
-    void output(AttributeColour attribute, String string);
+    void output(ColourEnum attribute, String string);
 
     /**
      * Output the incoming string formatted with the objects in the given colour to this hook
@@ -44,7 +44,7 @@ public interface TextOutHook {
      * @param toFormat the string to format
      * @param objects  the objects to format this string with
      */
-    void out(AttributeColour colour, String toFormat, Object... objects);
+    void out(ColourEnum colour, String toFormat, Object... objects);
 
     /**
      * Output the incoming string in COLOUR_WHITE, formatted with the objects to this hook

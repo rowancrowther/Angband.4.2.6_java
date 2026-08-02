@@ -17,9 +17,9 @@
 
 package uk.co.jackoftrades.frontend.colour;
 
-import javafx.scene.paint.Color;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
+import java.awt.*;
 import java.util.HashMap;
 
 /**
@@ -69,14 +69,14 @@ public class Colour {
 
     /**
      * Populate both the original and current colour tables from the
-     * {@link ColourType} definitions, indexed in declaration order.
+     * {@link ColourEnum} definitions, indexed in declaration order.
      *
      * @author Rowan Crowther
      */
     public static void init() {
         int index = 0;
 
-        for (ColourType colourType : ColourType.values()) {
+        for (ColourEnum colourType : ColourEnum.values()) {
             originalColours.put(index, colourType.getColour());
             currentColours.put(index, colourType.getColour());
             index++;

@@ -23,7 +23,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.*;
@@ -80,9 +80,14 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             ObjectBase base = null;
             TValue tValue = null;
             if (!record.tValue().isEmpty()) {
-                String tVal = record.tValue().toUpperCase().replace(" ", "_");
+                String tVal = record.tValue();
                 try {
-                    tValue = TValue.valueOf(tVal);
+                    tValue = TValue.fromName(tVal);
+                    if (tValue == null) {
+                        errors.add("Object kind starting at line: " + line + " has " +
+                                "an unknown tVal: " + tVal);
+                        continue;
+                    }
                     base = ObjectRegistry.getBaseFromTVal(tValue);
                 } catch (IllegalArgumentException e) {
                     errors.add("Object kind starting at line: " + line + " has " +
@@ -100,7 +105,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     continue;
                 }
                 char c = glyphChar.charAt(0);
-                ColourType colourType = ColourType.getColourType(glyphColour);
+                ColourEnum colourType = ColourEnum.fromCode(glyphColour);
                 if (colourType == null) {
                     errors.add("Object kind at line: " + line + " has " +
                             "an invalid colour: " + glyphColour);

@@ -360,8 +360,10 @@ class PlayerClassReaderTest {
                         + "book:notabase:town:[B]:1:arcane\n"
                         + "spell:S:1:1:1:1\n"));
 
-        // The error echoes the raw tval string ("TV_notabase") before fromName upper-cases it.
-        assertTrue(hasError(r, "unknown first parameter: TV_notabase"), r.errors()::toString);
+        // The error echoes the tval exactly as the file spelled it. It used to be prefixed "TV_"
+        // because the assembler built the enum-constant name by hand; TValue.fromName matches on
+        // the display name instead, so there is no prefix to expect.
+        assertTrue(hasError(r, "unknown first parameter: notabase"), r.errors()::toString);
     }
 
     @Test

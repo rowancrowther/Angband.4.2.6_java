@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.Heatmap;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.combat.Target;
@@ -126,7 +126,7 @@ public class Monster {
      *
      * @author Rowan Crowther
      */
-    private ColourType colourAttr;
+    private ColourEnum colourAttr;
 
     /**
      * A snapshot of the player state as known/used by this monster.
@@ -194,7 +194,7 @@ public class Monster {
      */
     public Monster(MonsterRace monsterRace, MonsterRace originalRace, Loc grid, int hp, int maxHp,
                    Map<MonTimed, Integer> mTimed, int mSpeed, int energy, int cDistance, Flag<MonsterFlag> monsterFlag,
-                   ItemObject mimickedObject, List<ItemObject> heldObject, ColourType colourAttr,
+                   ItemObject mimickedObject, List<ItemObject> heldObject, ColourEnum colourAttr,
                    PlayerState knownPState, Target target, List<MonsterGroupInfo> groupInfo, Heatmap heatmap,
                    int minRange, int bestRange) {
         this.monsterRace = monsterRace;

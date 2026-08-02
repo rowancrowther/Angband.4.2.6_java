@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 /**
  * One power tier of a monster spell: the minimum power at which it applies, the
@@ -46,19 +46,19 @@ public class MonsterSpellLevel {
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttr;
+    private ColourEnum loreAttr;
     /**
      * Colour used for the lore entry when the player resists.
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttrResist;
+    private ColourEnum loreAttrResist;
     /**
      * Colour used for the lore entry when the player is immune.
      *
      * @author Rowan Crowther
      */
-    private ColourType loreAttrImmune;
+    private ColourEnum loreAttrImmune;
     /**
      * Message shown when the spell is cast and seen.
      *
@@ -99,8 +99,8 @@ public class MonsterSpellLevel {
      * @author Rowan Crowther
      */
     @Contract(mutates = "this")
-    public MonsterSpellLevel(int power, String loreDesc, ColourType loreAttr, ColourType loreAttrResist,
-                             ColourType loreAttrImmune, String message, String blindMessage, String missMessage,
+    public MonsterSpellLevel(int power, String loreDesc, ColourEnum loreAttr, ColourEnum loreAttrResist,
+                             ColourEnum loreAttrImmune, String message, String blindMessage, String missMessage,
                              String saveMessage) {
         this.power = power;
         this.loreDesc = loreDesc;

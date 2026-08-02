@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.cave;
 
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
@@ -108,7 +108,7 @@ public class PitProfile {
      *
      * @author Rowan Crowther
      */
-    private List<ColourType> colours;
+    private List<ColourEnum> colours;
     /**
      * Specific monster races explicitly forbidden from this pit.
      *
@@ -137,7 +137,7 @@ public class PitProfile {
     public PitProfile(String name, PitRoomType roomType, int ave, int rarity, int objectRarity,
                       Flag<MonsterRaceFlag> flags, Flag<MonsterRaceFlag> forbiddenFlags, int freqInnate,
                       Flag<MonsterSpell> spellsFlags, Flag<MonsterSpell> forbiddenSpellFlags, List<MonsterBase> bases,
-                      List<ColourType> colours, List<MonsterRace> forbiddenMonsters) {
+                      List<ColourEnum> colours, List<MonsterRace> forbiddenMonsters) {
         this.name = name;
         this.roomType = roomType;
         this.ave = ave;

@@ -46,13 +46,20 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class MonsterDataLoader {
-    private static final Logger logger = LogManager.getLogger();
-
+    private static final Logger logger = LogManager.getLogger(MonsterDataLoader.class);
 
     /**
      * Load the monster races from {@code monster.txt} into {@link MonsterRegistry}, then run a second
      * pass resolving each race's friend and shape references (mirroring C's {@code finish_parse_monster})
      * now that every race exists. Must run after bases, visuals, blow methods and spell types.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the races that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>. Watch the second pass here: friend and shape references are resolved
+     * against the races just registered, so a race dropped by a soft error becomes an unresolvable
+     * reference for its neighbours rather than a silent absence.
+     *
+     * @author Rowan Crowther
      */
     public static void loadMonsters() {
         MonsterReader parser = new MonsterReader();
@@ -61,12 +68,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<MonsterRace> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterRaces(result.items());
             MonsterRegistry.monsterRaceMax = MonsterRegistry.monsterRaces.size();
@@ -86,6 +88,13 @@ public class MonsterDataLoader {
     /**
      * Load the pit/nest profiles from {@code pit.txt} into {@link MonsterRegistry}. Must run after
      * monsters, bases and spell types, which the pit assembler resolves against.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the profiles that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>: pits are a dungeon-generation flourish, so losing them costs variety
+     * rather than the game.
+     *
+     * @author Rowan Crowther
      */
     public static void loadPitProfiles() {
         PitReader parser = new PitReader();
@@ -94,12 +103,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<PitProfile> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterPitProfiles(result.items());
         } catch (IOException e) {
@@ -110,6 +114,17 @@ public class MonsterDataLoader {
     /**
      * Load the colour cycler and flicker tables from {@code visuals.txt} into {@link MonsterRegistry}.
      * Must run before monsters, whose colours reference these tables.
+     * <p>
+     * The odd one out: {@code visuals.txt} is parsed <em>twice</em>, once for cyclers and once for
+     * flickers, so this is the only loader that reports two {@link ParseResult}s - both are passed
+     * through {@link ErrorParsing#reportAndCheck} so neither parse's errors are lost. An IO failure
+     * is logged and <em>swallowed</em>.
+     * <p>
+     * Note both registrations take {@code items().getFirst()}, so unlike its neighbours this loader
+     * needs a non-empty parse: an empty table would fail on the {@code getFirst()} rather than
+     * degrade. That makes it the clearest candidate for acting on the helper's return value.
+     *
+     * @author Rowan Crowther
      */
     public static void loadVisualTables() {
         VisualsReader parser = new VisualsReader();
@@ -119,12 +134,8 @@ public class MonsterDataLoader {
             ParseResult<VisualsCycler> cyclers = parser.parseCyclerWithResults(filename);
             ParseResult<FlickerTable> flickers = parser.parseFlickerWithResults(filename);
 
-            if (cyclers.hasErrors() || flickers.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, cyclers, logger);
+            ErrorParsing.reportAndCheck(filename, flickers, logger);
 
             MonsterRegistry.setVisualsCyclerTable(cyclers.items().getFirst());
             MonsterRegistry.setVisualsFlickerTable(flickers.items().getFirst());
@@ -141,8 +152,9 @@ public class MonsterDataLoader {
      * the summon table is still empty. Loading summons in turn needs monster bases, which need
      * monster pains.
      * <p>
-     * Note that a file with soft errors logs and returns without populating the field, leaving
-     * it null rather than partially filled - the same shape as the loaders around it.
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the spells that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>.
      *
      * @author Rowan Crowther
      */
@@ -153,12 +165,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<MonsterSpellType> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterSpellTypes(result.items());
         } catch (IOException e) {
@@ -170,6 +177,11 @@ public class MonsterDataLoader {
      * Load the blow effects — what a monster attack does — from {@code blow_effects.txt} into
      * {@link MonsterRegistry}. Must run after projections, whose {@code lash-type:} the blow-effect
      * assembler resolves.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the effects that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>; a missing blow effect surfaces the first time a monster attacks with
+     * it.
      *
      * @author Rowan Crowther
      */
@@ -180,12 +192,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<BlowEffect> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setBlowEffects(result.items());
         } catch (IOException e) {
@@ -196,6 +203,12 @@ public class MonsterDataLoader {
     /**
      * Load the blow methods from {@code blow_methods.txt} into {@link MonsterRegistry}. Must run
      * before monsters, whose attacks reference a method by name.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the methods that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>, leaving the monsters that name a missing method to report it.
+     *
+     * @author Rowan Crowther
      */
     public static void loadBlowMethods() {
         BlowMethodReader parser = new BlowMethodReader();
@@ -204,12 +217,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<BlowMethod> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setBlowMethods(result.items());
         } catch (IOException e) {
@@ -218,7 +226,14 @@ public class MonsterDataLoader {
     }
 
     /**
-     * Load in the Summon information and store it in a List
+     * Load the summon types from {@code summon.txt} into {@link MonsterRegistry}. Must run after
+     * monster bases, and before the spells and effects whose {@code SUMMON} subtype resolves
+     * through {@link MonsterRegistry#lookupSummon}.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the summons that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>: {@code lookupSummon} throws on an empty table, so continuing past a
+     * failure here only relocates the crash.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -229,12 +244,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<Summon> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setSummons(result.items());
         } catch (IOException e) {
@@ -244,7 +254,14 @@ public class MonsterDataLoader {
     }
 
     /**
-     * Load in the MonsterBase information and store it in a List
+     * Load the monster bases from {@code monster_base.txt} into {@link MonsterRegistry}. Must run
+     * after pains, and before slays, summons and the monsters themselves, all of which resolve a
+     * base by name.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the bases that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>; with four loaders downstream this is one to stop on rather than let
+     * resurface as a wall of unresolved base names.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -255,12 +272,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<MonsterBase> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterBases(result.items());
         } catch (IOException e) {
@@ -270,7 +282,12 @@ public class MonsterDataLoader {
     }
 
     /**
-     * Load in the Pain information and store it in a List
+     * Load the monster pain-message sets from {@code pain.txt} into {@link MonsterRegistry}. The
+     * first monster-side loader to run, and a prerequisite for monster bases.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the pain sets that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>rethrown</em>, stopping the load at the root of the monster chain.
      *
      * @throws IOException an IO error occurred during parsing
      */
@@ -281,12 +298,7 @@ public class MonsterDataLoader {
         try {
             ParseResult<MonsterPain> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             MonsterRegistry.setMonsterPains(result.items());
         } catch (IOException e) {

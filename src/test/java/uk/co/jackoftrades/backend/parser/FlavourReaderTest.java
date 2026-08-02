@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Flavour;
 import uk.co.jackoftrades.middle.objects.FlavourKind;
@@ -246,7 +246,7 @@ class FlavourReaderTest {
         assertTrue(plainGold.isFixed());
         assertEquals(1, plainGold.getIndex());
         assertEquals("Ring of Power", plainGold.getsValStr());
-        assertSame(ColourType.COLOUR_TYPE_YELLOW, plainGold.getColour());
+        assertSame(ColourEnum.COLOUR_TYPE_YELLOW, plainGold.getColour());
 
         ObjectKind ringOfPower = ObjectRegistry.lookupObjectKind(TValue.TV_RING, "Ring of Power");
         assertNotNull(ringOfPower, "the One Ring's base kind is synthesised from artifact.txt");
@@ -265,7 +265,7 @@ class FlavourReaderTest {
         assertFalse(alexandrite.isFixed());
         assertNull(alexandrite.getsValStr());
         assertEquals(0, alexandrite.getsVal(), "SV_UNKNOWN is 0 in 4.2.6");
-        assertSame(ColourType.COLOUR_TYPE_GREEN, alexandrite.getColour());
+        assertSame(ColourEnum.COLOUR_TYPE_GREEN, alexandrite.getColour());
     }
 
     /**
@@ -280,7 +280,7 @@ class FlavourReaderTest {
         for (Flavour f : scrolls.getFlavours()) {
             assertNull(f.getText(), () -> "scroll flavour " + f.getIndex() + " should have no text");
             assertFalse(f.isFixed());
-            assertSame(ColourType.COLOUR_TYPE_WHITE, f.getColour());
+            assertSame(ColourEnum.COLOUR_TYPE_WHITE, f.getColour());
         }
     }
 

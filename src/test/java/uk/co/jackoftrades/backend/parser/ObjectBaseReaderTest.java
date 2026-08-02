@@ -24,7 +24,7 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseLexer;
 import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseParseRecord;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
@@ -122,7 +122,7 @@ class ObjectBaseReaderTest {
         assertEquals(1, none.size(), "exactly one synthetic TV_NONE base");
         ObjectBase base = none.get(0);
         assertEquals("none", base.getName());
-        assertEquals(ColourType.COLOUR_TYPE_DARK, base.getAttr(), "C's zeroed attr");
+        assertEquals(ColourEnum.COLOUR_TYPE_DARK, base.getAttr(), "C's zeroed attr");
         assertTrue(base.getElementMap().isEmpty(), "no HATES_ elements");
         assertEquals(0, base.getBreakPerc());
         assertEquals(0, base.getMaxStack());
@@ -187,9 +187,9 @@ class ObjectBaseReaderTest {
                 withHeader(1, "name:chest:Chest~\ngraphics:slate\n"));
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        ColourType attr = result.items().get(0).getAttr();
-        assertEquals(ColourType.getColourType("slate"), attr);
-        assertNotEquals(ColourType.COLOUR_TYPE_DARK, attr, "colour should resolve, not fall back to DARK");
+        ColourEnum attr = result.items().get(0).getAttr();
+        assertEquals(ColourEnum.fromCode("slate"), attr);
+        assertNotEquals(ColourEnum.COLOUR_TYPE_DARK, attr, "colour should resolve, not fall back to DARK");
     }
 
     // ---- Repeated flags: lines merge (asserted on the parse record) ------
@@ -218,8 +218,11 @@ class ObjectBaseReaderTest {
                 withHeader(1, "name:notatval:Thing~\ngraphics:white\n"));
 
         assertTrue(declared(result).isEmpty());
+        // The error echoes the tval exactly as the file spelled it. It used to be upper-cased,
+        // because the assembler upper-cased before calling TValue.valueOf; TValue.fromName matches
+        // case-insensitively, so no case folding happens and none should be asserted.
         assertTrue(result.errors().stream().anyMatch(
-                        e -> e.contains("invalid TValue") && e.contains("NOTATVAL")),
+                        e -> e.contains("invalid TValue") && e.contains("notatval")),
                 result.errors()::toString);
     }
 

@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -57,7 +57,7 @@ public class ObjectBase {
      *
      * @author Rowan Crowther
      */
-    private ColourType attr;
+    private ColourEnum attr;
 
     /**
      * Per-element info shared by kinds of this base, keyed by element. Replaces the earlier plain
@@ -110,7 +110,7 @@ public class ObjectBase {
      * @param maxStack    the maximum stack size ({@code -1} if unset)
      * @author Rowan Crowther
      */
-    public ObjectBase(TValue tVal, String name, ColourType colour, Flag<ObjectKindFlag> kFlag,
+    public ObjectBase(TValue tVal, String name, ColourEnum colour, Flag<ObjectKindFlag> kFlag,
                       Flag<ElementEnum> hatesFlag, int breakChance, int maxStack) {
         this.tVal = tVal;
         this.name = name;
@@ -182,7 +182,7 @@ public class ObjectBase {
      * @return the default display colour
      * @author Rowan Crowther
      */
-    public ColourType getAttr() {
+    public ColourEnum getAttr() {
         return attr;
     }
 

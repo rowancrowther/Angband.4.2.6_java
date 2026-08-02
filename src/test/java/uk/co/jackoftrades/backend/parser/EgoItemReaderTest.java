@@ -231,7 +231,8 @@ class EgoItemReaderTest {
                 withHeader(1, ego("weird", "type:no such tval\n")));
 
         assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("unknown type TValue")),
+        assertTrue(result.errors().stream().anyMatch(
+                        s -> s.contains("unknown TValue") && s.contains("no such tval")),
                 result.errors()::toString);
     }
 
@@ -241,7 +242,8 @@ class EgoItemReaderTest {
                 withHeader(1, ego("weird", "item:no such tval:Whatever\n")));
 
         assertTrue(result.items().isEmpty());
-        assertTrue(result.errors().stream().anyMatch(s -> s.contains("illegal TValue in its item")),
+        assertTrue(result.errors().stream().anyMatch(
+                        s -> s.contains("unknown TValue") && s.contains("no such tval")),
                 result.errors()::toString);
     }
 

@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.colour;
 
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.Map;
 
@@ -47,7 +47,7 @@ public final class FlickerTable {
      *
      * @author Rowan Crowther
      */
-    private final Map<ColourType, ColourCycle> byAttr;
+    private final Map<ColourEnum, ColourCycle> byAttr;
 
     /**
      * Wrap an already-built base-attribute-to-cycle map. Ownership of the map passes to the table.
@@ -55,7 +55,7 @@ public final class FlickerTable {
      * @param byAttr the base-attribute-keyed cycles, as assembled from the {@code flicker:} blocks
      * @author Rowan Crowther
      */
-    public FlickerTable(Map<ColourType, ColourCycle> byAttr) {
+    public FlickerTable(Map<ColourEnum, ColourCycle> byAttr) {
         this.byAttr = byAttr;
     }
 }

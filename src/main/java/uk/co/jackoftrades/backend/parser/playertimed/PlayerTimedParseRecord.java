@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.backend.parser.playertimed;
 
 import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.List;
 
@@ -78,7 +79,7 @@ public record PlayerTimedParseRecord(String name,
      * One {@code grade:} line, still textual. A grade is
      * {@code colour:max:status:up-message[:down-message]}; the down-message is optional and may be
      * a single character (the "dummy" sentinel the assembler collapses away). The assembler resolves
-     * {@code colour} to a {@link uk.co.jackoftrades.frontend.colour.enums.ColourType} and parses
+     * {@code colour} to a {@link ColourEnum} and parses
      * {@code max} to an int.
      *
      * @param colour  the one-letter code or full colour name

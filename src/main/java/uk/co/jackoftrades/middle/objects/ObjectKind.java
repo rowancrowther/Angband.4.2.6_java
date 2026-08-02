@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.objects;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.colour.enums.AttributeColour;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
@@ -550,7 +550,9 @@ public class ObjectKind {
      */
     public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
         this.flags = new Flag<>(ObjectFlag.class);
-        this.kindFlags = base.getKindFlags().copy();
+        Flag<ObjectKindFlag> copy = new Flag<>(ObjectKindFlag.class);
+        copy.copyFrom(base.getKindFlags());
+        this.kindFlags = copy;
         this.modifiers = new HashMap<>();
         this.elInfo = new HashMap<>();
         this.brands = new HashSet<>();
@@ -570,7 +572,7 @@ public class ObjectKind {
             this.elInfo.put(ee, newEi);
         }
 
-        this.character = new AngbandDisplayCharacter('*', AttributeColour.COLOUR_RED);
+        this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_TYPE_RED);
 
         this.base = base;
     }

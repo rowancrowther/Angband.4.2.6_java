@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.colour.ColourCycle;
 import uk.co.jackoftrades.frontend.colour.FlickerTable;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -50,7 +50,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * Build the flicker table from every parsed block.
      * <p>
      * Each step colour and the base-attribute key are resolved through
-     * {@link ColourType#getColourType}, which returns {@code null} on an unrecognised code; such a
+     * {@link ColourEnum#fromCode}, which returns {@code null} on an unrecognised code; such a
      * record is flagged into {@code errors} and skipped. In practice the grammar only lexes valid
      * {@code COLOUR_CODE} characters, so this soft-error path is defensive - unreachable from a real,
      * grammar-checked file - but it keeps the assembler safe against a hand-built record.
@@ -62,24 +62,24 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      */
     @Override
     public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records, @NotNull List<String> errors) {
-        Map<ColourType, ColourCycle> byAttr = new HashMap<>();
+        Map<ColourEnum, ColourCycle> byAttr = new HashMap<>();
 
         for (VisualsFlickerParseRecord record : records) {
-            List<ColourType> steps = new ArrayList<>();
+            List<ColourEnum> steps = new ArrayList<>();
             boolean illegalColour = false;
             for (String colour : record.colours()) {
-                ColourType colourType = ColourType.getColourType(colour);
+                ColourEnum colourType = ColourEnum.fromCode(colour);
                 if (colourType == null) {
                     errors.add("Flicker table at line: " + record.line() + " has " +
                             "an illegal colour: " + colour + " name: " +
                             record.name());
                     illegalColour = true;
                 } else {
-                    steps.add(ColourType.getColourType(colour));
+                    steps.add(ColourEnum.fromCode(colour));
                 }
             }
             if (illegalColour) continue;
-            ColourType key = ColourType.getColourType(record.colourChar());
+            ColourEnum key = ColourEnum.fromCode(record.colourChar());
             if (key == null) {
                 errors.add("Flicker table at line: " + record.line() + " has " +
                         "an illegal colour: " + record.colourChar());

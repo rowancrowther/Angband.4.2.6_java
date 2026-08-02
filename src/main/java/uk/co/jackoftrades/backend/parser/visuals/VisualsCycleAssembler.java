@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.colour.ColourCycle;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,7 +30,7 @@ import java.util.Map;
 
 /**
  * Folds the parsed {@code cycle:} blocks into a single {@link VisualsCycler}, bucketed group-then-name.
- * Each block's colour codes are resolved to {@link ColourType}s and stored as a {@link ColourCycle}
+ * Each block's colour codes are resolved to {@link ColourEnum}s and stored as a {@link ColourCycle}
  * under its (group, name) key. Assembles the domain half of the C {@code visuals_cycler} loader
  * ({@code ui-visuals.c}).
  * <p>
@@ -54,9 +54,9 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * {@code COLOUR_CODE} characters, so neither soft-error branch fires on real file input: an empty
      * colour string cannot be produced, and an unrecognised code is a hard parse error upstream. Both
      * guards are therefore defensive (reachable only by a hand-built record): an empty colour, or a
-     * code that {@link ColourType#getColourType} cannot resolve (it returns {@code null} on a miss),
+     * code that {@link ColourEnum#fromCode} cannot resolve (it returns {@code null} on a miss),
      * is flagged into {@code errors} and the whole record dropped. The lingering
-     * {@code catch (IllegalArgumentException)} is dead - {@code getColourType} signals a miss with
+     * {@code catch (IllegalArgumentException)} is dead - {@code fromCode} signals a miss with
      * {@code null}, never an exception.
      *
      * @param records the parsed {@code cycle:} blocks
@@ -72,11 +72,11 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
             int line = record.line();
             String group = record.group();
             String name = record.name();
-            List<ColourType> colours = new ArrayList<>();
+            List<ColourEnum> colours = new ArrayList<>();
             boolean illegalColour = false;
             for (String colour : record.colours()) {
                 if (!colour.isEmpty()) {
-                    ColourType colourType = ColourType.getColourType(colour);
+                    ColourEnum colourType = ColourEnum.fromCode(colour);
                     if (colourType == null) {
                         errors.add("Visuals at line: " + line + " has " +
                                 "an invalid colour: " + colour + " in group: " +

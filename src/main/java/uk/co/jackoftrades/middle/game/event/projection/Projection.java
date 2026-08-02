@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.game.event.projection;
 
 import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.enums.MessageType;
@@ -132,7 +132,7 @@ public class Projection {
      *
      * @author Rowan Crowther
      */
-    private ColourType colour;
+    private ColourEnum colour;
 
     /**
      * Build a projection whose damage denominator is a dice expression.
@@ -168,7 +168,7 @@ public class Projection {
                       MessageType message,
                       boolean isObvious,
                       boolean willwake,
-                      ColourType colour) {
+                      ColourEnum colour) {
         this.projection = projection;
         this.name = name;
         this.type = type;
@@ -221,7 +221,7 @@ public class Projection {
                       MessageType message,
                       boolean isObvious,
                       boolean willWake,
-                      ColourType colour) {
+                      ColourEnum colour) {
         this.projection = projection;
         this.name = name;
         this.type = type;

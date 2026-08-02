@@ -285,28 +285,6 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
     }
 
     /**
-     * Prepare a flag set with the same flags set as this one
-     *
-     * @return a flag set with the same flags set as this one
-     * @deprecated Use {@link #copyFrom} instead. Returning a fresh object cannot stand in for
-     * {@code flag_copy} ({@code z-bitflag.c}), which overwrites its destination in place: the
-     * 27 call sites of its wrapper macros ({@code rsf_copy}, {@code of_copy},
-     * {@code pf_copy}, ...) copy into a flag set that this port holds in a {@code final}
-     * field, so there is nothing to reassign the result to.
-     */
-    @CheckReturnValue
-    @Deprecated
-    public Flag<E> copy() {
-        Flag<E> result = new Flag<>(eClass);
-
-        for (E flag : flagSet) {
-            result.on(flag);
-        }
-
-        return result;
-    }
-
-    /**
      * Overwrites this flag set with the contents of another, so that afterwards this set has
      * exactly the flags that {@code flag} has. This is the port of {@code flag_copy}
      * ({@code z-bitflag.c}), which is a {@code memcpy} over the destination array — and it
@@ -322,21 +300,23 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * That is the easy mistake to make when reading a C {@code *_copy} call, because the
      * name suggests only addition.
      *
-     * <p>Only the flags are taken from {@code flag}; the two sets share no state afterwards,
-     * so later changes to either are invisible to the other. Unlike C, this returns the
-     * modified set, which lets calls be chained; the return value carries no information the
-     * caller does not already hold and can be discarded.
+     * <p>Only the flags are taken from {@code flag}; the two sets share no state afterwards, so
+     * later changes to either are invisible to the other. That guarantee is what the defensive-copy
+     * accessors rely on — {@code TrapKind.getFlags}, {@code ElementInfo.copy},
+     * {@code PlayerUpkeep.getRedrawFlags} — each of which allocates a fresh set and copies into it.
+     *
+     * <p>Returns {@code void}, like C's {@code flag_copy}. It briefly returned {@code this} to allow
+     * chaining, which forced every call site into a {@code x = x.copyFrom(y)} self-assignment to
+     * satisfy {@code @CheckReturnValue}; nothing needed the value, and the idiom actively misled —
+     * {@link #inter} once read {@code Flag<E> copy = copyFrom(other)}, where the returned "copy" was
+     * the receiver itself, silently wiping the set being intersected.
      *
      * @param flag the flag set to copy from, left unmodified
-     * @return this flag set, now holding exactly the flags of {@code flag}
      * @author Rowan Crowther
      */
-    @CheckReturnValue
-    public Flag<E> copyFrom(Flag<E> flag) {
+    public void copyFrom(Flag<E> flag) {
         wipe();
         union(flag);
-
-        return this;
     }
 
     /**
@@ -380,19 +360,7 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      */
     @Contract(mutates = "this")
     public boolean inter(@NotNull Flag<E> other) {
-        boolean changesMade = false;
-
-        Flag<E> copy = copyFrom(other);
-        copy.negate();
-
-        for (E flag : copy.flagSet) {
-            if (flagSet.contains(flag)) {
-                flagSet.remove(flag);
-                changesMade = true;
-            }
-        }
-
-        return changesMade;
+        return flagSet.retainAll(other.flagSet);
     }
 
     /**

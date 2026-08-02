@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.objects;
 
-import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 /**
  * A randomised "flavour" for an unidentified object kind — the disguising name
@@ -61,7 +61,7 @@ public class Flavour {
      *
      * @author Rowan Crowther
      */
-    private ColourType colour;
+    private ColourEnum colour;
 
     /**
      * The flavour's index within the file ({@code fidx} in C) — the stable
@@ -88,7 +88,7 @@ public class Flavour {
      * @param index  the flavour's file index
      * @author Rowan Crowther
      */
-    public Flavour(String text, String sVal, ColourType colour, int index) {
+    public Flavour(String text, String sVal, ColourEnum colour, int index) {
         this.text = text;
         this.sValStr = sVal;
         this.colour = colour;
@@ -107,7 +107,7 @@ public class Flavour {
      * @param index  the flavour's file index
      * @author Rowan Crowther
      */
-    public Flavour(String text, ColourType colour, int index) {
+    public Flavour(String text, ColourEnum colour, int index) {
         this.text = text;
         this.colour = colour;
         this.index = index;
@@ -155,7 +155,7 @@ public class Flavour {
      * @return the colour the flavoured object is drawn in
      * @author Rowan Crowther
      */
-    public ColourType getColour() {
+    public ColourEnum getColour() {
         return colour;
     }
 

@@ -19,7 +19,6 @@ package uk.co.jackoftrades.middle.game.globals.loaders;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.ParseResult;
 import uk.co.jackoftrades.backend.parser.ProjectionReader;
 import uk.co.jackoftrades.backend.parser.QuestReader;
@@ -52,10 +51,15 @@ import java.io.IOException;
  * @author Rowan Crowther
  */
 public class WorldDataLoader {
-    private static final Logger logger = LogManager.getLogger();
+    private static final Logger logger = LogManager.getLogger(WorldDataLoader.class);
 
     /**
-     * Load in the list of 'world' levels from the gamedata/world.txt file.
+     * Load the dungeon level list from {@code world.txt} into {@link WorldRegistry}. Self-contained
+     * (each level names only its neighbours, resolved within the file).
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the levels that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>rethrown</em>: there is no game without a dungeon, so this one stops the load.
      *
      * @throws IOException if there is a problem loading the file
      * @author Rowan Crowther
@@ -67,12 +71,7 @@ public class WorldDataLoader {
         try {
             ParseResult<World> result = worldReader.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String message = "Invalid lib/gamedata/world.txt file.";
-                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
-                logger.error(message, e);
-                throw e;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             WorldRegistry.setWorlds(result.items());
         } catch (IOException e) {
@@ -83,7 +82,13 @@ public class WorldDataLoader {
     }
 
     /**
-     * Load in the list of 'projections' from the gamedata/projection.txt file.
+     * Load the projection (element/effect) types from {@code projection.txt} into
+     * {@link WorldRegistry}. Must run before blow effects, which resolve their element by name.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the projections that
+     * did assemble are registered regardless, per the partial-results contract. An IO failure is
+     * logged and <em>rethrown</em>; later loaders depend on this list, so failing here names the
+     * real file rather than surfacing as an unresolvable element much later.
      *
      * @throws IOException if there is a problem loading the file
      * @author Rowan Crowther
@@ -95,12 +100,7 @@ public class WorldDataLoader {
         try {
             ParseResult<Projection> result = reader.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String message = "Invalid lib/gamedata/projection.txt file.";
-                InvalidTokenFoundDuringParse e = new InvalidTokenFoundDuringParse(message);
-                logger.error(message, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             WorldRegistry.setProjections(result.items());
         } catch (IOException e) {
@@ -112,9 +112,12 @@ public class WorldDataLoader {
 
     /**
      * Load the quest definitions from {@code quest.txt} into {@link WorldRegistry}. Must run after
-     * monsters, since each quest references the monster race that completes it. A file with soft
-     * errors is logged and skipped, and an IO error is logged and swallowed — either way the quest
-     * list is left unpopulated rather than partially filled.
+     * monsters, since each quest references the monster race that completes it.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the quests that did
+     * assemble are registered regardless, per the partial-results contract. An IO failure is logged
+     * and <em>swallowed</em>: nothing else loads from the quest list, so a missing file costs the
+     * quests rather than the game.
      *
      * @author Rowan Crowther
      */
@@ -125,12 +128,7 @@ public class WorldDataLoader {
         try {
             ParseResult<Quest> result = parser.parseWithResults(filename);
 
-            if (result.hasErrors()) {
-                String errorMessage = "Invalid " + filename + " file";
-                IllegalStateException e = new IllegalStateException(errorMessage);
-                logger.fatal(errorMessage, e);
-                return;
-            }
+            ErrorParsing.reportAndCheck(filename, result, logger);
 
             WorldRegistry.setQuests(result.items());
         } catch (IOException e) {

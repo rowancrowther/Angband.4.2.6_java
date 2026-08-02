@@ -22,7 +22,7 @@ import org.jetbrains.annotations.Contract;
 import uk.co.jackoftrades.backend.enums.DamageAspect;
 import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.outputtouser.Message;
+import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.ChunkUtils;
 import uk.co.jackoftrades.middle.cave.Generate;

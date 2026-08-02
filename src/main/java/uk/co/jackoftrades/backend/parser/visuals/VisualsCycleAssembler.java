@@ -18,10 +18,10 @@
 package uk.co.jackoftrades.backend.parser.visuals;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.frontend.colour.ColourCycle;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -18,12 +18,12 @@
 package uk.co.jackoftrades.backend.parser.monster;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.frontend.colour.ColourCycle;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;

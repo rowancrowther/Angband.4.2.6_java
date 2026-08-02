@@ -60,3 +60,5 @@ CLAUDE.md
 *.interp
 /src/main/gen/
 /src/test/
+/lib/fonts/
+/lib/tiles/

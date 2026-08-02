@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 
 /**
  * One severity grade of a timed effect — a named band within a status's range, with its own

@@ -17,8 +17,8 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.Heatmap;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.combat.Target;

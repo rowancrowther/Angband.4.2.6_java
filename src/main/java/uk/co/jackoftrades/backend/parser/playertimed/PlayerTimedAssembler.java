@@ -18,9 +18,9 @@
 package uk.co.jackoftrades.backend.parser.playertimed;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;

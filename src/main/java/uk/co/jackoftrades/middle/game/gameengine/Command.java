@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.outputtouser.Message;
+import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
@@ -537,7 +537,7 @@ public class Command {
         Optional<String> result = getArgString(argName);
         if (result.isPresent()) return result;
 
-        Message.send("%s", title); // This is currently a stub class
+        Message.message("%s", title);
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 
         if (initial != null && !initial.isEmpty())

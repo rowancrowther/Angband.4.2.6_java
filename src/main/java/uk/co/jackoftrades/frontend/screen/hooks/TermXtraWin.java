@@ -23,10 +23,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.frontend.screen.enums.TermXtraEventEnum;
 import uk.co.jackoftrades.frontend.sounds.MessageBoxFlags;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.io.File;
 
@@ -118,7 +116,7 @@ public class TermXtraWin implements TermEventHook {
      * @author Rowan Crowther
      */
     private void termXtraWinReact() {
-        Screen mainScreen = GameConstants.AngbandScreens.get(0);
+        //Screen mainScreen = GameConstants.AngbandScreens.get(0);
 
         long code;
         boolean change = false;
@@ -132,8 +130,8 @@ public class TermXtraWin implements TermEventHook {
      * @author Rowan Crowther
      */
     private void termXtraWinClear() {
-        Screen screen = GameConstants.AngbandScreens.get(0);
-        screen.clear();
+        //Screen screen = GameConstants.AngbandScreens.get(0);
+        //screen.clear();
     }
 
     /**

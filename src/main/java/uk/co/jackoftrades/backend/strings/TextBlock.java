@@ -22,9 +22,9 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.io.AngFile;
 import uk.co.jackoftrades.backend.io.enums.FileTypeEnum;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 import java.util.List;

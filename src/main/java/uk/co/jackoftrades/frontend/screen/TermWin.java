@@ -17,8 +17,8 @@
 
 package uk.co.jackoftrades.frontend.screen;
 
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 
 import java.util.ArrayList;
 

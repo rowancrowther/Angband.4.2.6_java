@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.colour;
 
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 
 import java.util.Map;
 

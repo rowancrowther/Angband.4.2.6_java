@@ -25,13 +25,11 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftrades.backend.parser.GameConstantsReader;
-import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.loaders.*;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 
 import java.io.IOException;
-import java.util.HashMap;
 
 /**
  * The global holder for the game's tunable constants and the startup entry point that loads all
@@ -85,8 +83,6 @@ public class GameConstants {
     public static final String ANGBAND_SYS = "xxx";
 
     public static final String iniFile = AngbandDirs.BASE_DIR + "angband.ini";
-
-    public static final HashMap<Integer, Screen> AngbandScreens = new HashMap<>();
 
     public boolean gameInProgress = false;
     public boolean initialised = false;
@@ -144,30 +140,20 @@ public class GameConstants {
      * @author Rowan Crowther
      */
     public static void init() {
-        String loader = "";
         try {
             // Start from an empty kind registry so init() is idempotent: object kinds and their
             // per-base sval counters are rebuilt from scratch here, so a re-init (e.g. between tests)
             // does not double-register kinds or keep incrementing svals.
             ObjectRegistry.reset();
 
-            loader = "Constants";
             loadGameConstants();
-            loader = "World";
             WorldDataLoader.loadWorld();                // world arraylist size determines maxRandDepth
-            loader = "Projections";
             WorldDataLoader.loadProjections();          // projections arrayList size determines projectionTypeMax
-            loader = "UIEntryRenderers";
             UIDataLoader.loadUIEntryRenderers();
-            loader = "UIEntryBases";
             UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
-            loader = "UIEntries";
             UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
-            loader = "PkayerProperties";
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry
-            loader = "TerrainFeatures";
             TerrainDataLoader.loadTerrainFeatures();
-            loader = "ObjectBases";
             ObjectDataLoader.loadObjectBases();
             MonsterDataLoader.loadPain();
             MonsterDataLoader.loadMonsterBases();         // Dependent on MonsterPain
@@ -200,7 +186,7 @@ public class GameConstants {
             MiscDataLoader.loadNames();
             MiscDataLoader.loadFlavours();
         } catch (Exception e) {
-            String message = "Unable to load " + loader + " data from " + AngbandDirs.ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
+            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }

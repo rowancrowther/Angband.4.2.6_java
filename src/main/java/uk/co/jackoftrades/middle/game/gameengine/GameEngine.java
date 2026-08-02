@@ -77,8 +77,6 @@ public class GameEngine {
     private GameEngine(Stage stage) {
         this.stage = stage;
         screen = new Screen(this.stage);
-        GameConstants.AngbandScreens.clear();
-        GameConstants.AngbandScreens.put(0, screen);
         initGame();
     }
 

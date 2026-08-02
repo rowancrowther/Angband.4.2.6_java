@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.outputtouser;
+package uk.co.jackoftrades.middle;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
@@ -36,18 +36,6 @@ import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
  * @author Rowan Crowther
  */
 public class Message {
-
-    /**
-     * Formats and sends a message to the player.
-     *
-     * @param message the message text, or a {@link String#format} pattern when {@code args} is given
-     * @param args    optional format arguments substituted into {@code message}
-     */
-    public static void send(String message, Object... args) {
-        String toSend = String.format(message, args);
-        // TODO: Flesh out this stub
-    }
-
     /**
      * Formats a message and announces it to the player — the port of C's {@code msg}
      * ({@code z-msg.c}), which is itself {@code msgt} with no sound attached.

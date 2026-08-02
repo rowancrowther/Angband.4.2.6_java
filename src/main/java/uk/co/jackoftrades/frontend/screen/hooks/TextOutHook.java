@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.screen.hooks;
 
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 
 /**
  * Sink for coloured text emitted by the game. Abstracts "where text goes" (a

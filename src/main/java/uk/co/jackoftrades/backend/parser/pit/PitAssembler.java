@@ -18,9 +18,9 @@
 package uk.co.jackoftrades.backend.parser.pit;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.swing.colour.ColourEnum;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;

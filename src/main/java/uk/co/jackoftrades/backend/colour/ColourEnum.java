@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.swing.colour;
+package uk.co.jackoftrades.backend.colour;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;

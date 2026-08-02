@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.gameinput;
 
 import uk.co.jackoftrades.backend.utils.Flag;
-import uk.co.jackoftrades.frontend.outputtouser.Message;
+import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
@@ -150,9 +150,9 @@ public interface GameInput {
      * @return {@code true} if the player confirmed
      */
     default boolean confirmDebug() {
-        Message.send("%s", "You are about to use the dangerous, unsupported, debug commands!");
-        Message.send("%s", "Your machine may crash, and your savefile may become corrupted!");
-        Message.send("%s", "Your experience beyond this point is not guaranteed in any way!");
+        Message.message("%s", "You are about to use the dangerous, unsupported, debug commands!");
+        Message.message("%s", "Your machine may crash, and your savefile may become corrupted!");
+        Message.message("%s", "Your experience beyond this point is not guaranteed in any way!");
 
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
 

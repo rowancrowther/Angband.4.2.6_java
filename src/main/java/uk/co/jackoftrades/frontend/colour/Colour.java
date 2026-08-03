@@ -113,4 +113,8 @@ public class Colour {
             index++;
         }
     }
+
+    public static Color getColour(ColourEnum colour) {
+        return currentColours.get(colour);
+    }
 }

@@ -17,18 +17,16 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
-import javafx.stage.Stage;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
-import uk.co.jackoftrades.frontend.screen.Screen;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 /**
- * The top-level game runtime: a singleton that owns the JavaFX {@link Stage} and
- * main {@link Screen} and performs game start-up (colours, the events handler and
+ * The top-level game runtime: a singleton that performs game start-up
+ * for the middle end, (the events handler and
  * the game constants). It is the entry point the front end calls into once the
  * window exists, roughly the Java counterpart of the C original's {@code play_game}
  * / initialisation bootstrap.
@@ -53,29 +51,15 @@ public class GameEngine {
     private static EventsHandler eventsBusHandler = new EventsBusHandler();
 
     private static GameEngine instance;
-    /**
-     * The main on-screen surface.
-     *
-     * @author Rowan Crowther
-     */
-    private Screen screen;
-    /**
-     * The JavaFX stage hosting the game.
-     *
-     * @author Rowan Crowther
-     */
-    private Stage stage;
+
 
     /**
      * Private constructor: build the main screen on the given stage, register it
      * as screen 0, and run {@link #initGame()}.
      *
-     * @param stage the JavaFX stage to host the game
      * @author Rowan Crowther
      */
-    private GameEngine(Stage stage) {
-        this.stage = stage;
-        screen = new Screen(this.stage);
+    private GameEngine() {
         initGame();
     }
 
@@ -86,10 +70,7 @@ public class GameEngine {
      * @author Rowan Crowther
      */
     private void initGame() {
-        screen.setStatusLabelText("Initializing events handler...");
-        screen.setStatusLabelText("Initialized game constants...");
         GameConstants.init();
-        screen.setStatusLabelText("Select New Game from File menu to start the game...");
 
         GameState.initGameState();
         eventsBusHandler = new EventsBusHandler();
@@ -121,27 +102,12 @@ public class GameEngine {
      * Get the game engine singleton, creating it on the given stage the first
      * time this is called.
      *
-     * @param stage the JavaFX stage to host the game
      * @return the singleton game engine
      * @author Rowan Crowther
      */
     @CheckReturnValue
-    public static GameEngine getGame(Stage stage) {
-        if (instance == null) instance = new GameEngine(stage);
-        return instance;
-    }
-
-    /**
-     * Get the already-created game engine singleton.
-     *
-     * @return the singleton game engine
-     * @throws IllegalStateException if the engine has not been created yet (see
-     *                               {@link #getGame(Stage)})
-     * @author Rowan Crowther
-     */
     public static GameEngine getGame() {
-        if (instance == null)
-            throw new IllegalStateException("Game Engine has not been initialized yet");
+        if (instance == null) instance = new GameEngine();
         return instance;
     }
 }

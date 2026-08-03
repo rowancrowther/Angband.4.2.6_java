@@ -17,15 +17,15 @@
 
 package uk.co.jackoftrades;
 
-import javafx.application.Application;
-import javafx.stage.Stage;
+import uk.co.jackoftrades.frontend.Frontend;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 
+import javax.swing.*;
 import java.io.IOException;
 
 //TIP To <b>Run</b> code, press <shortcut actionId="Run"/> or
 // click the <icon src="AllIcons.Actions.Execute"/> icon in the gutter.
-public class Main extends Application {
+public class Main {
     /**
      * The main entry point for all JavaFX applications.
      * The start method is called after the init method has returned,
@@ -41,22 +41,21 @@ public class Main extends Application {
      *              primary stages.
      * @throws Exception if something goes wrong
      */
-    @Override
-    public void start(Stage stage) throws Exception {
-        GameEngine gameEngine = GameEngine.getGame(stage);
+
+    public void start() throws Exception {
+        GameEngine gameEngine = GameEngine.getGame();
     }
 
     public static void main(String[] args) throws IOException {
-        launch(args);
-
-        //TIP Press <shortcut actionId="ShowIntentionActions"/> with your caret at the highlighted text
-        // to see how IntelliJ IDEA suggests fixing it.
-        System.out.println("Hello and welcome!\n");
-
-        for (int i = 1; i <= 5; i++) {
-            //TIP Press <shortcut actionId="Debug"/> to start debugging your code. We have set one <icon src="AllIcons.Debugger.Db_set_breakpoint"/> breakpoint
-            // for you, but you can always add more by pressing <shortcut actionId="ToggleLineBreakpoint"/>.
-            System.out.println("i = " + i);
-        }
+        SwingUtilities.invokeLater(startFrontend);
+        System.out.println("Do other stuff");
     }
+
+    static Runnable startFrontend = new Runnable() {
+        @Override
+        public void run() {
+            Frontend frontend = new Frontend();
+            frontend.init();
+        }
+    };
 }

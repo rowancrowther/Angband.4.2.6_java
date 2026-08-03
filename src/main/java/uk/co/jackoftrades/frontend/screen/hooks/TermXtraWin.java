@@ -17,8 +17,6 @@
 
 package uk.co.jackoftrades.frontend.screen.hooks;
 
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.Contract;
@@ -45,14 +43,6 @@ public class TermXtraWin implements TermEventHook {
      * @author Rowan Crowther
      */
     private static Logger logger = LogManager.getLogger();
-
-    /**
-     * Player retained for the most recent sound effect so it is not garbage
-     * collected before playback completes.
-     *
-     * @author Rowan Crowther
-     */
-    private MediaPlayer mediaPlayer;
 
     /**
      * Dispatch a terminal extra-event to its concrete handler.
@@ -143,8 +133,7 @@ public class TermXtraWin implements TermEventHook {
     }
 
     /**
-     * Play the sound associated with the given message-box style via a JavaFX
-     * {@link MediaPlayer}. Failures are logged and swallowed so a missing/invalid
+     * Failures are logged and swallowed so a missing/invalid
      * sound file never interrupts gameplay.
      *
      * @param flag the message-box style whose sound to play
@@ -154,9 +143,6 @@ public class TermXtraWin implements TermEventHook {
     private void termXtraWinNoise(MessageBoxFlags flag) {
         try {
             File file = flag.getFileName();
-            Media sound = new Media(file.toURI().toString());
-            mediaPlayer = new MediaPlayer(sound);
-            mediaPlayer.play();
         } catch (Exception e) {
             logger.error("Error caught", e);
         }

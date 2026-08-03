@@ -17,13 +17,12 @@
 
 package uk.co.jackoftrades.frontend.screen;
 
-import javafx.scene.text.Font;
 import uk.co.jackoftrades.frontend.screen.hooks.TermEventHook;
 import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
 
 /**
  * Per-window front-end state for one terminal, pairing a logical {@link Term}
- * with the on-screen {@link Screen} that draws it and all the platform geometry
+ * with the on-screen that draws it and all the platform geometry
  * (position, size, fonts, tile sizes) needed to lay it out. This is the Java
  * port of the C original's {@code term_data} struct ({@code src/main-win.c}),
  * which the Windows front end used to track each game window.
@@ -31,12 +30,6 @@ import uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin;
  * @author Rowan Crowther
  */
 public class TermData {
-    /**
-     * The on-screen surface this terminal is drawn onto.
-     *
-     * @author Rowan Crowther
-     */
-    private Screen screen;
 
     /**
      * The logical terminal this window backs.
@@ -153,12 +146,6 @@ public class TermData {
      */
     private boolean bizarre;
 
-    /**
-     * The font used to render this window's text.
-     *
-     * @author Rowan Crowther
-     */
-    private Font font;
     /**
      * Character cell width in pixels for the current font.
      *

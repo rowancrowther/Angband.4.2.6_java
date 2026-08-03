@@ -15,12 +15,22 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.screen;
+package uk.co.jackoftrades.frontend.colour;
 
-import javax.swing.*;
+import java.util.HashMap;
+import java.util.Map;
 
-public class Window extends JFrame {
-    public Window() {
-        super("Welcome");
+public class MonsterRaceCycler {
+    private static Map<String, VisualsCycler> monsterCyclerByRace = new HashMap<>();
+
+    private MonsterRaceCycler() {
+    }
+
+    public static void addCycler(String race, VisualsCycler visualsCycler) {
+        monsterCyclerByRace.put(race, visualsCycler);
+    }
+
+    public static VisualsCycler getCycler(String race) {
+        return monsterCyclerByRace.get(race);
     }
 }

@@ -552,7 +552,7 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
                 } else {
                     errors.add("Monster at line: " + line + " has " +
                             "an unknown colour cycle name: " + cyclerGroup + ":" + colourCycleName);
-                    continue;
+                    visualsCycler = null;
                 }
             }
             // An unset (0) innate or spell-cast frequency defaults to 4.

@@ -19,6 +19,7 @@ package uk.co.jackoftrades;
 
 import uk.co.jackoftrades.frontend.Frontend;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
 
 import javax.swing.*;
 import java.io.IOException;
@@ -54,7 +55,8 @@ public class Main {
     static Runnable startFrontend = new Runnable() {
         @Override
         public void run() {
-            Frontend frontend = new Frontend();
+            GameRunner gameRunner = new GameRunner();
+            Frontend frontend = new Frontend(gameRunner);
             frontend.init();
         }
     };

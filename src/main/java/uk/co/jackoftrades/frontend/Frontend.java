@@ -97,9 +97,6 @@ public class Frontend {
 
             g.setFont(font);
             g.setColor(new Color(255, 255, 255));
-
-            String threadRef = gameRunner.toString();
-            g.drawString(threadRef, 20, 20);
         }
     }
 

@@ -25,11 +25,15 @@ import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 /**
- * The top-level game runtime: a singleton that performs game start-up
- * for the middle end, (the events handler and
- * the game constants). It is the entry point the front end calls into once the
- * window exists, roughly the Java counterpart of the C original's {@code play_game}
- * / initialisation bootstrap.
+ * The top-level game runtime: a singleton that performs middle-end start-up - game
+ * state, the event bus and the game constants - roughly the Java counterpart of the C
+ * original's initialisation bootstrap, {@code init_angband()} ({@code src/init.c}) as
+ * called from {@code main()} ({@code src/main.c}).
+ *
+ * <p><b>Nothing constructs this yet.</b> It is meant to be built once on the game
+ * thread, by {@link GameRunner}, so that everything it initialises is confined to that
+ * thread; but {@code GameRunner} does not hold an engine, so no live code path reaches
+ * {@link #getGame()}.
  *
  * @author Rowan Crowther
  */
@@ -42,20 +46,26 @@ public class GameEngine {
     private static final Logger logger = LogManager.getLogger();
     /**
      * The live event bus, held here as the game-wide seam other layers reach through
-     * {@link #getEventsBusHandler()}. Created eagerly (so it is never {@code null}, even
-     * before a game starts) and typed to the {@link EventsHandler} interface so a test
-     * can swap in its own bus via {@link #setEventsBusHandler(EventsHandler)}.
+     * {@link #getEventsBusHandler()}. Typed to the {@link EventsHandler} interface so a
+     * test can swap in its own bus via {@link #setEventsBusHandler(EventsHandler)}.
+     *
+     * <p><b>Null until {@link #initGame()} runs.</b> The bus is created during
+     * initialisation, not at class load, so {@link #getEventsBusHandler()} returns
+     * {@code null} to any caller that reaches it before the first {@link #getGame()}.
+     * The ordering that buys is the point: the bus must exist before
+     * {@link GameConstants#init()} signals anything, and creating it in
+     * {@code initGame()} puts it there.
      *
      * @author Rowan Crowther
      */
-    private static EventsHandler eventsBusHandler = new EventsBusHandler();
+    private static EventsHandler eventsBusHandler;
 
     private static GameEngine instance;
 
 
     /**
-     * Private constructor: build the main screen on the given stage, register it
-     * as screen 0, and run {@link #initGame()}.
+     * Private constructor - the singleton is reached through {@link #getGame()}, never
+     * built directly. All it does is run {@link #initGame()}.
      *
      * @author Rowan Crowther
      */
@@ -64,23 +74,36 @@ public class GameEngine {
     }
 
     /**
-     * Initialise the game's subsystems in order — colours, the events handler and
-     * the game constants — updating the status line as each step completes.
+     * Initialise the middle end's subsystems, in the order they depend on each other:
+     * game state, then the event bus, then the game constants loaded from
+     * {@code lib/gamedata}.
+     *
+     * <p>The bus is created <em>before</em> {@link GameConstants#init()} deliberately.
+     * {@code GameConstants.init()} is this port's {@code init_angband()}
+     * ({@code src/init.c}), the step C signals {@code EVENT_ENTER_INIT} from - so any
+     * bus created after it would miss every event raised during loading, exactly as C
+     * requires {@code init_display()} to precede {@code init_angband()} in
+     * {@code main()} ({@code src/main.c}).
+     *
+     * <p>Not yet reached: C registers its handlers between those two calls. There is no
+     * equivalent hook here, because this method both creates the bus and starts loading
+     * with nothing in between, so the front end still has no point at which to register
+     * for events raised during initialisation.
      *
      * @author Rowan Crowther
      */
     private void initGame() {
-        GameConstants.init();
-
         GameState.initGameState();
         eventsBusHandler = new EventsBusHandler();
+
+        GameConstants.init();
     }
 
     /**
-     * The live event bus that game logic signals through. Never {@code null} - the field
-     * is initialised eagerly - so callers can dispatch without a null check.
+     * The live event bus that game logic signals through.
      *
-     * @return the current event bus
+     * @return the current event bus, or {@code null} if called before the first
+     * {@link #getGame()} has run {@link #initGame()}
      * @author Rowan Crowther
      */
     public static EventsHandler getEventsBusHandler() {
@@ -91,6 +114,10 @@ public class GameEngine {
      * Replace the live event bus - the injection seam for tests, which can install their
      * own {@link EventsBusHandler} (or a spy over one) to observe what gets signalled.
      *
+     * <p>Only usable <em>after</em> {@link #getGame()}: a bus installed before it is
+     * discarded, because {@link #initGame()} overwrites the field with a fresh
+     * {@link EventsBusHandler}.
+     *
      * @param eventsBusHandler the bus to install
      * @author Rowan Crowther
      */
@@ -99,8 +126,13 @@ public class GameEngine {
     }
 
     /**
-     * Get the game engine singleton, creating it on the given stage the first
-     * time this is called.
+     * Get the game engine singleton, building it - and so running the whole of
+     * {@link #initGame()} - the first time this is called. Later calls just return the
+     * existing instance.
+     *
+     * <p>Not thread-safe: the check-then-create is unsynchronised, so two threads
+     * calling this at once could each build an engine and load the game data twice.
+     * Safe as long as the call stays confined to the single game thread.
      *
      * @return the singleton game engine
      * @author Rowan Crowther

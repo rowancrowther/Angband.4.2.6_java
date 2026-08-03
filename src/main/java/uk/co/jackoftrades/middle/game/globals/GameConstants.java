@@ -98,6 +98,8 @@ public class GameConstants {
     private static int storeMax;
     private static int caveProfileMax;
 
+    public static final String version = "4.2.6";
+
     private static GameConstantsData data;
 
     /**

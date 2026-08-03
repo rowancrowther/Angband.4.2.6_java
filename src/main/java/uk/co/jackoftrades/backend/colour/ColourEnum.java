@@ -134,7 +134,7 @@ public enum ColourEnum {
                 return colour;
             }
         }
-        return null;
+        return COLOUR_WHITE;
     }
 
     @Nullable

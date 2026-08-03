@@ -41,56 +41,59 @@ public class Frontend {
 
     public void init() {
         Colour.init();
-        JFrame testWindow = new JFrame();
-        testWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        testWindow.setSize(800, 600);
-        testWindow.setTitle("Test Window");
+
+        List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
+        Font font;
+        int fontSize = 24;
+        if (fontNames.contains("TerminalVector"))
+            font = new Font("TerminalVector", Font.PLAIN, fontSize);
+        else
+            font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
+
+        JPanelArea.font = font;
+
+        FontMetrics metrics = activeWindow.getFontMetrics(font);
+        int charWidth = metrics.charWidth('M');
+        int charHeight = metrics.getHeight();
+        int charAscent = metrics.getAscent();
+
+        JPanelArea.charAscent = charAscent;
+        JPanelArea.charHeight = charHeight;
+        JPanelArea.charWidth = charWidth;
+
         JFrame.setDefaultLookAndFeelDecorated(true);
+        activeWindow = new Window();
+        activeWindow.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        activeWindow.setSize(80 * charWidth, 24 * charHeight);
+        activeWindow.setTitle("Test Window");
         JPanelArea mainPanel = new JPanelArea();
-        mainPanel.setPreferredSize(new Dimension(800, 600));
-        testWindow.add(mainPanel);
-        testWindow.setLocationRelativeTo(null);
-        testWindow.pack();
-        testWindow.setVisible(true);
+        mainPanel.setPreferredSize(new Dimension(80 * charWidth, 24 * charHeight));
+        activeWindow.add(mainPanel);
+        activeWindow.pack();
+        activeWindow.setLocationRelativeTo(null);
+        activeWindow.setVisible(true);
     }
 
     private static class JPanelArea extends JPanel {
+        public static Font font;
+        public static int charWidth;
+        public static int charHeight;
+        public static int charAscent;
+
         @Override
         public void paintComponent(Graphics g) {
-            super.paintComponents(g);
+            super.paintComponent(g);
             if (g == null) return;
-
-            List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
-            Font font;
-            if (fontNames.contains("TerminalVector"))
-                font = new Font("TerminalVector", Font.PLAIN, 20);
-            else
-                font = new Font(Font.MONOSPACED, Font.PLAIN, 20);
 
             List<AngbandDisplayCharacter> characters = new ArrayList<>();
             characters.add(new AngbandDisplayCharacter('@', ColourEnum.COLOUR_WHITE));
             characters.add(new AngbandDisplayCharacter('D', ColourEnum.COLOUR_RED));
             characters.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_SHADE));
 
-            FontMetrics metrics = getFontMetrics(font);
-            int charWidth = metrics.charWidth('M');
-            int charHeight = metrics.getHeight();
-            int charAscent = metrics.getAscent();
-
             g.setColor(new Color(0, 0, 0));
             g.fillRect(0, 0, getWidth(), getHeight());
 
             g.setFont(font);
-            int offset = 10;
-            for (AngbandDisplayCharacter character : characters) {
-                Color colour = Colour.getColour(character.getAttributeColour());
-
-                g.setColor(colour);
-                char[] toDraw = new char[]{character.getCharacter()};
-                g.drawChars(toDraw, 0, 1, charWidth * offset, charHeight * offset + charAscent);
-
-                offset += 5;
-            }
         }
     }
 }

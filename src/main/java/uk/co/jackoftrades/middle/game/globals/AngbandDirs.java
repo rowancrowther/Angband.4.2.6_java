@@ -40,4 +40,45 @@ public class AngbandDirs {
     public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
     public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
     public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
+
+    public enum ANGBAND_DIRS {
+        SCORES("scores", ANGBAND_DIR_SCORES),
+        GAMEDATA("gamedata", ANGBAND_DIR_GAMEDATA),
+        SCREENS("screens", ANGBAND_DIR_SCREENS),
+        HELP("help", ANGBAND_DIR_HELP),
+        PREF("pref", ANGBAND_DIR_CUSTOMIZE),
+        FONTS("fonts", ANGBAND_DIR_FONTS),
+        TILES("tiles", ANGBAND_DIR_TILES),
+        SOUNDS("sounds", ANGBAND_DIR_SOUNDS),
+        ICONS("icons", ANGBAND_DIR_ICONS),
+        USER("user", ANGBAND_DIR_USER),
+        SAVE("save", ANGBAND_DIR_SAVE),
+        PANIC("panic", ANGBAND_DIR_PANIC),
+        ARCHIVE("archive", ANGBAND_DIR_ARCHIVE);
+
+        private final String name;
+        private final String path;
+
+        ANGBAND_DIRS(final String name, final String path) {
+            this.name = name;
+            this.path = path;
+        }
+
+        public String getName() {
+            return name;
+        }
+
+        public String getPath() {
+            return path;
+        }
+
+        public static boolean contains(String dirName) {
+            for (ANGBAND_DIRS dir : ANGBAND_DIRS.values()) {
+                if (dir.getName().equals(dirName))
+                    return true;
+            }
+
+            return false;
+        }
+    }
 }

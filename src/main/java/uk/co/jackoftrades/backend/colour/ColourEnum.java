@@ -114,6 +114,14 @@ public enum ColourEnum {
         colourTranslate = table;
     }
 
+    /**
+     * The colour's display name, as data files spell it - the port of
+     * {@code attr_to_text()} ({@code [C] src/z-color.c}).
+     *
+     * @param colour the colour to name
+     * @return its display name, e.g. {@code "Light Green"}
+     * @author Rowan Crowther
+     */
     @NotNull
     @Contract(pure = true)
     @CheckReturnValue
@@ -121,6 +129,29 @@ public enum ColourEnum {
         return colour.colourName;
     }
 
+    /**
+     * Resolve a data-file colour to its constant, accepting either spelling: a single character is
+     * the index code ({@code "y"}), anything longer is the display name ({@code "Light Green"}),
+     * matched without regard to case. This pairs C's {@code color_char_to_attr()} and
+     * {@code color_text_to_attr()} ({@code [C] src/z-color.c}) behind one entry point, since a
+     * data file may use either.
+     *
+     * <p>An unrecognised name yields {@code null}, which is the whole point: it is what lets a
+     * reader report {@code unknown colour} against the offending line. C's
+     * {@code color_text_to_attr()} likewise answers {@code -1} and leaves the decision to its
+     * caller - the data-file parsers raise {@code PARSE_ERROR_INVALID_COLOR} rather than
+     * substituting anything.
+     *
+     * <p>This once returned {@code COLOUR_WHITE} for an unmatched name. That took the choice away
+     * from every caller and silently recoloured bad data instead of rejecting it, which
+     * disagreed with both C and the sibling overload below, and left the readers unable to detect
+     * a colour they could not resolve. Any caller that genuinely wants white on failure should
+     * say so itself.
+     *
+     * @param code a one-character index code, or a full display name
+     * @return the matching colour, or {@code null} if the code names none
+     * @author Rowan Crowther
+     */
     @Nullable
     @CheckReturnValue
     @Contract(pure = true)
@@ -134,9 +165,20 @@ public enum ColourEnum {
                 return colour;
             }
         }
-        return COLOUR_WHITE;
+        return null;
     }
 
+    /**
+     * Resolve a single index character to its colour - C's {@code color_char_to_attr()}
+     * ({@code [C] src/z-color.c}).
+     *
+     * <p>Case matters, and catches people out: {@code 'w'} is White but {@code 'W'} is Light
+     * Slate, {@code 'v'} is Violet but {@code 'V'} is Light Purple.
+     *
+     * @param c the index character from a data file
+     * @return the matching colour, or {@code null} if no colour uses that character
+     * @author Rowan Crowther
+     */
     @Nullable
     @CheckReturnValue
     @Contract(pure = true)

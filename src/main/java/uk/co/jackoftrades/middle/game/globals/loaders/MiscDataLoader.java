@@ -61,7 +61,7 @@ public class MiscDataLoader {
      */
     public static void loadFlavours() {
         FlavourReader parser = new FlavourReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "flavor.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "flavor.txt";
 
         try {
             ParseResult<FlavourKind> result = parser.parseWithResults(filename);
@@ -86,7 +86,7 @@ public class MiscDataLoader {
      */
     public static void loadHints() {
         HintReader parser = new HintReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "hints.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "hints.txt";
 
         try {
             ParseResult<Hint> result = parser.parseWithResults(filename);
@@ -111,7 +111,7 @@ public class MiscDataLoader {
      */
     public static void loadNames() {
         NamesReader parser = new NamesReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "names.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "names.txt";
 
         try {
             ParseResult<Name> result = parser.parseWithResults(filename);

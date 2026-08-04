@@ -55,7 +55,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerTimedProperties() {
         PlayerTimedReader parser = new PlayerTimedReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "player_timed.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "player_timed.txt";
 
         try {
             ParseResult<PlayerTimedEffect> result = parser.parseWithResults(filename);
@@ -82,7 +82,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerClasses() {
         PlayerClassReader parser = new PlayerClassReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "class.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "class.txt";
 
         try {
             ParseResult<PlayerClass> result = parser.parseWithResults(filename);
@@ -108,7 +108,7 @@ public class PlayerDataLoader {
      */
     public static void loadMagicRealms() {
         RealmReader parser = new RealmReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "realm.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "realm.txt";
 
         try {
             ParseResult<MagicRealm> result = parser.parseWithResults(filename);
@@ -133,7 +133,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerRaces() {
         PlayerRaceReader parser = new PlayerRaceReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "p_race.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "p_race.txt";
 
         try {
             ParseResult<PlayerRace> result = parser.parseWithResults(filename);
@@ -160,7 +160,7 @@ public class PlayerDataLoader {
      */
     public static void loadBodies() {
         BodyReader reader = new BodyReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "body.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "body.txt";
 
         try {
             ParseResult<PlayerBody> results = reader.parseWithResults(filename);
@@ -186,7 +186,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerHistories() {
         HistoryReader reader = new HistoryReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "history.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "history.txt";
 
         try {
             ParseResult<PlayerHistoryChart> results = reader.parseWithResults(filename);
@@ -213,7 +213,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerShapes() throws IOException {
         ShapeReader parser = new ShapeReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "shape.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "shape.txt";
 
         try {
             ParseResult<PlayerShape> result = parser.parseWithResults(filename);
@@ -241,7 +241,7 @@ public class PlayerDataLoader {
      */
     public static void loadPlayerProperties() throws IOException {
         PlayerPropertyReader parser = new PlayerPropertyReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "player_property.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "player_property.txt";
 
         try {
             ParseResult<PlayerProperty> result = parser.parseWithResults(filename);

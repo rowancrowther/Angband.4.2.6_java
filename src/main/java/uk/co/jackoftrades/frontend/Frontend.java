@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.frontend;
 
+import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Window;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
@@ -30,21 +31,127 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * The Swing front end: owns the game's windows, and owns the one handle on the middle end.
+ * It stands in for C's {@code main-*.c} modules ({@code [C] src/main-gcu.c} and friends), each of
+ * which builds its platform's terms and installs the hooks the core calls back through.
+ *
+ * <p>Everything here runs on Swing's event dispatch thread (EDT). The middle end runs on the
+ * thread {@link GameRunner} owns, and {@code GameRunner} is the only middle-end type this class
+ * imports - one object wide, which is what keeps the seam between the two halves checkable by
+ * reading the import list.
+ *
+ * <p>State is per-instance, not static. A previous version made the fields static so a static
+ * {@code closeDown} could reach them, which left the class half-static and would have let a second
+ * front end quietly overwrite the first one's runner.
+ *
+ * <p>Barely started: {@link #init} builds one blank 80x24 window and starts the game thread. The
+ * panel paints a black rectangle and no glyphs, and the window list only ever holds the one
+ * window it was constructed with.
+ *
+ * @author Rowan Crowther
+ */
 public class Frontend {
+    /**
+     * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
+     * for now; C's terms are a fixed array of eight.
+     *
+     * @author Rowan Crowther
+     */
     private List<Window> windows;
+    /**
+     * The window currently being drawn to and configured - C's {@code Term}, the term that
+     * display calls implicitly act on.
+     *
+     * @author Rowan Crowther
+     */
     private Window activeWindow;
+    /**
+     * The game thread's owner, and this class's entire view of the middle end: started at the end
+     * of {@link #init} and asked to stop by {@link #closeDown}.
+     *
+     * @author Rowan Crowther
+     */
     private GameRunner gameRunner;
 
+    /**
+     * The parsed command line, kept from {@link #init}.
+     *
+     * <p>Nothing reads it yet. {@code requestGraphicsMode} is the component that belongs to this
+     * class - tiles or plain text is a decision taken while building the window - and the
+     * savefile group is not the front end's to act on.
+     *
+     * @author Rowan Crowther
+     */
+    private StartupOptions startupOptions;
+
+    /**
+     * Build the front end around the runner it will drive, and open its first window.
+     *
+     * <p>Only assembles state; nothing is shown and no thread starts until {@link #init}. Runs on
+     * the EDT, since {@link Window} is a Swing component.
+     *
+     * @param gameRunner the game thread's owner, this front end's one handle on the middle end
+     * @author Rowan Crowther
+     */
     public Frontend(GameRunner gameRunner) {
-        this.windows = new ArrayList<>();
+        windows = new ArrayList<>();
         Window main = new Window();
         windows.add(main);
         activeWindow = main;
         this.gameRunner = gameRunner;
     }
 
-    public void init() {
+    /**
+     * Shut the game down: dispose every window, ask the game thread to stop, and exit.
+     *
+     * <p>Reached from the window-closing listener. The window is set to
+     * {@code DO_NOTHING_ON_CLOSE} precisely so the close button arrives here instead of quietly
+     * disposing the frame, which is the port's equivalent of C routing a quit through
+     * {@code quit_aux} rather than letting the display vanish underneath the game.
+     *
+     * <p>The stop is only requested, never waited for: {@link System#exit} follows immediately, so
+     * the game thread is killed wherever it happens to be rather than finishing. That is
+     * survivable only while the loop holds no state worth saving. Once it does, this needs to join
+     * the thread - or hand the exit to it - before the process goes.
+     *
+     * <p>Exits directly rather than through {@code QuitAux}, so nothing is logged on the way out
+     * and the front end does not get the cleanup hook C gives it.
+     *
+     * @author Rowan Crowther
+     */
+    public void closeDown() {
+        for (Window window : windows) {
+            window.dispose();
+        }
+        gameRunner.requestStop();
+        System.exit(0);
+    }
+
+    /**
+     * Bring the front end up: size the window from the chosen font, wire the close handler, start
+     * the game thread, and show it. The port of a {@code main-*.c} module's {@code init_*}
+     * function, which C calls before {@code init_angband()} so the display exists to report
+     * loading errors on.
+     *
+     * <p>The metrics drive everything. Angband is written against a character grid, so the window
+     * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
+     * of C asking a terminal how big it is. {@code TerminalVector} is preferred and the platform
+     * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
+     *
+     * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
+     * can never arrive before there is something to handle it, and {@code gameRunner.start()}
+     * comes last, so the game thread cannot outlive a failure to build the display. An exception
+     * before {@code setVisible} leaves the JVM alive with no window on screen, because
+     * {@code pack()} has already made the frame displayable and so kept the EDT running.
+     *
+     * @param options the parsed command line; stored, not yet acted on
+     * @author Rowan Crowther
+     */
+    public void init(StartupOptions options) {
         Colour.init();
+
+        startupOptions = options;
 
         List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
         Font font;
@@ -81,12 +188,39 @@ public class Frontend {
         activeWindow.setVisible(true);
     }
 
+    /**
+     * The character grid: the component the game is actually drawn on, and the port's {@code Term}
+     * surface.
+     *
+     * <p>A placeholder. {@link #paintComponent} blacks the panel out and sets up the pen, but
+     * draws no glyphs - there is nothing to draw until the renderer is ported.
+     *
+     * <p>The font and metrics are static, so they are shared by every panel in the JVM rather than
+     * belonging to the front end that measured them. They are per-front-end values, and a second
+     * front end with a different font would overwrite them.
+     *
+     * @author Rowan Crowther
+     */
     private class JPanelArea extends JPanel {
+        /**
+         * The grid font, measured and installed by {@link Frontend#init}.
+         */
         public static Font font;
+        /** Cell width in pixels, from the font's {@code 'M'}. */
         public static int charWidth;
+        /** Cell height in pixels, the font's full line height. */
         public static int charHeight;
+        /** Baseline offset within a cell, for placing glyphs once there are any. */
         public static int charAscent;
 
+        /**
+         * Clear to black and set the pen to the font and white. Glyph drawing lands here when the
+         * renderer is ported.
+         *
+         * @param g the graphics context, which Swing may pass as {@code null} before the panel is
+         *          realised
+         * @author Rowan Crowther
+         */
         @Override
         public void paintComponent(Graphics g) {
             super.paintComponent(g);
@@ -100,10 +234,25 @@ public class Frontend {
         }
     }
 
+    /**
+     * The game window's window events. Only {@code windowClosing} does anything; the rest are
+     * generated overrides that call {@code super} and could go.
+     *
+     * @author Rowan Crowther
+     */
     private WindowListener windowListener = new WindowAdapter() {
+        /**
+         * The player closed the window: shut the game down.
+         *
+         * <p>This runs at all only because the frame is {@code DO_NOTHING_ON_CLOSE} - the close
+         * button is routed here rather than disposing the window, so shutdown goes through
+         * {@link #closeDown()} and the game thread is told about it.
+         *
+         * @param e the close event, not inspected
+         * @author Rowan Crowther
+         */
         public void windowClosing(WindowEvent e) {
-            gameRunner.requestStop();
-            System.exit(0);
+            closeDown();
         }
 
         /**

@@ -60,7 +60,7 @@ public class ObjectDataLoader {
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "object_property.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "object_property.txt";
 
         try {
             ParseResult<ObjectProperty> result = parser.parseWithResults(filename);
@@ -89,7 +89,7 @@ public class ObjectDataLoader {
      */
     public static void loadArtifacts() {
         ArtifactReader parser = new ArtifactReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "artifact.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "artifact.txt";
 
         try {
             ParseResult<Artifact> result = parser.parseWithResults(filename);
@@ -115,7 +115,7 @@ public class ObjectDataLoader {
      */
     public static void loadEgoItems() {
         EgoItemReader reader = new EgoItemReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "ego_item.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ego_item.txt";
 
         try {
             ParseResult<EgoItem> results = reader.parseWithResults(filename);
@@ -141,7 +141,7 @@ public class ObjectDataLoader {
      */
     public static void loadActivations() {
         ActivationReader reader = new ActivationReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "activation.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "activation.txt";
 
         try {
             ParseResult<Activation> results = reader.parseWithResult(filename);
@@ -170,7 +170,7 @@ public class ObjectDataLoader {
      */
     public static void loadItemObjects() throws IOException {
         ItemObjectReader parser = new ItemObjectReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "object.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "object.txt";
 
         try {
             ParseResult<ObjectKind> results = parser.parseWithResults(filename);
@@ -201,7 +201,7 @@ public class ObjectDataLoader {
      */
     public static void loadCurses() throws IOException {
         CurseReader parser = new CurseReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "curse.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "curse.txt";
 
         try {
             ParseResult<Curse> result = parser.parseWithResults(filename);
@@ -227,7 +227,7 @@ public class ObjectDataLoader {
      */
     public static void loadBrands() throws IOException {
         BrandReader parser = new BrandReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "brand.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "brand.txt";
 
         try {
             ParseResult<Brand> result = parser.parseWithResults(filename);
@@ -258,7 +258,7 @@ public class ObjectDataLoader {
      */
     public static void loadSlays() throws IOException {
         SlayReader parser = new SlayReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "slay.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "slay.txt";
 
         try {
             ParseResult<Slay> result = parser.parseWithResults(filename);
@@ -290,7 +290,7 @@ public class ObjectDataLoader {
      */
     public static void loadObjectBases() throws IOException {
         ObjectBaseReader parser = new ObjectBaseReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "object_base.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "object_base.txt";
 
         try {
             ParseResult<ObjectBase> result = parser.parseWithResults(filename);

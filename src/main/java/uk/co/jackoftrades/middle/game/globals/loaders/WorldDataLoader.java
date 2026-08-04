@@ -65,7 +65,7 @@ public class WorldDataLoader {
      * @author Rowan Crowther
      */
     public static void loadWorld() throws IOException {
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "world.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "world.txt";
         WorldReader worldReader = new WorldReader();
 
         try {
@@ -94,7 +94,7 @@ public class WorldDataLoader {
      * @author Rowan Crowther
      */
     public static void loadProjections() throws IOException {
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "projection.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "projection.txt";
         ProjectionReader reader = new ProjectionReader();
 
         try {
@@ -123,7 +123,7 @@ public class WorldDataLoader {
      */
     public static void loadQuests() {
         QuestReader parser = new QuestReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "quest.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "quest.txt";
 
         try {
             ParseResult<Quest> result = parser.parseWithResults(filename);

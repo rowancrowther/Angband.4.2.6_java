@@ -112,7 +112,7 @@ public class GameConstants {
      * @author Rowan Crowther
      */
     private static void loadGameConstants() throws IOException {
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "constants.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "constants.txt";
         GameConstantsReader reader = new GameConstantsReader();
         GameConstantsParseResult result;
 
@@ -188,7 +188,7 @@ public class GameConstants {
             MiscDataLoader.loadNames();
             MiscDataLoader.loadFlavours();
         } catch (Exception e) {
-            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIR_GAMEDATA + " error message: " + e.getMessage();
+            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
@@ -196,7 +196,7 @@ public class GameConstants {
 
     //    private static void loadMonsterLore() {
 //        LoreReader loreReader = new LoreReader();
-//        String filename = AngbandDirs.ANGBAND_DIR_USER + "lore.txt";
+//        String filename = AngbandDirs.ANGBAND_DIRS.USER.getPath() + "lore.txt";
 //
 //        try {
 //            MonsterRegistry.monsterLore = loreReader.parse(filename);

@@ -42,7 +42,7 @@ public enum MessageBoxFlags {
     MB_ICONHAND(""),
     MB_ICONQUESTION(""),
     MB_ICONEXCLAMATION(""),
-    MB_ICONASTERISK(AngbandDirs.ANGBAND_DIR_SOUNDS + "Windows Background.wav"),
+    MB_ICONASTERISK(AngbandDirs.ANGBAND_DIRS.SOUNDS.getPath() + "Windows Background.wav"),
     MB_USERICON(""),
     MB_ICONWARNING(""),
     MB_ICONERROR(""),

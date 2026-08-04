@@ -63,7 +63,7 @@ public class MonsterDataLoader {
      */
     public static void loadMonsters() {
         MonsterReader parser = new MonsterReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "monster.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "monster.txt";
 
         try {
             ParseResult<MonsterRace> result = parser.parseWithResults(filename);
@@ -98,7 +98,7 @@ public class MonsterDataLoader {
      */
     public static void loadPitProfiles() {
         PitReader parser = new PitReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "pit.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "pit.txt";
 
         try {
             ParseResult<PitProfile> result = parser.parseWithResults(filename);
@@ -128,7 +128,7 @@ public class MonsterDataLoader {
      */
     public static void loadVisualTables() {
         VisualsReader parser = new VisualsReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "visuals.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "visuals.txt";
 
         try {
             ParseResult<VisualsCycler> cyclers = parser.parseCyclerWithResults(filename);
@@ -160,7 +160,7 @@ public class MonsterDataLoader {
      */
     public static void loadMonsterSpellTypes() {
         MonsterSpellReader parser = new MonsterSpellReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "monster_spell.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "monster_spell.txt";
 
         try {
             ParseResult<MonsterSpellType> result = parser.parseWithResults(filename);
@@ -187,7 +187,7 @@ public class MonsterDataLoader {
      */
     public static void loadBlowEffects() {
         BlowEffectReader parser = new BlowEffectReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "blow_effects.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "blow_effects.txt";
 
         try {
             ParseResult<BlowEffect> result = parser.parseWithResults(filename);
@@ -212,7 +212,7 @@ public class MonsterDataLoader {
      */
     public static void loadBlowMethods() {
         BlowMethodReader parser = new BlowMethodReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "blow_methods.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "blow_methods.txt";
 
         try {
             ParseResult<BlowMethod> result = parser.parseWithResults(filename);
@@ -239,7 +239,7 @@ public class MonsterDataLoader {
      */
     public static void loadSummons() throws IOException {
         SummonReader parser = new SummonReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "summon.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "summon.txt";
 
         try {
             ParseResult<Summon> result = parser.parseWithResults(filename);
@@ -267,7 +267,7 @@ public class MonsterDataLoader {
      */
     public static void loadMonsterBases() throws IOException {
         MonsterBaseReader parser = new MonsterBaseReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "monster_base.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "monster_base.txt";
 
         try {
             ParseResult<MonsterBase> result = parser.parseWithResults(filename);
@@ -293,7 +293,7 @@ public class MonsterDataLoader {
      */
     public static void loadPain() throws IOException {
         PainReader parser = new PainReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "pain.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "pain.txt";
 
         try {
             ParseResult<MonsterPain> result = parser.parseWithResults(filename);

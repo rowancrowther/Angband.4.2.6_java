@@ -54,7 +54,7 @@ public class TerrainDataLoader {
      */
     public static void loadTraps() throws IOException {
         TrapReader parser = new TrapReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "trap.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "trap.txt";
 
         try {
             ParseResult<TrapKind> result = parser.parseWithResults(filename);
@@ -75,7 +75,7 @@ public class TerrainDataLoader {
      */
     public static void loadTerrainFeatures() throws IOException {
         TerrainReader parser = new TerrainReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "terrain.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "terrain.txt";
 
         try {
             ParseResult<Feature> results = parser.parseWithResults(filename);

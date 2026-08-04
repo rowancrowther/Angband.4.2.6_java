@@ -49,17 +49,26 @@ public class GameEngine {
      * {@link #getEventsBusHandler()}. Typed to the {@link EventsHandler} interface so a
      * test can swap in its own bus via {@link #setEventsBusHandler(EventsHandler)}.
      *
-     * <p><b>Null until {@link #initGame()} runs.</b> The bus is created during
-     * initialisation, not at class load, so {@link #getEventsBusHandler()} returns
-     * {@code null} to any caller that reaches it before the first {@link #getGame()}.
-     * The ordering that buys is the point: the bus must exist before
-     * {@link GameConstants#init()} signals anything, and creating it in
-     * {@code initGame()} puts it there.
+     * <p><b>Never null.</b> A working bus is installed here, at class load, so any caller can
+     * signal an event without first arranging for one - the same guarantee
+     * {@code GameInputHolder} gives its seam by installing a default instance at declaration.
+     * {@link #initGame()} replaces it with a fresh one, so a game that starts gets a clean bus,
+     * but the field is never empty in between.
+     *
+     * <p>It was previously assigned only inside {@code initGame()}, which left it null for
+     * anything that ran without building an engine. Since callers signal through it unguarded,
+     * that surfaced as {@code NullPointerException}s in every test that exercised game logic
+     * without first standing up a bus of its own.
      *
      * @author Rowan Crowther
      */
-    private static EventsHandler eventsBusHandler;
+    private static EventsHandler eventsBusHandler = new EventsBusHandler();
 
+    /**
+     * The singleton, built on first {@link #getGame()}. Null until then.
+     *
+     * @author Rowan Crowther
+     */
     private static GameEngine instance;
 
 
@@ -78,7 +87,10 @@ public class GameEngine {
      * game state, then the event bus, then the game constants loaded from
      * {@code lib/gamedata}.
      *
-     * <p>The bus is created <em>before</em> {@link GameConstants#init()} deliberately.
+     * <p>The bus assignment here <em>replaces</em> the one installed at class load, giving each
+     * newly built engine a bus with no handlers left over from before.
+     *
+     * <p>It is created <em>before</em> {@link GameConstants#init()} deliberately.
      * {@code GameConstants.init()} is this port's {@code init_angband()}
      * ({@code src/init.c}), the step C signals {@code EVENT_ENTER_INIT} from - so any
      * bus created after it would miss every event raised during loading, exactly as C
@@ -102,8 +114,10 @@ public class GameEngine {
     /**
      * The live event bus that game logic signals through.
      *
-     * @return the current event bus, or {@code null} if called before the first
-     * {@link #getGame()} has run {@link #initGame()}
+     * <p>Never {@code null}: a bus is installed at class load and only ever replaced, so callers
+     * may signal without checking.
+     *
+     * @return the current event bus
      * @author Rowan Crowther
      */
     public static EventsHandler getEventsBusHandler() {
@@ -114,9 +128,12 @@ public class GameEngine {
      * Replace the live event bus - the injection seam for tests, which can install their
      * own {@link EventsBusHandler} (or a spy over one) to observe what gets signalled.
      *
-     * <p>Only usable <em>after</em> {@link #getGame()}: a bus installed before it is
-     * discarded, because {@link #initGame()} overwrites the field with a fresh
-     * {@link EventsBusHandler}.
+     * <p>A bus installed here survives until {@link #initGame()} runs, which overwrites the field
+     * with a fresh {@link EventsBusHandler} - so a test that installs a spy and then triggers the
+     * first {@link #getGame()} loses it. Tests that never build an engine keep what they set.
+     *
+     * <p>The field is process-wide, so a test that swaps the bus should capture the previous one
+     * and put it back afterwards, or it will leak into everything that runs later in the same JVM.
      *
      * @param eventsBusHandler the bus to install
      * @author Rowan Crowther

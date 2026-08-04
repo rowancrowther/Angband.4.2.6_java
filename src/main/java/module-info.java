@@ -6,6 +6,7 @@ module uk.co.jackoftrades {
     requires com.sun.jna.platform;
     requires com.sun.jna;
     requires java.sql;
+    requires org.apache.logging.log4j.core;
 
     exports uk.co.jackoftrades;
 }

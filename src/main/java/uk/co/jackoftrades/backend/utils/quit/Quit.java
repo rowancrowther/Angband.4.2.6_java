@@ -45,7 +45,7 @@ public class Quit implements QuitAux {
     @Override
     public void quit(@NotNull String quitMessage) {
         logger.info(quitMessage);
-        // TODO: Remove comment on next line once this is totally tested
-        // System.exit(0);
+
+        System.exit(0);
     }
 }

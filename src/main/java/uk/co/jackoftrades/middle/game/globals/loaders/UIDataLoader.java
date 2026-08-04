@@ -60,7 +60,7 @@ public class UIDataLoader {
      */
     public static void loadUIEntries() throws IOException {
         UIEntryReader parser = new UIEntryReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "ui_entry.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry.txt";
         ParseResult<UIEntry> result;
 
         try {
@@ -88,7 +88,7 @@ public class UIDataLoader {
      */
     public static void loadUIEntryBases() throws IOException {
         UIEntryBaseReader reader = new UIEntryBaseReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "ui_entry_base.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry_base.txt";
 
         try {
             ParseResult<UIEntryBase> result = reader.parseWithResults(filename);
@@ -114,7 +114,7 @@ public class UIDataLoader {
      */
     public static void loadUIEntryRenderers() throws IOException {
         UIEntryRendererReader reader = new UIEntryRendererReader();
-        String filename = AngbandDirs.ANGBAND_DIR_GAMEDATA + "ui_entry_renderer.txt";
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "ui_entry_renderer.txt";
 
         try {
             ParseResult<UIEntryRenderer> result = reader.parseWithResults(filename);

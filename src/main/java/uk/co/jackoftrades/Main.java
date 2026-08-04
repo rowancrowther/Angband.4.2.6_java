@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades;
 
+import uk.co.jackoftrades.backend.io.AngDir;
 import uk.co.jackoftrades.frontend.Frontend;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
@@ -145,8 +146,17 @@ public class Main {
     };
 
     private static void listSaves() throws IOException {
-        StringBuilder saves = new StringBuilder();
-        // Stub function TODO: Implement
+        List<String> saves = new ArrayList<>();
+
+        AngDir saveDirectory = new AngDir(AngbandDirs.ANGBAND_DIR_SAVE);
+
+        String nextFile = saveDirectory.read();
+        while (!nextFile.isEmpty()) {
+            saves.add(nextFile);
+            nextFile = saveDirectory.read();
+        }
+
+        displayText(saves);
     }
 
     private static void displayText(List<String> messages) {

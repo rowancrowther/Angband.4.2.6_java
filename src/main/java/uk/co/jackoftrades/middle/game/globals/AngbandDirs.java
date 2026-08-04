@@ -24,7 +24,6 @@ public class AngbandDirs {
     // Note, if the user wants to save on a custom area, then we will have to amend the function BASE_DIR
     // to return that value. That's a future issue
     static final String BASE_DIR = System.getProperty("user.dir");
-    public static final String ANGBAND_DIR_USER = BASE_DIR + File.separator + "user" + File.separator;
     private static final String libPath = File.separator + "lib" + File.separator;
     public static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
     public static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
@@ -33,9 +32,10 @@ public class AngbandDirs {
     public static final String ANGBAND_DIR_SCREENS = BASE_DIR + libPath + "screens" + File.separator;
     public static final String ANGBAND_DIR_HELP = BASE_DIR + libPath + "help" + File.separator;
     public static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
-    private static final String configPath = File.separator + "config" + File.separator;
+    private static final String configPath = libPath + "config" + File.separator;
     public static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + configPath + "customize" + File.separator;
-    private static final String userPath = File.separator + "user" + File.separator;
+    private static final String userPath = libPath + "user" + File.separator;
+    public static final String ANGBAND_DIR_USER = BASE_DIR + userPath;
     public static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
     public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
     public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;

@@ -17,12 +17,14 @@
 
 package uk.co.jackoftrades.backend.io;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -40,6 +42,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class AngDir {
+    private static final Logger logger = LogManager.getLogger(AngDir.class);
+
     /**
      * Path of the directory this handle was opened on.
      *
@@ -77,14 +81,14 @@ public class AngDir {
      *
      * @author Rowan Crowther
      */
-    private final char pathSeparator = File.pathSeparatorChar;
+    private final char pathSeparator = File.separatorChar;
 
     /**
      * Constructor
      * @param directoryName the name of the directory we are dealing with
      */
     public AngDir(String directoryName) {
-        directoryPath = Paths.get(directoryName);
+        directoryPath = Path.of(directoryName);
         firstFileIsDirectory = false;
         onlyFiles = true;
         dirFiles = new ArrayList<>();
@@ -102,6 +106,7 @@ public class AngDir {
                 count++;
             }
         } catch (IOException e) {
+            logger.error(e.getMessage(), e);
             throw new RuntimeException(e);
         }
 

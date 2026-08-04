@@ -23,6 +23,7 @@ import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
 import javax.swing.*;
+import java.awt.*;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -60,18 +61,22 @@ public class Main {
         boolean requestGraphicsMode = false;
         String useSpecificCharacter = "";
         Map<String, String> overrideDirectoryPath = new HashMap<>();
+        boolean displayMainGame = true;
 
         for (String arg : args) {
             if (arg.length() < 2 || arg.charAt(0) != '-') arg = "-h";
             switch (arg.charAt(1)) {
                 case 'c' -> selectSavefile = true;
                 case 'n' -> startNewCharacter = true;
-                case 'l' -> listSaves();
+                case 'l' -> {
+                    listSaves();
+                    displayMainGame = false;
+                }
                 case 'w' -> resurrectDeadCharacter = true;
                 case 'g' -> requestGraphicsMode = true;
                 case 'u' -> {
                     useSpecificCharacter = arg.substring(2);
-                    if (!useSpecificCharacter.isEmpty()) printUsage();
+                    if (useSpecificCharacter.isEmpty()) printUsage();
                 }
                 case 'd' -> {
                     String dirString = arg.substring(2);
@@ -92,7 +97,10 @@ public class Main {
                     overrideDirectoryPath.put(dirs[0], dirs[1]);
                 }
 
-                default -> printUsage();
+                default -> {
+                    printUsage();
+                    displayMainGame = false;
+                }
             }
         }
 
@@ -100,30 +108,31 @@ public class Main {
                 resurrectDeadCharacter, requestGraphicsMode, useSpecificCharacter,
                 overrideDirectoryPath, "", new ArrayList<>());
 
-        SwingUtilities.invokeLater(startFrontend);
+        if (displayMainGame) SwingUtilities.invokeLater(startFrontend);
         System.out.println("Do other stuff");
     }
 
     private static void printUsage() {
-        System.out.println("Usage: angband [options] [-- subopts]");
-        System.out.println("  -c             Select savefile with a menu; overrides -n");
-        System.out.println("  -n             Start a new character (WARNING: overwrites default savefile without -u)");
-        System.out.println("  -l             Lists all savefiles you can play");
-        System.out.println("  -w             Resurrect dead character (marks savefile)");
-        System.out.println("  -g             Request graphics mode");
-        System.out.println("  -u<who>        Use your <who> savefile");
-        System.out.println("  -d<dir>=<path> Override a specific directory with <path>. <path> can be:");
+        List<String> output = new ArrayList<>();
+        output.add("Usage: angband [options] [-- subopts]");
+        output.add("  -c             Select savefile with a menu; overrides -n");
+        output.add("  -n             Start a new character (WARNING: overwrites default savefile without -u)");
+        output.add("  -l             Lists all savefiles you can play");
+        output.add("  -w             Resurrect dead character (marks savefile)");
+        output.add("  -g             Request graphics mode");
+        output.add("  -u<who>        Use your <who> savefile");
+        output.add("  -d<dir>=<path> Override a specific directory with <path>. <path> can be:");
 
         for (AngbandDirs.ANGBAND_DIRS dir : AngbandDirs.ANGBAND_DIRS.values()) {
-            System.out.println(String.format("    %s (default is %s)", dir.getName(), dir.getPath()));
+            output.add(String.format("    %s (default is %s)", dir.getName(), dir.getPath()));
         }
 
-        System.out.println("                 Multiple -d options are allowed.");
+        output.add("                 Multiple -d options are allowed.");
         //      System.out.println("  -s<mod>        Use sound module <sys>:");
         //      printSoundHelp();
         //      System.out.println("  -m<sys>        Use module <sys>, where <sys> can be:");
 
-        System.exit(0);
+        displayText(output);
     }
 
     static Runnable startFrontend = new Runnable() {
@@ -136,7 +145,36 @@ public class Main {
     };
 
     private static void listSaves() throws IOException {
+        StringBuilder saves = new StringBuilder();
         // Stub function TODO: Implement
-        System.exit(0);
+    }
+
+    private static void displayText(List<String> messages) {
+        OutputWindow window = new OutputWindow();
+
+        // create the window stats
+        window.setTitle("Angband 4.2.6 - initial details");
+        window.setSize(800, 600);
+        window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        JTextArea textArea = new JTextArea();
+        textArea.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        JScrollPane scrollPane = new JScrollPane(textArea,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        textArea.setEditable(false);
+        textArea.setLineWrap(false);
+        StringBuilder text = new StringBuilder();
+        for (String message : messages) {
+            text.append(message).append("\n");
+        }
+        textArea.setText(text.toString());
+        window.setContentPane(scrollPane);
+        window.setLocationRelativeTo(null);
+        window.setVisible(true);
+    }
+
+    // Window to display details on.
+    private static class OutputWindow extends JFrame {
+
     }
 }

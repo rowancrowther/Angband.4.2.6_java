@@ -124,37 +124,41 @@ public class SplashScreen implements StatusDisplay {
             ColourEnum colour = ColourEnum.COLOUR_WHITE;
             SplashScreenState state = SplashScreenState.IN_NORMAL_TEXT;
             int printCol = 0;
-            String colourName = "";
+            StringBuilder colourName = new StringBuilder();
             while (newsScanner.hasNextLine()) {
                 String line = newsScanner.nextLine();
                 printCol = 0;
                 state = SplashScreenState.IN_NORMAL_TEXT;
                 colour = ColourEnum.COLOUR_WHITE;
-                colourName = "";
+                colourName = new StringBuilder();
                 // logger.debug(line);
                 for (int col = 0; col < line.length(); col++) {
                     char character = line.charAt(col);
 
                     if (character == '{') {
                         state = SplashScreenState.IN_COLOUR_TEXT;
-                        colourName = "";
+                        colourName = new StringBuilder();
                     } else if (character == '}') {
                         state = SplashScreenState.IN_NORMAL_TEXT;
 
-                        if (colourName.equals("/")) {
+                        if (colourName.toString().equals("/")) {
                             colour = ColourEnum.COLOUR_WHITE;
                         } else if (!colourName.isEmpty()) {
-                            colour = ColourEnum.fromCode(colourName);
+                            colour = ColourEnum.fromCode(colourName.toString());
+                            if (colour == null) {
+                                logger.error("Invalid colour name " + colourName.toString());
+                                colour = ColourEnum.COLOUR_WHITE;
+                            }
                         }
-                        colourName = "";
+                        colourName = new StringBuilder();
 
                     } else if (state == SplashScreenState.IN_COLOUR_TEXT) {
-                        colourName += character;
+                        colourName.append(character);
                     } else if (character == '$') {
                         if (line.substring(col).startsWith("$VERSION")) {
                             String version = String.format("%-8s", GameConstants.version);
                             col += 7;
-                            if (col > display[row].length) {
+                            if (printCol + 8 > display[row].length) {
                                 logger.error("Version tag exceeds line length");
                             } else {
                                 for (int index = 0; index < 8; index++) {
@@ -164,7 +168,8 @@ public class SplashScreen implements StatusDisplay {
                             }
                         } else {
                             if (state == SplashScreenState.IN_NORMAL_TEXT) {
-                                display[row][printCol] = new AngbandDisplayCharacter(character, colour);
+                                if (printCol < display[row].length)
+                                    display[row][printCol] = new AngbandDisplayCharacter(character, colour);
                                 printCol++;
                             } else {
                                 logger.error("'$' character found outside normal text.");
@@ -172,7 +177,7 @@ public class SplashScreen implements StatusDisplay {
                             }
                         }
                     } else if (state == SplashScreenState.IN_NORMAL_TEXT) {
-                        if (printCol < 80)
+                        if (printCol < display[row].length)
                             display[row][printCol] = new AngbandDisplayCharacter(character, colour);
                         printCol++;
                     }

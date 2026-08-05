@@ -609,7 +609,7 @@ public enum TValue {
     @Contract(pure = true)
     public static @Nullable TValue fromName(@NotNull String name) {
         String toSearch;
-        logger.debug("Trying to parse {} as a TV name", name);
+        // logger.debug("Trying to parse {} as a TV name", name);
 
         if (name.toUpperCase().contains("RMOUR")) {
             toSearch = name.replace("RMOUR", "RMOR")

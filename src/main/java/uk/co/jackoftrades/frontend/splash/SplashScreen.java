@@ -25,6 +25,7 @@ import uk.co.jackoftrades.frontend.Frontend;
 import uk.co.jackoftrades.frontend.screen.Window;
 import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplay;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -83,6 +84,11 @@ public class SplashScreen implements StatusDisplay {
         activeWindow = frontend.getActiveWindow();
     }
 
+    private enum SplashScreenState {
+        START_TAG, END_TAG, IN_COLOUR_TEXT,
+        IN_NORMAL_TEXT, VERSION
+    }
+
     /**
      * Read {@code lib/screens/news.txt} and put it on screen.
      *
@@ -115,12 +121,61 @@ public class SplashScreen implements StatusDisplay {
         AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
         int row = 0;
         try (Scanner newsScanner = new Scanner(path)) {
+            ColourEnum colour = ColourEnum.COLOUR_WHITE;
+            SplashScreenState state = SplashScreenState.IN_NORMAL_TEXT;
+            int printCol = 0;
+            String colourName = "";
             while (newsScanner.hasNextLine()) {
                 String line = newsScanner.nextLine();
-                int end = line.length();
-                if (end > 80) end = 80;
-                for (int col = 0; col < end; col++) {
-                    display[row][col] = new AngbandDisplayCharacter(line.charAt(col), ColourEnum.COLOUR_WHITE);
+                printCol = 0;
+                state = SplashScreenState.IN_NORMAL_TEXT;
+                colour = ColourEnum.COLOUR_WHITE;
+                colourName = "";
+                // logger.debug(line);
+                for (int col = 0; col < line.length(); col++) {
+                    char character = line.charAt(col);
+
+                    if (character == '{') {
+                        state = SplashScreenState.IN_COLOUR_TEXT;
+                        colourName = "";
+                    } else if (character == '}') {
+                        state = SplashScreenState.IN_NORMAL_TEXT;
+
+                        if (colourName.equals("/")) {
+                            colour = ColourEnum.COLOUR_WHITE;
+                        } else if (!colourName.isEmpty()) {
+                            colour = ColourEnum.fromCode(colourName);
+                        }
+                        colourName = "";
+
+                    } else if (state == SplashScreenState.IN_COLOUR_TEXT) {
+                        colourName += character;
+                    } else if (character == '$') {
+                        if (line.substring(col).startsWith("$VERSION")) {
+                            String version = String.format("%-8s", GameConstants.version);
+                            col += 7;
+                            if (col > display[row].length) {
+                                logger.error("Version tag exceeds line length");
+                            } else {
+                                for (int index = 0; index < 8; index++) {
+                                    display[row][printCol] = new AngbandDisplayCharacter(version.charAt(index), colour);
+                                    printCol++;
+                                }
+                            }
+                        } else {
+                            if (state == SplashScreenState.IN_NORMAL_TEXT) {
+                                display[row][printCol] = new AngbandDisplayCharacter(character, colour);
+                                printCol++;
+                            } else {
+                                logger.error("'$' character found outside normal text.");
+                                col = display[row].length;
+                            }
+                        }
+                    } else if (state == SplashScreenState.IN_NORMAL_TEXT) {
+                        if (printCol < 80)
+                            display[row][printCol] = new AngbandDisplayCharacter(character, colour);
+                        printCol++;
+                    }
                 }
                 row++;
 

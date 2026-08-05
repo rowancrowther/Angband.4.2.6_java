@@ -252,7 +252,7 @@ public class Main {
         window.setSize(800, 600);
         window.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         JTextArea textArea = new JTextArea();
-        textArea.setFont(new Font(Font.MONOSPACED, Font.BOLD, 14));
+        textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 14));
         JScrollPane scrollPane = new JScrollPane(textArea,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);

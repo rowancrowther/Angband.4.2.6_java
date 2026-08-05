@@ -109,6 +109,23 @@ public class GameEngine {
         eventsBusHandler = new EventsBusHandler();
     }
 
+    /**
+     * Read every file under {@code lib/gamedata} into the registries - this port's
+     * {@code init_angband()} ({@code [C] src/init.c}).
+     *
+     * <p>Separate from {@link #initGame()}, and that separation is the point. The bus is created in
+     * {@code initGame()} but the load is deferred to here, which gives the caller a window between
+     * the two to register handlers - exactly the gap C leaves between {@code init_display()} and
+     * {@code init_angband()}. {@code GameRunner.gameLoop()} uses it to wire {@code InitHandlers}
+     * before the load raises {@code EVENT_ENTER_INIT} from inside it.
+     *
+     * <p>Long-running and file-bound, so it belongs on the game thread. An interrupt arriving during
+     * it does not stop it cleanly: the reader's channel closes and the resulting failure is
+     * reported as a data-load error, which is what happens today if the window is closed while the
+     * game is still starting up.
+     *
+     * @author Rowan Crowther
+     */
     public void loadGameConstants() {
         GameConstants.init();
     }

@@ -19,8 +19,6 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
 
 /**
@@ -70,6 +68,16 @@ public class GameRunner {
      */
     private volatile boolean running = false;
 
+    /**
+     * The middle end this runner drives, obtained in {@link #start()} and used on the game thread.
+     *
+     * <p>Built in {@code start()} rather than in {@link #gameLoop()} deliberately: constructing the
+     * engine replaces the event bus, and the handlers registered at the top of the loop have to go
+     * onto the bus that survives. Assigning it before {@link Thread#start()} also publishes it
+     * safely to the game thread without needing {@code volatile}.
+     *
+     * @author Rowan Crowther
+     */
     private GameEngine gameEngine;
 
     /**
@@ -87,6 +95,16 @@ public class GameRunner {
         thread.start();
     }
 
+    /**
+     * The game engine singleton, building it on first call.
+     *
+     * <p>An instance method wrapping a static call, which is what makes it a seam: a test can
+     * subclass {@code GameRunner} and return a stand-in engine without touching
+     * {@link GameEngine#getGame()} or the singleton behind it.
+     *
+     * @return the game engine
+     * @author Rowan Crowther
+     */
     public GameEngine getGameEngine() {
         return GameEngine.getGame();
     }
@@ -125,9 +143,7 @@ public class GameRunner {
      * @author Rowan Crowther
      */
     public void gameLoop() {
-        // Register ENTER_INIT handler
-        EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
-        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_INIT, InitHandlers::enterInit);
+        InitHandlers.initHandlers();
 
         gameEngine.loadGameConstants();
 

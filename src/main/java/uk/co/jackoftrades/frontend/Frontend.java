@@ -20,9 +20,9 @@ package uk.co.jackoftrades.frontend;
 import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Window;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplay;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
-import uk.co.jackoftrades.middle.statusdisplay.StatusDisplay;
-import uk.co.jackoftrades.middle.statusdisplay.StatusDisplayHolder;
 
 import javax.swing.*;
 import java.awt.*;

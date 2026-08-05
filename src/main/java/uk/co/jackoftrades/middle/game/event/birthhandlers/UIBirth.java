@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.event.eventhandlers;
+package uk.co.jackoftrades.middle.game.event.birthhandlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

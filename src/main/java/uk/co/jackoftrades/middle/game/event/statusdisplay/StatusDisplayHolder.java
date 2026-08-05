@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.statusdisplay;
+package uk.co.jackoftrades.middle.game.event.statusdisplay;
 
 public final class StatusDisplayHolder {
     private static StatusDisplay instance = new DefaultStatusDisplay();

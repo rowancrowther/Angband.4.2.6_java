@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventDataString;
 import uk.co.jackoftrades.middle.game.event.GameEventData;
-import uk.co.jackoftrades.middle.statusdisplay.StatusDisplayHolder;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 
 public class InitHandlers {
     private static final Logger logger = LogManager.getLogger(InitHandlers.class);

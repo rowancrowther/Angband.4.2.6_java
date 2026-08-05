@@ -19,6 +19,7 @@ package uk.co.jackoftrades.frontend.splash;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.colour.ColourEnum;
 import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.Frontend;
@@ -27,6 +28,7 @@ import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplay;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
+import javax.swing.*;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -74,6 +76,10 @@ public class SplashScreen implements StatusDisplay {
      */
     private Window activeWindow;
 
+    private static int birthLine = 2;
+
+    private AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
+
     /**
      * Build the title screen against a front end's active window.
      *
@@ -114,11 +120,8 @@ public class SplashScreen implements StatusDisplay {
             initAngbandAux("Cannot access the " + filename + " file.");
         }
 
-        activeWindow.clear();
-
         Frontend.JPanelArea panel = activeWindow.getArea();
 
-        AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
         int row = 0;
         try (Scanner newsScanner = new Scanner(path)) {
             ColourEnum colour = ColourEnum.COLOUR_WHITE;
@@ -187,12 +190,23 @@ public class SplashScreen implements StatusDisplay {
                 if (row == 24)
                     break;
             }
-            panel.setChars(display);
-            panel.repaint();
+
+            onEventDispatchThread(new Runnable() {
+                @Override
+                public void run() {
+                    activeWindow.clear();
+                    panel.setChars(display);
+                    panel.repaint();
+                }
+            });
         } catch (IOException exception) {
-            String message = "Trying to read news.txt when error occured.\n";
+            String message = "Trying to read news.txt when error occurred.\n";
             logger.error(message, exception);
         }
+    }
+
+    private void onEventDispatchThread(Runnable event) {
+        SwingUtilities.invokeLater(event);
     }
 
     /**
@@ -218,20 +232,103 @@ public class SplashScreen implements StatusDisplay {
     }
 
     /**
-     * Show a progress note under the title screen while the data files load.
+     * Show a progress note under the title screen while the data files load: bracketed, centred, on
+     * the bottom row. The port of {@code splashscreen_note}'s non-birth branch
+     * ({@code [C] src/ui-display.c}).
      *
-     * <p>Not implemented, so the title screen sits unchanged for the whole load. C draws the note
-     * on the bottom row and flushes ({@code splashscreen_note}, {@code [C] src/ui-display.c}) -
-     * which the grid can now express as a {@code put} along row 23 followed by a repaint.
+     * <p>Row 23 is where C puts it too - {@code (Term->hgt - 23) / 5 + 23}, which is 23 on a
+     * 24-row term. It is the one row the title artwork leaves free, and later the row the status
+     * line and message prompt live on. Note that the row is written as a literal here while C
+     * derives it from the term's height, so a taller window would put the note in the wrong place;
+     * the whole class assumes 80x24, so this is one of several places that would need the real
+     * dimensions rather than a special case.
      *
-     * <p>It has no caller yet either: {@code InitHandlers.splashScreenNote} logs rather than
-     * forwarding to here, so wiring both halves is one change.
+     * <p><b>The row is blanked before the note is written</b>, which is C's {@code Term_erase} and
+     * is not optional. These notes arrive in a stream - one per data file - each a different length
+     * and each centred on its own length, so writing one over another without erasing would leave
+     * both ends of every note that was ever longer than the current one lying on the row.
      *
-     * @param message the progress note to show; currently discarded
+     * <p>The brackets are part of the format C chose, not decoration: they mark the text as a
+     * transient status line rather than as part of the artwork it is sitting under. They are
+     * included in the length the centring is computed from, as in C.
+     *
+     * <p>A note wider than the screen would be centred to a negative column. Nothing here rejects
+     * that, and nothing needs to - {@code JPanelArea.put} clips a string to the grid at both ends -
+     * but the note would lose its beginning as well as its end.
+     *
+     * <p><b>Called on the game thread, and touches Swing directly</b>, exactly as
+     * {@link #showSplashScreen()} does and for the same reason: the {@code EVENT_INITSTATUS} signal
+     * is raised from inside the data load. {@code put} mutates panel state off the event dispatch
+     * thread; only {@code repaint()} is documented as thread-safe. This needs a hop onto the EDT.
+     *
+     * <p>No caller yet: {@code InitHandlers.splashScreenNote} logs rather than forwarding here,
+     * because the event payload cannot yet say whether a note is a birth note or a load note - the
+     * distinction this method and {@link #splashScreenBirthNote(String)} are split on.
+     *
+     * @param message the progress note to show, unbracketed; the brackets are added here
      * @author Rowan Crowther
      */
     @Override
-    public void splashScreenNote(String message) {
+    public void splashScreenNote(@NotNull String message) {
+        Frontend.JPanelArea panel = activeWindow.getArea();
+        int row = 23;
 
+        // clear the status line
+        panel.put(row, 0, String.format("%80s", ""), ColourEnum.COLOUR_WHITE);
+
+        String toWrite = String.format("[%s]", message);
+        int col = (80 - toWrite.length()) / 2;
+        panel.put(row, col, toWrite, ColourEnum.COLOUR_WHITE);
+        panel.repaint();
+    }
+
+    /**
+     * Show a character-creation note, stacking down the screen from row 2. The port of
+     * {@code splashscreen_note}'s {@code MSG_BIRTH} branch ({@code [C] src/ui-display.c}).
+     *
+     * <p>These behave oppositely to {@link #splashScreenNote(String)} and that is the point of the
+     * split: a load note is one row rewritten over and over, while birth notes accumulate, each on
+     * its own row, so the player can read the sequence. So this one neither erases nor centres -
+     * it writes from column 0 and leaves everything above it alone.
+     *
+     * <p>C reaches both through a single callback and chooses between them at run time, on
+     * {@code data->message.type == MSG_BIRTH}, because a term registers one function pointer per
+     * event and both notes arrive on {@code EVENT_INITSTATUS}. The port routes display calls through
+     * a named interface instead, so the same choice can be made at the call site and checked by the
+     * compiler. Splitting is the port's decision, not C's.
+     *
+     * <p><b>Where it stops differs from C.</b> C wraps with {@code if (++y >= 24) y = 2}, so it uses
+     * rows 2 to 23 and reuses the note row once birth is under way; this wraps at 23, so row 23 is
+     * never written and one row of the twenty-two is lost. Whether that is worth keeping is a real
+     * choice - leaving 23 clear keeps the load note undisturbed - but it is a divergence, and the
+     * wrap point is where it lives.
+     *
+     * <p>The row counter is {@code static}, so it belongs to the class rather than to this splash
+     * screen. C's is a function-static and equally process-wide, so a single-window game behaves the
+     * same; two front ends would share one counter, which is not what the field's placement
+     * suggests.
+     *
+     * <p><b>C pauses here and this does not.</b> {@code splashscreen_note} calls
+     * {@code pause_line(Term)} after each birth note, so the player reads them one at a time; these
+     * will all appear at once. Closing that gap needs the input seam, since a pause is a read.
+     *
+     * <p><b>Called on the game thread, and touches Swing directly</b> - see
+     * {@link #splashScreenNote(String)}, which has the same problem for the same reason.
+     *
+     * <p>No caller yet, for the same reason as {@link #splashScreenNote(String)}: nothing on the
+     * event payload distinguishes a birth note from a load note, so {@code InitHandlers} has
+     * nothing to dispatch on.
+     *
+     * @param message the note to show, written from column 0 as given
+     * @author Rowan Crowther
+     */
+    @Override
+    public void splashScreenBirthNote(@NotNull String message) {
+        Frontend.JPanelArea panel = activeWindow.getArea();
+        panel.put(birthLine, 0, message, ColourEnum.COLOUR_WHITE);
+        birthLine++;
+        if (birthLine >= 24)
+            birthLine = 2;
+        panel.repaint();
     }
 }

@@ -15,16 +15,24 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.screen;
+package uk.co.jackoftrades.middle.statusdisplay;
 
-import javax.swing.*;
+public final class StatusDisplayHolder {
+    private static StatusDisplay instance = new DefaultStatusDisplay();
 
-public class Window extends JFrame {
-    public Window() {
-        super("Welcome");
+    private StatusDisplayHolder() {
+
     }
 
-    public void displayString(String string) {
-        super.setTitle(string);
+    public static StatusDisplay getInstance() {
+        return instance;
+    }
+
+    public static void setInstance(StatusDisplay instance) {
+        StatusDisplayHolder.instance = instance;
+    }
+
+    public static void resetInstance() {
+        instance = new DefaultStatusDisplay();
     }
 }

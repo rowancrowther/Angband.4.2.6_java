@@ -107,7 +107,9 @@ public class GameEngine {
     private void initGame() {
         GameState.initGameState();
         eventsBusHandler = new EventsBusHandler();
+    }
 
+    public void loadGameConstants() {
         GameConstants.init();
     }
 

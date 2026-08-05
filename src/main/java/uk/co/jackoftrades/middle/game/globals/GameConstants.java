@@ -25,6 +25,9 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftrades.backend.parser.GameConstantsReader;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.loaders.*;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
@@ -143,6 +146,10 @@ public class GameConstants {
      */
     public static void init() {
         try {
+            // Signal EVENT_ENTER_INIT
+            EventsHandler bus = GameEngine.getEventsBusHandler();
+            bus.eventSignalString(GameEventType.EVENT_ENTER_INIT, "Entering Init");
+
             // Start from an empty kind registry so init() is idempotent: object kinds and their
             // per-base sval counters are rebuilt from scratch here, so a re-init (e.g. between tests)
             // does not double-register kinds or keep incrementing svals.

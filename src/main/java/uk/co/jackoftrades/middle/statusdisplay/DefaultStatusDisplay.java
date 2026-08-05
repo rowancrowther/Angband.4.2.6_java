@@ -15,16 +15,16 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.screen;
+package uk.co.jackoftrades.middle.statusdisplay;
 
-import javax.swing.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-public class Window extends JFrame {
-    public Window() {
-        super("Welcome");
-    }
+public class DefaultStatusDisplay implements StatusDisplay {
+    private static final Logger logger = LogManager.getLogger(DefaultStatusDisplay.class);
 
-    public void displayString(String string) {
-        super.setTitle(string);
+    @Override
+    public void showInitStatus(String text) {
+        logger.info(text);
     }
 }

@@ -15,16 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.screen;
+package uk.co.jackoftrades.middle.statusdisplay;
 
-import javax.swing.*;
-
-public class Window extends JFrame {
-    public Window() {
-        super("Welcome");
-    }
-
-    public void displayString(String string) {
-        super.setTitle(string);
-    }
+public interface StatusDisplay {
+    void showInitStatus(String text);
 }

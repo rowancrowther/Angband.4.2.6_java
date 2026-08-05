@@ -21,6 +21,8 @@ import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.screen.Window;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
+import uk.co.jackoftrades.middle.statusdisplay.StatusDisplay;
+import uk.co.jackoftrades.middle.statusdisplay.StatusDisplayHolder;
 
 import javax.swing.*;
 import java.awt.*;
@@ -51,7 +53,7 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class Frontend {
+public class Frontend implements StatusDisplay {
     /**
      * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
      * for now; C's terms are a fixed array of eight.
@@ -166,9 +168,8 @@ public class Frontend {
         FontMetrics metrics = activeWindow.getFontMetrics(font);
         int charWidth = metrics.charWidth('M');
         int charHeight = metrics.getHeight();
-        int charAscent = metrics.getAscent();
 
-        JPanelArea.charAscent = charAscent;
+        JPanelArea.charAscent = metrics.getAscent();
         JPanelArea.charHeight = charHeight;
         JPanelArea.charWidth = charWidth;
 
@@ -184,8 +185,17 @@ public class Frontend {
         activeWindow.pack();
         activeWindow.setLocationRelativeTo(null);
 
-        gameRunner.start();
         activeWindow.setVisible(true);
+
+        // Register this as the status display holder
+        StatusDisplayHolder.setInstance(this);
+
+        gameRunner.start();
+    }
+
+    @Override
+    public void showInitStatus(String text) {
+        SwingUtilities.invokeLater(() -> activeWindow.displayString(text));
     }
 
     /**

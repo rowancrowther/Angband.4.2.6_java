@@ -17,6 +17,12 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
+
 /**
  * Owner of the game thread: the background thread the middle end runs on, kept
  * clear of Swing's event dispatch thread (EDT) so game work never blocks
@@ -41,6 +47,8 @@ package uk.co.jackoftrades.middle.game.gameengine;
  * @author Rowan Crowther
  */
 public class GameRunner {
+    private static final Logger logger = LogManager.getLogger(GameRunner.class);
+
     /**
      * The game thread, created fresh by each {@link #start()} call. Null until
      * the first {@code start()}, so {@link #requestStop()} must not be called
@@ -62,6 +70,8 @@ public class GameRunner {
      */
     private volatile boolean running = false;
 
+    private GameEngine gameEngine;
+
     /**
      * Start the game thread and begin running {@link #gameLoop()} on it.
      *
@@ -73,7 +83,12 @@ public class GameRunner {
     public void start() {
         thread = new Thread(this::gameLoop, "angband-game-loop");
         running = true;
+        gameEngine = getGameEngine();
         thread.start();
+    }
+
+    public GameEngine getGameEngine() {
+        return GameEngine.getGame();
     }
 
     /**
@@ -110,6 +125,12 @@ public class GameRunner {
      * @author Rowan Crowther
      */
     public void gameLoop() {
+        // Register ENTER_INIT handler
+        EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
+        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_INIT, InitHandlers::enterInit);
+
+        gameEngine.loadGameConstants();
+
         while (running) {
             try {
                 Thread.sleep(5);
@@ -117,6 +138,5 @@ public class GameRunner {
                 throw new RuntimeException(e);
             }
         }
-
     }
 }

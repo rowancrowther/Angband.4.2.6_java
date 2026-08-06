@@ -155,45 +155,86 @@ public class GameConstants {
             // does not double-register kinds or keep incrementing svals.
             ObjectRegistry.reset();
 
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game constants...");
             loadGameConstants();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising world...");
             WorldDataLoader.loadWorld();                // world arraylist size determines maxRandDepth
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game projections...");
             WorldDataLoader.loadProjections();          // projections arrayList size determines projectionTypeMax
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entry Renderers...");
             UIDataLoader.loadUIEntryRenderers();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entry Bases...");
             UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entries...");
             UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player properties...");
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising terrain features...");
             TerrainDataLoader.loadTerrainFeatures();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object bases...");
             ObjectDataLoader.loadObjectBases();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pain messages...");
             MonsterDataLoader.loadPain();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster bases...");
             MonsterDataLoader.loadMonsterBases();         // Dependent on MonsterPain
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object slays...");
             ObjectDataLoader.loadSlays();                // Dependent on MonsterBases
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object brands...");
             ObjectDataLoader.loadBrands();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster summons...");
             MonsterDataLoader.loadSummons();              // Dependent on MonsterBases
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising curses...");
             ObjectDataLoader.loadCurses();               // Dependent on ObjectBases, & Summons
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player shapes...");
             PlayerDataLoader.loadPlayerShapes();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising objects...");
             ObjectDataLoader.loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising activations...");
             ObjectDataLoader.loadActivations();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising ego items...");
             ObjectDataLoader.loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player histories...");
             PlayerDataLoader.loadPlayerHistories();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player bodies...");
             PlayerDataLoader.loadBodies();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player races...");
             PlayerDataLoader.loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising magic...");
             PlayerDataLoader.loadMagicRealms();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player classes...");
             PlayerDataLoader.loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising artifacts...");
             ObjectDataLoader.loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object properties...");
             ObjectDataLoader.loadObjectProperties();     // Dependent on UIEntry
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player times properties...");
             PlayerDataLoader.loadPlayerTimedProperties();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow methods...");
             MonsterDataLoader.loadBlowMethods();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow effects...");
             MonsterDataLoader.loadBlowEffects();          // Dependent on Projections
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster spell types...");
             MonsterDataLoader.loadMonsterSpellTypes();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising colour tables...");
             MonsterDataLoader.loadVisualTables();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monsters...");
             MonsterDataLoader.loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pit profiles...");
             MonsterDataLoader.loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
+            // TODO: Add in lore parsing and uncomment below two lines
+            //bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising lore...");
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising traps...");
             TerrainDataLoader.loadTraps();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising quests...");
             WorldDataLoader.loadQuests();               // Dependent on Monster
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising hints...");
             MiscDataLoader.loadHints();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising names...");
             MiscDataLoader.loadNames();
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising flavours...");
             MiscDataLoader.loadFlavours();
+            // TODO: Add chest traps
         } catch (Exception e) {
             String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + " error message: " + e.getMessage();
             logger.error(message, e);

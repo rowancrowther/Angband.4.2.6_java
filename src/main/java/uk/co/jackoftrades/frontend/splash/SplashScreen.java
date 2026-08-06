@@ -274,11 +274,24 @@ public class SplashScreen implements StatusDisplay {
         int row = 23;
 
         // clear the status line
-        panel.put(row, 0, String.format("%80s", ""), ColourEnum.COLOUR_WHITE);
+        for (int col = 0; col < display[row].length; col++) {
+            display[row][col] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
+        }
 
         String toWrite = String.format("[%s]", message);
         int col = (80 - toWrite.length()) / 2;
-        panel.put(row, col, toWrite, ColourEnum.COLOUR_WHITE);
+        for (int index = 0; index < toWrite.length(); index++) {
+            display[row][index + col] = new AngbandDisplayCharacter(toWrite.charAt(index), ColourEnum.COLOUR_WHITE);
+        }
+
+        onEventDispatchThread(new Runnable() {
+            @Override
+            public void run() {
+                activeWindow.clear();
+                panel.setChars(display);
+                panel.repaint();
+            }
+        });
         panel.repaint();
     }
 

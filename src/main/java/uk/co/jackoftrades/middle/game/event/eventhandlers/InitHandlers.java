@@ -114,7 +114,7 @@ public class InitHandlers {
      * @author Rowan Crowther
      */
     public static void enterInit(GameEventType eventType, GameEventData data) {
-        logger.info("Entering init");
+        // logger.info("Entering init");
 
         if (data instanceof EventDataString message) {
             StatusDisplayHolder.getInstance().showSplashScreen();
@@ -140,6 +140,10 @@ public class InitHandlers {
      */
     public static void splashScreenNote(GameEventType eventType, GameEventData data) {
         logger.info("Splash screen note");
+        if (data instanceof EventDataString message) {
+            String messageString = message.getString();
+            StatusDisplayHolder.getInstance().splashScreenNote(messageString);
+        }
     }
 
     /**

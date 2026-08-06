@@ -20,9 +20,11 @@ package uk.co.jackoftrades.middle.game.gameengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
+import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.player.Player;
 
 /**
  * The top-level game runtime: a singleton that performs middle-end start-up - game
@@ -83,35 +85,38 @@ public class GameEngine {
     }
 
     /**
-     * Initialise the middle end's subsystems, in the order they depend on each other:
-     * game state, then the event bus, then the game constants loaded from
-     * {@code lib/gamedata}.
+     * Initialise the middle end far enough that events can be signalled: reset the game state, then
+     * install a fresh event bus. The data load itself is deliberately <em>not</em> here - it waits
+     * in {@link #loadGameConstants()} so the caller gets a window to register handlers first.
+     *
+     * <p><b>Known duplication:</b> {@link GameState#initGameState()} still builds a player, level
+     * and command queue of its own, and this runs before the data load - so every engine creates
+     * that set twice, and the pre-load set is thrown away unread by {@link #loadGameConstants()}.
+     * Only the second set is the port of {@code player_module.init}; the first is left over from
+     * when this was the only place they were made.
      *
      * <p>The bus assignment here <em>replaces</em> the one installed at class load, giving each
      * newly built engine a bus with no handlers left over from before.
      *
-     * <p>It is created <em>before</em> {@link GameConstants#init()} deliberately.
-     * {@code GameConstants.init()} is this port's {@code init_angband()}
-     * ({@code src/init.c}), the step C signals {@code EVENT_ENTER_INIT} from - so any
-     * bus created after it would miss every event raised during loading, exactly as C
-     * requires {@code init_display()} to precede {@code init_angband()} in
-     * {@code main()} ({@code src/main.c}).
+     * <p>The bus is created <em>before</em> {@link GameConstants#init()} deliberately.
+     * {@code GameConstants.init()} is this port's {@code init_angband()} ({@code [C] src/init.c}),
+     * the step C signals {@code EVENT_ENTER_INIT} from - so any bus created after it would miss
+     * every event raised during loading, exactly as C requires {@code init_display()} to precede
+     * {@code init_angband()} in {@code main()} ({@code [C] src/main.c}).
      *
-     * <p>Not yet reached: C registers its handlers between those two calls. There is no
-     * equivalent hook here, because this method both creates the bus and starts loading
-     * with nothing in between, so the front end still has no point at which to register
-     * for events raised during initialisation.
+     * <p>The gap C leaves between those two calls for registering handlers now exists here too: it
+     * is the space between an engine being built and {@code loadGameConstants()} being called, and
+     * {@code GameRunner.gameLoop()} is what uses it.
      *
      * @author Rowan Crowther
      */
     private void initGame() {
-        GameState.initGameState();
         eventsBusHandler = new EventsBusHandler();
     }
 
     /**
-     * Read every file under {@code lib/gamedata} into the registries - this port's
-     * {@code init_angband()} ({@code [C] src/init.c}).
+     * Read every file under {@code lib/gamedata} into the registries and then stand up the objects
+     * that depend on what was read - this port's {@code init_angband()} ({@code [C] src/init.c}).
      *
      * <p>Separate from {@link #initGame()}, and that separation is the point. The bus is created in
      * {@code initGame()} but the load is deferred to here, which gives the caller a window between
@@ -119,15 +124,53 @@ public class GameEngine {
      * {@code init_angband()}. {@code GameRunner.gameLoop()} uses it to wire {@code InitHandlers}
      * before the load raises {@code EVENT_ENTER_INIT} from inside it.
      *
+     * <p>The two halves below mirror C's own two halves of {@code init_angband()}:
+     * {@link GameConstants#init()} covers both {@code init_game_constants()} and the data-file
+     * parsing C does in its {@code arrays_module}, and the player creation that follows is
+     * {@code player_module.init} - that is, {@code init_player()} ({@code [C] src/player.c:476}),
+     * which C's module table runs immediately after {@code arrays_module}
+     * ({@code [C] src/init.c:4445-4460}).
+     *
+     * <p><b>That order is a dependency, not a convention.</b> C's {@code init_player()} sizes the
+     * pack from {@code z_info->pack_size}, the quiver from {@code quiver_size}, and the
+     * rune-knowledge arrays from {@code brand_max}/{@code slay_max}/{@code curse_max} - all values
+     * that exist only once {@code constants.txt} has been read. The port's {@link Player}
+     * constructor uses growable collections and so does not depend on them <em>yet</em>, but it
+     * will as soon as inventory and rune knowledge are ported; creating the player after the load
+     * keeps the port correct in advance rather than after the fact.
+     *
      * <p>Long-running and file-bound, so it belongs on the game thread. An interrupt arriving during
      * it does not stop it cleanly: the reader's channel closes and the resulting failure is
      * reported as a data-load error, which is what happens today if the window is closed while the
      * game is still starting up.
      *
+     * <p>Every call replaces the player, level and command queue held in {@link GameState}, so
+     * calling this twice on one engine discards the first set entirely.
+     *
      * @author Rowan Crowther
      */
     public void loadGameConstants() {
         GameConstants.init();
+
+        // The port of init_player() ([C] src/player.c:476): allocate the player and its sub-structs.
+        // Everything C mem_zallocs there - upkeep, the timed-effect table, obj_k, the default
+        // options - the Player constructor does for itself, so a bare `new` is the whole of it here.
+        Player mainPlayer = new Player();
+        GameState.setPlayer(mainPlayer);
+
+        // Not part of init_player(). A stub level so the game has somewhere to stand until level
+        // generation is ported; in C the cave comes from generate_module and the level builders.
+        // TODO: replace with real level generation
+        Chunk cave = new Chunk("Current Level", 0, 0, 0, 0,
+                0, false, 10, 10, 4, 3, 3,
+                1, 1, 15, mainPlayer);
+        GameState.setCave(cave);
+
+        // Also not part of init_player(), but it has to follow the player: the queue binds to the
+        // player it feeds commands to. C needs no equivalent step - its cmdq is a file-scope array
+        // in cmd-core.c that reaches the player through the global instead.
+        CommandQueue commandQueue = new CommandQueue(mainPlayer);
+        GameState.setCommandQueue(commandQueue);
     }
 
     /**

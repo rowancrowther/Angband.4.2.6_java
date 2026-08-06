@@ -214,10 +214,12 @@ public class Player {
      * @see #getSkipCmdCoercion()
      */
     private int skipCmdCoercion;
+
     /**
      * Per-spell knowledge/learning flags - the port of C's {@code p->spell_flags}.
      */
     private int spellFlags; // TODO: Change this once we know what we are dealing with
+
     /**
      * Order in which spells were learned - the port of C's {@code p->spell_order}.
      */
@@ -227,18 +229,22 @@ public class Player {
      * The character's full name - the port of C's {@code p->full_name}.
      */
     private String fullName;
+
     /**
      * Cause of death - the port of C's {@code p->died_from}.
      */
     private String diedFrom;
+
     /**
      * The character's background history text - the port of C's {@code p->history}.
      */
     private String history;
+
     /**
      * The character's quest history - the port of C's {@code p->quests}.
      */
     private ArrayList<Quest> quests;
+
     /**
      * Total-winner flag: set once the player has won the game - the port of C's {@code p->total_winner}.
      */
@@ -253,6 +259,7 @@ public class Player {
      * True once the player has died - the port of C's {@code p->is_dead}.
      */
     private boolean isDead;
+
     /**
      * True while the player is in wizard mode - the port of C's {@code p->wizard}.
      */
@@ -267,14 +274,17 @@ public class Player {
      * Saved birth gold, used by quickstart when {@code birth_money} is off - the port of C's {@code p->au_birth}.
      */
     private int auBirth;
+
     /**
      * Saved birth "natural" stat values, for quickstart - the port of C's {@code p->stat_birth}.
      */
     private HashMap<Stats, Integer> statsBirth;
+
     /**
      * Saved birth height, for quickstart - the port of C's {@code p->ht_birth}.
      */
     private int htBirth;
+
     /**
      * Saved birth weight, for quickstart - the port of C's {@code p->wt_birth}.
      */
@@ -284,6 +294,7 @@ public class Player {
      * The player's option settings - the port of C's {@code p->opts}.
      */
     private PlayerOptions options;
+
     /**
      * The player's structured history log (see {@code player-history.c}) - the port of C's {@code p->hist}.
      */
@@ -293,6 +304,7 @@ public class Player {
      * The player's body plan, i.e. the equipment slots available - the port of C's {@code p->body}.
      */
     private PlayerBody body;
+
     /**
      * The player's current shape, if shapechanged - the port of C's {@code p->shape}.
      */
@@ -302,6 +314,7 @@ public class Player {
      * The player's real carried gear - the port of C's {@code p->gear}.
      */
     private ArrayList<ItemObject> gear;
+
     /**
      * The player's gear as currently known to the player - the port of C's {@code p->gear_k}.
      */
@@ -311,6 +324,7 @@ public class Player {
      * The player's accumulated object knowledge ("runes") - the port of C's {@code p->obj_k}.
      */
     private ArrayList<ItemObject> itemObjectsKnown;
+
     /**
      * The player's known version of the current level - the port of C's {@code p->cave}.
      */
@@ -320,14 +334,49 @@ public class Player {
      * The player's fully calculated state - the port of C's {@code p->state}.
      */
     private PlayerState state;
+
     /**
      * What the player can know of the calculated state - the port of C's {@code p->known_state}.
      */
     private PlayerState knownState;
+
     /**
      * Transient per-turn bookkeeping - the port of C's {@code p->upkeep}.
      */
     private PlayerUpkeep playerUpkeep;
+
+    public Player() {
+        // C initialisation
+        playerUpkeep = new PlayerUpkeep();
+        timed = new HashMap<>();
+        for (TimedEffect effect : TimedEffect.values()) {
+            timed.put(effect, 0);
+        }
+        itemObjectsKnown = new ArrayList<>();
+        options = new PlayerOptions();
+        options.initDefaults();
+
+        // Java initialisation
+        body = null;
+        cave = null;
+        gear = new ArrayList<>();
+        gearKnown = new ArrayList<>();
+        grid = Loc.zero;
+        isDead = false;
+        isWizard = false;
+        knownState = null;
+        oldGrid = Loc.zero;
+        playerClass = null;
+        playerHistory = null;
+        quests = new ArrayList<>();
+        race = null;
+        shape = null;
+        statCur = new HashMap<>();
+        statMax = new HashMap<>();
+        statMap = new HashMap<>();
+        statsBirth = new HashMap<>();
+        state = null;
+    }
 
     /**
      * @return the {@link Chunk} (level) the player is currently in - the port of C's {@code p->cave}

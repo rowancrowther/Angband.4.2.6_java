@@ -31,21 +31,31 @@ public enum PlayerOptionTypes {
     /**
      * Internal / non-user options, e.g. the {@code OP_none} placeholder.
      */
-    SPECIAL,
+    SPECIAL("special"),
     /**
      * Wizard/debug "cheat" options; using them marks the character.
      */
-    CHEAT,
+    CHEAT("cheat"),
     /**
      * Birth options — chosen at character creation and fixed for that game.
      */
-    BIRTH,
+    BIRTH("birth"),
     /**
      * Competition/score options that affect the high-score table.
      */
-    SCORE,
+    SCORE("score"),
     /**
      * Interface and display preferences.
      */
-    INTERFACE
+    INTERFACE("interface");
+
+    private final String name;
+
+    PlayerOptionTypes(String name) {
+        this.name = name;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

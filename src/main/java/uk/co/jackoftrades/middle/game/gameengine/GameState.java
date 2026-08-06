@@ -154,19 +154,23 @@ public class GameState {
     }
 
     /**
-     * Stands up a fresh game state: a new player, a placeholder current level around them, the
-     * command queue that feeds the engine, and the event bus. Called once when a game begins,
-     * before the turn loop starts.
+     * Stands up a fresh game state: a new player, a placeholder current level around them, and the
+     * command queue that feeds the engine. Called once when a game begins, before the turn loop
+     * starts.
+     *
+     * <p><b>Superseded, and safe to empty.</b> {@link GameEngine#loadGameConstants()} now builds
+     * all three itself as the port of {@code player_module.init} ({@code init_player()},
+     * {@code [C] src/player.c:476}), and it does so <em>after</em> the game data is read - which is
+     * where C puts it, {@code player_module} following {@code arrays_module} in the module table
+     * ({@code [C] src/init.c:4445-4460}), because {@code init_player()} sizes the pack, quiver and
+     * rune arrays from values that only exist once {@code constants.txt} has been read.
+     *
+     * <p>This method runs from {@code GameEngine.initGame()}, i.e. <em>before</em> that load, so
+     * everything it makes here is discarded moments later. Nothing reads it in between.
+     *
+     * @author Rowan Crowther
      */
     public static void initGameState() {
-        mainPlayer = new Player();
-        // Create a stub cave to allow the game to run until the actual code for this
-        // is implemented TODO: Implement
-        cave = new Chunk("Current Level", 0, 0, 0, 0,
-                0, false, 10, 10, 4, 3, 3,
-                1, 1, 15, mainPlayer);
-        commandQueue = new CommandQueue(mainPlayer);
-        GameEngine.getEventsBusHandler().init();
     }
 
     /**

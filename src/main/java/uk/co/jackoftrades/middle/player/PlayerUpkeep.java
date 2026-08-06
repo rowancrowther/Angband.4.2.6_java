@@ -28,6 +28,7 @@ import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftrades.middle.player.enums.PlayerUpkeepEnum;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -57,26 +58,32 @@ public class PlayerUpkeep {
      * True while a game is actually in progress — the turn loop's master condition ({@code playing}).
      */
     private boolean playing;
+
     /**
      * True when an autosave is pending ({@code autosave}).
      */
     private boolean autosave;
+
     /**
      * True when the current level needs regenerating ({@code generate_level}).
      */
     private boolean generateLevel;
+
     /**
      * True when only partial updates are needed ({@code only_partial}).
      */
     private boolean onlyPartial;
+
     /**
      * True while an auto-drop is in progress ({@code dropping}).
      */
     private boolean dropping;
+
     /**
      * Energy spent this turn; the loop reads it to tell whether a turn was actually taken ({@code energy_use}).
      */
     private int energyUse;
+
     /**
      * Number of spells currently available to learn ({@code new_spells}).
      */
@@ -86,14 +93,17 @@ public class PlayerUpkeep {
      * The monster shown on the health bar — the health-bar trackee ({@code health_who}).
      */
     private Monster healthWho;
+
     /**
      * The monster race currently being recalled — the race trackee ({@code monster_race}).
      */
     private MonsterRace monsterRace;
+
     /**
      * The object currently being examined — the object trackee ({@code object}).
      */
     private ItemObject object;
+
     /**
      * The object kind currently being examined — the kind trackee ({@code object_kind}).
      */
@@ -103,10 +113,12 @@ public class PlayerUpkeep {
      * Pending one-off housekeeping actions such as combining the pack or applying ignore rules ({@code notice}).
      */
     private Flag<PlayerNotice> noticeFlags = new Flag<>(PlayerNotice.class);
+
     /**
      * Derived quantities (HP, mana, view, …) that have gone stale and must be recomputed ({@code update}).
      */
     private Flag<PlayerUpkeepEnum> updateFlags = new Flag<>(PlayerUpkeepEnum.class);
+
     /**
      * Parts of the screen that have changed and need repainting by the UI ({@code redraw}).
      */
@@ -122,14 +134,17 @@ public class PlayerUpkeep {
      * Create an up staircase on the next level generated ({@code create_up_stair}).
      */
     private boolean createUpStair;
+
     /**
      * Create a down staircase on the next level generated ({@code create_down_stair}).
      */
     private boolean createDownStair;
+
     /**
      * The next level is to be fully lit on creation ({@code light_level}).
      */
     private boolean lightLevel;
+
     /**
      * The current level is an arena ({@code arena_level}).
      */
@@ -144,6 +159,7 @@ public class PlayerUpkeep {
      * Running counter: state of an in-progress run ({@code running}).
      */
     private int runningCounter;
+
     /**
      * True if this is the first step of a run rather than following a precomputed path ({@code running_firststep}).
      */
@@ -153,38 +169,63 @@ public class PlayerUpkeep {
      * The objects held in the quiver ({@code quiver}).
      */
     private List<ItemObject> quiverObjects;
+
     /**
      * The objects held in the pack ({@code inven}).
      */
     private List<ItemObject> inventoryObjects;
+
     /**
      * Total weight currently carried ({@code total_weight}).
      */
     private int totalWeight;
+
     /**
      * Number of items in the inventory ({@code inven_cnt}).
      */
     private int inventoryCount;
+
     /**
      * Number of items in the equipment ({@code equip_cnt}).
      */
     private int equipmentCount;
+
     /**
      * Number of items in the quiver ({@code quiver_cnt}).
      */
     private int quiverCount;
+
     /**
      * Power of the recharge effect in progress ({@code recharge_pow}).
      */
     private int rechargePower;
+
     /**
      * Pathfinding: number of steps left to walk ({@code step_count}).
      */
     private int stepCount;
+
     /** Pathfinding: the queued steps, in reverse order ({@code steps}). */
     private List<Integer> steps;
+
     /** Pathfinding: the destination grid being walked to ({@code path_dest}). */
     private Loc pathDestination;
+
+    public PlayerUpkeep() {
+        // C implementation
+        inventoryObjects = new ArrayList<>();
+        quiverObjects = new ArrayList<>();
+
+        // Java implementation
+        healthWho = null;
+        monsterRace = null;
+        object = null;
+        objectKind = null;
+        objectPile = null;
+        pathDestination = Loc.zero;
+        playing = false;
+        steps = new ArrayList<>();
+    }
 
     /**
      * @return the pile of objects currently under the player

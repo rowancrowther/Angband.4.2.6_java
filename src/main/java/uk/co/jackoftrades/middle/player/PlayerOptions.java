@@ -17,11 +17,21 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
+import uk.co.jackoftrades.middle.player.enums.PlayerOptionTypes;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * The player's option settings — the port of C's {@code struct player_options}
@@ -39,6 +49,8 @@ import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
  * @author Rowan Crowther
  */
 public class PlayerOptions {
+    private static final Logger logger = LogManager.getLogger(PlayerOptions.class);
+
     /**
      * The set of boolean options currently switched on, standing in for C's
      * {@code bool opt[OPT_MAX]}. Options absent from the set are off.
@@ -82,6 +94,10 @@ public class PlayerOptions {
      */
     private int nameSuffix;
 
+    public PlayerOptions() {
+        options = new Flag<>(PlayerOptionEnum.class);
+    }
+
     /**
      * Reports whether a boolean option is switched on — the port of C's {@code OPT(player, name)}
      * macro, which indexes {@code player->opts.opt[]}.
@@ -94,5 +110,94 @@ public class PlayerOptions {
     @Contract(pure = true)
     public boolean has(@NotNull PlayerOptionEnum option) {
         return options.has(option);
+    }
+
+    public void initDefaults() {
+        options = new Flag<>(PlayerOptionEnum.class);
+
+        for (PlayerOptionEnum option : PlayerOptionEnum.values()) {
+            if (option.isNormal())
+                options.on(option);
+        }
+
+        restoreCustom(PlayerOptionTypes.BIRTH);
+        restoreCustom(PlayerOptionTypes.INTERFACE);
+
+        delayFactor = 40;
+        hitpointWarn = 3;
+    }
+
+    private boolean restoreCustom(PlayerOptionTypes type) {
+        String optionTag = "option:";
+        boolean loadedNoErrors = true;
+
+        String pageName = type.getName();
+        String filename = AngbandDirs.ANGBAND_DIRS.USER.getPath() + "customized_" + pageName + "_options.txt";
+        Path path = Paths.get(filename);
+        if (!Files.exists(path)) {
+            logger.info("Customized options file " + filename + " does not exist.");
+            restoreMaintainer(type);
+            return false;
+        }
+
+        try (BufferedReader reader = Files.newBufferedReader(path)) {
+            String line = null;
+            while ((line = reader.readLine()) != null) {
+                if (line.isBlank() || line.startsWith("#")) {
+                    continue;
+                }
+
+                if (!line.startsWith(optionTag)) {
+                    logger.warn("Line read in from file " + filename + " has an illegal option line: " + line);
+                    loadedNoErrors = false;
+                    continue;
+                }
+
+                String optionName = line.substring(optionTag.length());
+
+                String[] optionStringSplit = optionName.split(":");
+
+                if (optionStringSplit.length != 2) {
+                    logger.warn("Line read in from file " + filename + " has too many ':' in it: " + line);
+                    loadedNoErrors = false;
+                    continue;
+                }
+
+                if (!optionStringSplit[1].equalsIgnoreCase("yes") && !optionStringSplit[1].equalsIgnoreCase("no")) {
+                    logger.warn("Line read in from file " + filename + " does not have 'yes' or 'no' as a option value: " + line);
+                    loadedNoErrors = false;
+                    continue;
+                }
+
+                try {
+                    PlayerOptionEnum poEnum = PlayerOptionEnum.valueOf("OP_" + optionStringSplit[0].toLowerCase());
+
+                    if (optionStringSplit[1].equalsIgnoreCase("yes")) {
+                        options.on(poEnum);
+                    } else {
+                        options.on(poEnum);
+                    }
+                } catch (IllegalArgumentException e) {
+                    logger.warn("Line read in from file " + filename + " has an unknown option: " + line);
+                    loadedNoErrors = false;
+                }
+            }
+        } catch (IOException e) {
+            logger.warn("IOException while reading from file " + filename + ": " + e.getMessage());
+            loadedNoErrors = false;
+        }
+
+        return loadedNoErrors;
+    }
+
+    private void restoreMaintainer(PlayerOptionTypes type) {
+        for (PlayerOptionEnum option : PlayerOptionEnum.values()) {
+            if (option.getPlayerOptionType().equals(type)) {
+                if (option.isNormal())
+                    options.on(option);
+                else
+                    options.off(option);
+            }
+        }
     }
 }

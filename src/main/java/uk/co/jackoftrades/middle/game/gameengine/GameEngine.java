@@ -21,9 +21,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import uk.co.jackoftrades.middle.cave.Chunk;
+import uk.co.jackoftrades.middle.game.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.loaders.DungeonLoader;
 import uk.co.jackoftrades.middle.player.Player;
 
 /**
@@ -165,6 +167,12 @@ public class GameEngine {
                 0, false, 10, 10, 4, 3, 3,
                 1, 1, 15, mainPlayer);
         GameState.setCave(cave);
+
+        // The level-generation data, read from dungeon_profile.txt into DungeonRegistry. In C this
+        // is one of the run_parser() calls in init_arrays ([C] src/generate.c:644), which also
+        // signals the same progress message as it goes.
+        GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (dungeon profiles)");
+        DungeonLoader.loadDungeonProfiles();
 
         // Also not part of init_player(), but it has to follow the player: the queue binds to the
         // player it feeds commands to. C needs no equivalent step - its cmdq is a file-scope array

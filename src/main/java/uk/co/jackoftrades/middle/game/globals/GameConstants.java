@@ -246,10 +246,10 @@ public class GameConstants {
         // Signal EVENT_ENTER_INIT
         EventsHandler bus = GameEngine.getEventsBusHandler();
         bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising arrays... (dungeon profiles)");
+        DungeonLoader.loadDungeonProfiles();
 
     }
 
-    
 
     //    private static void loadMonsterLore() {
 //        LoreReader loreReader = new LoreReader();

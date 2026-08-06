@@ -20,6 +20,8 @@ package uk.co.jackoftrades.middle.cave.roombuilders;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 
+import java.util.stream.Stream;
+
 /**
  * The room types a level may contain — the port of C's {@code room_builders[]} table, which is
  * itself built from {@code list-rooms.h}.
@@ -210,5 +212,26 @@ public enum RoomType {
      */
     public static int getRoomBuilderCount() {
         return values().length;
+    }
+
+    /**
+     * Find a room type by the name the data files use.
+     *
+     * <p>The same lookup as {@link #getIndexFromName}, returning the constant rather than its
+     * index — what the assembler wants, since it stores the type on a {@code RoomProfile} rather
+     * than indexing a table. Matching is case-insensitive for the same reason given there.
+     *
+     * <p>Where C treats an unmatched name as a fatal parse error
+     * ({@code PARSE_ERROR_NO_ROOM_FOUND}, generate.c:176), this returns {@code null} and leaves
+     * the caller to decide.
+     *
+     * @param name the name to look for
+     * @return the matching room type, or {@code null} if no room type has that name
+     * @author Rowan Crowther
+     */
+    public static RoomType getRoomTypeFromName(String name) {
+        return Stream.of(values())
+                .filter(r -> r.name.equalsIgnoreCase(name))
+                .findFirst().orElse(null);
     }
 }

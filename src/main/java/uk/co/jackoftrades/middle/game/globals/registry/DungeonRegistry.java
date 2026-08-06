@@ -19,9 +19,35 @@ package uk.co.jackoftrades.middle.game.globals.registry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.middle.cave.profilers.CaveProfile;
 
+import java.util.List;
+
+/**
+ * Holds the level-generation data loaded from {@code lib/gamedata} for the rest of the game to
+ * read — the port's home for what C keeps in the file-scope globals of {@code generate.c}.
+ *
+ * <p>Populated once at start-up by {@link uk.co.jackoftrades.middle.game.globals.loaders.DungeonLoader}.
+ *
+ * @author Rowan Crowther
+ */
 public class DungeonRegistry {
     private static final Logger logger = LogManager.getLogger(DungeonRegistry.class);
 
+    /**
+     * Every level style the game may build, in file order — C's {@code cave_profiles} array.
+     */
+    private static List<CaveProfile> caveProfiles;
 
+    /**
+     * Install the level styles read from {@code dungeon_profile.txt}.
+     *
+     * <p>Replaces whatever was held before, so calling this twice discards the first set.
+     *
+     * @param caveProfiles the profiles to install, in file order
+     * @author Rowan Crowther
+     */
+    public static void setCaveProfiles(List<CaveProfile> caveProfiles) {
+        DungeonRegistry.caveProfiles = caveProfiles;
+    }
 }

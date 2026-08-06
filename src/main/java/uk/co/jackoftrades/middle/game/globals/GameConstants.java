@@ -242,6 +242,15 @@ public class GameConstants {
         }
     }
 
+    public static void runTemplateParser() {
+        // Signal EVENT_ENTER_INIT
+        EventsHandler bus = GameEngine.getEventsBusHandler();
+        bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising arrays... (dungeon profiles)");
+
+    }
+
+    
+
     //    private static void loadMonsterLore() {
 //        LoreReader loreReader = new LoreReader();
 //        String filename = AngbandDirs.ANGBAND_DIRS.USER.getPath() + "lore.txt";

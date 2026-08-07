@@ -713,4 +713,9 @@ public enum TValue {
 
         return list;
     }
+
+    public static int findIndex(String tvalName) {
+        TValue tValue = TValue.fromName(tvalName);
+        return tValue.ordinal();
+    }
 }

@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.game.globals.registry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.cave.profilers.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
 
 import java.util.List;
 

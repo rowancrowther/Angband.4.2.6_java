@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.cave.profilers;
+package uk.co.jackoftrades.middle.cave.profilers.dungeon;
 
 /**
  * The mineral veins running through one style of level — the port of C's

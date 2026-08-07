@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.dungeonprofile;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.cave.profilers.RoomProfile;
+import uk.co.jackoftrades.middle.cave.profilers.dungeon.RoomProfile;
 import uk.co.jackoftrades.middle.cave.roombuilders.RoomType;
 
 import java.util.ArrayList;

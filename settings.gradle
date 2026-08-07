@@ -3,6 +3,13 @@ pluginManagement {
         gradlePluginPortal()
         mavenCentral()
     }
+    plugins {
+        id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
+    }
+}
+
+plugins {
+    id 'org.gradle.toolchains.foojay-resolver-convention'
 }
 
 rootProject.name = 'Angband.4.2.6'

@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.parser.DungeonProfileReader;
 import uk.co.jackoftrades.backend.parser.ParseResult;
-import uk.co.jackoftrades.middle.cave.profilers.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.DungeonRegistry;
 

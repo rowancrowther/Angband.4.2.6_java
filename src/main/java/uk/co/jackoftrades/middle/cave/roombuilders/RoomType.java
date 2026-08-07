@@ -234,4 +234,12 @@ public enum RoomType {
                 .filter(r -> r.name.equalsIgnoreCase(name))
                 .findFirst().orElse(null);
     }
+
+    public int getMaxHeight() {
+        return maxHeight;
+    }
+
+    public int getMaxWidth() {
+        return maxWidth;
+    }
 }

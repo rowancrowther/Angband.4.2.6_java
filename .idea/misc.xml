@@ -752,12 +752,25 @@
           <option name="language" value="" />
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/RoomProfileLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="C:\Users\sarah\IdeaProjects\Angband.4.2.6_java\src\main\java\uk\co\jackoftrades\backend\parser\grammars\imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
       </list>
     </option>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
-  <component name="KubernetesApiProvider">{}</component>
-  <component name="ProjectRootManager" version="2" languageLevel="JDK_26" default="true" project-jdk-name="openjdk-26" project-jdk-type="JavaSDK">
+  <component name="FrameworkDetectionExcludesConfiguration">
+    <file type="web" url="file://$PROJECT_DIR$" />
+  </component>
+  <component name="KubernetesApiProvider"><![CDATA[{}]]></component>
+  <component name="ProjectRootManager" version="2" languageLevel="JDK_26" default="true" project-jdk-name="26" project-jdk-type="JavaSDK">
     <output url="file://$PROJECT_DIR$/out" />
   </component>
 </project>

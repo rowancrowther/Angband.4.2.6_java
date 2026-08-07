@@ -21,7 +21,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.parser.DungeonProfileReader;
 import uk.co.jackoftrades.backend.parser.ParseResult;
+import uk.co.jackoftrades.backend.parser.RoomProfileReader;
 import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profilers.room.RoomTemplate;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.DungeonRegistry;
 
@@ -63,5 +65,32 @@ public class DungeonLoader {
             logger.error("Error while loading file {}", filename, e);
         }
 
+    }
+
+    /**
+     * Read {@code room_template.txt} and install the templates in {@link DungeonRegistry}.
+     *
+     * <p>Data problems are reported but not fatal, following the same pattern as
+     * {@link #loadDungeonProfiles()}: {@code ErrorParsing.reportAndCheck} logs whatever the reader
+     * gathered, and the templates that did assemble are still installed. An unreadable file is
+     * logged and swallowed, leaving the registry unset; C by contrast quits the game outright,
+     * since {@code run_parse_room} also uses {@code parse_file_quit_not_found}
+     * ({@code generate.c}).
+     *
+     * @author Rowan Crowther
+     */
+    public static void loadRoomTemplates() {
+        RoomProfileReader parser = new RoomProfileReader();
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "room_template.txt";
+        
+        try {
+            ParseResult<RoomTemplate> result = parser.parseWithResults(filename);
+            
+            ErrorParsing.reportAndCheck(filename, result, logger);
+            
+            DungeonRegistry.setRoomTemplates(result.items());
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
     }
 }

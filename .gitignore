@@ -63,3 +63,4 @@ CLAUDE.md
 /lib/fonts/
 /lib/tiles/
 /lib/user/save/Loth
+/src/main/java/uk/co/jackoftrades/middle/game/gameengine/GameEngineSmokeTest.java

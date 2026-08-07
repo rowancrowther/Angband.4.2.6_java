@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.game.globals.registry;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profilers.room.RoomTemplate;
 
 import java.util.List;
 
@@ -40,6 +41,12 @@ public class DungeonRegistry {
     private static List<CaveProfile> caveProfiles;
 
     /**
+     * Every room template the game may lay out, in file order — C's {@code room_templates} linked
+     * list.
+     */
+    private static List<RoomTemplate> roomTemplates;
+
+    /**
      * Install the level styles read from {@code dungeon_profile.txt}.
      *
      * <p>Replaces whatever was held before, so calling this twice discards the first set.
@@ -49,5 +56,17 @@ public class DungeonRegistry {
      */
     public static void setCaveProfiles(List<CaveProfile> caveProfiles) {
         DungeonRegistry.caveProfiles = caveProfiles;
+    }
+
+    /**
+     * Install the room templates read from {@code room_template.txt}.
+     *
+     * <p>Replaces whatever was held before, so calling this twice discards the first set.
+     *
+     * @param roomTemplates the templates to install, in file order
+     * @author Rowan Crowther
+     */
+    public static void setRoomTemplates(List<RoomTemplate> roomTemplates) {
+        DungeonRegistry.roomTemplates = roomTemplates;
     }
 }

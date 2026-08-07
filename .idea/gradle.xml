@@ -4,6 +4,7 @@
   <component name="GradleSettings">
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
+        <option name="delegatedBuild" value="false" />
         <option name="testRunner" value="PLATFORM" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="gradleJvm" value="ms-25" />
@@ -12,7 +13,6 @@
             <option value="$PROJECT_DIR$" />
           </set>
         </option>
-        <option name="myGradleHome" value="D:\Program Files (x86)\gradle-9.4.1" />
       </GradleProjectSettings>
     </option>
   </component>

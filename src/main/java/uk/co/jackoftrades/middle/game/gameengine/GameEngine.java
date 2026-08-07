@@ -173,6 +173,9 @@ public class GameEngine {
         // signals the same progress message as it goes.
         GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (dungeon profiles)");
         DungeonLoader.loadDungeonProfiles();
+        
+        GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (room templates)");
+        DungeonLoader.loadRoomTemplates();
 
         // Also not part of init_player(), but it has to follow the player: the queue binds to the
         // player it feeds commands to. C needs no equivalent step - its cmdq is a file-scope array

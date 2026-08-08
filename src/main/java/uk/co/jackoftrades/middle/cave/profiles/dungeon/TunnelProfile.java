@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.cave.profilers.dungeon;
+package uk.co.jackoftrades.middle.cave.profiles.dungeon;
 
 /**
  * How corridors are dug on one style of level — the port of C's {@code struct tunnel_profile}

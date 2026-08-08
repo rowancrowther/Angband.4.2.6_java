@@ -19,8 +19,9 @@ package uk.co.jackoftrades.middle.game.globals.registry;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
-import uk.co.jackoftrades.middle.cave.profilers.room.RoomTemplate;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profiles.room.RoomTemplate;
+import uk.co.jackoftrades.middle.cave.profiles.vault.Vault;
 
 import java.util.List;
 
@@ -45,6 +46,15 @@ public class DungeonRegistry {
      * list.
      */
     private static List<RoomTemplate> roomTemplates;
+    
+    /**
+     * Every vault the game may place, in file order — C's {@code vaults} linked list
+     * ({@code [C] src/generate.h:316}).
+     *
+     * <p>Holds all six vault types plus the interesting rooms, since {@code vault.txt} carries them
+     * in one file and distinguishes them only by the {@code type:} line.
+     */
+    private static List<Vault> vaultTemplates;
 
     /**
      * Install the level styles read from {@code dungeon_profile.txt}.
@@ -68,5 +78,17 @@ public class DungeonRegistry {
      */
     public static void setRoomTemplates(List<RoomTemplate> roomTemplates) {
         DungeonRegistry.roomTemplates = roomTemplates;
+    }
+
+    /**
+     * Install the vaults read from {@code vault.txt}.
+     *
+     * <p>Replaces whatever was held before, so calling this twice discards the first set.
+     *
+     * @param items the vaults to install, in file order
+     * @author Rowan Crowther
+     */
+    public static void setVaultTemplates(List<Vault> items) {
+        DungeonRegistry.vaultTemplates = items;
     }
 }

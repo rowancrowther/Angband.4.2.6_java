@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.cave.profilers.dungeon;
+package uk.co.jackoftrades.middle.cave.profiles.dungeon;
 
 import uk.co.jackoftrades.middle.cave.roombuilders.RoomType;
 

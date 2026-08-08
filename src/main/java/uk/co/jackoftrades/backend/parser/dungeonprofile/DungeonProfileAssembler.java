@@ -19,10 +19,10 @@ package uk.co.jackoftrades.backend.parser.dungeonprofile;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.RoomProfile;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.StreamerProfile;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.TunnelProfile;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.RoomProfile;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.StreamerProfile;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.TunnelProfile;
 
 import java.util.ArrayList;
 import java.util.List;

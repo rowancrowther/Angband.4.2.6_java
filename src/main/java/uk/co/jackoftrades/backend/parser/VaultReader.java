@@ -20,58 +20,62 @@ package uk.co.jackoftrades.backend.parser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.parser.grammars.roomprofiler.RoomProfileGrammar;
-import uk.co.jackoftrades.backend.parser.grammars.roomprofiler.RoomProfileLexer;
-import uk.co.jackoftrades.backend.parser.roomprofile.RoomProfileAssembler;
-import uk.co.jackoftrades.backend.parser.roomprofile.RoomProfileParseRecord;
-import uk.co.jackoftrades.middle.cave.profiles.room.RoomTemplate;
+import uk.co.jackoftrades.backend.parser.grammars.vault.VaultGrammar;
+import uk.co.jackoftrades.backend.parser.grammars.vault.VaultLexer;
+import uk.co.jackoftrades.backend.parser.vault.VaultAssembler;
+import uk.co.jackoftrades.backend.parser.vault.VaultParseRecord;
+import uk.co.jackoftrades.middle.cave.profiles.vault.Vault;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Reads {@code room_template.txt} into a list of {@link RoomTemplate}s. The four
- * {@code room_template}-specific pieces — {@link RoomProfileLexer}, {@link RoomProfileGrammar},
- * {@link #extract} and {@link RoomProfileAssembler} — are handed to {@link GrammarDriver}, which
- * owns the shared lex/parse/assemble ritual every {@code lib/gamedata} reader follows.
+ * Reads {@code vault.txt} into a list of {@link Vault}s. The four vault-specific pieces —
+ * {@link VaultLexer}, {@link VaultGrammar}, {@link #extract} and {@link VaultAssembler} — are
+ * handed to {@link GrammarDriver}, which owns the shared lex/parse/assemble ritual every
+ * {@code lib/gamedata} reader follows.
+ *
+ * <p>The one file covers all seven room-builder types C keeps in {@code vaults} — the three vault
+ * sizes, their newer variants, and the interesting rooms — since the data distinguishes them only
+ * by the {@code type:} line.
  *
  * @author Rowan Crowther
  */
-public class RoomProfileReader implements Reader<RoomTemplate> {
-    private static final Logger logger = LogManager.getLogger(RoomProfileReader.class);
+public class VaultReader implements Reader <Vault> {
+    private final static Logger logger = LogManager.getLogger(VaultReader.class);
 
     /**
      * @param filename the data file to parse
-     * @return the successfully assembled templates; soft errors are logged but not surfaced here
+     * @return the successfully assembled vaults; soft errors are logged but not surfaced here
      * @author Rowan Crowther
      */
     @Override
-    public @NotNull List<RoomTemplate> parse(@NotNull String filename) throws IOException {
+    public @NotNull List<Vault> parse(@NotNull String filename) throws IOException {
         return parseWithResults(filename).items();
     }
 
     /**
-     * As {@link #parse}, but keeps the soft errors alongside the assembled templates rather than
+     * As {@link #parse}, but keeps the soft errors alongside the assembled vaults rather than
      * discarding them.
      *
      * @param filename the data file to parse
-     * @return the assembled templates plus any soft errors gathered along the way
+     * @return the assembled vaults plus any soft errors gathered along the way
      * @author Rowan Crowther
      */
-    public ParseResult<RoomTemplate> parseWithResults(@NotNull String filename) throws IOException {
+    public ParseResult<Vault> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
-                RoomProfileLexer::new,
-                RoomProfileGrammar::new,
-                RoomProfileReader::extract,
-                new RoomProfileAssembler(), logger);
+                VaultLexer::new,
+                VaultGrammar::new,
+                VaultReader::extract,
+                new VaultAssembler(), logger);
     }
-
+    
     /**
      * Runs the grammar's entry rule, fails closed on hard parse errors, checks the file's declared
      * {@code record-count:} against how many records actually parsed (a soft error on mismatch —
      * note C's own parser never validates this header at all, so a mismatch here is stricter than
-     * the original), and hands back the raw records for {@link RoomProfileAssembler} to type-check.
+     * the original), and hands back the raw records for {@link VaultAssembler} to type-check.
      *
      * @param parser       the constructed parser, ready to run its entry rule
      * @param errorCatcher the installed error listener; {@link ParseErrors#throwIfAny()} must run
@@ -81,17 +85,17 @@ public class RoomProfileReader implements Reader<RoomTemplate> {
      * @return the raw parse records, in file order
      * @author Rowan Crowther
      */
-    private static List<RoomProfileParseRecord> extract(
-            @NotNull RoomProfileGrammar parser,
+    private static List<VaultParseRecord> extract (
+            @NotNull VaultGrammar parser,
             @NotNull ParseErrors errorCatcher,
             @NotNull List<String> errors) {
-        RoomProfileGrammar.FileContext output = parser.file();
-        List<RoomProfileParseRecord> result = output.records;
+        VaultGrammar.FileContext output = parser.file();
+        List<VaultParseRecord> result = output.profiles;
         errorCatcher.throwIfAny();
-
-        String declaredRecordCount = output.declaredCount;
+        
+        String declaredRecordCount = output.declaredRecordCount;
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
-
+        
         return new ArrayList<>(result);
     }
 }

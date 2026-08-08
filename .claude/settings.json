@@ -2,6 +2,22 @@
   "worktree": {
     "bgIsolation": "none"
   },
+  "permissions": {
+    "deny": [
+      "Bash(git:*)",
+      "Bash(gh:*)",
+      "mcp__idea__git_status",
+      "mcp__idea__execute_terminal_command",
+      "mcp__idea__apply_patch"
+    ],
+    "ask": [
+      "Edit(./src/main/**)",
+      "Write(./src/main/**)",
+      "mcp__idea__create_new_file",
+      "mcp__idea__rename_refactoring",
+      "mcp__idea__reformat_file"
+    ]
+  },
   "hooks": {
     "PreToolUse": [
       {
@@ -9,7 +25,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python \"C:\\Users\\sarah\\IdeaProjects\\Angband.4.2.6_java\\.claude\\hooks\\guard-vcs.py\""
+            "command": "python3 \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard-vcs.py\"",
+            "statusMessage": "Checking for git..."
           }
         ]
       }

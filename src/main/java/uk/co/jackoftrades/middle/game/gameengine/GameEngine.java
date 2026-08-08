@@ -176,6 +176,13 @@ public class GameEngine {
         
         GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (room templates)");
         DungeonLoader.loadRoomTemplates();
+        
+        // The vaults, read from vault.txt into DungeonRegistry - one file covering the three vault
+        // sizes, their newer variants and the interesting rooms. Must follow loadGameConstants
+        // above, since vault.txt writes max-depth:0 to mean "no maximum" and resolving that needs
+        // the world's maximum depth.
+        GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays... (vault templates)");
+        DungeonLoader.loadVaultTemplates();
 
         // Also not part of init_player(), but it has to follow the player: the queue binds to the
         // player it feeds commands to. C needs no equivalent step - its cmdq is a file-scope array

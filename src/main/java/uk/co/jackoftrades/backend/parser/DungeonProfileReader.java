@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.parser.dungeonprofile.DungeonProfileAssembler;
 import uk.co.jackoftrades.backend.parser.dungeonprofile.DungeonProfileParseRecord;
 import uk.co.jackoftrades.backend.parser.grammars.dungeonprofile.DungeonProfileGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.dungeonprofile.DungeonProfileLexer;
-import uk.co.jackoftrades.middle.cave.profilers.dungeon.CaveProfile;
+import uk.co.jackoftrades.middle.cave.profiles.dungeon.CaveProfile;
 
 import java.io.IOException;
 import java.util.ArrayList;

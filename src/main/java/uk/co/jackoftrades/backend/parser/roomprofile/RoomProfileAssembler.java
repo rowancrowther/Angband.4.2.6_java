@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.RoomFlags;
-import uk.co.jackoftrades.middle.cave.profilers.room.RoomTemplate;
+import uk.co.jackoftrades.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftrades.middle.cave.roombuilders.RoomType;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 

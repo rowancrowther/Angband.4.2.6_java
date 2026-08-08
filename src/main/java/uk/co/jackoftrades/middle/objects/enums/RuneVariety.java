@@ -52,7 +52,7 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * @return the knowledge-menu heading this variety is listed under
      * @author Rowan Crowther
      */
-    public RuneGroup group();
+    RuneGroup group();
 
     /**
      * A rune of one of the three fixed combat enchantments.

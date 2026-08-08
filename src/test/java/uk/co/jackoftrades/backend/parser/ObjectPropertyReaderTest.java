@@ -199,7 +199,7 @@ class ObjectPropertyReaderTest {
 
         // The element index resolves off the code for an element-relation type.
         ObjectPropertyTypeWrapper wrapper =
-                (ObjectPropertyTypeWrapper) field(byName(result.items(), "acid resistance"), "index");
+                (ObjectPropertyTypeWrapper) field(byName(result.items(), "acid resistance"), "payload");
         assertEquals(ElementEnum.ELEM_ACID, wrapper.getElement(ObjPropertyType.OBJ_PROPERTY_RESIST));
     }
 
@@ -345,7 +345,7 @@ class ObjectPropertyReaderTest {
         assertEquals(ObjPropertyType.OBJ_PROPERTY_FLAG, field(prop, "type"));
         assertEquals(ObjectFlagType.OFT_MISC, field(prop, "subtype"));
         assertEquals(ObjectFlagID.OFID_NORMAL, field(prop, "idType"));
-        ObjectPropertyTypeWrapper wrapper = (ObjectPropertyTypeWrapper) field(prop, "index");
+        ObjectPropertyTypeWrapper wrapper = (ObjectPropertyTypeWrapper) field(prop, "payload");
         assertEquals(ObjectFlag.OF_FREE_ACT, wrapper.getFlag(ObjPropertyType.OBJ_PROPERTY_FLAG));
     }
 
@@ -374,7 +374,7 @@ class ObjectPropertyReaderTest {
         assertEquals(13, field(prop, "mult"));
         assertEquals("strong", field(prop, "adjective"));
         assertEquals("weak", field(prop, "negAdjective"));
-        ObjectPropertyTypeWrapper wrapper = (ObjectPropertyTypeWrapper) field(prop, "index");
+        ObjectPropertyTypeWrapper wrapper = (ObjectPropertyTypeWrapper) field(prop, "payload");
         assertEquals(ObjectModifier.OM_STR, wrapper.getModifier(ObjPropertyType.OBJ_PROPERTY_STAT));
     }
 

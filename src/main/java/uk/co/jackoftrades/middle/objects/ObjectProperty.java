@@ -81,7 +81,7 @@ public class ObjectProperty {
      *
      * @author Rowan Crowther
      */
-    private ObjectPropertyTypeWrapper index;
+    private ObjectPropertyTypeWrapper payload;
     /**
      * The property's base power (for item valuation).
      *
@@ -143,7 +143,7 @@ public class ObjectProperty {
      * @param type         property category
      * @param subtype      sub-type identifier
      * @param idType       identification method
-     * @param index        typed payload
+     * @param payload        typed payload
      * @param power        base power
      * @param mult         value multiplier
      * @param typeMults    per-type value multipliers
@@ -156,7 +156,7 @@ public class ObjectProperty {
      * @author Rowan Crowther
      */
     public ObjectProperty(ObjPropertyType type, ObjectFlagType subtype,
-                          ObjectFlagID idType, ObjectPropertyTypeWrapper index,
+                          ObjectFlagID idType, ObjectPropertyTypeWrapper payload,
                           int power, int mult, Map<TValue, Integer> typeMults,
                           String name, String adjective, String negAdjective,
                           String message, String description,
@@ -164,7 +164,7 @@ public class ObjectProperty {
         this.type = type;
         this.subtype = subtype;
         this.idType = idType;
-        this.index = index;
+        this.payload = payload;
         this.power = power;
         this.mult = mult;
         this.typeMults = typeMults;
@@ -174,5 +174,38 @@ public class ObjectProperty {
         this.message = message;
         this.description = description;
         this.boundEntries = boundEntries;
+    }
+
+    /**
+     * @return the property's category, which decides how {@link #getPayload} is to be read
+     * @author Rowan Crowther
+     */
+    public ObjPropertyType getType() {
+        return type;
+    }
+
+    /**
+     * @return the property's sub-type, which for flags distinguishes sustains, protections and the
+     * like, and marks those that are not learnable properties at all
+     * @author Rowan Crowther
+     */
+    public ObjectFlagType getSubtype() {
+        return subtype;
+    }
+
+    /**
+     * @return the typed payload identifying which flag, modifier or element this property describes
+     * @author Rowan Crowther
+     */
+    public ObjectPropertyTypeWrapper getPayload() {
+        return payload;
+    }
+
+    /**
+     * @return the property's name, as shown to the player
+     * @author Rowan Crowther
+     */
+    public String getName() {
+        return name;
     }
 }

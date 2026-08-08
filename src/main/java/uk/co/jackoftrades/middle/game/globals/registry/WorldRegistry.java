@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.cave.World;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.player.Quest;
 
@@ -50,6 +51,9 @@ import java.util.Optional;
  * @author Rowan Crowther
  */
 public class WorldRegistry {
+    /**
+     * Logger used to report access before the registry has been populated.
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**
@@ -156,6 +160,34 @@ public class WorldRegistry {
         }
 
         return projections.stream().filter(p -> name.equals(p.getLashDescription()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Returns the first loaded projection of the given broad category (element/environs/monster).
+     * <p>
+     * Note that despite the name this matches on {@code type:} rather than on {@code code:}, and
+     * that many projections share a type — {@code projection.txt} declares twenty-five elements
+     * alone — so "first" here means whichever came earliest in the file, not a uniquely identified
+     * projection. To find one particular projection, use {@link #lookupProjectionByLash}, which
+     * matches on the code.
+     *
+     * @param type the category to find a projection for
+     * @return the first {@link Projection} of that category, or {@code null} if none is loaded
+     * @throws IllegalStateException if projections have not been loaded
+     * @author Rowan Crowther
+     */
+    @Nullable
+    public static Projection lookupProjectionByCode(ProjectionType type) {
+        if (projections == null) {
+            String message = "Invalid attempt to access projections when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return projections.stream().filter(p -> p.getType() == type)
                 .findFirst()
                 .orElse(null);
     }

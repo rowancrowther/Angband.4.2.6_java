@@ -19,6 +19,8 @@ package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 
+import java.util.Objects;
+
 /**
  * A weapon/ammo brand (as loaded from {@code brand.txt}) — extra elemental damage
  * a weapon deals, with the damage verb, the monster flags that resist or are
@@ -135,5 +137,36 @@ public class Brand {
                 ", oMultiplier=" + oMultiplier +
                 ", power=" + power +
                 '}';
+    }
+
+    /**
+     * Value equality over every field. Note this is stricter than the test used to group brands
+     * into runes, which compares names alone — two brands can be the same property at different
+     * strengths, and so share a rune, while remaining unequal here.
+     *
+     * @param o the object to compare against
+     * @return {@code true} if {@code o} is a brand with identical fields
+     * @author Rowan Crowther
+     */
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Brand brand)) return false;
+        return multiplier == brand.multiplier
+                && oMultiplier == brand.oMultiplier
+                && power == brand.power
+                && Objects.equals(code, brand.code)
+                && Objects.equals(name, brand.name)
+                && Objects.equals(verb, brand.verb)
+                && resistFlag == brand.resistFlag
+                && vulnerableFlag == brand.vulnerableFlag;
+    }
+
+    /**
+     * @return a hash consistent with {@link #equals}
+     * @author Rowan Crowther
+     */
+    @Override
+    public int hashCode() {
+        return Objects.hash(code, name, verb, resistFlag, vulnerableFlag, multiplier, oMultiplier, power);
     }
 }

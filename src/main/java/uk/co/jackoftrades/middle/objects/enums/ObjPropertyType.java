@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.objects.ObjectProperty;
+
 import java.util.Arrays;
 
 /**

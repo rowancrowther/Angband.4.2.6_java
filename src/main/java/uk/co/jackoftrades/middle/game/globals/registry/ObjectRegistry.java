@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.objects.*;
+import uk.co.jackoftrades.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.util.*;
@@ -141,6 +142,24 @@ public class ObjectRegistry {
      * Sentinel kind representing an unidentified item.
      */
     public static final ObjectKind unknownItemKind = new ObjectKind();
+
+    /**
+     * The complete rune list, built by {@link Rune#initRunes()}. Order is significant — it is the
+     * order runes are listed in the knowledge menu, and C identifies a rune in its savefile by
+     * position in this list.
+     */
+    private static final List<Rune> allRunes = new ArrayList<>();
+
+    /**
+     * Replaces the rune list with the one just built. Unlike the other setters here this copies
+     * into the existing list rather than rebinding the field, so the list itself stays final.
+     *
+     * @param runes the runes to store, in list order
+     */
+    public static void setRunes(List<Rune> runes) {
+        allRunes.clear();
+        allRunes.addAll(runes);
+    }
 
     /**
      * Records the current object-kind count as {@code objectBaseKindMax} — the ordinary-kind ceiling.
@@ -719,5 +738,33 @@ public class ObjectRegistry {
 
         return activations.stream().filter(e -> name.equals(e.getName()))
                 .findFirst().orElse(null);
+    }
+
+    /**
+     * Finds the property definition describing a given flag, modifier or element. Ports C's
+     * {@code lookup_obj_property} ({@code src/obj-properties.c}), which searches the same loaded
+     * property list.
+     * <p>
+     * A request for {@code OBJ_PROPERTY_MOD} also matches properties declared as
+     * {@code OBJ_PROPERTY_STAT}. The two are one contiguous range in C — the stats occupy the first
+     * few modifier slots — so a lookup by modifier finds a stat without needing to know which of
+     * the two it is asking about.
+     *
+     * @param type    the category of property wanted
+     * @param payload the flag, modifier or element to find the definition for
+     * @return the matching property, or {@code null} if the loaded data declares none, which means
+     * the data files and the enums have drifted apart
+     */
+    public static ObjectProperty lookupObjectProperty(ObjPropertyType type, ObjectPropertyTypeWrapper payload) {
+        for (ObjectProperty property : objectProperties) {
+            if (property.getType().equals(type) && property.getPayload().equals(payload))
+                return property;
+
+            if (type.equals(ObjPropertyType.OBJ_PROPERTY_MOD) && property.getType().equals(ObjPropertyType.OBJ_PROPERTY_STAT)
+                    && property.getPayload().equals(payload))
+                return property;
+        }
+
+        return null;
     }
 }

@@ -202,4 +202,27 @@ public class ObjectPropertyTypeWrapper {
                 throw ex;
         }
     }
+
+    /**
+     * Equality over the discriminator and all three payload slots. Comparing every slot rather than
+     * just the one the discriminator selects is safe because the unused slots are always
+     * {@code null}: each constructor sets exactly one.
+     *
+     * <p>This is what makes the wrapper usable as a lookup key, which is how property definitions
+     * are found — a caller builds a wrapper describing the flag or modifier it wants and matches it
+     * against the loaded properties. There is no {@code hashCode} to match, so it is only sound for
+     * linear searches, not hash-based ones.
+     *
+     * @param obj the object to compare against
+     * @return {@code true} if {@code obj} is a wrapper with the same discriminator and payload
+     * @author Rowan Crowther
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (!(obj instanceof ObjectPropertyTypeWrapper other)) return false;
+        if (other.type != this.type) return false;
+        if (other.flag != this.flag) return false;
+        if (other.modifier != this.modifier) return false;
+        return other.element == this.element;
+    }
 }

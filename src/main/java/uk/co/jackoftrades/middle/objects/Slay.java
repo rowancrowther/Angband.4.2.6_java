@@ -138,6 +138,14 @@ public class Slay {
     }
 
     /**
+     * @return the slay's display name
+     * @author Rowan Crowther
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
      * @return a debug string listing this slay's fields
      * @author Rowan Crowther
      */
@@ -154,5 +162,29 @@ public class Slay {
                 ", oMultiplier=" + oMultiplier +
                 ", power=" + power +
                 '}';
+    }
+
+    /**
+     * Whether this slay and another kill exactly the same monsters — that is, whether they target
+     * the same race flag and the same monster base. Ports C's {@code same_monsters_slain}
+     * ({@code src/obj-slays.c}).
+     *
+     * <p>Note that the name is deliberately not compared. Two slays with different names and
+     * different multipliers are "the same" by this test if they pick out the same monsters, which
+     * is what makes it the right grouping for runes: the player learns which monsters a weapon is
+     * good against, not how good it is against them. This is why slay runes group by this method
+     * where brand runes group by name.
+     *
+     * <p>The base comparison is by identity, which is correct while bases are interned by the
+     * registry — and moot in 4.2.6's data, where no slay declares a base at all and every
+     * comparison is {@code null} against {@code null}.
+     *
+     * @param other the slay to compare against
+     * @return {@code true} if both slays kill the same monsters
+     * @author Rowan Crowther
+     */
+    public boolean sameMonsterSlain(Slay other) {
+        if (this.raceFlag != other.raceFlag) return false;
+        return this.base == other.base;
     }
 }

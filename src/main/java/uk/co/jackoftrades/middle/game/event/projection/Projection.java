@@ -241,6 +241,23 @@ public class Projection {
     }
 
     /**
+     * @return the projection's name — for the elemental projections, the name a resistance rune is
+     * displayed under
+     * @author Rowan Crowther
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return the projection's broad category (element/environs/monster)
+     * @author Rowan Crowther
+     */
+    public ProjectionType getType() {
+        return type;
+    }
+
+    /**
      * @return the lash-form description
      * @author Rowan Crowther
      */
@@ -248,6 +265,10 @@ public class Projection {
         return lashDescription;
     }
 
+    /**
+     * @return the projection's code — its identity, and the key it is looked up by
+     * @author Rowan Crowther
+     */
     public ProjectionEnum getProjection() {
         return projection;
     }

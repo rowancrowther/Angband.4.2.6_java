@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.combat.enums;
 
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+
 /**
  * The complete set of projection ("GF") types — every kind of bolt, ball, beam
  * or area effect the game can resolve, from elemental damage (acid, fire, …)
@@ -85,5 +87,29 @@ public enum ProjectionEnum {
     PROJ_MON_HOLD,
     PROJ_MON_STUN,
     PROJ_MON_DRAIN,
-    PROJ_MON_CRUSH
+    PROJ_MON_CRUSH;
+
+    /**
+     * Finds the projection corresponding to a damage element — {@link ElementEnum#ELEM_FIRE} to
+     * {@link #PROJ_FIRE}, and so on. Every element has one, since C's projection parser refuses to
+     * load {@code projection.txt} unless its leading entries match the element list position for
+     * position; the elements are simply the first stretch of the projection list.
+     *
+     * <p>C exploits that alignment directly, subscripting its projection array with an element's
+     * value. Here the correspondence is resolved by name instead. Both enums happen to carry a
+     * matching {@code NONE} placeholder that C lacks, so their ordinals do still line up with each
+     * other — but resolving by name means nothing breaks if that ever stops being true.
+     *
+     * @param elementEnum the element to find the projection for
+     * @return the matching projection, or {@code null} if no constant of that name exists, which
+     * means the two enums have drifted apart
+     * @author Rowan Crowther
+     */
+    public static ProjectionEnum getFromElementEnum(ElementEnum elementEnum) {
+        try {
+            return ProjectionEnum.valueOf("PROJ_" + elementEnum.name().substring(5));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
 }

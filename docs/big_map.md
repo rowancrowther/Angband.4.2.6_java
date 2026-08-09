@@ -20,8 +20,8 @@ How does Angband run.
    12 store production – parse store.txt\
    13 options – initialise the pages of options that the user can choose before starting a game\
    14 ui player module – does nothing!\
-   15 ui equipment module – does nothing!\
-4) Sets the monster and object windows to null\
+   15 ui equipment module – does nothing!
+4) Sets the monster and object windows to null
 5) Seeds the RNG
 
 ---
@@ -99,6 +99,8 @@ How does Angband run.
 ---
 
 28) Clean up the game
+
+---
 
 The UI is handled by two main ‘classes’ the command queue, and the event handler bus. Events are registered on the event
 handler bus by event type a game event handler function, and a user. (In the port the user is removed and added as flat

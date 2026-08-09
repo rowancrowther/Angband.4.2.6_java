@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.jetbrains.annotations.VisibleForTesting;
 import uk.co.jackoftrades.backend.io.AngDir;
 import uk.co.jackoftrades.frontend.Frontend;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
@@ -49,6 +52,8 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class Main {
+    private static final Logger logger = LogManager.getLogger(Main.class);
+    
     /**
      * The parsed command line, handed to {@link Frontend#init} by {@link #startFrontend}.
      *
@@ -106,21 +111,13 @@ public class Main {
                     }
                 }
                 case 'd' -> {
-                    String dirString = arg.substring(2);
-                    String[] dirs = dirString.split("=");
-                    // Check that the save file is correctly named
-                    if (dirs.length != 2) {
-                        System.out.println("Error: invalid directory path incorrect number of parameters supplied");
+                    String error = checkDirectoryOption(arg);
+                    if (error != null) {
+                        logger.fatal(error);
+                        System.err.println(error);
                         System.exit(1);
                     }
-                    if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0])) {
-                        System.out.println("Error: invalid directory path unknown directory name");
-                        System.exit(1);
-                    }
-                    if (!Paths.get(dirs[1]).toFile().exists()) {
-                        System.out.println("Error: invalid directory path does not exist");
-                        System.exit(1);
-                    }
+                    String dirs[] = arg.substring(2).split("=");
                     AngbandDirs.setDirectory(dirs[0], dirs[1]);
                 }
 
@@ -138,6 +135,19 @@ public class Main {
                 "", new ArrayList<>());
 
         SwingUtilities.invokeLater(startFrontend);
+    }
+
+    @VisibleForTesting
+    static String checkDirectoryOption(String arg) {
+        String[] dirs = arg.substring(2).split("=");
+        if (dirs.length != 2)
+            return "Error: invalid directory path '" + arg + "'. Should be '-d<dir>=<path>'.";
+        if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0]))
+            return "Error: invalid directory path unknown directory name: " + dirs[0];
+        if (!Paths.get(dirs[1]).toFile().isDirectory())
+            return "Error: invalid directory path " + dirs[1] + " is not a directory.";
+        // No errors - return null to signal this, as opposed to an empty string which would signal an error
+        return null;
     }
 
     /**

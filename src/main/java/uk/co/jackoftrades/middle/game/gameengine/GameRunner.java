@@ -91,6 +91,9 @@ public class GameRunner {
     public void start() {
         thread = new Thread(this::gameLoop, "angband-game-loop");
         running = true;
+
+        // Must keep the following two lines (gameEngine = getGameEngine(); & thread.start();)
+        // in this order as getGameEngine publishes the bus.
         gameEngine = getGameEngine();
         thread.start();
     }

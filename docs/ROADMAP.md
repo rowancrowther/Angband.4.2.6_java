@@ -25,7 +25,7 @@ The whole-game view everything else hangs off. How does C Angband actually run?
   (`play_game` / `run_game_loop` in `game-world.c`), the event system (`game-event.c`), how UI and core talk
   (`cmd-core.c`, `game-input.c`), where the port's registries sit relative to C's globals. Claude reviews against the C.
 - [x] Revise the map after review; commit it as `docs/big-map.md`
-- [ ] Java-side counterpart: one page on how *this* port boots (`Angband.java`, loaders, registries) and where it
+- [x] Java-side counterpart: one page on how *this* port boots (`Angband.java`, loaders, registries) and where it
   diverges
 
 ## Chapter 1 — The game loads its data *(mostly done)*

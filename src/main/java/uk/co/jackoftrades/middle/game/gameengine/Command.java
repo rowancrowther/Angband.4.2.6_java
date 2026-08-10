@@ -27,7 +27,7 @@ import uk.co.jackoftrades.middle.game.bespokeexceptions.CommandArgumentWrongType
 import uk.co.jackoftrades.middle.game.enums.CommandArgumentType;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.argumentdata.*;
 import uk.co.jackoftrades.middle.gameinput.EffectChoice;
 import uk.co.jackoftrades.middle.gameinput.GameInput;

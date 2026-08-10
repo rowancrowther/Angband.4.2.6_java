@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.effect;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.enums.EffectEnchant;
 import uk.co.jackoftrades.middle.enums.EffectNourish;
 import uk.co.jackoftrades.middle.enums.GlyphType;

@@ -15,8 +15,9 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.channel.messages;
+package uk.co.jackoftrades.channel.enums;
 
-public sealed interface ChannelMessage permits CoreMessage, UIMessage {
-    
+public enum UILifecycleEvent {
+    START,
+    SAVE_AND_STOP
 }

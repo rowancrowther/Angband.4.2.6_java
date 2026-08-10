@@ -17,7 +17,8 @@
 
 package uk.co.jackoftrades.middle.game.event;
 
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.channel.messages.data.GameEventData;
 
 /**
  * Callback contract for a registered game-event handler. Implementations react to

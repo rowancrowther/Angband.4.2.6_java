@@ -19,10 +19,10 @@ package uk.co.jackoftrades.middle.game.event.eventhandlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
-import uk.co.jackoftrades.middle.game.event.EventDataString;
+import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.channel.messages.data.EventDataString;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
-import uk.co.jackoftrades.middle.game.event.GameEventData;
+import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.game.event.birthhandlers.UIBirth;
 import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
@@ -141,7 +141,7 @@ public class InitHandlers {
     public static void splashScreenNote(GameEventType eventType, GameEventData data) {
         logger.info("Splash screen note");
         if (data instanceof EventDataString message) {
-            String messageString = message.getString();
+            String messageString = message.string();
             StatusDisplayHolder.getInstance().splashScreenNote(messageString);
         }
     }

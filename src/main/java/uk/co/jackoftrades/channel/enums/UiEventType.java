@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.events.enums;
+package uk.co.jackoftrades.channel.enums;
 
 /**
  * The kinds of UI event the front end can deliver to the game, mirroring the

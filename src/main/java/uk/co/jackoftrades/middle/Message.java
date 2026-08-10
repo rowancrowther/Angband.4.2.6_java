@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle;
 
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;

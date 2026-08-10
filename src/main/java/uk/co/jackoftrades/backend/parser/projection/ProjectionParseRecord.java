@@ -17,9 +17,11 @@
 
 package uk.co.jackoftrades.backend.parser.projection;
 
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
+
 /**
  * @param code        Computer code for this projection used by the game. Must
- *                    match an {@link uk.co.jackoftrades.middle.combat.enums.ProjectionEnum}
+ *                    match an {@link ProjectionEnum}
  * @param name        Human readable name for this projection.
  *                    {@link uk.co.jackoftrades.middle.objects.Brand} is linked
  *                    by this

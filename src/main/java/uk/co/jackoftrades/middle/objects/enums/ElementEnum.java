@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects.enums;
 
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
+
 /**
  * The damage elements as referenced by object code (resistances, brands, slays).
  * Mirrors the C original's {@code ELEM_*} list; the constants are self-describing
@@ -25,8 +27,8 @@ package uk.co.jackoftrades.middle.objects.enums;
  * <p>The declaration order matches {@code src/list-elements.h} exactly, and must: C's projection
  * parser checks each of the first {@code ELEM_MAX} entries of {@code projection.txt} against the
  * element of the same position and refuses to load if they disagree, so the two files are locked
- * together. {@link uk.co.jackoftrades.middle.combat.enums.ProjectionEnum#getFromElementEnum} relies
- * on the same correspondence, by name rather than by position.
+ * together. {@link #getProjectionEnum} relies on the same correspondence, by name rather than by
+ * position.
  *
  * <p>Unlike C, this enum carries an {@code ELEM_NONE} zero placeholder, so an element's
  * {@link #ordinal()} is one greater than its C value. Nothing in the port depends on the numeric
@@ -111,5 +113,33 @@ public enum ElementEnum {
      */
     public boolean isHasResistRune() {
         return hasResistRune;
+    }
+
+    /**
+     * Finds the projection this element is dealt as — {@link #ELEM_FIRE} gives
+     * {@link ProjectionEnum#PROJ_FIRE}, and so on. Every element has one: C's projection parser
+     * refuses to load {@code projection.txt} unless its leading entries match the element list
+     * position for position, so the elements are simply the first stretch of the projection list.
+     *
+     * <p>C exploits that alignment directly, subscripting its projection array with an element's
+     * value. Here the correspondence is resolved by name instead, which keeps the port clear of
+     * both enums' {@link #ordinal()}s — each carries a {@code NONE} placeholder that C lacks, so
+     * neither set of ordinals matches the original's numbering anyway.
+     *
+     * <p>Lives here rather than on {@link ProjectionEnum} because the question it answers is
+     * "how is this element delivered?", which is a property of the element; and because
+     * {@code ProjectionEnum} is shared vocabulary that both halves of the program can name,
+     * while elements are the core's own.
+     *
+     * @return the matching projection, or {@code null} if no constant of that name exists, which
+     * means the two enums have drifted apart
+     * @author Rowan Crowther
+     */
+    public ProjectionEnum getProjectionEnum() {
+        try {
+            return ProjectionEnum.valueOf("PROJ_" + name().substring(5));
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 }

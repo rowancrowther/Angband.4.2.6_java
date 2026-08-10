@@ -23,7 +23,7 @@ import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;

@@ -174,7 +174,8 @@ The other two split packages were checked for the same trap and are clean: nothi
       `backend.utils.ControlUtils` → `middle`. All five are ported-but-not-yet-called (nothing references them). Move
       them to where their eventual callers will live rather than leave them sitting in `backend` defining it wrongly.
     - `backend.utils.quit` — three `backend` files use it, but quitting is a game-lifecycle concern, not IO. Under the
-      target architecture it becomes the `SaveAndStop`/`Stopped` handshake, so this one is better **deleted in stage 3**
+      target architecture it becomes the `SAVE_AND_STOP`/`STOPPED` handshake, so this one is better **deleted in stage
+      3**
       than moved now. Leave it where it is and let stage 3 take it.
 - [X] After the move, `backend` contains exactly `io/`, `parser/` and `AngbandModule` — and `utils/quit`, on borrowed
   time.
@@ -201,27 +202,32 @@ friends; the file moves would be identical and the rename is cheap at any time. 
 Define the protocol before any wiring moves. It lands in `uk.co.jackoftrades.channel`, the package stage 0 has just made
 the *only* thing both halves share.
 
-- [ ] `ChannelMessage` — the root of the protocol, a sealed interface with exactly two branches, one per sender:
+- [x] `ChannelMessage` — the root of the protocol, a sealed interface with exactly two branches, one per sender:
     - `CoreMessage` — sealed; **one record per payload shape, not one per occasion** (see "What the core actually
       sends", below). Two groups: *game events*, each carrying a `GameEventType` and whatever data that event needs; and
       *lifecycle*, which are protocol rather than gameplay. Today's traffic needs `Simple(GameEventType)` for
-      `EVENT_ENTER_INIT`, `Text(GameEventType, String)` for `EVENT_INITSTATUS` and the birth notes, and `Stopped()` for
-      the shutdown handshake.
+      `EVENT_ENTER_INIT`, `Text(GameEventType, String)` for `EVENT_INITSTATUS` and the birth notes, and
+      `Lifecycle(CoreLifecycle)` — one constant, `STOPPED` — for the shutdown handshake.
     - `UIMessage` — sealed; **same rule, one record per payload shape** (see "What the UI actually sends", below). Two
       populations, on different axes: *raw input* from the EDT, which is the port of C's `ui_event`; and *intent* from
-      the UI thread, which is the port of C's `struct command`. Today's traffic needs neither in full — only `Start()`
-      and
-      `SaveAndStop()` *to the core, on `uiChannel`*, and `WindowCloseRequested()` *to the UI thread, on `coreChannel`*
-      (the inbox, because that is the only queue the UI thread is blocked on). Note what the EDT is doing: it *receives*
-      an AWT
-      `WindowEvent` and *sends* a `WindowCloseRequested`. The AWT type stays inside the EDT; the record is the message
-      that leaves it.
-- [ ] Move the **vocabularies** into `channel` — the enums of meaning and the payload shapes they travel in, but not the
+      the UI thread, which is the port of C's `struct command`. Today's traffic needs neither in full — only
+      `Lifecycle(UiLifecycle)`, carrying `START` or `SAVE_AND_STOP`, *to the core on `uiChannel`*, and
+      `WindowCloseRequested()` *to the UI thread on `coreChannel`* (the inbox, because that is the only queue the UI
+      thread is blocked on). Note what the EDT is doing: it *receives* an AWT `WindowEvent` and *sends* a
+      `WindowCloseRequested`. The AWT type stays inside the EDT; the record is the message that leaves it.
+    - Both `Lifecycle` records are payload-free, so by the rule they are **one record each with the meaning in an enum
+      field**, not one record per occasion. *(Rowan, 2026-08-10.)* Until Chapter 5 this makes `uiChannel` a
+      single-record channel — a *fact about today's traffic*, not an invariant: population B joins it as soon as there
+      are game commands to send.
+- [x] Move the **vocabularies** into `channel` — the enums of meaning and the payload shapes they travel in, but not the
   machinery that dispatches them (see both design notes):
-    - `GameEventType` + the `GameEventData` shapes. The bus itself stays in `middle`.
+    - `GameEventType` + the `GameEventData` shapes — the eleven `EventData*`, tiered in "Which shapes can actually move"
+      below. `EventsBusHandler`, `EventsHandler` and `EventHandlerInterface` stay in `middle`: they are the machinery,
+      the port of C's `event_signal_*` family.
     - `UiEventType` + the keypress/mouseclick shapes, out of `frontend.events`. *(Only when population A lands — Chapter
         5. Listed here because the reasoning belongs with the other two.)*
     - `CommandCode` + the `cmd_arg` shapes. `CommandQueue`/`CommandProcessor` stay in `middle`. *(Chapter 5.)*
+- [x] `Grid(int y, int x)` in `channel` — the flattened form of `middle.cave.Loc` for messages that carry positions.
 - [ ] `Channels` — one small class/record holding the two typed `LinkedBlockingQueue`s — `coreChannel` of
   `ChannelMessage` (the UI thread's inbox, both senders) and `uiChannel` of `UIMessage` — created in one place and
   handed to both halves. Consider thin wrapper views instead of raw queues so the receive invariants are
@@ -229,11 +235,15 @@ the *only* thing both halves share.
   of the UI channel — then the core cannot forge a `UIMessage`, receive on the wrong channel, or send on the UI channel,
   by type alone. A worthwhile design conversation, not a requirement.
 - [ ] **Open point for that conversation.** Naming by sender puts the EDT's `WindowCloseRequested` and the UI thread's
-  `Start`/`SaveAndStop` in one sealed type, so the compiler alone no longer stops a `Start()` being put on the core
+  `Lifecycle` in one sealed type, so the compiler alone no longer stops a `Lifecycle(START)` being put on the core
   channel or a `WindowCloseRequested()` on the UI channel. If that matters, the fix is two sealed sub-interfaces
   *inside* `UIMessage` (one per UI-side sender) rather than a return to direction-named types — the `XMessage`
-  vocabulary stays either way. Worth deciding before the wrapper views are written, since they are what would enforce
-  it.
+  vocabulary stays either way.
+
+  Note that this split is arriving anyway, for unrelated reasons: populations A and B *are* the two UI-side senders. So
+  there may be nothing to decide at stage 1 — with one record on each side there is very little for the sub-interfaces
+  to separate, and Chapter 5 brings both the need and the members. Deferring is the cheaper bet; the cost of being wrong
+  is that the wrapper views get written twice.
 - [ ] Claude: tests — message equality, channel round-trip across two real threads.
 
 *Primer candidates:* sealed interfaces + records as a message protocol (you've met sealed with
@@ -286,8 +296,8 @@ sealed interface CoreMessage extends ChannelMessage {
     }
     // …explosion, bolt, birthstage as their events acquire real callers
 
-    // lifecycle — protocol, not gameplay; no GameEventType
-    record Stopped() implements CoreMessage {
+    // lifecycle — protocol, not gameplay; its own vocabulary, not GameEventType
+    record Lifecycle(CoreLifecycle what) implements CoreMessage {   // STOPPED, for now
     }
 }
 ```
@@ -299,8 +309,15 @@ compiler-as-protocol-checker, which is the entire reason for using sealed record
 
 **Three of today's four messages were never new.** `ShowSplashScreen`, `LoadNote` and `BirthNote` are
 `EVENT_ENTER_INIT`, `EVENT_INITSTATUS` and the birth notes wearing different hats — they already travel the bus, and
-`InitHandlers` already turns them into `StatusDisplay` calls. Only `Stopped` is genuinely new, which is why the
+`InitHandlers` already turns them into `StatusDisplay` calls. Only the stop signal is genuinely new, which is why the
 lifecycle group exists at all.
+
+**Lifecycle gets a record, not a record per signal** *(Rowan, 2026-08-10)*. `STOPPED` carries nothing, so it rides
+`Lifecycle(CoreLifecycle)` exactly as the payload-free game events ride `Simple(GameEventType)`. The compiler still
+checks you handled every case: a `switch` *expression* over an enum must cover all constants or carry a default. This is
+not the `Object payload` trap above — there is no payload here to arrive in the wrong shape. It also keeps both ends of
+the handshake modelled alike, since the UI's `Lifecycle` is the same construction (see the next note); a bare
+`Stopped()` facing a `Lifecycle(START | SAVE_AND_STOP)` would have been two shapes for one conversation.
 
 **What this costs elsewhere in this document,** recorded here so the change isn't rediscovered as a contradiction: §3
 listed the bus as untouched and wholly core-internal, and stage 5 planned to *retire* `StatusDisplayHolder`. Under this
@@ -336,8 +353,27 @@ leaves by a different road entirely. It is a genuine AWT-driven addition, so whe
 **Population B — the UI thread, sending intent to the core.** Not `ui_event`; this is C's `struct command` — a
 `cmd_code` plus up to four tagged `cmd_arg`s (`CMD_MAX_ARGS`, `cmd-core.h`), against about ninety command codes. One
 record per code would be the explosion in its worst form, so the rule applies unchanged: carry `CommandCode` in a field,
-split by argument shape. Alongside it sits the lifecycle pair, `Start()` and `SaveAndStop()`, which are protocol rather
-than gameplay and carry nothing.
+split by argument shape.
+
+Alongside it sits **lifecycle**, which is protocol rather than gameplay: starting the core, and asking it to save and
+stop. Both carry nothing, so by the rule they are one record — `Lifecycle(UiLifecycle)`, with `START` and
+`SAVE_AND_STOP` as constants — not a record each. *(Rowan, 2026-08-10.)* Three consequences worth having written down:
+
+- **`uiChannel` carries exactly one record type until Chapter 5.** That is a fact about today's traffic, not a property
+  of the design. Population B lands on the same channel the moment there is a keymap producing commands, so nothing
+  should be built that assumes a single-record channel — least of all the wrapper views.
+- **The core's lifecycle collapses the same way**, which is why `Stopped()` became `Lifecycle(CoreLifecycle)` in the
+  note above. Two enums rather than one, because the two halves say different things: the UI has `START` and
+  `SAVE_AND_STOP`, the core has `STOPPED`. Sharing one enum would let each end name a signal it can never send.
+- **Expect `SAVE_AND_STOP` to split back out.** It is payload-free today, but C's exit paths distinguish saving from not
+  (`CMD_QUIT` beside the retire path), so a "save or discard" flag is a plausible Chapter 8 arrival. When it comes it is
+  a different payload shape and therefore its own record — the rule handles it, and the collapse being undone later is
+  not evidence it was wrong now.
+
+**On the name.** `Lifecycle`, not `Control`. The document already calls this group lifecycle on both sides, and
+`Control` collides twice over: `ControlUtils` exists in `backend.utils` (stage 0 moves it to `middle`), and
+`KC_MOD_CONTROL` is keyboard-modifier vocabulary arriving with population A. `UIMessage.Control(START)` would send a
+reader to check whether it meant the Ctrl key.
 
 **Only the lifecycle pair and `WindowCloseRequested` are stage 1's business.** Population A arrives with keystrokes and
 population B when there is a keymap to interpret them against — both Chapter 5. Writing either now would be porting
@@ -360,6 +396,65 @@ All three enums and all three shape sets move into `channel`; none of the machin
 `channel` cannot import `frontend`, so the vocabulary has to move or a keystroke ends up with two representations. The
 rename still stands, on better grounds: `UIMessage` is the envelope, `UiEventType` is the vocabulary written inside it —
 the same relation `CoreMessage` has to `GameEventType`.
+
+#### Design note: which shapes can actually move *(decided 2026-08-10)*
+
+"Move the payload shapes into `channel`" is easy to write and turns out to be five different jobs. The eleven
+`EventData*` classes were surveyed; five of them name a `middle` type, and those five are where the real decisions are.
+
+**The rule, tighter than "move the shapes":** a `middle` type moves into `channel` **only if it is genuinely a word the
+messages are written in** — something the UI must understand to render at all. Otherwise the *shape* flattens to
+primitives plus what `channel` already holds (`ColourEnum`, `AngbandDisplayCharacter`, `Grid`), and the `middle` type
+stays where it is. *(Rowan's challenge, 2026-08-10: the first draft moved `Loc` and `Stats` too, and neither passes.)*
+
+| Shape                                         | Names                       | Verdict                                                                                         |
+|-----------------------------------------------|-----------------------------|-------------------------------------------------------------------------------------------------|
+| `String`, `Boolean`, `Size`, `Tunnel`, `Bolt` | nothing but primitives      | move as they are                                                                                |
+| `Message`                                     | `middle.enums.MessageType`  | **move `MessageType` too** — C's `MSG_*` list is shared, the front end colours and sounds by it |
+| `Point`, `Explosion`                          | `middle.cave.Loc`           | **flatten to `Grid`**                                                                           |
+| `BirthPoints`                                 | `middle.enums.Stats`        | **`Stats` stays** — flatten to indexed ints                                                     |
+| `BirthStage`                                  | `Object xtra`               | **blocked** — untyped, needs a real type                                                        |
+| `Missile`                                     | `middle.objects.ItemObject` | **blocked** — flatten to appearance                                                             |
+
+**Why `Loc` flattens rather than moves.** C's `struct loc` is `{int x, y;}`, a POD; `loc_sum`, `next_grid`,
+`rand_loc` and friends are free functions in `cave.c`. The Java port fused the struct and its helpers into one 268-line
+class, so moving it would drag `nextGrid(DirectionEnum)`, `rand(xSpread, ySpread)`, the arithmetic and the
+`RowBuilder` DSL into the shared package — dungeon movement and RNG, in the package the UI imports. Flattening restores
+C's own separation. A record rather than bare ints because `EventDataExplosion` holds an `ArrayList<Loc> blastGrid`;
+`Grid` is Angband's own word for a map square and does not collide with `Loc`, which stays in `middle.cave`.
+
+> ⚠️ **The transposition trap.** `Loc`'s constructor is `Loc(int x, int y)` — x first — and `Grid` is written y first,
+> matching how most of Angband's older code passes coordinates. Two int fields means a swapped pair compiles silently
+> and surfaces as a mirrored dungeon, a long way from the conversion that caused it. Whichever order wins, the
+> `Loc` ↔ `Grid` conversion needs a test that would fail on a transposition — not a round-trip, which passes when both
+> directions are wrong the same way.
+
+**Why `Stats` does not move.** C's `birthpoints` payload is `const int *points`, `const int *inc_points`,
+`int remaining` — indexed arrays carrying no stat identity whatever. The labels live entirely front-end side:
+`stat_names[]` and `stat_names_reduced[]` are *defined* in `ui-display.c` and used from `ui-player.c` and `ui-birth.c`.
+The core never sends a stat's name. So `EventDataBirthPoints` carries indexed ints — its `HashMap<Stats, Integer>` is
+already a divergence from C's array — and the UI owns its own label table.
+
+There is a sting worth recording: `Stats.getStatString()` returns `"STR"`, `"INT"`, `"WIS"` — that *is* C's
+`stat_names_reduced`, currently living in `middle.enums`. A UI table in the core. Moving `Stats` to `channel` would
+cement that inversion into the shared package; leaving it keeps the mistake contained, and Chapter 5 can lift the labels
+out to where C has them.
+
+**The two blocked shapes.** `EventDataMissile` holds an `ItemObject`, and moving that would expose the object system to
+`frontend` — the coupling this migration exists to remove. C shows the way out: `game_event_data.missile` carries
+`struct object *obj`, and `ui-*.c` immediately reduces it to appearance via `object_kind_char`/`object_kind_attr`. The
+UI never wants the object, only its glyph and colour — `AngbandDisplayCharacter` + `ColourEnum`, both already in
+`channel`, resolved core-side before the message is sent. `EventDataBirthStage` has the milder version, an
+`Object xtra` mirroring C's `const void *xtra`; an untyped escape hatch cannot cross a typed channel.
+
+**Neither is urgent, and that is the point.** Every one of the eleven is referenced only by `EventsHandler`, and only
+`EventDataString` has a second caller (`InitHandlers`). Nothing in the game signals a missile or a birth stage yet, so
+leave both where they are with a comment: the flattened form is better designed against a real caller than guessed at
+now. This is the same caution recorded against `cmd_arg` in the previous note, arriving early on the event side.
+
+*One to know before it bites:* `EventDataBolt.projType` and `EventDataExplosion.projType` are both `int`, each with a
+"probably going to be replaced by an Enum" comment. When that enum arrives it is channel vocabulary, not `middle` —
+worth knowing before choosing where to put it.
 
 ### Stage 2 — Core→UI traffic crosses the core channel
 
@@ -390,16 +485,16 @@ wrapper) shows every one of them crossed the core channel.
 The `sleep(5)` placeholder in `GameRunner.gameLoop()` becomes a real receive loop, and the kill-the-thread shutdown
 becomes the document's handshake.
 
-- [ ] `gameLoop()`: after `loadGameConstants()`, loop on `uiChannel.take()`; switch over
-  `UIMessage`. `Start` → log it (birth lands here in Chapter 3). `SaveAndStop` → send
-  `Stopped()` on the core channel and fall out of the loop; the thread ends. (Nothing to save yet — the save half
-  arrives with Chapter 8.)
-- [ ] `Frontend.init`: once the window is up, `put` a `Start()` — the document's step 1.5.
+- [ ] `gameLoop()`: after `loadGameConstants()`, loop on `uiChannel.take()`; switch over `UIMessage`, then over the
+  `UiLifecycle` inside it. `START` → log it (birth lands here in Chapter 3). `SAVE_AND_STOP` → send
+  `Lifecycle(STOPPED)` on the core channel and fall out of the loop; the thread ends. (Nothing to save yet — the save
+  half arrives with Chapter 8.)
+- [ ] `Frontend.init`: once the window is up, `put` a `Lifecycle(START)` — the document's step 1.5.
 - [ ] `windowClosing`: put a `WindowCloseRequested()` on the *core* channel — the EDT forwards the raw AWT event as a
   `UIMessage` and nothing more (review note 1). No `requestStop`, no `System.exit`.
-- [ ] `UiLoop`, on `WindowCloseRequested()`: send `SaveAndStop()` on the UI channel — the one place raw AWT events are
-  turned into messages for the core.
-- [ ] `UiLoop`, on `Stopped()`: `invokeLater` the window disposal (the old `closeDown`
+- [ ] `UiLoop`, on `WindowCloseRequested()`: send `Lifecycle(SAVE_AND_STOP)` on the UI channel — the one place raw AWT
+  events are turned into messages for the core.
+- [ ] `UiLoop`, on `Lifecycle(STOPPED)`: `invokeLater` the window disposal (the old `closeDown`
   body minus `exit` and minus `requestStop`), then fall out of its own loop; the thread ends.
 - [ ] Delete the `requestStop()`/interrupt path — the `RuntimeException`-on-interrupt wart in
   `gameLoop` (its own Javadoc already flags it) goes with it.
@@ -407,7 +502,7 @@ becomes the document's handshake.
   `System.exit` anywhere on the path (all windows disposed → EDT ends → JVM ends).
 
 *Primer candidates:* thread lifecycle (why the JVM exits when the last non-daemon thread does, and what keeps the EDT
-alive); the poison-pill / sentinel-message pattern (`Stopped` is one).
+alive); the poison-pill / sentinel-message pattern (`Lifecycle(STOPPED)` is one).
 
 **Done when:** the game starts, the splash shows, and closing the window shuts everything down cleanly — verifiable with
 a thread dump (`jstack`) before and after, and by the exit code.
@@ -489,6 +584,11 @@ on it.
 | UI thread's runnable                 | `UiLoop`                                                                                                    | the EDT (Swing's own thread, never blocks on a channel)             |
 | The only package both halves import  | `channel` (transport + shared vocabulary)                                                                   | `backend` — IO only from stage 0 on, and UI-invisible               |
 | Shared vocabulary types              | `channel.colour`, `channel.strings`, `channel.utils`, plus the three meaning-enums and their payload shapes | `middle.numerics` etc. (core-only, moved out of `backend`)          |
+| A map position on the wire           | `Grid(int y, int x)` in `channel`                                                                           | `middle.cave.Loc` — same idea plus movement and RNG, stays put      |
+
+**The test for whether a `middle` type belongs in `channel`:** is it a word the messages are *written in* — something
+the UI must understand to render at all? `ColourEnum` and `MessageType` pass it. `Loc` and `Stats` do not, and their
+shapes flatten instead. See "Which shapes can actually move".
 
 *Retired names, so a stale note is recognisable:* `commandChannel` → `uiChannel`; `displayChannel` → `coreChannel`;
 `UiInboxMessage` → `ChannelMessage`; `DisplayMessage` → `CoreMessage`; `UiEvent` and `CoreCommand` → `UIMessage`. (The

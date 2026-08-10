@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.combat.enums;
 
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
+
 /**
  * The broad categories a {@link ProjectionEnum} projection falls into, mirroring
  * the C original's projection-type grouping. This determines how a projection's

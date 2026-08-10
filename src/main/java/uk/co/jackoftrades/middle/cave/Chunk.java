@@ -29,7 +29,7 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.monsters.Monster;

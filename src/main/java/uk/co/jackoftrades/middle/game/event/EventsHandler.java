@@ -18,10 +18,12 @@
 package uk.co.jackoftrades.middle.game.event;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.messages.data.*;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 
 import java.util.ArrayList;
@@ -193,14 +195,14 @@ public interface EventsHandler {
 
     /**
      * Send a signal to dispatch all the events of a given type with a Loc data type determined by its x and y
-     * coordinates
+     * coordinates. Note, the EventDataGrid is y, x, but the data coming into this function is x, y.
      *
      * @param eventType The event type we are signalling
      * @param x         The x coordinate of the Loc
      * @param y         The y coordinate of the Loc
      */
     default void eventSignalPoint(GameEventType eventType, int x, int y) {
-        gameEventDispatch(eventType, new EventDataPoint(x, y));
+        gameEventDispatch(eventType, new EventDataGrid(y, x));
     }
 
     /**
@@ -210,7 +212,7 @@ public interface EventsHandler {
      * @param point     The Loc we are using to signal the event
      */
     default void eventSignalPoint(GameEventType eventType, Loc point) {
-        gameEventDispatch(eventType, new EventDataPoint(point));
+        gameEventDispatch(eventType, new EventDataGrid(point.getY(), point.getX()));
     }
 
     /**
@@ -281,21 +283,17 @@ public interface EventsHandler {
      * @param drawing   Whether we are drawing the bolt?
      * @param seen      Whether the bolt is seen?
      * @param beam      Whether the bolt is a beam?
-     * @param oy        The origin-Y of the bolt?
-     * @param ox        The origin-X of the bolt?
-     * @param y         The target-Y of the bolt?
-     * @param x         The target-X of the bolt
+     * @param origin    The origin of the bolt
+     * @param current   The target
      */
     default void eventSignalBolt(GameEventType eventType,
-                                 int projType,
+                                 ProjectionEnum projType,
                                  boolean drawing,
                                  boolean seen,
                                  boolean beam,
-                                 int oy,
-                                 int ox,
-                                 int y,
-                                 int x) {
-        gameEventDispatch(eventType, new EventDataBolt(projType, drawing, seen, beam, oy, ox, y, x));
+                                 EventDataGrid origin,
+                                 EventDataGrid current) {
+        gameEventDispatch(eventType, new EventDataBolt(projType, drawing, seen, beam, origin, current));
     }
 
     /**

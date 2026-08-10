@@ -23,7 +23,7 @@ import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.magic.MagicSpell;
 import uk.co.jackoftrades.middle.objects.ItemObject;

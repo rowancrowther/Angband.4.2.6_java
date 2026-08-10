@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.enums;
+package uk.co.jackoftrades.channel.enums;
 
 /**
  * Every kind of game event the UI/event system can broadcast — display updates

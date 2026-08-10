@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.ObjectPropertyTypeWrapper;
@@ -214,7 +214,7 @@ class RuneVarietyTest {
             return;
         }
 
-        ProjectionEnum projection = ProjectionEnum.getFromElementEnum(element);
+        ProjectionEnum projection = element.getProjectionEnum();
 
         assertNotNull(projection, () -> "no PROJ_ counterpart for " + element);
         assertEquals("PROJ_" + element.name().substring(5), projection.name());
@@ -222,7 +222,7 @@ class RuneVarietyTest {
 
     @Test
     void getFromElementEnumReturnsNullRatherThanThrowingOnAMiss() {
-        assertDoesNotThrow(() -> ProjectionEnum.getFromElementEnum(ElementEnum.ELEM_MAX));
+        assertDoesNotThrow(() -> ElementEnum.ELEM_MAX.getProjectionEnum());
     }
 
     /**

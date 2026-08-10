@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.combat.enums;
+package uk.co.jackoftrades.channel.enums;
 
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 

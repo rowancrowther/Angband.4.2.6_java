@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
@@ -138,7 +138,7 @@ public class Rune {
             if (e == ElementEnum.ELEM_NONE || e == ElementEnum.ELEM_MAX) continue;
             if (!e.isHasResistRune()) continue;
 
-            ProjectionEnum projectionEnum = ProjectionEnum.getFromElementEnum(e);
+            ProjectionEnum projectionEnum = e.getProjectionEnum();
             if (projectionEnum == null) {
                 String message = "No projection enum found for element enum: " + e;
                 RuntimeException ex = new RuntimeException(message);

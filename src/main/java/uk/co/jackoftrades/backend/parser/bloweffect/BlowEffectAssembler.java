@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.bloweffect;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftrades.middle.monsters.BlowEffect;

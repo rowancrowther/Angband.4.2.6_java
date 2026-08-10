@@ -23,7 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.cave.World;
-import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
+import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.player.Quest;

@@ -19,9 +19,9 @@ package uk.co.jackoftrades.middle.game.event.birthhandlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
-import uk.co.jackoftrades.middle.game.event.GameEventData;
+import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 
 /**

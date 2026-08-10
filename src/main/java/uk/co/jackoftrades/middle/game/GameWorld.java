@@ -36,7 +36,7 @@ import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
-import uk.co.jackoftrades.middle.game.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.projection.Source;
 import uk.co.jackoftrades.middle.game.event.projection.SourceWhat;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;

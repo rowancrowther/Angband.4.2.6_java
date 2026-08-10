@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.middle.game.event;
 
+import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 
 /**

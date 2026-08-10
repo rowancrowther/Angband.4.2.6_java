@@ -17,6 +17,9 @@
 
 package uk.co.jackoftrades.channel.messages;
 
-public sealed interface ChannelMessage permits CoreMessage, UIMessage {
-    
+import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
+
+public sealed interface UIMessage extends ChannelMessage permits UIMessage.LifecycleUIMessage {
+    record LifecycleUIMessage(UILifecycleEvent event) implements UIMessage {
+    }
 }

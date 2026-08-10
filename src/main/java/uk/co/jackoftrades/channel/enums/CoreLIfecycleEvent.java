@@ -15,17 +15,8 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.event;
+package uk.co.jackoftrades.channel.enums;
 
-/**
- * Marker interface for the payload carried by a {@link uk.co.jackoftrades.middle.game.enums.GameEventType}
- * event. Concrete {@code EventData*} classes implement it to carry the specific
- * data a given event needs (a point, a message, an explosion, …). This is the
- * Java port of the C original's {@code game_event_data} union ({@code src/game-event.h});
- * the type hierarchy replaces the C union.
- *
- * @author Rowan Crowther
- */
-public interface GameEventData {
-
+public enum CoreLIfecycleEvent {
+    STOPPED
 }

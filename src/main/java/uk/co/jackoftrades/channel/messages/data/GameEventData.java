@@ -15,24 +15,19 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.frontend.events;
+package uk.co.jackoftrades.channel.messages.data;
 
-import uk.co.jackoftrades.channel.utils.Flag;
-import uk.co.jackoftrades.channel.enums.UiEventType;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 
 /**
- * Marker/base type for UI events, carrying the set of {@link UiEventType}s an
- * event may represent. The Java port of the C original's {@code ui_event}
- * abstraction ({@code src/ui-event.h}); the shared {@link Flag} captures which
- * event categories are in play.
+ * Marker interface for the payload carried by a {@link GameEventType}
+ * event. Concrete {@code EventData*} classes implement it to carry the specific
+ * data a given event needs (a point, a message, an explosion, …). This is the
+ * Java port of the C original's {@code game_event_data} union ({@code src/game-event.h});
+ * the type hierarchy replaces the C union.
  *
  * @author Rowan Crowther
  */
-public interface Event {
-    /**
-     * The set of event categories this event belongs to.
-     *
-     * @author Rowan Crowther
-     */
-    Flag<UiEventType> uiEventType = new Flag<>(UiEventType.class);
+public interface GameEventData {
+
 }

@@ -27,7 +27,7 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 import org.antlr.v4.runtime.tree.TerminalNode;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.numerics.Random;
 
 import java.util.List;
 

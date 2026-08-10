@@ -19,7 +19,7 @@ package uk.co.jackoftrades.backend.parser.monsterbase;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterPain;

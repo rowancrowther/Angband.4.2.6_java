@@ -23,7 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.cave.enums.SquareEnum;

@@ -17,8 +17,8 @@
 
 package uk.co.jackoftrades.middle.cave;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
 import uk.co.jackoftrades.middle.monsters.MonsterBase;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;

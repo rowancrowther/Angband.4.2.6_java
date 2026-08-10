@@ -17,8 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;

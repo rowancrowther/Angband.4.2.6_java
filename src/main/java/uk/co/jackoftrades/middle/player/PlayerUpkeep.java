@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;

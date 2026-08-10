@@ -18,12 +18,12 @@
 package uk.co.jackoftrades.backend.parser.trap;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.colour.ColourEnum;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
-import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.TrapKind;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.TrapEnum;

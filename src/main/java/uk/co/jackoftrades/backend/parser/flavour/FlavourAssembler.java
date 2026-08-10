@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.backend.parser.flavour;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.middle.objects.Flavour;
 

@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.monsters;
 
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 
 /**
  * One power tier of a monster spell: the minimum power at which it applies, the

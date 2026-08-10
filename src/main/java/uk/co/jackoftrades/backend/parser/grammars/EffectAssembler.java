@@ -20,7 +20,7 @@ package uk.co.jackoftrades.backend.parser.grammars;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.effect.*;
 import uk.co.jackoftrades.middle.enums.*;

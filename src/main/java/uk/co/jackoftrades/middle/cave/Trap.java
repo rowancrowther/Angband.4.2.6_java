@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.cave;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.enums.TrapEnum;
 
 /**

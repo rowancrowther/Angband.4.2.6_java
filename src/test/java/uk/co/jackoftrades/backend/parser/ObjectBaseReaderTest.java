@@ -21,7 +21,7 @@ import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseGrammar;
 import uk.co.jackoftrades.backend.parser.grammars.objectbase.ObjectBaseLexer;
 import uk.co.jackoftrades.backend.parser.objectbase.ObjectBaseParseRecord;

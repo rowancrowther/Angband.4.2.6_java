@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;

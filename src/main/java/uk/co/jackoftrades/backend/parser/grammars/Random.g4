@@ -19,7 +19,7 @@
 // "1+1d3", "M80", "4d$S", "$Dd5"). Unlike the other grammars in this
 // directory, this one isn't tied to a single lib/gamedata file or a single
 // C file_parser - it's a shared building block. Every other grammar reaches
-// it indirectly: uk.co.jackoftrades.backend.numerics.Random.parseStr(String)
+// it indirectly: uk.co.jackoftrades.middle.numerics.Random.parseStr(String)
 // (Random.java:95) constructs a RandomReader, which drives this grammar's
 // generated RandomLexer/RandomParser (see RandomReader.java) and is itself
 // called from dice:/visibility:/radius-style fields all over the other
@@ -49,7 +49,7 @@
 grammar Random;
 
 @header {
-    import uk.co.jackoftrades.backend.numerics.Random;
+    import uk.co.jackoftrades.middle.numerics.Random;
 }
 
 // The only rule in this grammar: parses one whole dice string as

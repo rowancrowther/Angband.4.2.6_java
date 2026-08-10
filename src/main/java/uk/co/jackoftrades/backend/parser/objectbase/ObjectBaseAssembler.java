@@ -18,9 +18,9 @@
 package uk.co.jackoftrades.backend.parser.objectbase;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;

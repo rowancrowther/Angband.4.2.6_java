@@ -25,8 +25,8 @@ import uk.co.jackoftrades.middle.cave.Loc;
  * {@code ddx}/{@code ddy} offset arrays and keypad-direction mapping into one
  * enum: the {@code key} is the numpad digit (1–9) for that direction, and the
  * offsets give the change in column/row for a single step. Note {@code y}
- * increases <em>northward</em> here (N is {@code +1}), matching the offsets
- * encoded below.
+ * increases <em>southward</em> here (N is {@code -1}), because rows are numbered
+ * from the top of the map downwards, matching the offsets encoded below.
  *
  * @author Rowan Crowther
  */
@@ -38,11 +38,11 @@ public enum DirectionEnum {
     /**
      * North-west (keypad 7). @author Rowan Crowther
      */
-    DIR_NW(7, -1, 1, true),
+    DIR_NW(7, -1, -1, true),
     /** North (keypad 8). @author Rowan Crowther */
-    DIR_N(8, 0, 1, true),
+    DIR_N(8, 0, -1, true),
     /** North-east (keypad 9). @author Rowan Crowther */
-    DIR_NE(9, 1, 1, true),
+    DIR_NE(9, 1, -1, true),
     /** West (keypad 4). @author Rowan Crowther */
     DIR_W(4, -1, 0, true),
     /** "Target" pseudo-direction / centre (keypad 5). @author Rowan Crowther */
@@ -52,11 +52,11 @@ public enum DirectionEnum {
     /** East (keypad 6). @author Rowan Crowther */
     DIR_E(6, 1, 0, true),
     /** South-west (keypad 1). @author Rowan Crowther */
-    DIR_SW(1, -1, -1, true),
+    DIR_SW(1, -1, 1, true),
     /** South (keypad 2). @author Rowan Crowther */
-    DIR_S(2, 0, -1, true),
+    DIR_S(2, 0, 1, true),
     /** South-east (keypad 3). @author Rowan Crowther */
-    DIR_SE(3, 1, -1, true),
+    DIR_SE(3, 1, 1, true),
     ;
 
     /**
@@ -72,7 +72,7 @@ public enum DirectionEnum {
      */
     private final int xOffset;
     /**
-     * Change in row for one step in this direction (north is positive).
+     * Change in row for one step in this direction (south is positive).
      *
      * @author Rowan Crowther
      */

@@ -19,9 +19,9 @@ package uk.co.jackoftrades.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.backend.enums.DamageAspect;
-import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.middle.enums.DamageAspect;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.ChunkUtils;

@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.backend.parser.itemobject;
 
 import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
+import uk.co.jackoftrades.middle.numerics.Random;
 
 import java.util.List;
 import java.util.Map;
@@ -33,7 +34,7 @@ import java.util.Map;
  * directives arrive as empty strings / empty collections (the grammar seeds them), so the only
  * required field is {@link #name}. The rand-bearing fields ({@code attack*}, {@code armourToa},
  * {@code charges}, {@code pileNumber}, {@code pVal}) are captured as dice strings for the assembler
- * to resolve into {@link uk.co.jackoftrades.backend.numerics.Random}s.
+ * to resolve into {@link Random}s.
  *
  * @param name             the kind's display name (the record header; the only required field)
  * @param glyph            display glyph character from {@code graphics:}

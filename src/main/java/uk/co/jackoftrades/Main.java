@@ -117,7 +117,7 @@ public class Main {
                         System.err.println(error);
                         System.exit(1);
                     }
-                    String dirs[] = arg.substring(2).split("=");
+                    String dirs[] = arg.substring(2).split("=", 2);
                     AngbandDirs.setDirectory(dirs[0], dirs[1]);
                 }
 
@@ -139,9 +139,11 @@ public class Main {
 
     @VisibleForTesting
     static String checkDirectoryOption(String arg) {
-        String[] dirs = arg.substring(2).split("=");
+        String[] dirs = arg.substring(2).split("=", 2);
         if (dirs.length != 2)
             return "Error: invalid directory path '" + arg + "'. Should be '-d<dir>=<path>'.";
+        if (dirs[1].isEmpty())
+            return "Error: empty directory path, expected '-d<dir>=<path>', received '-d<dir>='";
         if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0]))
             return "Error: invalid directory path unknown directory name: " + dirs[0];
         if (!Paths.get(dirs[1]).toFile().isDirectory())

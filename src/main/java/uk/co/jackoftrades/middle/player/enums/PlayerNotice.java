@@ -29,7 +29,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * a later notice pass performs each pending action and clears it, so the work happens once at a
  * safe point rather than repeatedly mid-mutation.
  *
- * <p>Held as a {@link uk.co.jackoftrades.backend.utils.Flag} over this enum in the port, in place
+ * <p>Held as a {@link uk.co.jackoftrades.channel.utils.Flag} over this enum in the port, in place
  * of C's packed {@code uint32_t} bitflags, for the same type-safety reason as the other flag
  * families.
  *

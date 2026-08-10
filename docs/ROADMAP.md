@@ -53,8 +53,11 @@ C: `obj-knowledge.c`. The current stretch.
   `getRunes`)
 - [x] `c_rune[]`, `rune_group_text[]`, `enum rune_variety` (tables → `CombatRunes`, `RuneGroup`)
 - [x] `cleanup_rune` — N/A, garbage collected
-- [ ] **Fix `lookupObjectProperty` stat/mod bug** (Option B, agreed) — blocks everything below; 20 red tests point at it
-  by name
+- [ ] **Fix `lookupObjectProperty` stat/mod bug** — extract the property subject into a
+  `sealed interface ObjectPropertySubject permits ObjectFlag, ObjectModifier, ElementEnum`, the same move as
+  `RuneVariety` above, one layer down. Agreed 260810, superseding the earlier "Option A / Option B" pair. Blocks
+  everything below; 20 red tests point at it by name. Design, the ACID trap and blast radius are written up in
+  `docs/Issues log.md` under "ObjectProperty / ObjectPropertyTypeWrapper" — read that before starting
 - [ ] `ObjectRegistry.getRunes()` + `max_runes`
 - [ ] `rune_index` → map-based lookup by `RuneVariety`
 - [ ] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`

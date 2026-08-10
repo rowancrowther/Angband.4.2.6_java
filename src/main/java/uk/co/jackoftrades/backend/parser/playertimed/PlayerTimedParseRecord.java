@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.backend.parser.playertimed;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.backend.parser.grammars.EffectParseRecord;
 
 import java.util.List;

@@ -17,8 +17,8 @@
 
 package uk.co.jackoftrades.middle.game.event.projection;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.combat.enums.ProjectionType;
 import uk.co.jackoftrades.middle.enums.MessageType;

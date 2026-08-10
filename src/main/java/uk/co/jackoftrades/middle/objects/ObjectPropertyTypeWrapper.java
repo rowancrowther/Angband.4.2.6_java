@@ -220,7 +220,13 @@ public class ObjectPropertyTypeWrapper {
     @Override
     public boolean equals(Object obj) {
         if (!(obj instanceof ObjectPropertyTypeWrapper other)) return false;
-        if (other.type != this.type) return false;
+//      The tag deliberately takes no part in identity, so the line below stays commented out. C keeps the tag and
+//      the subject as two independent fields (obj-properties.c:32) and compares them separately, which is what lets
+//      it relax the tag for the "stats count as mods" special case. This port folded the tag into the payload, so
+//      comparing it here as well made lookupObjectProperty compare it twice and killed that special case: a rune
+//      asking for OBJ_PROPERTY_MOD/OM_STR could never match STR, which the data declares as type:stat. Comparing
+//      subjects only leaves the tag to be compared exactly once, by lookupObjectProperty, as in C.
+//        if (other.type != this.type) return false;
         if (other.flag != this.flag) return false;
         if (other.modifier != this.modifier) return false;
         return other.element == this.element;

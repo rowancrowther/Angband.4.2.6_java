@@ -18,9 +18,9 @@
 package uk.co.jackoftrades.backend.parser.egoitem;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;

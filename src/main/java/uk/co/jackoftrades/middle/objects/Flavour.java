@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.objects;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 
 /**
  * A randomised "flavour" for an unidentified object kind — the disguising name

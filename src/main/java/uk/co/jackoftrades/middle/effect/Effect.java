@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.effect;
 
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 

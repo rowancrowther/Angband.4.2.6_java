@@ -17,10 +17,10 @@
 
 package uk.co.jackoftrades.middle.objects;
 
-import uk.co.jackoftrades.backend.colour.ColourEnum;
-import uk.co.jackoftrades.backend.numerics.Random;
-import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.middle.numerics.Random;
+import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;

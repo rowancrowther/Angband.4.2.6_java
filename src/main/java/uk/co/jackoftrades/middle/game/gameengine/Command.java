@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;

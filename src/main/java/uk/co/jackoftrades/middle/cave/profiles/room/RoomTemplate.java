@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.cave.profiles.room;
 
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.enums.RoomFlags;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 

@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.events;
 
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.frontend.events.enums.UiEventType;
 
 /**

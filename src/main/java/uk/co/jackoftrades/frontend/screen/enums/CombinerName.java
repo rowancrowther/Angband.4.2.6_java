@@ -17,8 +17,9 @@
 
 package uk.co.jackoftrades.frontend.screen.enums;
 
-import uk.co.jackoftrades.backend.utils.Combiner;
-import uk.co.jackoftrades.backend.utils.combiners.*;
+import uk.co.jackoftrades.channel.utils.Combiner;
+import uk.co.jackoftrades.channel.utils.combiners.*;
+import uk.co.jackoftrades.channel.utils.combiners.*;
 
 /**
  * The strategies for combining multiple contributing values into a single

@@ -82,6 +82,13 @@ Points where the document and reality need to shake hands. None of them break th
    remaining *core-internal*
    listeners, but the UI is no longer one of them.)
 
+7. **`backend` is the IO layer, not the shared layer.** *(Decision taken 2026-08-10, superseding the first draft, which
+   treated `backend` as legitimately shared by both halves.)* `backend` is for liaising with IO — reading, writing and
+   parsing files — and nothing else. Everything now in `backend` that `frontend` needs moves into `channel`; the non-IO
+   remainder moves into `middle`. This is stage 0, and it comes first because it's a pure move and because it turns
+   stage 5's boundary test from an allowlist with an exception in it into a flat rule: **`frontend` imports `channel`,
+   and nothing else of ours.**
+
 ## 3. What stays untouched
 
 Worth saying out loud, because it's most of the codebase: every parser, grammar, reader, registry and loader;
@@ -90,21 +97,86 @@ The bus is the port of `game-event.c` and becomes a purely core-internal broadca
 Only the *last hop* changes: where a handler today calls through `StatusDisplayHolder` into Swing, it will put a message
 on the display channel instead.
 
+(Stage 0 rewrites a great many `import` lines across these files, but not a line of their logic. "Untouched" here means
+untouched in behaviour.)
+
 ---
 
 ## 4. The route
 
-Five stages. Each is a chapter-sized chunk of checkbox items at roughly function granularity; each ends with the game
+Stage 0 plus five stages. Each is a chapter-sized chunk of checkbox items at roughly function granularity; each ends
+with the game
 running and something observable. Claude's half throughout: tests for every new class, verification that the visible
 behaviour (splash screen, progress notes, clean shutdown)
 survives each stage.
 
+### Stage 0 — Empty `backend` of everything that isn't IO *(no behaviour change)*
+
+A pure move: IDE "Move Class" plus import fixes, no logic touched, verified by compiling. It goes first because every
+later stage is easier to state once `channel` is the only thing `frontend` is allowed to see.
+
+**What `frontend` actually uses from `backend` today** — all of it, five types across ten files:
+
+| Type                                   | Used by                                                                                 |
+|----------------------------------------|-----------------------------------------------------------------------------------------|
+| `colour.ColourEnum`                    | `Frontend`, `TermWin`, `Window`, `TextOutHook`, `Colour`, `FlickerTable`, `ColourCycle` |
+| `strings.AngbandDisplayCharacter`      | `Frontend`, `TermWin`, `Window`, `SplashScreen`                                         |
+| `utils.Flag`                           | `Event`, `TextUIHook`                                                                   |
+| `utils.Combiner` + `utils.combiners.*` | `CombinerName`                                                                          |
+
+The closure is small but it is *not* just those five: `AngbandDisplayCharacter` needs `ColourEnum`; the nine combiners
+need `Combiner` and `UIEntryCombinerState`; and `ColourEnum` needs `ColourTranslation`, which is the subtle one. A
+same-package dependency needs no `import`, so it is invisible to an import survey — `ColourEnum` holds a translation
+table indexed by `ColourTranslation` and exposes `forTranslation(ColourTranslation)` and
+`translateColour(…, ColourTranslation, …)`, making the enum part of its public API. It moves with it or `ColourEnum`
+doesn't compile. `backend.colour` therefore empties completely.
+
+The other two split packages were checked for the same trap and are clean: nothing moving out of `backend.strings` or
+`backend.utils` touches the neighbours left behind, and none of those neighbours touches a mover.
+
+- [X] Move to `channel`, in sub-packages so the protocol types stay visible at the top level:
+    - `channel.colour` — `ColourEnum` **and `ColourTranslation`** (the whole of `backend.colour`)
+    - `channel.strings` — `AngbandDisplayCharacter`
+    - `channel.utils` — `Flag`, `Combiner`, `UIEntryCombinerState`, and `combiners/*` (nine of them)
+- [X] Claude: move the matching tests to mirror the new packages —
+  `src/test/…/backend/colour/ColourEnumTest` is the one that exists today.
+- [X] Move the non-IO remainder to `middle`. Nothing in `frontend` touches any of it, so this half is invisible to the
+  boundary:
+    - `backend.numerics` (`Random`, `Dice`, `Rational`, `RandomChance`, `RandomValueUtils`) → `middle.numerics`.
+      Fourteen
+      `middle` files and nineteen `backend` files import these; `backend` importing `middle` is already the normal
+      direction (92 `backend` files do it today), so this costs nothing.
+    - `backend.enums.DamageAspect` → `middle`, alongside its two users there.
+    - `backend.strings.Quark`, `backend.strings.TextBlock`, `backend.utils.NumberUtils`, `backend.utils.StringUtils`,
+      `backend.utils.ControlUtils` → `middle`. All five are ported-but-not-yet-called (nothing references them). Move
+      them to where their eventual callers will live rather than leave them sitting in `backend` defining it wrongly.
+    - `backend.utils.quit` — three `backend` files use it, but quitting is a game-lifecycle concern, not IO. Under the
+      target architecture it becomes the `SaveAndStop`/`Stopped` handshake, so this one is better **deleted in stage 3**
+      than moved now. Leave it where it is and let stage 3 take it.
+- [X] After the move, `backend` contains exactly `io/`, `parser/` and `AngbandModule` — and `utils/quit`, on borrowed
+  time.
+- [X] Claude: verification — full compile, full test run, and a grep proving `frontend` no longer names `backend`
+  anywhere. *(2026-08-10: `clean build` green; 123 test classes / 1303 tests, 0 failures, 0 errors, 0 skipped;
+  `grep -rn "backend" src/main/java/uk/co/jackoftrades/frontend` returns nothing — not just the qualified name, the bare
+  word. Five stray tests moved to mirror the `middle` move: `RationalTest`, `RandomValueUtilsTest` →
+  `middle.numerics`, `QuarkTest` → `middle.strings`, `NumberUtilsTest`, `StringUtilsTest` → `middle.utils`. Game
+  launches, splash screen and progress notes render.)*
+
+**Done when:** `grep -r "jackoftrades\.backend" src/main/java/uk/co/jackoftrades/frontend` returns nothing, and the game
+still starts and shows the splash screen.
+
+*A note on what this does to `channel`'s meaning, recorded so it isn't rediscovered as a surprise.* Before this decision
+`channel` was to be the wire protocol and nothing more. It is now also the **shared vocabulary** — the types both halves
+must agree on to be able to talk about colours and characters at all. That is a coherent thing for it to be: these are
+precisely the words the messages are written in, and a `DisplayMessage` carrying a coloured string carries a
+`ColourEnum` by definition. It does mean the package name reads narrower than its contents. If that ever grates, the
+alternative shape is `uk.co.jackoftrades.shared` holding `shared.channel` for the transport beside `shared.colour` and
+friends; the file moves would be identical and the rename is cheap at any time. Not proposed — just recorded.
+
 ### Stage 1 — The messages and the channels *(no behaviour change)*
 
-Define the protocol before any wiring moves. New package, suggested name
-`uk.co.jackoftrades.channel` — owned by neither half; both may import it (alongside `backend`, which is already the
-shared layer — `Frontend` legitimately imports `backend.colour` and
-`backend.strings` today).
+Define the protocol before any wiring moves. It lands in `uk.co.jackoftrades.channel`, the package stage 0 has just made
+the *only* thing both halves share.
 
 - [ ] `UiInboxMessage` — the display channel's element type, a sealed interface with exactly two branches, matching the
   two producers (review note 1):
@@ -211,10 +283,14 @@ line — because they now describe the same program.
   `InitHandlers`' bus handlers can put messages on the display channel directly (handed the channel, not reaching a
   static). The `StatusDisplay` interface either retires with it or survives UI-side as the consumer's painting seam —
   Rowan's call; either is defensible.
-- [ ] **The boundary test** (Claude writes, both maintain): a test that walks `src/main` imports and fails if
-  `frontend.**` imports anything from `middle.**`, or `middle.**` anything from
-  `frontend.**`; `backend.**` and `channel.**` are the shared allowlist. This turns
-  `Java_map.md`'s "you can check by reading the import statements" from a habit into a regression test.
+- [ ] **The boundary test** (Claude writes, both maintain): a test that walks `src/main` imports and enforces three
+  rules, which stage 0 is what makes them this simple —
+    - `frontend.**` may name `channel.**` and nothing else of ours (not `middle`, not `backend`);
+    - `middle.**` may not name `frontend.**`;
+    - `backend.**` may not name `frontend.**`.
+
+  This turns `Java_map.md`'s "you can check by reading the import statements" from a habit into a regression test. The
+  first rule would have been red before stage 0 and green after; the other two catch backsliding.
 - [ ] Docs pass: `Java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a verdict
   paragraph recorded here, set-piece style — what it cost, what it paid.
 - [ ] **Marker for Chapter 3:** the input seams (`CommandGetterHolder`, `GameInputHolder`,
@@ -238,6 +314,8 @@ line — because they now describe the same program.
 | UI→core message type                 | `CoreCommand` (sealed)                                   | `Command`/`CommandCode` (game commands in the `cmdq`)      |
 | Core thread's runnable               | `Core` (was `GameRunner`)                                | `GameEngine` (unchanged)                                   |
 | UI thread's runnable                 | `UiLoop`                                                 | the EDT (Swing's own thread, never blocks on a channel)    |
+| The only package both halves import  | `channel` (transport + shared vocabulary)                | `backend` — IO only from stage 0 on, and UI-invisible      |
+| Shared vocabulary types              | `channel.colour`, `channel.strings`, `channel.utils`     | `middle.numerics` etc. (core-only, moved out of `backend`) |
 
 ## 6. Primer menu
 
@@ -258,4 +336,5 @@ Page-length, on demand, tied to the code in front of us at the time — ask when
 
 *Verdict log — filled in as stages complete, one honest paragraph each:*
 
+- *(stage 0: …)*
 - *(stage 1: …)*

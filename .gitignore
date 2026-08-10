@@ -59,7 +59,6 @@ CLAUDE.md
 ## ANTLR4 ##
 *.interp
 /src/main/gen/
-/src/test/
 /lib/fonts/
 /lib/tiles/
 /lib/user/save/Loth

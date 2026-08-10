@@ -19,8 +19,8 @@ package uk.co.jackoftrades.backend.parser.terrainfeature;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
-import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFeatureFlags;
 import uk.co.jackoftrades.middle.cave.enums.TerrainFlags;

@@ -27,8 +27,8 @@ parser grammar LoreGrammar;
 options { tokenVocab = LoreLexer; }
 
 @header {
-    import uk.co.jackoftrades.backend.numerics.Random;
-    import uk.co.jackoftrades.backend.utils.Flag;
+    import uk.co.jackoftrades.middle.numerics.Random;
+    import uk.co.jackoftrades.channel.utils.Flag;
     import uk.co.jackoftrades.middle.combat.BlowMethod;
     import uk.co.jackoftrades.middle.game.globals.GameConstants;
     import uk.co.jackoftrades.middle.monsters.BlowEffect;

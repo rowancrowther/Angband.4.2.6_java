@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.monsters.enums;
 
-import uk.co.jackoftrades.backend.utils.Flag;
+import uk.co.jackoftrades.channel.utils.Flag;
 
 import static uk.co.jackoftrades.middle.monsters.enums.MonsterSpellTypeEnum.*;
 

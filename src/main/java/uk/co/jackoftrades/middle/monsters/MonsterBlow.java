@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.monsters;
 
-import uk.co.jackoftrades.backend.numerics.Random;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
 
 /**

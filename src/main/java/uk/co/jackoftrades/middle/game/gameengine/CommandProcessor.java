@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.middle.game.gameengine;
 
-import uk.co.jackoftrades.backend.numerics.RandomValueUtils;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.player.Player;

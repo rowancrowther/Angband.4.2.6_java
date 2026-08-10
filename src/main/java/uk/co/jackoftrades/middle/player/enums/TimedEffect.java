@@ -17,8 +17,9 @@
 
 package uk.co.jackoftrades.middle.player.enums;
 
+import uk.co.jackoftrades.channel.utils.Flag;
+
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.backend.utils.Flag;
 
 /**
  * The catalogue of timed player statuses — the {@code TMD_*} effects such as haste, fear,
@@ -41,7 +42,7 @@ import uk.co.jackoftrades.backend.utils.Flag;
  * additionally re-evaluate monster visibility.
  *
  * <p>Each constant declares its flags as plain arrays which the constructor folds into a
- * {@link uk.co.jackoftrades.backend.utils.Flag} bitset for compact storage and querying.
+ * {@link uk.co.jackoftrades.channel.utils.Flag} bitset for compact storage and querying.
  *
  * @author Rowan Crowther
  */

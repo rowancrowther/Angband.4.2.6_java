@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.magic;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
+import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.enums.TValue;

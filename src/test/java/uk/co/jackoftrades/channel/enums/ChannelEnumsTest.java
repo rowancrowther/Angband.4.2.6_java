@@ -245,7 +245,7 @@ class ChannelEnumsTest {
             assertEquals(List.of("START", "SAVE_AND_STOP"),
                     Arrays.stream(UILifecycleEvent.values()).map(Enum::name).collect(Collectors.toList()));
             assertEquals(List.of("STOPPED"),
-                    Arrays.stream(CoreLIfecycleEvent.values()).map(Enum::name).collect(Collectors.toList()));
+                    Arrays.stream(CoreLifecycleEvent.values()).map(Enum::name).collect(Collectors.toList()));
         }
     }
 }

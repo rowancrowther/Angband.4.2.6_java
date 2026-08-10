@@ -202,7 +202,7 @@ public class CommandProcessor {
      * left the repeat count unchanged, this execution is counted against it.
      *
      * <p>The command and queue are passed in, and the acting player is taken from the swappable
-     * {@link GameState#getPlayer()} seam rather than a hard global, so the method acts on the queue
+     * {@link GameState#getPlayer()} boundary rather than a hard global, so the method acts on the queue
      * that invoked it and can be tested in isolation (a test registers its own player via
      * {@link GameState#setPlayer(Player)}).
      *

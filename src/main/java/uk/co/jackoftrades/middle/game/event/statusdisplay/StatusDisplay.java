@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.middle.game.event.statusdisplay;
 
 /**
- * The seam the middle end reports start-up progress through: "show the title screen", and "here is
+ * The boundary the middle end reports start-up progress through: "show the title screen", and "here is
  * what I am loading now". The front end supplies the implementation; the middle end only ever sees
  * this interface, which is what keeps {@code lib/gamedata} loading free of any Swing type.
  *

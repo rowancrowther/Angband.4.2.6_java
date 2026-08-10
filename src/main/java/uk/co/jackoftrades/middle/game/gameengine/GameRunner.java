@@ -29,7 +29,7 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * <p>This is the front end's single handle on the middle end. {@code Frontend}
  * holds one of these and drives it with {@link #start()} and
  * {@link #requestStop()}; it imports nothing else from the middle end, which is
- * what keeps the seam between the two halves one object wide.
+ * what keeps the boundary between the two halves one object wide.
  *
  * <p>There is no C counterpart to this class. The C original is single-threaded:
  * {@code main()} ({@code src/main.c}) initialises and then calls
@@ -101,7 +101,7 @@ public class GameRunner {
     /**
      * The game engine singleton, building it on first call.
      *
-     * <p>An instance method wrapping a static call, which is what makes it a seam: a test can
+     * <p>An instance method wrapping a static call, which is what makes it a boundary: a test can
      * subclass {@code GameRunner} and return a stand-in engine without touching
      * {@link GameEngine#getGame()} or the singleton behind it.
      *

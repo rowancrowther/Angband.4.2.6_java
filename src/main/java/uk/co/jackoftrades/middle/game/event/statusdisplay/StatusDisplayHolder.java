@@ -21,7 +21,7 @@ package uk.co.jackoftrades.middle.game.event.statusdisplay;
  * The registration point for the front end's {@link StatusDisplay}: one process-wide slot the
  * middle end reads and the front end writes.
  *
- * <p>Same shape as the port's other UI seams ({@code CommandGetterHolder}, {@code GameInputHolder})
+ * <p>Same shape as the port's other UI boundaries ({@code CommandGetterHolder}, {@code GameInputHolder})
  * and for the same reason. The middle end must be able to reach the display from deep inside
  * {@code GameConstants.init()} without that code holding a reference to the front end, and C solves
  * the same problem with a file-scope function pointer installed by {@code init_display()}

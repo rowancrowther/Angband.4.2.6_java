@@ -49,13 +49,13 @@ public class GameEngine {
      */
     private static final Logger logger = LogManager.getLogger();
     /**
-     * The live event bus, held here as the game-wide seam other layers reach through
+     * The live event bus, held here as the game-wide boundary other layers reach through
      * {@link #getEventsBusHandler()}. Typed to the {@link EventsHandler} interface so a
      * test can swap in its own bus via {@link #setEventsBusHandler(EventsHandler)}.
      *
      * <p><b>Never null.</b> A working bus is installed here, at class load, so any caller can
      * signal an event without first arranging for one - the same guarantee
-     * {@code GameInputHolder} gives its seam by installing a default instance at declaration.
+     * {@code GameInputHolder} gives its boundary by installing a default instance at declaration.
      * {@link #initGame()} replaces it with a fresh one, so a game that starts gets a clean bus,
      * but the field is never empty in between.
      *
@@ -205,7 +205,7 @@ public class GameEngine {
     }
 
     /**
-     * Replace the live event bus - the injection seam for tests, which can install their
+     * Replace the live event bus - the injection boundary for tests, which can install their
      * own {@link EventsBusHandler} (or a spy over one) to observe what gets signalled.
      *
      * <p>A bus installed here survives until {@link #initGame()} runs, which overwrites the field

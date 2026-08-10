@@ -37,7 +37,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 /**
- * The seam through which the game engine asks the user interface for an interactive value - the
+ * The boundary through which the game engine asks the user interface for an interactive value - the
  * port of C's {@code get_*_hook} indirection in {@code game-input.c}, gathered into a single
  * interface. Each method stands in for one C UI dispatcher, so the middle layer can request a
  * direction, an item, a quantity, a spell, and so on without knowing which front-end (textui, a

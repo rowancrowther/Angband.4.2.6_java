@@ -35,7 +35,7 @@ The core channel is the UI thread's single inbox: the core's messages and the ED
 and only the UI thread sends on the UI channel (see review note 1).
 
 **Vocabulary decision, made now so nothing has to be renamed twice.** The transport queues are called **channels** —
-`uiChannel` (UI→core) and `coreChannel` (core→UI). "Channel" is Hoare's own CSP term, and it keeps clear of
+`uiChannel` (UI→core) and `CoreChannel` (core→UI). "Channel" is Hoare's own CSP term, and it keeps clear of
 `CommandQueue`, which already exists as the port of C's
 `cmdq` (`cmd-core.c`) and is a *core-internal* structure that stays exactly where it is. If the two ever sit in one
 sentence: the *channel* carries messages between threads; the *queue* holds game commands awaiting dispatch inside the
@@ -51,7 +51,7 @@ channel. Naming by sender leaves no room for either confusion: if the UI made it
 
 One place the sender-naming is not exclusive, recorded so it isn't mistaken for a slip: the EDT is UI-side, so the raw
 events it forwards to the UI thread are `UIMessage`s — but they travel on the *core* channel, because that channel is
-the UI thread's single inbox (review note 1). So `uiChannel` carries only `UIMessage`s, while `coreChannel` carries
+the UI thread's single inbox (review note 1). So `uiChannel` carries only `UIMessage`s, while `CoreChannel` carries
 `CoreMessage`s *and* the EDT's `UIMessage`s.
 
 ## 2. Review notes on Architecture.md (read before stage 1)
@@ -77,7 +77,8 @@ Points where the document and reality need to shake hands. None of them break th
 3. **Birth is interactive, and that's the hidden hard part.** "Receives and processes birth related commands" implies
    the core *asking* the UI things and waiting for answers — C's synchronous
    `get_command`, currently stubbed as `CommandGetterHolder` / `GameInputHolder`. Under CSP that becomes a
-   request/response protocol over the two channels. Nothing calls those seams yet, so this migration doesn't need to
+   request/response protocol over the two channels. Nothing calls those boundaries yet, so this migration doesn't need
+   to
    solve it — but it is the natural **design set piece for Chapter 3**, and stage 5 leaves a marker for it rather than
    pretending it's done.
 4. **Step 4 of Startup ("waits for both threads") is what makes save-on-quit possible.** Today
@@ -212,7 +213,7 @@ the *only* thing both halves share.
       populations, on different axes: *raw input* from the EDT, which is the port of C's `ui_event`; and *intent* from
       the UI thread, which is the port of C's `struct command`. Today's traffic needs neither in full — only
       `Lifecycle(UiLifecycle)`, carrying `START` or `SAVE_AND_STOP`, *to the core on `uiChannel`*, and
-      `WindowCloseRequested()` *to the UI thread on `coreChannel`* (the inbox, because that is the only queue the UI
+      `WindowCloseRequested()` *to the UI thread on `CoreChannel`* (the inbox, because that is the only queue the UI
       thread is blocked on). Note what the EDT is doing: it *receives* an AWT `WindowEvent` and *sends* a
       `WindowCloseRequested`. The AWT type stays inside the EDT; the record is the message that leaves it.
     - Both `Lifecycle` records are payload-free, so by the rule they are **one record each with the meaning in an enum
@@ -228,13 +229,13 @@ the *only* thing both halves share.
         5. Listed here because the reasoning belongs with the other two.)*
     - `CommandCode` + the `cmd_arg` shapes. `CommandQueue`/`CommandProcessor` stay in `middle`. *(Chapter 5.)*
 - [x] `Grid(int y, int x)` in `channel` — the flattened form of `middle.cave.Loc` for messages that carry positions.
-- [ ] `Channels` — one small class/record holding the two typed `LinkedBlockingQueue`s — `coreChannel` of
+- [x] `Channels` — one small class/record holding the two typed `LinkedBlockingQueue`s — `CoreChannel` of
   `ChannelMessage` (the UI thread's inbox, both senders) and `uiChannel` of `UIMessage` — created in one place and
   handed to both halves. Consider thin wrapper views instead of raw queues so the receive invariants are
   compiler-enforced: the core gets a *send-only, `CoreMessage`-only* view of the core channel and a *receive-only* view
   of the UI channel — then the core cannot forge a `UIMessage`, receive on the wrong channel, or send on the UI channel,
   by type alone. A worthwhile design conversation, not a requirement.
-- [ ] **Open point for that conversation.** Naming by sender puts the EDT's `WindowCloseRequested` and the UI thread's
+- [x] **Open point for that conversation.** Naming by sender puts the EDT's `WindowCloseRequested` and the UI thread's
   `Lifecycle` in one sealed type, so the compiler alone no longer stops a `Lifecycle(START)` being put on the core
   channel or a `WindowCloseRequested()` on the UI channel. If that matters, the fix is two sealed sub-interfaces
   *inside* `UIMessage` (one per UI-side sender) rather than a return to direction-named types — the `XMessage`
@@ -244,7 +245,7 @@ the *only* thing both halves share.
   there may be nothing to decide at stage 1 — with one record on each side there is very little for the sub-interfaces
   to separate, and Chapter 5 brings both the need and the members. Deferring is the cheaper bet; the cost of being wrong
   is that the wrapper views get written twice.
-- [ ] Claude: tests — message equality, channel round-trip across two real threads.
+- [x] Claude: tests — message equality, channel round-trip across two real threads.
 
 *Primer candidates:* sealed interfaces + records as a message protocol (you've met sealed with
 `RuneVariety`; the new bit is records-as-messages); `BlockingQueue` semantics (`put`/`take`/
@@ -458,7 +459,7 @@ worth knowing before choosing where to put it.
 
 ### Stage 2 — Core→UI traffic crosses the core channel
 
-The pivot of the whole migration, and it's small because `StatusDisplay` is already the perfect seam: swap *which
+The pivot of the whole migration, and it's small because `StatusDisplay` is already the perfect boundary: swap *which
 implementation* is registered, and the core doesn't notice.
 
 - [ ] `ChannelStatusDisplay implements StatusDisplay` (core side): each method wraps its arguments in the matching
@@ -535,7 +536,7 @@ line — because they now describe the same program.
 
 - [ ] Retire `StatusDisplayHolder` + `DefaultStatusDisplay`: with the channel in place, `InitHandlers`' bus handlers can
   put `CoreMessage`s on the core channel directly (handed the channel, not reaching a static). The `StatusDisplay`
-  interface either retires with it or survives UI-side as the consumer's painting seam — Rowan's call; either is
+  interface either retires with it or survives UI-side as the consumer's painting boundary — Rowan's call; either is
   defensible.
 - [ ] **Split the handlers across the boundary** *(added 2026-08-10 by stage 1's design note)*. `InitHandlers` currently
   does two jobs in one place: it subscribes to the bus, and it decides what the screen should look like. Those separate
@@ -556,7 +557,7 @@ line — because they now describe the same program.
   first rule would have been red before stage 0 and green after; the other two catch backsliding.
 - [ ] Docs pass: `Java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a verdict
   paragraph recorded here, set-piece style — what it cost, what it paid.
-- [ ] **Marker for Chapter 3:** the input seams (`CommandGetterHolder`, `GameInputHolder`,
+- [ ] **Marker for Chapter 3:** the input boundaries (`CommandGetterHolder`, `GameInputHolder`,
   `DefaultCommandGetter`) are still holder-shaped and still uncalled. Their CSP form — the core sends a request
   `CoreMessage` and blocks on the UI channel for the reply — is the birth chapter's design set piece. Do not
   migrate them speculatively now; migrate them when birth gives them their first real caller.
@@ -573,7 +574,7 @@ on it.
 | Concept                              | Name                                                                                                        | Not to be confused with                                             |
 |--------------------------------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
 | UI→core transport                    | `uiChannel` (carries `UIMessage`)                                                                           | `CommandQueue` (core-internal `cmdq` port — unchanged)              |
-| UI thread's inbox (core→UI + EDT→UI) | `coreChannel` (carries `ChannelMessage`)                                                                    | the event bus (core-internal — unchanged)                           |
+| UI thread's inbox (core→UI + EDT→UI) | `CoreChannel` (carries `ChannelMessage`)                                                                    | the event bus (core-internal — unchanged)                           |
 | Root of the protocol                 | `ChannelMessage` (sealed: `CoreMessage` \| `UIMessage`)                                                     | `middle.Message` — C's `msg`/`msgt` log, core-internal, not renamed |
 | Anything the core sends              | `CoreMessage` (sealed, ~one record per payload shape)                                                       | `GameEventData` — the shapes it carries, moved to `channel`         |
 | Anything the UI sends                | `UIMessage` (sealed, ~one record per payload shape)                                                         | `UiEventType`/`CommandCode` — the vocabularies it carries           |
@@ -590,7 +591,7 @@ on it.
 the UI must understand to render at all? `ColourEnum` and `MessageType` pass it. `Loc` and `Stats` do not, and their
 shapes flatten instead. See "Which shapes can actually move".
 
-*Retired names, so a stale note is recognisable:* `commandChannel` → `uiChannel`; `displayChannel` → `coreChannel`;
+*Retired names, so a stale note is recognisable:* `commandChannel` → `uiChannel`; `displayChannel` → `CoreChannel`;
 `UiInboxMessage` → `ChannelMessage`; `DisplayMessage` → `CoreMessage`; `UiEvent` and `CoreCommand` → `UIMessage`. (The
 root is `ChannelMessage`, not `Message`, because `middle.Message` — C's `message.c` — has the better claim on that name
 and five callers already.)

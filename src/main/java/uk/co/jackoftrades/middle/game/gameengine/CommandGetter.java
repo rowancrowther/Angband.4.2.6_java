@@ -20,14 +20,14 @@ package uk.co.jackoftrades.middle.game.gameengine;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 
 /**
- * The seam through which the game loop asks the user interface to fetch a command - the port of C's
+ * The boundary through which the game loop asks the user interface to fetch a command - the port of C's
  * {@code cmd_get_hook} function pointer (cmd-core.c). A front-end installs its implementation and the
  * loop calls it once per turn to top the {@link CommandQueue} up before draining it.
  *
- * <p>This is a different seam from {@link uk.co.jackoftrades.middle.gameinput.GameInput}: that one
+ * <p>This is a different boundary from {@link uk.co.jackoftrades.middle.gameinput.GameInput}: that one
  * fetches a single <em>argument</em> for a command already being carried out (a direction, an item, a
  * spell); this one fetches a <em>whole command</em>. They fire at different points in the same turn -
- * this first, to obtain the command, then the argument seam as the command's handler runs.
+ * this first, to obtain the command, then the argument boundary as the command's handler runs.
  *
  * <p>The method returns C's {@code errr} status (0 for success, non-zero for "no command obtained"),
  * but that return is largely vestigial - as in C, the loop ignores it and treats an empty queue as

@@ -39,7 +39,7 @@ import java.util.function.Predicate;
  * The always-installed default {@link GameInput}: every hook aborts (returns {@link Optional#empty()}).
  * It is the port of C's {@code else} branches in {@code game-input.c}, where a missing UI hook simply
  * fails the request. Installed by {@link GameInputHolder} from the start so callers never see a
- * {@code null} seam, it lets the middle layer's non-UI logic run (and compile) before any real
+ * {@code null} boundary, it lets the middle layer's non-UI logic run (and compile) before any real
  * front-end exists; a front-end or a test replaces it via {@link GameInputHolder#setInstance}.
  *
  * <p>Each method's parameter and return contract is documented on {@link GameInput}; here every one

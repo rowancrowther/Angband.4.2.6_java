@@ -700,10 +700,10 @@ public class Command {
     }
 
     /**
-     * Asks the input seam to choose a spell from a single, already-known book - the port of C's
+     * Asks the input boundary to choose a spell from a single, already-known book - the port of C's
      * {@code get_spell_from_book} call in {@code cmd_get_spell}. A thin pass-through to the installed
      * {@link GameInput}; kept as its own method so {@link #getSpell}'s book-arg branch reads as one
-     * step and the seam lookup lives in a single place.
+     * step and the boundary lookup lives in a single place.
      *
      * @param player      the caster
      * @param verb        the action the spell is wanted for (e.g. "cast", "study")
@@ -739,7 +739,7 @@ public class Command {
      *
      * @param argName     the name the choice argument is stored under
      * @param prompt      the prompt to show, or {@code null} for the default
-     * @param effects     the effects to choose among (only its size is read here; the seam shows them)
+     * @param effects     the effects to choose among (only its size is read here; the boundary shows them)
      * @param count       how many of the effects to offer, or {@code -1} for all of them
      * @param allowRandom whether to offer an extra "choose at random" option, whose result is {@code -2}
      * @return the chosen index (or {@code -2} for random), or empty if the player aborted

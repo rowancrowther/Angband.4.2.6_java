@@ -131,7 +131,7 @@ public class InitHandlers {
      * <p>Logs a fixed line so far. The port of {@code splashscreen_note}
      * ({@code [C] src/ui-display.c}), which reads the string out of the payload and prints it under
      * the title screen - so the remaining work here is to pull the message from {@code data} and
-     * pass it to {@code StatusDisplayHolder.getInstance().splashScreenNote(...)}, the seam method
+     * pass it to {@code StatusDisplayHolder.getInstance().splashScreenNote(...)}, the boundary method
      * that currently has no caller.
      *
      * @param eventType the event being handled, always {@code EVENT_INITSTATUS}; not read

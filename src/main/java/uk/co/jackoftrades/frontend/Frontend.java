@@ -45,7 +45,7 @@ import java.util.List;
  *
  * <p>Everything here runs on Swing's event dispatch thread (EDT). The middle end runs on the
  * thread {@link GameRunner} owns, and {@code GameRunner} is the only middle-end type this class
- * imports - one object wide, which is what keeps the seam between the two halves checkable by
+ * imports - one object wide, which is what keeps the boundary between the two halves checkable by
  * reading the import list.
  *
  * <p>State is per-instance, not static. A previous version made the fields static so a static

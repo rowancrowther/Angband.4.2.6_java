@@ -323,7 +323,7 @@ public class SplashScreen implements StatusDisplay {
      *
      * <p><b>C pauses here and this does not.</b> {@code splashscreen_note} calls
      * {@code pause_line(Term)} after each birth note, so the player reads them one at a time; these
-     * will all appear at once. Closing that gap needs the input seam, since a pause is a read.
+     * will all appear at once. Closing that gap needs the input boundary, since a pause is a read.
      *
      * <p><b>Called on the game thread, and touches Swing directly</b> - see
      * {@link #splashScreenNote(String)}, which has the same problem for the same reason.

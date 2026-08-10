@@ -42,7 +42,7 @@ import java.util.HashMap;
  * gear, and the transient per-turn bookkeeping held in {@link PlayerUpkeep}.
  *
  * <p>The middle layer reaches the live player through the swappable
- * {@link uk.co.jackoftrades.middle.game.gameengine.GameState#getPlayer()} seam rather than a global,
+ * {@link uk.co.jackoftrades.middle.game.gameengine.GameState#getPlayer()} boundary rather than a global,
  * so there is exactly one player during play and a test can install its own.
  *
  * <p>This is a work in progress: many fields of C's {@code struct player} are present but not yet

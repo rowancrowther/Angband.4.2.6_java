@@ -19,7 +19,7 @@ package uk.co.jackoftrades.channel.messages;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftrades.channel.enums.CoreLIfecycleEvent;
+import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
 
@@ -237,8 +237,8 @@ class ChannelMessageTest {
          */
         @Test
         void theLifecycleMessageIsComparableByValue() {
-            assertEquals(new CoreMessage.LifecycleCoreMessage(CoreLIfecycleEvent.STOPPED),
-                    new CoreMessage.LifecycleCoreMessage(CoreLIfecycleEvent.STOPPED));
+            assertEquals(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED),
+                    new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
         }
     }
 
@@ -277,7 +277,7 @@ class ChannelMessageTest {
         @Test
         void eachHalfHasItsOwnLifecycleVocabulary() {
             Set<String> uiEvents = names(UILifecycleEvent.values());
-            Set<String> coreEvents = names(CoreLIfecycleEvent.values());
+            Set<String> coreEvents = names(CoreLifecycleEvent.values());
 
             assertEquals(Set.of("START", "SAVE_AND_STOP"), uiEvents);
             assertEquals(Set.of("STOPPED"), coreEvents);

@@ -29,7 +29,7 @@ import java.util.Optional;
 import java.util.function.Predicate;
 
 /**
- * The seam through which the game engine asks the user interface for an interactive value - the
+ * The boundary through which the game engine asks the user interface for an interactive value - the
  * port of C's {@code get_*_hook} indirection in {@code game-input.c}. Each method stands in for one
  * C UI hook that the middle layer calls without knowing which front-end (textui, test harness, …)
  * answers it. Every accessor returns an {@link Optional}: present is the chosen value, empty is the

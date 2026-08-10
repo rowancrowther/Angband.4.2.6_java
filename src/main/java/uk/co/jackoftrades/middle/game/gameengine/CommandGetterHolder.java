@@ -21,7 +21,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 
 /**
- * The static switchboard for the {@link CommandGetter} seam: it holds the one implementation
+ * The static switchboard for the {@link CommandGetter} boundary: it holds the one implementation
  * currently installed and hands it to callers. This is where C's file-scope {@code cmd_get_hook}
  * function pointer lands in the port - the game loop reaches the UI through {@code getInstance()}
  * rather than importing any front-end, so the dependency points inward.

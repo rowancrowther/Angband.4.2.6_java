@@ -5,8 +5,8 @@
 - ~~- The two subsystems should communicate solely via exactly two thread-safe queues: one ("display queue") from core
   to UI and one ("command queue") from UI to core. The core should never send on the UI-to-core queue, and the UI should
   never send on the core-to-UI queue.~~
-- Only the UI thread receives on the display channel; only the core receives on the command channel; the core sends only
-  display message
+- Only the UI thread receives on the core channel; only the core receives on the UI channel; the core sends only
+  `CoreMessage`s
 
 ## Sequencing
 

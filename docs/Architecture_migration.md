@@ -26,40 +26,53 @@ waits for both to exit. Core and UI know nothing of each other; everything cross
 ```
    main() ── creates channels, starts both, joins both
       │
-      ├─▶ core thread   ──── displayChannel ───▶ UI thread ──invokeLater──▶ EDT
-      │                 ◀─── commandChannel ────     ▲                       │
+      ├─▶ core thread   ───── coreChannel ─────▶ UI thread ──invokeLater──▶ EDT
+      │                 ◀────── uiChannel ──────     ▲                       │
       │                                              └── raw Swing events ──┘
 ```
 
-The display channel is the UI thread's single inbox: the core's messages and the EDT's raw events both arrive on it, and
-only the UI thread sends on the command channel (see review note 1).
+The core channel is the UI thread's single inbox: the core's messages and the EDT's forwarded events both arrive on it,
+and only the UI thread sends on the UI channel (see review note 1).
 
 **Vocabulary decision, made now so nothing has to be renamed twice.** The transport queues are called **channels** —
-`commandChannel` (UI→core) and `displayChannel` (core→UI). "Channel" is Hoare's own CSP term, and it keeps clear of
+`uiChannel` (UI→core) and `coreChannel` (core→UI). "Channel" is Hoare's own CSP term, and it keeps clear of
 `CommandQueue`, which already exists as the port of C's
 `cmdq` (`cmd-core.c`) and is a *core-internal* structure that stays exactly where it is. If the two ever sit in one
 sentence: the *channel* carries messages between threads; the *queue* holds game commands awaiting dispatch inside the
 core.
+
+**The messages are named for their sender.** Everything that crosses a channel is an `XMessage`: a **`UIMessage`** is
+something the UI sends, a **`CoreMessage`** is something the core sends, and each channel is named for the half that
+sends on it. *(Decision taken 2026-08-10, replacing the first draft's `DisplayMessage`/`UiEvent` pair.)* The old names
+were wrong in two ways. "UI event" is ambiguous — it reads equally as *an AWT event* and as *a core-to-UI notification*,
+which are opposite directions; and it collides outright with `frontend.events.Event` /
+`UiEventType`, the existing port of C's `ui_event` (`src/ui-event.h`), which is a UI-internal type that never crosses a
+channel. Naming by sender leaves no room for either confusion: if the UI made it, it is a `UIMessage`.
+
+One place the sender-naming is not exclusive, recorded so it isn't mistaken for a slip: the EDT is UI-side, so the raw
+events it forwards to the UI thread are `UIMessage`s — but they travel on the *core* channel, because that channel is
+the UI thread's single inbox (review note 1). So `uiChannel` carries only `UIMessage`s, while `coreChannel` carries
+`CoreMessage`s *and* the EDT's `UIMessage`s.
 
 ## 2. Review notes on Architecture.md (read before stage 1)
 
 Points where the document and reality need to shake hands. None of them break the design.
 
 1. **Three threads, not two.** Swing owns the EDT regardless. The workable shape: the "UI thread"
-   of the document blocks on `displayChannel.take()`, and the display channel is its *single inbox* — core messages and
-   raw Swing events both land on it. Swing listeners (which run on the EDT) never touch the command channel: they wrap
-   the raw event as a message, put it on the display channel, and the UI thread parses it and sends any resulting
-   `CoreCommand` down the command channel itself. *(Corrected 2026-08-10 — the first draft had EDT listeners sending
+   of the document blocks on `coreChannel.take()`, and the core channel is its *single inbox* — `CoreMessage`s and the
+   EDT's forwarded `UIMessage`s both land on it. Swing listeners (which run on the EDT) never touch the UI channel: they
+   wrap the raw AWT event as a `UIMessage`, put it on the core channel, and the UI thread parses it and sends any
+   resulting `UIMessage` down the UI channel itself. *(Corrected 2026-08-10 — the first draft had EDT listeners sending
    commands directly, which Rowan rejected.)* Three reasons the corrected routing is right, in rising order of weight:
    interpretation ("which command does this event mean?") is stateful UI logic — keymaps, whatever prompt is up — that
    belongs in one loop, not scattered across listeners; a thread can only block on one queue, so merging both sources
    into one inbox is what makes the document's "waits for a) events and also b) items — either or both" implementable at
-   all; and every command-channel send now happens on one thread, so command ordering is deterministic. The EDT stays a
+   all; and every UI-channel send now happens on one thread, so command ordering is deterministic. The EDT stays a
    private implementation detail of the UI half; the core never knows it exists. *Consequence for Architecture.md's
    Principles:* "the UI should never send on the core-to-UI queue" is now violated by design — the EDT is a UI-side
-   producer onto the display channel. The invariant that survives is about *receiving*, not sending: only the UI thread
-   receives on the display channel, only the core receives on the command channel, and the core sends only
-   `DisplayMessage`s — all three enforceable by stage 1's types.
+   producer onto the core channel. The invariant that survives is about *receiving*, not sending: only the UI thread
+   receives on the core channel, only the core receives on the UI channel, and the core sends only
+   `CoreMessage`s — all three enforceable by stage 1's types.
 2. **"JWT"** in the document is a typo, and means AWT/Swing window events.
 3. **Birth is interactive, and that's the hidden hard part.** "Receives and processes birth related commands" implies
    the core *asking* the UI things and waiting for answers — C's synchronous
@@ -71,8 +84,9 @@ Points where the document and reality need to shake hands. None of them break th
    `closeDown()` requests a stop and immediately `System.exit(0)`s — the core dies mid-stride. In the new shape the core
    finishes its `saveAndStop` work, *then* sends `stopped`, *then* exits, and `main()` outlives it. This is a
    correctness gain, not just tidiness.
-5. **Unbounded channels, for now.** `LinkedBlockingQueue` without a capacity. Backpressure (a core producing display
-   messages faster than the UI drains them) is a real topic but not a today problem; a bounded channel would add a way
+5. **Unbounded channels, for now.** `LinkedBlockingQueue` without a capacity. Backpressure (a core producing
+   `CoreMessage`s faster than the UI drains them) is a real topic but not a today problem; a bounded channel would add a
+   way
    for the core to block on the UI, which is exactly the coupling being removed. Revisit if the map redraw traffic in
    Chapter 5 ever measures slow.
 6. **An unexpected gain: the event-ordering constraint dissolves.** Today `InitHandlers` must be registered before
@@ -93,9 +107,18 @@ Points where the document and reality need to shake hands. None of them break th
 
 Worth saying out loud, because it's most of the codebase: every parser, grammar, reader, registry and loader;
 `GameConstants.init()`; the rune system; `CommandQueue`/`CommandProcessor`; and the **event bus** (`EventsBusHandler`).
-The bus is the port of `game-event.c` and becomes a purely core-internal broadcast mechanism — exactly what it is in C.
-Only the *last hop* changes: where a handler today calls through `StatusDisplayHolder` into Swing, it will put a message
-on the display channel instead.
+The bus is the port of `game-event.c` and stays a core-internal broadcast mechanism — exactly what it is in C.
+
+Its *handlers*, though, are a different matter. *(Amended 2026-08-10 by stage 1's design note; the first draft said the
+whole bus was untouched.)* Two things change around the bus, neither of them inside it:
+
+- the **event vocabulary** — `GameEventType` and the `GameEventData` shapes — moves into `channel` in stage 1, because
+  it is what `CoreMessage`s are written in;
+- the handlers that *render* stop being core code. Today `InitHandlers` subscribes core-side and calls through
+  `StatusDisplayHolder` into Swing. From stage 5 the core's subscriber does one thing — put the event on the core
+  channel as a `CoreMessage` — and the rendering handler lives in the UI half, which is where C keeps it (`ui-*.c`).
+
+The bus's own mechanics, and every core-internal subscription, are untouched.
 
 (Stage 0 rewrites a great many `import` lines across these files, but not a line of their logic. "Untouched" here means
 untouched in behaviour.)
@@ -168,7 +191,7 @@ still starts and shows the splash screen.
 *A note on what this does to `channel`'s meaning, recorded so it isn't rediscovered as a surprise.* Before this decision
 `channel` was to be the wire protocol and nothing more. It is now also the **shared vocabulary** — the types both halves
 must agree on to be able to talk about colours and characters at all. That is a coherent thing for it to be: these are
-precisely the words the messages are written in, and a `DisplayMessage` carrying a coloured string carries a
+precisely the words the messages are written in, and a `CoreMessage` carrying a coloured string carries a
 `ColourEnum` by definition. It does mean the package name reads narrower than its contents. If that ever grates, the
 alternative shape is `uk.co.jackoftrades.shared` holding `shared.channel` for the transport beside `shared.colour` and
 friends; the file moves would be identical and the rename is cheap at any time. Not proposed — just recorded.
@@ -178,22 +201,39 @@ friends; the file moves would be identical and the rename is cheap at any time. 
 Define the protocol before any wiring moves. It lands in `uk.co.jackoftrades.channel`, the package stage 0 has just made
 the *only* thing both halves share.
 
-- [ ] `UiInboxMessage` — the display channel's element type, a sealed interface with exactly two branches, matching the
-  two producers (review note 1):
-  - `DisplayMessage` — sealed; one record per thing the core can tell the UI. Today's traffic needs exactly four:
-  `ShowSplashScreen()`, `LoadNote(String text)`, `BirthNote(String
-        text)`, `Stopped()`. (These mirror the three `StatusDisplay` methods plus the shutdown handshake — no invention
-  required.)
-  - `UiEvent` — sealed; one record per raw Swing event the EDT forwards to the UI thread. One member for now:
-  `WindowCloseRequested()`. (Keystrokes join it in Chapter 5.)
-- [ ] `CoreCommand` — a sealed interface; one record per thing the UI can tell the core:
-  `Start()`, `SaveAndStop()`.
-- [ ] `Channels` — one small class/record holding the two typed `LinkedBlockingQueue`s (`UiInboxMessage` and
-  `CoreCommand`), created in one place and handed to both halves. Consider thin wrapper views instead of raw queues so
-  the receive invariants are compiler-enforced: the core gets a *send-only, `DisplayMessage`-only* view of the display
-  channel and a *receive-only* view of the command channel — then the core cannot forge a
-  `UiEvent`, receive on the wrong channel, or send a command, by type alone. A worthwhile design conversation, not a
-  requirement.
+- [ ] `ChannelMessage` — the root of the protocol, a sealed interface with exactly two branches, one per sender:
+    - `CoreMessage` — sealed; **one record per payload shape, not one per occasion** (see "What the core actually
+      sends", below). Two groups: *game events*, each carrying a `GameEventType` and whatever data that event needs; and
+      *lifecycle*, which are protocol rather than gameplay. Today's traffic needs `Simple(GameEventType)` for
+      `EVENT_ENTER_INIT`, `Text(GameEventType, String)` for `EVENT_INITSTATUS` and the birth notes, and `Stopped()` for
+      the shutdown handshake.
+    - `UIMessage` — sealed; **same rule, one record per payload shape** (see "What the UI actually sends", below). Two
+      populations, on different axes: *raw input* from the EDT, which is the port of C's `ui_event`; and *intent* from
+      the UI thread, which is the port of C's `struct command`. Today's traffic needs neither in full — only `Start()`
+      and
+      `SaveAndStop()` *to the core, on `uiChannel`*, and `WindowCloseRequested()` *to the UI thread, on `coreChannel`*
+      (the inbox, because that is the only queue the UI thread is blocked on). Note what the EDT is doing: it *receives*
+      an AWT
+      `WindowEvent` and *sends* a `WindowCloseRequested`. The AWT type stays inside the EDT; the record is the message
+      that leaves it.
+- [ ] Move the **vocabularies** into `channel` — the enums of meaning and the payload shapes they travel in, but not the
+  machinery that dispatches them (see both design notes):
+    - `GameEventType` + the `GameEventData` shapes. The bus itself stays in `middle`.
+    - `UiEventType` + the keypress/mouseclick shapes, out of `frontend.events`. *(Only when population A lands — Chapter
+        5. Listed here because the reasoning belongs with the other two.)*
+    - `CommandCode` + the `cmd_arg` shapes. `CommandQueue`/`CommandProcessor` stay in `middle`. *(Chapter 5.)*
+- [ ] `Channels` — one small class/record holding the two typed `LinkedBlockingQueue`s — `coreChannel` of
+  `ChannelMessage` (the UI thread's inbox, both senders) and `uiChannel` of `UIMessage` — created in one place and
+  handed to both halves. Consider thin wrapper views instead of raw queues so the receive invariants are
+  compiler-enforced: the core gets a *send-only, `CoreMessage`-only* view of the core channel and a *receive-only* view
+  of the UI channel — then the core cannot forge a `UIMessage`, receive on the wrong channel, or send on the UI channel,
+  by type alone. A worthwhile design conversation, not a requirement.
+- [ ] **Open point for that conversation.** Naming by sender puts the EDT's `WindowCloseRequested` and the UI thread's
+  `Start`/`SaveAndStop` in one sealed type, so the compiler alone no longer stops a `Start()` being put on the core
+  channel or a `WindowCloseRequested()` on the UI channel. If that matters, the fix is two sealed sub-interfaces
+  *inside* `UIMessage` (one per UI-side sender) rather than a return to direction-named types — the `XMessage`
+  vocabulary stays either way. Worth deciding before the wrapper views are written, since they are what would enforce
+  it.
 - [ ] Claude: tests — message equality, channel round-trip across two real threads.
 
 *Primer candidates:* sealed interfaces + records as a message protocol (you've met sealed with
@@ -202,17 +242,136 @@ the *only* thing both halves share.
 
 **Done when:** it compiles, tests pass, and nothing else has changed.
 
-### Stage 2 — Core→UI traffic crosses the display channel
+#### Design note: what the core actually sends *(decided 2026-08-10)*
+
+The first draft said "one record per thing the core can tell the UI", with four members. Rowan's objection: that set
+grows without bound. One for the splash screen, one for a progress line, one for redrawing a character when a monster
+moves, one for switching which window is being drawn on, one for asking the UI a question — and the game has barely
+started. The objection is right, and the fix has two parts: pick the axis, then split on payload.
+
+**The axis: the channel carries meaning, not drawing.** The tempting set — *redraw everything, draw a line, redraw one
+character, change the active window* — is very nearly C's `term` hook set (`wipe_hook`, `text_hook`, `pict_hook`,
+`curs_hook`, `Term_activate`; about ten in `ui-term.h`). That set really is closed: it describes what a display can
+*do*, and it has not grown as Angband has. But in C those hooks are called by `ui-*.c`, not by the game. The core
+signals `EVENT_HP`; a handler in the front end decides the health bar sits at row 5 in red and calls `Term_putstr`.
+Putting the primitives on the channel would put that decision core-side and hand the core a screen layout — precisely
+the coupling this migration exists to remove. `frontend` already owns `TermWin`, `Window` and `Frontend`: **term
+primitives stay UI-internal and never cross a channel.** What crosses is the event.
+
+**The split: by payload shape.** With that axis chosen the set is not open-ended, because C has already enumerated it
+and the port has already ported it:
+
+- `GameEventType` — 65 constants, fixed by C's `game-event.h`, already in `middle.game.enums`;
+- `GameEventData` — the port of C's `game_event_data` **union**, which has about ten shapes (`point`, `string`,
+  `message`, `birthstage`, `explosion`, `bolt`, `size`, …), already an interface with `EventData*` implementations in
+  `middle.game.event`.
+
+So `CoreMessage` gets roughly ten records — one per payload shape, each carrying the `GameEventType` that says what it
+means — plus the lifecycle handful. `EVENT_HP`, `EVENT_GOLD` and `EVENT_AC` all ride the same payload-free record. The
+record count is driven by payload variety, which is stable; not by game content, which is not.
+
+```java
+sealed interface CoreMessage extends ChannelMessage {
+    // game events — the payload shapes of C's game_event_data union
+    record Simple(GameEventType type) implements CoreMessage {
+    }   // the payload-free majority
+
+    record Point(GameEventType type, int x, int y) implements CoreMessage {
+    }
+
+    record Text(GameEventType type, String text) implements CoreMessage {
+    }
+
+    record Msg(GameEventType type, String text, MessageType msgType) implements CoreMessage {
+    }
+    // …explosion, bolt, birthstage as their events acquire real callers
+
+    // lifecycle — protocol, not gameplay; no GameEventType
+    record Stopped() implements CoreMessage {
+    }
+}
+```
+
+**The trap to avoid**, since it is the obvious reading of "flat payload": *not*
+`record CoreMessage(GameEventType type, Object payload)`. The enum makes the `switch` exhaustive, so it compiles — but
+nothing then checks that `EVENT_MESSAGE` arrives carrying message-shaped data. You would be casting, and the
+compiler-as-protocol-checker, which is the entire reason for using sealed records, is gone. Keep the fields typed.
+
+**Three of today's four messages were never new.** `ShowSplashScreen`, `LoadNote` and `BirthNote` are
+`EVENT_ENTER_INIT`, `EVENT_INITSTATUS` and the birth notes wearing different hats — they already travel the bus, and
+`InitHandlers` already turns them into `StatusDisplay` calls. Only `Stopped` is genuinely new, which is why the
+lifecycle group exists at all.
+
+**What this costs elsewhere in this document,** recorded here so the change isn't rediscovered as a contradiction: §3
+listed the bus as untouched and wholly core-internal, and stage 5 planned to *retire* `StatusDisplayHolder`. Under this
+shape the bus is still core-internal and still the port of `game-event.c` — but the **event vocabulary** moves to
+`channel` (stage 1), and the handlers that render move to the UI half (stage 5) rather than being deleted. That is the C
+arrangement, where the handlers live in `ui-*.c`. Both sections below are amended to match.
+
+#### Design note: what the UI actually sends *(decided 2026-08-10)*
+
+The same question, asked of the other direction, and the same rule answers it — but `UIMessage` is not the mirror image
+of `CoreMessage`, because the UI has **two senders with two unrelated vocabularies**. Splitting them is the first move;
+everything else follows.
+
+**Population A — the EDT, sending raw input to the UI thread.** This is the port of C's `ui_event`, whose union has
+exactly three shapes against eight event types:
+
+```c
+typedef union {
+    ui_event_type type;        /* bare: RESIZE, BUTTON, ESCAPE, SELECT, MOVE, SWITCH */
+    struct mouseclick mouse;   /* x, y, button, mods */
+    struct keypress key;       /* code, mods */
+} ui_event;
+```
+
+So three records — `Keystroke(int code, int mods)`, `MouseClick(int x, int y, int button, int mods)`, and a bare
+`Input(UiEventType type)` carrying the rest. At this size "split by device" and "split by payload shape" happen to give
+the same answer, so the rule from the `CoreMessage` note costs nothing here.
+
+*Except for one.* `WindowCloseRequested` has no C counterpart — `ui_event_type` has no close or quit constant, because C
+leaves by a different road entirely. It is a genuine AWT-driven addition, so when you write it, say so in the Javadoc:
+"port of C's X" is true of its three neighbours and false of this one.
+
+**Population B — the UI thread, sending intent to the core.** Not `ui_event`; this is C's `struct command` — a
+`cmd_code` plus up to four tagged `cmd_arg`s (`CMD_MAX_ARGS`, `cmd-core.h`), against about ninety command codes. One
+record per code would be the explosion in its worst form, so the rule applies unchanged: carry `CommandCode` in a field,
+split by argument shape. Alongside it sits the lifecycle pair, `Start()` and `SaveAndStop()`, which are protocol rather
+than gameplay and carry nothing.
+
+**Only the lifecycle pair and `WindowCloseRequested` are stage 1's business.** Population A arrives with keystrokes and
+population B when there is a keymap to interpret them against — both Chapter 5. Writing either now would be porting
+against no caller.
+
+**The symmetry that actually holds** is not between the record sets — it is that each direction has an *enum of
+meanings* and a small closed set of *payload shapes*, and in all three cases the record count tracks the shapes:
+
+| Direction        | Meaning (enum)       | Payload shapes             | Machinery that stays put          |
+|------------------|----------------------|----------------------------|-----------------------------------|
+| core → UI        | `GameEventType` (65) | `game_event_data`, ~10     | the bus (`EventsBusHandler`)      |
+| EDT → UI thread  | `UiEventType` (8)    | `ui_event`, 3              | AWT listeners                     |
+| UI thread → core | `CommandCode` (~90)  | `cmd_arg` ×4, tagged union | `CommandQueue`/`CommandProcessor` |
+
+All three enums and all three shape sets move into `channel`; none of the machinery does.
+
+**A correction to §5's table,** made rather than left to be tripped over: an earlier draft listed
+`frontend.events.Event` / `UiEventType` as "UI-internal, never crosses a channel", and used that to justify the
+`UiEvent` → `UIMessage` rename. That does not survive population A — those records *are* the port of `ui_event`, and
+`channel` cannot import `frontend`, so the vocabulary has to move or a keystroke ends up with two representations. The
+rename still stands, on better grounds: `UIMessage` is the envelope, `UiEventType` is the vocabulary written inside it —
+the same relation `CoreMessage` has to `GameEventType`.
+
+### Stage 2 — Core→UI traffic crosses the core channel
 
 The pivot of the whole migration, and it's small because `StatusDisplay` is already the perfect seam: swap *which
 implementation* is registered, and the core doesn't notice.
 
 - [ ] `ChannelStatusDisplay implements StatusDisplay` (core side): each method wraps its arguments in the matching
-  `DisplayMessage` and `put`s it on the display channel. Three one-line methods.
-- [ ] `UiLoop` (UI side, a `Runnable`): loop on `displayChannel.take()`, switch over the sealed
-  `UiInboxMessage` — for each `DisplayMessage`, `invokeLater` the painting the old
+  `CoreMessage` and `put`s it on the core channel. Three one-line methods.
+- [ ] `UiLoop` (UI side, a `Runnable`): loop on `coreChannel.take()`, switch over the sealed
+  `ChannelMessage` — for each `CoreMessage`, `invokeLater` the painting the old
   `SplashScreen` methods do now (`SplashScreen` itself keeps its painting code; it just stops being the thing the *core*
-  calls); `UiEvent` handling arrives in stage 3.
+  calls); `UIMessage` handling arrives in stage 3.
 - [ ] `Frontend.init`: build the channels (temporarily — they move to `main()` in stage 4), register
   `ChannelStatusDisplay` in the holder instead of `SplashScreen`, start the consumer on its own thread
   (`new Thread(consumer, "angband-display")`).
@@ -224,22 +383,22 @@ not run on the EDT). Also fixes in passing: `SplashScreen`'s own Javadoc admits 
 today — after this stage every touch arrives via the consumer's `invokeLater`, closing that hole.
 
 **Done when:** the splash screen and the "Initializing arrays…" notes still appear — but a breakpoint (or a logging
-wrapper) shows every one of them crossed the display channel.
+wrapper) shows every one of them crossed the core channel.
 
-### Stage 3 — UI→Core traffic crosses the command channel; clean shutdown
+### Stage 3 — UI→Core traffic crosses the UI channel; clean shutdown
 
 The `sleep(5)` placeholder in `GameRunner.gameLoop()` becomes a real receive loop, and the kill-the-thread shutdown
 becomes the document's handshake.
 
-- [ ] `gameLoop()`: after `loadGameConstants()`, loop on `commandChannel.take()`; switch over
-  `CoreCommand`. `Start` → log it (birth lands here in Chapter 3). `SaveAndStop` → send
-  `Stopped()` on the display channel and fall out of the loop; the thread ends. (Nothing to save yet — the save half
+- [ ] `gameLoop()`: after `loadGameConstants()`, loop on `uiChannel.take()`; switch over
+  `UIMessage`. `Start` → log it (birth lands here in Chapter 3). `SaveAndStop` → send
+  `Stopped()` on the core channel and fall out of the loop; the thread ends. (Nothing to save yet — the save half
   arrives with Chapter 8.)
 - [ ] `Frontend.init`: once the window is up, `put` a `Start()` — the document's step 1.5.
-- [ ] `windowClosing`: put a `WindowCloseRequested()` on the *display* channel — the EDT forwards the raw event, nothing
-  more (review note 1). No `requestStop`, no `System.exit`.
-- [ ] `UiLoop`, on `WindowCloseRequested()`: send `SaveAndStop()` on the command channel — the one place raw events are
-  turned into core commands.
+- [ ] `windowClosing`: put a `WindowCloseRequested()` on the *core* channel — the EDT forwards the raw AWT event as a
+  `UIMessage` and nothing more (review note 1). No `requestStop`, no `System.exit`.
+- [ ] `UiLoop`, on `WindowCloseRequested()`: send `SaveAndStop()` on the UI channel — the one place raw AWT events are
+  turned into messages for the core.
 - [ ] `UiLoop`, on `Stopped()`: `invokeLater` the window disposal (the old `closeDown`
   body minus `exit` and minus `requestStop`), then fall out of its own loop; the thread ends.
 - [ ] Delete the `requestStop()`/interrupt path — the `RuntimeException`-on-interrupt wart in
@@ -279,10 +438,19 @@ line — because they now describe the same program.
 
 ### Stage 5 — Seal the boundary and take stock
 
-- [ ] Retire `StatusDisplayHolder` + `DefaultStatusDisplay`: with the channel in place,
-  `InitHandlers`' bus handlers can put messages on the display channel directly (handed the channel, not reaching a
-  static). The `StatusDisplay` interface either retires with it or survives UI-side as the consumer's painting seam —
-  Rowan's call; either is defensible.
+- [ ] Retire `StatusDisplayHolder` + `DefaultStatusDisplay`: with the channel in place, `InitHandlers`' bus handlers can
+  put `CoreMessage`s on the core channel directly (handed the channel, not reaching a static). The `StatusDisplay`
+  interface either retires with it or survives UI-side as the consumer's painting seam — Rowan's call; either is
+  defensible.
+- [ ] **Split the handlers across the boundary** *(added 2026-08-10 by stage 1's design note)*. `InitHandlers` currently
+  does two jobs in one place: it subscribes to the bus, and it decides what the screen should look like. Those separate
+  here.
+    - Core side keeps the subscription and does one thing with it: wrap the event as the matching `CoreMessage` and put
+      it on the core channel. No Swing, no layout, no colour.
+    - UI side gains the rendering half — the `switch` over `GameEventType` that decides *where* and *how*, calling
+      `TermWin`/`Window` directly. This is C's arrangement: `game-event.c` broadcasts, `ui-*.c` draws.
+    - The test that this landed: `grep` for `GameEventType` in `frontend` returns hits, and `grep` for anything Swing in
+      the core's handler returns none.
 - [ ] **The boundary test** (Claude writes, both maintain): a test that walks `src/main` imports and enforces three
   rules, which stage 0 is what makes them this simple —
     - `frontend.**` may name `channel.**` and nothing else of ours (not `middle`, not `backend`);
@@ -294,8 +462,8 @@ line — because they now describe the same program.
 - [ ] Docs pass: `Java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a verdict
   paragraph recorded here, set-piece style — what it cost, what it paid.
 - [ ] **Marker for Chapter 3:** the input seams (`CommandGetterHolder`, `GameInputHolder`,
-  `DefaultCommandGetter`) are still holder-shaped and still uncalled. Their CSP form — the core sends a *request*
-  display message and blocks on the command channel for the reply — is the birth chapter's design set piece. Do not
+  `DefaultCommandGetter`) are still holder-shaped and still uncalled. Their CSP form — the core sends a request
+  `CoreMessage` and blocks on the UI channel for the reply — is the birth chapter's design set piece. Do not
   migrate them speculatively now; migrate them when birth gives them their first real caller.
 
 **Done when:** the boundary test is green and would have been red at every stage before 4.
@@ -304,18 +472,28 @@ line — because they now describe the same program.
 
 ## 5. Naming table (for consistency as you go)
 
-| Concept                              | Name                                                     | Not to be confused with                                    |
-|--------------------------------------|----------------------------------------------------------|------------------------------------------------------------|
-| UI→core transport                    | `commandChannel`                                         | `CommandQueue` (core-internal `cmdq` port — unchanged)     |
-| UI thread's inbox (core→UI + EDT→UI) | `displayChannel`                                         | the event bus (core-internal — unchanged)                  |
-| Display channel element type         | `UiInboxMessage` (sealed: `DisplayMessage` \| `UiEvent`) | —                                                          |
-| Core→UI message type                 | `DisplayMessage` (sealed)                                | `GameEventData` (bus payloads — unchanged)                 |
-| EDT→UI-thread raw event              | `UiEvent` (sealed)                                       | AWT's own `WindowEvent`/`KeyEvent` (never cross a channel) |
-| UI→core message type                 | `CoreCommand` (sealed)                                   | `Command`/`CommandCode` (game commands in the `cmdq`)      |
-| Core thread's runnable               | `Core` (was `GameRunner`)                                | `GameEngine` (unchanged)                                   |
-| UI thread's runnable                 | `UiLoop`                                                 | the EDT (Swing's own thread, never blocks on a channel)    |
-| The only package both halves import  | `channel` (transport + shared vocabulary)                | `backend` — IO only from stage 0 on, and UI-invisible      |
-| Shared vocabulary types              | `channel.colour`, `channel.strings`, `channel.utils`     | `middle.numerics` etc. (core-only, moved out of `backend`) |
+Everything crossing a channel is an `XMessage` named for its **sender**; each channel is named for the half that sends
+on it.
+
+| Concept                              | Name                                                                                                        | Not to be confused with                                             |
+|--------------------------------------|-------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------|
+| UI→core transport                    | `uiChannel` (carries `UIMessage`)                                                                           | `CommandQueue` (core-internal `cmdq` port — unchanged)              |
+| UI thread's inbox (core→UI + EDT→UI) | `coreChannel` (carries `ChannelMessage`)                                                                    | the event bus (core-internal — unchanged)                           |
+| Root of the protocol                 | `ChannelMessage` (sealed: `CoreMessage` \| `UIMessage`)                                                     | `middle.Message` — C's `msg`/`msgt` log, core-internal, not renamed |
+| Anything the core sends              | `CoreMessage` (sealed, ~one record per payload shape)                                                       | `GameEventData` — the shapes it carries, moved to `channel`         |
+| Anything the UI sends                | `UIMessage` (sealed, ~one record per payload shape)                                                         | `UiEventType`/`CommandCode` — the vocabularies it carries           |
+| What a message *means*               | a `GameEventType`/`UiEventType`/`CommandCode` field                                                         | the record type, which says only what *shape* the payload is        |
+| A raw AWT event                      | never crosses a channel                                                                                     | the `UIMessage` the EDT wraps it in and forwards                    |
+| A `term` drawing primitive           | never crosses a channel — UI-internal                                                                       | the `CoreMessage` whose handler calls it, UI-side                   |
+| Core thread's runnable               | `Core` (was `GameRunner`)                                                                                   | `GameEngine` (unchanged)                                            |
+| UI thread's runnable                 | `UiLoop`                                                                                                    | the EDT (Swing's own thread, never blocks on a channel)             |
+| The only package both halves import  | `channel` (transport + shared vocabulary)                                                                   | `backend` — IO only from stage 0 on, and UI-invisible               |
+| Shared vocabulary types              | `channel.colour`, `channel.strings`, `channel.utils`, plus the three meaning-enums and their payload shapes | `middle.numerics` etc. (core-only, moved out of `backend`)          |
+
+*Retired names, so a stale note is recognisable:* `commandChannel` → `uiChannel`; `displayChannel` → `coreChannel`;
+`UiInboxMessage` → `ChannelMessage`; `DisplayMessage` → `CoreMessage`; `UiEvent` and `CoreCommand` → `UIMessage`. (The
+root is `ChannelMessage`, not `Message`, because `middle.Message` — C's `message.c` — has the better claim on that name
+and five callers already.)
 
 ## 6. Primer menu
 
@@ -331,6 +509,9 @@ Page-length, on demand, tied to the code in front of us at the time — ask when
    (stage 2).
 5. **Thread lifecycle & shutdown** — non-daemon threads, `join`, why `System.exit` was hiding a race, poison pills
    (stage 3–4).
+6. **How C's front end is actually layered** — `game-event.c` broadcasting upward vs `ui-term.h`'s hooks drawing
+   downward, why `ui-*.c` sits between them, and what that says about which of the two a channel should carry (stage 1,
+   and again at stage 5 when the handlers split).
 
 ---
 

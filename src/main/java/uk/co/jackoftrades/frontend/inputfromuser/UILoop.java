@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.channel.UIChannel;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
 import uk.co.jackoftrades.channel.messages.ChannelMessage;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
@@ -31,6 +32,7 @@ import uk.co.jackoftrades.frontend.SwingUI;
 import uk.co.jackoftrades.frontend.splash.SplashScreen;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
+import javax.swing.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -60,9 +62,12 @@ import java.nio.file.Paths;
  * starts simply waits on the queue: the channel buffers, so there is no "was anyone listening yet?"
  * window of the kind that makes {@code InitHandlers}' registration timing load-bearing core-side.
  *
- * <p>The package name reads oddly for a class that mostly paints - {@code inputfromuser} was chosen
- * for the input half this loop will grow in stage 3, when the EDT starts forwarding window events
- * onto this same inbox. Until then everything here flows the other way.
+ * <p><b>Two writers, one inbox, and that is what the class is for.</b> The core sends events to be
+ * painted; the EDT sends window events it is not allowed to act on itself. Both land on the same
+ * queue, and this loop is the one thread that reads it - so it is also the one place where a raw
+ * AWT event becomes a message the core understands. The package name, {@code inputfromuser}, was
+ * chosen for that half of the job before it existed; the close handler below is its first member,
+ * and keypresses join it in Chapter 5.
  *
  * @author Rowan Crowther
  */
@@ -76,8 +81,8 @@ public class UILoop {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * This half's pair of channel ends: the receiver read below, and the sender stage 3 will use to
-     * answer the core.
+     * This half's pair of channel ends: the receiver the loop blocks on, and the sender it answers
+     * the core with.
      *
      * <p>Named for the half that owns it, not for a direction - the messages read from
      * {@code uiChannel.uiReceiver()} are the ones the <em>core</em> sent. Handed in rather than
@@ -138,7 +143,8 @@ public class UILoop {
     }
 
     /**
-     * Block on the inbox and act on whatever the core sends, forever. The thread's whole body.
+     * Block on the inbox and act on each message until one of them ends the loop. The thread's
+     * whole body.
      *
      * <p>The {@code switch} is over the sealed {@code ChannelMessage}, so the compiler checks the
      * arms cover the protocol: a new record added to {@code CoreMessage} makes this fail to compile
@@ -154,18 +160,25 @@ public class UILoop {
      * one run of the loop - and makes "a note before the title screen" a state this method can see
      * and report, rather than a null field somewhere else.
      *
-     * <p><b>Two arms are stage 3's, and are stubs on purpose.</b> {@code STOPPED} is where the
-     * shutdown handshake ends - the loop falls out and the thread finishes - and the
-     * {@code UIMessage} arm is for the window events the EDT will forward onto this same inbox.
-     * Neither can happen yet: nothing sends {@code STOPPED}, and with today's four channel views
-     * nothing UI-side can put a {@code UIMessage} on this queue at all, since the only sender into it
-     * is the core's. The arm still earns its place - it is what makes the {@code switch} exhaustive
-     * over {@code ChannelMessage} - and logs rather than ignoring, so if one does arrive early it
-     * says so.
+     * <p><b>Two of the arms are the shutdown handshake, and they are its middle and its end.</b>
+     * {@code WindowCloseRequested} is the EDT saying what the player did; this loop turns it into
+     * {@code SAVE_AND_STOP} for the core, which is the whole of the translation the EDT was kept
+     * from doing itself. {@code STOPPED} is the core's reply, and the only message that ends this
+     * loop: the windows go, the method returns, and the thread finishes. Ending by returning
+     * rather than by being killed is the point of the exchange - see
+     * {@code docs/Architecture.md}'s shutdown sequence.
      *
-     * <p>An interrupt is logged and the loop continues, which is wrong but harmless while nothing
-     * interrupts this thread. Stage 3 replaces it: an interrupt then means "stop", and falling out
-     * of the loop is how the thread ends.
+     * <p><b>The last arm is a message that should never arrive.</b> A {@code UIMessage} that is
+     * not the close request came from this half and belongs on the core's queue, so it means the
+     * wiring is wrong rather than that the sender is early. It throws instead of logging on,
+     * because a misrouted message on a queue nobody else reads is lost silently otherwise, and a
+     * loop that quietly drops half the protocol is the hardest kind of channel bug to find. The
+     * arm is also what makes the {@code switch} exhaustive over {@code ChannelMessage}.
+     *
+     * <p>An interrupt ends the loop, which is what a thread being interrupted means anywhere it
+     * is not being used as a signal - and nothing interrupts this thread, so reaching it at all is
+     * a bug worth the log line. Note that the windows are not disposed on that path: an interrupt
+     * is a failure, not a shutdown, and the two should not be made to look alike.
      *
      * @author Rowan Crowther
      */
@@ -181,12 +194,32 @@ public class UILoop {
                     case CoreMessage.LifecycleCoreMessage lifecycleCoreMessage -> {
                         CoreLifecycleEvent event = lifecycleCoreMessage.event();
                         switch (event) {
-                            // Stage 3: dispose the windows and fall out of the loop, ending the
-                            // thread. The core has finished saving by the time this arrives - that
-                            // is what the handshake is for.
-                            case STOPPED -> { // Stop the thread
+                            // The core has finished and its thread is ending, so the windows may
+                            // now go. The hop onto the EDT is required - dispose() is a Swing call
+                            // and this is not the EDT - and invokeLater rather than invokeAndWait
+                            // because there is nothing left to wait for: returning ends this
+                            // thread, and the disposal runs on its own.
+                            //
+                            // No System.exit follows, deliberately. Once the windows are gone the
+                            // EDT has nothing to keep it alive, so the JVM ends by running out of
+                            // threads rather than by being told to.
+                            case STOPPED -> {
+                                SwingUtilities.invokeLater(() -> {
+                                    swingUI.closeDown();
+                                });
+                                return;
                             }
                         }
+                    }
+
+                    // The EDT's report that the player closed the window, turned into the request
+                    // the core understands. This is the one place that translation happens, and it
+                    // happens on this thread because the EDT must not be the one to wait for what
+                    // comes back.
+                    case UIMessage.WindowCloseRequested uiMessage -> {
+                        UILifecycleEvent event = UILifecycleEvent.SAVE_AND_STOP;
+                        UIMessage uiMessageToSend = new UIMessage.LifecycleUIMessage(event);
+                        uiChannel.uiSender().send(uiMessageToSend);
                     }
 
                     case CoreMessage.SimpleCoreMessage simpleCoreMessage -> {
@@ -232,11 +265,20 @@ public class UILoop {
                         }
                     }
 
-                    case UIMessage m -> logger.warn("UI message on the UI inbox: {}", m);
+                    // Anything else this half sent is misrouted: it should have gone to the core's
+                    // inbox. Loud rather than ignored - nothing else reads this queue, so a
+                    // dropped message here disappears without trace.
+                    case UIMessage m -> {
+                        logger.warn("UI message on the UI inbox: {}", m);
+                        throw new RuntimeException("UI message on the UI inbox");
+                    }
                 }
 
             } catch (InterruptedException e) {
+                // Not a shutdown path: nothing interrupts this thread, so this is a failure. The
+                // windows are left alone - only the STOPPED arm above disposes them.
                 logger.error("Interrupted receive in coreChannel", e);
+                break;
             }
         }
     }

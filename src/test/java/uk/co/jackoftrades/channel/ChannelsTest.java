@@ -27,6 +27,7 @@ import uk.co.jackoftrades.channel.messages.ChannelMessage;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 
+import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -43,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
- * Unit tests for the transport itself — {@link Channels} and the four views onto its two queues.
+ * Unit tests for the transport itself — {@link Channels} and the five views onto its two queues.
  *
  * <p>What is worth testing here is not the queues, which are the JDK's and already work, but the
  * <b>wiring</b>: that a sender and the receiver meant to read it hold the same queue object.
@@ -168,8 +170,8 @@ class ChannelsTest {
     }
 
     /**
-     * The four views must be wired onto exactly two queues, crossed so that each sender feeds the
-     * other half's receiver.
+     * The views must be wired onto exactly two queues, crossed so that each sender feeds the
+     * other half's receiver. The EDT's end has a nest of its own, below.
      *
      * @author Rowan Crowther
      */
@@ -268,6 +270,122 @@ class ChannelsTest {
             assertSame(channels.coreChannel(), channels.coreChannel());
             assertSame(channels.coreChannel().coreSender(), channels.coreChannel().coreSender());
             assertSame(channels.uiChannel().uiReceiver(), channels.uiChannel().uiReceiver());
+        }
+    }
+
+    /**
+     * The EDT's end: the third view, and the narrowest.
+     *
+     * <p>Its wiring is the one most easily got wrong, because it is the one that looks wrong. The
+     * EDT is part of the UI half, so the obvious reading is that it should write to the core; it
+     * writes to the <em>UI thread's own inbox</em> instead, because that is the only queue anyone
+     * on this side is waiting on. A close click posted to the core's queue would still be
+     * delivered - to a thread that has no idea what to do with it - and the window would simply
+     * never shut. These tests pin the counter-intuitive direction so it survives a tidy-up.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class EdtView {
+
+        /**
+         * A window event reaches the UI thread. Without this the close button does nothing at all.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void edtSenderReachesUiReceiver() throws InterruptedException {
+            Channels channels = Channels.create();
+            UIMessage closed = new UIMessage.WindowCloseRequested();
+
+            channels.edtChannel().edtSender().send(closed);
+
+            assertEquals(closed, channels.uiChannel().uiReceiver().receive());
+        }
+
+        /**
+         * And does not reach the core. The core has an arm for this message and ignores it, so a
+         * crossed wire here would not throw or hang - the click would be swallowed silently and
+         * the game would look frozen rather than broken.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void edtSenderDoesNotReachTheCore() throws InterruptedException {
+            Channels channels = Channels.create();
+
+            channels.edtChannel().edtSender().send(new UIMessage.WindowCloseRequested());
+
+            assertNothingArrives(channels.coreChannel().coreReceiver(), "a raw window event");
+        }
+
+        /**
+         * The EDT writes to the same queue the core does, so the UI thread has one inbox rather
+         * than two to choose between - which is what lets its loop be a single blocking receive.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void bothWritersShareTheUiInboxAndKeepTheirOrder() throws InterruptedException {
+            Channels channels = Channels.create();
+            UIMessage closed = new UIMessage.WindowCloseRequested();
+
+            channels.coreChannel().coreSender().send(ENTER_INIT);
+            channels.edtChannel().edtSender().send(closed);
+
+            Receiver<ChannelMessage> inbox = channels.uiChannel().uiReceiver();
+            assertEquals(ENTER_INIT, inbox.receive());
+            assertEquals(closed, inbox.receive());
+        }
+
+        /**
+         * The EDT is given no way to read anything, which is the containment the record exists for
+         * rather than a convenience it happens to lack. A receiver added here would compile and
+         * work; the first listener to call it would block the event dispatch thread and freeze the
+         * window, and nothing else in the build would object. So the absence is asserted.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void theEdtIsGivenNoReceiver() {
+            Channels channels = Channels.create();
+
+            for (RecordComponent component : EDTChannel.class.getRecordComponents()) {
+                assertFalse(Receiver.class.isAssignableFrom(component.getType()),
+                        "the EDT must not be handed a receiver: " + component.getName());
+            }
+
+            assertNotNull(channels.edtChannel().edtSender());
+        }
+
+        /**
+         * One EDT sender per set, handed out as constructed - the window listener keeps a
+         * reference to it for the life of the window.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void theEdtSenderIsTheSameViewEachTime() {
+            Channels channels = Channels.create();
+
+            assertSame(channels.edtChannel(), channels.edtChannel());
+            assertSame(channels.edtChannel().edtSender(), channels.edtChannel().edtSender());
+        }
+
+        /**
+         * Posting never waits. This matters more here than on the other senders: this call happens
+         * on the EDT, so a send that blocked would freeze the window it was trying to close.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        void postingFromTheEdtDoesNotWaitForAReader() {
+            Channels channels = Channels.create();
+            Sender<UIMessage> sender = channels.edtChannel().edtSender();
+
+            for (int i = 0; i < 1_000; i++) {
+                sender.send(new UIMessage.WindowCloseRequested());
+            }
         }
     }
 

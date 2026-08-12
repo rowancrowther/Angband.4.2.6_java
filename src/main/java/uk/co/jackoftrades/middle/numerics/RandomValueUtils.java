@@ -56,38 +56,68 @@ public class RandomValueUtils {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Generates a random unsigned integer number along a uniform distribution of 0 <= X < max - 1
+     * Generates a random unsigned integer number along a uniform distribution of {@code 0 <= X < max},
+     * the port of C's {@code Rand_div} ({@code z-rand.c:168}).
      *
-     * @param max the top of the distribution range
-     * @return A random number between 0 and max - 1
+     * <p>A {@code max} of 0 or 1 returns 0 rather than drawing, matching C's {@code if (m <= 1)
+     * return (0);} — both have exactly one possible answer, and call sites pass them freely from
+     * data-driven values.
+     *
+     * <p>A negative {@code max} is rejected. C cannot represent one: {@code Rand_div} takes a
+     * {@code uint32_t}, so a negative argument wraps to a value above {@code 0x10000000} and trips
+     * the assertion on the next line. The port's {@code int} parameter makes the same call site bug
+     * representable, so it is caught here instead — the alternative being to fold it into the
+     * {@code max <= 1} case and return 0, which would turn a caller's arithmetic error into a
+     * plausible-looking roll. This also restores the behaviour of the underlying
+     * {@link java.util.Random#nextInt(int, int)}, which rejects a bound below its origin.
+     *
+     * <p>Note that the port does not reproduce C's rejection-sampling partition scheme, which
+     * exists to strip bias from the WELL and LCRNG generators; the JDK generator is already
+     * unbiased. Draws therefore do not match C's for the same seed.
+     *
+     * @param max the top of the distribution range, exclusive
+     * @return A random number between 0 and max - 1, or 0 if {@code max} is 0 or 1
+     * @throws IllegalArgumentException if {@code max} is negative
      */
     public static int randDiv(int max) {
+        if (max < 0)
+            throw new IllegalArgumentException("max must be a non-negative integer");
         if (max <= 1) return 0;
         return random.nextInt(0, max);
     }
 
     /**
-     * Generates a random unsigned integer number along a uniform distribution of 0 <= X < x
+     * Generates a random unsigned integer number along a uniform distribution of {@code 0 <= X < max}
      *
-     * @param max the maximum value we are looking for
-     * @return a random number between 0 and max - 1
+     * <p>C's {@code randint0} ({@code z-rand.h:77}) is a bare cast over {@code Rand_div}, and this
+     * is the same: it delegates to {@link #randDiv} and inherits its handling of the degenerate and
+     * negative bounds.
+     *
+     * @param max the maximum value we are looking for, exclusive
+     * @return a random number between 0 and max - 1, or 0 if {@code max} is 0 or 1
+     * @throws IllegalArgumentException if {@code max} is negative
      */
     public static int randInt0(int max) {
         return randDiv(max);
     }
 
     /**
-     * Generates a random unsigned integer number along a uniform distribution of 0 < X <= x
+     * Generates a random unsigned integer number along a uniform distribution of {@code 0 < X <= max}
      *
-     * @param max the maximum value we are looking for
-     * @return a random number between 1 and max
+     * <p>C's {@code randint1} ({@code z-rand.h:85}) adds one to {@code Rand_div}, and so does this.
+     * The shift rides on top of {@link #randDiv}'s degenerate case, so a {@code max} of 0 or 1
+     * yields 1 — which is why a one-sided die always rolls one, rather than rolling nothing.
+     *
+     * @param max the maximum value we are looking for, inclusive
+     * @return a random number between 1 and max, or 1 if {@code max} is 0 or 1
+     * @throws IllegalArgumentException if {@code max} is negative
      */
     public static int randInt1(int max) {
         return randDiv(max) + 1;
     }
 
     /**
-     * Generates a random unsigned number which is between centre - diff <= X < centre + diff
+     * Generates a random unsigned number which is between {@code centre - diff <= X < centre + diff}
      *
      * @param centre the centre of where in the spread we want the random number to be
      * @param diff   the right and left bounds of the random number
@@ -230,10 +260,10 @@ public class RandomValueUtils {
     }
 
     /**
-     * Calculates a random integer x such that lowest <= x < highest, from a uniform distribution
+     * Calculates a random integer x such that {@code lowest <= x < highest}, from a uniform distribution
      *
      * @param lowest  The lowest possible number to return
-     * @param highest The highest possible number to return, less 1 (i.e. x <= highest - 1)
+     * @param highest The highest possible number to return, less 1 (i.e. {@code x <= highest - 1})
      * @return The random number
      */
     public static int randRange(int lowest, int highest) {

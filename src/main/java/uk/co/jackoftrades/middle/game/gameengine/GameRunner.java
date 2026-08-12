@@ -20,6 +20,9 @@ package uk.co.jackoftrades.middle.game.gameengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.channel.CoreChannel;
+import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
+import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
 
 /**
@@ -28,11 +31,12 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * repainting and input never blocks the game.
  *
  * <p>This is the front end's single handle on the middle end. {@code SwingUI}
- * holds one of these and drives it with {@link #start(CoreChannel)} and
- * {@link #requestStop()}; it imports nothing else from the middle end, which is
- * what keeps the boundary between the two halves one object wide.
+ * holds one of these and drives it with {@link #start(CoreChannel)} — one method,
+ * now that stopping is a message rather than a call; it imports nothing else from
+ * the middle end, which is what keeps the boundary between the two halves one
+ * object wide.
  *
- * <p><b>On its way out as a handle.</b> {@code start} now takes the core's end of
+ * <p><b>On its way out as a handle.</b> {@code start} takes the core's end of
  * the channel, so the front end hands this class the means to talk back rather
  * than being talked to directly. Stage 4 finishes the job: this becomes the core
  * thread's own {@code Runnable}, constructed by {@code main()} with its channel
@@ -44,12 +48,13 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * input inside the command hook. Splitting the loop onto its own thread is a
  * port-only decision forced by Swing, which reserves the EDT for the UI.
  *
- * <p><b>Half wired.</b> {@link #gameLoop()} now registers the start-up handlers
- * and runs the data load on this thread, so the engine's mutable state is
- * confined to it by construction - but once the load finishes it falls into a
- * bare timing loop with nothing to do. Stage 3 replaces that with a receive on
- * the UI channel, at which point the thread spends its idle time blocked on a
- * queue rather than sleeping.
+ * <p><b>Wired at both ends, with nothing in the middle yet.</b> {@link #gameLoop()}
+ * registers the start-up handlers and runs the data load on this thread, so the
+ * engine's mutable state is confined to it by construction; it then blocks on the
+ * core's inbox and answers the shutdown handshake. What is still missing is the
+ * game: the loop understands the two lifecycle messages and nothing else, because
+ * nothing else is sent yet. Commands arrive with Chapter 5 and the save with
+ * Chapter 8, and both land as further arms of the same switch.
  *
  * @author Rowan Crowther
  */
@@ -57,28 +62,34 @@ public class GameRunner {
     private static final Logger logger = LogManager.getLogger(GameRunner.class);
 
     /**
-     * The game thread, created fresh by each {@link #start()} call. Null until
-     * the first {@code start()}, so {@link #requestStop()} must not be called
-     * before then.
+     * The game thread, created fresh by each {@link #start(CoreChannel)} call. Null
+     * until the first {@code start()}.
+     *
+     * <p>Non-daemon, being an ordinary {@code new Thread(...)}, which is what makes
+     * the handshake's promise real: the JVM cannot exit while this thread is still
+     * saving, because a live non-daemon thread keeps it alive.
      *
      * @author Rowan Crowther
      */
     private Thread thread;
     /**
-     * Whether {@link #gameLoop()} should keep running - the flag
-     * {@link #requestStop()} clears to ask the loop to finish.
+     * Whether {@link #gameLoop()} should keep running - cleared by the loop itself
+     * when the front end asks it to stop.
      *
-     * <p>{@code volatile} because it is written from the EDT (via
-     * {@code requestStop()}, from the window-closing listener) and read from the
-     * game thread. Without it the write is not guaranteed to ever become visible
-     * to the reader, and the loop could spin on a stale {@code true} forever.
+     * <p>Not {@code volatile}, and no longer needs to be. It was, when the EDT set
+     * it through a {@code requestStop()} that has since gone: a flag written on one
+     * thread and read on another has no guarantee of ever being seen without it.
+     * Now that the stop arrives as a message, the only write and the only read are
+     * both on the game thread, so ordinary field access is enough — the flag has
+     * become bookkeeping local to the loop rather than a means of communication.
      *
      * @author Rowan Crowther
      */
-    private volatile boolean running = false;
+    private boolean running = false;
 
     /**
-     * The middle end this runner drives, obtained in {@link #start()} and used on the game thread.
+     * The middle end this runner drives, obtained in {@link #start(CoreChannel)} and used on the
+     * game thread.
      *
      * <p>Built in {@code start()} rather than in {@link #gameLoop()} deliberately: constructing the
      * engine replaces the event bus, and the handlers registered at the top of the loop have to go
@@ -91,13 +102,15 @@ public class GameRunner {
 
     /**
      * The core's pair of channel ends: the sender it reports to the other half on,
-     * and the receiver stage 3 turns {@link #gameLoop()} into a loop over.
+     * and the receiver {@link #gameLoop()} is a loop over.
      *
-     * <p>Held but not yet read. The start-up traffic that already crosses goes out
-     * through {@code ChannelStatusDisplay}, which the front end registers in the
-     * holder with its own copy of this sender - so today the core has two routes to
-     * one queue and uses the other one. Stage 5 removes the holder and this becomes
-     * the only route; stage 3 gives the receiving end its first reader.
+     * <p>The receiving end is this class's whole knowledge of the front end - the
+     * loop waits on it and never calls the UI at all. The sending end is a second
+     * route to the UI's inbox rather than the only one: the start-up traffic still
+     * goes out through {@code ChannelStatusDisplay}, which the front end registers
+     * in the holder with its own copy of this sender. So the core has two routes to
+     * one queue and uses whichever the caller happened to be given. Stage 5 removes
+     * the holder and leaves this as the only route.
      *
      * <p>Assigned in {@link #start(CoreChannel)} before {@link Thread#start()},
      * which publishes it safely to the game thread without needing
@@ -111,7 +124,10 @@ public class GameRunner {
      * Start the game thread and begin running {@link #gameLoop()} on it.
      *
      * <p>{@link #running} is set before {@link Thread#start()} so the loop cannot
-     * observe {@code false} and exit immediately on its first test.
+     * observe {@code false} and exit immediately on its first test. Every field the
+     * loop reads is likewise assigned before the thread exists, which is what makes
+     * their lack of {@code volatile} safe: starting a thread publishes everything
+     * written before it to that thread.
      *
      * @param channel the core's pair of channel ends, kept for the loop to use
      * @author Rowan Crowther
@@ -143,35 +159,37 @@ public class GameRunner {
     }
 
     /**
-     * Ask the game thread to stop: clear {@link #running} so the loop's next test
-     * fails, then interrupt the thread so it does not sit out a sleep first.
+     * The game thread's body: load the data, then block on the core's inbox and act
+     * on what the front end sends, until it sends the message that ends the loop.
      *
-     * <p>Called from the EDT by the window-closing listener. It only
-     * <em>requests</em> the stop - it does not join the thread, so the thread may
-     * still be finishing when this returns.
+     * <p>The port of C's {@code play_game()} ({@code src/ui-game.c}), at the stage
+     * where only its skeleton exists. C initialises and then alternates between
+     * fetching a command and running the game world; this initialises and then waits
+     * for messages, which is the same shape with a queue where C has a blocking call
+     * into the display module. The alternation itself is Chapter 5's.
      *
-     * @author Rowan Crowther
-     */
-    public void requestStop() {
-        running = false;
-        thread.interrupt();
-    }
-
-    /**
-     * The game thread's body: loop until {@link #running} is cleared.
+     * <p><b>Blocked, not spinning.</b> {@code receive()} parks the thread until
+     * something arrives, so an idle game costs no CPU at all - the arrangement the
+     * placeholder {@code sleep} loop this replaced was standing in for. The flip side
+     * is that the thread is unresponsive to anything that is not a message, which is
+     * the point: there is no longer any other way to reach it.
      *
-     * <p>A placeholder. It currently only sleeps in 5ms slices to keep the thread
-     * alive and idle; the real body is the port of C's {@code play_game()}
-     * ({@code src/ui-game.c}) - initialise, then alternate between fetching a
-     * command and running the game world until the player dies or quits.
+     * <p><b>The shutdown handshake, core half.</b> {@code SAVE_AND_STOP} is answered
+     * with {@code STOPPED} and then the loop ends, in that order, so the reply is on
+     * the queue before this thread stops existing. The front end is waiting for that
+     * reply before it disposes anything, which is what makes "the save finished
+     * before the window went" a guarantee rather than a race - and why nothing here
+     * calls {@code System.exit}. The thread simply returns; the JVM exits when the
+     * last non-daemon thread does. (There is nothing to save yet. When there is, it
+     * goes between the two lines below, and the guarantee is already in place for
+     * it.)
      *
-     * <p>Note that in practice the loop presently ends by exception rather than by
-     * the flag: {@link #requestStop()} interrupts the sleep, and the resulting
-     * {@link InterruptedException} is rethrown wrapped in a
-     * {@link RuntimeException}, killing the thread before the {@code while} test is
-     * reached. That is survivable only because the loop holds no state and the
-     * process is exiting anyway; a real body will need to catch the interrupt and
-     * fall out of the loop cleanly instead.
+     * <p>An interrupt is treated as a hard stop rather than as a request: nothing
+     * interrupts this thread today, so an interrupt means something unexpected has
+     * happened, and the loop logs and gives up rather than pretending it can carry
+     * on. Note that it gives up <em>without</em> sending {@code STOPPED} - the UI
+     * would then wait forever, which is a real gap and the reason interrupting this
+     * thread is not part of any shutdown path.
      *
      * @author Rowan Crowther
      */
@@ -182,9 +200,40 @@ public class GameRunner {
 
         while (running) {
             try {
-                Thread.sleep(5);
+                UIMessage uiMessage = coreChannel.coreReceiver().receive();
+
+                // Exhaustive over the sealed UIMessage, so a new record added to the protocol
+                // breaks this switch at compile time rather than being silently ignored at run
+                // time. The inner switch over UILifecycleEvent is exhaustive for the same reason.
+                switch (uiMessage) {
+                    case UIMessage.LifecycleUIMessage lifecycleUIMessage -> {
+                        switch (lifecycleUIMessage.event()) {
+                            // Reply first, then leave: the STOPPED must be on the queue before
+                            // this thread ends, because it is what releases the front end to
+                            // dispose the windows. The save goes above the send, in Chapter 8.
+                            case SAVE_AND_STOP -> {
+                                coreChannel.coreSender()
+                                        .send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+                                running = false;
+                            }
+                            // Nothing to do with it yet - the window is up and the data is
+                            // already loaded by the time it arrives. This is where character
+                            // birth goes in Chapter 3.
+                            case START -> logger.debug("Start message received");
+                        }
+                    }
+                    // Not ours: the EDT posts these to the UI thread's inbox, not to this one.
+                    // The arm exists to make the switch exhaustive, and ignores rather than
+                    // failing because a raw window event means nothing to the core in any case.
+                    case UIMessage.WindowCloseRequested ignored -> {
+                    }
+                }
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                // Nothing interrupts this thread, so reaching here means something unexpected
+                // did. Give up rather than continue - but note the UI is left waiting.
+                logger.error("Game loop interrupted");
+                running = false;
+                return;
             }
         }
     }

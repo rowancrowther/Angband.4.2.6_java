@@ -21,8 +21,12 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.channel.Channels;
-import uk.co.jackoftrades.channel.CoreChannel;
+import uk.co.jackoftrades.channel.EDTSender;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
+import uk.co.jackoftrades.channel.messages.ChannelMessage;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
+import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.inputfromuser.UILoop;
@@ -89,7 +93,11 @@ public class SwingUI {
     private Window activeWindow;
     /**
      * The game thread's owner, and this class's entire view of the middle end: started at the end
-     * of {@link #init} and asked to stop by {@link #closeDown}.
+     * of {@link #init}, and never told anything afterwards.
+     *
+     * <p>Write-once, in effect - the handle is used for exactly one call. Stopping the core used
+     * to be a second call on it; it is now a message, which is why the field's remaining job is
+     * small enough for stage 4 to delete it outright.
      *
      * @author Rowan Crowther
      */
@@ -112,11 +120,18 @@ public class SwingUI {
      * The two queues the halves talk over, built here temporarily.
      *
      * <p>{@code Channels.create()} belongs in {@code main()} - it is the one place that can hand
-     * each half its own ends and nothing more - and stage 4 moves it there. Until then this class
-     * builds the pair and passes the core's half on with {@code gameRunner.start()}, which is the
+     * each holder its own ends and nothing more - and stage 4 moves it there. Until then this class
+     * builds the set and passes the core's half on with {@code gameRunner.start()}, which is the
      * only reason the field exists: the constructor needs somewhere to keep them until {@link #init}
      * runs. Building them here is safe but says the wrong thing about ownership, since the front end
      * is holding the core's ends on its behalf.
+     *
+     * <p>Three of the ends are used from here, on two different threads, and the difference is
+     * worth reading: {@code uiChannel().uiSender()} in {@link #sendStartToCore} runs on whichever
+     * thread called {@link #init}, while {@code edtChannel().edtSender()} in the window listener
+     * runs on the EDT. The listener is given the narrow end deliberately - it can post and cannot
+     * wait, which is the property that keeps a close click from blocking the event dispatch
+     * thread.
      *
      * @author Rowan Crowther
      */
@@ -155,22 +170,161 @@ public class SwingUI {
         activeWindow = main;
         this.gameRunner = gameRunner;
     }
+    /**
+     * The game window's window events. Only {@code windowClosing} does anything; the rest are
+     * generated overrides that call {@code super} and could go.
+     *
+     * @author Rowan Crowther
+     */
+    private WindowListener windowListener = new WindowAdapter() {
+        /**
+         * The player closed the window: report it, and stop. The first step of the shutdown
+         * handshake and the only one taken on the EDT.
+         *
+         * <p>This runs at all only because the frame is {@code DO_NOTHING_ON_CLOSE} - the close
+         * button is routed here rather than disposing the window, so there is a chance to save
+         * before the display goes.
+         *
+         * <p><b>Forwarding, and nothing else.</b> The whole body is one message onto the UI
+         * thread's inbox. It decides nothing - not whether to save, not whether to exit, not even
+         * whether the window really should close - because deciding here would mean deciding on
+         * the EDT, and every interesting answer involves waiting for the core. A listener that
+         * waits is a frozen window. So the EDT states the fact and the UI thread, which is allowed
+         * to block, runs the exchange: see {@code UILoop.loop} for the other three steps.
+         *
+         * <p>The {@link WindowEvent} itself does not cross. It is a Swing object belonging to this
+         * thread, and the channel exists to keep exactly that kind of thing on the side it came
+         * from; what crosses is a record saying what happened.
+         *
+         * @param e the close event, not inspected - there is one window, and its identity is
+         *          implied
+         * @author Rowan Crowther
+         */
+        public void windowClosing(WindowEvent e) {
+            UIMessage closingDown = new UIMessage.WindowCloseRequested();
+            channels.edtChannel().edtSender().send(closingDown);
+        }
+
+        /**
+         * Invoked when a window has been opened.
+         *
+         * @param e
+         */
+        @Override
+        public void windowOpened(WindowEvent e) {
+            super.windowOpened(e);
+        }
+
+        /**
+         * Invoked when a window has been closed.
+         *
+         * @param e
+         */
+        @Override
+        public void windowClosed(WindowEvent e) {
+            super.windowClosed(e);
+        }
+
+        /**
+         * Invoked when a window is iconified.
+         *
+         * @param e
+         */
+        @Override
+        public void windowIconified(WindowEvent e) {
+            super.windowIconified(e);
+        }
+
+        /**
+         * Invoked when a window is de-iconified.
+         *
+         * @param e
+         */
+        @Override
+        public void windowDeiconified(WindowEvent e) {
+            super.windowDeiconified(e);
+        }
+
+        /**
+         * Invoked when a window is activated.
+         *
+         * @param e
+         */
+        @Override
+        public void windowActivated(WindowEvent e) {
+            super.windowActivated(e);
+        }
+
+        /**
+         * Invoked when a window is de-activated.
+         *
+         * @param e
+         */
+        @Override
+        public void windowDeactivated(WindowEvent e) {
+            super.windowDeactivated(e);
+        }
+
+        /**
+         * Invoked when a window state is changed.
+         *
+         * @param e
+         * @since 1.4
+         */
+        @Override
+        public void windowStateChanged(WindowEvent e) {
+            super.windowStateChanged(e);
+        }
+
+        /**
+         * Invoked when the Window is set to be the focused Window, which means
+         * that the Window, or one of its subcomponents, will receive keyboard
+         * events.
+         *
+         * @param e
+         * @since 1.4
+         */
+        @Override
+        public void windowGainedFocus(WindowEvent e) {
+            super.windowGainedFocus(e);
+        }
+
+        /**
+         * Invoked when the Window is no longer the focused Window, which means
+         * that keyboard events will no longer be delivered to the Window or any of
+         * its subcomponents.
+         *
+         * @param e
+         * @since 1.4
+         */
+        @Override
+        public void windowLostFocus(WindowEvent e) {
+            super.windowLostFocus(e);
+        }
+    };
 
     /**
-     * Shut the game down: dispose every window, ask the game thread to stop, and exit.
+     * Dispose every window. The last step of the shutdown handshake, and now the whole of it that
+     * happens front-end side.
      *
-     * <p>Reached from the window-closing listener. The window is set to
-     * {@code DO_NOTHING_ON_CLOSE} precisely so the close button arrives here instead of quietly
-     * disposing the frame, which is the port's equivalent of C routing a quit through
-     * {@code quit_aux} rather than letting the display vanish underneath the game.
+     * <p><b>Must run on the EDT.</b> {@link java.awt.Window#dispose()} touches Swing state, and
+     * this method is called from the UI thread's loop, so the call is wrapped in
+     * {@code invokeLater} by its caller rather than here - the same convention the painting
+     * methods follow. Called directly from another thread it would be a race, not an error, which
+     * is the kind that shows up once and never reproduces.
      *
-     * <p>The stop is only requested, never waited for: {@link System#exit} follows immediately, so
-     * the game thread is killed wherever it happens to be rather than finishing. That is
-     * survivable only while the loop holds no state worth saving. Once it does, this needs to join
-     * the thread - or hand the exit to it - before the process goes.
+     * <p><b>Three things this deliberately no longer does.</b> It does not stop the game thread:
+     * that thread has already stopped itself, which is what the {@code STOPPED} message the caller
+     * just received means. It does not call {@link System#exit}: with every window disposed the
+     * EDT has nothing left to keep it alive, so the JVM exits on its own once the last non-daemon
+     * thread finishes. And it is no longer the window listener's target - the listener posts a
+     * message and this runs at the end of the exchange that message begins.
      *
-     * <p>Exits directly rather than through {@code QuitAux}, so nothing is logged on the way out
-     * and the front end does not get the cleanup hook C gives it.
+     * <p>The window is set to {@code DO_NOTHING_ON_CLOSE} to make that exchange possible: the
+     * close button starts the handshake instead of quietly disposing the frame, which is the
+     * port's equivalent of C routing a quit through {@code quit_aux} rather than letting the
+     * display vanish underneath the game. What C does inside {@code quit_aux} - logging, the front
+     * end's cleanup hook - has no equivalent here yet.
      *
      * @author Rowan Crowther
      */
@@ -178,90 +332,27 @@ public class SwingUI {
         for (Window window : windows) {
             window.dispose();
         }
-        gameRunner.requestStop();
-        System.exit(0);
     }
-
+    
     /**
-     * Bring the front end up: size the window from the chosen font, wire the close handler, start
-     * the game thread, and show it. The port of a {@code main-*.c} module's {@code init_*}
-     * function, which C calls before {@code init_angband()} so the display exists to report
-     * loading errors on.
+     * Tell the core the front end is up and it may begin. The document's step 1.5, and the first
+     * message ever to cross in this direction.
      *
-     * <p>The metrics drive everything. Angband is written against a character grid, so the window
-     * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
-     * of C asking a terminal how big it is. {@code TerminalVector} is preferred and the platform
-     * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
+     * <p>Sent after the window is visible, so the core's first act - loading the data and
+     * reporting its progress - has somewhere to be painted. Nothing enforces that ordering, and
+     * nothing needs to: the channel buffers, so a message sent early would wait rather than be
+     * lost. Sending it late is a choice about what the player sees, not about correctness.
      *
-     * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
-     * can never arrive before there is something to handle it, and {@code gameRunner.start()}
-     * comes last, so the game thread cannot outlive a failure to build the display. An exception
-     * before {@code setVisible} leaves the JVM alive with no window on screen, because
-     * {@code pack()} has already made the frame displayable and so kept the EDT running.
+     * <p>Sent before {@code gameRunner.start()} for the same reason, and safely: the queue exists
+     * before either thread does, so a message can be put on it while the reader is still to be
+     * created.
      *
-     * <p><b>The last three lines are the whole of the channel wiring.</b> A
-     * {@link ChannelStatusDisplay} goes into the holder, so the core's start-up calls become messages
-     * instead of paint calls; the {@code angband-display} thread starts, so something is reading
-     * this half's inbox; and only then does the game thread start. The order between the last two
-     * matters less than it looks - the channel buffers, so a message sent before the consumer starts
-     * waits rather than being lost - but starting the reader first keeps the splash screen prompt and
-     * costs nothing.
-     *
-     * <p>Registering a core-side object into a core-side holder from here is the transitional
-     * shortcut described on the class, and the line stage 4 deletes: once {@code main()} owns the
-     * channels, the core is handed its own sending end and this half never names it.
-     *
-     * @param options the parsed command line; stored, not yet acted on
      * @author Rowan Crowther
      */
-    public void init(StartupOptions options) {
-        Colour.init();
-
-        startupOptions = options;
-
-        List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
-        Font font;
-        int fontSize = 24;
-        if (fontNames.contains("TerminalVector"))
-            font = new Font("TerminalVector", Font.PLAIN, fontSize);
-        else
-            font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
-
-        JPanelArea.font = font;
-
-        FontMetrics metrics = activeWindow.getFontMetrics(font);
-        int charWidth = metrics.charWidth('M');
-        int charHeight = metrics.getHeight();
-
-        JPanelArea.charAscent = metrics.getAscent();
-        JPanelArea.charHeight = charHeight;
-        JPanelArea.charWidth = charWidth;
-
-        JFrame.setDefaultLookAndFeelDecorated(true);
-        activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        activeWindow.setSize(80 * charWidth, 24 * charHeight);
-        activeWindow.setTitle("Test Window");
-        activeWindow.addWindowListener(windowListener);
-
-        JPanelArea mainPanel = new JPanelArea();
-        mainPanel.setToolTipText("Main Panel");
-        mainPanel.setPreferredSize(new Dimension(80 * charWidth, 24 * charHeight));
-        activeWindow.add(mainPanel);
-        activeWindow.pack();
-        activeWindow.setLocationRelativeTo(null);
-
-        activeWindow.setVisible(true);
-
-        // Give the core a StatusDisplay that sends rather than paints. This replaces the front end's
-        // own SplashScreen in the holder, and is the single line that puts the core's start-up
-        // traffic on the channel.
-        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(channels.coreChannel().coreSender()));
-
-        // Start reading this half's inbox. Non-daemon, so from stage 3 the thread's own exit is part
-        // of the shutdown rather than something the JVM has to be told to ignore.
-        new Thread(uiLoop::loop, "angband-display").start();
-
-        gameRunner.start(channels.coreChannel());
+    private void sendStartToCore() {
+        UIMessage.LifecycleUIMessage uiMessage = new UIMessage.LifecycleUIMessage(UILifecycleEvent.START);
+        channels.uiChannel().uiSender()
+                .send(uiMessage);
     }
 
     /**
@@ -468,120 +559,92 @@ public class SwingUI {
     }
 
     /**
-     * The game window's window events. Only {@code windowClosing} does anything; the rest are
-     * generated overrides that call {@code super} and could go.
+     * Bring the front end up: size the window from the chosen font, wire the close handler, start
+     * the game thread, and show it. The port of a {@code main-*.c} module's {@code init_*}
+     * function, which C calls before {@code init_angband()} so the display exists to report
+     * loading errors on.
      *
+     * <p>The metrics drive everything. Angband is written against a character grid, so the window
+     * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
+     * of C asking a terminal how big it is. {@code TerminalVector} is preferred and the platform
+     * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
+     *
+     * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
+     * can never arrive before there is something to handle it, and {@code gameRunner.start()}
+     * comes last, so the game thread cannot outlive a failure to build the display. An exception
+     * before {@code setVisible} leaves the JVM alive with no window on screen, because
+     * {@code pack()} has already made the frame displayable and so kept the EDT running.
+     *
+     * <p><b>The last four lines are the whole of the channel wiring.</b> A
+     * {@link ChannelStatusDisplay} goes into the holder, so the core's start-up calls become messages
+     * instead of paint calls; the {@code angband-display} thread starts, so something is reading
+     * this half's inbox; {@link #sendStartToCore} says the display is ready; and only then does the
+     * game thread start. The order among the last three matters less than it looks - the channel
+     * buffers, so a message sent before the consumer starts waits rather than being lost - but
+     * starting the reader first keeps the splash screen prompt and costs nothing.
+     *
+     * <p><b>This method starts a thread and returns; it does not wait for either half.</b> The
+     * window stays up because the EDT is alive, not because anything here is blocking, and the
+     * program ends when the windows are disposed and that thread runs out of work. Stage 4 makes
+     * that explicit by moving the waiting into {@code main()}, which will {@code join()} both
+     * threads.
+     *
+     * <p>Registering a core-side object into a core-side holder from here is the transitional
+     * shortcut described on the class, and the line stage 4 deletes: once {@code main()} owns the
+     * channels, the core is handed its own sending end and this half never names it.
+     *
+     * @param options the parsed command line; stored, not yet acted on
      * @author Rowan Crowther
      */
-    private WindowListener windowListener = new WindowAdapter() {
-        /**
-         * The player closed the window: shut the game down.
-         *
-         * <p>This runs at all only because the frame is {@code DO_NOTHING_ON_CLOSE} - the close
-         * button is routed here rather than disposing the window.
-         *
-         * @param e the close event, not inspected
-         * @author Rowan Crowther
-         */
-        public void windowClosing(WindowEvent e) {
-            closeDown();
-        }
+    public void init(StartupOptions options) {
+        Colour.init();
 
-        /**
-         * Invoked when a window has been opened.
-         *
-         * @param e
-         */
-        @Override
-        public void windowOpened(WindowEvent e) {
-            super.windowOpened(e);
-        }
+        startupOptions = options;
 
-        /**
-         * Invoked when a window has been closed.
-         *
-         * @param e
-         */
-        @Override
-        public void windowClosed(WindowEvent e) {
-            super.windowClosed(e);
-        }
+        List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
+        Font font;
+        int fontSize = 24;
+        if (fontNames.contains("TerminalVector"))
+            font = new Font("TerminalVector", Font.PLAIN, fontSize);
+        else
+            font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
 
-        /**
-         * Invoked when a window is iconified.
-         *
-         * @param e
-         */
-        @Override
-        public void windowIconified(WindowEvent e) {
-            super.windowIconified(e);
-        }
+        JPanelArea.font = font;
 
-        /**
-         * Invoked when a window is de-iconified.
-         *
-         * @param e
-         */
-        @Override
-        public void windowDeiconified(WindowEvent e) {
-            super.windowDeiconified(e);
-        }
+        FontMetrics metrics = activeWindow.getFontMetrics(font);
+        int charWidth = metrics.charWidth('M');
+        int charHeight = metrics.getHeight();
 
-        /**
-         * Invoked when a window is activated.
-         *
-         * @param e
-         */
-        @Override
-        public void windowActivated(WindowEvent e) {
-            super.windowActivated(e);
-        }
+        JPanelArea.charAscent = metrics.getAscent();
+        JPanelArea.charHeight = charHeight;
+        JPanelArea.charWidth = charWidth;
 
-        /**
-         * Invoked when a window is de-activated.
-         *
-         * @param e
-         */
-        @Override
-        public void windowDeactivated(WindowEvent e) {
-            super.windowDeactivated(e);
-        }
+        JFrame.setDefaultLookAndFeelDecorated(true);
+        activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        activeWindow.setSize(80 * charWidth, 24 * charHeight);
+        activeWindow.setTitle("Test Window");
+        activeWindow.addWindowListener(windowListener);
 
-        /**
-         * Invoked when a window state is changed.
-         *
-         * @param e
-         * @since 1.4
-         */
-        @Override
-        public void windowStateChanged(WindowEvent e) {
-            super.windowStateChanged(e);
-        }
+        JPanelArea mainPanel = new JPanelArea();
+        mainPanel.setToolTipText("Main Panel");
+        mainPanel.setPreferredSize(new Dimension(80 * charWidth, 24 * charHeight));
+        activeWindow.add(mainPanel);
+        activeWindow.pack();
+        activeWindow.setLocationRelativeTo(null);
 
-        /**
-         * Invoked when the Window is set to be the focused Window, which means
-         * that the Window, or one of its subcomponents, will receive keyboard
-         * events.
-         *
-         * @param e
-         * @since 1.4
-         */
-        @Override
-        public void windowGainedFocus(WindowEvent e) {
-            super.windowGainedFocus(e);
-        }
+        activeWindow.setVisible(true);
 
-        /**
-         * Invoked when the Window is no longer the focused Window, which means
-         * that keyboard events will no longer be delivered to the Window or any of
-         * its subcomponents.
-         *
-         * @param e
-         * @since 1.4
-         */
-        @Override
-        public void windowLostFocus(WindowEvent e) {
-            super.windowLostFocus(e);
-        }
-    };
+        // Give the core a StatusDisplay that sends rather than paints. This replaces the front end's
+        // own SplashScreen in the holder, and is the single line that puts the core's start-up
+        // traffic on the channel.
+        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(channels.coreChannel().coreSender()));
+
+        // Start reading this half's inbox. Non-daemon, so from stage 3 the thread's own exit is part
+        // of the shutdown rather than something the JVM has to be told to ignore.
+        new Thread(uiLoop::loop, "angband-display").start();
+
+        sendStartToCore();
+        
+        gameRunner.start(channels.coreChannel());
+    }
 }

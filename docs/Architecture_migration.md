@@ -507,20 +507,20 @@ wrapper) shows every one of them crossed the core channel.
 The `sleep(5)` placeholder in `GameRunner.gameLoop()` becomes a real receive loop, and the kill-the-thread shutdown
 becomes the document's handshake.
 
-- [ ] `gameLoop()`: after `loadGameConstants()`, loop on `uiChannel.take()`; switch over `UIMessage`, then over the
+- [x] `gameLoop()`: after `loadGameConstants()`, loop on `uiChannel.take()`; switch over `UIMessage`, then over the
   `UiLifecycle` inside it. `START` → log it (birth lands here in Chapter 3). `SAVE_AND_STOP` → send
   `Lifecycle(STOPPED)` on the core channel and fall out of the loop; the thread ends. (Nothing to save yet — the save
   half arrives with Chapter 8.)
-- [ ] `SwingUI.init`: once the window is up, `put` a `Lifecycle(START)` — the document's step 1.5.
-- [ ] `windowClosing`: put a `WindowCloseRequested()` on the *core* channel — the EDT forwards the raw AWT event as a
+- [x] `SwingUI.init`: once the window is up, `put` a `Lifecycle(START)` — the document's step 1.5.
+- [x] `windowClosing`: put a `WindowCloseRequested()` on the *core* channel — the EDT forwards the raw AWT event as a
   `UIMessage` and nothing more (review note 1). No `requestStop`, no `System.exit`.
-- [ ] `UiLoop`, on `WindowCloseRequested()`: send `Lifecycle(SAVE_AND_STOP)` on the UI channel — the one place raw AWT
+- [x] `UiLoop`, on `WindowCloseRequested()`: send `Lifecycle(SAVE_AND_STOP)` on the UI channel — the one place raw AWT
   events are turned into messages for the core.
-- [ ] `UiLoop`, on `Lifecycle(STOPPED)`: `invokeLater` the window disposal (the old `closeDown`
+- [x] `UiLoop`, on `Lifecycle(STOPPED)`: `invokeLater` the window disposal (the old `closeDown`
   body minus `exit` and minus `requestStop`), then fall out of its own loop; the thread ends.
-- [ ] Delete the `requestStop()`/interrupt path — the `RuntimeException`-on-interrupt wart in
+- [x] Delete the `requestStop()`/interrupt path — the `RuntimeException`-on-interrupt wart in
   `gameLoop` (its own Javadoc already flags it) goes with it.
-- [ ] Claude: tests — the handshake in both orders; verify the process exits with no
+- [x] Claude: tests — the handshake in both orders; verify the process exits with no
   `System.exit` anywhere on the path (all windows disposed → EDT ends → JVM ends).
 
 *Primer candidates:* thread lifecycle (why the JVM exits when the last non-daemon thread does, and what keeps the EDT

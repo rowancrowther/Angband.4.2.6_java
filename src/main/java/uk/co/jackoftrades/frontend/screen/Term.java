@@ -30,7 +30,8 @@ import java.util.ArrayList;
  * has changed since the last refresh, an input key queue, behaviour flags, and a
  * set of {@link TermEventHook} callbacks the front end installs to actually draw
  * text/pictures/cursors. The core game talks only to this abstraction; concrete
- * front ends (here {@link Screen}) supply the hooks.
+ * front ends (here {@link uk.co.jackoftrades.frontend.screen.hooks.TermXtraWin TermXtraWin}
+ * and its siblings) supply the hooks.
  *
  * @author Rowan Crowther
  */

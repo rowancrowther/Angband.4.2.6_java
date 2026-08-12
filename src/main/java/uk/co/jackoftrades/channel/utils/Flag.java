@@ -51,7 +51,7 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
     private final EnumSet<E> all;
     /**
      * The enum class, retained so new {@link EnumSet}s can be built generically
-     * (e.g. in {@link #copy()} and {@link #mask}).
+     * (e.g. in {@link #copyFrom} and {@link #mask}).
      *
      * @author Rowan Crowther
      */
@@ -292,7 +292,7 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * its first argument, so the twenty-seven call sites of the wrapper macros
      * ({@code rsf_copy}, {@code of_copy}, {@code pf_copy}, ...) copy into a flag set that
      * lives inside some longer-lived struct. This port holds those in {@code final} fields,
-     * so a method returning a new object — the deprecated {@link #copy()} — has nothing the
+     * so a method returning a new object — a {@code copy()} in the C mould — has nothing the
      * caller can do with its result. Hence the copy happens in place.
      *
      * <p>Note that this <em>replaces</em> rather than merges: any flag set here but not in

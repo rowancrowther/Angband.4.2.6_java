@@ -20,6 +20,11 @@ package uk.co.jackoftrades.middle.numerics;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -310,6 +315,99 @@ class RationalTest {
 
             assertNotEquals(null, value);
             assertFalse(value.equals("1 / 2"));
+        }
+    }
+
+    /**
+     * The {@code hashCode}/{@code equals} pairing.
+     *
+     * <p>The contract only requires that equal values hash alike, and every test here is a case
+     * of that one rule. They are worth spelling out separately because the ways of getting two
+     * equal rationals are not interchangeable: the same value can arrive already reduced, with
+     * reduction suppressed, or with its sign on the other half of the fraction, and each reaches
+     * the canonical pair by a different route. A {@code hashCode} built from the fields rather
+     * than from a reduced copy passes the first case and fails the other two.
+     */
+    @Nested
+    class Hashing {
+
+        @Test
+        void equalFractionsHashAlike() {
+            assertEquals(new Rational(1, 2).hashCode(), new Rational(2, 4).hashCode());
+            assertEquals(new Rational(1, 2).hashCode(), new Rational(-3, -6).hashCode());
+        }
+
+        @Test
+        void anUnsimplifiedFractionHashesAsItsReducedForm() {
+            // The case that makes the throwaway copy necessary. simplify:false keeps the raw
+            // 6/12, so a hash taken straight from the fields would differ from 1/2's while
+            // equals() still called them equal - the exact contract violation being closed.
+            Rational raw = new Rational(6, 12, false);
+
+            assertEquals(new Rational(1, 2), raw, "precondition: these must be equal");
+            assertEquals(new Rational(1, 2).hashCode(), raw.hashCode());
+        }
+
+        @Test
+        void signVariantsHashAlike() {
+            // 1/-2 and -1/2 take different paths through the GCD and the sign flip, and the
+            // negative-GCD route is the one most likely to break under a change to simplify().
+            assertEquals(new Rational(-1, 2), new Rational(1, -2), "precondition: these must be equal");
+            assertEquals(new Rational(-1, 2).hashCode(), new Rational(1, -2).hashCode());
+        }
+
+        @Test
+        void hashingIsRepeatable() {
+            Rational value = new Rational(3, 7);
+            int first = value.hashCode();
+
+            assertEquals(first, value.hashCode());
+            assertEquals(first, value.hashCode());
+        }
+
+        @Test
+        void hashingDoesNotDisturbTheValue() {
+            // The throwaway copy must stay throwaway: simplify() mutates whatever it is called
+            // on, so a hashCode that reduced 'this' instead would quietly rewrite the receiver.
+            Rational raw = new Rational(6, 12, false);
+
+            raw.hashCode();
+
+            assertFraction(6, 12, raw);
+        }
+
+        @Test
+        void equalFractionsCollapseInAHashSet() {
+            // What the contract buys in practice, and the reason it was worth fixing.
+            Set<Rational> seen = new HashSet<>();
+            seen.add(new Rational(1, 2));
+            seen.add(new Rational(2, 4));
+            seen.add(new Rational(6, 12, false));
+            seen.add(new Rational(-3, -6));
+
+            assertEquals(1, seen.size(), () -> "one value, four spellings: " + seen);
+        }
+
+        @Test
+        void aFractionFoundAsAMapKeyRegardlessOfHowItWasWritten() {
+            Map<Rational, String> byValue = new HashMap<>();
+            byValue.put(new Rational(1, 2), "a half");
+
+            assertEquals("a half", byValue.get(new Rational(2, 4)));
+            assertEquals("a half", byValue.get(new Rational(6, 12, false)));
+        }
+
+        @Test
+        void distinctValuesGetDistinctHashes() {
+            // Not required by the contract - unequal values are allowed to collide - but a
+            // hashCode degenerated to a constant would satisfy every test above while making
+            // every map holding Rationals a linked list. These few must not collide.
+            Set<Integer> hashes = new HashSet<>();
+            for (int numerator = 1; numerator <= 20; numerator++) {
+                hashes.add(new Rational(numerator, 7).hashCode());
+            }
+
+            assertEquals(20, hashes.size(), "distinct values collided");
         }
     }
 }

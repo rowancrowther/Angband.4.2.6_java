@@ -31,19 +31,25 @@ import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
  *   <li><b>Intent</b> from the UI thread: what the player has asked the game to do, the port of
  *       C's {@code struct command}. Also Chapter 5.</li>
  * </ul>
- * Today neither exists, and the only traffic is the lifecycle record below.
+ * Neither of those exists yet. Today's two records are the shutdown handshake's UI half and the
+ * first of the EDT's window events, which is the raw-input population arriving early — a window
+ * close is a thing the player did to a window, reported exactly as it happened and interpreted
+ * elsewhere.
  * <p>
  * Note what naming by <em>sender</em> rather than by direction costs. A {@code UIMessage} is not
- * bound for one particular queue: the lifecycle messages go to the core, while the EDT's future
- * window messages go to the UI thread's own inbox, since that is the only queue it waits on. So
- * the compiler alone cannot stop one being posted to the wrong channel. The fix, when it is worth
- * having, is two sealed sub-interfaces here — one per UI-side sender — and it is deferred to
- * Chapter 5 for the good reason that the two sub-interfaces would currently have one member
- * between them. Populations A and B above <em>are</em> that split; it is arriving anyway.
+ * bound for one particular queue: {@link LifecycleUIMessage} goes to the core, while
+ * {@link WindowCloseRequested} goes to the UI thread's own inbox, since that is the only queue it
+ * waits on. So the compiler alone cannot stop one being posted to the wrong channel — which is no
+ * longer hypothetical now that both records exist, and is why {@code UILoop} and the core's loop
+ * each keep an arm for the message they should never be handed. The fix, when it is worth having,
+ * is two sealed sub-interfaces here — one per UI-side sender — and it is deferred to Chapter 5 for
+ * the good reason that the two sub-interfaces would currently have one member apiece. Populations
+ * A and B above <em>are</em> that split; it is arriving anyway.
  *
  * @see CoreMessage the traffic going the other way
  */
-public sealed interface UIMessage extends ChannelMessage permits UIMessage.LifecycleUIMessage {
+public sealed interface UIMessage extends ChannelMessage permits UIMessage.LifecycleUIMessage,
+        UIMessage.WindowCloseRequested {
 
     /**
      * Protocol rather than gameplay: the front end telling the core to begin, or to save and shut
@@ -58,5 +64,26 @@ public sealed interface UIMessage extends ChannelMessage permits UIMessage.Lifec
      * @param event what the front end is asking for
      */
     record LifecycleUIMessage(UILifecycleEvent event) implements UIMessage {
+    }
+
+    /**
+     * The player clicked the window's close button. Posted by the EDT onto the UI thread's inbox,
+     * and the port of the moment C's front end notices a quit request before
+     * {@code quit_aux} ({@code [C] src/ui-init.c}) is reached.
+     * <p>
+     * <b>An event, not an instruction.</b> It says what happened, not what should follow: the
+     * listener that sends it decides nothing, and the UI thread is where it becomes a
+     * {@link LifecycleUIMessage} carrying {@link UILifecycleEvent#SAVE_AND_STOP}. Keeping the
+     * translation there rather than in the listener is what stops the EDT from having opinions
+     * about saving, and leaves one place to change when closing the window should sometimes
+     * prompt instead of quitting.
+     * <p>
+     * <b>Empty on purpose.</b> The {@code WindowEvent} the EDT was handed carries a window
+     * reference and Swing state, none of which survives the crossing — an AWT object on another
+     * thread's queue is exactly the coupling the channel exists to prevent. There is only one
+     * window today; when there are several, this gains a component identifying which, not the
+     * frame itself.
+     */
+    record WindowCloseRequested() implements UIMessage {
     }
 }

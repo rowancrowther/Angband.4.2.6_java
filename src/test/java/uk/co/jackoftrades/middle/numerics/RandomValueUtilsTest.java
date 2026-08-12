@@ -107,10 +107,55 @@ class RandomValueUtilsTest {
         @Test
         void aDegenerateBoundAlwaysGivesZero() {
             // Guarding rather than throwing: randDiv(0) and randDiv(1) both have exactly one
-            // possible answer, and callers pass them freely from data-driven values.
+            // possible answer, and callers pass them freely from data-driven values. This half
+            // of the guard is C's own -- 'if (m <= 1) return (0)' (z-rand.c:176).
             assertEquals(0, RandomValueUtils.randDiv(1));
             assertEquals(0, RandomValueUtils.randDiv(0));
-            assertEquals(0, RandomValueUtils.randDiv(-5));
+        }
+
+        @Test
+        void aNegativeBoundIsRejected() {
+            // This case used to assert randDiv(-5) == 0, lumped in with the degenerate bounds
+            // above. It is not the same thing: 0 and 1 are values a data file can legitimately
+            // produce, whereas a negative bound is arithmetic that has already gone wrong at the
+            // call site. C never has to decide, because Rand_div takes a uint32_t -- a negative
+            // argument wraps past 0x10000000 and trips its assert. The int parameter here makes
+            // the bug representable, so returning 0 would hand the caller a plausible-looking
+            // roll instead of a failure.
+            IllegalArgumentException thrown = assertThrows(IllegalArgumentException.class,
+                    () -> RandomValueUtils.randDiv(-5));
+
+            assertTrue(thrown.getMessage().toLowerCase().contains("max"), thrown.getMessage());
+        }
+
+        @Test
+        void theRejectionReachesTheDelegatingDraws() {
+            // randInt0 and randInt1 are bare wrappers, so the guard has to arrive through them
+            // rather than being re-implemented; these fail if either grows its own bounds check.
+            assertThrows(IllegalArgumentException.class, () -> RandomValueUtils.randInt0(-1));
+            assertThrows(IllegalArgumentException.class, () -> RandomValueUtils.randInt1(-1));
+        }
+
+        @Test
+        void minValueIsRejectedRatherThanWrapping() {
+            // The edge worth pinning: Integer.MIN_VALUE has no positive counterpart, so any guard
+            // written as a negation or an abs() rather than a comparison silently lets it through.
+            assertThrows(IllegalArgumentException.class,
+                    () -> RandomValueUtils.randDiv(Integer.MIN_VALUE));
+        }
+
+        @Test
+        void theSmallestLegalBoundStillDraws() {
+            // Immediately above the rejected range: 2 is the smallest bound with a real choice in
+            // it, so it catches a guard written as 'max < 2' that would swallow a usable draw.
+            Set<Integer> seen = new HashSet<>();
+            for (int draw = 0; draw < DRAWS; draw++) {
+                int rolled = RandomValueUtils.randDiv(2);
+                assertTrue(rolled == 0 || rolled == 1, () -> "out of range: " + rolled);
+                seen.add(rolled);
+            }
+
+            assertEquals(Set.of(0, 1), seen, "a two-sided draw must produce both outcomes");
         }
 
         @Test

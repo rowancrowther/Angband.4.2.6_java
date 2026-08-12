@@ -855,18 +855,37 @@ public class ItemObject {
     }
 
     /**
-     * Decrements this object's recharge timeout by the number of items currently charging, the
-     * port of C's {@code recharge_timeout} ({@code obj-util.c}).
+     * Advances this object's recharge by one game turn, the port of C's {@code recharge_timeout}
+     * ({@code obj-util.c:1043-1065}).
      *
-     * <p><b>Stub:</b> not yet implemented; currently a no-op returning {@code false}. When ported
-     * it must reduce {@link #timeout} by {@code min(numberCharging(), timeout)} and report whether
-     * the charging count fell (i.e. at least one item in the stack gained a charge).
+     * <p>A stack of rods is a single object with one pooled {@link #timeout} rather than a counter
+     * per rod, so the turn's charge is spent on every rod still charging at once: {@link #timeout}
+     * falls by {@link #numberCharging()}, clamped so it can never run past zero into a value
+     * {@link #numberCharging()} would read back as ready.
      *
-     * @return {@code true} if at least one item obtained a charge this tick
+     * <p>The return value is a <em>transition</em>, not a state. It is {@code false} on every turn
+     * that merely reduces the timeout, and {@code true} only on the turn that takes the charging
+     * count down — which is the turn one more rod becomes usable, and so the turn the player is
+     * told about it. Callers wanting to know whether the object is ready should read
+     * {@link #getTimeout()} instead.
+     *
+     * <p>Because the drain rate is the number still charging, a stack recharges more slowly as it
+     * goes: three rods on a ten-turn interval spend thirty turns of pooled charge over eighteen
+     * game turns, not ten, as the rate steps down from three per turn to one.
+     *
+     * @return {@code true} if at least one item obtained a charge this turn
      */
     public boolean rechargeTimeout() {
-        // Stub function TODO: Implement
-        return false;
+        int chargingBefore = numberCharging();
+
+        if (chargingBefore == 0)
+            return false;
+
+        timeout -= Math.min(chargingBefore, timeout);
+
+        int chargingAfter = numberCharging();
+
+        return (chargingAfter < chargingBefore);
     }
 
     /**

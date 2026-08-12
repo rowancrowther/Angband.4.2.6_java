@@ -435,7 +435,7 @@ public class Square {
     }
 
     /**
-     * Tests for any door including open, closed, & hidden
+     * Tests for any door including open, closed, and hidden
      *
      * @return true for any door
      */

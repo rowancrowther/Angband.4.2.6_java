@@ -57,8 +57,8 @@ public abstract class NumberUtils {
      * Return a + b coerced to be in the range Integer.MIN_VALUE to Integer.MAX_VALUE
      * @param a one of the integers to be added
      * @param b one of the integers to be added
-     * @return if Integer.MIN_VALUE <= a + b <= Integer.MAX_VALUE then returns a + b.<br>
-     *         if a + b < Integer.MIN_VALUE then returns Integer.MIN_VALUE.<br>
+     * @return if {@code Integer.MIN_VALUE <= a + b <= Integer.MAX_VALUE} then returns a + b.<br>
+     *         if {@code a + b < Integer.MIN_VALUE} then returns Integer.MIN_VALUE.<br>
      *         if a + b > Integer.MAX_VALUE then returns Integer.MAX_VALUE.
      */
     @Contract(pure = true)

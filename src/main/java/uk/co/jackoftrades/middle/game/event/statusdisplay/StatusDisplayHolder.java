@@ -33,7 +33,7 @@ package uk.co.jackoftrades.middle.game.event.statusdisplay;
  *
  * <p><b>Not thread-safe.</b> {@link #instance} is a plain static, written by the front end on
  * Swing's event dispatch thread and read by the middle end on the game thread. That is safe today
- * only by accident of ordering: {@code Frontend.init} registers before {@code gameRunner.start()},
+ * only by accident of ordering: {@code SwingUI.init} registers before {@code gameRunner.start()},
  * and {@link Thread#start()} publishes everything written before it. A registration made after the
  * game thread is running has no such guarantee and might never be seen - making the field
  * {@code volatile} is what would fix that.
@@ -73,7 +73,7 @@ public final class StatusDisplayHolder {
 
     /**
      * Register the front end's display, replacing whatever was there. Called once during start-up,
-     * by {@code Frontend.init}.
+     * by {@code SwingUI.init}.
      *
      * @param instance the display to install; not checked for null, and a null would break every
      *                 later {@code getInstance} caller

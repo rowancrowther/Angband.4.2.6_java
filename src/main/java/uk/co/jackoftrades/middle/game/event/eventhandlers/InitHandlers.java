@@ -19,13 +19,17 @@ package uk.co.jackoftrades.middle.game.event.eventhandlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.channel.Channels;
 import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.data.EventDataString;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.game.event.birthhandlers.UIBirth;
 import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+
+import java.nio.channels.Channel;
 
 /**
  * The middle end's start-up event handlers, and the one place they are registered. This is the port
@@ -100,14 +104,22 @@ public class InitHandlers {
      * <p>The display is fetched from the holder at call time, not captured at registration, so a
      * front end that registers itself late still gets the call.
      *
+     * <p><b>What "put the title screen up" now means.</b> Since stage 2 the holder contains a
+     * {@code ChannelStatusDisplay}, so this call sends {@code SimpleCoreMessage(EVENT_ENTER_INIT)}
+     * and returns; the other half decides that means {@code news.txt} on the screen. Reading
+     * the file, parsing it and painting it all moved to {@code UILoop} with it - which is C's own
+     * arrangement, where {@code game-event.c} broadcasts and {@code ui-*.c} draws.
+     *
      * <p><b>Guarded on the payload.</b> A signal carrying no {@link EventDataString} is ignored
      * entirely - no splash screen, no subscription. The bound {@code message} is never read; the
      * guard is really a check that the sender used {@code eventSignalString}, so switching
      * {@code GameConstants.init()} to a bare {@code eventSignal} would silently lose the title
      * screen rather than fail. {@code InitHandlersTest} pins that.
      *
-     * <p>Called on the game thread, so anything this reaches must get itself onto the event
-     * dispatch thread before touching a Swing component.
+     * <p>Called on the game thread - but that no longer constrains what it may reach. The call
+     * crosses a channel, so the thread that paints is the one that took the message off the queue,
+     * and the hop onto the event dispatch thread is made over there. Nothing on this side of the
+     * boundary touches Swing at all now.
      *
      * @param eventType the event being handled, always {@code EVENT_ENTER_INIT}; not read
      * @param data      the payload; must be an {@link EventDataString} or nothing happens
@@ -128,14 +140,19 @@ public class InitHandlers {
      * A progress note arrived during the data load. Subscribed by {@link #enterInit}, not by
      * {@link #initHandlers()}.
      *
-     * <p>Logs a fixed line so far. The port of {@code splashscreen_note}
-     * ({@code [C] src/ui-display.c}), which reads the string out of the payload and prints it under
-     * the title screen - so the remaining work here is to pull the message from {@code data} and
-     * pass it to {@code StatusDisplayHolder.getInstance().splashScreenNote(...)}, the boundary method
-     * that currently has no caller.
+     * <p>The port of {@code splashscreen_note} ({@code [C] src/ui-display.c})'s non-birth branch,
+     * which reads the string out of the payload and prints it under the title screen. This does the
+     * first half and hands the second across the boundary: the note goes to
+     * {@code StatusDisplayHolder.getInstance().splashScreenNote(...)}, which since stage 2 is a
+     * {@code ChannelStatusDisplay} and so puts it on the core channel rather than painting it.
+     *
+     * <p><b>Guarded on the payload</b>, as {@link #enterInit} is: a signal carrying no
+     * {@link EventDataString} is dropped, so a caller using a bare {@code eventSignal} would lose
+     * the note silently. {@code InitHandlersTest} pins that.
      *
      * @param eventType the event being handled, always {@code EVENT_INITSTATUS}; not read
-     * @param data      the payload carrying the note; not read yet
+     * @param data      the payload carrying the note; must be an {@link EventDataString} or nothing
+     *                  is forwarded
      * @author Rowan Crowther
      */
     public static void splashScreenNote(GameEventType eventType, GameEventData data) {

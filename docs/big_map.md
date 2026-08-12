@@ -115,5 +115,5 @@ a small number of functions on the screen (change this character here and redraw
 and redraw, …). Core signals, UI registers, and the dependency arrow only ever points UI → core.
 
 In the current state of the port, Angband.java is in package uk.co.jackoftrades.middle.game, and as such is in the
-middle part of the core, not in the UI (package uk.co.jackoftrades.frontend). I would argue that it is the right side of
+middle part of the core, not in the UI (package uk.co.jackoftrades.swingUI). I would argue that it is the right side of
 the design, as it is UI-agnostic, containing data.

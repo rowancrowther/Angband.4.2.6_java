@@ -8,10 +8,10 @@ verifies and tests, primers on demand.
 
 ## 1. Where we are, where we're going
 
-**Now** (per `Java_map.md`): `main()` → EDT → `Frontend` → creates `GameRunner` → starts the game thread. The core
+**Now** (per `Old_java_map.md`): `main()` → EDT → `SwingUI` → creates `GameRunner` → starts the game thread. The core
 reaches the UI through three static holders (`StatusDisplayHolder`,
 `CommandGetterHolder`, `GameInputHolder`); the UI reaches the core through the `GameRunner` it holds (`start()` /
-`requestStop()`). Shutdown is `Frontend.closeDown()` calling `System.exit(0)`
+`requestStop()`). Shutdown is `SwingUI.closeDown()` calling `System.exit(0)`
 with the game thread shot wherever it happens to be.
 
 ```
@@ -45,7 +45,7 @@ core.
 something the UI sends, a **`CoreMessage`** is something the core sends, and each channel is named for the half that
 sends on it. *(Decision taken 2026-08-10, replacing the first draft's `DisplayMessage`/`UiEvent` pair.)* The old names
 were wrong in two ways. "UI event" is ambiguous — it reads equally as *an AWT event* and as *a core-to-UI notification*,
-which are opposite directions; and it collides outright with `frontend.events.Event` /
+which are opposite directions; and it collides outright with `swingUI.events.Event` /
 `UiEventType`, the existing port of C's `ui_event` (`src/ui-event.h`), which is a UI-internal type that never crosses a
 channel. Naming by sender leaves no room for either confusion: if the UI made it, it is a `UIMessage`.
 
@@ -59,7 +59,8 @@ the UI thread's single inbox (review note 1). So `uiChannel` carries only `UIMes
 Points where the document and reality need to shake hands. None of them break the design.
 
 1. **Three threads, not two.** Swing owns the EDT regardless. The workable shape: the "UI thread"
-   of the document blocks on `coreChannel.take()`, and the core channel is its *single inbox* — `CoreMessage`s and the
+   of the document blocks on `coreChannel.receive()`, and the core channel is its *single inbox* — `CoreMessage`s and
+   the
    EDT's forwarded `UIMessage`s both land on it. Swing listeners (which run on the EDT) never touch the UI channel: they
    wrap the raw AWT event as a `UIMessage`, put it on the core channel, and the UI thread parses it and sends any
    resulting `UIMessage` down the UI channel itself. *(Corrected 2026-08-10 — the first draft had EDT listeners sending
@@ -99,9 +100,9 @@ Points where the document and reality need to shake hands. None of them break th
 
 7. **`backend` is the IO layer, not the shared layer.** *(Decision taken 2026-08-10, superseding the first draft, which
    treated `backend` as legitimately shared by both halves.)* `backend` is for liaising with IO — reading, writing and
-   parsing files — and nothing else. Everything now in `backend` that `frontend` needs moves into `channel`; the non-IO
+   parsing files — and nothing else. Everything now in `backend` that `swingUI` needs moves into `channel`; the non-IO
    remainder moves into `middle`. This is stage 0, and it comes first because it's a pure move and because it turns
-   stage 5's boundary test from an allowlist with an exception in it into a flat rule: **`frontend` imports `channel`,
+   stage 5's boundary test from an allowlist with an exception in it into a flat rule: **`swingUI` imports `channel`,
    and nothing else of ours.**
 
 ## 3. What stays untouched
@@ -137,16 +138,16 @@ survives each stage.
 ### Stage 0 — Empty `backend` of everything that isn't IO *(no behaviour change)*
 
 A pure move: IDE "Move Class" plus import fixes, no logic touched, verified by compiling. It goes first because every
-later stage is easier to state once `channel` is the only thing `frontend` is allowed to see.
+later stage is easier to state once `channel` is the only thing `swingUI` is allowed to see.
 
-**What `frontend` actually uses from `backend` today** — all of it, five types across ten files:
+**What `swingUI` actually uses from `backend` today** — all of it, five types across ten files:
 
-| Type                                   | Used by                                                                                 |
-|----------------------------------------|-----------------------------------------------------------------------------------------|
-| `colour.ColourEnum`                    | `Frontend`, `TermWin`, `Window`, `TextOutHook`, `Colour`, `FlickerTable`, `ColourCycle` |
-| `strings.AngbandDisplayCharacter`      | `Frontend`, `TermWin`, `Window`, `SplashScreen`                                         |
-| `utils.Flag`                           | `Event`, `TextUIHook`                                                                   |
-| `utils.Combiner` + `utils.combiners.*` | `CombinerName`                                                                          |
+| Type                                   | Used by                                                                                |
+|----------------------------------------|----------------------------------------------------------------------------------------|
+| `colour.ColourEnum`                    | `SwingUI`, `TermWin`, `Window`, `TextOutHook`, `Colour`, `FlickerTable`, `ColourCycle` |
+| `strings.AngbandDisplayCharacter`      | `SwingUI`, `TermWin`, `Window`, `SplashScreen`                                         |
+| `utils.Flag`                           | `Event`, `TextUIHook`                                                                  |
+| `utils.Combiner` + `utils.combiners.*` | `CombinerName`                                                                         |
 
 The closure is small but it is *not* just those five: `AngbandDisplayCharacter` needs `ColourEnum`; the nine combiners
 need `Combiner` and `UIEntryCombinerState`; and `ColourEnum` needs `ColourTranslation`, which is the subtle one. A
@@ -164,7 +165,7 @@ The other two split packages were checked for the same trap and are clean: nothi
     - `channel.utils` — `Flag`, `Combiner`, `UIEntryCombinerState`, and `combiners/*` (nine of them)
 - [X] Claude: move the matching tests to mirror the new packages —
   `src/test/…/backend/colour/ColourEnumTest` is the one that exists today.
-- [X] Move the non-IO remainder to `middle`. Nothing in `frontend` touches any of it, so this half is invisible to the
+- [X] Move the non-IO remainder to `middle`. Nothing in `swingUI` touches any of it, so this half is invisible to the
   boundary:
     - `backend.numerics` (`Random`, `Dice`, `Rational`, `RandomChance`, `RandomValueUtils`) → `middle.numerics`.
       Fourteen
@@ -180,14 +181,14 @@ The other two split packages were checked for the same trap and are clean: nothi
       than moved now. Leave it where it is and let stage 3 take it.
 - [X] After the move, `backend` contains exactly `io/`, `parser/` and `AngbandModule` — and `utils/quit`, on borrowed
   time.
-- [X] Claude: verification — full compile, full test run, and a grep proving `frontend` no longer names `backend`
+- [X] Claude: verification — full compile, full test run, and a grep proving `swingUI` no longer names `backend`
   anywhere. *(2026-08-10: `clean build` green; 123 test classes / 1303 tests, 0 failures, 0 errors, 0 skipped;
-  `grep -rn "backend" src/main/java/uk/co/jackoftrades/frontend` returns nothing — not just the qualified name, the bare
+  `grep -rn "backend" src/main/java/uk/co/jackoftrades/swingUI` returns nothing — not just the qualified name, the bare
   word. Five stray tests moved to mirror the `middle` move: `RationalTest`, `RandomValueUtilsTest` →
   `middle.numerics`, `QuarkTest` → `middle.strings`, `NumberUtilsTest`, `StringUtilsTest` → `middle.utils`. Game
   launches, splash screen and progress notes render.)*
 
-**Done when:** `grep -r "jackoftrades\.backend" src/main/java/uk/co/jackoftrades/frontend` returns nothing, and the game
+**Done when:** `grep -r "jackoftrades\.backend" src/main/java/uk/co/jackoftrades/swingUI` returns nothing, and the game
 still starts and shows the splash screen.
 
 *A note on what this does to `channel`'s meaning, recorded so it isn't rediscovered as a surprise.* Before this decision
@@ -225,7 +226,7 @@ the *only* thing both halves share.
     - `GameEventType` + the `GameEventData` shapes — the eleven `EventData*`, tiered in "Which shapes can actually move"
       below. `EventsBusHandler`, `EventsHandler` and `EventHandlerInterface` stay in `middle`: they are the machinery,
       the port of C's `event_signal_*` family.
-    - `UiEventType` + the keypress/mouseclick shapes, out of `frontend.events`. *(Only when population A lands — Chapter
+  - `UiEventType` + the keypress/mouseclick shapes, out of `swingUI.events`. *(Only when population A lands — Chapter
         5. Listed here because the reasoning belongs with the other two.)*
     - `CommandCode` + the `cmd_arg` shapes. `CommandQueue`/`CommandProcessor` stay in `middle`. *(Chapter 5.)*
 - [x] `Grid(int y, int x)` in `channel` — the flattened form of `middle.cave.Loc` for messages that carry positions.
@@ -266,7 +267,7 @@ character, change the active window* — is very nearly C's `term` hook set (`wi
 *do*, and it has not grown as Angband has. But in C those hooks are called by `ui-*.c`, not by the game. The core
 signals `EVENT_HP`; a handler in the front end decides the health bar sits at row 5 in red and calls `Term_putstr`.
 Putting the primitives on the channel would put that decision core-side and hand the core a screen layout — precisely
-the coupling this migration exists to remove. `frontend` already owns `TermWin`, `Window` and `Frontend`: **term
+the coupling this migration exists to remove. `swingUI` already owns `TermWin`, `Window` and `SwingUI`: **term
 primitives stay UI-internal and never cross a channel.** What crosses is the event.
 
 **The split: by payload shape.** With that axis chosen the set is not open-ended, because C has already enumerated it
@@ -392,9 +393,9 @@ meanings* and a small closed set of *payload shapes*, and in all three cases the
 All three enums and all three shape sets move into `channel`; none of the machinery does.
 
 **A correction to §5's table,** made rather than left to be tripped over: an earlier draft listed
-`frontend.events.Event` / `UiEventType` as "UI-internal, never crosses a channel", and used that to justify the
+`swingUI.events.Event` / `UiEventType` as "UI-internal, never crosses a channel", and used that to justify the
 `UiEvent` → `UIMessage` rename. That does not survive population A — those records *are* the port of `ui_event`, and
-`channel` cannot import `frontend`, so the vocabulary has to move or a keystroke ends up with two representations. The
+`channel` cannot import `swingUI`, so the vocabulary has to move or a keystroke ends up with two representations. The
 rename still stands, on better grounds: `UIMessage` is the envelope, `UiEventType` is the vocabulary written inside it —
 the same relation `CoreMessage` has to `GameEventType`.
 
@@ -442,7 +443,7 @@ cement that inversion into the shared package; leaving it keeps the mistake cont
 out to where C has them.
 
 **The two blocked shapes.** `EventDataMissile` holds an `ItemObject`, and moving that would expose the object system to
-`frontend` — the coupling this migration exists to remove. C shows the way out: `game_event_data.missile` carries
+`swingUI` — the coupling this migration exists to remove. C shows the way out: `game_event_data.missile` carries
 `struct object *obj`, and `ui-*.c` immediately reduces it to appearance via `object_kind_char`/`object_kind_attr`. The
 UI never wants the object, only its glyph and colour — `AngbandDisplayCharacter` + `ColourEnum`, both already in
 `channel`, resolved core-side before the message is sent. `EventDataBirthStage` has the milder version, an
@@ -462,21 +463,41 @@ worth knowing before choosing where to put it.
 The pivot of the whole migration, and it's small because `StatusDisplay` is already the perfect boundary: swap *which
 implementation* is registered, and the core doesn't notice.
 
-- [ ] `ChannelStatusDisplay implements StatusDisplay` (core side): each method wraps its arguments in the matching
-  `CoreMessage` and `put`s it on the core channel. Three one-line methods.
-- [ ] `UiLoop` (UI side, a `Runnable`): loop on `coreChannel.take()`, switch over the sealed
+- [x] `ChannelStatusDisplay implements StatusDisplay` (core side): each method wraps its arguments in the matching
+  `CoreMessage` and `put`s it on the core channel. Two one-line methods —
+  `showSplashScreen()` → `SimpleCoreMessage(EVENT_ENTER_INIT)`, `splashScreenNote(text)` →
+  `TextCoreMessage(EVENT_INITSTATUS, text)`.
+- [x] `StatusDisplay` loses `splashScreenBirthNote`; the birth note is parked for Chapter 3 (see below). Drop the
+  `@Override` on `SplashScreen`'s implementation rather than deleting it — the painting code and its Javadoc are right,
+  they simply have no caller yet — and delete the empty stub from `DefaultStatusDisplay`.
+- [x] `UiLoop` (UI side, a `Runnable`): loop on `coreChannel.take()`, switch over the sealed
   `ChannelMessage` — for each `CoreMessage`, `invokeLater` the painting the old
   `SplashScreen` methods do now (`SplashScreen` itself keeps its painting code; it just stops being the thing the *core*
   calls); `UIMessage` handling arrives in stage 3.
-- [ ] `Frontend.init`: build the channels (temporarily — they move to `main()` in stage 4), register
+- [x] `SwingUI.init`: build the channels (temporarily — they move to `main()` in stage 4), register
   `ChannelStatusDisplay` in the holder instead of `SplashScreen`, start the consumer on its own thread
   (`new Thread(consumer, "angband-display")`).
-- [ ] Claude: tests — a fake channel proves each `StatusDisplay` call becomes the right message; consumer tests prove
+- [x] Claude: tests — a fake channel proves each `StatusDisplay` call becomes the right message; consumer tests prove
   each message reaches the right painting call.
 
+**Why the birth note is parked, in full — it looks like a dropped method otherwise.** C has *one* callback,
+`splashscreen_note` (`[C] src/ui-display.c:2403`), which branches at run time on
+`data->message.type == MSG_BIRTH`: birth notes stack down from row 2 and pause for a keypress, load notes rewrite row 23
+centred and bracketed. The port split that run-time branch into two interface methods so the choice is made at the call
+site and checked by the compiler — a good decision, taken one chapter early. Nothing distinguishes the two on the wire:
+both would send `TextCoreMessage(EVENT_INITSTATUS, text)`, byte-identical, because no
+`MSG_BIRTH` equivalent has been ported yet. Two methods whose whole point is that they behave oppositely, collapsing to
+the same message, is the tell. Implementing it now means inventing the discriminator — a second `GameEventType`? a
+`MessageType` field on the record? — against no caller, and `InitHandlers` confirms it: `splashScreenNote` logs rather
+than forwarding, precisely because the payload cannot yet say which kind of note it holds. Same call already recorded
+here for `EventDataMissile` and `cmd_arg`, and for the same reason: better designed against a real caller than guessed
+at now. Removing the method from the interface rather than leaving it unimplemented is the honest form — a method on the
+boundary that looks routable and isn't is worse than no method.
+
 *Primer candidates:* producer–consumer as a pattern; the EDT and `invokeLater` (why painting must hop, why `take()` must
-not run on the EDT). Also fixes in passing: `SplashScreen`'s own Javadoc admits it touches Swing from the game thread
-today — after this stage every touch arrives via the consumer's `invokeLater`, closing that hole.
+not run on the EDT) — both now written, in `docs/primers/`. Also fixes in passing: `SplashScreen`'s own Javadoc admits
+it touches Swing from the game thread today — after this stage every touch arrives via the consumer's `invokeLater`,
+closing that hole.
 
 **Done when:** the splash screen and the "Initializing arrays…" notes still appear — but a breakpoint (or a logging
 wrapper) shows every one of them crossed the core channel.
@@ -490,7 +511,7 @@ becomes the document's handshake.
   `UiLifecycle` inside it. `START` → log it (birth lands here in Chapter 3). `SAVE_AND_STOP` → send
   `Lifecycle(STOPPED)` on the core channel and fall out of the loop; the thread ends. (Nothing to save yet — the save
   half arrives with Chapter 8.)
-- [ ] `Frontend.init`: once the window is up, `put` a `Lifecycle(START)` — the document's step 1.5.
+- [ ] `SwingUI.init`: once the window is up, `put` a `Lifecycle(START)` — the document's step 1.5.
 - [ ] `windowClosing`: put a `WindowCloseRequested()` on the *core* channel — the EDT forwards the raw AWT event as a
   `UIMessage` and nothing more (review note 1). No `requestStop`, no `System.exit`.
 - [ ] `UiLoop`, on `WindowCloseRequested()`: send `Lifecycle(SAVE_AND_STOP)` on the UI channel — the one place raw AWT
@@ -514,12 +535,12 @@ The structure finally matches the document's Startup section. Mostly *moving* co
 
 - [ ] `Main.main()`: create the `Channels`; create and start the core thread and the UI thread;
   `join()` both; return. (The `-l`/usage windows stay exactly as they are — they run before either thread exists, as
-  `Java_map.md` already notes.)
+  `Old_java_map.md` already notes.)
 - [ ] Core side: `GameRunner` absorbs its last responsibilities and becomes the core's `Runnable`
   (suggested rename: `Core`) — constructed with the channels and the startup options, no longer constructed *by the UI*.
-- [ ] UI side: a `Runnable` (inside `Frontend` or wrapping it) that does the Swing bootstrap on the EDT (`invokeLater`
+- [ ] UI side: a `Runnable` (inside `SwingUI` or wrapping it) that does the Swing bootstrap on the EDT (`invokeLater`
   from the UI thread) and then runs the `UiLoop` as its own body — one thread, matching the document's UI sequencing.
-- [ ] `Frontend` loses its `gameRunner` field entirely. After this stage the UI's compile-time view of the core is:
+- [ ] `SwingUI` loses its `gameRunner` field entirely. After this stage the UI's compile-time view of the core is:
   nothing. The channel package is the whole interface.
 - [ ] `StartupOptions`: both halves get a copy (document's steps 2–3); the static field in `Main`
   and its happens-before Javadoc essay can go — arguments become plain constructor parameters.
@@ -529,7 +550,8 @@ The structure finally matches the document's Startup section. Mostly *moving* co
 *Primer candidate:* `Thread.join()` and structured teardown — why "main waits" is what makes
 "save before exit" a guarantee rather than a race.
 
-**Done when:** `Java_map.md`'s startup narrative can be rewritten to match `Architecture.md`'s Startup section line for
+**Done when:** `Old_java_map.md`'s startup narrative can be rewritten to match `Architecture.md`'s Startup section line
+for
 line — because they now describe the same program.
 
 ### Stage 5 — Seal the boundary and take stock
@@ -545,22 +567,33 @@ line — because they now describe the same program.
       it on the core channel. No Swing, no layout, no colour.
     - UI side gains the rendering half — the `switch` over `GameEventType` that decides *where* and *how*, calling
       `TermWin`/`Window` directly. This is C's arrangement: `game-event.c` broadcasts, `ui-*.c` draws.
-    - The test that this landed: `grep` for `GameEventType` in `frontend` returns hits, and `grep` for anything Swing in
+  - The test that this landed: `grep` for `GameEventType` in `swingUI` returns hits, and `grep` for anything Swing in
       the core's handler returns none.
 - [ ] **The boundary test** (Claude writes, both maintain): a test that walks `src/main` imports and enforces three
   rules, which stage 0 is what makes them this simple —
-    - `frontend.**` may name `channel.**` and nothing else of ours (not `middle`, not `backend`);
-    - `middle.**` may not name `frontend.**`;
-    - `backend.**` may not name `frontend.**`.
+    - `swingUI.**` may name `channel.**` and nothing else of ours (not `middle`, not `backend`);
+    - `middle.**` may not name `swingUI.**`;
+    - `backend.**` may not name `swingUI.**`.
 
-  This turns `Java_map.md`'s "you can check by reading the import statements" from a habit into a regression test. The
+  This turns `Old_java_map.md`'s "you can check by reading the import statements" from a habit into a regression test.
+  The
   first rule would have been red before stage 0 and green after; the other two catch backsliding.
-- [ ] Docs pass: `Java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a verdict
+- [ ] Docs pass: `Old_java_map.md` rewritten; `big_map.md`'s ending checked (it already points this direction); a
+  verdict
   paragraph recorded here, set-piece style — what it cost, what it paid.
 - [ ] **Marker for Chapter 3:** the input boundaries (`CommandGetterHolder`, `GameInputHolder`,
   `DefaultCommandGetter`) are still holder-shaped and still uncalled. Their CSP form — the core sends a request
   `CoreMessage` and blocks on the UI channel for the reply — is the birth chapter's design set piece. Do not
   migrate them speculatively now; migrate them when birth gives them their first real caller.
+- [ ] **Second marker for Chapter 3 — the birth note.** Stage 2 removed `splashScreenBirthNote` from `StatusDisplay`
+  (reasoning there). Chapter 3 is what gives it a caller, and restoring it needs three things, none of which should be
+  guessed at before then: a way for the wire to say "this is a birth note" (C's `MSG_BIRTH`, so probably
+  `MessageType` on the message rather than a second `GameEventType` — it is a property of the note, not a different
+  event); the method back on `StatusDisplay` and the `@Override` back on `SplashScreen`, whose painting code is already
+  correct and waiting; and the pause. That last one is the interesting half: C calls `pause_line(Term)` after each note
+  so the player reads them one at a time, and a pause is a *read* — so it needs the input boundary above, and the two
+  markers are really one piece of work. Also settle the wrap divergence then (`SplashScreen`'s Javadoc records it: C
+  wraps at 24 and reuses row 23, the port wraps at 23 and loses a row).
 
 **Done when:** the boundary test is green and would have been red at every stage before 4.
 
@@ -598,19 +631,24 @@ and five callers already.)
 
 ## 6. Primer menu
 
-Page-length, on demand, tied to the code in front of us at the time — ask when a stage reaches the topic, not before:
+Page-length, on demand, tied to the code in front of us at the time — ask when a stage reaches the topic, not before.
+Written ones live in `docs/primers/` and are marked ✅ with their filename; the numbering is fixed so notes elsewhere
+that cite "primer 4" stay true.
 
 1. **CSP in one page** — processes, channels, why "share by communicating" beats "communicate by sharing", and where
    this design is CSP-flavoured rather than CSP-strict (stage 1).
 2. **Records + sealed interfaces as a wire protocol** — exhaustive `switch`, why the compiler becomes the protocol
    checker (stage 1).
 3. **`BlockingQueue` mechanics** — `put`/`take` vs `offer`/`poll`, interruption, memory-visibility guarantees you get
-   for free (stage 1–2).
-4. **The EDT, properly** — what runs on it, `invokeLater` vs `invokeAndWait`, why `take()` on the EDT freezes the app
-   (stage 2).
-5. **Thread lifecycle & shutdown** — non-daemon threads, `join`, why `System.exit` was hiding a race, poison pills
+   for free (stage 1–2). ✅ `blocking-queue.md`
+4. **Producer–consumer as a pattern** — the shape rather than the mechanism: what you buy by having neither thread name
+   the other, the consumer loop's four decisions, why there is no back-pressure here (stage 2). ✅
+   `producer-consumer.md` — added after the menu was numbered, hence the letter.
+5. **The EDT, properly** — what runs on it, `invokeLater` vs `invokeAndWait`, why `take()` on the EDT freezes the app
+   (stage 2). ✅ `edt-and-invokelater.md`
+6. **Thread lifecycle & shutdown** — non-daemon threads, `join`, why `System.exit` was hiding a race, poison pills
    (stage 3–4).
-6. **How C's front end is actually layered** — `game-event.c` broadcasting upward vs `ui-term.h`'s hooks drawing
+7. **How C's front end is actually layered** — `game-event.c` broadcasting upward vs `ui-term.h`'s hooks drawing
    downward, why `ui-*.c` sits between them, and what that says about which of the two a channel should carry (stage 1,
    and again at stage 5 when the handlers split).
 
@@ -618,5 +656,12 @@ Page-length, on demand, tied to the code in front of us at the time — ask when
 
 *Verdict log — filled in as stages complete, one honest paragraph each:*
 
-- *(stage 0: …)*
-- *(stage 1: …)*
+- *(stage 0)* Lots of architecture work, but a lot of understanding came out of it. Problem was that after I had done
+  all the work, I felt drained and not energised, which is normally how I feel coming out of a coding session.
+  Worthwhile but worth spreading out between coding runs.
+
+- *(stage 1)* A lot of confusion and turns dealing with that confusion, but a good outcome. More understanding built,
+  and this time some coding was included, so a mixture of drained and energised. Slight (oh, nothing happens when you
+  run it) disappointment in that I have gone from a running model through to a model where the guts are correct, but not
+  wired in. Need to handle the lack of success and dopamine hit with a "next stage will be better" (and I hope it will
+  be.)

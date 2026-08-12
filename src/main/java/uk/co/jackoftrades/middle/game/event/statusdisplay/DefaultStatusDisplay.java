@@ -64,12 +64,4 @@ public class DefaultStatusDisplay implements StatusDisplay {
     public void splashScreenNote(String message) {
 
     }
-
-    /**
-     * @param message
-     */
-    @Override
-    public void splashScreenBirthNote(String message) {
-
-    }
 }

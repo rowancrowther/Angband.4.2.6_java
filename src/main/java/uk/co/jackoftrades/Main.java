@@ -21,7 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.VisibleForTesting;
 import uk.co.jackoftrades.backend.io.AngDir;
-import uk.co.jackoftrades.frontend.Frontend;
+import uk.co.jackoftrades.frontend.SwingUI;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
@@ -55,16 +55,25 @@ public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
     
     /**
-     * The parsed command line, handed to {@link Frontend#init} by {@link #startFrontend}.
+     * Builds the front end and its game-thread owner, and starts them. Handed to
+     * {@link SwingUtilities#invokeLater} so all of it happens on the EDT, which is the only thread
+     * allowed to touch Swing components once they are realised.
      *
-     * <p>Static because the {@link Runnable} below runs later, on the EDT, after {@code main} has
-     * returned and its locals are gone. Publishing it is safe without further synchronisation:
-     * {@link SwingUtilities#invokeLater} establishes a happens-before edge, so the EDT is
-     * guaranteed to see the write made just above the call.
+     * <p>This is the whole of the port's start-up wiring: a {@link GameRunner} to own the game
+     * thread, a {@link SwingUI} given that runner as its single handle on the middle end, and
+     * {@code init} to build the window and start the loop. It reads {@link #options} rather than
+     * taking a parameter because {@code Runnable} has none.
      *
      * @author Rowan Crowther
      */
-    private static StartupOptions options;
+    static Runnable startFrontend = new Runnable() {
+        @Override
+        public void run() {
+            GameRunner gameRunner = new GameRunner();
+            SwingUI swingUI = new SwingUI(gameRunner);
+            swingUI.init(options);
+        }
+    };
 
     /**
      * Parse {@code args}, then start the front end - unless an argument asked a question instead,
@@ -188,27 +197,17 @@ public class Main {
 
         displayText(output);
     }
-
     /**
-     * Builds the front end and its game-thread owner, and starts them. Handed to
-     * {@link SwingUtilities#invokeLater} so all of it happens on the EDT, which is the only thread
-     * allowed to touch Swing components once they are realised.
+     * The parsed command line, handed to {@link SwingUI#init} by {@link #startFrontend}.
      *
-     * <p>This is the whole of the port's start-up wiring: a {@link GameRunner} to own the game
-     * thread, a {@link Frontend} given that runner as its single handle on the middle end, and
-     * {@code init} to build the window and start the loop. It reads {@link #options} rather than
-     * taking a parameter because {@code Runnable} has none.
+     * <p>Static because the {@link Runnable} below runs later, on the EDT, after {@code main} has
+     * returned and its locals are gone. Publishing it is safe without further synchronisation:
+     * {@link SwingUtilities#invokeLater} establishes a happens-before edge, so the EDT is
+     * guaranteed to see the write made just above the call.
      *
      * @author Rowan Crowther
      */
-    static Runnable startFrontend = new Runnable() {
-        @Override
-        public void run() {
-            GameRunner gameRunner = new GameRunner();
-            Frontend frontend = new Frontend(gameRunner);
-            frontend.init(options);
-        }
-    };
+    private static StartupOptions options;
 
     /**
      * List the savefiles the player could load - the {@code -l} switch. Reads the save directory
@@ -283,7 +282,7 @@ public class Main {
     /**
      * The frame {@link #displayText} fills. A bare {@link JFrame} subclass that adds nothing yet;
      * it exists to give these pre-game windows a name of their own, separate from the game window
-     * {@code Frontend} builds.
+     * {@code SwingUI} builds.
      *
      * @author Rowan Crowther
      */

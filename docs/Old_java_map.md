@@ -9,9 +9,9 @@ It assumes that it can be launched from a terminal.
    logged and then sent to System.err, followed by a System.exit (1).
 4. Main updates the startup options.
 5. Main queues a Runnable (SwingUtilities.invokeLater (startFrontend)), and ceases to exist
-6. startFrontend.run () executes on the EDT getting a new gameRunner, and passing it through to a new frontend.
-    1. When the frontend is created, it creates a new ArrayList for windows, creates a new main window and adds it to
-       the list, then sets activeWindow to be the main window, and sets the frontend gameRunner to be the game runner
+6. startFrontend.run () executes on the EDT getting a new gameRunner, and passing it through to a new swingUI.
+    1. When the swingUI is created, it creates a new ArrayList for windows, creates a new main window and adds it to the
+       list, then sets activeWindow to be the main window, and sets the swingUI gameRunner to be the game runner
        passed in in step 5.
 7. The EDT initialises based on the startup options.
     1. Frontend initialises the activeWindow
@@ -55,7 +55,7 @@ It assumes that it can be launched from a terminal.
 #### The code differs in the following ways ####
 
 The java code splits the game into two Threads, forcing a clear differentiation between the backend/core and the
-frontend. The C has the split, which it differentiates by prefixing the classes that deal with the UI with ui (i.e.
+swingUI. The C has the split, which it differentiates by prefixing the classes that deal with the UI with ui (i.e.
 ui-display.c), but there is no thread other than the main one running at any time. C's split between core and ui is
 purely a naming convention. Java's is enforced. You can check the Java's UI/Core boundary isn't being breached by
 reading the import statements on a UI class.

@@ -56,6 +56,4 @@ public interface StatusDisplay {
      * @author Rowan Crowther
      */
     void splashScreenNote(String message);
-
-    void splashScreenBirthNote(String message);
 }

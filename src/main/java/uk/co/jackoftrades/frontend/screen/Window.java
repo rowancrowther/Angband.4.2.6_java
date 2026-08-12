@@ -19,7 +19,7 @@ package uk.co.jackoftrades.frontend.screen;
 
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
-import uk.co.jackoftrades.frontend.Frontend;
+import uk.co.jackoftrades.frontend.SwingUI;
 
 import javax.swing.*;
 import java.awt.*;
@@ -43,15 +43,15 @@ import java.awt.*;
 public class Window extends JFrame {
     /**
      * The character grid this window displays, captured by {@link #add}. Null until a
-     * {@code JPanelArea} has been added, which {@code Frontend.init} does during start-up.
+     * {@code JPanelArea} has been added, which {@code SwingUI.init} does during start-up.
      *
      * @author Rowan Crowther
      */
-    private Frontend.JPanelArea area;
+    private SwingUI.JPanelArea area;
 
     /**
      * Build an empty window with a placeholder title. Nothing is sized, laid out or shown here -
-     * {@code Frontend.init} does all of that once it has measured the font.
+     * {@code SwingUI.init} does all of that once it has measured the font.
      *
      * @author Rowan Crowther
      */
@@ -82,7 +82,7 @@ public class Window extends JFrame {
      *
      * <p>Only the last grid added is kept: a second one silently replaces the reference, though the
      * component itself is still added. That is fine while a window holds exactly one grid, which is
-     * the arrangement {@code Frontend.init} builds.
+     * the arrangement {@code SwingUI.init} builds.
      *
      * @param comp the component to add; kept as this window's grid if it is a {@code JPanelArea}
      * @return the component argument, as {@code Container.add} contracts
@@ -91,10 +91,38 @@ public class Window extends JFrame {
      */
     @Override
     public Component add(Component comp) {
-        if (comp instanceof Frontend.JPanelArea jPanel) {
+        if (comp instanceof SwingUI.JPanelArea jPanel) {
             area = jPanel;
         }
         return super.add(comp);
+    }
+
+    /**
+     * Put a whole screen of characters into the grid and repaint it.
+     *
+     * <p><b>The hop onto the event dispatch thread lives here</b>, not in the caller. Everything that
+     * paints now arrives from {@code UILoop}, which runs on the display thread rather than the EDT,
+     * so a caller that forgot to hop would be mutating panel state from the wrong thread - the class
+     * of bug that shows up as a repaint that half-happened, a long way from its cause. Putting the
+     * {@code invokeLater} in the method every caller has to go through makes the guarantee a property
+     * of this call rather than something each caller must remember.
+     *
+     * <p>Whole screen at a time, rather than cell by cell: the messages that reach here replace
+     * everything, so there is nothing underneath worth preserving. C's {@code term} hooks work the
+     * other way round, drawing runs of characters as they change, and the port will need that shape
+     * too once the map is being redrawn per turn rather than per screen.
+     *
+     * <p>Runs against whatever {@link #getArea()} holds at the time the queued block runs, so a
+     * window with no grid added yet fails inside the EDT rather than here.
+     *
+     * @param display the character grid to show, indexed {@code [row][column]}
+     * @author Rowan Crowther
+     */
+    public void display(AngbandDisplayCharacter[][] display) {
+        SwingUtilities.invokeLater(() -> {
+            area.setChars(display);
+            area.repaint();
+        });
     }
 
     /**
@@ -103,7 +131,7 @@ public class Window extends JFrame {
      * @return the grid, or {@code null} if none has been added yet
      * @author Rowan Crowther
      */
-    public Frontend.JPanelArea getArea() {
+    public SwingUI.JPanelArea getArea() {
         return area;
     }
 

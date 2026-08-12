@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.channel.CoreChannel;
 import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
 
 /**
@@ -26,10 +27,16 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * clear of Swing's event dispatch thread (EDT) so game work never blocks
  * repainting and input never blocks the game.
  *
- * <p>This is the front end's single handle on the middle end. {@code Frontend}
- * holds one of these and drives it with {@link #start()} and
+ * <p>This is the front end's single handle on the middle end. {@code SwingUI}
+ * holds one of these and drives it with {@link #start(CoreChannel)} and
  * {@link #requestStop()}; it imports nothing else from the middle end, which is
  * what keeps the boundary between the two halves one object wide.
+ *
+ * <p><b>On its way out as a handle.</b> {@code start} now takes the core's end of
+ * the channel, so the front end hands this class the means to talk back rather
+ * than being talked to directly. Stage 4 finishes the job: this becomes the core
+ * thread's own {@code Runnable}, constructed by {@code main()} with its channel
+ * ends, and the front end holds nothing of the middle end at all.
  *
  * <p>There is no C counterpart to this class. The C original is single-threaded:
  * {@code main()} ({@code src/main.c}) initialises and then calls
@@ -37,10 +44,12 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * input inside the command hook. Splitting the loop onto its own thread is a
  * port-only decision forced by Swing, which reserves the EDT for the UI.
  *
- * <p><b>Not yet wired.</b> {@link #gameLoop()} is currently a bare timing loop -
- * it does not build or run a {@link GameEngine}. Engine ownership is intended to
- * land here (created and used on this thread, so the middle end's mutable state
- * is confined to it by construction), but that is not implemented yet.
+ * <p><b>Half wired.</b> {@link #gameLoop()} now registers the start-up handlers
+ * and runs the data load on this thread, so the engine's mutable state is
+ * confined to it by construction - but once the load finishes it falls into a
+ * bare timing loop with nothing to do. Stage 3 replaces that with a receive on
+ * the UI channel, at which point the thread spends its idle time blocked on a
+ * queue rather than sleeping.
  *
  * @author Rowan Crowther
  */
@@ -81,14 +90,35 @@ public class GameRunner {
     private GameEngine gameEngine;
 
     /**
+     * The core's pair of channel ends: the sender it reports to the other half on,
+     * and the receiver stage 3 turns {@link #gameLoop()} into a loop over.
+     *
+     * <p>Held but not yet read. The start-up traffic that already crosses goes out
+     * through {@code ChannelStatusDisplay}, which the front end registers in the
+     * holder with its own copy of this sender - so today the core has two routes to
+     * one queue and uses the other one. Stage 5 removes the holder and this becomes
+     * the only route; stage 3 gives the receiving end its first reader.
+     *
+     * <p>Assigned in {@link #start(CoreChannel)} before {@link Thread#start()},
+     * which publishes it safely to the game thread without needing
+     * {@code volatile}.
+     *
+     * @author Rowan Crowther
+     */
+    private CoreChannel coreChannel;
+
+    /**
      * Start the game thread and begin running {@link #gameLoop()} on it.
      *
      * <p>{@link #running} is set before {@link Thread#start()} so the loop cannot
      * observe {@code false} and exit immediately on its first test.
      *
+     * @param channel the core's pair of channel ends, kept for the loop to use
      * @author Rowan Crowther
      */
-    public void start() {
+    public void start(CoreChannel channel) {
+        this.coreChannel = channel;
+        
         thread = new Thread(this::gameLoop, "angband-game-loop");
         running = true;
 

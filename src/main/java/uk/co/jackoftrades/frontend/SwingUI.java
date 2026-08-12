@@ -20,11 +20,14 @@ package uk.co.jackoftrades.frontend;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.StartupOptions;
+import uk.co.jackoftrades.channel.Channels;
+import uk.co.jackoftrades.channel.CoreChannel;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.colour.Colour;
+import uk.co.jackoftrades.frontend.inputfromuser.UILoop;
 import uk.co.jackoftrades.frontend.screen.Window;
-import uk.co.jackoftrades.frontend.splash.SplashScreen;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.ChannelStatusDisplay;
 import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
 
@@ -44,9 +47,18 @@ import java.util.List;
  * which builds its platform's terms and installs the hooks the core calls back through.
  *
  * <p>Everything here runs on Swing's event dispatch thread (EDT). The middle end runs on the
- * thread {@link GameRunner} owns, and {@code GameRunner} is the only middle-end type this class
- * imports - one object wide, which is what keeps the boundary between the two halves checkable by
- * reading the import list.
+ * thread {@link GameRunner} owns.
+ *
+ * <p><b>The import list does not yet respect the boundary.</b> Three middle-end types are imported:
+ * {@link GameRunner}, which is legitimate and stays until stage 4 moves ownership to {@code main()};
+ * and {@link ChannelStatusDisplay} with {@link StatusDisplayHolder}, which are not. Constructing a
+ * core-side {@code StatusDisplay} here and pushing it into the core's holder is a transitional
+ * shortcut taken because the holder is the registration mechanism that already exists - the UI
+ * reaches across to install the core's own sending end rather than the core being handed it. Stage 4
+ * gives both halves their channel ends from {@code main()}, at which point this class constructs
+ * nothing that belongs to the core; stage 5's boundary test then enforces it, and is expected to
+ * fail against this class until then. The target is that {@code channel} is the only package
+ * this half imports, which is what makes the boundary checkable by reading the import list.
  *
  * <p>State is per-instance, not static. A previous version made the fields static so a static
  * {@code closeDown} could reach them, which left the class half-static and would have let a second
@@ -58,8 +70,8 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class Frontend {
-    private static final Logger logger = LogManager.getLogger(Frontend.class);
+public class SwingUI {
+    private static final Logger logger = LogManager.getLogger(SwingUI.class);
 
     /**
      * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
@@ -84,6 +96,33 @@ public class Frontend {
     private GameRunner gameRunner;
 
     /**
+     * The consumer half: the loop that reads this half's inbox and paints what the core sent.
+     *
+     * <p>Built in the constructor but not started until the end of {@link #init}, so it cannot try
+     * to paint into a window that has no grid in it yet. It is given this front end, so the two
+     * refer to each other - which is a shortcut of the same kind as the holder registration below,
+     * and unwinds in the same place: stage 4 makes the loop the UI thread's own {@code Runnable}
+     * rather than something this class owns.
+     *
+     * @author Rowan Crowther
+     */
+    private UILoop uiLoop;
+
+    /**
+     * The two queues the halves talk over, built here temporarily.
+     *
+     * <p>{@code Channels.create()} belongs in {@code main()} - it is the one place that can hand
+     * each half its own ends and nothing more - and stage 4 moves it there. Until then this class
+     * builds the pair and passes the core's half on with {@code gameRunner.start()}, which is the
+     * only reason the field exists: the constructor needs somewhere to keep them until {@link #init}
+     * runs. Building them here is safe but says the wrong thing about ownership, since the front end
+     * is holding the core's ends on its behalf.
+     *
+     * @author Rowan Crowther
+     */
+    private Channels channels;
+
+    /**
      * The parsed command line, kept from {@link #init}.
      *
      * <p>Nothing reads it yet. {@code requestGraphicsMode} is the component that belongs to this
@@ -103,7 +142,13 @@ public class Frontend {
      * @param gameRunner the game thread's owner, this front end's one handle on the middle end
      * @author Rowan Crowther
      */
-    public Frontend(GameRunner gameRunner) {
+    public SwingUI(GameRunner gameRunner) {
+        // Build the two channels to send and receive messages from the core
+        // Temporary build here until Stage 4 when they are moved to main and only
+        // passed here
+        channels = Channels.create();
+        uiLoop = new UILoop(channels.uiChannel(), this);
+        
         windows = new ArrayList<>();
         Window main = new Window();
         windows.add(main);
@@ -154,6 +199,18 @@ public class Frontend {
      * before {@code setVisible} leaves the JVM alive with no window on screen, because
      * {@code pack()} has already made the frame displayable and so kept the EDT running.
      *
+     * <p><b>The last three lines are the whole of the channel wiring.</b> A
+     * {@link ChannelStatusDisplay} goes into the holder, so the core's start-up calls become messages
+     * instead of paint calls; the {@code angband-display} thread starts, so something is reading
+     * this half's inbox; and only then does the game thread start. The order between the last two
+     * matters less than it looks - the channel buffers, so a message sent before the consumer starts
+     * waits rather than being lost - but starting the reader first keeps the splash screen prompt and
+     * costs nothing.
+     *
+     * <p>Registering a core-side object into a core-side holder from here is the transitional
+     * shortcut described on the class, and the line stage 4 deletes: once {@code main()} owns the
+     * channels, the core is handed its own sending end and this half never names it.
+     *
      * @param options the parsed command line; stored, not yet acted on
      * @author Rowan Crowther
      */
@@ -195,10 +252,16 @@ public class Frontend {
 
         activeWindow.setVisible(true);
 
-        // Register the event holders
-        StatusDisplayHolder.setInstance(new SplashScreen(this));
+        // Give the core a StatusDisplay that sends rather than paints. This replaces the front end's
+        // own SplashScreen in the holder, and is the single line that puts the core's start-up
+        // traffic on the channel.
+        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(channels.coreChannel().coreSender()));
 
-        gameRunner.start();
+        // Start reading this half's inbox. Non-daemon, so from stage 3 the thread's own exit is part
+        // of the shutdown rather than something the JVM has to be told to ignore.
+        new Thread(uiLoop::loop, "angband-display").start();
+
+        gameRunner.start(channels.coreChannel());
     }
 
     /**
@@ -237,7 +300,7 @@ public class Frontend {
      */
     public class JPanelArea extends JPanel {
         /**
-         * The grid font, measured and installed by {@link Frontend#init}.
+         * The grid font, measured and installed by {@link SwingUI#init}.
          */
         public static Font font;
         /** Cell width in pixels, from the font's {@code 'M'}. */

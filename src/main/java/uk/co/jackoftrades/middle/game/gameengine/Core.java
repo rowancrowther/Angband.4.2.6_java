@@ -21,12 +21,11 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.channel.CoreChannel;
+import uk.co.jackoftrades.channel.corechannel.CoreSender;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.ChannelStatusDisplay;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 
 /**
  * The middle end's body: what the game thread runs, kept clear of Swing's event
@@ -91,12 +90,12 @@ public class Core {
      *
      * <p>The receiving end is this class's whole knowledge of the front end - the
      * loop waits on it and never calls the UI at all. The sending end goes out
-     * twice over: directly, for the shutdown reply, and wrapped in a
-     * {@link ChannelStatusDisplay} that {@link #gameLoop()} puts in the holder, so
-     * the start-up narration the event handlers produce leaves by the same queue.
-     * Both routes are this one sender, which is the change stage 4 made - the front
-     * end used to build that wrapper with a copy of the sender it had no business
-     * holding. Stage 5 removes the holder and leaves the direct route alone.
+     * twice over: directly, for the shutdown reply, and handed to
+     * {@code InitHandlers}, so the start-up narration the event handlers produce
+     * leaves by the same queue. Both routes are this one sender. Stage 4 made that
+     * true - the front end used to hold a copy of the sender it had no business
+     * holding - and stage 5 removed the last indirection on the second route, so the
+     * handlers now send on it themselves rather than through a registered display.
      *
      * <p>Handed in at construction, on {@code main}'s thread, and read on the game
      * thread; safe without {@code volatile} because starting a thread publishes
@@ -120,22 +119,6 @@ public class Core {
     private StartupOptions startupOptions;
 
     /**
-     * Build the core around the channel ends and the options {@code main()} gives it.
-     *
-     * <p>Only assembles state: no thread is started, no engine is built and no message is sent
-     * until {@link #gameLoop()} runs on the thread {@code main()} wraps this in. That split is what
-     * lets construction happen on one thread and everything else on another.
-     *
-     * @param coreChannel    the core's pair of channel ends - its inbox and its way of replying
-     * @param startupOptions the parsed command line
-     * @author Rowan Crowther
-     */
-    public Core(CoreChannel coreChannel, StartupOptions startupOptions) {
-        this.coreChannel = coreChannel;
-        this.startupOptions = startupOptions;
-    }
-
-    /**
      * Put the game engine in {@link #gameEngine}, building the singleton on first call.
      *
      * <p>An instance method wrapping a static call, so the dependency on
@@ -155,6 +138,22 @@ public class Core {
     }
 
     /**
+     * Build the core around the channel ends and the options {@code main()} gives it.
+     *
+     * <p>Only assembles state: no thread is started, no engine is built and no message is sent
+     * until {@link #gameLoop()} runs on the thread {@code main()} wraps this in. That split is what
+     * lets construction happen on one thread and everything else on another.
+     *
+     * @param coreChannel    the core's pair of channel ends - its inbox and its way of replying
+     * @param startupOptions the parsed command line
+     * @author Rowan Crowther
+     */
+    public Core(CoreChannel coreChannel, StartupOptions startupOptions) {
+        this.coreChannel = coreChannel;
+        this.startupOptions = startupOptions;
+    }
+
+    /**
      * The game thread's body: load the data, then block on the core's inbox and act
      * on what the front end sends, until it sends the message that ends the loop.
      *
@@ -164,12 +163,16 @@ public class Core {
      * for messages, which is the same shape with a queue where C has a blocking call
      * into the display module. The alternation itself is Chapter 5's.
      *
-     * <p><b>The four statements before the loop are the core's whole set-up, in the only order that
+     * <p><b>The statements before the loop are the core's whole set-up, in the only order that
      * works.</b> The engine is built first, because building it replaces the event bus. The
-     * {@link ChannelStatusDisplay} goes into the holder next, so that when the data load starts
-     * signalling, the handlers have somewhere to send to - registered after the load, the title
-     * screen would stay blank and the notes would go nowhere. The handlers subscribe third, and
-     * only then does {@code loadGameConstants()} produce the events they carry across.
+     * handlers are then constructed around the core's sender and subscribed to that bus - both
+     * before the load, because {@code EVENT_ENTER_INIT} is raised from inside it and a handler
+     * registered afterwards would miss it: the title screen would stay blank and the notes would go
+     * nowhere. Only then does {@code loadGameConstants()} produce the events they carry across.
+     *
+     * <p>Nothing keeps the {@code InitHandlers} instance after this method drops its local, and
+     * nothing needs to: subscribing hands the bus a bound method reference per handler, and each of
+     * those holds the object.
      *
      * <p>The engine is built here rather than by the caller, replacing a two-call sequence the
      * caller had to know about, where calling this method alone dereferenced a null field. The null
@@ -206,9 +209,10 @@ public class Core {
         if (gameEngine == null)
             getGameEngine();
 
-        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(coreChannel.coreSender()));
-        
-        InitHandlers.initHandlers();
+        CoreSender coreSender = coreChannel.coreSender();
+
+        InitHandlers initHandlers = new InitHandlers(coreSender);
+        initHandlers.initHandlers();
 
         gameEngine.loadGameConstants();
 

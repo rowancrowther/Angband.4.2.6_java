@@ -53,8 +53,8 @@ import java.util.List;
  *
  * <p><b>The import list now respects the boundary.</b> Stage 4 removed the last of the middle-end
  * imports: this class held a {@code Core} as its single handle on the middle end, and built a
- * core-side {@code StatusDisplay} to push into the core's own holder. {@code main()} now gives each
- * half its channel ends, and the core installs that display itself, so what is left here names
+ * core-side display object to push into a static slot the core read. {@code main()} now gives each
+ * half its channel ends, and the core's own handlers send on theirs, so what is left here names
  * {@code channel} and the front end's own packages - which is what makes the boundary checkable by
  * reading the imports, and what stage 5's boundary test will pin down.
  *
@@ -135,6 +135,38 @@ public class SwingUI {
      * @author Rowan Crowther
      */
     private StartupOptions startupOptions;
+
+    /**
+     * Build the front end around the channel ends {@code main()} gives it, and make its first
+     * window.
+     *
+     * <p>Only assembles state: nothing is shown until {@link #init()} and nothing is read from the
+     * inbox until {@link #startLoop()}. The three arguments are the whole of what this half is
+     * given - no handle on the core, and no way to obtain one.
+     *
+     * <p><b>Runs on the UI thread, not the EDT</b>, unlike everything it builds. That is the benign
+     * case rather than a violation: the {@link Window} made here is not yet realised, no other
+     * thread has a reference to it, and the {@code invokeLater} that queues {@link #init()}
+     * establishes the happens-before edge the EDT needs before it touches any of it.
+     *
+     * @param uiChannel      this half's pair of channel ends
+     * @param edtChannel     the send-only end the window listener will post on
+     * @param startupOptions the parsed command line
+     * @author Rowan Crowther
+     */
+    public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
+        this.uiChannel = uiChannel;
+        this.edtChannel = edtChannel;
+        this.startupOptions = startupOptions;
+
+        uiLoop = new UILoop(uiChannel, this);
+
+        windows = new ArrayList<>();
+        Window main = new Window();
+        windows.add(main);
+        activeWindow = main;
+    }
+
     /**
      * The game window's window events. Only {@code windowClosing} does anything; the rest are
      * generated overrides that call {@code super} and could go.
@@ -267,37 +299,6 @@ public class SwingUI {
             super.windowLostFocus(e);
         }
     };
-
-    /**
-     * Build the front end around the channel ends {@code main()} gives it, and make its first
-     * window.
-     *
-     * <p>Only assembles state: nothing is shown until {@link #init()} and nothing is read from the
-     * inbox until {@link #startLoop()}. The three arguments are the whole of what this half is
-     * given - no handle on the core, and no way to obtain one.
-     *
-     * <p><b>Runs on the UI thread, not the EDT</b>, unlike everything it builds. That is the benign
-     * case rather than a violation: the {@link Window} made here is not yet realised, no other
-     * thread has a reference to it, and the {@code invokeLater} that queues {@link #init()}
-     * establishes the happens-before edge the EDT needs before it touches any of it.
-     *
-     * @param uiChannel      this half's pair of channel ends
-     * @param edtChannel     the send-only end the window listener will post on
-     * @param startupOptions the parsed command line
-     * @author Rowan Crowther
-     */
-    public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
-        this.uiChannel = uiChannel;
-        this.edtChannel = edtChannel;
-        this.startupOptions = startupOptions;
-
-        uiLoop = new UILoop(uiChannel, this);
-        
-        windows = new ArrayList<>();
-        Window main = new Window();
-        windows.add(main);
-        activeWindow = main;
-    }
 
     /**
      * Dispose every window. The last step of the shutdown handshake, and now the whole of it that
@@ -654,9 +655,9 @@ public class SwingUI {
 
         activeWindow.setVisible(true);
 
-        // The display is up, so the core may begin. Registering the core's ChannelStatusDisplay used
-        // to happen here too; it now happens in Core.gameLoop, on the side that owns the
-        // sender.
+        // The display is up, so the core may begin. Installing the core's display object used to
+        // happen here too; the core's own handlers now send on the sender they are constructed
+        // with, so this side has nothing to register.
         sendStartToCore();
     }
 }

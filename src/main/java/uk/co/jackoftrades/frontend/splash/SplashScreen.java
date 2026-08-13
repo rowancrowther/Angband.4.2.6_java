@@ -40,12 +40,12 @@ import java.util.Scanner;
  * ({@code [C] src/ui-display.c}), which C reaches through {@code show_splashscreen()}
  * ({@code [C] src/ui-init.c}).
  *
- * <p><b>No longer the core's {@code StatusDisplay}.</b> Until stage 2 an instance of this class sat
- * in {@code StatusDisplayHolder} and the core called it directly. It is now built by {@code UILoop}
- * when {@code EVENT_ENTER_INIT} arrives as a message, and the holder contains a
- * {@code ChannelStatusDisplay} instead - so this class implements nothing, is named by no core code,
- * and is reached only from the UI half. The methods kept their names because they still answer the
- * same two questions; what changed is who asks.
+ * <p><b>No longer anything the core can name.</b> Until stage 2 an instance of this class sat in a
+ * static slot the middle end read, and the core called it directly. It is now built by
+ * {@code UILoop} when {@code EVENT_ENTER_INIT} arrives as a message - so this class implements
+ * nothing, is named by no core code, and is reached only from the UI half. Stage 5 removed the slot
+ * and its remaining implementations altogether. The methods kept their names because they still
+ * answer the same two questions; what changed is who asks.
  *
  * <p><b>Called on the UI thread, and hops to the EDT itself.</b> {@code UILoop} runs on
  * {@code angband-ui}, which is neither the game thread nor Swing's event dispatch thread, so the
@@ -302,10 +302,10 @@ public class SplashScreen {
      * {@code repaint} sequence is queued with {@code invokeLater} - so the grid is complete before
      * anything looks at it, and no Swing state is mutated off the event dispatch thread.
      *
-     * <p><b>The live path since stage 2:</b> {@code GameConstants.init()} signals
-     * {@code EVENT_INITSTATUS}, {@code InitHandlers.splashScreenNote} forwards it to the boundary,
-     * {@code ChannelStatusDisplay} turns it into a {@code TextCoreMessage}, and {@code UILoop} calls
-     * this with the text. Every note in the data load comes through here.
+     * <p><b>The live path:</b> {@code GameConstants.init()} signals {@code EVENT_INITSTATUS},
+     * {@code InitHandlers.splashScreenNote} turns it into a {@code TextCoreMessage} on the core
+     * channel, and {@code UILoop} takes it off the inbox and calls this with the text. Every note in
+     * the data load comes through here.
      *
      * <p>Its birth counterpart {@link #splashScreenBirthNote(String)} is still unreached, because
      * nothing on the wire distinguishes the two kinds of note - which is the whole reason the split

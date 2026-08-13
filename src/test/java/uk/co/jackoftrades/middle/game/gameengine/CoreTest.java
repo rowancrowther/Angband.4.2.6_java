@@ -29,7 +29,6 @@ import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
 import uk.co.jackoftrades.channel.messages.ChannelMessage;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -131,8 +130,13 @@ class CoreTest {
     }
 
     /**
-     * Leaves nothing running and nothing global changed: the holder is static, and a game thread
-     * left blocked on a queue would outlive the test that started it.
+     * Leaves nothing running: a game thread left blocked on a queue would outlive the test that
+     * started it.
+     *
+     * <p>There is no global left to restore. {@code gameLoop()} used to install a display in a
+     * static holder, which every test after this one would then have inherited; since stage 5 it
+     * constructs handlers around its own sender instead, and the only state it touches outside
+     * itself is the event bus.
      */
     @AfterEach
     void tearDown() throws InterruptedException {
@@ -140,7 +144,6 @@ class CoreTest {
             requestStop();
             awaitThreadEnd();
         }
-        StatusDisplayHolder.resetInstance();
     }
 
     /**

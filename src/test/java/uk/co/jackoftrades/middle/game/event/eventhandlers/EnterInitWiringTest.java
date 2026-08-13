@@ -17,16 +17,14 @@
 
 package uk.co.jackoftrades.middle.game.event.eventhandlers;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.channel.Channels;
+import uk.co.jackoftrades.channel.corechannel.CoreSender;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.messages.ChannelMessage;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.ChannelStatusDisplay;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 
 import java.util.ArrayList;
@@ -37,10 +35,15 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * The whole core-side path of stage 2, asserted end to end on the real transport: a bus signal
- * from where {@code GameConstants.init()} raises it, through {@link InitHandlers}, through
- * {@link StatusDisplayHolder}, through {@link ChannelStatusDisplay}, onto a real
+ * The whole core-side path, asserted end to end on the real transport: a bus signal from where
+ * {@code GameConstants.init()} raises it, through {@link InitHandlers}, onto a real
  * {@link Channels} queue - and read back off the UI half's inbox exactly as {@code UILoop} would.
+ *
+ * <p>Stage 5 shortened that path rather than changing what it delivers. The signal used to reach
+ * the channel through a static holder and a {@code StatusDisplay} implementation; the handler now
+ * sends on the {@link CoreSender} it was constructed with, and the messages on the inbox are the
+ * same ones. That this test needed no change to its assertions is the evidence that the stage was a
+ * refactor.
  *
  * <p>Everything but the painting, in other words. That last hop is what {@code UILoop} does and is
  * not covered here; see the note in this test's companion about why it cannot be, today.
@@ -63,13 +66,9 @@ class EnterInitWiringTest {
         bus = new EventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
         channels = Channels.create();
-        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(channels.coreChannel().coreSender()));
-        InitHandlers.initHandlers();
-    }
-
-    @AfterEach
-    void tearDown() {
-        StatusDisplayHolder.resetInstance();
+        CoreSender coreSender = channels.coreChannel().coreSender();
+        InitHandlers initHandlers = new InitHandlers(coreSender);
+        initHandlers.initHandlers();
     }
 
     /**

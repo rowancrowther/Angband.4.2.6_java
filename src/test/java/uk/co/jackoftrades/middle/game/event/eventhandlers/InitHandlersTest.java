@@ -17,68 +17,93 @@
 
 package uk.co.jackoftrades.middle.game.event.eventhandlers;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.channel.Sender;
 import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplay;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertIterableEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests the start-up chain {@link InitHandlers} owns: bus signal, to handler, to the
- * {@link StatusDisplay} boundary. Replaces the {@code InitHandlersTest} named in
- * {@code InitHandlers}' Javadoc, which the stage 0/1 package moves lost.
+ * Tests the start-up chain {@link InitHandlers} owns: bus signal, to handler, to the sending end of
+ * the core channel.
  *
  * <p>The property under test is the one that is invisible at a breakpoint in the bus:
  * {@code EVENT_INITSTATUS} has no handler until {@code EVENT_ENTER_INIT} has been dispatched,
- * because {@link InitHandlers#enterInit} is what subscribes it. Signalling the two in the wrong
- * order dispatches to an empty list and looks exactly like an event that was never signalled.
+ * because {@code enterInit} is what subscribes it. Signalling the two in the wrong order dispatches
+ * to an empty list and looks exactly like an event that was never signalled.
+ *
+ * <p><b>A fake {@link Sender}, not a real channel.</b> That is the whole reason this test and
+ * {@code EnterInitWiringTest} both exist: this one asks what the handlers do and can see the answer
+ * synchronously, with no queue and no second thread; that one asks whether the real transport
+ * carries it. They fail for different reasons - this one when the registration changes, that one
+ * when the wire format does.
+ *
+ * <p>Since stage 5 there is nothing global to restore: the handlers are handed their sender at
+ * construction rather than reaching a process-wide holder, so each test gets its own instance and
+ * the only shared state left is the bus, which {@code setUp} replaces outright.
  *
  * @author Rowan Crowther
  */
 class InitHandlersTest {
 
     private EventsBusHandler bus;
-    private RecordingDisplay display;
+    private RecordingSender sender;
 
     @BeforeEach
     void setUp() {
         bus = new EventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
-        display = new RecordingDisplay();
-        StatusDisplayHolder.setInstance(display);
-        InitHandlers.initHandlers();
-    }
-
-    @AfterEach
-    void tearDown() {
-        StatusDisplayHolder.resetInstance();
+        sender = new RecordingSender();
+        new InitHandlers(sender).initHandlers();
     }
 
     /**
-     * The order {@code GameConstants.init()} actually uses: enter-init first, then the notes.
-     * Both must reach the display.
+     * The order {@code GameConstants.init()} actually uses: enter-init first, then the notes. Each
+     * must reach the sender as the record matching its payload shape - nothing for the splash
+     * screen, text for a note.
      */
     @Test
-    void enterInitThenNotesReachTheDisplay() {
+    void enterInitThenNotesReachTheSender() {
         bus.eventSignalString(GameEventType.EVENT_ENTER_INIT, "Entering Init");
         bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game constants...");
         bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising world...");
 
         assertIterableEquals(
-                List.of("showSplashScreen",
-                        "note:Initialising game constants...",
-                        "note:Initialising world..."),
-                display.calls);
+                List.of(new CoreMessage.SimpleCoreMessage(GameEventType.EVENT_ENTER_INIT),
+                        new CoreMessage.TextCoreMessage(GameEventType.EVENT_INITSTATUS,
+                                "Initialising game constants..."),
+                        new CoreMessage.TextCoreMessage(GameEventType.EVENT_INITSTATUS,
+                                "Initialising world...")),
+                sender.sent);
+    }
+
+    /**
+     * The type on the message is the event that was signalled, not the payload's text and not a
+     * constant baked into the handler. Pins the {@code eventType} forwarding both handlers do.
+     */
+    @Test
+    void messagesCarryTheEventThatWasSignalled() {
+        bus.eventSignalString(GameEventType.EVENT_ENTER_INIT, "Entering Init");
+        bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "a note");
+
+        CoreMessage.SimpleCoreMessage splash =
+                assertInstanceOf(CoreMessage.SimpleCoreMessage.class, sender.sent.get(0));
+        CoreMessage.TextCoreMessage note =
+                assertInstanceOf(CoreMessage.TextCoreMessage.class, sender.sent.get(1));
+
+        assertEquals(GameEventType.EVENT_ENTER_INIT, splash.gameEventType());
+        assertEquals(GameEventType.EVENT_INITSTATUS, note.gameEventType());
+        assertEquals("a note", note.message());
     }
 
     /**
@@ -88,35 +113,66 @@ class InitHandlersTest {
     void noteBeforeEnterInitIsLost() {
         bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "too early");
 
-        assertTrue(display.calls.isEmpty(), "expected no handler for EVENT_INITSTATUS yet");
+        assertTrue(sender.sent.isEmpty(), "expected no handler for EVENT_INITSTATUS yet");
     }
 
     /**
-     * A bare {@code eventSignal} carries no payload, so {@code enterInit}'s guard rejects it.
+     * A bare {@code eventSignal} carries no payload, so {@code enterInit}'s guard rejects it - and
+     * rejects it before the subscription, so the notes that follow are lost too.
      */
     @Test
-    void bareEnterInitSignalShowsNothing() {
+    void bareEnterInitSignalSendsNothing() {
         bus.eventSignal(GameEventType.EVENT_ENTER_INIT);
 
-        assertTrue(display.calls.isEmpty(), "enterInit requires an EventDataString payload");
+        assertTrue(sender.sent.isEmpty(), "enterInit requires an EventDataString payload");
         bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "note");
-        assertEquals(0, display.calls.size(), "no subscription happened either");
+        assertEquals(0, sender.sent.size(), "no subscription happened either");
     }
 
     /**
-     * A recording stand-in for the front end, so the boundary calls can be asserted.
+     * A note carrying no string payload is dropped, the same way {@code enterInit} drops a bare
+     * signal - the guard is on both handlers and this is the half the other tests do not reach.
      */
-    private static final class RecordingDisplay implements StatusDisplay {
-        private final List<String> calls = new ArrayList<>();
+    @Test
+    void bareNoteSignalSendsNothing() {
+        bus.eventSignalString(GameEventType.EVENT_ENTER_INIT, "Entering Init");
+        sender.sent.clear();
+
+        bus.eventSignal(GameEventType.EVENT_INITSTATUS);
+
+        assertTrue(sender.sent.isEmpty(), "splashScreenNote requires an EventDataString payload");
+    }
+
+    /**
+     * The phase handlers that only log still send nothing at all. Cheap to assert and it is the
+     * test that would fail first if one of them grew a message without one being intended.
+     */
+    @Test
+    void loggingOnlyHandlersSendNothing() {
+        bus.eventSignal(GameEventType.EVENT_LEAVE_INIT);
+        bus.eventSignal(GameEventType.EVENT_ENTER_GAME);
+        bus.eventSignal(GameEventType.EVENT_LEAVE_GAME);
+        bus.eventSignal(GameEventType.EVENT_ENTER_WORLD);
+        bus.eventSignal(GameEventType.EVENT_LEAVE_WORLD);
+        bus.eventSignal(GameEventType.EVENT_ENTER_BIRTH);
+        bus.eventSignal(GameEventType.EVENT_LEAVE_BIRTH);
+
+        assertTrue(sender.sent.isEmpty(), "these handlers only log so far");
+    }
+
+    /**
+     * A recording stand-in for the core's end of the channel.
+     *
+     * <p>Implementing {@link Sender} rather than subclassing {@code CoreSender} is what the field's
+     * interface type buys: no queue to own, no messages to drain, and the assertions read against a
+     * plain list.
+     */
+    private static final class RecordingSender implements Sender<CoreMessage> {
+        private final List<CoreMessage> sent = new ArrayList<>();
 
         @Override
-        public void showSplashScreen() {
-            calls.add("showSplashScreen");
-        }
-
-        @Override
-        public void splashScreenNote(String message) {
-            calls.add("note:" + message);
+        public void send(CoreMessage message) {
+            sent.add(message);
         }
     }
 }

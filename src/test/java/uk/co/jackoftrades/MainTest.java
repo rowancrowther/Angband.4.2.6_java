@@ -400,13 +400,16 @@ class MainTest {
          */
         private static final StartupOptions NO_OPTIONS =
                 new StartupOptions(false, false, false, false, "", "", List.of());
+
+        private Channels channels;
+        private Thread uiThread;
+
         /**
          * Anything that escaped the UI body, recorded by the thread's own handler. Staying
          * {@code null} is the assertion in {@link #aCrashEndsTheThreadByReturningNotThrowing}.
          */
         private final AtomicReference<Throwable> escaped = new AtomicReference<>();
-        private Channels channels;
-        private Thread uiThread;
+
         /**
          * The frames that already existed when the test began, so the ones this test creates can be
          * told apart from those another test class left on screen.

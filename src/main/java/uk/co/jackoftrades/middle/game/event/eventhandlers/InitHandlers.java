@@ -19,17 +19,14 @@ package uk.co.jackoftrades.middle.game.event.eventhandlers;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.channel.Channels;
+import uk.co.jackoftrades.channel.Sender;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.data.EventDataString;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.game.event.birthhandlers.UIBirth;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
-
-import java.nio.channels.Channel;
 
 /**
  * The middle end's start-up event handlers, and the one place they are registered. This is the port
@@ -47,8 +44,21 @@ import java.nio.channels.Channel;
  * with a fresh one and would discard anything registered earlier. {@code EnterInitWiringTest} pins
  * that ordering; {@code InitHandlersTest} pins what this class registers.
  *
- * <p>Only {@link #enterInit} does real work so far. The rest log and return, standing in for the
- * screen setup and teardown C does at each transition.
+ * <p>Only {@link #enterInit} and {@link #splashScreenNote} do real work so far. The rest log and
+ * return, standing in for the screen setup and teardown C does at each transition.
+ *
+ * <p><b>An instance, since stage 5, and that is the whole of the change.</b> These handlers used to
+ * be static and reach the front end through {@code StatusDisplayHolder}, a process-wide slot the
+ * other half wrote. They now hold {@link #coreSender} and put a {@link CoreMessage} on the core
+ * channel themselves, which is the same information travelling by a route the compiler can see: a
+ * field handed in at construction rather than a static read at call time. The holder, the
+ * {@code StatusDisplay} interface and its two implementations all lose their last caller here.
+ *
+ * <p>What that costs is late registration. The holder was read at the point of use, so a front end
+ * that registered itself after the handlers were wired still received the calls; a captured sender
+ * fixes the destination when {@code Core.gameLoop()} constructs this. Nothing needs the old
+ * property - the channel ends exist before either thread starts, and the front end no longer
+ * registers anything with the core at all.
  *
  * @author Rowan Crowther
  */
@@ -61,6 +71,40 @@ public class InitHandlers {
     private static final Logger logger = LogManager.getLogger(InitHandlers.class);
 
     /**
+     * The core's writing end of the UI thread's inbox: where every handler that has something to
+     * say puts it.
+     *
+     * <p>Declared as {@link Sender} rather than as the concrete {@code CoreSender} it is handed.
+     * The interface is the whole of what these handlers need - one {@code send} - and typing the
+     * field to it says so: this class depends on somewhere to put {@link CoreMessage}s, not on
+     * which end of which queue that turns out to be. A test can therefore supply a recording
+     * {@code Sender} without owning a queue, and the compiler still refuses anything that is not a
+     * {@code CoreMessage}, which is the direction of travel enforced rather than remembered.
+     *
+     * <p>{@code final}, so it is safely published: the object is constructed on the game thread
+     * today, but a final field is visible to any thread that sees the object at all, which does not
+     * depend on that staying true.
+     *
+     * @author Rowan Crowther
+     */
+    private final Sender<CoreMessage> coreSender;
+
+    /**
+     * Build the handlers around the channel end they report on.
+     *
+     * <p>Constructing does not subscribe anything - {@link #initHandlers()} does that, and the two
+     * are separate because the bus this wires must be the live one, which is only true after
+     * {@code GameEngine.getGame()} has run.
+     *
+     * @param coreSender the core's sending end of the core channel; not checked for null, and a
+     *                   null would fail at the first event rather than here
+     * @author Rowan Crowther
+     */
+    public InitHandlers(Sender<CoreMessage> coreSender) {
+        this.coreSender = coreSender;
+    }
+
+    /**
      * Subscribe every start-up handler to the live event bus, including the birth-screen pair
      * {@code UIBirth} owns.
      *
@@ -71,22 +115,33 @@ public class InitHandlers {
      * <p>Not idempotent: dispatch is non-consuming, so calling this twice on one bus registers
      * every handler twice and each would then run twice per signal. Safe today only because
      * {@code Core.gameLoop()} is called once, and each {@code GameEngine} arrives with a bus
-     * that has nothing on it yet.
+     * that has nothing on it yet. Two {@code InitHandlers} instances wired to one bus would do the
+     * same damage, which is the same rule seen from the other side.
+     *
+     * <p>The registrations are bound method references ({@code this::enterInit}), so each one holds
+     * this object. That is what keeps the instance reachable once {@code gameLoop()} drops its
+     * local: the bus owns the handlers, and the handlers own their receiver. Nothing needs to
+     * retain this class deliberately.
+     *
+     * <p>{@code UIBirth} is constructed here with the same {@link #coreSender} and asked to
+     * subscribe its own pair, so start-up still has one entry point and both halves of it report
+     * on one channel end.
      *
      * @author Rowan Crowther
      */
-    public static void initHandlers() {
+    public void initHandlers() {
         EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
-        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_INIT, InitHandlers::enterInit);
-        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_INIT, InitHandlers::leaveInit);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_INIT, this::enterInit);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_INIT, this::leaveInit);
 
-        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_GAME, InitHandlers::enterGame);
-        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_GAME, InitHandlers::leaveGame);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_GAME, this::enterGame);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_GAME, this::leaveGame);
 
-        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_WORLD, InitHandlers::enterWorld);
-        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_WORLD, InitHandlers::leaveWorld);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_ENTER_WORLD, this::enterWorld);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_LEAVE_WORLD, this::leaveWorld);
 
-        UIBirth.uiInitBirthstateHandlers();
+        UIBirth uiBirth = new UIBirth(coreSender);
+        uiBirth.uiInitBirthstateHandlers();
     }
 
     /**
@@ -101,14 +156,17 @@ public class InitHandlers {
      * {@link java.util.concurrent.CopyOnWriteArrayList} - a plain list's fail-fast iterator would
      * throw here.
      *
-     * <p>The display is fetched from the holder at call time, not captured at registration, so a
-     * front end that registers itself late still gets the call.
+     * <p><b>What "put the title screen up" means here.</b> One {@code SimpleCoreMessage} onto the
+     * core channel, and return; the other half decides that means {@code news.txt} on the screen.
+     * Reading the file, parsing it and painting it all live in {@code UILoop} - which is C's own
+     * arrangement, where {@code game-event.c} broadcasts and {@code ui-*.c} draws. The send does
+     * not wait: the channel is unbounded, so the data load carries on at its own speed whatever the
+     * display is doing.
      *
-     * <p><b>What "put the title screen up" now means.</b> Since stage 2 the holder contains a
-     * {@code ChannelStatusDisplay}, so this call sends {@code SimpleCoreMessage(EVENT_ENTER_INIT)}
-     * and returns; the other half decides that means {@code news.txt} on the screen. Reading
-     * the file, parsing it and painting it all moved to {@code UILoop} with it - which is C's own
-     * arrangement, where {@code game-event.c} broadcasts and {@code ui-*.c} draws.
+     * <p><b>The message carries {@code eventType}, not the constant.</b> They are the same value
+     * today - this is subscribed to {@code EVENT_ENTER_INIT} and nothing else - but forwarding the
+     * event that was actually signalled is what the message means, and it keeps the two from
+     * drifting apart if this is ever registered against a second type.
      *
      * <p><b>Guarded on the payload.</b> A signal carrying no {@link EventDataString} is ignored
      * entirely - no splash screen, no subscription. The bound {@code message} is never read; the
@@ -121,18 +179,19 @@ public class InitHandlers {
      * and the hop onto the event dispatch thread is made over there. Nothing on this side of the
      * boundary touches Swing at all now.
      *
-     * @param eventType the event being handled, always {@code EVENT_ENTER_INIT}; not read
+     * @param eventType the event being handled, always {@code EVENT_ENTER_INIT}; forwarded as the
+     *                  message's type
      * @param data      the payload; must be an {@link EventDataString} or nothing happens
      * @author Rowan Crowther
      */
-    public static void enterInit(GameEventType eventType, GameEventData data) {
+    private void enterInit(GameEventType eventType, GameEventData data) {
         // logger.info("Entering init");
 
         if (data instanceof EventDataString message) {
-            StatusDisplayHolder.getInstance().showSplashScreen();
+            coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
 
             EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
-            eventsHandler.eventAddHandler(GameEventType.EVENT_INITSTATUS, InitHandlers::splashScreenNote);
+            eventsHandler.eventAddHandler(GameEventType.EVENT_INITSTATUS, this::splashScreenNote);
         }
     }
 
@@ -142,24 +201,36 @@ public class InitHandlers {
      *
      * <p>The port of {@code splashscreen_note} ({@code [C] src/ui-display.c})'s non-birth branch,
      * which reads the string out of the payload and prints it under the title screen. This does the
-     * first half and hands the second across the boundary: the note goes to
-     * {@code StatusDisplayHolder.getInstance().splashScreenNote(...)}, which since stage 2 is a
-     * {@code ChannelStatusDisplay} and so puts it on the core channel rather than painting it.
+     * first half and hands the second across the boundary: the note is unwrapped here and goes
+     * straight back onto the core channel as a {@code TextCoreMessage}, leaving where and how to
+     * paint it to the other half.
+     *
+     * <p><b>Two shapes, chosen by payload rather than by occasion.</b> {@link #enterInit} carries
+     * nothing so it sends a {@code SimpleCoreMessage}; this carries text so it sends a
+     * {@code TextCoreMessage}. Both put the {@link GameEventType} on the message to say what they
+     * mean, which is why a third handler with a text payload would need no third record. See
+     * {@code CoreMessage}'s Javadoc for why the protocol is built that way round.
+     *
+     * <p>Nothing on the wire says whether this is a load note or a birth note - C distinguishes them
+     * with {@code MSG_BIRTH} on the message payload, and the port has no equivalent yet. Chapter 3
+     * is what gives the birth note a caller and has to invent the discriminator; the migration
+     * document records what that needs.
      *
      * <p><b>Guarded on the payload</b>, as {@link #enterInit} is: a signal carrying no
      * {@link EventDataString} is dropped, so a caller using a bare {@code eventSignal} would lose
      * the note silently. {@code InitHandlersTest} pins that.
      *
-     * @param eventType the event being handled, always {@code EVENT_INITSTATUS}; not read
+     * @param eventType the event being handled, always {@code EVENT_INITSTATUS}; forwarded as the
+     *                  message's type
      * @param data      the payload carrying the note; must be an {@link EventDataString} or nothing
      *                  is forwarded
      * @author Rowan Crowther
      */
-    public static void splashScreenNote(GameEventType eventType, GameEventData data) {
+    private void splashScreenNote(GameEventType eventType, GameEventData data) {
         logger.info("Splash screen note");
         if (data instanceof EventDataString message) {
             String messageString = message.string();
-            StatusDisplayHolder.getInstance().splashScreenNote(messageString);
+            coreSender.send(new CoreMessage.TextCoreMessage(eventType, messageString));
         }
     }
 
@@ -170,7 +241,7 @@ public class InitHandlers {
      * @param data      the payload; not read
      * @author Rowan Crowther
      */
-    public static void leaveInit(GameEventType eventType, GameEventData data) {
+    private void leaveInit(GameEventType eventType, GameEventData data) {
         logger.info("Leaving init");
     }
 
@@ -182,7 +253,7 @@ public class InitHandlers {
      * @param data      the payload; not read
      * @author Rowan Crowther
      */
-    public static void enterGame(GameEventType eventType, GameEventData data) {
+    private void enterGame(GameEventType eventType, GameEventData data) {
         logger.info("Entering game");
     }
 
@@ -194,7 +265,7 @@ public class InitHandlers {
      * @param data      the payload; not read
      * @author Rowan Crowther
      */
-    public static void leaveGame(GameEventType eventType, GameEventData data) {
+    private void leaveGame(GameEventType eventType, GameEventData data) {
         logger.info("Leaving game");
     }
 
@@ -206,7 +277,7 @@ public class InitHandlers {
      * @param data      the payload; not read
      * @author Rowan Crowther
      */
-    public static void enterWorld(GameEventType eventType, GameEventData data) {
+    private void enterWorld(GameEventType eventType, GameEventData data) {
         logger.info("Entering world");
     }
 
@@ -217,9 +288,7 @@ public class InitHandlers {
      * @param data      the payload; not read
      * @author Rowan Crowther
      */
-    public static void leaveWorld(GameEventType eventType, GameEventData data) {
+    private void leaveWorld(GameEventType eventType, GameEventData data) {
         logger.info("Leaving world");
     }
-
-    // uiInitBirthstateHandlers();
 }

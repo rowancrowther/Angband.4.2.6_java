@@ -316,7 +316,6 @@ public class SplashScreen {
      */
 
     public void splashScreenNote(@NotNull String message) {
-        SwingUI.JPanelArea panel = activeWindow.getArea();
         int row = 23;
 
         // clear the status line

@@ -560,11 +560,11 @@ line — because they now describe the same program.
 
 ### Stage 5 — Seal the boundary and take stock
 
-- [ ] Retire `StatusDisplayHolder` + `DefaultStatusDisplay`: with the channel in place, `InitHandlers`' bus handlers can
+- [x] Retire `StatusDisplayHolder` + `DefaultStatusDisplay`: with the channel in place, `InitHandlers`' bus handlers can
   put `CoreMessage`s on the core channel directly (handed the channel, not reaching a static). The `StatusDisplay`
   interface either retires with it or survives UI-side as the consumer's painting boundary — Rowan's call; either is
   defensible.
-- [ ] **Split the handlers across the boundary** *(added 2026-08-10 by stage 1's design note)*. `InitHandlers` currently
+- [x] **Split the handlers across the boundary** *(added 2026-08-10 by stage 1's design note)*. `InitHandlers` currently
   does two jobs in one place: it subscribes to the bus, and it decides what the screen should look like. Those separate
   here.
     - Core side keeps the subscription and does one thing with it: wrap the event as the matching `CoreMessage` and put

@@ -243,6 +243,7 @@ public class InitHandlers {
      */
     private void leaveInit(GameEventType eventType, GameEventData data) {
         logger.info("Leaving init");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 
     /**
@@ -255,6 +256,7 @@ public class InitHandlers {
      */
     private void enterGame(GameEventType eventType, GameEventData data) {
         logger.info("Entering game");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 
     /**
@@ -267,6 +269,7 @@ public class InitHandlers {
      */
     private void leaveGame(GameEventType eventType, GameEventData data) {
         logger.info("Leaving game");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 
     /**
@@ -279,6 +282,7 @@ public class InitHandlers {
      */
     private void enterWorld(GameEventType eventType, GameEventData data) {
         logger.info("Entering world");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 
     /**
@@ -290,5 +294,6 @@ public class InitHandlers {
      */
     private void leaveWorld(GameEventType eventType, GameEventData data) {
         logger.info("Leaving world");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 }

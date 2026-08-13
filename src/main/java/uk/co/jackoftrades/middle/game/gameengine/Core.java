@@ -225,6 +225,9 @@ public class Core {
                 // time. The inner switch over UILifecycleEvent is exhaustive for the same reason.
                 switch (uiMessage) {
                     case UIMessage.LifecycleUIMessage lifecycleUIMessage -> {
+
+                        logger.info("Received {}" + lifecycleUIMessage.event());
+                        
                         switch (lifecycleUIMessage.event()) {
                             // Reply first, then leave: the STOPPED must be on the queue before
                             // this thread ends, because it is what releases the front end to

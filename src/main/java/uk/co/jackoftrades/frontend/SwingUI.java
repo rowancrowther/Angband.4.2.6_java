@@ -643,7 +643,7 @@ public class SwingUI {
         JFrame.setDefaultLookAndFeelDecorated(true);
         activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         activeWindow.setSize(80 * charWidth, 24 * charHeight);
-        activeWindow.setTitle("Test Window");
+        activeWindow.setTitle("Angband v4.2.6");
         activeWindow.addWindowListener(windowListener);
 
         JPanelArea mainPanel = new JPanelArea();

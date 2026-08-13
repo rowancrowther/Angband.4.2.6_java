@@ -144,20 +144,54 @@ class InitHandlersTest {
     }
 
     /**
-     * The phase handlers that only log still send nothing at all. Cheap to assert and it is the
-     * test that would fail first if one of them grew a message without one being intended.
+     * Every phase transition is forwarded across the boundary, carrying the event that was
+     * signalled and nothing else.
+     *
+     * <p><b>This test used to assert the opposite.</b> Until stage 5 finished its split these
+     * handlers only logged, and {@code loggingOnlyHandlersSendNothing} pinned that - reasonably, as
+     * a message sent by accident would have been a real mistake then. Completing the split reversed
+     * the intent: a phase transition the core does not forward is now a transition the front end
+     * cannot draw, so silence is the bug and the send is the requirement. Recorded here rather than
+     * quietly rewritten, because a test flipping direction is worth noticing.
+     *
+     * <p>Each is asserted as a {@code SimpleCoreMessage}: these events carry no payload, so the
+     * shape is the plain one, and a handler that started sending text would be sending something
+     * the protocol says it has no reason to have.
      */
     @Test
-    void loggingOnlyHandlersSendNothing() {
-        bus.eventSignal(GameEventType.EVENT_LEAVE_INIT);
-        bus.eventSignal(GameEventType.EVENT_ENTER_GAME);
-        bus.eventSignal(GameEventType.EVENT_LEAVE_GAME);
-        bus.eventSignal(GameEventType.EVENT_ENTER_WORLD);
-        bus.eventSignal(GameEventType.EVENT_LEAVE_WORLD);
-        bus.eventSignal(GameEventType.EVENT_ENTER_BIRTH);
-        bus.eventSignal(GameEventType.EVENT_LEAVE_BIRTH);
+    void everyPhaseTransitionIsForwarded() {
+        List<GameEventType> transitions = List.of(
+                GameEventType.EVENT_LEAVE_INIT,
+                GameEventType.EVENT_ENTER_GAME,
+                GameEventType.EVENT_LEAVE_GAME,
+                GameEventType.EVENT_ENTER_WORLD,
+                GameEventType.EVENT_LEAVE_WORLD,
+                GameEventType.EVENT_ENTER_BIRTH,
+                GameEventType.EVENT_LEAVE_BIRTH);
 
-        assertTrue(sender.sent.isEmpty(), "these handlers only log so far");
+        transitions.forEach(bus::eventSignal);
+
+        assertEquals(transitions.stream()
+                        .map(event -> (CoreMessage) new CoreMessage.SimpleCoreMessage(event))
+                        .toList(),
+                sender.sent,
+                "every phase transition should cross the channel, in order, as a bare message");
+    }
+
+    /**
+     * The forwarded message names the transition that actually happened.
+     *
+     * <p>Implied by the test above, and stated separately because it is the half that rots: the
+     * handlers are seven near-identical one-liners, and one of them passing the wrong constant -
+     * rather than the {@code eventType} it was handed - is invisible in review and produces a front
+     * end that draws the wrong phase.
+     */
+    @Test
+    void aForwardedTransitionCarriesItsOwnEvent() {
+        bus.eventSignal(GameEventType.EVENT_ENTER_WORLD);
+
+        assertEquals(List.of(new CoreMessage.SimpleCoreMessage(GameEventType.EVENT_ENTER_WORLD)),
+                sender.sent, "EVENT_ENTER_WORLD should be forwarded as itself");
     }
 
     /**

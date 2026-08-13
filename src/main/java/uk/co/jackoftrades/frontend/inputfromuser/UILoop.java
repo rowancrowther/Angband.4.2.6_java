@@ -29,6 +29,8 @@ import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.SwingUI;
+import uk.co.jackoftrades.frontend.events.BirthEvents;
+import uk.co.jackoftrades.frontend.events.MainEvents;
 import uk.co.jackoftrades.frontend.splash.SplashScreen;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
@@ -193,6 +195,9 @@ public class UILoop {
                     // Protocol rather than gameplay: the core reporting on its own lifecycle.
                     case CoreMessage.LifecycleCoreMessage lifecycleCoreMessage -> {
                         CoreLifecycleEvent event = lifecycleCoreMessage.event();
+
+                        logger.info("Received {}", event);
+                        
                         switch (event) {
                             // The core has finished and its thread is ending, so the windows may
                             // now go. The hop onto the EDT is required - dispose() is a Swing call
@@ -218,12 +223,16 @@ public class UILoop {
                     // comes back.
                     case UIMessage.WindowCloseRequested uiMessage -> {
                         UILifecycleEvent event = UILifecycleEvent.SAVE_AND_STOP;
+
+                        logger.info("Received {}", uiMessage.toString());
+                        
                         UIMessage uiMessageToSend = new UIMessage.LifecycleUIMessage(event);
                         uiChannel.uiSender().send(uiMessageToSend);
                     }
 
                     case CoreMessage.SimpleCoreMessage simpleCoreMessage -> {
                         GameEventType eventType = simpleCoreMessage.gameEventType();
+                        logger.info("Received {}", eventType);
                         switch (eventType) {
                             // The data load has started. C's show_splashscreen() ([C] src/ui-init.c),
                             // reached the same way: the core signals, the front end decides that
@@ -240,6 +249,13 @@ public class UILoop {
                                 AngbandDisplayCharacter[][] display = splashScreen.readAndParse(path);
                                 swingUI.getActiveWindow().display(display);
                             }
+                            case EVENT_LEAVE_INIT -> new MainEvents().leaveInit();
+                            case EVENT_ENTER_GAME -> new MainEvents().enterGame();
+                            case EVENT_LEAVE_GAME -> new MainEvents().leaveGame();
+                            case EVENT_ENTER_WORLD -> new MainEvents().enterWorld();
+                            case EVENT_LEAVE_WORLD -> new MainEvents().leaveWorld();
+                            case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth();
+                            case EVENT_LEAVE_BIRTH -> new BirthEvents().leaveBirth();
                             default -> {
                             }
                         }
@@ -248,7 +264,7 @@ public class UILoop {
                     case CoreMessage.TextCoreMessage textCoreMessage -> {
                         GameEventType eventType = textCoreMessage.gameEventType();
                         String eventMessage = textCoreMessage.message();
-
+                        logger.info("Received {}", eventType);
                         switch (eventType) {
 
                             // A progress note, one per data file. Painted onto the title screen's
@@ -269,6 +285,8 @@ public class UILoop {
                     // inbox. Loud rather than ignored - nothing else reads this queue, so a
                     // dropped message here disappears without trace.
                     case UIMessage m -> {
+                        logger.info("Received {}", m.toString());
+                        
                         logger.warn("UI message on the UI inbox: {}", m);
                         throw new RuntimeException("UI message on the UI inbox");
                     }

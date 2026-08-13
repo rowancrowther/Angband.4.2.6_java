@@ -113,6 +113,7 @@ public class UIBirth {
      */
     private void uiEnterBirthscreen(GameEventType eventType, GameEventData data) {
         logger.info("Entering birthscreen");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 
     /**
@@ -124,5 +125,6 @@ public class UIBirth {
      */
     private void uiLeaveBirthscreen(GameEventType eventType, GameEventData data) {
         logger.info("Leaving birthscreen");
+        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
     }
 }

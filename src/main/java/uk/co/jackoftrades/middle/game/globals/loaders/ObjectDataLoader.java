@@ -31,7 +31,7 @@ import java.io.IOException;
  * Startup loader for the object slice: parses the object-domain gamedata files
  * ({@code object_base.txt}, {@code slay.txt}, {@code brand.txt}, {@code curse.txt},
  * {@code object.txt}, {@code activation.txt}, {@code ego_item.txt}, {@code artifact.txt},
- * {@code object_property.txt}) and populates
+ * {@code object_property.txt}, {@code chest_trap.txt}) and populates
  * {@link uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry} through its setters and
  * {@code addObjectKind}.
  *
@@ -68,6 +68,36 @@ public class ObjectDataLoader {
             ErrorParsing.reportAndCheck(filename, result, logger);
 
             ObjectRegistry.setObjectProperties(result.items());
+        } catch (IOException e) {
+            logger.error("Error while loading file {}", filename, e);
+        }
+    }
+
+    /**
+     * Load the chest traps from {@code chest_trap.txt} into {@link ObjectRegistry}. Must run after
+     * summons, which the {@code SUMMON} trap's effect resolves against - and so, transitively, after
+     * monster bases and pains. Nothing else in the object slice depends on this list, so it may run
+     * late.
+     * <p>
+     * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and whatever assembled is
+     * registered regardless, per the partial-results contract. Note that this file is validated as a
+     * whole rather than record by record: if it breaks any of the structural rules stated at the top
+     * of {@code chest_trap.txt}, the assembler returns an empty list and the registry is left with no
+     * traps at all rather than a partial set. An IO failure is logged and <em>swallowed</em>; the
+     * cost is chests that generate untrapped.
+     *
+     * @author Rowan Crowther
+     */
+    public static void loadChestTraps() {
+        ChestTrapReader parser = new ChestTrapReader();
+        String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "chest_trap.txt";
+
+        try {
+            ParseResult<ChestTrap> result = parser.parseWithResults(filename);
+
+            ErrorParsing.reportAndCheck(filename, result, logger);
+
+            ObjectRegistry.setChestTraps(result.items());
         } catch (IOException e) {
             logger.error("Error while loading file {}", filename, e);
         }

@@ -29,8 +29,8 @@ import java.util.*;
 
 /**
  * Runtime holder for all object-domain game data — object bases, object kinds, slays, brands,
- * curses, item objects, activations, ego items, artifacts, and object properties — together with
- * the derived {@code *Max} counters and the lookups the running game queries.
+ * curses, item objects, activations, ego items, artifacts, chest traps, and object properties —
+ * together with the derived {@code *Max} counters and the lookups the running game queries.
  *
  * <p>Unlike the other registries, the object-kind table is a live, mutable registry rather than a
  * load-once list: {@link #addObjectKind} appends a kind and indexes it in {@link #kindsByTvalSval}
@@ -133,6 +133,26 @@ public class ObjectRegistry {
      * The live, mutable object-kind table — grown by {@link #addObjectKind}, cleared by {@link #reset}.
      */
     private static List<ObjectKind> objectKinds = new ArrayList<>();
+
+    /**
+     * The loaded chest traps, in file order. Order is load-bearing twice over: each trap's pval bit
+     * is its position, and {@code pick_one_chest_trap} draws only from the entries <em>after</em> the
+     * first, which is always the "locked" no-trap entry. C holds the same data as a linked list
+     * headed by its global {@code chest_traps} ({@code obj-chest.c:53}).
+     */
+    private static final List<ChestTrap> chestTraps = new ArrayList<>();
+
+    /**
+     * Replaces the loaded chest traps with the ones just read; set once by {@code ObjectDataLoader}.
+     * Like {@link #setRunes}, this copies into the existing list rather than rebinding the field, so
+     * the list itself stays final.
+     *
+     * @param chestTraps the chest traps to store, in file order
+     */
+    public static void setChestTraps(List<ChestTrap> chestTraps) {
+        ObjectRegistry.chestTraps.clear();
+        ObjectRegistry.chestTraps.addAll(chestTraps);
+    }
 
     /**
      * Sentinel kind representing an unidentified pile of gold.

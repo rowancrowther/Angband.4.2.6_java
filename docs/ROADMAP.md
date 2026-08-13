@@ -46,11 +46,11 @@ Every data file in `../lib/gamedata` parses into a registry. C: `parser.c`, `ini
 - [x] Loaders wired into one boot sequence (`GameConstants.init()` + `GameEngine.loadGameConstants()`,
   dependency-ordered, INITSTATUS events; 33 of the 37 parsers in C's `pl[]` table, `init.c:4349`)
 - [x] Misc data not listed above: constants, flavor, hints, names — all wired
-- [ ] `chest_trap.txt` — the one real hole: no grammar, no reader, no loader; `ChestTrap.java` is a field-only skeleton
+- [x] `chest_trap.txt` — the one real hole: no grammar, no reader, no loader; `ChestTrap.java` is a field-only skeleton
   (C: `chest_trap_parser`)
-- [ ] `lore.txt` — built but not wired: `LoreReader` + grammar exist, load call commented out in
+- [x] `lore.txt` — built but not wired: `LoreReader` + grammar exist, load call commented out in
   `GameConstants`. Lives in the *user* dir and C tolerates its absence — candidate to defer to Chapter 8 with save/load;
-  decide and record
+  decide and record **260813: Defer to chapter 8**
 - [ ] Tests for `DungeonProfileReader`, `RoomProfileReader`, `LoreReader` (Claude's half — every other reader has a
   suite)
 - [x] Prune this list against reality — audited against the C `pl[]` table 2026-08-13; out of Chapter-1 scope:

@@ -1,5 +1,11 @@
 ### How does Angband run in Java ###
 
+> **Superseded on 2026-08-13, and kept deliberately.** This describes the program as it ran *before* the two-channel
+> migration: `main()` handing everything to the EDT, the EDT building the core, `StatusDisplayHolder` as the one
+> corridor to the display, a `sleep(5)` game loop, and shutdown by `System.exit(0)`. Everything from step 5 onwards is
+> now false. `New_java_map.md` is the current narrative; this file is the record of what it was, and of what the
+> migration cost and changed.
+
 It assumes that it can be launched from a terminal.
 
 1. Main sets some basic options, to be overwritten depending on incoming parameters.

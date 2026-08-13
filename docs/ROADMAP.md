@@ -51,7 +51,7 @@ Every data file in `../lib/gamedata` parses into a registry. C: `parser.c`, `ini
 - [x] `lore.txt` — built but not wired: `LoreReader` + grammar exist, load call commented out in
   `GameConstants`. Lives in the *user* dir and C tolerates its absence — candidate to defer to Chapter 8 with save/load;
   decide and record **260813: Defer to chapter 8**
-- [ ] Tests for `DungeonProfileReader`, `RoomProfileReader`, `LoreReader` (Claude's half — every other reader has a
+- [x] Tests for `DungeonProfileReader`, `RoomProfileReader`, `LoreReader` (Claude's half — every other reader has a
   suite)
 - [x] Prune this list against reality — audited against the C `pl[]` table 2026-08-13; out of Chapter-1 scope:
   `store.txt` (Ch 8), `ui_knowledge.txt` (UI-side in C), `old_class.txt` (unparsed even by C)

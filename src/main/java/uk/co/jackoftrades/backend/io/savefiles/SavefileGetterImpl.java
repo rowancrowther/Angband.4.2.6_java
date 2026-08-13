@@ -18,7 +18,7 @@
 package uk.co.jackoftrades.backend.io.savefiles;
 
 import uk.co.jackoftrades.backend.io.AngDir;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 
 public class SavefileGetterImpl {
     private AngDir directory;

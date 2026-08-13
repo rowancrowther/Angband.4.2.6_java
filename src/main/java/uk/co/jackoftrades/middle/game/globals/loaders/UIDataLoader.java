@@ -26,7 +26,7 @@ import uk.co.jackoftrades.backend.parser.UIEntryRendererReader;
 import uk.co.jackoftrades.frontend.entries.UIEntry;
 import uk.co.jackoftrades.frontend.entries.UIEntryBase;
 import uk.co.jackoftrades.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.UIRegistry;
 
 import java.io.IOException;

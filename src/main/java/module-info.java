@@ -9,4 +9,5 @@ module uk.co.jackoftrades {
     requires org.apache.logging.log4j.core;
 
     exports uk.co.jackoftrades;
+    exports uk.co.jackoftrades.channel;
 }

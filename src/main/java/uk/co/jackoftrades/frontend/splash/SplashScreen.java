@@ -21,17 +21,14 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.channel.globals.Angband;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.SwingUI;
 import uk.co.jackoftrades.frontend.screen.Window;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 
 import javax.swing.*;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Scanner;
 
 /**
@@ -183,7 +180,7 @@ public class SplashScreen {
                         colourName.append(character);
                     } else if (character == '$') {
                         if (line.substring(col).startsWith("$VERSION")) {
-                            String version = String.format("%-8s", GameConstants.version);
+                            String version = String.format("%-8s", Angband.versionString);
                             col += 7;
                             if (printCol + 8 > display[row].length) {
                                 logger.error("Version tag exceeds line length");

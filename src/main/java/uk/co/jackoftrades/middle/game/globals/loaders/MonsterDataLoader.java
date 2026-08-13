@@ -24,7 +24,7 @@ import uk.co.jackoftrades.frontend.colour.FlickerTable;
 import uk.co.jackoftrades.frontend.colour.VisualsCycler;
 import uk.co.jackoftrades.middle.cave.PitProfile;
 import uk.co.jackoftrades.middle.combat.BlowMethod;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftrades.middle.monsters.*;
 

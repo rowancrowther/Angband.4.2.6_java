@@ -28,12 +28,13 @@ import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import uk.co.jackoftrades.channel.Channels;
 import uk.co.jackoftrades.channel.EDTChannel;
+import uk.co.jackoftrades.channel.StartupOptions;
 import uk.co.jackoftrades.channel.UIChannel;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 
 import javax.swing.SwingUtilities;
 import java.awt.Frame;

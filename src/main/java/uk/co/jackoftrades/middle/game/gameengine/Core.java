@@ -19,7 +19,7 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.StartupOptions;
+import uk.co.jackoftrades.channel.StartupOptions;
 import uk.co.jackoftrades.channel.CoreChannel;
 import uk.co.jackoftrades.channel.corechannel.CoreSender;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;

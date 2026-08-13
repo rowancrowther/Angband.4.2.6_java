@@ -102,18 +102,28 @@ How does Angband run.
 
 ---
 
-The UI is handled by two main ‘classes’ the command queue, and the event handler bus. Events are registered on the event
-handler bus by event type a game event handler function, and a user. (In the port the user is removed and added as flat
-data to the event handler function). When a particular event type is signalled by the bus to all the event handlers
+The event bus is a hashmap of GameEventType to a List of GameEventHandlers. Each handler consists of code which takes
+data from the relevant game message (GameEventType, GameEventData), and runs this code. Normally this running of code
+results in a message being put on a channel, as outlined below. The event bus is purely on the Core side of the system.
 
-The event bus is core side, with the registration table being owned on the core side. Event signals come from the core
-side, and only ever a type of event, not a specific event. The functions registered with the events are all registered
-on the UI side (?), and all run UI side (?), so the event bus forms a acceptable hole through the boundary between the
-UI and the core. It is that which makes the core UI independent – if you replaced it with a different UI that took the
-same events, it would still work. This makes the core UI-agnostic. The event passes flat data through to the UI side via
-a small number of functions on the screen (change this character here and redraw the screen, change the entire screen
-and redraw, …). Core signals, UI registers, and the dependency arrow only ever points UI → core.
+The old UI→core path — three static holders and the UI calling the core's methods directly — has been totally replaced.
+The UI thread now puts bespoke UIMessages on coreQueue, to be picked up by the core and processed there. (CommandQueue
+is a different thing entirely and is unchanged: it is the port of C's cmdq, core-internal, and holds Commands awaiting
+dispatch inside the core once Chapter 5 gives it callers.)
 
-In the current state of the port, Angband.java is in package uk.co.jackoftrades.middle.game, and as such is in the
-middle part of the core, not in the UI (package uk.co.jackoftrades.swingUI). I would argue that it is the right side of
-the design, as it is UI-agnostic, containing data.
+The new state of Angband due to the port has introduced a 'channel' system allowing messages to be passed between
+threads running the game. There are two different threads, in addition to the EDT, `core` and `UI`. The core thread is
+responsible for running everything in the backend/middle packages (namely the working guts of the game, in charge of
+responding to the user input). The UI thread is responsible for running the UI system, displaying the windows, when the
+sound system is implemented it will be in charge of making sounds.
+
+The two threads communicate with each other via two queues, two message receivers and 3 message senders. Each queue goes
+from one thread to another (the UIQueue goes from the Core thread to the UI thread, and receives messages from the
+CoreSender, and the EDTSender; the CoreQueue goes from the UI thread to the Core thread, and receives messages from the
+UISender).
+
+In the current state of the port, Angband.java is in package uk.co.jackoftrades.channel.globals, part of the game that
+is used by both the UI and the core, not in the UI (package uk.co.jackoftrades.frontend). I would argue that it is the
+right side of the design, as it is UI-agnostic, but contains data that both the UI and the core need access to, so it
+fulfils the "only put in the channels things to do with the communication between the two areas, or common
+nomenclature".

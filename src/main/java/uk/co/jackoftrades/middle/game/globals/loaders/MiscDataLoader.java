@@ -25,7 +25,7 @@ import uk.co.jackoftrades.backend.parser.NamesReader;
 import uk.co.jackoftrades.backend.parser.ParseResult;
 import uk.co.jackoftrades.middle.game.Hint;
 import uk.co.jackoftrades.middle.game.Name;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftrades.middle.objects.FlavourKind;
 

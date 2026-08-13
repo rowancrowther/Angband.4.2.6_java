@@ -24,7 +24,7 @@ import uk.co.jackoftrades.backend.parser.TerrainReader;
 import uk.co.jackoftrades.backend.parser.TrapReader;
 import uk.co.jackoftrades.middle.cave.Feature;
 import uk.co.jackoftrades.middle.cave.TrapKind;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 
 import java.io.IOException;

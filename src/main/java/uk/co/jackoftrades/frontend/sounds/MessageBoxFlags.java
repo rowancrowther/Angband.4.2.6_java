@@ -17,7 +17,7 @@
 
 package uk.co.jackoftrades.frontend.sounds;
 
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 
 import java.io.File;
 

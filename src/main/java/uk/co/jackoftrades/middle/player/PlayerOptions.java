@@ -23,7 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.channel.utils.Flag;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionTypes;
 

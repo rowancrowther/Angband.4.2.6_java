@@ -28,6 +28,10 @@ The whole-game view everything else hangs off. How does C Angband actually run?
 - [x] Java-side counterpart: one page on how *this* port boots (`Angband.java`, loaders, registries) and where it
   diverges
 
+## Chapter 0.5 — the architecture is amended ##
+
+The whole architecture is re-written as per Architecture.md & Architecture_migration.md.
+
 ## Chapter 1 — The game loads its data *(mostly done)*
 
 Every data file in `../lib/gamedata` parses into a registry. C: `parser.c`, `init.c`, `datafile.c`,

@@ -22,9 +22,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+
 import uk.co.jackoftrades.backend.io.bespokeexceptions.InvalidTokenFoundDuringParse;
 import uk.co.jackoftrades.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftrades.backend.parser.GameConstantsReader;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
@@ -100,8 +102,6 @@ public class GameConstants {
      */
     private static int storeMax;
     private static int caveProfileMax;
-
-    public static final String version = "4.2.6";
 
     private static GameConstantsData data;
 

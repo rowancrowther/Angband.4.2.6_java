@@ -21,7 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import uk.co.jackoftrades.StartupOptions;
+import uk.co.jackoftrades.channel.StartupOptions;
 import uk.co.jackoftrades.channel.Channels;
 import uk.co.jackoftrades.channel.Receiver;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;

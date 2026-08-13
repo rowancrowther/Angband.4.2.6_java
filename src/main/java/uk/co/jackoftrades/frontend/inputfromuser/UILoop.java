@@ -32,7 +32,7 @@ import uk.co.jackoftrades.frontend.SwingUI;
 import uk.co.jackoftrades.frontend.events.BirthEvents;
 import uk.co.jackoftrades.frontend.events.MainEvents;
 import uk.co.jackoftrades.frontend.splash.SplashScreen;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 
 import javax.swing.*;
 import java.nio.file.Files;

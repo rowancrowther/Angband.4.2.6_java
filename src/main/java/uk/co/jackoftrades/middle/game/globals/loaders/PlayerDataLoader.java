@@ -20,7 +20,7 @@ package uk.co.jackoftrades.middle.game.globals.loaders;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.backend.parser.*;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.player.*;

@@ -26,7 +26,7 @@ import uk.co.jackoftrades.backend.parser.VaultReader;
 import uk.co.jackoftrades.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftrades.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftrades.middle.cave.profiles.vault.Vault;
-import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 import uk.co.jackoftrades.middle.game.globals.registry.DungeonRegistry;
 
 import java.io.IOException;

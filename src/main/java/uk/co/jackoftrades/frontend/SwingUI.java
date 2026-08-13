@@ -19,11 +19,12 @@ package uk.co.jackoftrades.frontend;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftrades.StartupOptions;
+import uk.co.jackoftrades.channel.StartupOptions;
 import uk.co.jackoftrades.channel.EDTChannel;
 import uk.co.jackoftrades.channel.UIChannel;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
+import uk.co.jackoftrades.channel.globals.Angband;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.colour.Colour;
@@ -643,7 +644,7 @@ public class SwingUI {
         JFrame.setDefaultLookAndFeelDecorated(true);
         activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         activeWindow.setSize(80 * charWidth, 24 * charHeight);
-        activeWindow.setTitle("Angband v4.2.6");
+        activeWindow.setTitle(Angband.buildId);
         activeWindow.addWindowListener(windowListener);
 
         JPanelArea mainPanel = new JPanelArea();

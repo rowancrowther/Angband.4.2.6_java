@@ -15,7 +15,9 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades;
+package uk.co.jackoftrades.channel;
+
+import uk.co.jackoftrades.channel.directories.AngbandDirs;
 
 import java.util.List;
 
@@ -25,7 +27,7 @@ import java.util.List;
  * ({@code arg_force_name}, {@code arg_force_roguelike} and friends), which C's {@code main()}
  * fills in as it walks {@code argv} and every later stage reads.
  *
- * <p>Lives outside {@link Main} on purpose. It is consumed by the front end and, later, by the
+ * <p>Lives outside Main on purpose. It is consumed by the front end and, later, by the
  * game loop, and nesting it in the entry point would make both of them depend on the class that
  * happens to hold {@code main()}. As a top-level record it is data that anyone may read and
  * nobody may change.
@@ -35,7 +37,7 @@ import java.util.List;
  * it cannot be compared or logged as one, and only the front end could ever have reached the
  * hook, while C's {@code quit_aux} is reachable from everywhere. It also once carried the
  * {@code -d} overrides as a map, which became redundant when
- * {@link uk.co.jackoftrades.middle.game.globals.AngbandDirs#setDirectory} started applying them
+ * {@link AngbandDirs#setDirectory} started applying them
  * as they are parsed.
  *
  * <p>Not everything here is wanted at the same moment, which is worth knowing before threading it

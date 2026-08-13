@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftrades.middle.game.globals;
+package uk.co.jackoftrades.channel.directories;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -62,7 +62,7 @@ public class AngbandDirs {
      *
      * @author Rowan Crowther
      */
-    static String BASE_DIR = System.getProperty("user.dir");
+    public static String BASE_DIR = System.getProperty("user.dir");
     /*
      * Start-up defaults, and nothing more. Each is read exactly once - by the ANGBAND_DIRS
      * constant that names it - and is final because an override goes to the enum, never here.

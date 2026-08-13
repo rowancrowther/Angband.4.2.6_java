@@ -37,18 +37,29 @@ The whole architecture is re-written as per Architecture.md & Architecture_migra
 Every data file in `../lib/gamedata` parses into a registry. C: `parser.c`, `init.c`, `datafile.c`,
 `*-init.c`.
 
-- [x] Parser infrastructure (ANTLR grammars + readers + assemblers, ~49 readers)
+- [x] Parser infrastructure (ANTLR grammars + readers + assemblers, 46 readers)
 - [x] Object data: object_property, object_base, object, ego_item, artifact, curse, brand, slay, activation
 - [x] Monster data: monster_base, monster, pain, summon, blow effects
 - [x] Player data: race, class, history, shapes, timed effects, properties
 - [x] World data: world, projection, quest, terrain, trap, dungeon_profile, room_template, vault
 - [x] UI data: ui_entry, ui_entry_base, ui_entry_renderer
-- [ ] Remaining loaders wired into one boot sequence (C: `init_angband`'s module list, in order)
-- [ ] Prune this list against reality — boxes above are Claude's survey, not gospel
+- [x] Loaders wired into one boot sequence (`GameConstants.init()` + `GameEngine.loadGameConstants()`,
+  dependency-ordered, INITSTATUS events; 33 of the 37 parsers in C's `pl[]` table, `init.c:4349`)
+- [x] Misc data not listed above: constants, flavor, hints, names — all wired
+- [ ] `chest_trap.txt` — the one real hole: no grammar, no reader, no loader; `ChestTrap.java` is a field-only skeleton
+  (C: `chest_trap_parser`)
+- [ ] `lore.txt` — built but not wired: `LoreReader` + grammar exist, load call commented out in
+  `GameConstants`. Lives in the *user* dir and C tolerates its absence — candidate to defer to Chapter 8 with save/load;
+  decide and record
+- [ ] Tests for `DungeonProfileReader`, `RoomProfileReader`, `LoreReader` (Claude's half — every other reader has a
+  suite)
+- [x] Prune this list against reality — audited against the C `pl[]` table 2026-08-13; out of Chapter-1 scope:
+  `store.txt` (Ch 8), `ui_knowledge.txt` (UI-side in C), `old_class.txt` (unparsed even by C)
 
 ## Chapter 2 — Object knowledge (the rune system) *(in progress)*
 
-C: `obj-knowledge.c`. The current stretch.
+C: `obj-knowledge.c`. The current stretch. Fine detail and the 2026-08-13 audit live in
+`docs/Chapter_2_Roadmap.md`.
 
 - [x] `init_rune` → `Rune.initRunes()` — verified against C; 99 runes, all counts match
 - [x] `struct rune` redesign (`RuneVariety` sealed interface) — the design set piece for this subsystem, verdict: paid
@@ -57,11 +68,10 @@ C: `obj-knowledge.c`. The current stretch.
   `getRunes`)
 - [x] `c_rune[]`, `rune_group_text[]`, `enum rune_variety` (tables → `CombatRunes`, `RuneGroup`)
 - [x] `cleanup_rune` — N/A, garbage collected
-- [ ] **Fix `lookupObjectProperty` stat/mod bug** — extract the property subject into a
-  `sealed interface ObjectPropertySubject permits ObjectFlag, ObjectModifier, ElementEnum`, the same move as
-  `RuneVariety` above, one layer down. Agreed 260810, superseding the earlier "Option A / Option B" pair. Blocks
-  everything below; 20 red tests point at it by name. Design, the ACID trap and blast radius are written up in
-  `docs/Issues log.md` under "ObjectProperty / ObjectPropertyTypeWrapper" — read that before starting
+- [x] **Fix `lookupObjectProperty` stat/mod bug** — done via the *minimal* fix (the wrapper's equals no longer compares
+  the tag, so `lookupObjectProperty` compares it exactly once, as C does); the sealed `ObjectPropertySubject` this
+  bullet used to describe was superseded the same day (deferred, not rejected). The 20 red tests pass; full suite green
+  2026-08-13. Rationale is in the comment at `ObjectPropertyTypeWrapper.equals`
 - [ ] `ObjectRegistry.getRunes()` + `max_runes`
 - [ ] `rune_index` → map-based lookup by `RuneVariety`
 - [ ] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`
@@ -71,7 +81,8 @@ C: `obj-knowledge.c`. The current stretch.
 ## Chapter 3 — A character exists
 
 Roll a character; see their stats. C: `player-birth.c`, `player-calcs.c`, `player.c`,
-`player-util.c`, `player-history.c`. *(Map before detail.)*
+`player-util.c`, `player-history.c`. *(Map before detail — a pre-map inventory of the existing
+`middle/player` scaffold is in `docs/Chapter_3_Roadmap.md`.)*
 
 - [ ] Map: the player subsystem
 - [ ] Character creation (birth)

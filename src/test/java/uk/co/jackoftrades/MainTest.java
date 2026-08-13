@@ -17,18 +17,40 @@
 
 package uk.co.jackoftrades;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import uk.co.jackoftrades.channel.Channels;
+import uk.co.jackoftrades.channel.EDTChannel;
+import uk.co.jackoftrades.channel.UIChannel;
+import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
+import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
+import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
+import javax.swing.SwingUtilities;
+import java.awt.Frame;
+import java.awt.GraphicsEnvironment;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
  * Unit tests for {@code Main.checkDirectoryOption}, the validation behind the {@code -d<dir>=<path>}
@@ -328,6 +350,262 @@ class MainTest {
 
         assertNotNull(Main.checkDirectoryOption("-dsave=" + file),
                 "a regular file is not a directory: the check needs isDirectory(), not exists()");
+    }
+
+    /**
+     * The UI half's crash path: what {@code startSwingUI}'s {@code try}/{@code catch}/{@code finally}
+     * does when the loop it wraps dies, and what it does on the ordinary path as well.
+     *
+     * <p><b>Why this needs testing at all.</b> A thread that dies of an exception used to leave the
+     * program running with nothing running in it - both halves gone, {@code main}'s joins returned,
+     * and the event dispatch thread still holding an undisposed window, so the JVM never exited.
+     * That was found by launching the game from the wrong working directory, where the data files
+     * were not where the paths said; it cost a {@code kill}. The three tests below are that failure
+     * turned into assertions, and the fourth pins the {@code finally} they share with the clean
+     * path.
+     *
+     * <p><b>The body is reached by reflection, and that is a statement about the code rather than a
+     * trick.</b> {@code startSwingUI} is {@code private static} and its {@code SwingUI} is a local
+     * of the lambda it returns, so there is no seam: nothing can hand in a front end to observe, and
+     * {@code main} itself blocks for the session. The alternative is
+     * {@link org.jetbrains.annotations.VisibleForTesting} and package-private, which
+     * {@code checkDirectoryOption} above already uses for the same reason - Rowan's call, and these
+     * tests would simplify by three lines if it were taken.
+     *
+     * <p>The window is therefore observed globally, through {@link Frame#getFrames()}, filtered to
+     * the frames that appeared after the test began. Coarse, but it is the same thing a person
+     * checks, and it is what the earlier bug would have failed.
+     *
+     * <p>The crash is provoked with a misrouted message rather than a broken data directory: a
+     * {@code UIMessage} that is not a close request arriving on the UI's own inbox means the wiring
+     * is wrong, and {@code UILoop} throws on it by design. That keeps the trigger inside the
+     * protocol - no files moved, no static directory state changed, nothing another test could
+     * inherit.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @Timeout(value = 15, unit = TimeUnit.SECONDS)
+    class TheUiHalfsCrashPath {
+
+        /**
+         * Long enough that a loaded machine does not fail a passing case, short enough that a real
+         * hang is reported by the class timeout instead.
+         */
+        private static final long SHOULD_FINISH_MILLIS = 5_000;
+
+        /**
+         * Defaults for every switch. Nothing reads them yet; passed rather than {@code null} so the
+         * body under test is built exactly as {@code main} builds it.
+         */
+        private static final StartupOptions NO_OPTIONS =
+                new StartupOptions(false, false, false, false, "", "", List.of());
+        /**
+         * Anything that escaped the UI body, recorded by the thread's own handler. Staying
+         * {@code null} is the assertion in {@link #aCrashEndsTheThreadByReturningNotThrowing}.
+         */
+        private final AtomicReference<Throwable> escaped = new AtomicReference<>();
+        private Channels channels;
+        private Thread uiThread;
+        /**
+         * The frames that already existed when the test began, so the ones this test creates can be
+         * told apart from those another test class left on screen.
+         */
+        private Set<Frame> framesBefore;
+
+        @BeforeEach
+        void setUp() {
+            assumeFalse(GraphicsEnvironment.isHeadless(),
+                    "needs a display: the UI body builds a JFrame");
+
+            channels = Channels.create();
+            framesBefore = new HashSet<>(Arrays.asList(Frame.getFrames()));
+        }
+
+        /**
+         * Leaves no thread blocked on a queue and no window on screen, however the test ended.
+         */
+        @AfterEach
+        void tearDown() throws InterruptedException {
+            if (uiThread != null && uiThread.isAlive()) {
+                uiThread.interrupt();
+                uiThread.join(SHOULD_FINISH_MILLIS);
+            }
+            for (Frame frame : framesCreatedByThisTest()) {
+                SwingUtilities.invokeLater(frame::dispose);
+            }
+        }
+
+        /**
+         * Builds the real UI body and hands it a thread, as {@code main} does.
+         *
+         * @throws Exception if the private factory cannot be reached
+         * @author ClaudeCode
+         */
+        private void startTheUiHalf() throws Exception {
+            Method factory = Main.class.getDeclaredMethod("startSwingUI",
+                    UIChannel.class, EDTChannel.class, StartupOptions.class);
+            factory.setAccessible(true);
+
+            Runnable body = (Runnable) factory.invoke(null,
+                    channels.uiChannel(), channels.edtChannel(), NO_OPTIONS);
+
+            uiThread = new Thread(body, "angband-ui-under-test");
+            uiThread.setUncaughtExceptionHandler((thread, thrown) -> escaped.set(thrown));
+            uiThread.start();
+        }
+
+        /**
+         * @return the frames that appeared since this test started
+         */
+        private List<Frame> framesCreatedByThisTest() {
+            return Arrays.stream(Frame.getFrames())
+                    .filter(frame -> !framesBefore.contains(frame))
+                    .toList();
+        }
+
+        /**
+         * Waits for the window {@code init} puts up, since it is built on the event dispatch thread
+         * and so is not there the moment the thread starts.
+         *
+         * @return the realised game window
+         */
+        private Frame awaitTheGameWindow() throws InterruptedException {
+            long deadline = System.currentTimeMillis() + SHOULD_FINISH_MILLIS;
+            while (System.currentTimeMillis() < deadline) {
+                for (Frame frame : framesCreatedByThisTest()) {
+                    if (frame.isDisplayable()) return frame;
+                }
+                Thread.sleep(20);
+            }
+            return fail("the UI body never put a window up");
+        }
+
+        /**
+         * Waits for a window to be disposed, which also happens on the event dispatch thread.
+         *
+         * @param window the window that should go
+         * @return whether it went within the timeout
+         */
+        private boolean awaitDisposalOf(Frame window) throws InterruptedException {
+            long deadline = System.currentTimeMillis() + SHOULD_FINISH_MILLIS;
+            while (System.currentTimeMillis() < deadline) {
+                if (!window.isDisplayable()) return true;
+                Thread.sleep(20);
+            }
+            return false;
+        }
+
+        /**
+         * Kills the loop the way the protocol allows: a {@code UIMessage} that is not a close
+         * request, arriving on the UI's own inbox, which {@code UILoop} rejects by throwing.
+         */
+        private void crashTheLoop() {
+            channels.edtChannel().edtSender()
+                    .send(new UIMessage.LifecycleUIMessage(UILifecycleEvent.START));
+        }
+
+        /**
+         * Reads the core's inbox until the shutdown request arrives, ignoring the {@code START}
+         * that {@code init} sends first.
+         *
+         * @return the request, once it comes
+         */
+        private UIMessage awaitSaveAndStop() throws InterruptedException {
+            while (true) {
+                UIMessage message = channels.coreChannel().coreReceiver().receive();
+                if (message instanceof UIMessage.LifecycleUIMessage lifecycle
+                        && lifecycle.event() == UILifecycleEvent.SAVE_AND_STOP) {
+                    return message;
+                }
+            }
+        }
+
+        /**
+         * A dying UI half unparks the core before it goes.
+         *
+         * <p>The first of the two things it owes. Without this the core sits in {@code receive()}
+         * for ever, waiting for a front end that no longer exists - a thread that cannot be joined
+         * and a program that cannot end.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        void aCrashSendsSaveAndStopToTheCore() throws Exception {
+            startTheUiHalf();
+            awaitTheGameWindow();
+
+            crashTheLoop();
+
+            assertNotNull(awaitSaveAndStop(),
+                    "a UI half that dies must still tell the core to stop");
+        }
+
+        /**
+         * And disposes its windows, which is the half that actually ends the process.
+         *
+         * <p>This is the assertion the original bug would have failed: the loop died, nothing
+         * disposed anything, and the event dispatch thread kept a dead program alive.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        void aCrashDisposesTheWindow() throws Exception {
+            startTheUiHalf();
+            Frame window = awaitTheGameWindow();
+
+            crashTheLoop();
+
+            assertTrue(awaitDisposalOf(window),
+                    "an undisposed window holds the EDT, and the JVM with it");
+        }
+
+        /**
+         * The thread ends by returning, not by throwing.
+         *
+         * <p>Which is why the UI half needs no {@code UncaughtExceptionHandler}: the exception is
+         * caught where the front end it has to shut down is in scope, so nothing reaches the
+         * handler. A recorded throwable here means the {@code catch} has stopped covering what the
+         * loop can throw.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        void aCrashEndsTheThreadByReturningNotThrowing() throws Exception {
+            startTheUiHalf();
+            awaitTheGameWindow();
+
+            crashTheLoop();
+            uiThread.join(SHOULD_FINISH_MILLIS);
+
+            assertFalse(uiThread.isAlive(), "the UI thread must finish after its loop dies");
+            assertNull(escaped.get(),
+                    "the crash should be caught in the body, not escape to a handler");
+        }
+
+        /**
+         * The clean path disposes too, through the same {@code finally}.
+         *
+         * <p>On this path {@code UILoop} has already queued a disposal of its own before returning,
+         * so the {@code finally} makes it happen twice. That is the point of the test: disposing a
+         * disposed window does nothing, while a missing disposal hangs the program, so the
+         * duplicate is the right way to be wrong.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        void theCleanPathDisposesTheWindowThroughTheSameFinally() throws Exception {
+            startTheUiHalf();
+            Frame window = awaitTheGameWindow();
+
+            channels.coreChannel().coreSender()
+                    .send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+            uiThread.join(SHOULD_FINISH_MILLIS);
+
+            assertFalse(uiThread.isAlive(), "STOPPED ends the loop and so the thread");
+            assertTrue(awaitDisposalOf(window), "the windows go on the ordinary path as well");
+            assertNull(escaped.get(), "disposing an already-disposed window must not throw");
+        }
     }
 
 }

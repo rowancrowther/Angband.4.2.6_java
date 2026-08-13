@@ -34,10 +34,11 @@ import uk.co.jackoftrades.middle.player.Player;
  * original's initialisation bootstrap, {@code init_angband()} ({@code src/init.c}) as
  * called from {@code main()} ({@code src/main.c}).
  *
- * <p><b>Nothing constructs this yet.</b> It is meant to be built once on the game
- * thread, by {@link GameRunner}, so that everything it initialises is confined to that
- * thread; but {@code GameRunner} does not hold an engine, so no live code path reaches
- * {@link #getGame()}.
+ * <p><b>Built once, on the game thread.</b> {@link Core#gameLoop()} reaches
+ * {@link #getGame()} as its first act and holds what it gets, so the engine is
+ * constructed on {@code angband-core} and everything it initialises is confined to
+ * that thread. No other live path builds one, and the front end cannot: it names
+ * nothing of the middle end.
  *
  * @author Rowan Crowther
  */
@@ -108,7 +109,7 @@ public class GameEngine {
      *
      * <p>The gap C leaves between those two calls for registering handlers now exists here too: it
      * is the space between an engine being built and {@code loadGameConstants()} being called, and
-     * {@code GameRunner.gameLoop()} is what uses it.
+     * {@code Core.gameLoop()} is what uses it.
      *
      * @author Rowan Crowther
      */
@@ -123,7 +124,7 @@ public class GameEngine {
      * <p>Separate from {@link #initGame()}, and that separation is the point. The bus is created in
      * {@code initGame()} but the load is deferred to here, which gives the caller a window between
      * the two to register handlers - exactly the gap C leaves between {@code init_display()} and
-     * {@code init_angband()}. {@code GameRunner.gameLoop()} uses it to wire {@code InitHandlers}
+     * {@code init_angband()}. {@code Core.gameLoop()} uses it to wire {@code InitHandlers}
      * before the load raises {@code EVENT_ENTER_INIT} from inside it.
      *
      * <p>The two halves below mirror C's own two halves of {@code init_angband()}:

@@ -40,7 +40,7 @@ import java.nio.channels.Channel;
  * {@code lib/gamedata}), <em>game</em> (a character exists), and <em>world</em> (a level is being
  * played). {@code UIBirth} adds the fourth pair, for character creation.
  *
- * <p><b>Registration timing is load-bearing.</b> These are wired from {@code GameRunner.gameLoop()},
+ * <p><b>Registration timing is load-bearing.</b> These are wired from {@code Core.gameLoop()},
  * which runs on the game thread <em>before</em> {@code loadGameConstants()} - because
  * {@code EVENT_ENTER_INIT} is raised from inside that load, and a handler registered afterwards
  * would miss it. It also has to happen after {@code GameEngine.getGame()}, which replaces the bus
@@ -70,7 +70,7 @@ public class InitHandlers {
      *
      * <p>Not idempotent: dispatch is non-consuming, so calling this twice on one bus registers
      * every handler twice and each would then run twice per signal. Safe today only because
-     * {@code GameRunner.start()} is called once, and each {@code GameEngine} arrives with a bus
+     * {@code Core.gameLoop()} is called once, and each {@code GameEngine} arrives with a bus
      * that has nothing on it yet.
      *
      * @author Rowan Crowther

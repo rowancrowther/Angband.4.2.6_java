@@ -9,9 +9,9 @@ It assumes that it can be launched from a terminal.
    logged and then sent to System.err, followed by a System.exit (1).
 4. Main updates the startup options.
 5. Main queues a Runnable (SwingUtilities.invokeLater (startFrontend)), and ceases to exist
-6. startFrontend.run () executes on the EDT getting a new gameRunner, and passing it through to a new swingUI.
+6. startFrontend.run () executes on the EDT getting a new core, and passing it through to a new swingUI.
     1. When the swingUI is created, it creates a new ArrayList for windows, creates a new main window and adds it to the
-       list, then sets activeWindow to be the main window, and sets the swingUI gameRunner to be the game runner
+       list, then sets activeWindow to be the main window, and sets the swingUI core to be the game runner
        passed in in step 5.
 7. The EDT initialises based on the startup options.
     1. Frontend initialises the activeWindow
@@ -19,7 +19,7 @@ It assumes that it can be launched from a terminal.
         2. Frontend sets the title of the window, sets a main panel, adds the main panel to the active window and shows
            the active window.
         3. Frontend registers itself via the SplashScreen object as the StatusDisplayHolder.
-        4. Frontend then starts the gameRunner.
+       4. Frontend then starts the core.
     2. GameRunner is running on the EDT at this point.
         1. GameRunner creates a new thread (GameRunner.gameLoop) to become the core thread, and sets the running flag to
            true.
@@ -46,7 +46,7 @@ It assumes that it can be launched from a terminal.
     6. If the game thread is interrupted it throws a RuntimeException
     7. If the game thread is stopped it exits
     8. The UI thread is kept alive by the main window. The main window has an event handler on it so that when it closes
-       it sends a signal to the gameRunner to request stop on the core thread, and then exits with a value of 0.
+       it sends a signal to the core to request stop on the core thread, and then exits with a value of 0.
     9. The request stop on the core thread sets the running flag to false, and interrupts the thread's execution, and
        then exits.
 

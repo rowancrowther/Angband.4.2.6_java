@@ -177,7 +177,7 @@ class UILoopTest {
         private final AtomicBoolean closedOnTheEdt = new AtomicBoolean();
 
         RecordingSwingUI() {
-            super(null);
+            super(null, null, null);
         }
 
         @Override

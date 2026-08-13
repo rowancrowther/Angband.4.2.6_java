@@ -49,9 +49,9 @@ import java.nio.file.Paths;
  * separate threads - the dispatch still happens core-side, but what it produces is a message, and
  * this is where it is picked up again.
  *
- * <p><b>Three threads, and this is the middle one.</b> It runs on the {@code angband-display} thread
- * started by {@code SwingUI.init}, which is neither the game thread nor Swing's event dispatch
- * thread. Both of those matter: {@code receive()} blocks, so running this on the EDT would freeze
+ * <p><b>Three threads, and this is the middle one.</b> It runs on {@code angband-ui} - the thread
+ * {@code main()} starts and {@code SwingUI.startLoop} hands over to - which is neither the game
+ * thread nor Swing's event dispatch thread. Both of those matter: {@code receive()} blocks, so running this on the EDT would freeze
  * the window for the whole data load (see {@code docs/primers/edt-and-invokelater.md}), and painting
  * touches Swing components, so every paint below has to hop onto the EDT. That hop is not made here
  * - {@code Window.display} and {@code SplashScreen}'s painting methods each do their own
@@ -107,9 +107,9 @@ public class UILoop {
     /**
      * Build the loop around the channel ends it reads and the front end it paints through.
      *
-     * <p>Constructed by {@code SwingUI} today and by {@code main()} from stage 4; either way the
-     * channel arrives from outside, which is what keeps this loop's queue the same object the core
-     * is sending on.
+     * <p>Constructed by {@code SwingUI}, whose {@code startLoop()} then hands this loop the UI
+     * thread. The channel arrives from outside rather than being built here, which is what keeps
+     * this loop's queue the same object the core is sending on.
      *
      * @param uiChannel this half's pair of channel ends
      * @param swingUI   the front end whose active window the messages are painted into

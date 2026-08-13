@@ -21,8 +21,16 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.VisibleForTesting;
 import uk.co.jackoftrades.backend.io.AngDir;
+import uk.co.jackoftrades.channel.Channels;
+import uk.co.jackoftrades.channel.CoreChannel;
+import uk.co.jackoftrades.channel.EDTChannel;
+import uk.co.jackoftrades.channel.UIChannel;
+import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
+import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
+import uk.co.jackoftrades.channel.messages.CoreMessage;
+import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.frontend.SwingUI;
-import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
+import uk.co.jackoftrades.middle.game.gameengine.Core;
 import uk.co.jackoftrades.middle.game.globals.AngbandDirs;
 
 import javax.swing.*;
@@ -33,15 +41,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * The entry point: parse the command line, then either answer it and stop, or hand the parsed
- * options to the front end and get out of the way. This is the port of {@code main()}
+ * The entry point: parse the command line, then either answer it and stop, or build the two halves
+ * of the game, start them, and wait for both to finish. This is the port of {@code main()}
  * ({@code [C] src/main.c}).
  *
  * <p>Where C's {@code main()} goes on to call {@code play_game()} and blocks there for the whole
- * session, this one returns almost immediately. Everything after argument parsing happens on
- * other threads - the front end on Swing's event dispatch thread (EDT), the game loop on the
- * thread {@link GameRunner} owns - so {@code main} returning is the normal path, not a shutdown.
- * The JVM stays up because a shown window keeps AWT's non-daemon EDT alive.
+ * session, this one blocks in {@link Thread#join()} instead - which is the same shape from a
+ * distance and a different thing underneath. C is waiting for the game because it <em>is</em> the
+ * game; this waits for two threads it owns and does no game work itself, holding neither channel
+ * end after it has handed them out.
+ *
+ * <p><b>Waiting is the point, not politeness.</b> The last thing the core does before its thread
+ * ends is answer the shutdown handshake, so a {@code main} that returned early would let the JVM
+ * race the save. Joining both is what turns "the save finished before the process did" from a
+ * hope into a guarantee - and it is why nothing on either half calls {@link System#exit}: the
+ * program ends by running out of threads.
+ *
+ * <p>This is also the only class that names both halves. {@link SwingUI} and {@link Core}
+ * are imported here and nowhere across the boundary from each other; everything they say to one
+ * another goes through the {@code channel} package.
  *
  * <p>Two kinds of argument, and the difference decides how the method ends. Most switches only
  * set a value and fall through to the launch at the bottom. {@code -l} and anything unrecognised
@@ -55,29 +73,149 @@ public class Main {
     private static final Logger logger = LogManager.getLogger(Main.class);
     
     /**
-     * Builds the front end and its game-thread owner, and starts them. Handed to
-     * {@link SwingUtilities#invokeLater} so all of it happens on the EDT, which is the only thread
-     * allowed to touch Swing components once they are realised.
+     * The UI thread's body: build the front end, put its window up on the EDT, and then become the
+     * loop that reads this half's inbox.
      *
-     * <p>This is the whole of the port's start-up wiring: a {@link GameRunner} to own the game
-     * thread, a {@link SwingUI} given that runner as its single handle on the middle end, and
-     * {@code init} to build the window and start the loop. It reads {@link #options} rather than
-     * taking a parameter because {@code Runnable} has none.
+     * <p><b>A method that returns a {@code Runnable}, not a {@code Runnable} itself.</b>
+     * {@code run()} takes no arguments, so anything the body needs has to be state it carries; a
+     * lambda built here carries it by capturing these three parameters. That is what let the
+     * options stop being a static field read from the EDT and become an ordinary argument.
      *
+     * <p><b>Two threads, and the {@code invokeLater} is the join between them.</b> Only the EDT may
+     * touch realised Swing components, so {@link SwingUI#init()} is queued onto it - but
+     * {@link SwingUI#startLoop()} blocks for the whole session, and blocking the EDT would freeze
+     * the window it just built. So the bootstrap goes to the EDT and the loop stays here, on the
+     * thread this runnable is given to.
+     *
+     * <p>Nothing waits for the queued {@code init} to finish; the loop starts immediately and could
+     * in principle receive a message before the window exists. It cannot in practice, and the
+     * reason is the handshake rather than luck: the core sends nothing until it is told to start,
+     * and {@code init} is what tells it, on its last line.
+     *
+     * <p><b>The {@code catch} is this half's crash path, and it is a {@code catch} rather than an
+     * {@link Thread.UncaughtExceptionHandler} for one plain reason: scope.</b> A handler installed
+     * on the thread in {@code main} would have no front end to shut down - {@code swingUI} is a
+     * local of this lambda, built after {@code main} has handed the work over. Catching here also
+     * means the thread ends by returning rather than by throwing, so there is nothing left for a
+     * handler to do. The core's half of the same problem has the opposite shape and so takes the
+     * opposite answer; see {@link #main}.
+     *
+     * <p>A dead UI half owes two messages, and the {@code catch} and the {@code finally} send one
+     * each. {@code SAVE_AND_STOP} is what unparks the core, which would otherwise sit in
+     * {@code receive()} forever waiting for a front end that no longer exists; nothing waits for
+     * the {@code STOPPED} that comes back, and it simply rests unread on an inbox whose reader has
+     * gone. Disposing the windows is the other, and it is what actually ends the process: the EDT
+     * is kept alive by displayable windows, so until they go the JVM outlives both halves - a
+     * running program with nothing running in it.
+     *
+     * <p>The disposal is in a {@code finally} because it is owed on the clean path too, where
+     * {@code startLoop()} returns normally after {@code UILoop} has already queued a
+     * {@code closeDown} of its own. Two disposals are harmless - {@code dispose()} on a disposed
+     * window does nothing, which {@code SwingUITest.closeDownIsSafeToRepeat} pins - and a missing
+     * one hangs the program, so the duplicate is the right way to be wrong.
+     *
+     * <p>Two limits worth knowing before they bite. Only {@link RuntimeException} is caught, so an
+     * {@link Error} - {@code OutOfMemoryError}, a stack overflow - still leaves by the default
+     * handler and still hangs; that is a considered line rather than an oversight, since a JVM in
+     * that state cannot be relied on to send anything. And the disposal only releases the EDT if
+     * <em>every</em> displayable window goes: {@link SwingUI#closeDown()} walks the front end's own
+     * list, which today holds the single game window, but the {@code -l} and usage frames built by
+     * {@link #displayText} are not in it and neither would a dialog be.
+     *
+     * @param uiChannel      the UI thread's pair of ends - its inbox, and its way of reaching the
+     *                       core
+     * @param edtChannel     the send-only end the window listener posts close requests on
+     * @param startupOptions the parsed command line
+     * @return the body for the {@code angband-ui} thread
      * @author Rowan Crowther
      */
-    static Runnable startFrontend = new Runnable() {
-        @Override
-        public void run() {
-            GameRunner gameRunner = new GameRunner();
-            SwingUI swingUI = new SwingUI(gameRunner);
-            swingUI.init(options);
-        }
-    };
+    private static Runnable startSwingUI(UIChannel uiChannel, EDTChannel edtChannel,
+                                         StartupOptions startupOptions) {
+        return () -> {
+            SwingUI swingUI = new SwingUI(uiChannel, edtChannel, startupOptions);
+            try {
+                SwingUtilities.invokeLater(swingUI::init);
+                swingUI.startLoop();
+            } catch (RuntimeException e) {
+                logger.fatal("angband-ui died.", e);
+                uiChannel.uiSender().send(new UIMessage.LifecycleUIMessage(UILifecycleEvent.SAVE_AND_STOP));
+            } finally {
+                SwingUtilities.invokeLater(() -> {
+                    swingUI.closeDown();
+                });
+            }
+        };
+    }
 
     /**
-     * Parse {@code args}, then start the front end - unless an argument asked a question instead,
-     * in which case the answer is displayed and this returns without starting anything.
+     * The core thread's body: build the core and hand it the thread for the rest of the session.
+     *
+     * <p>Two lines where the front end used to be three, and where this method used to be. The
+     * core's set-up moved inside {@link Core#gameLoop()}, so there is no longer an ordering
+     * for a caller to get wrong - which is the difference between this lambda and the UI's. That
+     * one coordinates two objects and an EDT hop; this one just names where the core's thread
+     * begins.
+     *
+     * @param coreChannel    the core's pair of ends - its inbox, and its way of reaching the UI
+     * @param startupOptions the parsed command line
+     * @return the body for the {@code angband-core} thread
+     * @author Rowan Crowther
+     */
+    private static Runnable startCore(CoreChannel coreChannel, StartupOptions startupOptions) {
+        return () -> {
+            Core core = new Core(coreChannel, startupOptions);
+            core.gameLoop();
+        };
+    }
+    
+    /**
+     * Parse {@code args}, then start both halves and wait for them - unless an argument asked a
+     * question instead, in which case the answer is displayed and this returns without starting
+     * anything.
+     *
+     * <p><b>The last dozen lines are the whole of the port's start-up wiring.</b> One
+     * {@link Channels} set is created, which is the only place the two queues come into existence
+     * and the only way a sender and its matching receiver can be guaranteed to be looking at the
+     * same one. Each half is then given exactly the ends it is entitled to and nothing more - the
+     * UI gets both of its own plus the EDT's send-only view, the core gets its pair - and after
+     * that neither can reach the other except by sending.
+     *
+     * <p>Both threads are named, which costs nothing and is worth it the first time a stack trace
+     * or a thread dump has to be read: {@code angband-ui} and {@code angband-core} say which half
+     * is stuck without anyone having to work it out from the frames.
+     *
+     * <p><b>The handler is the crash path, and it exists because the handshake cannot cover its own
+     * failure.</b> The shutdown is an exchange - the core answers {@code SAVE_AND_STOP} with
+     * {@code STOPPED} - and a half that dies by exception never gets to take its turn, leaving the
+     * other half parked on a queue nothing will ever arrive on. So the core's handler sends the
+     * {@code STOPPED} its thread did not live to send, and a crash leaves by the shutdown path that
+     * already exists rather than by a second one written for the purpose.
+     *
+     * <p>It is installed <em>before</em> {@link Thread#start()}, which is the whole reason those
+     * two lines are separated. A handler set afterwards is a race: a thread that dies in its first
+     * instruction dies before its handler exists, and the default handler prints to
+     * {@code System.err} instead.
+     *
+     * <p><b>Only the core is handled here, and the asymmetry is deliberate.</b> The UI half needs
+     * to dispose its windows as well as unpark its opposite number, and the front end it must
+     * dispose is a local inside {@link #startSwingUI}'s lambda that this method never sees - so
+     * that half is caught where it can be acted on, which is also why its thread ends by returning
+     * rather than by throwing. Neither shape is the "right" one: each is where the thing that needs
+     * shutting down happens to be in scope.
+     *
+     * <p>What no handler here can do is rescue the EDT. It is not a thread this method started, so
+     * it cannot be named, joined or handled; it ends only when the last displayable window is
+     * disposed. That is why the UI half's shutdown is the one that actually ends the process, and
+     * why a crash on that side that skipped the disposal would hang the JVM around a dead program.
+     *
+     * <p>The order of the two {@code join} calls does not matter. Neither thread can finish before
+     * the other has played its part in the handshake, so whichever is waited on first, the second
+     * has either already ended or is about to.
+     *
+     * <p>An interrupt while joining is logged and returns, which leaves the two threads running
+     * with nobody waiting for them - the program would then end whenever they do, without the
+     * guarantee the joins exist to provide. Nothing interrupts this thread today, so it is a
+     * recorded gap rather than a live one.
      *
      * <p>The loop rewrites anything that is not a switch (too short, or not starting with
      * {@code -}) to {@code "-h"} so it falls into {@code default} and prints the usage, which is
@@ -139,11 +277,31 @@ public class Main {
             }
         }
 
-        Main.options = new StartupOptions(selectSavefile, startNewCharacter,
+        StartupOptions options = new StartupOptions(selectSavefile, startNewCharacter,
                 resurrectDeadCharacter, requestGraphicsMode, useSpecificCharacter,
                 "", new ArrayList<>());
 
-        SwingUtilities.invokeLater(startFrontend);
+        Channels channels = Channels.create();
+
+        Thread uiThread = new Thread(startSwingUI(channels.uiChannel(), channels.edtChannel(), options), "angband-ui");
+        Thread coreThread = new Thread(startCore(channels.coreChannel(), options), "angband-core");
+
+        coreThread.setUncaughtExceptionHandler((t, e) -> {
+            logger.fatal("{} died.", t.getName(), e);
+            channels.coreChannel().coreSender().send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+        });
+
+        // The UIThread catch of a dead thread without a closedown message is in startSwingUI. 
+
+        uiThread.start();
+        coreThread.start();
+
+        try {
+            uiThread.join();
+            coreThread.join();
+        } catch (InterruptedException e) {
+            logger.error("Unable to join threads", e);
+        }
     }
 
     @VisibleForTesting
@@ -197,17 +355,6 @@ public class Main {
 
         displayText(output);
     }
-    /**
-     * The parsed command line, handed to {@link SwingUI#init} by {@link #startFrontend}.
-     *
-     * <p>Static because the {@link Runnable} below runs later, on the EDT, after {@code main} has
-     * returned and its locals are gone. Publishing it is safe without further synchronisation:
-     * {@link SwingUtilities#invokeLater} establishes a happens-before edge, so the EDT is
-     * guaranteed to see the write made just above the call.
-     *
-     * @author Rowan Crowther
-     */
-    private static StartupOptions options;
 
     /**
      * List the savefiles the player could load - the {@code -l} switch. Reads the save directory

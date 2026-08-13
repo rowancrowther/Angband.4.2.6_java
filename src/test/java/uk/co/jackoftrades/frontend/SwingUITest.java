@@ -57,13 +57,14 @@ class SwingUITest {
     /**
      * Builds a front end with its window realised, so there is something for a disposal to do.
      *
-     * <p>A {@code null} runner is deliberate: nothing on the shutdown path touches it any more,
-     * and a test that passed a real one would hide it if that changed back.
+     * <p>Three {@code null}s are deliberate. Nothing on the shutdown path touches the channels -
+     * {@code closeDown} disposes windows and sends nothing - so passing real ends would hide it if
+     * that ever changed back, and would need a matching reader to keep the queues from filling.
      *
      * @author Rowan Crowther
      */
     private static SwingUI realisedFrontEnd() throws Exception {
-        SwingUI swingUI = new SwingUI(null);
+        SwingUI swingUI = new SwingUI(null, null, null);
 
         SwingUtilities.invokeAndWait(() -> swingUI.getActiveWindow().pack());
 

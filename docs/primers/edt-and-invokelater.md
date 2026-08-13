@@ -1,6 +1,6 @@
 # Primer: the EDT and `invokeLater`
 
-*Primer 4 from the menu in `Architecture_migration.md`. Written at stage 2, against `SwingUI`,
+*A primer from the menu in `Architecture_migration.md`. Written at stage 2, against `SwingUI`,
 `SplashScreen` and the `UiLoop` that stage 2 introduces.*
 
 Swing has one thread that is allowed to touch components, and it is not a thread you created. Almost every Swing bug
@@ -9,7 +9,9 @@ thread, or blocking Swing's thread with work that isn't Swing's.
 
 ## What the EDT actually is
 
-The event dispatch thread is a consumer loop — the same shape as primer 1's, written by someone else in 1998. Its queue
+The event dispatch thread is a consumer loop — the same shape as `producer-consumer.md`'s, written by someone else in
+
+1998. Its queue
 is `java.awt.EventQueue`, and its items are things like "the mouse moved", "this component needs repainting",
 "run this `Runnable`". It takes one, runs it to completion, takes the next.
 
@@ -24,7 +26,7 @@ That is the whole model, and two consequences follow immediately:
 
 The EDT starts lazily, the first time something needs it — realistically, when `SwingUI`'s first `Window` becomes
 displayable. It is non-daemon, which is why the JVM stays alive after `main` returns and why disposing every window is
-what actually ends the process (primer 5's territory).
+what actually ends the process (`thread-lifecycle-and-shutdown.md`'s territory).
 
 ## Direction 1: painting must hop
 
@@ -170,5 +172,5 @@ gets handed a whole `UIChannel`.
 | The EDT as a producer, doing one thing only | `SwingUI`'s `windowListener` (stage 3)                            |
 | The thread that blocks so the EDT doesn't   | stage 2's `UiLoop`                                                |
 
-*See also: primer 1 (producer–consumer), primer 3 (`BlockingQueue`), primer 5 (thread lifecycle and why disposing
-windows ends the JVM).*
+*See also: `producer-consumer.md`, `blocking-queue.md`, `thread-lifecycle-and-shutdown.md` (why disposing windows ends
+the JVM).*

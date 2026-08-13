@@ -19,28 +19,33 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.StartupOptions;
 import uk.co.jackoftrades.channel.CoreChannel;
 import uk.co.jackoftrades.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.ChannelStatusDisplay;
+import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
 
 /**
- * Owner of the game thread: the background thread the middle end runs on, kept
- * clear of Swing's event dispatch thread (EDT) so game work never blocks
- * repainting and input never blocks the game.
+ * The middle end's body: what the game thread runs, kept clear of Swing's event
+ * dispatch thread (EDT) so game work never blocks repainting and input never
+ * blocks the game. The thread itself belongs to {@code main()}, which names it
+ * {@code angband-core}, starts it and waits for it.
  *
- * <p>This is the front end's single handle on the middle end. {@code SwingUI}
- * holds one of these and drives it with {@link #start(CoreChannel)} — one method,
- * now that stopping is a message rather than a call; it imports nothing else from
- * the middle end, which is what keeps the boundary between the two halves one
- * object wide.
+ * <p><b>Built by {@code main()}, named by nothing else.</b> This used to be the
+ * front end's single handle on the middle end - {@code SwingUI} constructed one
+ * and drove it. Stage 4 moved that: {@code main()} now builds this with the
+ * core's channel ends and the parsed command line, hands it to a thread, and the
+ * front end holds nothing of the middle end at all. What this class knows of the
+ * other half is a queue it reads and a queue it writes, which is what keeps the
+ * boundary between them one package wide.
  *
- * <p><b>On its way out as a handle.</b> {@code start} takes the core's end of
- * the channel, so the front end hands this class the means to talk back rather
- * than being talked to directly. Stage 4 finishes the job: this becomes the core
- * thread's own {@code Runnable}, constructed by {@code main()} with its channel
- * ends, and the front end holds nothing of the middle end at all.
+ * <p>{@link #gameLoop()} is the thread's body, reached through the {@code
+ * Runnable} {@code main()} wraps this in. The wrapping is why the loop builds the
+ * engine itself rather than trusting a caller to have done it first: there is one
+ * entry point, and everything it needs is set up inside it.
  *
  * <p>There is no C counterpart to this class. The C original is single-threaded:
  * {@code main()} ({@code src/main.c}) initialises and then calls
@@ -49,7 +54,8 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  * port-only decision forced by Swing, which reserves the EDT for the UI.
  *
  * <p><b>Wired at both ends, with nothing in the middle yet.</b> {@link #gameLoop()}
- * registers the start-up handlers and runs the data load on this thread, so the
+ * builds the engine, installs the boundary the start-up events leave through,
+ * registers the handlers and runs the data load - all on this thread, so the
  * engine's mutable state is confined to it by construction; it then blocks on the
  * core's inbox and answers the shutdown handshake. What is still missing is the
  * game: the loop understands the two lifecycle messages and nothing else, because
@@ -58,43 +64,22 @@ import uk.co.jackoftrades.middle.game.event.eventhandlers.InitHandlers;
  *
  * @author Rowan Crowther
  */
-public class GameRunner {
-    private static final Logger logger = LogManager.getLogger(GameRunner.class);
+public class Core {
+    private static final Logger logger = LogManager.getLogger(Core.class);
 
     /**
-     * The game thread, created fresh by each {@link #start(CoreChannel)} call. Null
-     * until the first {@code start()}.
-     *
-     * <p>Non-daemon, being an ordinary {@code new Thread(...)}, which is what makes
-     * the handshake's promise real: the JVM cannot exit while this thread is still
-     * saving, because a live non-daemon thread keeps it alive.
-     *
-     * @author Rowan Crowther
-     */
-    private Thread thread;
-    /**
-     * Whether {@link #gameLoop()} should keep running - cleared by the loop itself
-     * when the front end asks it to stop.
-     *
-     * <p>Not {@code volatile}, and no longer needs to be. It was, when the EDT set
-     * it through a {@code requestStop()} that has since gone: a flag written on one
-     * thread and read on another has no guarantee of ever being seen without it.
-     * Now that the stop arrives as a message, the only write and the only read are
-     * both on the game thread, so ordinary field access is enough — the flag has
-     * become bookkeeping local to the loop rather than a means of communication.
-     *
-     * @author Rowan Crowther
-     */
-    private boolean running = false;
-
-    /**
-     * The middle end this runner drives, obtained in {@link #start(CoreChannel)} and used on the
+     * The middle end this class drives, built by {@link #getGameEngine()} and used only on the
      * game thread.
      *
-     * <p>Built in {@code start()} rather than in {@link #gameLoop()} deliberately: constructing the
-     * engine replaces the event bus, and the handlers registered at the top of the loop have to go
-     * onto the bus that survives. Assigning it before {@link Thread#start()} also publishes it
-     * safely to the game thread without needing {@code volatile}.
+     * <p>Built at the top of {@link #gameLoop()} and before {@code initHandlers()}, which is an
+     * ordering rather than a preference: constructing the engine replaces the event bus, so
+     * handlers registered first would go onto a bus that is then thrown away, and their events
+     * would never arrive.
+     *
+     * <p>Not {@code volatile}, and does not need to be. It is written and read on one thread - this
+     * object is constructed on {@code main}'s thread but every field it touches after that belongs
+     * to the game thread, and starting a thread publishes everything written before the start to
+     * it.
      *
      * @author Rowan Crowther
      */
@@ -105,57 +90,68 @@ public class GameRunner {
      * and the receiver {@link #gameLoop()} is a loop over.
      *
      * <p>The receiving end is this class's whole knowledge of the front end - the
-     * loop waits on it and never calls the UI at all. The sending end is a second
-     * route to the UI's inbox rather than the only one: the start-up traffic still
-     * goes out through {@code ChannelStatusDisplay}, which the front end registers
-     * in the holder with its own copy of this sender. So the core has two routes to
-     * one queue and uses whichever the caller happened to be given. Stage 5 removes
-     * the holder and leaves this as the only route.
+     * loop waits on it and never calls the UI at all. The sending end goes out
+     * twice over: directly, for the shutdown reply, and wrapped in a
+     * {@link ChannelStatusDisplay} that {@link #gameLoop()} puts in the holder, so
+     * the start-up narration the event handlers produce leaves by the same queue.
+     * Both routes are this one sender, which is the change stage 4 made - the front
+     * end used to build that wrapper with a copy of the sender it had no business
+     * holding. Stage 5 removes the holder and leaves the direct route alone.
      *
-     * <p>Assigned in {@link #start(CoreChannel)} before {@link Thread#start()},
-     * which publishes it safely to the game thread without needing
-     * {@code volatile}.
+     * <p>Handed in at construction, on {@code main}'s thread, and read on the game
+     * thread; safe without {@code volatile} because starting a thread publishes
+     * everything written before it.
      *
      * @author Rowan Crowther
      */
     private CoreChannel coreChannel;
 
     /**
-     * Start the game thread and begin running {@link #gameLoop()} on it.
+     * The parsed command line, handed in by {@code main()} so the core has its own copy rather
+     * than reading one the front end owns.
      *
-     * <p>{@link #running} is set before {@link Thread#start()} so the loop cannot
-     * observe {@code false} and exit immediately on its first test. Every field the
-     * loop reads is likewise assigned before the thread exists, which is what makes
-     * their lack of {@code volatile} safe: starting a thread publishes everything
-     * written before it to that thread.
+     * <p>Nothing reads it yet. The savefile group is what this half will want -
+     * {@code selectSavefile}, {@code startNewCharacter} and {@code useSpecificCharacter} all decide
+     * what happens before the first turn, which is Chapter 3's work. {@code requestGraphicsMode}
+     * belongs to the other half and is carried here only because both halves get the whole record.
      *
-     * @param channel the core's pair of channel ends, kept for the loop to use
      * @author Rowan Crowther
      */
-    public void start(CoreChannel channel) {
-        this.coreChannel = channel;
-        
-        thread = new Thread(this::gameLoop, "angband-game-loop");
-        running = true;
+    private StartupOptions startupOptions;
 
-        // Must keep the following two lines (gameEngine = getGameEngine(); & thread.start();)
-        // in this order as getGameEngine publishes the bus.
-        gameEngine = getGameEngine();
-        thread.start();
+    /**
+     * Build the core around the channel ends and the options {@code main()} gives it.
+     *
+     * <p>Only assembles state: no thread is started, no engine is built and no message is sent
+     * until {@link #gameLoop()} runs on the thread {@code main()} wraps this in. That split is what
+     * lets construction happen on one thread and everything else on another.
+     *
+     * @param coreChannel    the core's pair of channel ends - its inbox and its way of replying
+     * @param startupOptions the parsed command line
+     * @author Rowan Crowther
+     */
+    public Core(CoreChannel coreChannel, StartupOptions startupOptions) {
+        this.coreChannel = coreChannel;
+        this.startupOptions = startupOptions;
     }
 
     /**
-     * The game engine singleton, building it on first call.
+     * Put the game engine in {@link #gameEngine}, building the singleton on first call.
      *
-     * <p>An instance method wrapping a static call, which is what makes it a boundary: a test can
-     * subclass {@code GameRunner} and return a stand-in engine without touching
-     * {@link GameEngine#getGame()} or the singleton behind it.
+     * <p>An instance method wrapping a static call, so the dependency on
+     * {@link GameEngine#getGame()} is reachable by name and could be replaced without touching the
+     * singleton itself.
      *
-     * @return the game engine
+     * <p><b>Caveat, and it is a real one.</b> This assigns the field rather than returning the
+     * engine, which means a subclass overriding it cannot install a stand-in: {@link #gameEngine}
+     * is private, so the override has nothing it can write to, and {@link #gameLoop()} would find
+     * the field still null. The boundary is nominal until either the field is made visible to
+     * subclasses or this hands the engine back instead of storing it.
+     *
      * @author Rowan Crowther
      */
-    public GameEngine getGameEngine() {
-        return GameEngine.getGame();
+    public void getGameEngine() {
+        gameEngine = GameEngine.getGame();
     }
 
     /**
@@ -167,6 +163,19 @@ public class GameRunner {
      * fetching a command and running the game world; this initialises and then waits
      * for messages, which is the same shape with a queue where C has a blocking call
      * into the display module. The alternation itself is Chapter 5's.
+     *
+     * <p><b>The four statements before the loop are the core's whole set-up, in the only order that
+     * works.</b> The engine is built first, because building it replaces the event bus. The
+     * {@link ChannelStatusDisplay} goes into the holder next, so that when the data load starts
+     * signalling, the handlers have somewhere to send to - registered after the load, the title
+     * screen would stay blank and the notes would go nowhere. The handlers subscribe third, and
+     * only then does {@code loadGameConstants()} produce the events they carry across.
+     *
+     * <p>The engine is built here rather than by the caller, replacing a two-call sequence the
+     * caller had to know about, where calling this method alone dereferenced a null field. The null
+     * check would leave a pre-supplied engine alone, but nothing can supply one today:
+     * {@link #gameEngine} is private and {@link #getGameEngine()} assigns it rather than returning
+     * it, which is the caveat recorded on that method.
      *
      * <p><b>Blocked, not spinning.</b> {@code receive()} parks the thread until
      * something arrives, so an idle game costs no CPU at all - the arrangement the
@@ -194,11 +203,16 @@ public class GameRunner {
      * @author Rowan Crowther
      */
     public void gameLoop() {
+        if (gameEngine == null)
+            getGameEngine();
+
+        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(coreChannel.coreSender()));
+        
         InitHandlers.initHandlers();
 
         gameEngine.loadGameConstants();
 
-        while (running) {
+        while (true) {
             try {
                 UIMessage uiMessage = coreChannel.coreReceiver().receive();
 
@@ -214,7 +228,7 @@ public class GameRunner {
                             case SAVE_AND_STOP -> {
                                 coreChannel.coreSender()
                                         .send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
-                                running = false;
+                                return;
                             }
                             // Nothing to do with it yet - the window is up and the data is
                             // already loaded by the time it arrives. This is where character
@@ -232,7 +246,6 @@ public class GameRunner {
                 // Nothing interrupts this thread, so reaching here means something unexpected
                 // did. Give up rather than continue - but note the UI is left waiting.
                 logger.error("Game loop interrupted");
-                running = false;
                 return;
             }
         }

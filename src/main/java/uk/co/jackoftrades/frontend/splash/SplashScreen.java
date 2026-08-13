@@ -47,16 +47,19 @@ import java.util.Scanner;
  * and is reached only from the UI half. The methods kept their names because they still answer the
  * same two questions; what changed is who asks.
  *
- * <p><b>Called on the display thread, and hops to the EDT itself.</b> {@code UILoop} runs on
- * {@code angband-display}, which is neither the game thread nor Swing's event dispatch thread, so
- * the painting below is queued with {@code invokeLater} rather than run where it is called. That
- * closes a hole this class's Javadoc used to admit to: the old arrangement painted straight from the
- * game thread, and only {@code repaint()} is documented as safe to do that with.
+ * <p><b>Called on the UI thread, and hops to the EDT itself.</b> {@code UILoop} runs on
+ * {@code angband-ui}, which is neither the game thread nor Swing's event dispatch thread, so the
+ * painting below is queued with {@code invokeLater} rather than run where it is called. That closes
+ * a hole this class's Javadoc used to admit to: the old arrangement painted straight from the game
+ * thread, and only {@code repaint()} is documented as safe to do that with.
  *
- * <p>One consequence worth holding on to: the character grid is filled in on the display thread and
- * only handed over inside the queued block, so the parse and the paint never race. That works
- * because each instance owns its grid - two splash screens would be two grids, not one contended
- * one.
+ * <p>(The thread was called {@code angband-display} until stage 4, when the loop stopped having a
+ * thread of its own and became the body of the UI thread {@code main()} starts. Nothing about the
+ * reasoning changed - it is still not the EDT - but the name in a stack trace did.)
+ *
+ * <p>One consequence worth holding on to: the character grid is filled in on the UI thread and only
+ * handed over inside the queued block, so the parse and the paint never race. That works because
+ * each instance owns its grid - two splash screens would be two grids, not one contended one.
  *
  * <p>Builds a whole screen and hands it over in one go, rather than writing cell by cell: the title
  * screen replaces everything, so there is nothing underneath worth preserving. Cells past the end
@@ -130,8 +133,8 @@ public class SplashScreen {
      * which is why a version string longer than eight would overflow the line in both.
      *
      * <p><b>Parsing, not painting.</b> Nothing here touches Swing, which is what lets it run on the
-     * display thread while the file is read - the caller paints the result separately. The grid is
-     * also returned as well as kept, so the caller need not reach back in for it.
+     * UI thread while the file is read - the caller paints the result separately. The grid is also
+     * returned as well as kept, so the caller need not reach back in for it.
      *
      * <p>Stops after 24 rows and clips anything past column 80, so a news file larger than the term
      * is truncated rather than throwing. A read failure is logged and leaves the grid partly filled:
@@ -259,7 +262,7 @@ public class SplashScreen {
      *
      * <p>A named wrapper over {@code SwingUtilities.invokeLater} rather than the call itself, so the
      * painting methods read as a statement of where the work goes. {@code invokeLater} and not
-     * {@code invokeAndWait}: the display thread has no reason to wait for a repaint, and waiting is
+     * {@code invokeAndWait}: the UI thread has no reason to wait for a repaint, and waiting is
      * how it would deadlock if the EDT ever came to need something from it.
      *
      * @param event the block to run on the EDT
@@ -294,7 +297,7 @@ public class SplashScreen {
      * that, and nothing needs to - {@code JPanelArea.put} clips a string to the grid at both ends -
      * but the note would lose its beginning as well as its end.
      *
-     * <p><b>Called on the display thread, and hops to the EDT itself.</b> The note is written into
+     * <p><b>Called on the UI thread, and hops to the EDT itself.</b> The note is written into
      * this instance's grid where it is called, and only the {@code clear}/{@code setChars}/
      * {@code repaint} sequence is queued with {@code invokeLater} - so the grid is complete before
      * anything looks at it, and no Swing state is mutated off the event dispatch thread.
@@ -331,8 +334,8 @@ public class SplashScreen {
             @Override
             public void run() {
                 activeWindow.clear();
-                panel.setChars(display);
-                panel.repaint();
+                activeWindow.getArea().setChars(display);
+                activeWindow.getArea().repaint();
             }
         });
     }
@@ -391,7 +394,7 @@ public class SplashScreen {
      *
      * <p><b>Still paints from wherever it is called</b>, unlike its neighbour: {@code put} mutates
      * panel state and only {@code repaint()} is documented as safe off the event dispatch thread. Its
-     * first caller will arrive on the display thread, so this needs the same {@code invokeLater}
+     * first caller will arrive on the UI thread, so this needs the same {@code invokeLater}
      * {@link #splashScreenNote(String)} now has before it is wired up.
      *
      * <p>No caller yet, and the reason is on the wire rather than here: nothing in the message says

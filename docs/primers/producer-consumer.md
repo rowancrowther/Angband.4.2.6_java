@@ -3,7 +3,8 @@
 *Stage 2 primer from `Architecture_migration.md`. Written against `uk.co.jackoftrades.channel` and the
 `StatusDisplay` → `UiLoop` path that stage 2 builds.*
 
-Primer 3 covered the mechanism — what `take()` does when the queue is empty. This one covers the *shape*: what you get
+`blocking-queue.md` covered the mechanism — what `take()` does when the queue is empty. This one covers the *shape*:
+what you get
 when you arrange two threads as a producer and a consumer rather than as two threads that call each other.
 
 ## The pattern in one paragraph
@@ -68,13 +69,14 @@ public void run() {
 ```
 
 1. **`while` around a blocking receive**, never a poll-and-sleep. The loop spends its life parked.
-2. **`switch` over the sealed hierarchy**, so the compiler enforces that every message shape is handled — primer 2's
-   point, cashed in here. A new record on the protocol becomes a compile error in the consumer, which is where you want
+2. **`switch` over the sealed hierarchy**, so the compiler enforces that every message shape is handled — the point of
+   the sealed-records protocol, cashed in here. A new record on the protocol becomes a compile error in the consumer,
+   which is where you want
    to find out.
 3. **A sentinel ends the loop**, not an interrupt and not a `stop` flag. `Lifecycle(STOPPED)` arrives *in order*, after
    every message sent before it — so the last progress note is painted before the window closes. A flag checked at the
    top of the loop has no such ordering, which is how you get a shutdown that eats the final frame. (This is the
-   poison-pill pattern; primer 5 does it properly.)
+   poison-pill pattern; `thread-lifecycle-and-shutdown.md` does it properly.)
 4. **Interruption exits the loop.** It does not go back round and call `receive()` again — being interrupted is a
    request to stop waiting, and continuing to wait is the one response that is definitely wrong.
 
@@ -91,7 +93,8 @@ That is the whole of a producer method, and it should stay that whole. Two tempt
 - **Waiting for a reply.** "Send, then block until the consumer acknowledges" reintroduces the rendezvous and, with it,
   the possibility of deadlock — the two halves can end up each blocked on the other's queue. If a producer needs an
   answer, that answer is a *message coming back*, handled by that thread's own loop, not a return value.
-- **Sending a mutable object.** The handover guarantee (primer 3) covers everything written *before* the send. It does
+- **Sending a mutable object.** The handover guarantee (`blocking-queue.md`) covers everything written *before* the
+  send. It does
   not cover what you do to the object *after*. Records with immutable components make that a non-question, which is why
   the protocol is records all the way down, and why `EventDataMissile` carrying a live `ItemObject` is called out in the
   migration doc as a shape that has to flatten before it can cross.
@@ -104,7 +107,8 @@ the fast end. It's the right answer when a runaway producer would exhaust memory
 These channels are unbounded, so there is no back-pressure at all, and that is a considered choice: the core must never
 be made to wait on the display, and the traffic is one message per data file or per player action rather than per pixel.
 The failure mode you've accepted is unbounded growth if a consumer dies while a producer keeps going — which stage 3's
-shutdown handshake exists to make orderly. If that ever changes, primer 3's note applies: bounding the queue and
+shutdown handshake exists to make orderly. If that ever changes, `blocking-queue.md`'s note applies: bounding the queue
+and
 revisiting `Sender.send`'s use of `offer` are the same commit.
 
 ## Why this is the shape the port needs
@@ -118,8 +122,8 @@ threading question **once, at one place**, and the rest of the code goes back to
 both sides. That is the trade the migration is buying: one hard boundary instead of hundreds of soft ones.
 
 The consumer in this port also has a second job that the plain pattern doesn't mention: it takes work off the queue and
-then hands the painting part to a *third* thread. That is primer 4, and the reason for it is that Swing's thread is not
-one we own.
+then hands the painting part to a *third* thread. That is `edt-and-invokelater.md`, and the reason for it is that
+Swing's thread is not one we own.
 
 ## Where to look in the code
 
@@ -131,4 +135,5 @@ one we own.
 | The protocol the `switch` is exhaustive over | `ChannelMessage`, `CoreMessage`, `UIMessage`                                                 |
 | The rendezvous being removed                 | `SplashScreen`'s Javadoc — "called on the game thread, and currently touches Swing directly" |
 
-*See also: primer 2 (sealed messages), primer 3 (`BlockingQueue`), primer 4 (the EDT), primer 5 (shutdown).*
+*See also: the sealed-messages primer (unwritten), `blocking-queue.md`, `edt-and-invokelater.md`,
+`thread-lifecycle-and-shutdown.md`.*

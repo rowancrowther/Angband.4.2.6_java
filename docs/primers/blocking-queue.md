@@ -1,6 +1,6 @@
 # Primer: `BlockingQueue` mechanics
 
-*Primer 3 from the menu in `Architecture_migration.md`. Written at stage 1, tied to
+*A primer from the menu in `Architecture_migration.md`. Written at stage 1, tied to
 `uk.co.jackoftrades.channel`.*
 
 A `BlockingQueue<E>` is a queue that knows how to make a thread wait. That is the whole idea. Everything else — the four
@@ -95,7 +95,7 @@ handover to worry about afterwards.
 
 - **Never call `take()` on the EDT.** It freezes the entire UI, including repaints, and no message will ever arrive to
   unfreeze it because the thread that would deliver it can't get scheduled work through a frozen event queue. This is
-  primer 4's territory, but it is the single most likely way to hang this application.
+  `edt-and-invokelater.md`'s territory, but it is the single most likely way to hang this application.
 - **`size()` is a snapshot and a lie.** By the time you act on it, another thread may have changed it. Don't branch on
   it; there is no correct "if not empty then take" — that's what `poll()` is for.
 - **Unbounded means unbounded.** A producer that never stops and a consumer that never runs is an

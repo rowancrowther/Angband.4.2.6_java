@@ -20,20 +20,15 @@ package uk.co.jackoftrades.frontend;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.StartupOptions;
-import uk.co.jackoftrades.channel.Channels;
-import uk.co.jackoftrades.channel.EDTSender;
+import uk.co.jackoftrades.channel.EDTChannel;
+import uk.co.jackoftrades.channel.UIChannel;
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.channel.enums.UILifecycleEvent;
-import uk.co.jackoftrades.channel.messages.ChannelMessage;
-import uk.co.jackoftrades.channel.messages.CoreMessage;
 import uk.co.jackoftrades.channel.messages.UIMessage;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.frontend.colour.Colour;
 import uk.co.jackoftrades.frontend.inputfromuser.UILoop;
 import uk.co.jackoftrades.frontend.screen.Window;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.ChannelStatusDisplay;
-import uk.co.jackoftrades.middle.game.event.statusdisplay.StatusDisplayHolder;
-import uk.co.jackoftrades.middle.game.gameengine.GameRunner;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
@@ -46,36 +41,55 @@ import java.util.Arrays;
 import java.util.List;
 
 /**
- * The Swing front end: owns the game's windows, and owns the one handle on the middle end.
- * It stands in for C's {@code main-*.c} modules ({@code [C] src/main-gcu.c} and friends), each of
- * which builds its platform's terms and installs the hooks the core calls back through.
+ * The Swing front end: owns the game's windows and nothing else. It stands in for C's
+ * {@code main-*.c} modules ({@code [C] src/main-gcu.c} and friends), each of which builds its
+ * platform's terms and installs the hooks the core calls back through.
  *
- * <p>Everything here runs on Swing's event dispatch thread (EDT). The middle end runs on the
- * thread {@link GameRunner} owns.
+ * <p><b>Two threads share this object, and which is which matters.</b> {@link #init()} is queued
+ * onto Swing's event dispatch thread (EDT) by {@code main()}, so everything it builds is built
+ * there, and the window listener fires there too. {@link #startLoop()} runs on the UI thread and
+ * stays there for the session, blocking on the inbox; the painting it drives hops back to the EDT
+ * through {@code invokeLater}. The middle end is a third thread this class knows nothing about.
  *
- * <p><b>The import list does not yet respect the boundary.</b> Three middle-end types are imported:
- * {@link GameRunner}, which is legitimate and stays until stage 4 moves ownership to {@code main()};
- * and {@link ChannelStatusDisplay} with {@link StatusDisplayHolder}, which are not. Constructing a
- * core-side {@code StatusDisplay} here and pushing it into the core's holder is a transitional
- * shortcut taken because the holder is the registration mechanism that already exists - the UI
- * reaches across to install the core's own sending end rather than the core being handed it. Stage 4
- * gives both halves their channel ends from {@code main()}, at which point this class constructs
- * nothing that belongs to the core; stage 5's boundary test then enforces it, and is expected to
- * fail against this class until then. The target is that {@code channel} is the only package
- * this half imports, which is what makes the boundary checkable by reading the import list.
+ * <p><b>The import list now respects the boundary.</b> Stage 4 removed the last of the middle-end
+ * imports: this class held a {@code Core} as its single handle on the middle end, and built a
+ * core-side {@code StatusDisplay} to push into the core's own holder. {@code main()} now gives each
+ * half its channel ends, and the core installs that display itself, so what is left here names
+ * {@code channel} and the front end's own packages - which is what makes the boundary checkable by
+ * reading the imports, and what stage 5's boundary test will pin down.
  *
  * <p>State is per-instance, not static. A previous version made the fields static so a static
  * {@code closeDown} could reach them, which left the class half-static and would have let a second
- * front end quietly overwrite the first one's runner.
+ * front end quietly overwrite the first one's windows.
  *
- * <p>Barely started: {@link #init} builds one 80x24 window and starts the game thread. The panel
- * can now hold and paint a grid of coloured characters, but the window list only ever holds the one
- * window it was constructed with, and nothing yet drives the grid except the splash screen.
+ * <p>Barely started: {@link #init()} builds one 80x24 window. The panel can now hold and paint a
+ * grid of coloured characters, but the window list only ever holds the one window it was
+ * constructed with, and nothing yet drives the grid except the splash screen.
  *
  * @author Rowan Crowther
  */
 public class SwingUI {
     private static final Logger logger = LogManager.getLogger(SwingUI.class);
+
+    /**
+     * This half's pair of channel ends: the inbox {@link #uiLoop} reads, and the sender
+     * {@link #sendStartToCore} reports readiness on.
+     *
+     * @author Rowan Crowther
+     */
+    private UIChannel uiChannel;
+
+    /**
+     * The EDT's whole view of the channels: a send-only end, given to the window listener.
+     *
+     * <p>Narrow on purpose. A listener holding a full {@link UIChannel} could call {@code receive()}
+     * and park the event dispatch thread, which is the one thing the front end must never do; there
+     * is no method here to do it with, so the rule is enforced by what the EDT was handed rather
+     * than by remembering it.
+     *
+     * @author Rowan Crowther
+     */
+    private EDTChannel edtChannel;
 
     /**
      * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
@@ -91,54 +105,28 @@ public class SwingUI {
      * @author Rowan Crowther
      */
     private Window activeWindow;
-    /**
-     * The game thread's owner, and this class's entire view of the middle end: started at the end
-     * of {@link #init}, and never told anything afterwards.
-     *
-     * <p>Write-once, in effect - the handle is used for exactly one call. Stopping the core used
-     * to be a second call on it; it is now a message, which is why the field's remaining job is
-     * small enough for stage 4 to delete it outright.
-     *
-     * @author Rowan Crowther
-     */
-    private GameRunner gameRunner;
 
     /**
      * The consumer half: the loop that reads this half's inbox and paints what the core sent.
      *
-     * <p>Built in the constructor but not started until the end of {@link #init}, so it cannot try
-     * to paint into a window that has no grid in it yet. It is given this front end, so the two
-     * refer to each other - which is a shortcut of the same kind as the holder registration below,
-     * and unwinds in the same place: stage 4 makes the loop the UI thread's own {@code Runnable}
-     * rather than something this class owns.
+     * <p>Built in the constructor and entered by {@link #startLoop()}, which is the UI thread's
+     * whole body from then on. It is given this front end, so the two refer to each other: the loop
+     * needs a window to paint into and this class needs somewhere for the thread to go.
+     *
+     * <p>That mutual reference is the one shortcut stage 4 left in place. The alternative was for
+     * {@code main()} to build the loop and pass it the front end, which would make this class the
+     * display and nothing else; keeping it here makes {@code SwingUI} the single public face of the
+     * front end. Either is defensible, and the choice is recorded rather than settled.
      *
      * @author Rowan Crowther
      */
     private UILoop uiLoop;
 
     /**
-     * The two queues the halves talk over, built here temporarily.
+     * The parsed command line, handed in at construction by {@code main()}.
      *
-     * <p>{@code Channels.create()} belongs in {@code main()} - it is the one place that can hand
-     * each holder its own ends and nothing more - and stage 4 moves it there. Until then this class
-     * builds the set and passes the core's half on with {@code gameRunner.start()}, which is the
-     * only reason the field exists: the constructor needs somewhere to keep them until {@link #init}
-     * runs. Building them here is safe but says the wrong thing about ownership, since the front end
-     * is holding the core's ends on its behalf.
-     *
-     * <p>Three of the ends are used from here, on two different threads, and the difference is
-     * worth reading: {@code uiChannel().uiSender()} in {@link #sendStartToCore} runs on whichever
-     * thread called {@link #init}, while {@code edtChannel().edtSender()} in the window listener
-     * runs on the EDT. The listener is given the narrow end deliberately - it can post and cannot
-     * wait, which is the property that keeps a close click from blocking the event dispatch
-     * thread.
-     *
-     * @author Rowan Crowther
-     */
-    private Channels channels;
-
-    /**
-     * The parsed command line, kept from {@link #init}.
+     * <p>It arrived through {@link #init} until stage 4, which is why that method used to take a
+     * parameter it no longer needs; both halves are now given their own copy up front.
      *
      * <p>Nothing reads it yet. {@code requestGraphicsMode} is the component that belongs to this
      * class - tiles or plain text is a decision taken while building the window - and the
@@ -147,29 +135,6 @@ public class SwingUI {
      * @author Rowan Crowther
      */
     private StartupOptions startupOptions;
-
-    /**
-     * Build the front end around the runner it will drive, and open its first window.
-     *
-     * <p>Only assembles state; nothing is shown and no thread starts until {@link #init}. Runs on
-     * the EDT, since {@link Window} is a Swing component.
-     *
-     * @param gameRunner the game thread's owner, this front end's one handle on the middle end
-     * @author Rowan Crowther
-     */
-    public SwingUI(GameRunner gameRunner) {
-        // Build the two channels to send and receive messages from the core
-        // Temporary build here until Stage 4 when they are moved to main and only
-        // passed here
-        channels = Channels.create();
-        uiLoop = new UILoop(channels.uiChannel(), this);
-        
-        windows = new ArrayList<>();
-        Window main = new Window();
-        windows.add(main);
-        activeWindow = main;
-        this.gameRunner = gameRunner;
-    }
     /**
      * The game window's window events. Only {@code windowClosing} does anything; the rest are
      * generated overrides that call {@code super} and could go.
@@ -202,7 +167,7 @@ public class SwingUI {
          */
         public void windowClosing(WindowEvent e) {
             UIMessage closingDown = new UIMessage.WindowCloseRequested();
-            channels.edtChannel().edtSender().send(closingDown);
+            edtChannel.edtSender().send(closingDown);
         }
 
         /**
@@ -304,6 +269,37 @@ public class SwingUI {
     };
 
     /**
+     * Build the front end around the channel ends {@code main()} gives it, and make its first
+     * window.
+     *
+     * <p>Only assembles state: nothing is shown until {@link #init()} and nothing is read from the
+     * inbox until {@link #startLoop()}. The three arguments are the whole of what this half is
+     * given - no handle on the core, and no way to obtain one.
+     *
+     * <p><b>Runs on the UI thread, not the EDT</b>, unlike everything it builds. That is the benign
+     * case rather than a violation: the {@link Window} made here is not yet realised, no other
+     * thread has a reference to it, and the {@code invokeLater} that queues {@link #init()}
+     * establishes the happens-before edge the EDT needs before it touches any of it.
+     *
+     * @param uiChannel      this half's pair of channel ends
+     * @param edtChannel     the send-only end the window listener will post on
+     * @param startupOptions the parsed command line
+     * @author Rowan Crowther
+     */
+    public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
+        this.uiChannel = uiChannel;
+        this.edtChannel = edtChannel;
+        this.startupOptions = startupOptions;
+
+        uiLoop = new UILoop(uiChannel, this);
+        
+        windows = new ArrayList<>();
+        Window main = new Window();
+        windows.add(main);
+        activeWindow = main;
+    }
+
+    /**
      * Dispose every window. The last step of the shutdown handshake, and now the whole of it that
      * happens front-end side.
      *
@@ -343,16 +339,26 @@ public class SwingUI {
      * nothing needs to: the channel buffers, so a message sent early would wait rather than be
      * lost. Sending it late is a choice about what the player sees, not about correctness.
      *
-     * <p>Sent before {@code gameRunner.start()} for the same reason, and safely: the queue exists
-     * before either thread does, so a message can be put on it while the reader is still to be
-     * created.
+     * <p>Sent from the EDT, on {@link #init()}'s last line, while the core is already running and
+     * blocked on its inbox waiting for exactly this. Every other thing this half tells the core is
+     * sent by the UI thread from {@code UILoop}.
+     *
+     * <p><b>Which makes this the one place the EDT reaches past its own end.</b> The whole point of
+     * {@link EDTChannel} is that the event dispatch thread is given a send-only view and so cannot
+     * block on a receive; but {@link #init()} now runs on the EDT and this method sends through
+     * {@link #uiChannel}, the full pair, because it is a field of an object the EDT is running
+     * inside. Harmless in itself - a send is a send - but it means the containment rests on nobody
+     * calling {@code receive()} here rather than on there being no way to. Worth settling when the
+     * boundary test arrives. Note that simply switching to {@link #edtChannel} would not do it:
+     * that end writes to this half's own inbox, not the core's, so the EDT would be telling the UI
+     * thread to tell the core - the shape the close request already has, and a defensible answer,
+     * but a different one from what this line does today.
      *
      * @author Rowan Crowther
      */
     private void sendStartToCore() {
         UIMessage.LifecycleUIMessage uiMessage = new UIMessage.LifecycleUIMessage(UILifecycleEvent.START);
-        channels.uiChannel().uiSender()
-                .send(uiMessage);
+        uiChannel.uiSender().send(uiMessage);
     }
 
     /**
@@ -559,10 +565,34 @@ public class SwingUI {
     }
 
     /**
-     * Bring the front end up: size the window from the chosen font, wire the close handler, start
-     * the game thread, and show it. The port of a {@code main-*.c} module's {@code init_*}
+     * Hand the calling thread to the inbox loop. One line, and the line that makes a thread the UI
+     * thread.
+     *
+     * <p><b>This does not return until the session ends.</b> {@code main()} calls it as the last
+     * statement of the UI thread's body, so the thread spends its life inside
+     * {@code UILoop.loop()}, blocked on the queue; when the core's {@code STOPPED} arrives the loop
+     * returns, this returns, and that thread finishes - which is one of the two events that let the
+     * JVM exit.
+     *
+     * <p>Called after {@link #init()} has been queued but without waiting for it. Safe because the
+     * core sends nothing before the {@code START} that {@code init} ends with, so this loop cannot
+     * be handed anything to paint before there is a window to paint it into.
+     *
+     * @author Rowan Crowther
+     */
+    public void startLoop() {
+        uiLoop.loop();
+    }
+
+    /**
+     * Bring the front end up: size the window from the chosen font, wire the close handler, show
+     * it, and tell the core to begin. The port of a {@code main-*.c} module's {@code init_*}
      * function, which C calls before {@code init_angband()} so the display exists to report
      * loading errors on.
+     *
+     * <p><b>Runs on the EDT.</b> {@code main()} queues it there with {@code invokeLater} rather
+     * than calling it on the UI thread, because every line below touches a Swing component and the
+     * window is realised part-way through.
      *
      * <p>The metrics drive everything. Angband is written against a character grid, so the window
      * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
@@ -570,36 +600,26 @@ public class SwingUI {
      * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
      *
      * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
-     * can never arrive before there is something to handle it, and {@code gameRunner.start()}
-     * comes last, so the game thread cannot outlive a failure to build the display. An exception
-     * before {@code setVisible} leaves the JVM alive with no window on screen, because
-     * {@code pack()} has already made the frame displayable and so kept the EDT running.
+     * can never arrive before there is something to handle it, and {@link #sendStartToCore} comes
+     * last, so the core cannot begin reporting progress before there is a window for it to be
+     * reported into. An exception before {@code setVisible} leaves the JVM alive with no window on
+     * screen, because {@code pack()} has already made the frame displayable and so kept the EDT
+     * running.
      *
-     * <p><b>The last four lines are the whole of the channel wiring.</b> A
-     * {@link ChannelStatusDisplay} goes into the holder, so the core's start-up calls become messages
-     * instead of paint calls; the {@code angband-display} thread starts, so something is reading
-     * this half's inbox; {@link #sendStartToCore} says the display is ready; and only then does the
-     * game thread start. The order among the last three matters less than it looks - the channel
-     * buffers, so a message sent before the consumer starts waits rather than being lost - but
-     * starting the reader first keeps the splash screen prompt and costs nothing.
+     * <p><b>The last line is the whole of the channel wiring left here.</b> It used to be four:
+     * this method also built a core-side status display and pushed it into the core's holder, and
+     * started a separate {@code angband-display} thread for the inbox loop. Stage 4 took both away
+     * - the core installs its own display now, and the loop runs on the UI thread that queued this
+     * method rather than on one of its own.
      *
-     * <p><b>This method starts a thread and returns; it does not wait for either half.</b> The
-     * window stays up because the EDT is alive, not because anything here is blocking, and the
-     * program ends when the windows are disposed and that thread runs out of work. Stage 4 makes
-     * that explicit by moving the waiting into {@code main()}, which will {@code join()} both
-     * threads.
+     * <p><b>This method returns as soon as the window is up; it waits for nothing.</b> The session
+     * carries on in two other places: {@link #startLoop()} on the UI thread, and the core on its.
+     * The program ends when both of those finish and {@code main()}'s two joins return.
      *
-     * <p>Registering a core-side object into a core-side holder from here is the transitional
-     * shortcut described on the class, and the line stage 4 deletes: once {@code main()} owns the
-     * channels, the core is handed its own sending end and this half never names it.
-     *
-     * @param options the parsed command line; stored, not yet acted on
      * @author Rowan Crowther
      */
-    public void init(StartupOptions options) {
+    public void init() {
         Colour.init();
-
-        startupOptions = options;
 
         List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
         Font font;
@@ -634,17 +654,9 @@ public class SwingUI {
 
         activeWindow.setVisible(true);
 
-        // Give the core a StatusDisplay that sends rather than paints. This replaces the front end's
-        // own SplashScreen in the holder, and is the single line that puts the core's start-up
-        // traffic on the channel.
-        StatusDisplayHolder.setInstance(new ChannelStatusDisplay(channels.coreChannel().coreSender()));
-
-        // Start reading this half's inbox. Non-daemon, so from stage 3 the thread's own exit is part
-        // of the shutdown rather than something the JVM has to be told to ignore.
-        new Thread(uiLoop::loop, "angband-display").start();
-
+        // The display is up, so the core may begin. Registering the core's ChannelStatusDisplay used
+        // to happen here too; it now happens in Core.gameLoop, on the side that owns the
+        // sender.
         sendStartToCore();
-        
-        gameRunner.start(channels.coreChannel());
     }
 }

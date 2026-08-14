@@ -55,8 +55,36 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
     RuneGroup group();
 
     /**
+     * The player-visible name of a rune of this variety — "resist fire", "acid brand", "slay
+     * demons", "Strength". Ports C's {@code rune_name} ({@code src/obj-knowledge.c}), which the
+     * knowledge browser uses both as a list entry and as the title of a rune's detail page, and
+     * which the learning message reads as "You have learned the rune of %s."
+     *
+     * <p>C writes this as a chain of {@code if}s over the variety, wrapping the rune's stored name
+     * in a format string for four of the seven — {@code "%s brand"}, {@code "slay %s"},
+     * {@code "%s curse"}, {@code "resist %s"} — and returning it unadorned for the rest. Here each
+     * record supplies its own, so the wrapping sits next to the thing being wrapped and the
+     * compiler, rather than a final {@code else}, guarantees every variety has an answer. C's
+     * function ends with an unreachable {@code return NULL} because its chain cannot make that
+     * promise.
+     *
+     * <p>The name is derived on each call rather than cached. C flattens it once at init into
+     * {@code struct rune}'s {@code name} field, which is why {@code rune_desc} has to reach back
+     * into {@code curses[]} for the description it did not copy; holding the subject itself makes
+     * that second lookup unnecessary and keeps the two in step if the underlying data changes.
+     *
+     * @return the rune's name as the player sees it
+     * @author Rowan Crowther
+     */
+    String runeName();
+
+    /**
      * A rune of one of the three fixed combat enchantments.
      *
+     * <p>The only variety whose name is not looked up from loaded data: the three enchantments are
+     * a closed set, so {@link CombatRunes} carries its own text and {@link #runeName()} reads
+     * {@link CombatRunes#getDescription()} — the port of the {@code c_rune[]} table C indexes here.
+     * 
      * @param key which combat enchantment
      * @author Rowan Crowther
      */
@@ -64,10 +92,19 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         public RuneGroup group() {
             return RuneGroup.COMBAT;
         }
+
+        public String runeName() {
+            return key.getDescription();
+        }
     }
 
     /**
      * A rune of an object modifier — a numeric bonus such as a stat, speed or stealth.
+     *
+     * <p>{@link #runeName()} is the property's name with nothing added, matching the {@code else}
+     * branch C falls through to for this variety. The property is the one
+     * {@code lookup_obj_property(OBJ_PROPERTY_MOD, i)} finds, so the name is whatever
+     * {@code object_property.txt} gives it.
      *
      * @param key      which modifier
      * @param property the modifier's property definition, held for its name and power
@@ -77,12 +114,23 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         public RuneGroup group() {
             return RuneGroup.MODIFIERS;
         }
+
+        public String runeName() {
+            return property.getName();
+        }
     }
 
     /**
      * A rune of an elemental resistance. Only elements up to and including disenchantment carry
      * one — C bounds the loop at {@code ELEM_HIGH_MAX}, which {@link ElementEnum#isHasResistRune()}
      * ports.
+     *
+     * <p>The name comes from the projection, not the element: C fills the rune's name field with
+     * {@code projections[i].name}, and {@code list-elements.h} has no name column at all — an
+     * element is only the tag {@code ELEM(ACID)}. The distinction is easy to miss because most of
+     * the pairs read alike, but not all do; {@code ELEM_ELEC} projects as "lightning" and
+     * {@code ELEM_DISEN} as "disenchantment", so naming a resist rune off the element would put
+     * two of the thirteen wrong.
      *
      * @param key        which element
      * @param projection the element's projection, held for its name
@@ -91,6 +139,10 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
     record ResistKey(ElementEnum key, Projection projection) implements RuneVariety {
         public RuneGroup group() {
             return RuneGroup.RESIST;
+        }
+
+        public String runeName() {
+            return String.format("resist %s", projection.getName());
         }
     }
 
@@ -111,6 +163,10 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         public RuneGroup group() {
             return RuneGroup.BRAND;
         }
+
+        public String runeName() {
+            return String.format("%s brand", key.getName());
+        }
     }
 
     /**
@@ -128,6 +184,10 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         public RuneGroup group() {
             return RuneGroup.SLAY;
         }
+
+        public String runeName() {
+            return String.format("slay %s", key.getName());
+        }
     }
 
     /**
@@ -140,11 +200,17 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         public RuneGroup group() {
             return RuneGroup.CURSE;
         }
+
+        public String runeName() {
+            return String.format("%s curse", key.getName());
+        }
     }
 
     /**
      * A rune of an object flag — a boolean property such as a sustain or a protection. Listed under
      * {@link RuneGroup#OTHER}, following the C original's group headings.
+     *
+     * <p>Named like {@link ModKey}: the property's name unadorned, C's {@code else} branch again.
      *
      * @param key      which flag
      * @param property the flag's property definition, held for its name and subtype
@@ -153,6 +219,10 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
     record FlagKey(ObjectFlag key, ObjectProperty property) implements RuneVariety {
         public RuneGroup group() {
             return RuneGroup.OTHER;
+        }
+
+        public String runeName() {
+            return property.getName();
         }
     }
 }

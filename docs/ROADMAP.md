@@ -73,7 +73,7 @@ C: `obj-knowledge.c`. The current stretch. Fine detail and the 2026-08-13 audit 
   bullet used to describe was superseded the same day (deferred, not rejected). The 20 red tests pass; full suite green
   2026-08-13. Rationale is in the comment at `ObjectPropertyTypeWrapper.equals`
 - [x] `ObjectRegistry.getRunes()` + `max_runes`
-- [ ] `rune_index` → map-based lookup by `RuneVariety`
+- [x] `rune_index` → map-based lookup by `RuneVariety`
 - [ ] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`
 - [ ] Canonical-representative lookup (`player_learn_brand`/`_slay`'s scan)
 - [ ] `player_knows_rune` and the knowledge-application half (needs player object — may defer to Chapter 5)

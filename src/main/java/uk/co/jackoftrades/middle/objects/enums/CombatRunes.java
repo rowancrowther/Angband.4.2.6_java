@@ -25,6 +25,11 @@ package uk.co.jackoftrades.middle.objects.enums;
  * ({@code src/obj-knowledge.h}), and the descriptions port its {@code c_rune[]} table
  * ({@code src/obj-knowledge.c}).
  *
+ * <p>{@link #getDescription()} is the port of {@code c_rune[]}, and is the only combat-rune text
+ * the player ever sees: {@code rune_name} is the sole place C displays one, both as a knowledge-menu
+ * entry and as the title of a rune's detail page. There is deliberately no second, shorter label —
+ * a caller wanting one would be inventing text the original does not have.
+ *
  * <p>{@code COMBAT_RUNE_MAX} is the count sentinel and carries an empty description; it is not a
  * rune and callers must skip it, as C's {@code i < COMBAT_RUNE_MAX} bound does.
  *

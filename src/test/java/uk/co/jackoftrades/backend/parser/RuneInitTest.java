@@ -475,6 +475,119 @@ class RuneInitTest {
         assertEquals(99, loadedRunes().size());
     }
 
+    // ---- Rune names ------------------------------------------------------
+
+    /**
+     * The resist names come from {@code projection.txt}, not from the element list - C fills the
+     * rune's name with {@code projections[i].name}, and {@code list-elements.h} carries no name at
+     * all. Most of the pairs read alike, which is what makes the distinction easy to lose; the two
+     * that do not are the reason this is a full list rather than a spot check.
+     */
+    @Test
+    void resistRuneNamesArePrefixedProjectionNames() throws Exception {
+        assertEquals(List.of(
+                        "resist acid", "resist lightning", "resist fire", "resist cold",
+                        "resist poison", "resist light", "resist dark", "resist sound",
+                        "resist shards", "resist nexus", "resist nether", "resist chaos",
+                        "resist disenchantment"),
+                varietiesOf(RuneGroup.RESIST).stream().map(RuneVariety::runeName).toList());
+    }
+
+    /**
+     * Named separately because these two are the whole risk: {@code ELEM_ELEC} projects as
+     * "lightning" and {@code ELEM_DISEN} as "disenchantment", so a resist rune named off the
+     * element instead of the projection is wrong here and nowhere else, and would pass any spot
+     * check that happened to pick fire.
+     */
+    @Test
+    void theTwoElementsWhoseProjectionIsNamedDifferentlyUseTheProjectionName() throws Exception {
+        for (RuneVariety v : varietiesOf(RuneGroup.RESIST)) {
+            RuneVariety.ResistKey key = (RuneVariety.ResistKey) v;
+            if (key.key() == ElementEnum.ELEM_ELEC) {
+                assertEquals("resist lightning", key.runeName());
+            } else if (key.key() == ElementEnum.ELEM_DISEN) {
+                assertEquals("resist disenchantment", key.runeName());
+            }
+        }
+    }
+
+    /**
+     * {@code "%s brand"} and {@code "slay %s"} - the suffix and the prefix are the other way round
+     * between the two, which is the sort of thing a port silently normalises.
+     */
+    @Test
+    void brandAndSlayRuneNamesMatchCsFormats() throws Exception {
+        assertEquals(List.of("acid brand", "lightning brand", "fire brand", "cold brand",
+                        "poison brand"),
+                varietiesOf(RuneGroup.BRAND).stream().map(RuneVariety::runeName).toList());
+        assertEquals(List.of("slay evil creatures", "slay animals", "slay orcs", "slay trolls",
+                        "slay giants", "slay demons", "slay dragons", "slay undead"),
+                varietiesOf(RuneGroup.SLAY).stream().map(RuneVariety::runeName).toList());
+    }
+
+    /**
+     * Every curse gets its own rune, so the names are {@code curse.txt}'s in file order with
+     * {@code " curse"} appended.
+     */
+    @Test
+    void curseRuneNamesAreTheDataNamesWithCurseAppended() throws Exception {
+        assertEquals(
+                ObjectRegistry.getCurses().stream().map(c -> c.getName() + " curse").toList(),
+                varietiesOf(RuneGroup.CURSE).stream().map(RuneVariety::runeName).toList());
+    }
+
+    /**
+     * The three varieties C returns unadorned. Modifiers and flags take the name straight off the
+     * property the lookup resolved, and the combat runes take theirs from the port of
+     * {@code c_rune[]}, {@link CombatRunes#getDescription()}.
+     */
+    @Test
+    void theUnwrappedVarietiesReturnTheirSubjectsNameAsIs() throws Exception {
+        assertEquals(List.of("enchantment to armour", "enchantment to hit",
+                        "enchantment to damage"),
+                varietiesOf(RuneGroup.COMBAT).stream().map(RuneVariety::runeName).toList());
+
+        for (RuneVariety v : varietiesOf(RuneGroup.MODIFIERS)) {
+            RuneVariety.ModKey key = (RuneVariety.ModKey) v;
+            assertEquals(key.property().getName(), key.runeName());
+        }
+        for (RuneVariety v : varietiesOf(RuneGroup.OTHER)) {
+            RuneVariety.FlagKey key = (RuneVariety.FlagKey) v;
+            assertEquals(key.property().getName(), key.runeName());
+        }
+    }
+
+    /**
+     * C's knowledge browser prints {@code rune_name(oid)} directly into a column and uses it as the
+     * title of the detail page, with no null check anywhere - so every rune in the list must have
+     * real text, whatever variety it is.
+     */
+    @Test
+    void everyRuneInTheListHasANonBlankName() throws Exception {
+        for (Rune rune : loadedRunes()) {
+            String name = rune.getVariety().runeName();
+
+            assertNotNull(name, () -> "no name for " + rune.getVariety());
+            assertFalse(name.isBlank(), () -> "blank name for " + rune.getVariety());
+        }
+    }
+
+    /**
+     * Names are what the player picks a rune out by, so two runes sharing one would be two
+     * indistinguishable lines in the knowledge menu. C does not enforce this - it falls out of the
+     * data and of the de-duplication rules - which is exactly why it is worth asserting: it would
+     * break quietly.
+     */
+    @Test
+    void noTwoRunesShareAName() throws Exception {
+        List<String> names = loadedRunes().stream()
+                .map(r -> r.getVariety().runeName())
+                .toList();
+
+        assertEquals(names.size(), new HashSet<>(names).size(),
+                "duplicate rune names would render as identical knowledge-menu entries");
+    }
+
     // ---- The registry accessors ------------------------------------------
 
     /**

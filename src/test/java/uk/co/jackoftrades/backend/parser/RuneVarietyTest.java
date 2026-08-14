@@ -23,6 +23,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import uk.co.jackoftrades.channel.enums.ProjectionEnum;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Brand;
+import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.CombatRunes;
@@ -64,6 +65,10 @@ class RuneVarietyTest {
     private static Brand brand(String code, String name, int multiplier) {
         return new Brand(code, name, "burns", MonsterRaceFlag.RF_IM_FIRE,
                 MonsterRaceFlag.RF_HURT_FIRE, multiplier, 20, 100);
+    }
+
+    private static Curse curse(String name) {
+        return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, null, null);
     }
 
     // ---- Record identity -------------------------------------------------
@@ -155,6 +160,60 @@ class RuneVarietyTest {
         assertEquals("enchantment to hit", CombatRunes.COMBAT_RUNE_TO_H.getDescription());
         assertEquals("enchantment to damage", CombatRunes.COMBAT_RUNE_TO_D.getDescription());
         assertEquals("", CombatRunes.COMBAT_RUNE_MAX.getDescription());
+    }
+
+    // ---- RuneVariety.runeName --------------------------------------------
+
+    /**
+     * C's {@code rune_name} wraps the rune's stored name in one of four format strings and returns
+     * it bare for the other three varieties. These are the four, checked against subjects built
+     * here so the format is pinned independently of what the shipped data happens to contain.
+     */
+    @Test
+    void theFourWrappedVarietiesUseCsFormatStrings() {
+        assertEquals("fire brand",
+                new RuneVariety.BrandKey(brand("FIRE_3", "fire", 3)).runeName());
+        assertEquals("slay demons",
+                new RuneVariety.SlayKey(slay("DEMON_3", "demons", MonsterRaceFlag.RF_DEMON, 3))
+                        .runeName());
+        assertEquals("siphon curse", new RuneVariety.CurseKey(curse("siphon")).runeName());
+    }
+
+    /**
+     * The combat runes are the one variety named from compiled-in text rather than from loaded
+     * data, and the text is {@code c_rune[]} - held here as {@link CombatRunes#getDescription()}.
+     * Pinned in full because it is what the player reads in the knowledge browser and in "You have
+     * learned the rune of %s." alike, so any abbreviation of it is visible.
+     */
+    @Test
+    void combatRunesAreNamedFromTheCRuneTable() {
+        assertEquals("enchantment to armour",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A).runeName());
+        assertEquals("enchantment to hit",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H).runeName());
+        assertEquals("enchantment to damage",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D).runeName());
+    }
+
+    /**
+     * {@code runeName} has to be callable through the interface, since the knowledge browser asks
+     * every rune in the list for its name without knowing which variety it holds. C's
+     * {@code rune_name} takes a rune index and branches internally; a set of unrelated methods that
+     * merely share a name would not port that, and would not compile here.
+     */
+    @Test
+    void everyVarietyAnswersRuneNameThroughTheInterface() {
+        List<RuneVariety> varieties = List.of(
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A),
+                new RuneVariety.BrandKey(brand("FIRE_3", "fire", 3)),
+                new RuneVariety.SlayKey(slay("ORC_3", "orcs", MonsterRaceFlag.RF_ORC, 3)),
+                new RuneVariety.CurseKey(curse("teleportation")));
+
+        for (RuneVariety variety : varieties) {
+            String name = variety.runeName();
+            assertNotNull(name, () -> variety + " has no name");
+            assertFalse(name.isBlank(), () -> variety + " has a blank name");
+        }
     }
 
     /**

@@ -17,16 +17,19 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.middle.Message;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
-import uk.co.jackoftrades.middle.objects.Curse;
-import uk.co.jackoftrades.middle.objects.ItemObject;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.objects.*;
+import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
@@ -52,6 +55,13 @@ import java.util.HashMap;
  * @author Rowan Crowther
  */
 public class Player {
+    /**
+     * Log destination for the conditions C asserts on. Ported asserts become a warning and an
+     * early return rather than a crash, so that a data file with an unexpected shape spoils one
+     * action instead of the session.
+     */
+    private static final Logger logger = LogManager.getLogger(Player.class);
+    
     /**
      * The player's race - the port of C's {@code p->race}.
      */
@@ -322,8 +332,17 @@ public class Player {
 
     /**
      * The player's accumulated object knowledge ("runes") - the port of C's {@code p->obj_k}.
+     *
+     * <p>C types that field as a whole {@code struct object}, having nowhere else to hang a bag of
+     * learned properties; this port gives it {@link KnownObject}, which carries the twelve fields
+     * {@code obj_k} actually uses and none of the several dozen it does not. See that class for
+     * why the split is safe.
+     *
+     * <p>Null until the data files are parsed, matching C, which allocates {@code p->obj_k} in
+     * {@code init_player} rather than with the player struct because the knowledge is sized from
+     * the registries.
      */
-    private ArrayList<ItemObject> itemObjectsKnown;
+    private KnownObject itemKnowledge;
 
     /**
      * The player's known version of the current level - the port of C's {@code p->cave}.
@@ -345,6 +364,18 @@ public class Player {
      */
     private PlayerUpkeep playerUpkeep;
 
+    /**
+     * Builds an empty player. The two comments below mark a real division: the first group is what
+     * C's own initialisation does — {@code player_init} ({@code src/player.c}) allocates the
+     * upkeep and the timed-effect table and calls {@code options_init_defaults} — while the second
+     * group sets fields C leaves to {@code mem_zalloc}. Java has no equivalent blanket zeroing for
+     * the reference fields, and writing them out is what makes the starting state readable rather
+     * than implied.
+     *
+     * <p>A player built here is not yet playable: race, class, body, state and level are all null
+     * or empty, and {@link #itemKnowledge} is null until the registries exist to size it against.
+     * Birth fills them in.
+     */
     public Player() {
         // C initialisation
         playerUpkeep = new PlayerUpkeep();
@@ -352,7 +383,7 @@ public class Player {
         for (TimedEffect effect : TimedEffect.values()) {
             timed.put(effect, 0);
         }
-        itemObjectsKnown = new ArrayList<>();
+        itemKnowledge = null;
         options = new PlayerOptions();
         options.initDefaults();
 
@@ -959,15 +990,26 @@ public class Player {
     }
 
     /**
-     * Record that the player has learned the identity of a curse, typically because
-     * its effect just fired on a worn item. The port of C's {@code player_learn_curse}.
+     * Records that the player has learned the identity of a curse, typically because its effect
+     * just fired on a worn item. The port of C's {@code player_learn_curse}
+     * ({@code src/obj-knowledge.c}).
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the object-knowledge runtime.</p>
+     * <p>C resolves the curse to a rune by name — {@code rune_index(RUNE_VAR_CURSE,
+     * lookup_curse(curse->name))} — rather than by identity, which is why
+     * {@link Rune#runeIndex(Curse)} matches on the name too. A curse reconstructed from a savefile
+     * or built by a test is then still recognised.
+     *
+     * <p>A curse with no rune yields null here, where C's guard is {@code index >= 0}; the null is
+     * handled inside {@link #learnRune}, so the two guards sit in different places but reject the
+     * same case. The knowledge update stays outside that guard in both, running even when the
+     * lookup found nothing.
      *
      * @param curse the curse whose nature has now been revealed
      */
     public void learnCurse(Curse curse) {
-        // Stub function TODO: implement
+        Rune rune = Rune.runeIndex(curse);
+        learnRune(rune, true);
+        updateObjectKnowledge();
     }
 
     /**
@@ -978,14 +1020,158 @@ public class Player {
         return options;
     }
 
+    /**
+     * Raises the high-water mark of experience level to the current level, if the current level is
+     * higher. C writes this inline wherever the level changes.
+     */
     public void updateMaxLevel() {
         this.maxLevel = Math.max(this.maxLevel, this.level);
     }
 
+    /**
+     * Raises the deepest-reached mark to the current depth, and moves the word-of-recall depth
+     * down with it. The two travel together deliberately: reaching new depth is what re-targets
+     * recall, so a player who then climbs back up still recalls to the deepest point rather than
+     * to wherever they happen to be standing.
+     */
     public void updateDungeonDepth() {
         if (maxDepth < depth) {
             maxDepth = depth;
             recallDepth = depth;
         }
+    }
+
+    /**
+     * Records that the player has learned to recognise a brand, typically because they just saw it
+     * fire in combat. The port of C's {@code player_learn_brand}.
+     *
+     * <p>One of the wrapper functions that {@link #learnRune} exists to serve, and it shows the
+     * shape they all take: guard on already-knowing, resolve the property to its rune, learn the
+     * rune, update. The resolution step is the one that cannot be skipped — a brand belongs to a
+     * group of same-named brands sharing a single rune, and {@link Rune#runeIndex(Brand)} returns
+     * the rune for the group rather than for the particular strength passed in.
+     *
+     * <p>The second {@link #updateObjectKnowledge()} is C's, not an oversight: {@link #learnRune}
+     * has already called it on any path that learned something, and
+     * {@code player_learn_brand} calls it again regardless.
+     *
+     * @param brand any brand of the wanted kind, at any strength
+     */
+    public void learnBrand(Brand brand) {
+        if (!knowsBrand(brand)) {
+            Rune rune = Rune.runeIndex(brand);
+
+            learnRune(rune, true);
+            updateObjectKnowledge();
+        }
+    }
+
+    /**
+     * The port of C's {@code player_knows_brand}. Note that this asks about the exact brand given,
+     * not its group — which is the same thing in practice, because learning any member of a group
+     * marks all of them (see {@link KnownObject#learnBrand}).
+     *
+     * @param brand the brand to ask about
+     * @return true if the player recognises this brand
+     */
+    public boolean knowsBrand(Brand brand) {
+        return itemKnowledge.brandIsKnown(brand);
+    }
+
+    /**
+     * Learns a single rune: marks the property it names as readable, announces it if anything was
+     * genuinely new, and updates everything the player can now see. The port of C's
+     * {@code player_learn_rune} ({@code src/obj-knowledge.c}), and the one place object knowledge
+     * is added.
+     *
+     * <p><b>This is an internal choke point, not an entry point.</b> C keeps it file-{@code static}
+     * and routes every caller through a wrapper — {@code player_learn_flag},
+     * {@code player_learn_slay}, {@code player_learn_brand}, {@code player_learn_curse}, the
+     * {@code equip_learn_*} family. The wrappers are not decoration. Each resolves its property to
+     * a rune through the matching {@link Rune#runeIndex} overload, and for brands, slays and
+     * curses that lookup returns the rune for an <em>equivalence class</em> rather than for the
+     * exact object handed in. Code that reaches past a wrapper and builds its own {@link Rune}
+     * skips that resolution, and learns one member of a group where the game means all of them.
+     * Prefer {@link #learnBrand} and its siblings; add new learning paths as further wrappers.
+     *
+     * <p>The switch is over a sealed interface, so the seven varieties are matched as record
+     * patterns and the compiler proves the set is covered — no {@code default} arm, and no cast to
+     * get at each variety's key. C reaches the same seven cases through a {@code switch} on
+     * {@code r->variety} followed by an {@code int} index whose meaning changes per case, and
+     * closes with a {@code default: learned = false} it cannot show to be unreachable.
+     *
+     * <p>Only the combat arm can fall through without learning, on the {@code COMBAT_RUNE_MAX}
+     * sentinel; C's chain of {@code if}/{@code else if} does the same silently, and the warning
+     * here is a Java-side addition for a case that should not arise.
+     *
+     * <p>The tail order matters and is C's: nothing learned means no message and no update, so a
+     * property learned twice is announced once.
+     *
+     * @param rune         the rune to learn; null is logged and ignored, standing in for C's
+     *                     {@code assert} on the rune index
+     * @param printMessage whether to announce the discovery, false for the paths that learn in
+     *                     bulk and would otherwise bury the player in messages
+     */
+    public void learnRune(Rune rune, boolean printMessage) {
+        if (rune == null) {
+            logger.warn("Rune is null on entering learnRune");
+            return;
+        }
+
+        boolean learned = false;
+
+        switch (rune.getVariety()) {
+            case RuneVariety.CombatKey(CombatRunes key) -> {
+                switch (key) {
+                    case COMBAT_RUNE_TO_A -> learned = itemKnowledge.learnToA();
+
+                    case COMBAT_RUNE_TO_H -> learned = itemKnowledge.learnToH();
+
+                    case COMBAT_RUNE_TO_D -> learned = itemKnowledge.learnToD();
+
+                    case COMBAT_RUNE_MAX -> logger.warn("Combat Rune MAX encountered.");
+                }
+            }
+            case RuneVariety.ModKey(ObjectModifier key, var property) -> learned = itemKnowledge.learnModifier(key);
+
+            case RuneVariety.ResistKey(ElementEnum key, var projection) -> learned = itemKnowledge.learnResistance(key);
+
+            case RuneVariety.BrandKey(Brand key) -> learned = itemKnowledge.learnBrand(key);
+
+            case RuneVariety.SlayKey(Slay key) -> learned = itemKnowledge.learnSlay(key);
+
+            case RuneVariety.CurseKey(Curse key) -> learned = itemKnowledge.learnCurse(key);
+
+            case RuneVariety.FlagKey(ObjectFlag key, var property) -> learned = itemKnowledge.learnFlag(key);
+        }
+
+        if (!learned) return;
+
+        if (printMessage)
+            Message.messageType(MessageType.MSG_RUNE, "You have learned the rune of "
+                    + rune.getVariety().runeName() + ".");
+
+        updateObjectKnowledge();
+    }
+
+    /**
+     * Re-derives the known copy of every object the player could be looking at, now that a rune
+     * has been learned. The port of C's {@code update_player_object_knowledge}, which runs
+     * {@code player_know_object} over four populations — the objects on the level, the player's
+     * gear, every store's stock, and the objects hanging off the curse definitions — then
+     * autoinscribes the ground and the pack and signals the inventory and equipment events.
+     *
+     * <p>Stores and curse objects are in that list for a reason worth keeping: knowledge is a
+     * property of the player rather than of the item, so learning a rune changes how a sword in a
+     * shop reads without the player ever having touched it.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the object-knowledge runtime. Callers already
+     * invoke it in the right places, so filling it in should not need them changed. Note that
+     * calling it twice is normal rather than a mistake — {@link #learnRune} calls it, and each
+     * wrapper calls it again — which is C's arrangement and harmless because the work is a
+     * recomputation rather than a step.
+     */
+    public void updateObjectKnowledge() {
+        // Stub class TODO: Implement
     }
 }

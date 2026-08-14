@@ -74,7 +74,7 @@ C: `obj-knowledge.c`. The current stretch. Fine detail and the 2026-08-13 audit 
   2026-08-13. Rationale is in the comment at `ObjectPropertyTypeWrapper.equals`
 - [x] `ObjectRegistry.getRunes()` + `max_runes`
 - [x] `rune_index` → map-based lookup by `RuneVariety`
-- [ ] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`
+- [x] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`
 - [ ] Canonical-representative lookup (`player_learn_brand`/`_slay`'s scan)
 - [ ] `player_knows_rune` and the knowledge-application half (needs player object — may defer to Chapter 5)
 

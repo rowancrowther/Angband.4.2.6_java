@@ -54,7 +54,15 @@ import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MI
  * two items are "similar" enough to stack and how stacks merge/absorb. This is
  * the Java port of the C original's {@code struct object} ({@code src/object.h}).
  *
+ * <p><b>This type is for real items only.</b> C reuses {@code struct object} for two things that
+ * are not items: {@code p->obj_k}, the player's accumulated rune knowledge, and the {@code obj}
+ * hanging off each curse definition. The first of those is {@link KnownObject} here, because a
+ * struct that exists to answer "can the player read to-hit bonuses" has no business carrying a
+ * grid, a weight, a timeout, or a {@link #known} pointer to a known version of itself. Nothing in
+ * this class is shaped around that second role, so do not press it back into service for it.
+ *
  * @author Rowan Crowther
+ * @see KnownObject
  */
 public class ItemObject {
     /**
@@ -84,7 +92,19 @@ public class ItemObject {
     private Artifact artifact;
 
     /**
-     * The player's known/identified view of this item.
+     * The player's known/identified view of this item — a parallel {@code ItemObject} carrying
+     * only what has been discovered about this one, so that display code can describe the item as
+     * the player sees it without having to ask, field by field, whether each value is readable.
+     * C's {@code obj->known}.
+     *
+     * <p>Filled in by the knowledge code from two sources: this item's real values, and the
+     * player's rune knowledge deciding which of them come through. That is where the 0/1
+     * multipliers on {@link KnownObject} are spent — C writes {@code obj->known->ac = obj->ac *
+     * p->obj_k->ac}, zeroing an unreadable value rather than branching on it.
+     *
+     * <p>Null on an item the player has never seen. It is not the same object as this one and
+     * never points back at it; C's {@code obj_k} having a {@code known} of its own is an artefact
+     * of the struct reuse this port drops.
      *
      * @author Rowan Crowther
      */
@@ -952,5 +972,20 @@ public class ItemObject {
      */
     public String getNote() {
         return note;
+    }
+
+    /**
+     * Returns the live brand set, not a copy, matching how C hands out {@code obj->brands} — an
+     * array on the struct that callers read and write in place.
+     *
+     * <p>The brands here are the ones the item actually has, each at its own strength. That is a
+     * different question from whether the player can read them, which is
+     * {@link KnownObject#brandIsKnown} and is not per-item at all.
+     *
+     * @return this item's brands, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Set<Brand> getBrands() {
+        return brands;
     }
 }

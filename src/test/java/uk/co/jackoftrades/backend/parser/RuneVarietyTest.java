@@ -21,9 +21,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import uk.co.jackoftrades.channel.enums.ProjectionEnum;
+import uk.co.jackoftrades.middle.game.event.projection.Projection;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Curse;
+import uk.co.jackoftrades.middle.objects.ObjectProperty;
 import uk.co.jackoftrades.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.CombatRunes;
@@ -68,7 +70,33 @@ class RuneVarietyTest {
     }
 
     private static Curse curse(String name) {
-        return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, null, null);
+        return curse(name, null);
+    }
+
+    /**
+     * A curse carrying the {@code desc} field too. {@code rune_desc} is the only place that field is
+     * read, which is why the shorter helper above leaves it null.
+     */
+    private static Curse curse(String name, String description) {
+        return new Curse(name, null, 0, null, null, null, null, 0, 0, 0, null, null, description,
+                null);
+    }
+
+    /**
+     * A property as {@code object_property.txt} defines one, carrying only the name the rune reads.
+     */
+    private static ObjectProperty property(ObjPropertyType type, String name) {
+        return new ObjectProperty(type, null, null, null, 1, 1, null, name, null, null, null, null,
+                null);
+    }
+
+    /**
+     * A projection carrying only its name. Elements are named through their projection, never from
+     * the element tag, so this is what a resist rune reads.
+     */
+    private static Projection projection(ProjectionEnum code, String name) {
+        return new Projection(code, name, null, null, null, null, null, 1, 1, 1, 0, null, false,
+                false, null);
     }
 
     // ---- Record identity -------------------------------------------------
@@ -214,6 +242,206 @@ class RuneVarietyTest {
             assertNotNull(name, () -> variety + " has no name");
             assertFalse(name.isBlank(), () -> variety + " has a blank name");
         }
+    }
+
+    // ---- RuneVariety.runeDesc --------------------------------------------
+
+    /**
+     * One rune of every variety, subjects filled in from {@code lib/gamedata} so the expected
+     * sentences are the ones the game really shows.
+     */
+    private static List<RuneVariety> everyVariety() {
+        return List.of(
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A),
+                new RuneVariety.ModKey(ObjectModifier.OM_STR,
+                        property(ObjPropertyType.OBJ_PROPERTY_STAT, "strength")),
+                new RuneVariety.ResistKey(ElementEnum.ELEM_ELEC,
+                        projection(ProjectionEnum.PROJ_ELEC, "lightning")),
+                new RuneVariety.BrandKey(brand("ELEC_3", "lightning", 3)),
+                new RuneVariety.SlayKey(slay("EVIL_2", "evil creatures", MonsterRaceFlag.RF_EVIL, 2)),
+                new RuneVariety.CurseKey(
+                        curse("vulnerability", "attracts opponents and weakens the defences")),
+                new RuneVariety.FlagKey(ObjectFlag.OF_FEATHER,
+                        property(ObjPropertyType.OBJ_PROPERTY_FLAG, "feather falling")));
+    }
+
+    /**
+     * C's {@code rune_desc} in full: six sentences assembled from loaded data, each wrapping the
+     * <b>bare</b> stored name rather than the wrapped form {@code rune_name} produces.
+     */
+    @Test
+    void theSixDataDrivenDescriptionsUseCsFormatStrings() {
+        assertEquals("Object gives the player a magical bonus to strength.",
+                new RuneVariety.ModKey(ObjectModifier.OM_STR,
+                        property(ObjPropertyType.OBJ_PROPERTY_STAT, "strength")).runeDesc());
+        assertEquals("Object affects the player's resistance to lightning.",
+                new RuneVariety.ResistKey(ElementEnum.ELEM_ELEC,
+                        projection(ProjectionEnum.PROJ_ELEC, "lightning")).runeDesc());
+        assertEquals("Object brands the player's attacks with fire.",
+                new RuneVariety.BrandKey(brand("FIRE_3", "fire", 3)).runeDesc());
+        assertEquals("Object makes the player's attacks against demons more powerful.",
+                new RuneVariety.SlayKey(slay("DEMON_3", "demons", MonsterRaceFlag.RF_DEMON, 3))
+                        .runeDesc());
+        assertEquals("Object randomly makes you teleport.",
+                new RuneVariety.CurseKey(curse("teleportation", "randomly makes you teleport"))
+                        .runeDesc());
+        assertEquals("Object gives the player the property of feather falling.",
+                new RuneVariety.FlagKey(ObjectFlag.OF_FEATHER,
+                        property(ObjPropertyType.OBJ_PROPERTY_FLAG, "feather falling")).runeDesc());
+    }
+
+    /**
+     * The trap this section exists for, and one this port has already fallen into once. A resist
+     * rune is titled "resist lightning" but described as "…resistance to lightning." - C reads
+     * {@code projections[i].name} for both and only {@code rune_name} adds the prefix. Deriving the
+     * description from {@code runeName()} yields "resistance to resist lightning", which reads as
+     * obviously wrong to a player and as obviously right in the source.
+     */
+    @Test
+    void aResistDescriptionDoesNotRepeatTheTitlesPrefix() {
+        RuneVariety rune = new RuneVariety.ResistKey(ElementEnum.ELEM_ELEC,
+                projection(ProjectionEnum.PROJ_ELEC, "lightning"));
+
+        assertEquals("resist lightning", rune.runeName());
+        assertEquals("Object affects the player's resistance to lightning.", rune.runeDesc());
+        assertFalse(rune.runeDesc().contains("resist "),
+                "the description wraps the bare projection name, so the prefix must not appear");
+    }
+
+    /**
+     * The same trap generalised to the other three wrapping varieties: none of their descriptions
+     * may contain their own title, because all four wrap a name C only ever stored unwrapped.
+     */
+    @Test
+    void aWrappedTitleNeverLeaksIntoItsDescription() {
+        List<RuneVariety> wrapping = List.of(
+                new RuneVariety.ResistKey(ElementEnum.ELEM_ELEC,
+                        projection(ProjectionEnum.PROJ_ELEC, "lightning")),
+                new RuneVariety.BrandKey(brand("FIRE_3", "fire", 3)),
+                new RuneVariety.SlayKey(slay("ORC_3", "orcs", MonsterRaceFlag.RF_ORC, 3)),
+                new RuneVariety.CurseKey(curse("sickliness", "makes you frail")));
+
+        for (RuneVariety variety : wrapping) {
+            assertFalse(variety.runeDesc().contains(variety.runeName()),
+                    () -> variety + " wraps its name for display, so the wrapped form must not"
+                            + " appear in its description");
+        }
+    }
+
+    /**
+     * The converse, stated so it is not mistaken for an accident: a modifier and a flag really do
+     * share one string between title and description, because C's final {@code else} leaves their
+     * names unadorned. Both methods read the property directly, so this holds because of the data
+     * rather than because one method calls the other.
+     */
+    @Test
+    void aModifierAndAFlagShareTheirUnadornedName() {
+        RuneVariety mod = new RuneVariety.ModKey(ObjectModifier.OM_STEALTH,
+                property(ObjPropertyType.OBJ_PROPERTY_MOD, "stealth"));
+        RuneVariety flag = new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR,
+                property(ObjPropertyType.OBJ_PROPERTY_FLAG, "sustain strength"));
+
+        assertEquals("stealth", mod.runeName());
+        assertTrue(mod.runeDesc().contains(mod.runeName()));
+        assertEquals("sustain strength", flag.runeName());
+        assertTrue(flag.runeDesc().contains(flag.runeName()));
+    }
+
+    /**
+     * A curse is described from its {@code desc} field, not its name - the one field
+     * {@code struct rune} never copied, which is why C's {@code rune_desc} has to index back into
+     * {@code curses[]}. Holding the {@link Curse} makes it a plain accessor, so the two cannot
+     * drift apart.
+     */
+    @Test
+    void aCurseIsDescribedFromItsDescriptionNotItsName() {
+        RuneVariety rune = new RuneVariety.CurseKey(curse("dullness", "makes you mentally slow"));
+
+        assertEquals("dullness curse", rune.runeName());
+        assertEquals("Object makes you mentally slow.", rune.runeDesc());
+        assertFalse(rune.runeDesc().contains("dullness"),
+                "the sentence is built from the description, which does not repeat the name");
+    }
+
+    /**
+     * The three combat sentences are the only ones written as literals rather than assembled, the
+     * enchantments being a closed set. C spells the first "armor"; this port spells it "armour"
+     * throughout, matching {@link CombatRunes#COMBAT_RUNE_TO_A}'s own text.
+     */
+    @Test
+    void theCombatDescriptionsPortCsThreeLiterals() {
+        assertEquals("Object magically increases the player's armour class",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A).runeDesc());
+        assertEquals("Object magically increases the player's chance to hit",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H).runeDesc());
+        assertEquals("Object magically increases the player's damage",
+                new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D).runeDesc());
+    }
+
+    /**
+     * C's three combat strings end without a full stop where all six of its format strings end with
+     * one, and the browser prints whichever it is handed. An inconsistency that invites tidying, so
+     * it is pinned.
+     */
+    @Test
+    void onlyTheCombatDescriptionsEndWithoutAFullStop() {
+        for (RuneVariety variety : everyVariety()) {
+            if (variety instanceof RuneVariety.CombatKey) {
+                assertFalse(variety.runeDesc().endsWith("."),
+                        () -> variety + " should keep C's missing full stop");
+            } else {
+                assertTrue(variety.runeDesc().endsWith("."),
+                        () -> variety + " should end its sentence with a stop");
+            }
+        }
+    }
+
+    /**
+     * {@code runeDesc} has to be callable through the interface for the same reason
+     * {@code runeName} does: the browser asks each rune in the list for its detail text without
+     * knowing the variety. Every real variety must answer.
+     */
+    @Test
+    void everyVarietyAnswersRuneDescThroughTheInterface() {
+        for (RuneVariety variety : everyVariety()) {
+            String description = variety.runeDesc();
+            assertNotNull(description, () -> variety + " has no description");
+            assertFalse(description.isBlank(), () -> variety + " has a blank description");
+            assertTrue(description.startsWith("Object "),
+                    () -> variety + " should describe what the object does");
+        }
+    }
+
+    /**
+     * {@code COMBAT_RUNE_MAX} is a count sentinel, not a rune: {@code c_rune[]} has no entry to
+     * index for it, and C's {@code if} chain falls through to {@code return NULL}. Naming it in the
+     * switch is what makes that switch exhaustive; answering {@code null} is what keeps it honest
+     * about having nothing to say.
+     */
+    @Test
+    void theCountSentinelIsNotARuneAndHasNoDescription() {
+        RuneVariety sentinel = new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX);
+
+        assertNull(sentinel.runeDesc(),
+                "the sentinel should mirror C's return NULL rather than invent a sentence");
+        assertEquals("", sentinel.runeName());
+    }
+
+    /**
+     * "lightning" is both a brand name and a projection name, so the two runes share a stored name
+     * and are told apart only by their variety - exactly what C's bare {@code index} field cannot
+     * do on its own. Both the title and the description must differ.
+     */
+    @Test
+    void aBrandAndAResistOfTheSameNameDescribeDifferentThings() {
+        RuneVariety brand = new RuneVariety.BrandKey(brand("ELEC_3", "lightning", 3));
+        RuneVariety resist = new RuneVariety.ResistKey(ElementEnum.ELEM_ELEC,
+                projection(ProjectionEnum.PROJ_ELEC, "lightning"));
+
+        assertNotEquals(brand, resist);
+        assertNotEquals(brand.runeName(), resist.runeName());
+        assertNotEquals(brand.runeDesc(), resist.runeDesc());
+        assertEquals(2, Set.of(brand, resist).size());
     }
 
     /**

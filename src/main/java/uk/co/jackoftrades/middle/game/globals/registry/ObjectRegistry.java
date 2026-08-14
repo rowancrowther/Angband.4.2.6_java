@@ -182,6 +182,36 @@ public class ObjectRegistry {
     }
 
     /**
+     * The rune list as built by {@link Rune#initRunes()}, in its significant order — the order the
+     * knowledge menu lists runes in, and the order C's savefile identifies them by.
+     *
+     * <p>This is a snapshot, not a view: {@link #setRunes} refills the backing list in place, so a
+     * copy is what keeps a caller holding the result from seeing a later re-init happen underneath
+     * it. The copy is immutable in its own right, so position — which is a rune's identity here —
+     * cannot be disturbed by the caller either.
+     *
+     * @return an immutable copy of the loaded runes, empty if {@code initRunes} has not run
+     */
+    public static List<Rune> getRunes() {
+        return List.copyOf(allRunes);
+    }
+
+    /**
+     * The number of loaded runes — the port of C's {@code max_runes()}
+     * ({@code [C] src/obj-knowledge.c:230}), which returns the {@code rune_max} that
+     * {@code init_rune} sets alongside {@code rune_list} ({@code [C] src/obj-knowledge.c:131}).
+     *
+     * <p>Derived from the list rather than stored beside it as C's counter is, so the two cannot
+     * drift apart. Unlike the {@code *Max} counters above it this needs no setter for the same
+     * reason.
+     *
+     * @return the number of runes {@link Rune#initRunes()} built, or 0 if it has not run
+     */
+    public static int getMaxRunes() {
+        return allRunes.size();
+    }
+
+    /**
      * Records the current object-kind count as {@code objectBaseKindMax} — the ordinary-kind ceiling.
      */
     public static void updateObjectBaseKindMax() {

@@ -71,8 +71,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * dependency order through the real readers, exactly as the reader suites do, and {@link #restore()}
  * puts the previous contents back so nothing leaks to another suite.
  *
- * <p>{@link ObjectRegistry} has a {@code setRunes} but no {@code getRunes}, so the list is read back
- * through {@link #loadedRunes()} by reflection.
+ * <p>The list is read back through {@link #loadedRunes()} by reflection rather than through
+ * {@link ObjectRegistry#getRunes()}, so that the tests below check what {@code initRunes} stored
+ * rather than what the accessor reports - the accessors themselves are checked separately, against
+ * that same stored list.
  *
  * @author ClaudeCode
  */
@@ -470,6 +472,58 @@ class RuneInitTest {
     @Test
     void theRuneListIsNinetyNineRunesLong() throws Exception {
         assertEquals(99, loadedRunes().size());
+    }
+
+    // ---- The registry accessors ------------------------------------------
+
+    /**
+     * {@code getRunes}/{@code getMaxRunes} read the same list {@code setRunes} fills, so after
+     * {@code initRunes} they must agree with it and with each other: {@code getMaxRunes} is the port
+     * of C's {@code max_runes()}, which returns the {@code rune_max} set alongside {@code rune_list}
+     * in {@code init_rune} ({@code [C] src/obj-knowledge.c:131, 230}).
+     *
+     */
+    @Test
+    void theRuneAccessorsAgreeWithTheStoredList() throws Exception {
+        List<Rune> stored = loadedRunes();
+
+        assertEquals(stored.size(), ObjectRegistry.getMaxRunes());
+        assertEquals(stored.size(), ObjectRegistry.getRunes().size());
+        assertEquals(stored, ObjectRegistry.getRunes(), "and in the same order");
+        assertEquals(99, ObjectRegistry.getMaxRunes(), "the shipped data's rune count");
+    }
+
+    /**
+     * The returned list is immutable: the knowledge menu and the savefile both identify a rune by
+     * its position, so a caller must not be able to reorder or extend what it is handed.
+     */
+    @Test
+    void getRunesHandsBackAnImmutableList() throws Exception {
+        loadedRunes();
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        assertThrows(UnsupportedOperationException.class, () -> runes.add(runes.getFirst()));
+        assertThrows(UnsupportedOperationException.class, runes::clear);
+    }
+
+    /**
+     * A snapshot, not a view: {@code setRunes} refills the same backing list in place, so without
+     * the copy a caller holding an earlier result would silently see a later re-init. This is what
+     * that copy buys, and it is the one behaviour a reader cannot infer from the return type.
+     */
+    @Test
+    void anEarlierResultIsUnaffectedByALaterSetRunes() throws Exception {
+        List<Rune> full = loadedRunes();
+        List<Rune> taken = ObjectRegistry.getRunes();
+
+        try {
+            ObjectRegistry.setRunes(List.of(full.getFirst()));
+
+            assertEquals(full.size(), taken.size(), "the copy must not follow the registry");
+            assertEquals(1, ObjectRegistry.getMaxRunes(), "though the registry itself has moved on");
+        } finally {
+            ObjectRegistry.setRunes(full);
+        }
     }
 
     @Test

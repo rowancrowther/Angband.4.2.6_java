@@ -53,7 +53,7 @@ public class LoreReader implements Reader<MonsterLore> {
      * @return an ArrayList of items read from the file
      */
     @Override
-    public @NotNull List<MonsterLore> parse(@NotNull String filename) throws IOException {
+    public List<MonsterLore> parse(@NotNull String filename) throws IOException {
         try {
             CharStream stream = CharStreams.fromFileName(filename);
             LoreLexer lexer = new LoreLexer(stream);

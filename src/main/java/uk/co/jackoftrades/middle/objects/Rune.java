@@ -244,4 +244,192 @@ public class Rune {
     public RuneVariety getVariety() {
         return variety;
     }
+
+    /**
+     * Finds the rune for one of the three fixed combat enchantments — the first of the seven
+     * lookups that together port C's {@code rune_index} ({@code src/obj-knowledge.c:194}).
+     *
+     * <p>C identifies a rune by a {@code (variety, index)} pair and returns its <em>position</em> in
+     * {@code rune_list}. Every caller hands that position straight back to
+     * {@code player_learn_rune}, which reads the rune out of the array again and switches on the
+     * variety it already knew — so the integer is a round trip, and these return the {@link Rune}
+     * itself. C's "can't find it" {@code -1} becomes {@code null}.
+     *
+     * <p>The {@code variety} argument is gone as well. It is a literal at every C call site —
+     * {@code rune_index(RUNE_VAR_COMBAT, COMBAT_RUNE_TO_A)} — so overload resolution can carry it,
+     * and the pair becomes unrepresentable rather than merely discouraged: there is no way to ask
+     * for an element as though it were a flag, which {@code size_t variety} allows.
+     *
+     * <p>Each overload takes the raw subject rather than a {@link RuneVariety}, so a caller never
+     * has to rebuild a key — and, for the two varieties that hold a property alongside their
+     * subject, never has to repeat the registry lookup that resolved it.
+     *
+     * <p>All seven scan the rune list, as C's does, rather than consulting an index built beside it.
+     * The list is short and the scan stops at the match, and asking
+     * {@link ObjectRegistry#getRunes()} for it costs nothing — it hands back the stored list itself
+     * rather than a copy, which is why each lookup can fetch it afresh instead of caching a
+     * reference that a later re-init would strand. If these ever become hot enough to matter, the
+     * scans are what an index would replace, and none of the signatures here would change.
+     *
+     * @param key which combat enchantment
+     * @return the rune for that enchantment, or {@code null} if there is none
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(CombatRunes key) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.CombatKey k && key == k.key())
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for an object modifier. See {@link #runeIndex(CombatRunes)} for what this
+     * overload set replaces.
+     *
+     * <p>Every modifier {@link #initRunes()} could resolve a property for has a rune, so a
+     * {@code null} here means the sentinels, or a modifier added to the enum without a matching
+     * entry in {@code object_property.txt}.
+     *
+     * @param key which modifier
+     * @return the rune for that modifier, or {@code null} if there is none
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(ObjectModifier key) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.ModKey k && k.key() == key)
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for an elemental resistance. See {@link #runeIndex(CombatRunes)} for what this
+     * overload set replaces.
+     *
+     * <p>Only the elements up to and including disenchantment carry a resistance rune — C bounds
+     * the loop in {@code init_rune} at {@code ELEM_HIGH_MAX}, which
+     * {@link ElementEnum#isHasResistRune()} ports — so asking about anything above it is a
+     * legitimate question with the answer {@code null}, not a lookup failure.
+     *
+     * @param key which element
+     * @return the rune for that element's resistance, or {@code null} if it has none
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(ElementEnum key) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.ResistKey k && k.key() == key)
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for a weapon brand. See {@link #runeIndex(CombatRunes)} for what this overload
+     * set replaces.
+     *
+     * <p>Matched by name rather than by identity or equality, because brands sharing a name share a
+     * rune and the one the rune holds is only a representative of that group — see
+     * {@link RuneVariety.BrandKey}. Any acid brand must therefore find the acid rune, not just the
+     * particular one {@link #initRunes()} happened to keep. C reaches the same result from the other
+     * direction: it stores nothing but the name and compares with {@code streq}.
+     *
+     * @param key any brand of the wanted kind, at any strength
+     * @return the rune covering brands of that name, or {@code null} if there is none
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(Brand key) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.BrandKey b && b.key().getName().equals(key.getName()))
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for a weapon slay. See {@link #runeIndex(CombatRunes)} for what this overload
+     * set replaces.
+     *
+     * <p>As with {@link #runeIndex(Brand)} the slay held by a rune is a representative, but the
+     * grouping is by {@link Slay#sameMonsterSlain} rather than by name — so this cannot match on a
+     * name, and slays that kill the same monsters under different names still find the same rune.
+     * The test used here is the same one {@link #initRunes()} de-duplicates with, so the two cannot
+     * disagree about which slays share a rune.
+     *
+     * @param slay any slay of the wanted kind, at any strength
+     * @return the rune covering slays that kill the same monsters, or {@code null} if there is none
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(Slay slay) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.SlayKey s && s.key().sameMonsterSlain(slay))
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for a curse. See {@link #runeIndex(CombatRunes)} for what this overload set
+     * replaces.
+     *
+     * <p>Curses are never grouped, so each has its own rune and identity would serve — but the name
+     * is matched instead, following C, whose caller resolves the curse by name before asking:
+     * {@code rune_index(RUNE_VAR_CURSE, lookup_curse(curse->name))}. That also makes the lookup
+     * indifferent to where the curse came from, where identity would quietly fail for one that did
+     * not come from the registry.
+     *
+     * @param curse the curse to look up
+     * @return the rune for that curse, or {@code null} if there is none — C's {@code lookup_curse}
+     *         miss, which it reports as {@code -1} and its callers largely do not check
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(Curse curse) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.CurseKey c && c.key().getName().equals(curse.getName()))
+                return rune;
+        }
+
+        return null;
+    }
+
+    /**
+     * Finds the rune for an object flag. See {@link #runeIndex(CombatRunes)} for what this overload
+     * set replaces.
+     *
+     * <p>Not every flag is a learnable property: {@link #initRunes()} skips the placeholder
+     * subtypes, the ones describing the object rather than the player (light, digging, throwing),
+     * and those that only ever appear on curses. Asking about one of those is expected — the
+     * learning code walks whole flag sets — and answers {@code null}, C's {@code -1}.
+     *
+     * @param flag which flag
+     * @return the rune for that flag, or {@code null} if it is not a learnable property
+     * @author Rowan Crowther
+     */
+    public static Rune runeIndex(ObjectFlag flag) {
+        List<Rune> runes = ObjectRegistry.getRunes();
+
+        for (Rune rune : runes) {
+            if (rune.getVariety() instanceof RuneVariety.FlagKey f && f.key().equals(flag))
+                return rune;
+        }
+
+        return null;
+    }
 }

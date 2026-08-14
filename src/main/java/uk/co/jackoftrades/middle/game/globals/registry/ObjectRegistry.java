@@ -143,16 +143,18 @@ public class ObjectRegistry {
     private static final List<ChestTrap> chestTraps = new ArrayList<>();
 
     /**
-     * Replaces the loaded chest traps with the ones just read; set once by {@code ObjectDataLoader}.
-     * Like {@link #setRunes}, this copies into the existing list rather than rebinding the field, so
-     * the list itself stays final.
+     * The complete rune list, built by {@link Rune#initRunes()}. Order is significant — it is the
+     * order runes are listed in the knowledge menu, and C identifies a rune in its savefile by
+     * position in this list.
      *
-     * @param chestTraps the chest traps to store, in file order
+     * <p>Held as an immutable list that {@link #setRunes} <em>replaces</em>, rather than as a
+     * mutable list refilled in place like the others here. The field cannot be final as a result,
+     * but nothing outside {@code setRunes} can reach it and no published list ever changes, which
+     * is what lets {@link #getRunes} hand out the list itself instead of copying it. It starts as
+     * an empty list rather than null so the accessors answer sensibly before {@code initRunes} has
+     * run.
      */
-    public static void setChestTraps(List<ChestTrap> chestTraps) {
-        ObjectRegistry.chestTraps.clear();
-        ObjectRegistry.chestTraps.addAll(chestTraps);
-    }
+    private static List<Rune> allRunes = List.of();
 
     /**
      * Sentinel kind representing an unidentified pile of gold.
@@ -164,36 +166,62 @@ public class ObjectRegistry {
     public static final ObjectKind unknownItemKind = new ObjectKind();
 
     /**
-     * The complete rune list, built by {@link Rune#initRunes()}. Order is significant — it is the
-     * order runes are listed in the knowledge menu, and C identifies a rune in its savefile by
-     * position in this list.
-     */
-    private static final List<Rune> allRunes = new ArrayList<>();
-
-    /**
-     * Replaces the rune list with the one just built. Unlike the other setters here this copies
-     * into the existing list rather than rebinding the field, so the list itself stays final.
+     * Replaces the loaded chest traps with the ones just read; set once by {@code ObjectDataLoader}.
+     * This copies into the existing list rather than rebinding the field, so the list itself stays
+     * final — the older of the two patterns here. {@link #setRunes} takes the other one, publishing
+     * a fresh immutable list on each call; see {@link #getRunes} for what that buys and why the
+     * runes needed it.
      *
-     * @param runes the runes to store, in list order
+     * @param chestTraps the chest traps to store, in file order
      */
-    public static void setRunes(List<Rune> runes) {
-        allRunes.clear();
-        allRunes.addAll(runes);
+    public static void setChestTraps(List<ChestTrap> chestTraps) {
+        ObjectRegistry.chestTraps.clear();
+        ObjectRegistry.chestTraps.addAll(chestTraps);
     }
 
     /**
      * The rune list as built by {@link Rune#initRunes()}, in its significant order — the order the
      * knowledge menu lists runes in, and the order C's savefile identifies them by.
      *
-     * <p>This is a snapshot, not a view: {@link #setRunes} refills the backing list in place, so a
-     * copy is what keeps a caller holding the result from seeing a later re-init happen underneath
-     * it. The copy is immutable in its own right, so position — which is a rune's identity here —
-     * cannot be disturbed by the caller either.
+     * <p>The list is immutable, so position — which is a rune's identity here — cannot be disturbed
+     * by a caller, and it is a snapshot rather than a view: {@link #setRunes} publishes a new list
+     * instead of refilling this one, so a caller holding an earlier result keeps the runes it asked
+     * for and never sees a re-init arrive halfway through.
      *
-     * @return an immutable copy of the loaded runes, empty if {@code initRunes} has not run
+     * <p>Nothing is allocated on the way out. The stored list is already immutable, and
+     * {@code List.copyOf} of such a list returns that same list rather than duplicating it, so the
+     * one copy in the rune path is the one {@code setRunes} makes per load. That matters because
+     * {@link Rune#runeIndex(uk.co.jackoftrades.middle.objects.enums.ObjectFlag)} and its siblings
+     * call this once per lookup, and the learning code asks about whole flag sets at a time.
+     *
+     * <p>Two consequences worth knowing. Repeated calls return the <em>same</em> list until the
+     * runes are rebuilt, so {@code before != getRunes()} is a complete and O(1) test of whether a
+     * rebuild has happened — there is no need to re-run {@code initRunes} to refresh a stale
+     * reference, only to call this again. And immutability is structural only: the list holds the
+     * live {@link Rune} objects, so an auto-inscription set through one of them is visible through
+     * every list ever handed out, which is what the knowledge menu needs.
+     *
+     * @return the loaded runes in list order, immutable, empty if {@code initRunes} has not run
      */
     public static List<Rune> getRunes() {
-        return List.copyOf(allRunes);
+        return allRunes;
+    }
+
+    /**
+     * Replaces the rune list with the one just built; called only by {@link Rune#initRunes()}.
+     *
+     * <p>Copies on the way in, so the caller's list — an {@code ArrayList} that {@code initRunes}
+     * grows — cannot be written through afterwards to disturb rune positions. That copy is the only
+     * one in the rune path: it happens once per load, where copying in {@code getRunes} instead
+     * would happen once per lookup.
+     *
+     * <p>Rebinding rather than refilling is what makes a published list safe to keep: see
+     * {@link #getRunes}.
+     *
+     * @param runes the runes to store, in list order
+     */
+    public static void setRunes(List<Rune> runes) {
+        allRunes = List.copyOf(runes);
     }
 
     /**

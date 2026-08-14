@@ -39,6 +39,7 @@ import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.CombatRunes;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjPropertyType;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.RuneGroup;
@@ -507,9 +508,10 @@ class RuneInitTest {
     }
 
     /**
-     * A snapshot, not a view: {@code setRunes} refills the same backing list in place, so without
-     * the copy a caller holding an earlier result would silently see a later re-init. This is what
-     * that copy buys, and it is the one behaviour a reader cannot infer from the return type.
+     * A snapshot, not a view: {@code setRunes} publishes a new immutable list rather than refilling
+     * the old one, so a caller holding an earlier result keeps the runes it asked for. This is the
+     * one behaviour a reader cannot infer from the return type - an unmodifiable {@code List} that
+     * tracked the registry would satisfy the same signature and the same immutability test.
      */
     @Test
     void anEarlierResultIsUnaffectedByALaterSetRunes() throws Exception {
@@ -519,10 +521,58 @@ class RuneInitTest {
         try {
             ObjectRegistry.setRunes(List.of(full.getFirst()));
 
-            assertEquals(full.size(), taken.size(), "the copy must not follow the registry");
+            assertEquals(full.size(), taken.size(), "the list taken must not follow the registry");
             assertEquals(1, ObjectRegistry.getMaxRunes(), "though the registry itself has moved on");
         } finally {
             ObjectRegistry.setRunes(full);
+        }
+    }
+
+    /**
+     * The other half of that bargain, and the reason the lookups can call {@code getRunes} once per
+     * lookup without paying for it: the accessor hands back the stored list itself, so repeated
+     * calls return the same object and only a rebuild produces a different one.
+     *
+     * <p>That makes reference identity a complete test of "have the runes been rebuilt?", which in
+     * turn means a caller never has to re-run {@code initRunes} to refresh a reference - calling the
+     * accessor again is enough. An accessor that copied would fail the first assertion here while
+     * satisfying every other test in this section.
+     */
+    @Test
+    void getRunesReturnsTheSameListUntilTheRunesAreRebuilt() throws Exception {
+        List<Rune> full = loadedRunes();
+
+        assertSame(ObjectRegistry.getRunes(), ObjectRegistry.getRunes(),
+                "repeated calls must not allocate - the lookups call this in a loop");
+
+        List<Rune> before = ObjectRegistry.getRunes();
+        try {
+            ObjectRegistry.setRunes(List.of(full.getFirst()));
+
+            assertNotSame(before, ObjectRegistry.getRunes(),
+                    "a rebuild must be visible as a different list");
+        } finally {
+            ObjectRegistry.setRunes(full);
+        }
+    }
+
+    /**
+     * Immutability is structural only. The published lists hold the live runes, not copies of them,
+     * so an auto-inscription set on one is visible through every list ever handed out - which is
+     * what the knowledge menu needs, and the one thing a "snapshot" here does not freeze.
+     */
+    @Test
+    void aSnapshotStillSeesLaterInscriptions() throws Exception {
+        List<Rune> taken = loadedRunes();
+        Rune rune = ObjectRegistry.getRunes().getFirst();
+
+        try {
+            rune.setNote("@w1");
+
+            assertEquals("@w1", taken.getFirst().getNote(),
+                    "the list is a snapshot of membership and order, not of rune state");
+        } finally {
+            rune.setNote(null);
         }
     }
 
@@ -560,6 +610,161 @@ class RuneInitTest {
             assertThrows(RuntimeException.class, Rune::initRunes);
         } finally {
             setStatic("projections", saved);
+        }
+    }
+
+    // ---- The lookup ------------------------------------------------------
+
+    /**
+     * The baseline every caller of C's {@code rune_index} relies on: ask for a rune by the subject
+     * it was built from and get that rune back. Each variety is asked for through the overload its
+     * subject selects, which is what replaces C's {@code variety} argument - at every C call site
+     * that argument is a literal, so overload resolution can carry it instead.
+     *
+     * <p>Failures are collected rather than thrown at the first one, so a broken variety reports as
+     * itself rather than hiding every variety built after it.
+     */
+    @Test
+    void everyRuneIsFoundByTheSubjectItHolds() throws Exception {
+        List<RuneVariety> unreachable = new ArrayList<>();
+
+        for (Rune rune : loadedRunes()) {
+            RuneVariety held = rune.getVariety();
+            Rune found = switch (held) {
+                case RuneVariety.CombatKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.ModKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.ResistKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.BrandKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.SlayKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.CurseKey k -> Rune.runeIndex(k.key());
+                case RuneVariety.FlagKey k -> Rune.runeIndex(k.key());
+            };
+
+            if (found != rune) unreachable.add(held);
+        }
+
+        assertEquals(List.of(), unreachable,
+                "every rune must be findable by the subject it was built from");
+    }
+
+    /**
+     * The lookups keyed on an enum must compare the enum, not the record wrapping it, so a caller
+     * holding nothing but the constant - C's {@code rune_index(RUNE_VAR_COMBAT, COMBAT_RUNE_TO_A)} -
+     * finds the rune. Spelled out with literals for the fixed varieties, since those call sites are
+     * written by hand rather than derived from the list.
+     */
+    @Test
+    void theFixedSubjectsAreFoundByTheirConstants() throws Exception {
+        loadedRunes();
+
+        for (CombatRunes combat : List.of(CombatRunes.COMBAT_RUNE_TO_A,
+                CombatRunes.COMBAT_RUNE_TO_H, CombatRunes.COMBAT_RUNE_TO_D)) {
+            Rune found = Rune.runeIndex(combat);
+
+            assertNotNull(found, () -> "no rune found for " + combat);
+            assertEquals(new RuneVariety.CombatKey(combat), found.getVariety());
+        }
+
+        Rune speed = Rune.runeIndex(ObjectModifier.OM_SPEED);
+        assertNotNull(speed, "no rune found for OM_SPEED");
+        assertEquals(ObjectModifier.OM_SPEED, ((RuneVariety.ModKey) speed.getVariety()).key());
+
+        Rune fire = Rune.runeIndex(ElementEnum.ELEM_FIRE);
+        assertNotNull(fire, "no rune found for ELEM_FIRE");
+        assertEquals(ElementEnum.ELEM_FIRE, ((RuneVariety.ResistKey) fire.getVariety()).key());
+
+        Rune feather = Rune.runeIndex(ObjectFlag.OF_FEATHER);
+        assertNotNull(feather, "no rune found for OF_FEATHER");
+        assertEquals(ObjectFlag.OF_FEATHER, ((RuneVariety.FlagKey) feather.getVariety()).key());
+    }
+
+    /**
+     * De-duplication makes the brand held by a rune a <em>representative</em> of its name group, so
+     * a caller holding any other member of that group - the x2 acid brand where the rune holds the
+     * x3 - must still find the rune. C has no difficulty here because it stores only the name and
+     * compares with {@code streq}.
+     */
+    @Test
+    void aBrandFindsItsRuneEvenWhenItIsNotTheOneHeld() throws Exception {
+        List<RuneVariety> runeVarieties = varietiesOf(RuneGroup.BRAND);
+
+        for (Brand brand : ObjectRegistry.getBrands()) {
+            if (brand.getName() == null) continue;
+
+            RuneVariety expected = runeVarieties.stream()
+                    .filter(v -> ((RuneVariety.BrandKey) v).key().getName().equals(brand.getName()))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no rune for brand " + brand.getName()));
+
+            Rune found = Rune.runeIndex(brand);
+
+            assertNotNull(found, () -> "no rune found for brand " + brand.getName());
+            assertEquals(expected, found.getVariety(),
+                    () -> "brand " + brand.getName() + " found the wrong rune");
+        }
+    }
+
+    /**
+     * The same point for slays, where the grouping is by {@link Slay#sameMonsterSlain} rather than
+     * by name - so the group members a lookup has to tolerate need not even share a name.
+     */
+    @Test
+    void aSlayFindsItsRuneEvenWhenItIsNotTheOneHeld() throws Exception {
+        List<RuneVariety> runeVarieties = varietiesOf(RuneGroup.SLAY);
+
+        for (Slay slay : ObjectRegistry.getSlays()) {
+            if (slay.getName() == null) continue;
+
+            RuneVariety expected = runeVarieties.stream()
+                    .filter(v -> ((RuneVariety.SlayKey) v).key().sameMonsterSlain(slay))
+                    .findFirst()
+                    .orElseThrow(() -> new AssertionError("no rune for slay " + slay.getName()));
+
+            Rune found = Rune.runeIndex(slay);
+
+            assertNotNull(found, () -> "no rune found for slay " + slay.getName());
+            assertEquals(expected, found.getVariety(),
+                    () -> "slay " + slay.getName() + " found the wrong rune");
+        }
+    }
+
+    /**
+     * C returns {@code -1} for a subject with no rune - the flags {@code init_rune} skips, and the
+     * elements above disenchantment. The port's equivalent is {@code null}.
+     */
+    @Test
+    void anElementWithNoResistRuneIsNotFound() throws Exception {
+        loadedRunes();
+
+        for (ElementEnum element : ElementEnum.values()) {
+            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
+            if (element.isHasResistRune()) continue;
+
+            assertNull(Rune.runeIndex(element),
+                    () -> element + " carries no resist rune, so the lookup must find nothing");
+        }
+    }
+
+    /**
+     * The other half of C's {@code -1}: the flags {@code init_rune} skips because they describe the
+     * object rather than the player, or only ever appear on curses. Asking for one is a legitimate
+     * question with the answer "no rune", not a lookup failure.
+     */
+    @Test
+    void aFlagWithNoRuneIsNotFound() throws Exception {
+        loadedRunes();
+
+        for (ObjectFlag flag : ObjectFlag.values()) {
+            if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) continue;
+
+            ObjectProperty property = ObjectRegistry.lookupObjectProperty(
+                    ObjPropertyType.OBJ_PROPERTY_FLAG,
+                    new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag));
+            if (property == null || !EXCLUDED_SUBTYPES.contains(property.getSubtype())) continue;
+
+            assertNull(Rune.runeIndex(flag),
+                    () -> flag + " is subtype " + property.getSubtype()
+                            + ", which init_rune skips, so the lookup must find nothing");
         }
     }
 }

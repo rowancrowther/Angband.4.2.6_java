@@ -290,8 +290,9 @@ class ObjectRegistryTest {
     /**
      * {@code getObjectKinds} hands back a live unmodifiable view - it tracks later registrations,
      * and cannot be written through. Note this is the opposite of
-     * {@link ObjectRegistry#getRunes()}, which copies; the two are worth reading side by side before
-     * relying on either.
+     * {@link ObjectRegistry#getRunes()}, which hands back an immutable list that a later
+     * {@code setRunes} replaces rather than updates; the two are worth reading side by side before
+     * relying on either, since neither can be told from the other by its signature.
      */
     @Test
     void getObjectKindsIsAnUnmodifiableViewThatTracksTheTable() throws Exception {
@@ -439,15 +440,21 @@ class ObjectRegistryTest {
     /**
      * The other lookups guard on {@code null} instead, which is the same intent applied to lists
      * that are assigned wholesale rather than grown.
+     *
+     * <p>{@code objectBases} is emptied through the field rather than through
+     * {@link ObjectRegistry#setObjectBases}, whose parameter is {@code @NotNull}: no caller may pass
+     * null, and a test that did would be asserting a contract the registry does not offer. The other
+     * lists here are already null from {@link #isolate()} for the same reason - what is under test is
+     * the state "never set", which the setter is not a way to reach.
      */
     @Test
-    void theOtherLookupsThrowWhenTheirListWasNeverSet() {
+    void theOtherLookupsThrowWhenTheirListWasNeverSet() throws Exception {
         assertThrows(IllegalStateException.class, () -> ObjectRegistry.lookupSlay("SLAY_ANIMAL"));
         assertThrows(IllegalStateException.class, () -> ObjectRegistry.lookupCurse("teleportation"));
         assertThrows(IllegalStateException.class, () -> ObjectRegistry.lookupBrandCode("ACID_2"));
         assertThrows(IllegalStateException.class, () -> ObjectRegistry.lookupActivation("RING_ACID"));
 
-        ObjectRegistry.setObjectBases(null);
+        set("objectBases", null);
         assertThrows(IllegalStateException.class, () -> ObjectRegistry.lookupObjectBase("sword"));
         assertThrows(IllegalStateException.class,
                 () -> ObjectRegistry.lookupObjectBase("sword", TValue.TV_SWORD));

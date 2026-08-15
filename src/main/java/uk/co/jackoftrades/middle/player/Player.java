@@ -38,7 +38,6 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Map;
 
 /**
  * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
@@ -1248,6 +1247,19 @@ public class Player {
      * skips that resolution, and learns one member of a group where the game means all of them.
      * Prefer {@link #learnBrand} and its siblings; add new learning paths as further wrappers.
      *
+     * <p><b>Package-private, and that is the whole of the enforcement.</b> C's {@code static} means
+     * nothing outside {@code obj-knowledge.c} can call it; the package is this port's equivalent, so
+     * every wrapper and every {@code object_curses_find_*} helper belongs in
+     * {@code middle.player} beside it. The rule has been broken once already — the curse-finding
+     * family briefly lived on {@link ItemObject}, which forced this method public for as long as it
+     * did. If a future learning path seems to want an object-side home
+     * ({@code item.learnOnWield(player)} rather than {@code player.learnOnWield(item)}), that is the
+     * same mistake wearing different clothes. Knowledge is player state, the item is only the thing
+     * being read, and C's argument order says so.
+     *
+     * <p>Package-private rather than {@code private} because {@code PlayerRuneLearningTest} shares
+     * the package and drives this directly, to exercise each of the seven variety arms in isolation.
+     *
      * <p><b>A wrapper does not need to call {@link #updateObjectKnowledge()}.</b> This method
      * leaves object knowledge propagated on every path that learned anything, and that is the
      * invariant the rest of the system is written against: most of C's callers — the
@@ -1272,10 +1284,14 @@ public class Player {
      *
      * @param rune         the rune to learn; null is logged and ignored, standing in for C's
      *                     {@code assert} on the rune index
+     * <p>Function learnRune coded before 260815, commented in full before 260815, narrowed to
+     * package-private on 260815, briefly public while the curse-finding family lived on
+     * {@link ItemObject}, and narrowed again on 260815 when that family moved here.
+     *
      * @param printMessage whether to announce the discovery, false for the paths that learn in
      *                     bulk and would otherwise bury the player in messages
      */
-    public void learnRune(Rune rune, boolean printMessage) {
+    void learnRune(Rune rune, boolean printMessage) {
         if (rune == null) {
             logger.warn("Rune is null on entering learnRune");
             return;
@@ -1431,7 +1447,7 @@ public class Player {
      *   <li>each equipped item's own bonus, via {@link ItemObject#getToAC} tested against zero —
      *       the faithful port of C's plain {@code if (obj->to_a)}, which is available because the
      *       item carries the figure it rolled rather than the dice it rolled from;</li>
-     *   <li>each equipped item's curses, via {@link ItemObject#cursesFindToA}, which learns the
+     *   <li>each equipped item's curses, via {@link #cursesFindToA}, which learns the
      *       curse's rune as well as the to-AC one;</li>
      *   <li>the player's assumed shape, whose {@link PlayerShape#getToAc} is a flat parsed
      *       {@code int} — a bear's hide is a to-AC bonus like any other.</li>
@@ -1459,7 +1475,7 @@ public class Player {
             if (slotObject.getToAC() != 0) {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
             }
-            slotObject.cursesFindToA(this);
+            cursesFindToA(slotObject);
             if (itemKnowledge.toAIsKnown()) return;
         }
         if (shape != null) {
@@ -1488,7 +1504,7 @@ public class Player {
      *
      * <p>Otherwise the shape is {@link #equipLearnOnDefend}'s: an empty slot is skipped, each
      * surviving item is asked about its own bonus and then about its curses via
-     * {@link ItemObject#cursesFindToH}, the walk stops at the first success because
+     * {@link #cursesFindToH}, the walk stops at the first success because
      * {@link KnownObject#toHIsKnown} has nothing left to gain, and the shape branch at the end is
      * therefore reachable only by a player carrying nothing that could teach it.
      *
@@ -1511,7 +1527,7 @@ public class Player {
             if (!slotObject.hasStandardToH()) {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
             }
-            slotObject.cursesFindToH(this);
+            cursesFindToH(slotObject);
             if (itemKnowledge.toHIsKnown()) return;
         }
         if (shape != null) {
@@ -1544,7 +1560,7 @@ public class Player {
      * {@link ItemObject#getToDam}, matching C's {@code if (obj->to_d)}; to-hit goes through
      * {@link ItemObject#hasStandardToH}, because body armour carries a to-hit penalty as standard
      * equipment and testing it against zero would teach the rune to anyone who wore a hauberk. The
-     * curse pair {@link ItemObject#cursesFindToH} and {@link ItemObject#cursesFindToD} is then asked
+     * curse pair {@link #cursesFindToH} and {@link #cursesFindToD} is then asked
      * for both, and each learns the offending curse's own rune alongside the combat one.
      *
      * <p>The shape branch tests {@link PlayerShape#getToHit} and {@link PlayerShape#getToDam}
@@ -1563,8 +1579,8 @@ public class Player {
             if (slotObject.getToDam() != 0)
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
 
-            slotObject.cursesFindToD(this);
-            slotObject.cursesFindToH(this);
+            cursesFindToD(slotObject);
+            cursesFindToH(slotObject);
             if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
         }
         if (shape != null) {
@@ -1607,7 +1623,7 @@ public class Player {
      *       properties, and what remains is the item.</li>
      *   <li><b>Either way, the curses are asked.</b> The flag may be riding on a curse rather than
      *       on the item, which is a different question from both of the above, so
-     *       {@link ItemObject#cursesFindFlags} runs unconditionally. It takes a set rather than a
+     *       {@link #cursesFindFlags} runs unconditionally. It takes a set rather than a
      *       single flag because its other callers pass real masks; the one-element set built here is
      *       C's {@code f}, assembled at the top of {@code equip_learn_flag} for exactly this
      *       purpose.</li>
@@ -1623,7 +1639,7 @@ public class Player {
      * {@link ItemObject#getKnownFlags}. See {@link #equipLearnOnDefend} for the reasoning.
      *
      * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so both this method's
-     * message and the one {@link ItemObject#cursesFindFlags} sends name the item with a
+     * message and the one {@link #cursesFindFlags} sends name the item with a
      * placeholder.
      *
      * <p>Function equipLearnFlag coded on 260815, commented in full on 260815, updated on 260815
@@ -1654,31 +1670,235 @@ public class Player {
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
             flags.on(flag);
 
-            slotObject.cursesFindFlags(this, flags);
+            cursesFindFlags(slotObject, flags);
         }
     }
 
     /**
-     * Reports whether the player can already read the given object flag — the port of C's
-     * {@code of_has(p->obj_k->flags, flag)}.
+     * Learns the to-AC rune, and the curse's own rune, if any curse on the given item contributes an
+     * armour-class change the player has just felt. The port of C's
+     * {@code object_curses_find_to_a} ({@code obj-knowledge.c:1557}), the first of six near-identical
+     * functions covering to-AC, to-hit, to-damage, flags, modifiers and elements.
      *
-     * <p>This is knowledge, not equipment. It asks nothing about what the player is wearing: once
-     * the rune for a flag has been learned it is legible on every item that carries it, now and in
-     * future. The companion question — does <em>this</em> item have the flag — is
-     * {@link ItemObject#hasFlag}, and the two are played against each other throughout the learning
-     * code.
+     * <p>A curse is a thing the player learns by being bitten by it, which is why this is reached
+     * from {@link #equipLearnOnDefend} rather than from anything to do with inspecting the item. Two
+     * runes are learned, not one: the fact that <em>something</em> is altering the armour class, and
+     * the identity of the curse doing it.
      *
-     * <p>It exists as a method on {@link Player} because the flag-learning that needs it lives on
-     * {@link ItemObject}, and an item has no business reaching into {@code itemKnowledge}. The same
-     * reasoning puts {@link #learnRune} where it is: knowledge is the player's, so an item asks
-     * rather than writes. {@link ItemObject#cursesFindFlags} is the caller.
+     * <p><b>Why the family lives here and not on {@link ItemObject}.</b> All six are {@code static}
+     * in {@code obj-knowledge.c}, the same translation unit as {@code player_learn_rune} — they are
+     * not object methods in C but player-side helpers that take an object, and the signature says so:
+     * {@code (struct player *p, struct object *obj)}. C's file boundary is this port's package
+     * boundary, so putting them here is what keeps {@link #learnRune} package-private and lets the
+     * compiler refuse any caller that reaches past a wrapper. They read the item entirely through its
+     * public surface.
      *
-     * <p>Function hasKnownFlag coded on 260815, commented in full on 260815.
+     * <p><b>Where the numbers come from.</b> The armour-class figure belongs to the curse
+     * definition, not to the item — {@link Curse#getCombatAC}, the port of {@code curses[i].obj->to_a},
+     * parsed once from {@code curse.txt}. What the item holds is the instance data: the power and
+     * timeout in {@link CurseData}. C keeps those in two arrays indexed alike, so every one of these
+     * functions has to walk {@code 1 .. curse_max} and read {@code obj->curses[i].power} and
+     * {@code curses[i].obj->to_a} at the same subscript. {@link Curse.CurseEntry} pairs them
+     * directly, so the loop visits only the curses the item actually carries and no index arithmetic
+     * survives the port.
      *
-     * @param testSubject the flag to ask about
-     * @return whether the player has learned that flag's rune
+     * <p>That also disposes of C's two guards. {@code !obj->curses[i].power} is what stops a dense
+     * array from reporting curses the item does not have, and is unnecessary against a map that only
+     * contains the ones it does — but the power test is kept anyway, because
+     * {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed entry can
+     * outlive the curse. {@code !curses[i].obj} is dead code upstream: the parser allocates that
+     * object at the {@code name:} line, so the only null in the array is index 0, the reserved
+     * no-curse slot the loop already skips.
+     *
+     * <p>The rune is resolved once, before the loop. C recomputes it into the same {@code index}
+     * variable it then overwrites with the curse's rune, so on a second qualifying curse it relearns
+     * the previous curse instead of the to-AC rune — harmless there only because the to-AC rune is
+     * already known by that point. Hoisting the lookup out makes the bug unexpressible.
+     *
+     * <p>Function cursesFindToA coded before 260815, commented in full before 260815, moved here
+     * from {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     *
+     * @param item the item whose curses are being read
+     * @author Rowan Crowther
      */
-    public boolean hasKnownFlag(ObjectFlag testSubject) {
-        return itemKnowledge.flagIsKnown(testSubject);
+    void cursesFindToA(ItemObject item) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A);
+        if (!item.getCurses().isEmpty()) {
+            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatAC() != 0) {
+                        // Learn the to AC rune
+                        learnRune(rune, true);
+                        // Learn the to AC Curse rune
+                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Learns the to-damage rune, and the curse's own rune, if any curse on the given item
+     * contributes a damage change the player has just dealt. The port of C's
+     * {@code object_curses_find_to_d} ({@code obj-knowledge.c:1603}), the to-damage sibling of
+     * {@link #cursesFindToA}.
+     *
+     * <p>Structurally identical to that method, and the reasoning there applies unchanged: why the
+     * family lives on {@link Player} rather than {@link ItemObject}, why the figure is read from the
+     * curse definition ({@link Curse#getCombatDam}, C's {@code curses[i].obj->to_d}) rather than from
+     * the item, why the power test survives, and why the rune is resolved once above the loop.
+     *
+     * <p>What differs is the occasion. This is reached from {@link #equipLearnOnMeleeAttack} — a
+     * curse that saps damage announces itself when a blow lands softly, not when one is taken.
+     *
+     * <p>Function cursesFindToD coded on 260815, commented in full on 260815, moved here from
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     *
+     * @param item the item whose curses are being read
+     * @author Rowan Crowther
+     */
+    void cursesFindToD(ItemObject item) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D);
+        if (!item.getCurses().isEmpty()) {
+            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatDam() != 0) {
+                        // Learn the to-damage rune
+                        learnRune(rune, true);
+                        // Learn the rune of the curse that caused it
+                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Learns the to-hit rune, and the curse's own rune, if any curse on the given item contributes
+     * an accuracy change the player has just felt. The port of C's {@code object_curses_find_to_h}
+     * ({@code obj-knowledge.c:1580}), the to-hit sibling of {@link #cursesFindToA}.
+     *
+     * <p>Structurally identical to that method — see it for why the family lives here, why the
+     * figure is read from the curse definition ({@link Curse#getCombatToHit}, C's
+     * {@code curses[i].obj->to_h}), why the power test is kept, and why the rune is hoisted above
+     * the loop.
+     *
+     * <p>This is the one of the three reached from both attack methods,
+     * {@link #equipLearnOnMeleeAttack} and {@link #equipLearnOnRangedAttack}: a curse that spoils
+     * the player's aim shows itself whichever way they attack.
+     *
+     * <p>Note that the curse's contribution is judged by a plain non-zero test, with no counterpart
+     * to {@link ItemObject#hasStandardToH}. That asymmetry is correct: "standard" is a fact about
+     * what a kind of item normally carries, and a curse has no normal to-hit to be measured against.
+     *
+     * <p>Function cursesFindToH coded on 260815, commented in full on 260815, moved here from
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     *
+     * @param item the item whose curses are being read
+     * @author Rowan Crowther
+     */
+    void cursesFindToH(ItemObject item) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H);
+        if (!item.getCurses().isEmpty()) {
+            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatToHit() != 0) {
+                        // Learn the to-hit rune
+                        learnRune(rune, true);
+                        // Learn the rune of the curse that caused it
+                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Learns any of the given flags that a curse on the given item has just betrayed, together with
+     * the rune of the curse betraying them — the port of C's {@code object_curses_find_flags}
+     * ({@code obj-knowledge.c:1634}), the flag member of the same family as {@link #cursesFindToA}
+     * and its two siblings.
+     *
+     * <p><b>Why this one takes a set where the others take nothing.</b> The to-AC, to-hit and
+     * to-damage finders each pursue a single fixed property, so the caller has nothing to say. Flags
+     * are a population, and the caller decides which of them this occasion could plausibly have
+     * revealed. C passes that as a {@code bitflag *test_flags} and intersects it with the curse's
+     * own flags, keeping only what is in both. Three call sites, three different sets: a one-element
+     * set built on the spot by {@code equip_learn_flag}, the {@code obvious_mask} of everything a
+     * wield could show, and the {@code timed_mask} of what only prolonged wear reveals.
+     *
+     * <p>As in the sibling finders, two runes are learned per hit and not one — the flag itself, and
+     * the identity of the curse that carries it. The curse's rune is learned whether or not the flag
+     * was new, since meeting a curse is knowledge even when its effect was already understood.
+     *
+     * <p><b>The intersection is taken on a copy, and it has to be.</b> {@link Flag#inter} is
+     * {@code retainAll} — it mutates the set it is called on. The flags being intersected belong to
+     * the {@link Curse} definition parsed once from {@code curse.txt} and shared by every item
+     * carrying that curse, so intersecting them in place would permanently delete from the
+     * definition every flag this one occasion happened not to be asking about.
+     * {@link Flag#set(java.util.List)} copies element by element into a fresh set, which is what
+     * keeps the definition intact. The caller's own set is left alone for the same reason:
+     * {@link #equipLearnFlag} builds one and hands it to every slot in turn.
+     *
+     * <p><b>The curse's rune is learned inside the flag loop, not beside it.</b> That is C's
+     * placement and it is load-bearing in one direction: a curse whose flags do not meet the test
+     * set teaches nothing at all, not even its own existence, because the player has had no
+     * evidence of it. It also means a curse matching two flags learns its rune twice, which the
+     * guard inside {@link #learnRune} makes harmless.
+     *
+     * <p><b>The message is conditional where the learning is not.</b> C wraps only
+     * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during character
+     * generation and loading but nothing is announced into a game that has not started. The
+     * returned {@code boolean} is C's {@code new} — true if any flag was learned that was not
+     * already known, ignored by this caller and used by the wield-time learning.
+     *
+     * <p>The per-curse guard is on {@link CurseData#getPower}, as in the three sibling finders and
+     * as C's {@code if (!obj->curses[i].power)} requires. Power is what says the curse is on the
+     * item at all — {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed
+     * entry can outlive the curse it names. C's second guard, {@code !curses[i].obj}, has no
+     * counterpart: it exists to skip the reserved index 0 of a dense array, and a map holding only
+     * the curses this item carries has no such hole.
+     *
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so the message names
+     * the item with a placeholder.
+     *
+     * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, moved here from
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     *
+     * @param item      the item whose curses are being read
+     * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}
+     * @return whether any flag was learned that the player did not already know
+     * @author Rowan Crowther
+     */
+    boolean cursesFindFlags(ItemObject item, Flag<ObjectFlag> testFlags) {
+        boolean curseLearned = false;
+
+        Flag<ObjectDescription> baseDesc = new Flag<>(ObjectDescription.class);
+        baseDesc.on(ObjectDescription.ODESC_BASE);
+        String name = item.description(baseDesc, this);
+
+        if (item.getCurses().isEmpty()) return false;
+
+        // Only loop through the curses on the object, not the entire set of curses
+        for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
+            if (curseEntry.curseData().getPower() == 0) continue;
+
+            Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
+            toTest.set(curseEntry.curse().getObjectFlags());
+            toTest.inter(testFlags);
+
+            for (ObjectFlag testSubject : toTest) {
+                if (!itemKnowledge.flagIsKnown(testSubject)) {
+                    curseLearned = true;
+                    learnRune(Rune.runeIndex(testSubject), true);
+                    if (getPlayerUpkeep().isPlaying())
+                        item.flagMessage(testSubject, name);
+                }
+
+                // Learn the curse
+                Rune rune = Rune.runeIndex(curseEntry.curse());
+                if (rune != null)
+                    learnRune(rune, true);
+            }
+        }
+
+        return curseLearned;
     }
 }

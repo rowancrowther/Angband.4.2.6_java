@@ -332,7 +332,7 @@ class PlayerRuneLearningTest {
 
     /**
      * Puts the player in a started game, which is what {@code p->upkeep->playing} reports. It is
-     * false on a fresh {@link PlayerUpkeep}, and {@link ItemObject#cursesFindFlags} gates its
+     * false on a fresh {@link PlayerUpkeep}, and {@link Player#cursesFindFlags} gates its
      * message on it, so a test about messages has to say so.
      *
      * @author ClaudeCode
@@ -1365,7 +1365,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link ItemObject#cursesFindToA} — learning a curse by being hurt by it.
+     * {@link Player#cursesFindToA} — learning a curse by being hurt by it.
      *
      * <p>The function reads two things that live apart: the power, which is on the item, and the
      * armour-class contribution, which is on the curse definition in the registry. C walks
@@ -1390,7 +1390,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertAll(
                     () -> assertTrue(knowledge.toAIsKnown()),
@@ -1412,7 +1412,7 @@ class PlayerRuneLearningTest {
         void signDoesNotMatter() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertTrue(knowledge.toAIsKnown());
             assertTrue(knowledge.curseIsKnown(enveloping));
@@ -1429,7 +1429,7 @@ class PlayerRuneLearningTest {
         void curseWithoutArmourChange() throws Exception {
             ItemObject item = itemWith(cursed(siren, 20));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertAll(
                     () -> assertFalse(knowledge.toAIsKnown()),
@@ -1449,7 +1449,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsAbsent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 0));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertFalse(knowledge.toAIsKnown());
             assertFalse(knowledge.curseIsKnown(vulnerability));
@@ -1469,7 +1469,7 @@ class PlayerRuneLearningTest {
         void curseNotOnTheItem() throws Exception {
             ItemObject item = itemWith(cursed(siren, 20));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertAll(
                     () -> assertFalse(knowledge.toAIsKnown()),
@@ -1485,7 +1485,7 @@ class PlayerRuneLearningTest {
         void uncursedItem() throws Exception {
             ItemObject item = itemWith();
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertFalse(knowledge.toAIsKnown());
             assertTrue(bus.messages.isEmpty());
@@ -1508,7 +1508,7 @@ class PlayerRuneLearningTest {
         void twoQualifyingCurses() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20), cursed(enveloping, 20));
 
-            item.cursesFindToA(player);
+            player.cursesFindToA(item);
 
             assertAll(
                     () -> assertTrue(knowledge.toAIsKnown()),
@@ -1730,7 +1730,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link ItemObject#cursesFindToH} — the to-hit sibling of {@link ItemObject#cursesFindToA}.
+     * {@link Player#cursesFindToH} — the to-hit sibling of {@link Player#cursesFindToA}.
      *
      * <p>The mechanics are covered under {@code cursesFindToA} and are not repeated: what is worth
      * pinning here is that the three functions read three different figures off the curse
@@ -1738,7 +1738,8 @@ class PlayerRuneLearningTest {
      * both kinds — {@code enveloping} carries a to-hit, a to-damage and an armour class, while
      * {@code vulnerability} carries only an armour class.
      *
-     * <p>Class CursesFindToH coded on 260815, commented in full on 260815.
+     * <p>Class CursesFindToH coded on 260815, commented in full on 260815, call sites turned round
+     * on 260815 when the method moved to Player.
      *
      * @author ClaudeCode
      */
@@ -1754,7 +1755,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            item.cursesFindToH(player);
+            player.cursesFindToH(item);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1777,7 +1778,7 @@ class PlayerRuneLearningTest {
         void aToAOnlyCurseIsSilent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            item.cursesFindToH(player);
+            player.cursesFindToH(item);
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1796,7 +1797,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 0));
 
-            item.cursesFindToH(player);
+            player.cursesFindToH(item);
 
             assertFalse(knowledge.toHIsKnown());
         }
@@ -1807,17 +1808,18 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
-            itemWith().cursesFindToH(player);
+            player.cursesFindToH(itemWith());
 
             assertFalse(knowledge.toHIsKnown());
         }
     }
 
     /**
-     * {@link ItemObject#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
+     * {@link Player#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
      * fixture does not hold, so each case registers it first. See {@link #addToDRune()}.
      *
-     * <p>Class CursesFindToD coded on 260815, commented in full on 260815.
+     * <p>Class CursesFindToD coded on 260815, commented in full on 260815, call sites turned round
+     * on 260815 when the method moved to Player.
      *
      * @author ClaudeCode
      */
@@ -1851,7 +1853,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            item.cursesFindToD(player);
+            player.cursesFindToD(item);
 
             assertAll(
                     () -> assertTrue(knowledge.toDIsKnown()),
@@ -1870,7 +1872,7 @@ class PlayerRuneLearningTest {
         void aToAOnlyCurseIsSilent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            item.cursesFindToD(player);
+            player.cursesFindToD(item);
 
             assertAll(
                     () -> assertFalse(knowledge.toDIsKnown()),
@@ -1886,7 +1888,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 0));
 
-            item.cursesFindToD(player);
+            player.cursesFindToD(item);
 
             assertFalse(knowledge.toDIsKnown());
         }
@@ -2454,7 +2456,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link ItemObject#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
+     * {@link Player#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
      * family, and the only one that takes a set.
      *
      * <p>Its siblings each pursue one fixed property, so the caller has nothing to say. Flags are a
@@ -2463,7 +2465,8 @@ class PlayerRuneLearningTest {
      * what is worth testing here is about that intersection and about which of the two runes gets
      * learned when.
      *
-     * <p>Class CursesFindFlags coded on 260815, commented in full on 260815.
+     * <p>Class CursesFindFlags coded on 260815, commented in full on 260815, call sites turned round
+     * on 260815 when the method moved to Player.
      *
      * @author ClaudeCode
      */
@@ -2495,7 +2498,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertTrue(learned),
@@ -2516,7 +2519,7 @@ class PlayerRuneLearningTest {
         void theIntersectionIsRespected() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2535,14 +2538,14 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the curse definition survives being intersected against")
         void theCurseDefinitionIsNotMutated() throws Exception {
-            itemCursed(cursed(cowardice, 20))
-                    .cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+                    testing(ObjectFlag.OF_AFRAID));
 
             assertEquals(List.of(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP),
                     cowardice.getObjectFlags());
 
-            itemCursed(cursed(cowardice, 20))
-                    .cursesFindFlags(player, testing(ObjectFlag.OF_IMPAIR_HP));
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+                    testing(ObjectFlag.OF_IMPAIR_HP));
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP));
         }
@@ -2559,7 +2562,7 @@ class PlayerRuneLearningTest {
         void theTestSetIsNotMutated() throws Exception {
             Flag<ObjectFlag> testFlags = testing(ObjectFlag.OF_AFRAID, ObjectFlag.OF_SUST_STR);
 
-            itemCursed(cursed(cowardice, 20)).cursesFindFlags(player, testFlags);
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)), testFlags);
 
             assertTrue(testFlags.has(ObjectFlag.OF_SUST_STR));
         }
@@ -2576,7 +2579,7 @@ class PlayerRuneLearningTest {
         void aMissTeachesNothingAtAll() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = item.cursesFindFlags(player, testing(ObjectFlag.OF_SUST_STR));
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_SUST_STR));
 
             assertAll(
                     () -> assertFalse(learned),
@@ -2598,7 +2601,7 @@ class PlayerRuneLearningTest {
             knowledge.learnFlag(ObjectFlag.OF_AFRAID);
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertFalse(learned),
@@ -2616,7 +2619,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 0));
 
-            assertFalse(item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID)));
+            assertFalse(player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID)));
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
         }
 
@@ -2626,7 +2629,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
-            assertFalse(itemCursed().cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID)));
+            assertFalse(player.cursesFindFlags(itemCursed(), testing(ObjectFlag.OF_AFRAID)));
         }
 
         /**
@@ -2642,7 +2645,7 @@ class PlayerRuneLearningTest {
         void theMessageIsSuppressedBeforePlay() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
             assertEquals(List.of(
@@ -2664,7 +2667,7 @@ class PlayerRuneLearningTest {
             startPlaying();
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            item.cursesFindFlags(player, testing(ObjectFlag.OF_AFRAID));
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
 
             assertEquals(List.of(
                             "You have learned the rune of fear.",
@@ -2686,7 +2689,7 @@ class PlayerRuneLearningTest {
             startPlaying();
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            item.cursesFindFlags(player, testing(ObjectFlag.OF_IMPAIR_HP));
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_IMPAIR_HP));
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)),
@@ -2752,7 +2755,7 @@ class PlayerRuneLearningTest {
         /**
          * The first arm: an item that has the flag announces it and teaches its rune. The message
          * comes before the rune here, which is C's order in this function and the opposite of
-         * {@link ItemObject#cursesFindFlags}'s.
+         * {@link Player#cursesFindFlags}'s.
          *
          * @author ClaudeCode
          */
@@ -2909,49 +2912,6 @@ class PlayerRuneLearningTest {
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
                     () -> assertTrue(knowledge.curseIsKnown(cowardice)));
-        }
-    }
-
-    /**
-     * {@link Player#hasKnownFlag} — the question {@link ItemObject#cursesFindFlags} has to ask
-     * before it announces anything.
-     *
-     * <p>Class HasKnownFlag coded on 260815, commented in full on 260815.
-     *
-     * @author ClaudeCode
-     */
-    @Nested
-    @DisplayName("hasKnownFlag")
-    class HasKnownFlag {
-
-        /**
-         * @author ClaudeCode
-         */
-        @Test
-        @DisplayName("a flag is unknown until its rune is learned")
-        void unknownUntilLearned() {
-            assertFalse(player.hasKnownFlag(ObjectFlag.OF_AFRAID));
-
-            player.learnRune(new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_AFRAID, fearProperty)),
-                    false);
-
-            assertTrue(player.hasKnownFlag(ObjectFlag.OF_AFRAID));
-        }
-
-        /**
-         * Knowledge, not equipment: the answer is about the player's runes and says nothing about
-         * what is being worn, which is {@link ItemObject#hasFlag}'s question.
-         *
-         * @author ClaudeCode
-         */
-        @Test
-        @DisplayName("each flag answers for itself")
-        void flagsAnswerSeparately() {
-            knowledge.learnFlag(ObjectFlag.OF_AFRAID);
-
-            assertAll(
-                    () -> assertTrue(player.hasKnownFlag(ObjectFlag.OF_AFRAID)),
-                    () -> assertFalse(player.hasKnownFlag(ObjectFlag.OF_IMPAIR_HP)));
         }
     }
 

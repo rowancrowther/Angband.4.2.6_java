@@ -1427,8 +1427,9 @@ public class Player {
      * also what makes the shape at the end reachable only for an unhelmeted, unarmoured player.
      *
      * <ol>
-     *   <li>each equipped item's own bonus, via {@link ItemObject#isBoostedToA} — currently stubbed
-     *       {@code false}, so this arm learns nothing yet;</li>
+     *   <li>each equipped item's own bonus, via {@link ItemObject#getToAC} tested against zero —
+     *       the faithful port of C's plain {@code if (obj->to_a)}, which is available because the
+     *       item carries the figure it rolled rather than the dice it rolled from;</li>
      *   <li>each equipped item's curses, via {@link ItemObject#cursesFindToA}, which learns the
      *       curse's rune as well as the to-AC one;</li>
      *   <li>the player's assumed shape, whose {@link PlayerShape#getToAc} is a flat parsed
@@ -1451,7 +1452,7 @@ public class Player {
         for (EquipSlot slot : body.getSlots()) {
             ItemObject slotObject = slot.getItem();
             if (slotObject == null) continue;
-            if (slotObject.isBoostedToA()) {
+            if (slotObject.getToAC() != 0) {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
             }
             slotObject.cursesFindToA(this);
@@ -1460,6 +1461,108 @@ public class Player {
         if (shape != null) {
             if (shape.getToAc() != 0) {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
+            }
+        }
+    }
+
+    /**
+     * Learns the to-hit rune from whatever the player is wearing, on the occasion of loosing a
+     * missile. The port of C's {@code equip_learn_on_ranged_attack} ({@code obj-knowledge.c:2003}).
+     *
+     * <p>Same premise as {@link #equipLearnOnDefend}, applied to accuracy: a shot that flies truer
+     * than the archer had any right to expect is evidence that something is helping, and only
+     * shooting can produce that evidence. Only to-hit is learned here — a missile's damage is the
+     * launcher's and the ammunition's business, so a ranged attack says nothing about to-damage.
+     *
+     * <p><b>Two slots are skipped, and this is the reason the method exists separately from
+     * {@link #equipLearnOnMeleeAttack}.</b> C skips {@code slot_by_name(p, "weapon")} and
+     * {@code slot_by_name(p, "shooting")}; {@code body.txt} pairs those names one-to-one with the
+     * slot types ({@code slot:WEAPON:weapon}, {@code slot:BOW:shooting}), so the port compares
+     * {@link EquipSlot#getType} and needs no lookup by name. The melee weapon is skipped because a
+     * sword hanging at the belt cannot have helped the shot; the launcher is skipped because its
+     * contribution cannot be told apart from the archer's own skill.
+     *
+     * <p>Otherwise the shape is {@link #equipLearnOnDefend}'s: an empty slot is skipped, each
+     * surviving item is asked about its own bonus and then about its curses via
+     * {@link ItemObject#cursesFindToH}, the walk stops at the first success because
+     * {@link KnownObject#toHIsKnown} has nothing left to gain, and the shape branch at the end is
+     * therefore reachable only by a player carrying nothing that could teach it.
+     *
+     * <p><b>Outstanding:</b> the item's own bonus is tested with {@code hasStandardToH()}, where C
+     * asks {@code !object_has_standard_to_h(obj)} — the negation is missing, so the rune is learned
+     * from every unremarkable item and from nothing else. Compare
+     * {@link #equipLearnOnMeleeAttack}, which has it.
+     */
+    public void equipLearnOnRangedAttack() {
+        if (itemKnowledge.toHIsKnown()) return;
+
+        for (EquipSlot slot : body.getSlots()) {
+            ItemObject slotObject = slot.getItem();
+            if (slotObject == null || slot.getType() == EquipmentSlotsEnum.EQUIP_WEAPON
+                    || slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
+            if (slotObject.hasStandardToH()) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
+            }
+            slotObject.cursesFindToH(this);
+            if (itemKnowledge.toHIsKnown()) return;
+        }
+        if (shape != null) {
+            if (shape.getToHit() != 0) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
+            }
+        }
+    }
+
+    /**
+     * Learns the to-hit and to-damage runes from whatever the player is wearing, on the occasion of
+     * striking a blow. The port of C's {@code equip_learn_on_melee_attack}
+     * ({@code obj-knowledge.c:2039}), the largest of the {@code equip_learn_*} family because it is
+     * the only one that pursues two runes at once.
+     *
+     * <p>That pairing is what makes the method's guards different in kind from its siblings'. Both
+     * the leading test and the one at the foot of the loop are conjunctions: there is nothing left
+     * to learn only when {@link KnownObject#toHIsKnown} <em>and</em>
+     * {@link KnownObject#toDIsKnown} are both satisfied, so a player who has already worked out
+     * their weapon's damage keeps walking the remaining slots in the hope of learning accuracy from
+     * their gloves. Getting either guard down to a single term would end the walk early and quietly
+     * lose the other rune.
+     *
+     * <p><b>One slot is skipped.</b> C skips {@code slot_by_name(p, "shooting")} and nothing else —
+     * a bow is no part of a sword-stroke, but the weapon very much is, which is precisely the slot
+     * {@link #equipLearnOnRangedAttack} has to leave alone. As there, the port compares
+     * {@link EquipSlot#getType} rather than looking the slot up by name.
+     *
+     * <p><b>The two tests are not symmetrical.</b> To-damage is a plain non-zero check on
+     * {@link ItemObject#getToDam}, matching C's {@code if (obj->to_d)}; to-hit goes through
+     * {@link ItemObject#hasStandardToH}, because body armour carries a to-hit penalty as standard
+     * equipment and testing it against zero would teach the rune to anyone who wore a hauberk. The
+     * curse pair {@link ItemObject#cursesFindToH} and {@link ItemObject#cursesFindToD} is then asked
+     * for both, and each learns the offending curse's own rune alongside the combat one.
+     *
+     * <p>The shape branch tests {@link PlayerShape#getToHit} and {@link PlayerShape#getToDam}
+     * independently rather than as alternatives, since a shape may well grant both.
+     */
+    public void equipLearnOnMeleeAttack() {
+        if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
+
+        for (EquipSlot slot : body.getSlots()) {
+            ItemObject slotObject = slot.getItem();
+            if (slotObject == null || slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
+            if (!slotObject.hasStandardToH())
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
+            if (slotObject.getToDam() != 0)
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
+
+            slotObject.cursesFindToD(this);
+            slotObject.cursesFindToH(this);
+            if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
+        }
+        if (shape != null) {
+            if (shape.getToDam() != 0) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
+            }
+            if (shape.getToHit() != 0) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
             }
         }
     }

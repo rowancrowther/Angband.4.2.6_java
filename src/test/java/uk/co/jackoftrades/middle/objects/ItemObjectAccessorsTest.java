@@ -48,9 +48,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code ItemObjectSimilarTest}.
  *
  * <p>Most of what is here is a round-trip, and would not be worth writing on its own. Three things
- * are: the long constructor does real work on four of its arguments rather than only assigning them
- * (it parses {@code pValue} from a string and three dice strings into {@link
- * uk.co.jackoftrades.middle.numerics.Random}s), the empty constructor has to leave the blank-slot
+ * are: the long constructor does real work on two of its arguments rather than only assigning them
+ * (it reads {@code pValue} out of a string as an {@code int} and parses {@code baseDamage} from a
+ * dice string into a {@link uk.co.jackoftrades.middle.numerics.Random} — the combat bonuses used to
+ * be parsed the same way and are now plain {@code int}s, since an item carries the figure it rolled
+ * rather than the dice it rolled from), the empty constructor has to leave the blank-slot
  * state C gets from {@code mem_zalloc}, and the two collection accessors disagree with each other
  * about mutability — {@link ItemObject#getBrands()} hands out the live set while
  * {@link ItemObject#getCurses()} wraps its map in an unmodifiable view. That asymmetry is easy to
@@ -90,7 +92,7 @@ class ItemObjectAccessorsTest {
      */
     private static ItemObject item(TValue tValue, String pValue, String note) {
         return new ItemObject(new ObjectKind(), null, null, null, Loc.zero, tValue, 0, pValue,
-                0, 0, 0, 0, "0", "0", "0", "0",
+                0, 0, 0, 0, 0, "0", 0, 0,
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), Map.of(),
                 List.of(), null, List.of(), "0", 0, 1,
                 new Flag<>(ObjectNotice.class), 0, 0,
@@ -151,7 +153,7 @@ class ItemObjectAccessorsTest {
     void kindIsKept() {
         ObjectKind kind = new ObjectKind();
         ItemObject item = new ItemObject(kind, null, null, null, Loc.zero, TValue.TV_SWORD, 0, "0",
-                0, 0, 0, 0, "0", "0", "0", "0",
+                0, 0, 0, 0, 0, "0", 0, 0,
                 new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), Map.of(),
                 List.of(), null, List.of(), "0", 0, 1,
                 new Flag<>(ObjectNotice.class), 0, 0,

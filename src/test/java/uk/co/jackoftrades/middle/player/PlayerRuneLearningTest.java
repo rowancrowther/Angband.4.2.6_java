@@ -53,7 +53,9 @@ import uk.co.jackoftrades.middle.objects.enums.RuneVariety;
 import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.CurseData;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -243,6 +245,45 @@ class PlayerRuneLearningTest {
     }
 
     /**
+     * An item carrying the given combat bonuses and no curses — the other half of what an equipped
+     * item can teach, and the half {@link ItemObject} could not express while it held dice rather
+     * than rolled figures.
+     *
+     * <p>The kind is left null on purpose. {@link ItemObject#hasStandardToH} answers true for a
+     * kindless item, so the to-hit arm of the learning stays quiet unless a test sets a kind up
+     * deliberately; that keeps a case about to-damage from accidentally being a case about to-hit
+     * as well. {@code ItemObjectStandardToHTest} covers the kind branches on their own.
+     *
+     * @param toHit this item's rolled to-hit bonus
+     * @param toDam this item's rolled to-damage bonus
+     * @param toAC  this item's rolled to-AC bonus
+     * @author ClaudeCode
+     */
+    private static ItemObject itemWithCombat(int toHit, int toDam, int toAC) throws Exception {
+        ItemObject item = itemWith();
+        poke(item, "toHit", toHit);
+        poke(item, "toDam", toDam);
+        poke(item, "toAC", toAC);
+        return item;
+    }
+
+    /**
+     * An item whose to-hit departs from what its kind prescribes, so that
+     * {@link ItemObject#hasStandardToH} answers false and the to-hit arm of the melee learning has
+     * something to find. A sword, so the body-armour branch is not in play.
+     *
+     * @param toHit this item's rolled to-hit bonus
+     * @author ClaudeCode
+     */
+    private static ItemObject weaponWithToHit(int toHit) throws Exception {
+        ItemObject item = itemWith();
+        poke(item, "tValue", TValue.TV_SWORD);
+        poke(item, "kind", new ObjectKind());
+        poke(item, "toHit", toHit);
+        return item;
+    }
+
+    /**
      * A one-slot body holding the given items in order; a null entry is an empty slot, which is what
      * most of a real body's slots are.
      *
@@ -276,8 +317,41 @@ class PlayerRuneLearningTest {
      * @author ClaudeCode
      */
     private static PlayerShape shapeWithToAc(int toAc) {
-        return new PlayerShape("bear", toAc, 0, 0, Map.of(), null, null, Map.of(), Map.of(),
+        return shapeWith(toAc, 0, 0);
+    }
+
+    /**
+     * A shape with the three combat figures set. Unlike an item's, these are flat parsed
+     * {@code int}s on the definition — a bear's claws are simply better than a hand, with no dice
+     * and no roll behind it.
+     *
+     * @author ClaudeCode
+     */
+    private static PlayerShape shapeWith(int toAc, int toHit, int toDam) {
+        return new PlayerShape("bear", toAc, toHit, toDam, Map.of(), null, null, Map.of(), Map.of(),
                 List.of(), 0, List.of());
+    }
+
+    /**
+     * A body of slots of the given types, each holding the item paired with it, in order. The
+     * attack methods skip by slot type, so unlike {@link #bodyWearing} these tests have to say which
+     * kind of slot each item is in.
+     *
+     * @param types the slot types, in order
+     * @param items the items to place, one per type; a null entry leaves that slot empty
+     * @author ClaudeCode
+     */
+    private static PlayerBody bodyOf(List<EquipmentSlotsEnum> types, ItemObject... items)
+            throws Exception {
+        List<EquipSlot> slots = new ArrayList<>();
+        for (int i = 0; i < types.size(); i++) {
+            EquipSlot slot = new EquipSlot(types.get(i), types.get(i).name());
+            if (i < items.length && items[i] != null) {
+                poke(slot, "item", items[i]);
+            }
+            slots.add(slot);
+        }
+        return new PlayerBody("humanoid", slots);
     }
 
     private List<String> announced() {
@@ -1352,13 +1426,37 @@ class PlayerRuneLearningTest {
     }
 
     /**
+     * Registers a to-damage rune for the duration of a test, and takes it away again.
+     *
+     * <p>The shared fixture deliberately leaves the to-damage rune out of the registry — the
+     * {@code learnAllRunes} case "learns the runes that exist, not the ones that could" turns on its
+     * absence, since the walk is over the registry's list rather than over the varieties. Anything
+     * testing to-damage learning therefore has to put one there itself.
+     *
+     * <p>The registry is swapped rather than appended to: {@link ObjectRegistry#setRunes} copies
+     * into an immutable list, so the one {@link ObjectRegistry#getRunes} hands back cannot be added
+     * to. The old list comes back as the return value, to be put back afterwards.
+     *
+     * @return the rune list that was in place before, for restoring
+     * @author ClaudeCode
+     */
+    private static List<Rune> withToDRune() {
+        List<Rune> previous = ObjectRegistry.getRunes();
+        List<Rune> extended = new ArrayList<>(previous);
+        extended.add(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)));
+        ObjectRegistry.setRunes(extended);
+        return previous;
+    }
+
+    /**
      * {@link Player#equipLearnOnDefend} — the occasion on which worn armour explains itself.
      *
      * <p>A property announces itself when it does its job, so an armour-class bonus is learned by
      * being hit rather than by being examined. Three sources are checked in order and the first
-     * success ends the method; the item's own bonus is stubbed
-     * ({@link ItemObject#isBoostedToA}) until the class carries a rolled to-AC, so the curse and
-     * shape arms are the live ones.
+     * success ends the method: the item's own bonus, its curses, and the player's assumed shape. The
+     * first of those was stubbed while {@link ItemObject} carried dice rather than a rolled figure;
+     * it now reads {@link ItemObject#getToAC} and a plain non-zero test is the faithful port of C's
+     * {@code if (obj->to_a)}.
      *
      * @author ClaudeCode
      */
@@ -1397,20 +1495,52 @@ class PlayerRuneLearningTest {
         }
 
         /**
-         * The item's own bonus arm is stubbed, so an uncursed item is silent. Written as a statement
-         * of the stub rather than of the eventual behaviour: when {@code isBoostedToA} learns to
-         * answer from a rolled to-AC, this test should start failing and be rewritten.
+         * A plain item with no bonus and no curse has nothing to say. The blow landed exactly as
+         * hard as it should have, which is not evidence of anything.
          *
          * @author ClaudeCode
          */
         @Test
-        @DisplayName("an uncursed item teaches nothing while isBoostedToA is stubbed")
-        void uncursedItemTeachesNothingYet() throws Exception {
+        @DisplayName("an uncursed item with no bonus teaches nothing")
+        void uncursedItemWithNoBonusTeachesNothing() throws Exception {
             set(player, "body", bodyWearing(itemWith()));
 
             player.equipLearnOnDefend();
 
             assertFalse(knowledge.toAIsKnown());
+        }
+
+        /**
+         * The item's own bonus arm, which replaced a stub once {@link ItemObject} began carrying the
+         * to-AC it rolled rather than the dice it was rolled from. No curse is involved: the armour
+         * itself is doing the work.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an uncursed item with a to-AC bonus teaches the rune")
+        void uncursedItemWithABonusTeaches() throws Exception {
+            set(player, "body", bodyWearing(itemWithCombat(0, 0, 5)));
+
+            player.equipLearnOnDefend();
+
+            assertTrue(knowledge.toAIsKnown());
+        }
+
+        /**
+         * A penalty is as much evidence as a bonus — C tests {@code if (obj->to_a)}, not its sign,
+         * and the rune names the enchantment rather than its direction.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a to-AC penalty teaches as readily as a bonus")
+        void aPenaltyTeachesToo() throws Exception {
+            set(player, "body", bodyWearing(itemWithCombat(0, 0, -5)));
+
+            player.equipLearnOnDefend();
+
+            assertTrue(knowledge.toAIsKnown());
         }
 
         /**
@@ -1496,6 +1626,722 @@ class PlayerRuneLearningTest {
             assertDoesNotThrow(() -> player.equipLearnOnDefend());
 
             assertFalse(knowledge.toAIsKnown());
+        }
+    }
+
+    /**
+     * {@link ItemObject#cursesFindToH} — the to-hit sibling of {@link ItemObject#cursesFindToA}.
+     *
+     * <p>The mechanics are covered under {@code cursesFindToA} and are not repeated: what is worth
+     * pinning here is that the three functions read three different figures off the curse
+     * definition, so a curse that changes one of them does not teach the other two. The fixture has
+     * both kinds — {@code enveloping} carries a to-hit, a to-damage and an armour class, while
+     * {@code vulnerability} carries only an armour class.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("cursesFindToH")
+    class CursesFindToH {
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse that changes to-hit teaches its own rune and the to-hit rune")
+        void teachesBothRunes() throws Exception {
+            ItemObject item = itemWith(cursed(enveloping, 20));
+
+            item.cursesFindToH(player);
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertEquals(List.of(
+                                    "You have learned the rune of enchantment to hit.",
+                                    "You have learned the rune of enveloping curse."),
+                            announced()));
+        }
+
+        /**
+         * The point of having three functions rather than one. {@code vulnerability} is a real curse
+         * that really is on the item, and it changes the armour class by -50 — but it does nothing
+         * to the player's aim, so a missed blow is no evidence of it.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse that changes only armour class teaches nothing here")
+        void aToAOnlyCurseIsSilent() throws Exception {
+            ItemObject item = itemWith(cursed(vulnerability, 20));
+
+            item.cursesFindToH(player);
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertTrue(bus.messages.isEmpty()));
+        }
+
+        /**
+         * A curse at zero power is not on the item at all — {@link CurseData#setPower} with a zero
+         * is how a curse is removed, so a zeroed entry can outlive the curse it named.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse at zero power is not on the item")
+        void zeroPowerIsNotACurse() throws Exception {
+            ItemObject item = itemWith(cursed(enveloping, 0));
+
+            item.cursesFindToH(player);
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an uncursed item teaches nothing")
+        void uncursedItemIsSilent() throws Exception {
+            itemWith().cursesFindToH(player);
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+    }
+
+    /**
+     * {@link ItemObject#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
+     * fixture does not hold, so each case registers it first. See {@link #addToDRune()}.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("cursesFindToD")
+    class CursesFindToD {
+
+        private List<Rune> previousRunes;
+
+        /**
+         * @author ClaudeCode
+         */
+        @BeforeEach
+        void addRune() {
+            previousRunes = withToDRune();
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @AfterEach
+        void removeRune() {
+            ObjectRegistry.setRunes(previousRunes);
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse that changes to-damage teaches its own rune and the to-damage rune")
+        void teachesBothRunes() throws Exception {
+            ItemObject item = itemWith(cursed(enveloping, 20));
+
+            item.cursesFindToD(player);
+
+            assertAll(
+                    () -> assertTrue(knowledge.toDIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertEquals(List.of(
+                                    "You have learned the rune of enchantment to damage.",
+                                    "You have learned the rune of enveloping curse."),
+                            announced()));
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse that changes only armour class teaches nothing here")
+        void aToAOnlyCurseIsSilent() throws Exception {
+            ItemObject item = itemWith(cursed(vulnerability, 20));
+
+            item.cursesFindToD(player);
+
+            assertAll(
+                    () -> assertFalse(knowledge.toDIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertTrue(bus.messages.isEmpty()));
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse at zero power is not on the item")
+        void zeroPowerIsNotACurse() throws Exception {
+            ItemObject item = itemWith(cursed(enveloping, 0));
+
+            item.cursesFindToD(player);
+
+            assertFalse(knowledge.toDIsKnown());
+        }
+    }
+
+    /**
+     * {@link Player#equipLearnOnRangedAttack} — the occasion on which a shot explains itself.
+     *
+     * <p>Only to-hit is at stake: a missile's damage belongs to the launcher and the ammunition, so
+     * a bowshot is no evidence about the player's own to-damage. What distinguishes this method from
+     * its melee twin is which slots it refuses to read. C skips both {@code weapon} and
+     * {@code shooting} — the sword at the belt cannot have helped the shot, and the launcher's
+     * contribution cannot be told apart from the archer's own skill.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("equipLearnOnRangedAttack")
+    class EquipLearnOnRangedAttack {
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("empty slots are stepped over, not fallen at")
+        void emptySlotsAreSkipped() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
+
+            assertDoesNotThrow(() -> player.equipLearnOnRangedAttack());
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The first of the two skips. A sword hanging at the belt took no part in the shot, so
+         * whatever it is carrying stays unlearned — and the curse riding on it stays hidden with it.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the melee weapon is not read")
+        void theWeaponSlotIsSkipped() throws Exception {
+            ItemObject sword = itemWith(cursed(enveloping, 20));
+            poke(sword, "toHit", 8);
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON), sword));
+
+            player.equipLearnOnRangedAttack();
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(enveloping)));
+        }
+
+        /**
+         * The second skip, and the less obvious one. The launcher is the thing that fired, but its
+         * accuracy and the archer's are the same number as far as the shot is concerned, so C
+         * declines to attribute the result to it.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the launcher is not read either")
+        void theShootingSlotIsSkipped() throws Exception {
+            ItemObject bow = itemWith(cursed(enveloping, 20));
+            poke(bow, "toHit", 8);
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
+
+            player.equipLearnOnRangedAttack();
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(enveloping)));
+        }
+
+        /**
+         * Every other slot is read, so a ring that steadies the hand is learned from a bowshot even
+         * though it had nothing to do with the bow.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse in any other slot teaches the to-hit rune")
+        void aCursedRingTeaches() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+                    itemWith(cursed(enveloping, 20))));
+
+            player.equipLearnOnRangedAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)));
+        }
+
+        /**
+         * The item's own bonus arm, which C reaches through
+         * {@code !object_has_standard_to_h(obj)} — the same predicate the melee method uses. An
+         * item sitting at exactly what its kind prescribes is evidence of nothing.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an item at its kind's to-hit teaches nothing")
+        void anItemAtItsKindsToHitTeachesNothing() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+                    weaponWithToHit(0)));
+
+            player.equipLearnOnRangedAttack();
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The other half, and the one that says the arm is live at all: an item whose to-hit has
+         * departed from its kind's is exactly what a truer-than-expected shot is evidence of.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an item off its kind's to-hit teaches the rune")
+        void anItemOffItsKindsToHitTeaches() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+                    weaponWithToHit(5)));
+
+            player.equipLearnOnRangedAttack();
+
+            assertTrue(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The leading guard: nothing is examined once the rune is known, so the curse on the worn
+         * ring goes unnoticed. C's behaviour, and the reason a curse can stay hidden on a character
+         * who worked out their bonuses long ago.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("nothing is examined once the to-hit rune is already known")
+        void alreadyKnownStopsAtTheDoor() throws Exception {
+            knowledge.learnToH();
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
+                    itemWith(cursed(enveloping, 20))));
+
+            player.equipLearnOnRangedAttack();
+
+            assertFalse(knowledge.curseIsKnown(enveloping));
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
+         * The guard repeated at the foot of the loop: the walk stops at the first slot that teaches,
+         * so the second cursed item is never read.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the walk stops at the first slot that teaches")
+        void stopsAtTheFirstSlotThatTeaches() throws Exception {
+            set(player, "body", bodyOf(
+                    List.of(EquipmentSlotsEnum.EQUIP_RING, EquipmentSlotsEnum.EQUIP_AMULET),
+                    itemWith(cursed(enveloping, 20)),
+                    itemWith(cursed(siren, 20))));
+
+            player.equipLearnOnRangedAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertFalse(knowledge.curseIsKnown(siren)));
+        }
+
+        /**
+         * A shape's to-hit is a flat parsed {@code int}, and is reached only when nothing worn has
+         * already answered the question.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an assumed shape's to-hit teaches the rune")
+        void shapeTeaches() throws Exception {
+            set(player, "body", emptyBody());
+            set(player, "shape", shapeWith(0, 5, 0));
+
+            player.equipLearnOnRangedAttack();
+
+            assertTrue(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The shape's own to-damage is not consulted here, whatever it says. Only accuracy is on
+         * offer from a bowshot.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a shape's to-damage is not learned from a shot")
+        void shapeToDamageIsNotLearned() throws Exception {
+            List<Rune> previousRunes = withToDRune();
+            try {
+                set(player, "body", emptyBody());
+                set(player, "shape", shapeWith(0, 0, 7));
+
+                player.equipLearnOnRangedAttack();
+
+                assertFalse(knowledge.toDIsKnown());
+            } finally {
+                ObjectRegistry.setRunes(previousRunes);
+            }
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("no shape is not an error")
+        void noShape() throws Exception {
+            set(player, "body", emptyBody());
+
+            assertDoesNotThrow(() -> player.equipLearnOnRangedAttack());
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+    }
+
+    /**
+     * {@link Player#equipLearnOnMeleeAttack} — the largest of the family, because it is the only one
+     * pursuing two runes at once.
+     *
+     * <p>That pairing is what makes its guards different in kind: both the leading test and the one
+     * at the foot of the loop are conjunctions, so a player who has already worked out their
+     * weapon's damage keeps walking the remaining slots in the hope of learning accuracy from their
+     * gloves. Only the launcher is skipped — the weapon is very much part of a sword-stroke, which
+     * is precisely the slot {@link Player#equipLearnOnRangedAttack} has to leave alone.
+     *
+     * <p>The two tests are also asymmetrical: to-damage is a plain non-zero check, while to-hit goes
+     * through {@link ItemObject#hasStandardToH} because body armour carries a penalty as standard
+     * equipment. {@code ItemObjectStandardToHTest} covers that predicate on its own; what is checked
+     * here is that the melee learning asks it rather than testing the figure directly.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("equipLearnOnMeleeAttack")
+    class EquipLearnOnMeleeAttack {
+
+        private List<Rune> previousRunes;
+
+        /**
+         * @author ClaudeCode
+         */
+        @BeforeEach
+        void addRune() {
+            previousRunes = withToDRune();
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @AfterEach
+        void removeRune() {
+            ObjectRegistry.setRunes(previousRunes);
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("empty slots are stepped over, not fallen at")
+        void emptySlotsAreSkipped() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
+
+            assertDoesNotThrow(() -> player.equipLearnOnMeleeAttack());
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.toDIsKnown()));
+        }
+
+        /**
+         * The one slot skipped, and the difference from the ranged method. A bow is no part of a
+         * sword-stroke.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the launcher is not read")
+        void theShootingSlotIsSkipped() throws Exception {
+            ItemObject bow = itemWith(cursed(enveloping, 20));
+            poke(bow, "toDam", 8);
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.toDIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(enveloping)));
+        }
+
+        /**
+         * The weapon slot is read, unlike in the ranged method — the whole reason the two functions
+         * differ.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the melee weapon is read")
+        void theWeaponSlotIsRead() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+                    itemWithCombat(0, 6, 0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertTrue(knowledge.toDIsKnown());
+        }
+
+        /**
+         * The to-damage arm on its own, from an item with no to-hit story to tell: the fixture item
+         * has no kind, so {@link ItemObject#hasStandardToH} answers true and the to-hit arm stays
+         * quiet.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an item's to-damage teaches the to-damage rune and not the to-hit one")
+        void toDamageAloneTeachesOnlyItsOwnRune() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+                    itemWithCombat(0, 6, 0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toDIsKnown()),
+                    () -> assertFalse(knowledge.toHIsKnown()));
+        }
+
+        /**
+         * A to-damage penalty teaches as readily as a bonus — C tests {@code if (obj->to_d)}, not
+         * its sign.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a to-damage penalty teaches as readily as a bonus")
+        void aToDamagePenaltyTeaches() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+                    itemWithCombat(0, -6, 0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertTrue(knowledge.toDIsKnown());
+        }
+
+        /**
+         * An item with no bonus at all is silent in both arms. The blow landed exactly as it should
+         * have, which is not evidence of anything.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an item with no bonus teaches nothing")
+        void anUnremarkableItemTeachesNothing() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+                    itemWithCombat(0, 0, 0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertFalse(knowledge.toDIsKnown()),
+                    () -> assertFalse(knowledge.toHIsKnown()));
+        }
+
+        /**
+         * The to-hit arm, from a weapon whose to-hit has departed from what its kind prescribes.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a weapon off its kind's to-hit teaches the to-hit rune")
+        void toHitAloneTeachesOnlyItsOwnRune() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+                    weaponWithToHit(5)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.toDIsKnown()));
+        }
+
+        /**
+         * The predicate the to-hit arm goes through, seen from the outside. An item sitting at
+         * exactly what its kind prescribes is standard, so nothing is learned from it — which is
+         * what stops a suit of chain mail teaching to-hit to everyone who swings a sword while
+         * wearing one.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an item at its kind's to-hit teaches nothing")
+        void anItemAtItsKindsToHitTeachesNothing() throws Exception {
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+                    weaponWithToHit(0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertFalse(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The leading guard is a conjunction, so knowing one of the two is not enough to stop the
+         * walk. A player who has worked out their weapon's damage still has accuracy to learn.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("knowing to-damage alone does not stop the walk")
+        void oneRuneKnownIsNotEnoughToStop() throws Exception {
+            knowledge.learnToD();
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+                    weaponWithToHit(5)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertTrue(knowledge.toHIsKnown());
+        }
+
+        /**
+         * The other half of the same guard.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("knowing to-hit alone does not stop the walk")
+        void theOtherRuneKnownIsNotEnoughEither() throws Exception {
+            knowledge.learnToH();
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
+                    itemWithCombat(0, 6, 0)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertTrue(knowledge.toDIsKnown());
+        }
+
+        /**
+         * Both known: now there is nothing left to learn, so no slot is read at all and the curse on
+         * the worn item stays hidden.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("nothing is examined once both runes are known")
+        void bothKnownStopsAtTheDoor() throws Exception {
+            knowledge.learnToH();
+            knowledge.learnToD();
+            set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
+                    itemWith(cursed(enveloping, 20))));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertFalse(knowledge.curseIsKnown(enveloping));
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
+         * The guard at the foot of the loop, which is the same conjunction. The first slot teaches
+         * both runes at once — {@code enveloping} carries a to-hit and a to-damage — so the second
+         * cursed item is never reached.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the walk stops at the first slot that teaches both")
+        void stopsOnceBothAreKnown() throws Exception {
+            set(player, "body", bodyOf(
+                    List.of(EquipmentSlotsEnum.EQUIP_WEAPON, EquipmentSlotsEnum.EQUIP_GLOVES),
+                    itemWith(cursed(enveloping, 20)),
+                    itemWith(cursed(siren, 20))));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.toDIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertFalse(knowledge.curseIsKnown(siren)));
+        }
+
+        /**
+         * A curse that changes only one of the two teaches only that one, and the walk goes on to
+         * the next slot looking for the other.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a slot that teaches one rune does not end the walk")
+        void aPartialSlotDoesNotEndTheWalk() throws Exception {
+            set(player, "body", bodyOf(
+                    List.of(EquipmentSlotsEnum.EQUIP_GLOVES, EquipmentSlotsEnum.EQUIP_BOOTS),
+                    itemWithCombat(0, 6, 0),
+                    weaponWithToHit(5)));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toDIsKnown()),
+                    () -> assertTrue(knowledge.toHIsKnown()));
+        }
+
+        /**
+         * The shape's two figures are tested independently rather than as alternatives, so a shape
+         * granting both teaches both.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an assumed shape teaches both its figures")
+        void shapeTeachesBoth() throws Exception {
+            set(player, "body", emptyBody());
+            set(player, "shape", shapeWith(0, 5, 7));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.toDIsKnown()));
+        }
+
+        /**
+         * And a shape granting one teaches only that one — the two branches are not an
+         * if/else pair.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a shape with only one of the two teaches only that one")
+        void shapeWithOneFigureTeachesOnlyIt() throws Exception {
+            set(player, "body", emptyBody());
+            set(player, "shape", shapeWith(0, 0, 7));
+
+            player.equipLearnOnMeleeAttack();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toDIsKnown()),
+                    () -> assertFalse(knowledge.toHIsKnown()));
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("no shape is not an error")
+        void noShape() throws Exception {
+            set(player, "body", emptyBody());
+
+            assertDoesNotThrow(() -> player.equipLearnOnMeleeAttack());
+
+            assertAll(
+                    () -> assertFalse(knowledge.toHIsKnown()),
+                    () -> assertFalse(knowledge.toDIsKnown()));
         }
     }
 

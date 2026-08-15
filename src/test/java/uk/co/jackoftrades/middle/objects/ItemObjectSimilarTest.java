@@ -500,22 +500,42 @@ class ItemObjectSimilarTest {
         }
 
         /**
-         * The combat bonuses are compared by reference rather than by value, so two items sharing
-         * one {@link Random} stack and two holding equal-but-separate ones do not. Stated as it
-         * behaves rather than as it reads, because the fixtures elsewhere in this suite leave all
-         * three null on both sides and so never reach the distinction.
+         * The combat bonuses are compared by value, matching C's {@code obj1->to_h != obj2->to_h}
+         * on three {@code int16_t}s.
+         *
+         * <p>This used to be a test that they were compared by <em>reference</em>, and it was
+         * accurate at the time: the fields held the {@link Random} dice parsed from the data file,
+         * and {@code !=} on two of those asks whether they are the same object. Two identically
+         * enchanted swords would then refuse to stack. Moving the fields to the rolled {@code int}
+         * — which is what C's {@code struct object} carries — turned the same {@code !=} into the
+         * comparison it always read as.
          *
          * @author ClaudeCode
          */
         @Test
-        @DisplayName("combat bonuses are compared by reference")
-        void bonusesAreComparedByReference() {
-            Random shared = new Random(1, 0, 0, 0, false);
-            set(first, "toHit", shared);
-            set(second, "toHit", shared);
+        @DisplayName("combat bonuses are compared by value")
+        void bonusesAreComparedByValue() {
+            set(first, "toHit", 1);
+            set(second, "toHit", 1);
             assertTrue(first.similar(second, mode()));
 
-            set(second, "toHit", new Random(1, 0, 0, 0, false));
+            set(second, "toHit", 2);
+            assertFalse(first.similar(second, mode()));
+        }
+
+        /**
+         * All three are compared, not just the one above.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("each combat bonus is compared separately")
+        void eachBonusIsCompared() {
+            set(second, "toDam", 3);
+            assertFalse(first.similar(second, mode()));
+
+            set(second, "toDam", 0);
+            set(second, "toAC", 3);
             assertFalse(first.similar(second, mode()));
         }
 

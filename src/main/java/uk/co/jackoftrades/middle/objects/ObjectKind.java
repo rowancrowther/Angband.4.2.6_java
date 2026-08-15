@@ -718,4 +718,20 @@ public class ObjectKind {
     public void setKindIndex(int kindIndex) {
         this.kindIndex = kindIndex;
     }
+
+    /**
+     * Returns the dice this kind's to-hit bonus is rolled from, C's {@code kind->to_h}.
+     *
+     * <p>Dice, not a number: this is the recipe every item of this kind is made to, and the figure
+     * an individual item ended up with lives on that item instead. The distinction is the whole
+     * point of {@link ItemObject#hasStandardToH}, which is currently the only caller — it compares
+     * an item's settled to-hit against {@link Random#getBase} here to decide whether the item has
+     * drifted from what its kind prescribes.
+     *
+     * @return this kind's to-hit dice
+     * @author Rowan Crowther
+     */
+    public Random getToH() {
+        return toH;
+    }
 }

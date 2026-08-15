@@ -170,23 +170,35 @@ public class ItemObject {
      */
     private int normalAC;
     /**
-     * To-armour-class bonus, as a dice expression.
+     * This item's own to-armour-class bonus — the rolled result, not the dice it came from. C's
+     * {@code obj->to_a} ({@code object.h}), an {@code int16_t}.
+     *
+     * <p>The dice live one level up, on the kind's {@code toA}, because they belong to the
+     * recipe rather than to any particular item: {@code object.txt} writes {@code armor:32:0} once
+     * and every suit rolled from it gets its own figure. By the time an item exists this is a
+     * settled number, so reading it is a plain field access and never a fresh roll.
      *
      * @author Rowan Crowther
      */
-    private Random toAC;
+    private int toAC;
     /**
-     * To-damage bonus, as a dice expression.
+     * This item's own to-damage bonus, rolled at generation. C's {@code obj->to_d}. See
+     * {@link #toAC} for why the instance holds a number and the kind holds dice.
      *
      * @author Rowan Crowther
      */
-    private Random toDam;
+    private int toDam;
     /**
-     * To-hit bonus, as a dice expression.
+     * This item's own to-hit bonus, rolled at generation. C's {@code obj->to_h}. See {@link #toAC}
+     * for why the instance holds a number and the kind holds dice.
+     *
+     * <p>Unlike the other two, a non-zero value here does not by itself mean the item is doing
+     * anything unusual — body armour carries a to-hit penalty from its kind. {@link #hasStandardToH}
+     * is the test that knows the difference.
      *
      * @author Rowan Crowther
      */
-    private Random toHit;
+    private int toHit;
 
     /**
      * The item's object flags.
@@ -332,10 +344,10 @@ public class ItemObject {
      * @param damageDice      number of damage dice
      * @param damageSides     sides per damage die
      * @param normalAC        base armour class
-     * @param toAC            to-AC dice string
+     * @param toAC            this item's rolled to-AC bonus
      * @param baseDamage      base-damage dice string
-     * @param toDam           to-damage dice string
-     * @param toHit           to-hit dice string
+     * @param toDam           this item's rolled to-damage bonus
+     * @param toHit           this item's rolled to-hit bonus
      * @param flags           object flags
      * @param modifiers       modifier dice strings
      * @param elInfo          per-element info
@@ -361,8 +373,8 @@ public class ItemObject {
                       Artifact artifact, ItemObject known,
                       Loc location, TValue tValue, int sValue,
                       String pValue, int weight, int damageDice,
-                      int damageSides, int normalAC, String toAC,
-                      String baseDamage, String toDam, String toHit,
+                      int damageSides, int normalAC, int toAC,
+                      String baseDamage, int toDam, int toHit,
                       Flag<ObjectFlag> flags,
                       Map<ObjectModifier, String> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
@@ -390,10 +402,10 @@ public class ItemObject {
         this.damageDice = damageDice;
         this.damageSides = damageSides;
         this.normalAC = normalAC;
-        this.toAC = Random.parseStr(toAC);
+        this.toAC = toAC;
         this.baseDamage = Random.parseStr(baseDamage);
-        this.toDam = Random.parseStr(toDam);
-        this.toHit = Random.parseStr(toHit);
+        this.toDam = toDam;
+        this.toHit = toHit;
         this.flags = flags;
         this.modifiers = modifiers;
         this.elInfo = elInfo;
@@ -991,38 +1003,42 @@ public class ItemObject {
     }
 
     /**
-     * Reports whether this item carries an armour-class bonus — the port of the bare
-     * {@code if (obj->to_a)} test that the {@code equip_learn_on_*} family uses to decide whether
-     * wearing the item can teach the to-AC rune.
+     * Returns this item's own to-hit bonus, the port of reading C's {@code obj->to_h} directly.
      *
-     * <p><b>Stub:</b> the value it needs does not exist on this class yet. C's {@code obj->to_a} is
-     * an {@code int16_t} on the instance, rolled once when the object is made and thereafter fixed;
-     * {@link #toAC} here is the {@link Random} parsed from the data file, which is the dice the roll
-     * would be made <em>from</em>. The two are not interchangeable in either direction:
+     * <p>Callers deciding whether the player has just <em>felt</em> this bonus should generally not
+     * use this — see {@link #hasStandardToH}, which knows that body armour's built-in penalty is
+     * normal and teaches nothing.
      *
-     * <ul>
-     *   <li>{@code toAC != null} would answer yes for any kind that merely declares the field.
-     *       Ego items routinely write a literal zero there ({@code combat:d10:d10:0} and friends in
-     *       {@code ego_item.txt}), and {@code Random.parseStr("0")} is a Random with base 0, not
-     *       null — so a Weapon of Extra Attacks would teach the to-AC rune to anyone who took a
-     *       blow while wearing it.</li>
-     *   <li>Rolling the dice here would answer a fresh question each call, where C asks what this
-     *       particular item rolled when it was created.</li>
-     * </ul>
-     *
-     * <p>So this returns {@code false} until the class carries a rolled to-AC of its own. That is
-     * the safe direction to be wrong in: {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnDefend}
-     * simply learns nothing from the item's own bonus, rather than learning from items that have
-     * none. The curse half of that method works today, because a curse's contribution is a plain
-     * parsed {@code int} on the definition and needs no roll.
-     *
-     * @return whether this item has a non-zero to-AC bonus; always {@code false} while stubbed
+     * @return this item's rolled to-hit bonus, which may be negative
      * @author Rowan Crowther
      */
-    public boolean isBoostedToA() {
-        // STUB method TODO: implement
-        // Needs to check to see whether a boost has occurred, not whether a random has been registered, or even rolled
-        return false;
+    public int getToHit() {
+        return toHit;
+    }
+
+    /**
+     * Returns this item's own to-damage bonus, the port of reading C's {@code obj->to_d} directly.
+     *
+     * <p>Here the raw comparison is the right one: C's learning code tests a plain
+     * {@code if (obj->to_d)}, because nothing has a to-damage figure as a matter of course the way
+     * armour has a to-hit penalty. There is no {@code hasStandardToD} to reach for.
+     *
+     * @return this item's rolled to-damage bonus, which may be negative
+     * @author Rowan Crowther
+     */
+    public int getToDam() {
+        return toDam;
+    }
+
+    /**
+     * Returns this item's own to-armour-class bonus, the port of reading C's {@code obj->to_a}
+     * directly. As with {@link #getToDam}, a plain non-zero test is the faithful comparison.
+     *
+     * @return this item's rolled to-AC bonus, which may be negative
+     * @author Rowan Crowther
+     */
+    public int getToAC() {
+        return toAC;
     }
 
     /**
@@ -1094,5 +1110,123 @@ public class ItemObject {
                     }
             }
         }
+    }
+
+    /**
+     * Learns the to-damage rune, and the curse's own rune, if any curse on this item contributes a
+     * damage change the player has just dealt. The port of C's {@code object_curses_find_to_d}
+     * ({@code obj-knowledge.c:1603}), the to-damage sibling of {@link #cursesFindToA}.
+     *
+     * <p>Structurally identical to that method, and the reasoning there applies unchanged: the
+     * figure belongs to the curse definition ({@link Curse#getCombatDam}, C's
+     * {@code curses[i].obj->to_d}) rather than to this item, the power test survives because
+     * {@link CurseData#setPower} with a zero is how a curse is removed, and the rune is resolved
+     * once above the loop so the second qualifying curse cannot relearn the first.
+     *
+     * <p>What differs is the occasion. This is reached from
+     * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnMeleeAttack} — a curse that saps
+     * damage announces itself when a blow lands softly, not when one is taken.
+     *
+     * @param player the player doing the learning; knowledge is player state, so the item is only
+     *               the thing being read
+     * @author Rowan Crowther
+     */
+    public void cursesFindToD(Player player) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D);
+        if (!curses.isEmpty()) {
+            for (CurseEntry curseEntry : curses.keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatDam() != 0) {
+                        // Learn the to-damage rune
+                        player.learnRune(rune, true);
+                        // Learn the rune of the curse that caused it
+                        player.learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Learns the to-hit rune, and the curse's own rune, if any curse on this item contributes an
+     * accuracy change the player has just felt. The port of C's {@code object_curses_find_to_h}
+     * ({@code obj-knowledge.c:1580}), the to-hit sibling of {@link #cursesFindToA}.
+     *
+     * <p>Structurally identical to that method, and the reasoning there applies unchanged — see it
+     * for why the figure is read from the curse definition ({@link Curse#getCombatToHit}, C's
+     * {@code curses[i].obj->to_h}), why the power test is kept, and why the rune is hoisted above
+     * the loop.
+     *
+     * <p>This is the one of the three reached from both attack methods,
+     * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnMeleeAttack} and
+     * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnRangedAttack}: a curse that spoils
+     * the player's aim shows itself whichever way they attack.
+     *
+     * <p>Note that the curse's contribution is judged by a plain non-zero test, with no counterpart
+     * to {@link #hasStandardToH}. That asymmetry is correct: "standard" is a fact about what a kind
+     * of item normally carries, and a curse has no normal to-hit to be measured against.
+     *
+     * @param player the player doing the learning; knowledge is player state, so the item is only
+     *               the thing being read
+     * @author Rowan Crowther
+     */
+    public void cursesFindToH(Player player) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H);
+        if (!curses.isEmpty()) {
+            for (CurseEntry curseEntry : curses.keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatToHit() != 0) {
+                        // Learn the to-hit rune
+                        player.learnRune(rune, true);
+                        // Learn the rune of the curse that caused it
+                        player.learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
+    }
+
+    /**
+     * Reports whether this item's to-hit bonus is the one it ought to have — that is, whether it is
+     * carrying nothing worth learning from. The port of C's {@code object_has_standard_to_h}
+     * ({@code obj-knowledge.c:580}).
+     *
+     * <p>The question exists because to-hit is the one combat figure an ordinary item can have
+     * without being remarkable. Body armour is heavy and gets in the way, so its kind declares a
+     * penalty as a matter of course — Chain Mail is {@code attack:1d4:-2:0} in {@code object.txt},
+     * and every hauberk ever rolled has {@code toHit == -2}. A plain {@code getToHit() != 0} would
+     * read that as evidence of enchantment and teach the to-hit rune to anyone who put one on, which
+     * is why {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnMeleeAttack} asks this
+     * instead. To-damage and to-AC need no such test: nothing has those as standard equipment, so
+     * {@link #getToDam} and {@link #getToAC} are compared against zero directly.
+     *
+     * <p><b>The three answers.</b>
+     * <ol>
+     *   <li>No kind at all → standard. C's {@code if (!obj->kind) return true;}, commented there as
+     *       a hack for curse object structures: a curse's contribution is carried on a bare
+     *       {@code struct object} that was never generated from a template, so there is no normal
+     *       value to compare against and the honest answer is "nothing unusual here".</li>
+     *   <li>Body armour whose kind declares a <em>fixed</em> to-hit → standard iff it still equals
+     *       that fixed value. The {@code !varies()} guard matters: if the kind rolled its penalty
+     *       from dice there is no single figure to have been expected, so the comparison would be
+     *       meaningless and C falls through to the last case rather than picking one end of the
+     *       range. {@link Random#varies} is the port of {@code randcalc_varies}, minimum against
+     *       maximum.</li>
+     *   <li>Everything else → standard iff zero. A sword has no built-in accuracy, so any figure at
+     *       all came from an ego, an artifact or a curse.</li>
+     * </ol>
+     *
+     * <p>Note this is a fact about the item, not about the player: it says what is there to be
+     * learned, and says nothing about whether the player has learned it. That second question is
+     * {@link KnownObject#toHIsKnown}.
+     *
+     * @return whether this item's to-hit bonus is the unremarkable one for its kind
+     * @author Rowan Crowther
+     */
+    public boolean hasStandardToH() {
+        if (kind == null) return true;
+
+        if (tValue.isBodyArmour() && !kind.getToH().varies())
+            return toHit == kind.getToH().getBase();
+        else
+            return toHit == 0;
     }
 }

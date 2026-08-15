@@ -944,7 +944,7 @@ public class GameWorld {
                 player.expLose(damage / 10, false);
             }
 
-            ObjectUtils.equipLearnFlag(player, ObjectFlag.OF_DRAIN_EXP);
+            player.equipLearnFlag(ObjectFlag.OF_DRAIN_EXP);
         }
 
         // Recharge activatable objects and rods

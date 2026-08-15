@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
@@ -1411,9 +1412,9 @@ public class Player {
     }
 
     /**
-     * Learns the to-AC rune from whatever the player is wearing, on the occasion of being attacked.
-     * The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c:1970}), the first of the
-     * {@code equip_learn_*} family and the model for the rest.
+     * Learns the to-AC rune from whatever the player is wearing, on the occasion of being
+     * attacked. The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c:1970}), the
+     * first of the {@code equip_learn_*} family and the model for the rest.
      *
      * <p>The premise is that a property announces itself when it does its job. A blow that lands
      * less heavily than it should have is evidence that something is adding to the armour class,
@@ -1445,6 +1446,9 @@ public class Player {
      *
      * <p>The shape branch drops C's {@code lookup_player_shape(p->shape->name)}, which re-fetches by
      * name the definition {@code p->shape} already points at.
+     *
+     * <p>Function equipLearnOnDefend coded before 260815, commented in full before 260815, updated on
+     * 260815 when the item's own bonus arm stopped being a stub.
      */
     public void equipLearnOnDefend() {
         if (itemKnowledge.toAIsKnown()) return;
@@ -1488,10 +1492,14 @@ public class Player {
      * {@link KnownObject#toHIsKnown} has nothing left to gain, and the shape branch at the end is
      * therefore reachable only by a player carrying nothing that could teach it.
      *
-     * <p><b>Outstanding:</b> the item's own bonus is tested with {@code hasStandardToH()}, where C
-     * asks {@code !object_has_standard_to_h(obj)} — the negation is missing, so the rune is learned
-     * from every unremarkable item and from nothing else. Compare
-     * {@link #equipLearnOnMeleeAttack}, which has it.
+     * <p>The item's own bonus goes through {@link ItemObject#hasStandardToH} rather than a non-zero
+     * test on the figure, exactly as {@link #equipLearnOnMeleeAttack} does — C calls the same
+     * predicate from both. Body armour carries a to-hit penalty as standard equipment, so a plain
+     * {@code getToHit() != 0} would have every archer in a hauberk learning the rune from their
+     * armour.
+     *
+     * <p>Function equipLearnOnRangedAttack coded on 260815, commented in full on 260815,
+     * updated on 260815 to test the predicate the right way round.
      */
     public void equipLearnOnRangedAttack() {
         if (itemKnowledge.toHIsKnown()) return;
@@ -1500,7 +1508,7 @@ public class Player {
             ItemObject slotObject = slot.getItem();
             if (slotObject == null || slot.getType() == EquipmentSlotsEnum.EQUIP_WEAPON
                     || slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
-            if (slotObject.hasStandardToH()) {
+            if (!slotObject.hasStandardToH()) {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
             }
             slotObject.cursesFindToH(this);
@@ -1514,8 +1522,8 @@ public class Player {
     }
 
     /**
-     * Learns the to-hit and to-damage runes from whatever the player is wearing, on the occasion of
-     * striking a blow. The port of C's {@code equip_learn_on_melee_attack}
+     * Learns the to-hit and to-damage runes from whatever the player is wearing, on the occasion
+     * of striking a blow. The port of C's {@code equip_learn_on_melee_attack}
      * ({@code obj-knowledge.c:2039}), the largest of the {@code equip_learn_*} family because it is
      * the only one that pursues two runes at once.
      *
@@ -1541,6 +1549,8 @@ public class Player {
      *
      * <p>The shape branch tests {@link PlayerShape#getToHit} and {@link PlayerShape#getToDam}
      * independently rather than as alternatives, since a shape may well grant both.
+     *
+     * <p>Function equipLearnOnMeleeAttack coded on 260815, commented in full on 260815.
      */
     public void equipLearnOnMeleeAttack() {
         if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
@@ -1565,5 +1575,110 @@ public class Player {
                 learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
             }
         }
+    }
+
+    /**
+     * Learns one named object flag from whatever the player is wearing, on the occasion of that
+     * flag having just done something. The port of C's {@code equip_learn_flag}
+     * ({@code obj-knowledge.c:2084}), and the busiest member of the family — upstream calls it from
+     * some thirty places, each naming the flag its own event could have revealed: {@code OF_AFRAID}
+     * on failing to attack, {@code OF_FEATHER} on a fall, {@code OF_HOLD_LIFE} on a drain,
+     * {@code OF_TRAP_IMMUNE} on a trap that did not fire.
+     *
+     * <p><b>Unlike its siblings, this one does not stop early.</b> The {@code equip_learn_on_*}
+     * methods return the moment their rune is known, because a second slot cannot teach the same
+     * thing twice. Here the walk always runs to the end of the body, and the reason is the
+     * {@code else} branch: every slot has bookkeeping to do whether or not anything was learned, so
+     * there is nothing to be saved by leaving early.
+     *
+     * <p><b>Three things happen per slot, and the first two are alternatives.</b>
+     *
+     * <ol>
+     *   <li><b>The item has the flag.</b> If the player cannot yet read it, the flag announces
+     *       itself — {@link ItemObject#description} names the item, {@link ItemObject#flagMessage}
+     *       delivers the property's own wording, and the rune is learned. The inner
+     *       {@link KnownObject#flagIsKnown} guard is what keeps a player wearing three items with
+     *       the same flag from being told about it three times.</li>
+     *   <li><b>The item does not have the flag.</b> Then its absence is itself worth recording, but
+     *       only while there is anything left to learn about the item: an item that is not yet
+     *       {@link ItemObject#isFullyKnown} gets the flag switched on in its known set, marking that
+     *       it has had its chance to display the property and did not. This is how an item is
+     *       identified by being used rather than examined — enough events rule out enough
+     *       properties, and what remains is the item.</li>
+     *   <li><b>Either way, the curses are asked.</b> The flag may be riding on a curse rather than
+     *       on the item, which is a different question from both of the above, so
+     *       {@link ItemObject#cursesFindFlags} runs unconditionally. It takes a set rather than a
+     *       single flag because its other callers pass real masks; the one-element set built here is
+     *       C's {@code f}, assembled at the top of {@code equip_learn_flag} for exactly this
+     *       purpose.</li>
+     * </ol>
+     *
+     * <p>The leading guard is C's {@code if (!flag) return;}. C's flag is an index into the flag
+     * table and its zero is {@link ObjectFlag#OF_NONE}, so the enum equivalent has to name that
+     * sentinel rather than test for null — {@link ObjectFlag#OF_MAX} is rejected on the same
+     * grounds, being the other end-marker and no more a real flag than the first.
+     *
+     * <p>As elsewhere in the family, C's {@code assert(obj->known)} has no counterpart; the null it
+     * asserts against is handled where it would actually be dereferenced, in
+     * {@link ItemObject#getKnownFlags}. See {@link #equipLearnOnDefend} for the reasoning.
+     *
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so both this method's
+     * message and the one {@link ItemObject#cursesFindFlags} sends name the item with a
+     * placeholder.
+     *
+     * <p>Function equipLearnFlag coded on 260815, commented in full on 260815, updated on 260815
+     * once the curse arm stopped being a stub.
+     *
+     * @param flag the flag whose moment this is; ignored if null or a sentinel
+     */
+    public void equipLearnFlag(ObjectFlag flag) {
+        if (flag == null || flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) return;
+        for (EquipSlot slot : body.getSlots()) {
+            ItemObject slotObject = slot.getItem();
+            if (slotObject == null) continue;
+            if (slotObject.hasFlag(flag)) {
+                if (!itemKnowledge.flagIsKnown(flag)) {
+                    Flag<ObjectDescription> descriptionMode = new Flag<>(ObjectDescription.class);
+                    descriptionMode.on(ObjectDescription.ODESC_BASE);
+
+                    String objDesc = slotObject.description(descriptionMode, this);
+                    slotObject.flagMessage(flag, objDesc);
+                    learnRune(Rune.runeIndex(flag), true);
+                }
+            } else if (!slotObject.isFullyKnown()) {
+                Flag<ObjectFlag> knownFlags = slotObject.getKnownFlags();
+                if (knownFlags != null)
+                    knownFlags.on(flag);
+            }
+
+            Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+            flags.on(flag);
+
+            slotObject.cursesFindFlags(this, flags);
+        }
+    }
+
+    /**
+     * Reports whether the player can already read the given object flag — the port of C's
+     * {@code of_has(p->obj_k->flags, flag)}.
+     *
+     * <p>This is knowledge, not equipment. It asks nothing about what the player is wearing: once
+     * the rune for a flag has been learned it is legible on every item that carries it, now and in
+     * future. The companion question — does <em>this</em> item have the flag — is
+     * {@link ItemObject#hasFlag}, and the two are played against each other throughout the learning
+     * code.
+     *
+     * <p>It exists as a method on {@link Player} because the flag-learning that needs it lives on
+     * {@link ItemObject}, and an item has no business reaching into {@code itemKnowledge}. The same
+     * reasoning puts {@link #learnRune} where it is: knowledge is the player's, so an item asks
+     * rather than writes. {@link ItemObject#cursesFindFlags} is the caller.
+     *
+     * <p>Function hasKnownFlag coded on 260815, commented in full on 260815.
+     *
+     * @param testSubject the flag to ask about
+     * @return whether the player has learned that flag's rune
+     */
+    public boolean hasKnownFlag(ObjectFlag testSubject) {
+        return itemKnowledge.flagIsKnown(testSubject);
     }
 }

@@ -728,6 +728,8 @@ public class ObjectKind {
      * an item's settled to-hit against {@link Random#getBase} here to decide whether the item has
      * drifted from what its kind prescribes.
      *
+     * <p>Function getToH coded on 260815, commented in full on 260815.
+     *
      * @return this kind's to-hit dice
      * @author Rowan Crowther
      */

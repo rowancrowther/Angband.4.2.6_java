@@ -208,4 +208,8 @@ public class ObjectProperty {
     public String getName() {
         return name;
     }
+
+    public String getNoticeMessage() {
+        return message;
+    }
 }

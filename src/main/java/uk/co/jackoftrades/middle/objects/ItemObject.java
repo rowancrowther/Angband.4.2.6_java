@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.numerics.Random;
@@ -39,10 +40,7 @@ import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
 
@@ -178,6 +176,9 @@ public class ItemObject {
      * and every suit rolled from it gets its own figure. By the time an item exists this is a
      * settled number, so reading it is a plain field access and never a fresh roll.
      *
+     * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
+     * Commented in full on 260815.
+     *
      * @author Rowan Crowther
      */
     private int toAC;
@@ -185,16 +186,22 @@ public class ItemObject {
      * This item's own to-damage bonus, rolled at generation. C's {@code obj->to_d}. See
      * {@link #toAC} for why the instance holds a number and the kind holds dice.
      *
+     * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
+     * Commented in full on 260815.
+     *
      * @author Rowan Crowther
      */
     private int toDam;
     /**
-     * This item's own to-hit bonus, rolled at generation. C's {@code obj->to_h}. See {@link #toAC}
-     * for why the instance holds a number and the kind holds dice.
+     * This item's own to-hit bonus, rolled at generation. C's {@code obj->to_h}. See
+     * {@link #toAC} for why the instance holds a number and the kind holds dice.
      *
      * <p>Unlike the other two, a non-zero value here does not by itself mean the item is doing
      * anything unusual — body armour carries a to-hit penalty from its kind. {@link #hasStandardToH}
      * is the test that knows the difference.
+     *
+     * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
+     * Commented in full on 260815.
      *
      * @author Rowan Crowther
      */
@@ -545,8 +552,8 @@ public class ItemObject {
         } else if (tVal.canHaveCharges() || tVal.isMoney()) {
             return this.pValue + itm2.pValue <= GameConstants.MAX_PVAL;
         } else if (tVal.isWeapon() || tVal.isArmour() || tVal.isJewelry() || tVal.isLight()) {
-            boolean thisKnown = fullyKnown();
-            boolean itm2Known = itm2.fullyKnown();
+            boolean thisKnown = isFullyKnown();
+            boolean itm2Known = itm2.isFullyKnown();
 
             // Identical values
             if (this.normalAC != itm2.normalAC) return false;
@@ -580,11 +587,26 @@ public class ItemObject {
     }
 
     /**
-     * Checks to see whether this object is known fully
+     * Checks whether the player knows everything there is to know about this object — the port of
+     * C's {@code object_fully_known} ({@code obj-knowledge.c}).
+     *
+     * <p>Two questions, both of which must answer yes: every rune on the item has been learned, and
+     * its effect is known. They are separate because they are learned by different means — runes by
+     * the property doing its job, an effect by using the item — so an item can easily be complete on
+     * one count and not the other.
+     *
+     * <p>Its role in {@link uk.co.jackoftrades.middle.player.Player#equipLearnFlag} is the
+     * interesting one, and it is a negative: an item that is <em>not</em> yet fully known gets a
+     * flag switched on in its known set to record that the flag was ruled out. Once the item is
+     * fully known there is nothing left to rule out, so the bookkeeping stops.
+     *
+     * <p>Function isFullyKnown coded before 260815 as the private {@code fullyKnown}, made public on
+     * 260815 when a second copy of it was folded back in. Commented in full on 260815.
      *
      * @return true if the player has full knowledge of this object
+     * @author Rowan Crowther
      */
-    private boolean fullyKnown() {
+    public boolean isFullyKnown() {
         if (!runesKnown()) return false;
 
         return effectIsKnown();
@@ -1009,6 +1031,9 @@ public class ItemObject {
      * use this — see {@link #hasStandardToH}, which knows that body armour's built-in penalty is
      * normal and teaches nothing.
      *
+     * <p>Function getToHit coded on 260815, replacing the stubbed {@code isBoostedToH}. Commented in
+     * full on 260815.
+     *
      * @return this item's rolled to-hit bonus, which may be negative
      * @author Rowan Crowther
      */
@@ -1017,11 +1042,15 @@ public class ItemObject {
     }
 
     /**
-     * Returns this item's own to-damage bonus, the port of reading C's {@code obj->to_d} directly.
+     * Returns this item's own to-damage bonus, the port of reading C's {@code obj->to_d}
+     * directly.
      *
      * <p>Here the raw comparison is the right one: C's learning code tests a plain
      * {@code if (obj->to_d)}, because nothing has a to-damage figure as a matter of course the way
      * armour has a to-hit penalty. There is no {@code hasStandardToD} to reach for.
+     *
+     * <p>Function getToDam coded on 260815, replacing the stubbed {@code isBoostedToD}. Commented in
+     * full on 260815.
      *
      * @return this item's rolled to-damage bonus, which may be negative
      * @author Rowan Crowther
@@ -1033,6 +1062,9 @@ public class ItemObject {
     /**
      * Returns this item's own to-armour-class bonus, the port of reading C's {@code obj->to_a}
      * directly. As with {@link #getToDam}, a plain non-zero test is the faithful comparison.
+     *
+     * <p>Function getToAC coded on 260815, replacing the stubbed {@code isBoostedToA}. Commented in
+     * full on 260815.
      *
      * @return this item's rolled to-AC bonus, which may be negative
      * @author Rowan Crowther
@@ -1093,6 +1125,8 @@ public class ItemObject {
      * the previous curse instead of the to-AC rune — harmless there only because the to-AC rune is
      * already known by that point. Hoisting the lookup out makes the bug unexpressible.
      *
+     * <p>Function cursesFindToA coded before 260815, commented in full before 260815.
+     *
      * @param player the player doing the learning; knowledge is player state, so the item is only
      *               the thing being read
      * @author Rowan Crowther
@@ -1113,8 +1147,8 @@ public class ItemObject {
     }
 
     /**
-     * Learns the to-damage rune, and the curse's own rune, if any curse on this item contributes a
-     * damage change the player has just dealt. The port of C's {@code object_curses_find_to_d}
+     * Learns the to-damage rune, and the curse's own rune, if any curse on this item contributes
+     * a damage change the player has just dealt. The port of C's {@code object_curses_find_to_d}
      * ({@code obj-knowledge.c:1603}), the to-damage sibling of {@link #cursesFindToA}.
      *
      * <p>Structurally identical to that method, and the reasoning there applies unchanged: the
@@ -1126,6 +1160,8 @@ public class ItemObject {
      * <p>What differs is the occasion. This is reached from
      * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnMeleeAttack} — a curse that saps
      * damage announces itself when a blow lands softly, not when one is taken.
+     *
+     * <p>Function cursesFindToD coded on 260815, commented in full on 260815.
      *
      * @param player the player doing the learning; knowledge is player state, so the item is only
      *               the thing being read
@@ -1165,6 +1201,8 @@ public class ItemObject {
      * to {@link #hasStandardToH}. That asymmetry is correct: "standard" is a fact about what a kind
      * of item normally carries, and a curse has no normal to-hit to be measured against.
      *
+     * <p>Function cursesFindToH coded on 260815, commented in full on 260815.
+     *
      * @param player the player doing the learning; knowledge is player state, so the item is only
      *               the thing being read
      * @author Rowan Crowther
@@ -1185,8 +1223,8 @@ public class ItemObject {
     }
 
     /**
-     * Reports whether this item's to-hit bonus is the one it ought to have — that is, whether it is
-     * carrying nothing worth learning from. The port of C's {@code object_has_standard_to_h}
+     * Reports whether this item's to-hit bonus is the one it ought to have — that is, whether it
+     * is carrying nothing worth learning from. The port of C's {@code object_has_standard_to_h}
      * ({@code obj-knowledge.c:580}).
      *
      * <p>The question exists because to-hit is the one combat figure an ordinary item can have
@@ -1218,6 +1256,8 @@ public class ItemObject {
      * learned, and says nothing about whether the player has learned it. That second question is
      * {@link KnownObject#toHIsKnown}.
      *
+     * <p>Function hasStandardToH coded on 260815, commented in full on 260815.
+     *
      * @return whether this item's to-hit bonus is the unremarkable one for its kind
      * @author Rowan Crowther
      */
@@ -1228,5 +1268,236 @@ public class ItemObject {
             return toHit == kind.getToH().getBase();
         else
             return toHit == 0;
+    }
+
+    /**
+     * Reports whether this item carries the given object flag, the port of C's
+     * {@code of_has(obj->flags, flag)}.
+     *
+     * <p>This asks what the item <em>is</em>, not what the player knows about it. The two are
+     * separate questions throughout the knowledge code and are deliberately kept in separate
+     * places: the flags an item has live here, while the flags the player can read live on
+     * {@link KnownObject} and are reached through {@link #getKnownFlags}. C's
+     * {@code equip_learn_flag} plays the two against each other — an item that has the flag may
+     * teach it, an item that does not gets the flag marked on its known counterpart as having been
+     * ruled out.
+     *
+     * <p>Function hasFlag coded on 260815, commented in full on 260815.
+     *
+     * @param flag the flag to test for
+     * @return whether this item carries it
+     * @author Rowan Crowther
+     */
+    public boolean hasFlag(ObjectFlag flag) {
+        return flags.has(flag);
+    }
+
+    /**
+     * Builds the player-facing name of this item at the requested level of detail — the port of
+     * C's {@code object_desc} ({@code obj-desc.c}), which assembles a name from the kind, the
+     * flavour, the player's knowledge of it, the stack count and the inscription according to the
+     * {@link ObjectDescription} flags it is given.
+     *
+     * <p><b>Stub:</b> returns the literal {@code {DESCRIPTION_TAG}} until the description subsystem
+     * is ported. The placeholder is deliberately conspicuous rather than empty, because the return
+     * value is not inspected by its callers — {@link #flagMessage} substitutes it straight into a
+     * message and shows it to the player. An empty string would produce "Your  glows." and read as
+     * a spacing bug; the tag reads as a thing not yet built.
+     *
+     * <p>Function description coded on 260815, commented in full on 260815.
+     *
+     * @param descriptionFlags how much of the name to build, C's {@code mode}
+     * @param player           the player whose knowledge decides what may appear in the name
+     * @return the item's name; the placeholder tag while stubbed
+     * @author Rowan Crowther
+     */
+    public String description(Flag<ObjectDescription> descriptionFlags, Player player) {
+        // Stub function
+        // TODO: Implement
+        return "{DESCRIPTION_TAG}";
+    }
+
+    /**
+     * Announces that a flag has shown itself on a named item — the port of C's
+     * {@code flag_message} ({@code obj-properties.c:86}). Called at the moment of noticing, so the
+     * message describes an event rather than a fact: the player did not read the property off the
+     * item, the property did something and gave itself away.
+     *
+     * <p>The wording belongs to the property, not to this class. {@code object_property.txt} gives
+     * each flag a {@code msg:} line — {@code Your {name} glows.} and the like — and the
+     * {@code {name}} tag is where the item's description goes. C walks the string looking for
+     * braces and silently drops any tag it does not recognise; a plain replace is equivalent here
+     * because {@code {name}} is the only tag the data file uses.
+     *
+     * <p><b>Two ways to have no message, and they are not the same.</b> A property that is missing
+     * from {@code object_property.txt} altogether is a data error and is logged as one, with C's
+     * distinction preserved between a flag index that could never be valid ({@link ObjectFlag#OF_NONE},
+     * {@link ObjectFlag#OF_MAX}) and a real flag that simply has no entry. A property that exists
+     * but declares no {@code msg:} is not an error at all — most flags are learned silently — and
+     * returns without a word.
+     *
+     * <p>Function flagMessage coded on 260815, commented in full on 260815.
+     *
+     * @param flag the flag that has just shown itself
+     * @param name the item's description, as {@link #description} builds it
+     * @author Rowan Crowther
+     */
+    public void flagMessage(ObjectFlag flag, String name) {
+        ObjectPropertyTypeWrapper payload = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag);
+        ObjectProperty property = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_FLAG, payload);
+
+        if (property == null) {
+            if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX)
+                logger.error("Invalid flag index, " + flag.toString() + " passed to ItemObject.flagMessage().");
+            else
+                logger.error("Flag (" + flag.toString() + ") has been passed to ItemObject.flagMessage() " +
+                        "but no entry in object_property.txt.");
+
+            return;
+        }
+        String toSend = property.getNoticeMessage();
+        if (toSend == null) return;
+        toSend = toSend.replace("{name}", name);
+        Message.message(toSend);
+    }
+
+    /**
+     * Returns the live flag set, not a copy — C hands out {@code obj->flags} as an array on the
+     * struct and callers write to it in place.
+     *
+     * <p>Package-private on purpose. The only caller is {@link #getKnownFlags}, reaching across to
+     * the known counterpart of the same class; outside this class the flags an item has are read
+     * through {@link #hasFlag}, and nothing outside has business writing them.
+     *
+     * <p>Function getObjectFlags coded on 260815, commented in full on 260815.
+     *
+     * @return this item's flags, shared with this instance
+     * @author Rowan Crowther
+     */
+    Flag<ObjectFlag> getObjectFlags() {
+        return flags;
+    }
+
+    /**
+     * Returns the flag set on this item's known counterpart — the flags the player can currently
+     * read — as C reaches {@code obj->known->flags}. Live, not a copy, because the point of it is to
+     * be written to: {@code equip_learn_flag} switches a flag on here to record that the item has
+     * had its chance to display that property and did not.
+     *
+     * <p>That is a subtle piece of bookkeeping. A flag being on the known set means the player has
+     * settled the question, which includes settling it in the negative — the item was worn through
+     * an event that would have revealed the flag, so its absence is now knowledge rather than
+     * ignorance. It is how an item becomes fully identified by being used rather than by being
+     * examined.
+     *
+     * <p>Answers {@code null} rather than throwing when there is no known counterpart. C is
+     * entitled to dereference {@code obj->known} straight away because {@code assert(obj->known)}
+     * has just run; the port drops those asserts (see
+     * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnDefend}), so the null has to be
+     * expressible instead. Every live item has a counterpart from the moment it is created, so a
+     * null here means a fixture or a generation path that skipped it — see {@link #isKnown} for why
+     * the presence of that companion is not the same as the item being identified.
+     *
+     * <p>Function getKnownFlags coded on 260815, commented in full on 260815.
+     *
+     * @return the known counterpart's flags, or {@code null} if this item has no counterpart
+     * @author Rowan Crowther
+     */
+    public Flag<ObjectFlag> getKnownFlags() {
+        if (known == null) return null;
+
+        return known.getObjectFlags();
+    }
+
+    /**
+     * Learns any of the given flags that a curse on this item has just betrayed, together with
+     * the rune of the curse betraying them — the port of C's {@code object_curses_find_flags}
+     * ({@code obj-knowledge.c:1634}), the flag member of the same family as {@link #cursesFindToA}
+     * and its two siblings.
+     *
+     * <p><b>Why this one takes a set where the others take nothing.</b> The to-AC, to-hit and
+     * to-damage finders each pursue a single fixed property, so the caller has nothing to say. Flags
+     * are a population, and the caller decides which of them this occasion could plausibly have
+     * revealed. C passes that as a {@code bitflag *test_flags} and intersects it with the curse's
+     * own flags, keeping only what is in both. Three call sites, three different sets: a one-element
+     * set built on the spot by {@code equip_learn_flag}, the {@code obvious_mask} of everything a
+     * wield could show, and the {@code timed_mask} of what only prolonged wear reveals.
+     *
+     * <p>As in the sibling finders, two runes are learned per hit and not one — the flag itself, and
+     * the identity of the curse that carries it. The curse's rune is learned whether or not the flag
+     * was new, since meeting a curse is knowledge even when its effect was already understood.
+     *
+     * <p><b>The intersection is taken on a copy, and it has to be.</b> {@link Flag#inter} is
+     * {@code retainAll} — it mutates the set it is called on. The flags being intersected belong to
+     * the {@link Curse} definition parsed once from {@code curse.txt} and shared by every item
+     * carrying that curse, so intersecting them in place would permanently delete from the
+     * definition every flag this one occasion happened not to be asking about.
+     * {@link Flag#set(java.util.List)} copies element by element into a fresh set, which is what
+     * keeps the definition intact.
+     *
+     * <p><b>The curse's rune is learned inside the flag loop, not beside it.</b> That is C's
+     * placement and it is load-bearing in one direction: a curse whose flags do not meet the test
+     * set teaches nothing at all, not even its own existence, because the player has had no
+     * evidence of it. It also means a curse matching two flags learns its rune twice, which the
+     * guard inside {@link uk.co.jackoftrades.middle.player.Player#learnRune} makes harmless.
+     *
+     * <p><b>The message is conditional where the learning is not.</b> C wraps only
+     * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during character
+     * generation and loading but nothing is announced into a game that has not started. The
+     * returned {@code boolean} is C's {@code new} — true if any flag was learned that was not
+     * already known, ignored by this caller and used by the wield-time learning.
+     *
+     * <p>The per-curse guard is on {@link CurseData#getPower}, as in the three sibling finders and
+     * as C's {@code if (!obj->curses[i].power)} requires. Power is what says the curse is on the
+     * item at all — {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed
+     * entry can outlive the curse it names. C's second guard, {@code !curses[i].obj}, has no
+     * counterpart: it exists to skip the reserved index 0 of a dense array, and a map holding only
+     * the curses this item carries has no such hole.
+     *
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so the message names
+     * the item with a placeholder.
+     *
+     * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, implemented on
+     * 260815 having landed as a stub earlier the same day.
+     *
+     * @param player    the player doing the learning; knowledge is player state, so the item is only
+     *                  the thing being read
+     * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}
+     * @return whether any flag was learned that the player did not already know
+     * @author Rowan Crowther
+     */
+    public boolean cursesFindFlags(Player player, Flag<ObjectFlag> testFlags) {
+        boolean curseLearned = false;
+
+        Flag<ObjectDescription> baseDesc = new Flag<>(ObjectDescription.class);
+        baseDesc.on(ObjectDescription.ODESC_BASE);
+        String name = description(baseDesc, player);
+
+        if (curses.isEmpty()) return false;
+
+        // Only loop through the curses on the object, not the entire set of curses
+        for (CurseEntry curseEntry : curses.keySet()) {
+            if (curseEntry.curseData().getPower() == 0) continue;
+
+            Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
+            toTest.set(curseEntry.curse().getObjectFlags());
+            toTest.inter(testFlags);
+
+            for (ObjectFlag testSubject : toTest) {
+                if (!player.hasKnownFlag(testSubject)) {
+                    curseLearned = true;
+                    player.learnRune(Rune.runeIndex(testSubject), true);
+                    if (player.getPlayerUpkeep().isPlaying())
+                        flagMessage(testSubject, name);
+                }
+
+                // Learn the curse
+                Rune rune = Rune.runeIndex(curseEntry.curse());
+                if (rune != null)
+                    player.learnRune(rune, true);
+            }
+        }
+
+        return curseLearned;
     }
 }

@@ -48,6 +48,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * constructor would work, but it takes thirty-odd arguments to say one thing, and a test that reads
  * as a wall of zeroes hides which of them the case turns on.
  *
+ * <p>Class ItemObjectStandardToHTest coded on 260815, commented in full on 260815.
+ *
  * @author ClaudeCode
  */
 class ItemObjectStandardToHTest {

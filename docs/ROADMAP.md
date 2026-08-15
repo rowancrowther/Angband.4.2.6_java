@@ -149,6 +149,10 @@ Stores, save, load, die, score. C: `store.c`, `save.c`, `load.c`, `savefile.c`, 
 
 *Look-back log — one line per finished stretch, newest first:*
 
+- 2026-08-14: `p->obj_k` split off as `KnownObject` (twelve fields, not a whole `struct object`);
+  `player_learn_rune` ported as a record-pattern switch over the sealed `RuneVariety`; brand/slay equivalence-class
+  fan-out found missing and fixed; Javadoc over `ElementInfo`, `ItemObject`,
+  `KnownObject`, `Player`; 112 tests written (suite 1808, green). Precis: `docs/precis/260814.md`.
 - 2026-08-08: `init_rune` ported and verified (99 runes, every count matches C); rune types designed (sealed
   `RuneVariety`); 66 tests written; found real bug in
   `lookupObjectProperty` (stat/mod); comment pass over 14 files.

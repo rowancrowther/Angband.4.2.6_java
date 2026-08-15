@@ -148,9 +148,57 @@ public class PlayerRace {
     }
 
     /**
+     * The port of C's {@code race->name} — the name as it appears in {@code p_race.txt} and on the
+     * character sheet. Races are matched by {@code rIndex} rather than by name, so this is for
+     * display; it is not an identity.
+     *
      * @return the race's display name
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Whether the race has an innate stake in an element, and so starts the game already able to
+     * read that element's rune. The port of the test C makes inline in {@code player_learn_innate}
+     * ({@code obj-knowledge.c:1450}):
+     *
+     * <pre>{@code
+     * if (p->race->el_info[element].res_level != 0)
+     * }</pre>
+     *
+     * <p><b>Non-zero, not positive.</b> A vulnerability is as learnable as a resistance — the rune
+     * is the element's, not the sign's, and a character who burns easily has learned quite as much
+     * about fire as one who does not. Testing {@code > 0} would leave a vulnerable race unable to
+     * read a rune it plainly knows.
+     *
+     * <p>C reads a full {@code el_info[ELEM_MAX]} array, where an element the race file never
+     * mentions is simply zero. This port's map is <em>sparse</em>: the assembler only creates an
+     * entry for a {@code RES_} line actually present in the data, so most elements are absent for
+     * most races, and absent has to mean the same as zero.
+     *
+     * @param element the element to ask about
+     * @return true if the race's data gives this element a non-zero resistance level
+     */
+    public boolean getResistKnowledge(ElementEnum element) {
+        ElementInfo info = resists.get(element);
+        return (info != null && info.getResLevel() != 0);
+    }
+
+    /**
+     * Whether the race confers an object flag innately, and so starts the game already able to read
+     * that flag's rune. The flag counterpart of {@link #getResistKnowledge(ElementEnum)}, and the
+     * port of C's membership test on {@code p->race->flags}.
+     *
+     * <p>C never asks this question one flag at a time — {@code player_learn_innate} walks the set
+     * bits directly with {@code of_next(p->race->flags, FLAG_START)}. Asking per flag lets the
+     * caller drive the loop from {@link ObjectFlag} instead, which reaches the same set at the cost
+     * of visiting the flags the race does not have.
+     *
+     * @param objectFlag the flag to ask about
+     * @return true if the race confers this flag
+     */
+    public boolean getObjectFlagKnowledge(ObjectFlag objectFlag) {
+        return oFlags.has(objectFlag);
     }
 }

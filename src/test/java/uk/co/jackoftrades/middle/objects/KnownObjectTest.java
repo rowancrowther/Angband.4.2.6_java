@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>The fixtures are built here rather than read from {@code lib/gamedata}, because what is under
  * test is the grouping rule and not the data: a hand-built pair of same-named brands states the
- * case being checked in a way that {@code brand.txt} does not. {@link RuneInitTest} covers the real
+ * case being checked in a way that {@code brand.txt} does not. {@code RuneInitTest} covers the real
  * files from the other direction. The registry is seeded through its public setters and put back in
  * {@link #restore()}, since it holds what C keeps in file-scope globals and is process-wide.
  *

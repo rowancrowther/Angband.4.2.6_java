@@ -1047,13 +1047,19 @@ public class Player {
      *
      * <p>One of the wrapper functions that {@link #learnRune} exists to serve, and it shows the
      * shape they all take: guard on already-knowing, resolve the property to its rune, learn the
-     * rune, update. The resolution step is the one that cannot be skipped — a brand belongs to a
-     * group of same-named brands sharing a single rune, and {@link Rune#runeIndex(Brand)} returns
-     * the rune for the group rather than for the particular strength passed in.
+     * rune. The resolution step is the one that cannot be skipped — a brand belongs to a group of
+     * same-named brands sharing a single rune, and {@link Rune#runeIndex(Brand)} returns the rune
+     * for the group rather than for the particular strength passed in. Propagating the new
+     * knowledge is not this method's job; {@link #learnRune} has done it by the time it returns.
      *
-     * <p>The second {@link #updateObjectKnowledge()} is C's, not an oversight: {@link #learnRune}
-     * has already called it on any path that learned something, and
-     * {@code player_learn_brand} calls it again regardless.
+     * <p>C's {@code player_learn_brand} closes with a second
+     * {@code update_player_object_knowledge}, which this port deliberately drops. It cannot do
+     * anything: the guard above means the rune is unknown whenever the call is reached — knowledge
+     * of a brand and of its rune move together, since {@link KnownObject#learnBrand} marks every
+     * same-named brand at once — so {@link #learnRune} always learns, and always updates. The
+     * duplicate is boilerplate copied from {@code player_learn_flag}, which has no guard and so is
+     * the one wrapper where the trailing call can be the only one that runs. Even there it changes
+     * nothing, because it recomputes identical values.
      *
      * @param brand any brand of the wanted kind, at any strength
      */
@@ -1062,7 +1068,30 @@ public class Player {
             Rune rune = Rune.runeIndex(brand);
 
             learnRune(rune, true);
-            updateObjectKnowledge();
+        }
+    }
+
+    /**
+     * Records that the player has learned to recognise a slay, typically because they just saw it
+     * bite. The port of C's {@code player_learn_slay}, and the sibling of {@link #learnBrand}.
+     *
+     * <p>Same three steps — guard on already-knowing, resolve the property to its rune, learn the
+     * rune — but the equivalence the resolution walks is a different one.
+     * {@link Rune#runeIndex(Slay)} groups by {@link Slay#sameMonsterSlain}, following C's
+     * {@code same_monsters_slain}, and <em>not</em> by name as brands do. The distinction is real:
+     * two slays can share the name "evil" and kill different monsters, because one carries a
+     * monster base and the other does not. Grouping those together would teach the player a rune
+     * they have seen no evidence for.
+     *
+     * <p>As with {@link #learnBrand}, C's trailing {@code update_player_object_knowledge} is
+     * dropped — the guard means {@link #learnRune} always learns, and so always updates.
+     *
+     * @param slay any slay of the wanted kind, at any strength
+     */
+    public void learnSlay(Slay slay) {
+        if (!knowsSlay(slay)) {
+            Rune rune = Rune.runeIndex(slay);
+            learnRune(rune, true);
         }
     }
 
@@ -1079,6 +1108,128 @@ public class Player {
     }
 
     /**
+     * Records that the player has learned to recognise an object flag. The port of C's
+     * {@code player_learn_flag}, whose one caller is the failed uncursing that leaves an item
+     * {@code OF_FRAGILE} ({@code effect-handler-general.c:203}).
+     *
+     * <p>Flags need no group resolution — each has its own rune, so unlike {@link #learnBrand} and
+     * {@link #learnSlay} there is no equivalence class for {@link Rune#runeIndex(ObjectFlag)} to
+     * find. The lookup can still answer {@code null}, because not every flag is a learnable
+     * property: {@code init_rune} skips the placeholder subtypes, the ones describing the object
+     * rather than the player, and the curse-only ones. {@link #learnRune} logs that and returns,
+     * where C hands {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
+     *
+     * <p><b>The already-known guard is this port's, not C's.</b> C's version is unguarded, and
+     * relies on the flag arm of {@code player_learn_rune} using {@code of_on}, which reports
+     * whether it changed anything — so a flag learned twice is silently not announced twice. The
+     * guard here changes no answer (it is the same test one call deeper) and buys consistency with
+     * the other wrappers. It also makes C's trailing {@code update_player_object_knowledge}
+     * unreachable, which matters only in that this was the single wrapper where that call could
+     * have been the one that ran; it recomputed identical values, so nothing is lost.
+     *
+     * @param flag the flag now readable
+     */
+    public void learnFlag(@NotNull ObjectFlag flag) {
+        if (itemKnowledge.flagIsKnown(flag)) return;
+
+        learnRune(Rune.runeIndex(flag), true);
+    }
+
+    /**
+     * Whether the player can read a rune. The port of C's {@code player_knows_rune}
+     * ({@code obj-knowledge.c:257-306}), and the mirror image of {@link #learnRune}: the same seven
+     * varieties, each asking {@link #itemKnowledge} the question the corresponding {@code learn}
+     * arm answers.
+     *
+     * <p>This is the method that decided {@link KnownObject}'s shape. C's version is a seven-armed
+     * switch in which every arm reads one field of {@code p->obj_k}, so between them the arms
+     * enumerate everything a knowledge object has to hold. A port of {@code obj_k} is the right
+     * size exactly when it can serve all seven with nothing left over — which is why the twelve
+     * fields, and not a whole {@code struct object}, are enough.
+     *
+     * <p>Two arms are worth reading against C rather than taken on trust. The curse arm is
+     * {@code p->obj_k->curses[index].power == 1}, where {@code power} is a severity everywhere else
+     * in the game but a 0/1 flag on the knowledge side — {@code save.c:661} writes it as
+     * {@code power ? 1 : 0} — so {@link KnownObject#curseIsKnown} answering from a boolean loses
+     * nothing. The combat arm splits three ways on {@link CombatRunes} where C compares
+     * {@code r->index} against three constants, and its {@code COMBAT_RUNE_MAX} case is the
+     * sentinel, which is a data error rather than an answer; it is logged and reported unknown.
+     *
+     * <p>No {@code default}: the switch is over the sealed {@link RuneVariety}, so the compiler
+     * proves the seven are covered. An eighth variety would be a compile error here, which is the
+     * point — a {@code default} would answer {@code false} for it and say nothing.
+     *
+     * @param rune the rune to ask about
+     * @return true if the player can read this rune
+     */
+    @NotNull
+    @Contract(pure = true)
+    @CheckReturnValue
+    public boolean knowsRune(@NotNull Rune rune) {
+        boolean known = false;
+
+        switch (rune.getVariety()) {
+            case RuneVariety.CombatKey(CombatRunes key) -> known = switch (key) {
+                case COMBAT_RUNE_TO_A -> itemKnowledge.toAIsKnown();
+                case COMBAT_RUNE_TO_D -> itemKnowledge.toDIsKnown();
+                case COMBAT_RUNE_TO_H -> itemKnowledge.toHIsKnown();
+                case COMBAT_RUNE_MAX -> {
+                    logger.warn("Combat Rune MAX encountered.");
+                    yield false;
+                }
+            };
+
+            case RuneVariety.BrandKey(Brand key) -> known = itemKnowledge.brandIsKnown(key);
+            case RuneVariety.FlagKey(ObjectFlag key, var property) -> known = itemKnowledge.flagIsKnown(key);
+            case RuneVariety.CurseKey(Curse key) -> known = itemKnowledge.curseIsKnown(key);
+            case RuneVariety.ModKey(ObjectModifier key, var property) -> known = itemKnowledge.modifierIsKnown(key);
+            case RuneVariety.ResistKey(ElementEnum key, var projection) -> known = itemKnowledge.resistanceIsKnown(key);
+            case RuneVariety.SlayKey(Slay key) -> known = itemKnowledge.slayIsKnown(key);
+        }
+
+        return known;
+    }
+
+    /**
+     * The port of C's {@code player_knows_slay}, a bare array lookup. As with
+     * {@link #knowsBrand}, it asks about the exact slay given rather than its group, and gets the
+     * same answer either way: {@link KnownObject#learnSlay} marks every slay that kills the same
+     * monsters, so the cost of grouping is paid once on the learning side and this stays cheap.
+     *
+     * @param slay the slay to ask about
+     * @return true if the player recognises this slay
+     */
+    public boolean knowsSlay(@NotNull Slay slay) {
+        return itemKnowledge.slayIsKnown(slay);
+    }
+
+    /**
+     * The port of C's {@code player_knows_curse}, which reads
+     * {@code p->obj_k->curses[index].power == 1}.
+     *
+     * <p>That {@code power} is not a severity. On a real object it is one — 1 to 99 from
+     * {@code apply_curse}, deciding how strong a removal spell must be, with 100 and above meaning
+     * permanent — but on the knowledge side it only ever holds 0 or 1, because C types
+     * {@code p->obj_k} as a whole {@code struct object} and inherits {@code struct curse_data}
+     * whether it wants two integers or not. {@code player_learn_rune} writes a literal 1 and
+     * {@code save.c:661} normalises with {@code power ? 1 : 0}. So the port keeps a boolean, and
+     * the {@code == 1} has nothing to test.
+     *
+     * <p>The two meanings meet in {@code player_know_object} ({@code obj-knowledge.c:1131}), where
+     * this answer <em>gates</em> the real severity: a recognised curse shows its true power on the
+     * known copy of an object, an unrecognised one reads as zero. That is why the curse-removal
+     * menu can offer only what the player has learned.
+     *
+     * <p>Curses are never grouped, so unlike brands and slays there is no fan-out behind this.
+     *
+     * @param curse the curse to ask about
+     * @return true if the player recognises this curse
+     */
+    public boolean knowsCurse(@NotNull Curse curse) {
+        return itemKnowledge.curseIsKnown(curse);
+    }
+    
+    /**
      * Learns a single rune: marks the property it names as readable, announces it if anything was
      * genuinely new, and updates everything the player can now see. The port of C's
      * {@code player_learn_rune} ({@code src/obj-knowledge.c}), and the one place object knowledge
@@ -1093,6 +1244,15 @@ public class Player {
      * exact object handed in. Code that reaches past a wrapper and builds its own {@link Rune}
      * skips that resolution, and learns one member of a group where the game means all of them.
      * Prefer {@link #learnBrand} and its siblings; add new learning paths as further wrappers.
+     *
+     * <p><b>A wrapper does not need to call {@link #updateObjectKnowledge()}.</b> This method
+     * leaves object knowledge propagated on every path that learned anything, and that is the
+     * invariant the rest of the system is written against: most of C's callers — the
+     * {@code equip_learn_*} family, {@code object_learn_on_wield},
+     * {@code object_learn_unknown_rune}, {@code missile_learn_on_ranged_attack}, the
+     * {@code object_curses_find_*} family, {@code player_learn_all_runes} — have no update call of
+     * their own and rely entirely on this one. Only four of C's wrappers add a second, and it is
+     * redundant in each (see {@link #learnBrand}); this port omits it rather than copy it.
      *
      * <p>The switch is over a sealed interface, so the seven varieties are matched as record
      * patterns and the compiler proves the set is covered — no {@code default} arm, and no cast to
@@ -1112,7 +1272,7 @@ public class Player {
      * @param printMessage whether to announce the discovery, false for the paths that learn in
      *                     bulk and would otherwise bury the player in messages
      */
-    public void learnRune(Rune rune, boolean printMessage) {
+    void learnRune(Rune rune, boolean printMessage) {
         if (rune == null) {
             logger.warn("Rune is null on entering learnRune");
             return;
@@ -1165,13 +1325,63 @@ public class Player {
      * property of the player rather than of the item, so learning a rune changes how a sword in a
      * shop reads without the player ever having touched it.
      *
+     * <p>The work is a recomputation rather than a step, so calling this twice in a row is
+     * harmless — which is why C's habit of calling it again in the learning wrappers went
+     * unnoticed. It is not free, though: each call sweeps four populations and signals two events,
+     * so the port calls it once, from {@link #learnRune}.
+     *
      * <p><b>Stub:</b> not yet implemented, awaiting the object-knowledge runtime. Callers already
-     * invoke it in the right places, so filling it in should not need them changed. Note that
-     * calling it twice is normal rather than a mistake — {@link #learnRune} calls it, and each
-     * wrapper calls it again — which is C's arrangement and harmless because the work is a
-     * recomputation rather than a step.
+     * invoke it in the right places, so filling it in should not need them changed.
      */
     public void updateObjectKnowledge() {
         // Stub class TODO: Implement
+    }
+
+    /**
+     * Learns every rune the player's race knows from birth — the elements it resists or is
+     * vulnerable to, and the object flags it carries innately. The port of C's
+     * {@code player_learn_innate}.
+     *
+     * <p>A character does not have to find a ring of free action to know what free action feels
+     * like when it is part of their body; the point of this pass is that a race's own properties
+     * are legible to it from the start, and so are the runes naming them.
+     *
+     * <p><b>Both loops learn silently.</b> {@link #learnRune} is called with {@code printMessage}
+     * false, because this runs at birth and a dwarf does not want a message telling them they have
+     * noticed they are a dwarf. That is C's choice too, and the reason {@link #learnRune} takes the
+     * flag at all.
+     *
+     * <p>The element loop skips {@link ElementEnum#ELEM_NONE} and {@link ElementEnum#ELEM_MAX},
+     * which are sentinels rather than elements; C has no equivalent of the former and excludes the
+     * latter by bounding at {@code ELEM_MAX}. Elements above the highest one carrying a resistance
+     * rune answer {@code null} from {@link Rune#runeIndex(ElementEnum)}, which {@link #learnRune}
+     * logs and ignores — C would index {@code rune_list[-1]}, so this is a place the port is
+     * deliberately safer rather than merely different.
+     *
+     * <p>The flag loop walks all of {@link ObjectFlag} and asks the race about each, where C walks
+     * only the bits actually set, with {@code of_next}. Same set reached, more iterations.
+     *
+     * <p>C closes with {@code update_player_object_knowledge}, dropped here as in the other
+     * wrappers. The reasoning differs slightly: there is no guard to make it unreachable, but each
+     * {@link #learnRune} that learned anything has already updated, and if the race knows nothing
+     * innately then C's call recomputes a knowledge state that never changed.
+     */
+    public void learnInnate() {
+        for (ElementEnum element : ElementEnum.values()) {
+            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
+                continue;
+
+            if (race.getResistKnowledge(element)) {
+                Rune resistRune = Rune.runeIndex(element);
+                learnRune(resistRune, false);
+            }
+        }
+
+        for (ObjectFlag flag : ObjectFlag.values()) {
+            if (race.getObjectFlagKnowledge(flag)) {
+                Rune rune = Rune.runeIndex(flag);
+                learnRune(rune, false);
+            }
+        }
     }
 }

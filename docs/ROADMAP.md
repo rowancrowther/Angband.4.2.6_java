@@ -75,7 +75,7 @@ C: `obj-knowledge.c`. The current stretch. Fine detail and the 2026-08-13 audit 
 - [x] `ObjectRegistry.getRunes()` + `max_runes`
 - [x] `rune_index` → map-based lookup by `RuneVariety`
 - [x] `rune_name` / `rune_desc` → `displayName()` / `description()` on `RuneVariety`
-- [ ] Canonical-representative lookup (`player_learn_brand`/`_slay`'s scan)
+- [X] Canonical-representative lookup (`player_learn_brand`/`_slay`'s scan)
 - [ ] `player_knows_rune` and the knowledge-application half (needs player object — may defer to Chapter 5)
 
 ## Chapter 3 — A character exists

@@ -22,9 +22,13 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.MessageType;
+import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
+import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
@@ -1349,11 +1353,68 @@ public class Player {
      * unnoticed. It is not free, though: each call sweeps four populations and signals two events,
      * so the port calls it once, from {@link #learnRune}.
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the object-knowledge runtime. Callers already
-     * invoke it in the right places, so filling it in should not need them changed.
+     * <p><b>Two of the four populations are live.</b> The level and the pack are walked; stores and
+     * curse objects are not, and neither is a matter of writing the loop:
+     *
+     * <ul>
+     *   <li><b>Stores</b> wait on the shop subsystem, Chapter 8.</li>
+     *   <li><b>Curse objects</b> wait on somewhere to put the answer. C sweeps
+     *       {@code curses[i].obj}, which is the curse's properties held as a template object with a
+     *       known counterpart of its own; the port flattens those properties onto {@link Curse}
+     *       itself, which is the more accurate shape but leaves no field holding what the player has
+     *       learned about them.</li>
+     *   <li><b>Autoinscribe</b> of ground and pack waits on Chapter 4.</li>
+     * </ul>
+     *
+     * <p><b>The guards are not symmetrical, and only one of them is C's.</b> {@code if (cave)} is
+     * real and load-bearing — knowledge is updated during birth and on loading a save, before any
+     * level exists. The null test on the gear has no counterpart: C walks {@code p->gear} as a linked
+     * list, where a null head is simply an empty loop, while a null {@link java.util.ArrayList} would
+     * throw. That guard is the port paying for the container change, not copying anything.
+     *
+     * <p><b>The two signals sit outside every guard</b>, so they fire even when nothing was walked.
+     * That is C's placement and it is right: the display has to redraw on the strength of the rune
+     * just learned, whether or not any object currently in play happens to carry it.
+     *
+     * <p>The real work is delegated to {@link #knowObject}, <b>which is still a stub</b> — so this
+     * method currently visits the right objects and tells them nothing. What is finished is the
+     * shape: the populations, their order, the guards and the signals. See
+     * {@code PlayerUpdateObjectKnowledgeTest}, which observes the walk rather than its outcome for
+     * exactly that reason, and should keep passing unchanged once {@code knowObject} is written.
+     *
+     * <p>Function updateObjectKnowledge coded before 260815 as a stub, implemented as far as the
+     * available subsystems allow on 260815, commented in full on 260815.
      */
     public void updateObjectKnowledge() {
-        // Stub class TODO: Implement
+        // Know the cave objects
+        if (cave != null) {
+            for (ItemObject itemObject : cave.getObjects()) {
+                knowObject(itemObject);
+            }
+        }
+
+        // Know the player objects
+        if (gear != null) {
+            for (ItemObject itemObject : gear) {
+                knowObject(itemObject);
+            }
+        }
+
+        // Store objects
+        // TODO: Implement this branch in chapter 8
+
+        // Curse objects
+        // TODO: Implement this branch once known object on curse is understood
+
+        // Inscription
+        // TODO: Implement this branch in chapter 4
+        //if (cave != null) 
+        //    autoinscribeGround();
+        //autoinscribePack();
+
+        EventsHandler eventsBusHandler = GameEngine.getEventsBusHandler();
+        eventsBusHandler.eventSignal(GameEventType.EVENT_INVENTORY);
+        eventsBusHandler.eventSignal(GameEventType.EVENT_EQUIPMENT);
     }
 
     /**

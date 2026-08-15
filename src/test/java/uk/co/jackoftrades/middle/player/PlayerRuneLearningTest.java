@@ -50,9 +50,15 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.RuneVariety;
 
+import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
+import uk.co.jackoftrades.middle.objects.CurseData;
+import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
+
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -99,6 +105,8 @@ class PlayerRuneLearningTest {
     private static Slay evil3;
     private static Slay evil5;
     private static Curse siren;
+    private static Curse vulnerability;
+    private static Curse enveloping;
     private static ObjectProperty strengthProperty;
     private static ObjectProperty sustainProperty;
 
@@ -132,6 +140,14 @@ class PlayerRuneLearningTest {
         siren = new Curse("siren", List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
                 List.of(), List.of(), "wakes monsters", "The curse fires.");
 
+        // Two curses that change the armour class, taken from curse.txt, and one (siren) that does
+        // not. The signs are opposite on purpose: the rune names the enchantment, not its direction,
+        // so a curse that makes armour worse teaches it exactly as one that makes it better does.
+        vulnerability = new Curse("vulnerability", List.of(), 0, null, List.of(), Map.of(), Map.of(),
+                0, 0, -50, List.of(), List.of(), "weakens armour", "The curse fires.");
+        enveloping = new Curse("enveloping", List.of(), 0, null, List.of(), Map.of(), Map.of(),
+                -5, -5, 20, List.of(), List.of(), "restricts movement", "The curse fires.");
+
         strengthProperty = new ObjectProperty(null, null, null, null, 0, 0, null,
                 "strength", null, null, null, null, null);
         sustainProperty = new ObjectProperty(null, null, null, null, 0, 0, null,
@@ -139,7 +155,7 @@ class PlayerRuneLearningTest {
 
         ObjectRegistry.setBrands(List.of(weakAcid, strongAcid));
         ObjectRegistry.setSlays(List.of(evil3, evil5));
-        ObjectRegistry.setCurses(List.of(siren));
+        ObjectRegistry.setCurses(List.of(siren, vulnerability, enveloping));
 
         // One rune per group, holding whichever member is the representative - which is what the
         // real initRunes produces, and what makes the runeIndex lookups worth testing at all.
@@ -148,9 +164,12 @@ class PlayerRuneLearningTest {
         // learning code walks past is listed.
         ObjectRegistry.setRunes(new ArrayList<>(List.of(
                 new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)),
+                new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A)),
                 new Rune(new RuneVariety.BrandKey(weakAcid)),
                 new Rune(new RuneVariety.SlayKey(evil3)),
                 new Rune(new RuneVariety.CurseKey(siren)),
+                new Rune(new RuneVariety.CurseKey(vulnerability)),
+                new Rune(new RuneVariety.CurseKey(enveloping)),
                 new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null)),
                 new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, sustainProperty)))));
     }
@@ -181,6 +200,88 @@ class PlayerRuneLearningTest {
         Field f = Player.class.getDeclaredField(name);
         f.setAccessible(true);
         return f.get(target);
+    }
+
+    /**
+     * Writes a field on anything, for the classes whose runtime state is filled in by machinery this
+     * suite does not run. {@link EquipSlot} has no setter at all — wielding is what puts an item in a
+     * slot — and {@link ItemObject}'s no-argument constructor leaves the curse map null, where a
+     * parsed item would always have one.
+     *
+     * @author ClaudeCode
+     */
+    private static void poke(Object target, String name, Object value) throws Exception {
+        Field f = target.getClass().getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(target, value);
+    }
+
+    /**
+     * A curse on an object, at a given power. The pairing is what C keeps in two arrays at one
+     * subscript — {@code curses[i]} for the definition and {@code obj->curses[i]} for the power.
+     *
+     * @author ClaudeCode
+     */
+    private static CurseEntry cursed(Curse curse, int power) {
+        return new CurseEntry(curse, new CurseData(power, 0));
+    }
+
+    /**
+     * An item carrying the given curses and nothing else. Order is preserved so a test about two
+     * curses can say which was met first.
+     *
+     * @author ClaudeCode
+     */
+    private static ItemObject itemWith(CurseEntry... entries) throws Exception {
+        ItemObject item = new ItemObject();
+        Map<CurseEntry, Boolean> curses = new LinkedHashMap<>();
+        for (CurseEntry entry : entries) {
+            curses.put(entry, false);
+        }
+        poke(item, "curses", curses);
+        return item;
+    }
+
+    /**
+     * A one-slot body holding the given items in order; a null entry is an empty slot, which is what
+     * most of a real body's slots are.
+     *
+     * @author ClaudeCode
+     */
+    private static PlayerBody bodyWearing(ItemObject... items) throws Exception {
+        List<EquipSlot> slots = new ArrayList<>();
+        for (ItemObject item : items) {
+            EquipSlot slot = new EquipSlot(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, "on your body");
+            if (item != null) {
+                poke(slot, "item", item);
+            }
+            slots.add(slot);
+        }
+        return new PlayerBody("humanoid", slots);
+    }
+
+    /**
+     * A body of one empty slot. Spelled out rather than written {@code bodyWearing(null)}, which
+     * varargs reads as no array at all.
+     *
+     * @author ClaudeCode
+     */
+    private static PlayerBody emptyBody() throws Exception {
+        return bodyWearing(new ItemObject[]{null});
+    }
+
+    /**
+     * A shape whose only interesting property is its armour class.
+     *
+     * @author ClaudeCode
+     */
+    private static PlayerShape shapeWithToAc(int toAc) {
+        return new PlayerShape("bear", toAc, 0, 0, Map.of(), null, null, Map.of(), Map.of(),
+                List.of(), 0, List.of());
+    }
+
+    private List<String> announced() {
+        return bus.messages.stream().map(EventDataMessage::message).toList();
     }
 
     /**
@@ -1089,6 +1190,387 @@ class PlayerRuneLearningTest {
             assertDoesNotThrow(() -> player.learnInnate());
 
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
+        }
+    }
+
+    /**
+     * {@link ItemObject#cursesFindToA} — learning a curse by being hurt by it.
+     *
+     * <p>The function reads two things that live apart: the power, which is on the item, and the
+     * armour-class contribution, which is on the curse definition in the registry. C walks
+     * {@code 1 .. curse_max} and subscripts both arrays alike; the port iterates the item's own
+     * {@link CurseEntry} set, which is why the case that matters most here is a curse that exists in
+     * the registry and carries armour class but is <em>not</em> on the item.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("cursesFindToA")
+    class CursesFindToA {
+
+        /**
+         * Two runes, not one: that something is altering the armour class, and which curse is doing
+         * it. C learns them in that order and so does this.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse that changes armour class teaches its own rune and the to-AC rune")
+        void teachesBothRunes() throws Exception {
+            ItemObject item = itemWith(cursed(vulnerability, 20));
+
+            item.cursesFindToA(player);
+
+            assertAll(
+                    () -> assertTrue(knowledge.toAIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertEquals(List.of(
+                                    "You have learned the rune of enchantment to armour.",
+                                    "You have learned the rune of vulnerability curse."),
+                            announced()));
+        }
+
+        /**
+         * The sign is not the question. C tests {@code to_a != 0}, and a curse that makes armour
+         * worse is as noticeable as one that makes it better.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a positive armour change teaches as readily as a negative one")
+        void signDoesNotMatter() throws Exception {
+            ItemObject item = itemWith(cursed(enveloping, 20));
+
+            item.cursesFindToA(player);
+
+            assertTrue(knowledge.toAIsKnown());
+            assertTrue(knowledge.curseIsKnown(enveloping));
+        }
+
+        /**
+         * A curse with no armour-class contribution is not evidence about armour class, however hard
+         * it bites in other ways.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse with no armour change teaches nothing")
+        void curseWithoutArmourChange() throws Exception {
+            ItemObject item = itemWith(cursed(siren, 20));
+
+            item.cursesFindToA(player);
+
+            assertAll(
+                    () -> assertFalse(knowledge.toAIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(siren)),
+                    () -> assertTrue(bus.messages.isEmpty()));
+        }
+
+        /**
+         * Zero power is how a curse is removed ({@code CurseData.setPower(0)}), so a zeroed entry can
+         * outlive the curse it describes. C reaches the same answer from the other side: its array is
+         * dense, and zero power is what "the item does not have curse {@code i}" looks like.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse at zero power is not on the item")
+        void zeroPowerIsAbsent() throws Exception {
+            ItemObject item = itemWith(cursed(vulnerability, 0));
+
+            item.cursesFindToA(player);
+
+            assertFalse(knowledge.toAIsKnown());
+            assertFalse(knowledge.curseIsKnown(vulnerability));
+        }
+
+        /**
+         * <b>The regression this suite exists for.</b> {@code vulnerability} is in the registry and
+         * changes armour class, but the item carries only {@code siren}. An implementation that
+         * walked the registry rather than the item — as C's loop bounds invite — would teach the
+         * player a rune for a curse they have never met, from an item that merely happens to be
+         * cursed at all.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a curse the item does not carry teaches nothing")
+        void curseNotOnTheItem() throws Exception {
+            ItemObject item = itemWith(cursed(siren, 20));
+
+            item.cursesFindToA(player);
+
+            assertAll(
+                    () -> assertFalse(knowledge.toAIsKnown()),
+                    () -> assertFalse(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertFalse(knowledge.curseIsKnown(enveloping)));
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an uncursed item teaches nothing")
+        void uncursedItem() throws Exception {
+            ItemObject item = itemWith();
+
+            item.cursesFindToA(player);
+
+            assertFalse(knowledge.toAIsKnown());
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
+         * Both curse runes are learned, and the to-AC rune is announced once — the second attempt
+         * finds it already known and {@code learnRune} returns before saying anything.
+         *
+         * <p>This is also where C's one real bug in the function would show. Its {@code index} is
+         * declared outside the loop and reassigned to the curse's rune inside it, so on the second
+         * qualifying curse it relearns the first curse instead of the to-AC rune. Harmless there only
+         * because to-AC is known by then; the port resolves the rune once, before the loop, so the
+         * mistake cannot be made.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("two qualifying curses are both learned, and the to-AC rune announced once")
+        void twoQualifyingCurses() throws Exception {
+            ItemObject item = itemWith(cursed(vulnerability, 20), cursed(enveloping, 20));
+
+            item.cursesFindToA(player);
+
+            assertAll(
+                    () -> assertTrue(knowledge.toAIsKnown()),
+                    () -> assertTrue(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertEquals(List.of(
+                                    "You have learned the rune of enchantment to armour.",
+                                    "You have learned the rune of vulnerability curse.",
+                                    "You have learned the rune of enveloping curse."),
+                            announced()));
+        }
+    }
+
+    /**
+     * {@link Player#equipLearnOnDefend} — the occasion on which worn armour explains itself.
+     *
+     * <p>A property announces itself when it does its job, so an armour-class bonus is learned by
+     * being hit rather than by being examined. Three sources are checked in order and the first
+     * success ends the method; the item's own bonus is stubbed
+     * ({@link ItemObject#isBoostedToA}) until the class carries a rolled to-AC, so the curse and
+     * shape arms are the live ones.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("equipLearnOnDefend")
+    class EquipLearnOnDefend {
+
+        /**
+         * Most of a real body's slots are empty most of the time, and C guards its whole loop body
+         * with {@code if (obj)}. Without the equivalent the very first unworn slot ends the turn.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("empty slots are stepped over, not fallen at")
+        void emptySlotsAreSkipped() throws Exception {
+            set(player, "body", bodyWearing(null, null));
+
+            assertDoesNotThrow(() -> player.equipLearnOnDefend());
+
+            assertFalse(knowledge.toAIsKnown());
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a cursed item in a slot teaches the to-AC rune")
+        void cursedItemTeaches() throws Exception {
+            set(player, "body", bodyWearing(null, itemWith(cursed(vulnerability, 20))));
+
+            player.equipLearnOnDefend();
+
+            assertTrue(knowledge.toAIsKnown());
+            assertTrue(knowledge.curseIsKnown(vulnerability));
+        }
+
+        /**
+         * The item's own bonus arm is stubbed, so an uncursed item is silent. Written as a statement
+         * of the stub rather than of the eventual behaviour: when {@code isBoostedToA} learns to
+         * answer from a rolled to-AC, this test should start failing and be rewritten.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an uncursed item teaches nothing while isBoostedToA is stubbed")
+        void uncursedItemTeachesNothingYet() throws Exception {
+            set(player, "body", bodyWearing(itemWith()));
+
+            player.equipLearnOnDefend();
+
+            assertFalse(knowledge.toAIsKnown());
+        }
+
+        /**
+         * The leading guard. Nothing is left to learn about the armour class, so no slot is read and
+         * the curse riding on the worn item goes unnoticed — which is C's behaviour, and the reason
+         * a curse can stay hidden on a character who identified their armour long ago.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("nothing is examined once the to-AC rune is already known")
+        void alreadyKnownStopsAtTheDoor() throws Exception {
+            knowledge.learnToA();
+            set(player, "body", bodyWearing(itemWith(cursed(vulnerability, 20))));
+
+            player.equipLearnOnDefend();
+
+            assertFalse(knowledge.curseIsKnown(vulnerability));
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
+         * The guard repeated at the foot of the loop. Once the first slot has taught the rune the
+         * walk stops, so the second cursed item is never read and its curse stays unknown.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("the walk stops at the first slot that teaches")
+        void stopsAtTheFirstSlotThatTeaches() throws Exception {
+            set(player, "body", bodyWearing(
+                    itemWith(cursed(vulnerability, 20)),
+                    itemWith(cursed(enveloping, 20))));
+
+            player.equipLearnOnDefend();
+
+            assertTrue(knowledge.toAIsKnown());
+            assertTrue(knowledge.curseIsKnown(vulnerability));
+            assertFalse(knowledge.curseIsKnown(enveloping));
+        }
+
+        /**
+         * A bear's hide is an armour-class bonus like any other. Reached only when nothing worn has
+         * already answered the question.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("an assumed shape's armour class teaches the rune")
+        void shapeTeaches() throws Exception {
+            set(player, "body", emptyBody());
+            set(player, "shape", shapeWithToAc(5));
+
+            player.equipLearnOnDefend();
+
+            assertTrue(knowledge.toAIsKnown());
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("a shape with no armour class teaches nothing")
+        void shapeWithoutArmourClass() throws Exception {
+            set(player, "body", emptyBody());
+            set(player, "shape", shapeWithToAc(0));
+
+            player.equipLearnOnDefend();
+
+            assertFalse(knowledge.toAIsKnown());
+        }
+
+        /**
+         * Being in no shape at all is the normal case, and C's {@code if (p->shape)} says so.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("no shape is not an error")
+        void noShape() throws Exception {
+            set(player, "body", emptyBody());
+
+            assertDoesNotThrow(() -> player.equipLearnOnDefend());
+
+            assertFalse(knowledge.toAIsKnown());
+        }
+    }
+
+    /**
+     * {@link Player#learnAllRunes} — the debug, cheat and winner's-dump path.
+     *
+     * @author ClaudeCode
+     */
+    @Nested
+    @DisplayName("learnAllRunes")
+    class LearnAllRunes {
+
+        /**
+         * Every rune in the registry, whatever its variety. The assertions reach into each corner of
+         * the knowledge rather than counting, because "all of them" is the claim being made.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("learns every rune the registry holds")
+        void learnsEverything() {
+            player.learnAllRunes();
+
+            assertAll(
+                    () -> assertTrue(knowledge.toHIsKnown()),
+                    () -> assertTrue(knowledge.toAIsKnown()),
+                    () -> assertTrue(knowledge.brandIsKnown(weakAcid)),
+                    () -> assertTrue(knowledge.slayIsKnown(evil3)),
+                    () -> assertTrue(knowledge.curseIsKnown(siren)),
+                    () -> assertTrue(knowledge.curseIsKnown(vulnerability)),
+                    () -> assertTrue(knowledge.curseIsKnown(enveloping)),
+                    () -> assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE)),
+                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR)));
+        }
+
+        /**
+         * A rune the registry does not list is not learned by "all" — the to-damage enchantment has
+         * no rune in this fixture, and the walk is over the list rather than over the varieties.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("learns the runes that exist, not the ones that could")
+        void onlyWhatTheRegistryHolds() {
+            player.learnAllRunes();
+
+            assertFalse(knowledge.toDIsKnown());
+        }
+
+        /**
+         * Silent, and for a plainer reason than {@link Player#learnInnate}'s: several hundred
+         * discoveries announced one at a time is not a message but a wall.
+         *
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("says nothing at all")
+        void saysNothing() {
+            player.learnAllRunes();
+
+            assertTrue(bus.messages.isEmpty());
+        }
+
+        /**
+         * @author ClaudeCode
+         */
+        @Test
+        @DisplayName("running it twice changes nothing and still says nothing")
+        void isIdempotent() {
+            player.learnAllRunes();
+            player.learnAllRunes();
+
+            assertTrue(knowledge.toAIsKnown());
+            assertTrue(knowledge.curseIsKnown(siren));
+            assertTrue(bus.messages.isEmpty());
         }
     }
 

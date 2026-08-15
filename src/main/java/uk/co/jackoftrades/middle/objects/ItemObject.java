@@ -23,6 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
@@ -987,5 +988,111 @@ public class ItemObject {
      */
     public Set<Brand> getBrands() {
         return brands;
+    }
+
+    /**
+     * Reports whether this item carries an armour-class bonus — the port of the bare
+     * {@code if (obj->to_a)} test that the {@code equip_learn_on_*} family uses to decide whether
+     * wearing the item can teach the to-AC rune.
+     *
+     * <p><b>Stub:</b> the value it needs does not exist on this class yet. C's {@code obj->to_a} is
+     * an {@code int16_t} on the instance, rolled once when the object is made and thereafter fixed;
+     * {@link #toAC} here is the {@link Random} parsed from the data file, which is the dice the roll
+     * would be made <em>from</em>. The two are not interchangeable in either direction:
+     *
+     * <ul>
+     *   <li>{@code toAC != null} would answer yes for any kind that merely declares the field.
+     *       Ego items routinely write a literal zero there ({@code combat:d10:d10:0} and friends in
+     *       {@code ego_item.txt}), and {@code Random.parseStr("0")} is a Random with base 0, not
+     *       null — so a Weapon of Extra Attacks would teach the to-AC rune to anyone who took a
+     *       blow while wearing it.</li>
+     *   <li>Rolling the dice here would answer a fresh question each call, where C asks what this
+     *       particular item rolled when it was created.</li>
+     * </ul>
+     *
+     * <p>So this returns {@code false} until the class carries a rolled to-AC of its own. That is
+     * the safe direction to be wrong in: {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnDefend}
+     * simply learns nothing from the item's own bonus, rather than learning from items that have
+     * none. The curse half of that method works today, because a curse's contribution is a plain
+     * parsed {@code int} on the definition and needs no roll.
+     *
+     * @return whether this item has a non-zero to-AC bonus; always {@code false} while stubbed
+     * @author Rowan Crowther
+     */
+    public boolean isBoostedToA() {
+        // STUB method TODO: implement
+        // Needs to check to see whether a boost has occurred, not whether a random has been registered, or even rolled
+        return false;
+    }
+
+    /**
+     * Reports whether this item has a known counterpart — the object that records how much of it
+     * the player can currently see. The port of C's {@code obj->known} tested for non-NULL.
+     *
+     * <p>This is emphatically not "has the player identified this item". Every object in play
+     * carries a {@code known} companion from the moment it is created, so on a live item the answer
+     * is yes long before anything about it has been learned; what the player actually knows is the
+     * <em>content</em> of that companion. Reading this as identification is the mistake the name
+     * invites, and it is why C only ever uses the test the way {@code equip_learn_on_defend} does —
+     * as {@code assert(obj->known)}, a sanity check that the pairing was set up, on its own line and
+     * never folded into a condition that decides whether to learn something.
+     *
+     * @return whether a known counterpart has been attached to this item
+     * @author Rowan Crowther
+     */
+    public boolean isKnown() {
+        return known != null;
+    }
+
+    /**
+     * Learns the to-AC rune, and the curse's own rune, if any curse on this item contributes an
+     * armour-class change the player has just felt. The port of C's
+     * {@code object_curses_find_to_a} ({@code obj-knowledge.c:1557}), one of six near-identical
+     * functions covering to-AC, to-hit, to-damage, flags, modifiers and elements.
+     *
+     * <p>A curse is a thing the player learns by being bitten by it, which is why this is reached
+     * from {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnDefend} rather than from
+     * anything to do with inspecting the item. Two runes are learned, not one: the fact that
+     * <em>something</em> is altering the armour class, and the identity of the curse doing it.
+     *
+     * <p><b>Where the numbers come from.</b> The armour-class figure belongs to the curse
+     * definition, not to this item — {@link Curse#getCombatAC}, the port of {@code curses[i].obj->to_a},
+     * parsed once from {@code curse.txt}. What the item holds is the instance data: the power and
+     * timeout in {@link CurseData}. C keeps those in two arrays indexed alike, so every one of these
+     * functions has to walk {@code 1 .. curse_max} and read {@code obj->curses[i].power} and
+     * {@code curses[i].obj->to_a} at the same subscript. {@link CurseEntry} pairs them directly, so
+     * the loop visits only the curses this item actually carries and no index arithmetic survives
+     * the port.
+     *
+     * <p>That also disposes of C's two guards. {@code !obj->curses[i].power} is what stops a dense
+     * array from reporting curses the item does not have, and is unnecessary against a map that only
+     * contains the ones it does — but the power test is kept anyway, because
+     * {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed entry can
+     * outlive the curse. {@code !curses[i].obj} is dead code upstream: the parser allocates that
+     * object at the {@code name:} line, so the only null in the array is index 0, the reserved
+     * no-curse slot the loop already skips.
+     *
+     * <p>The rune is resolved once, before the loop. C recomputes it into the same {@code index}
+     * variable it then overwrites with the curse's rune, so on a second qualifying curse it relearns
+     * the previous curse instead of the to-AC rune — harmless there only because the to-AC rune is
+     * already known by that point. Hoisting the lookup out makes the bug unexpressible.
+     *
+     * @param player the player doing the learning; knowledge is player state, so the item is only
+     *               the thing being read
+     * @author Rowan Crowther
+     */
+    public void cursesFindToA(Player player) {
+        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A);
+        if (!curses.isEmpty()) {
+            for (CurseEntry curseEntry : curses.keySet()) {
+                if (curseEntry.curseData().getPower() != 0)
+                    if (curseEntry.curse().getCombatAC() != 0) {
+                        // Learn the to AC rune
+                        player.learnRune(rune, true);
+                        // Learn the to AC Curse rune
+                        player.learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                    }
+            }
+        }
     }
 }

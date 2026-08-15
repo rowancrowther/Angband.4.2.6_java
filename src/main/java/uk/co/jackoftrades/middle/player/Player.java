@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.MessageType;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
@@ -36,6 +37,7 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
@@ -1272,7 +1274,7 @@ public class Player {
      * @param printMessage whether to announce the discovery, false for the paths that learn in
      *                     bulk and would otherwise bury the player in messages
      */
-    void learnRune(Rune rune, boolean printMessage) {
+    public void learnRune(Rune rune, boolean printMessage) {
         if (rune == null) {
             logger.warn("Rune is null on entering learnRune");
             return;
@@ -1381,6 +1383,83 @@ public class Player {
             if (race.getObjectFlagKnowledge(flag)) {
                 Rune rune = Rune.runeIndex(flag);
                 learnRune(rune, false);
+            }
+        }
+    }
+
+    /**
+     * Learns every rune in the game at once. The port of C's {@code player_learn_all_runes}, which
+     * is not part of normal play — it is what the debug command and the cheat option call, and what
+     * a winner's character gets so the final dump shows everything.
+     *
+     * <p>C counts to {@code rune_max}; the loop here is over the rune list itself
+     * ({@link ObjectRegistry#getRunes}), which is the same set in the same order, that count being
+     * only the list's length.
+     *
+     * <p><b>Silent.</b> {@link #learnRune} is called with {@code printMessage} false for the obvious
+     * reason: announcing several hundred discoveries one at a time is not a message, it is a wall.
+     * Same reasoning as {@link #learnInnate}, and the second reason the flag exists.
+     *
+     * <p>Learning is left to run per rune rather than short-circuited, so anything already known
+     * falls out at {@link #learnRune}'s own guard and the trailing
+     * {@link #updateObjectKnowledge} fires once per rune actually learned.
+     */
+    public void learnAllRunes() {
+        for (Rune rune : ObjectRegistry.getRunes()) {
+            learnRune(rune, false);
+        }
+    }
+
+    /**
+     * Learns the to-AC rune from whatever the player is wearing, on the occasion of being attacked.
+     * The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c:1970}), the first of the
+     * {@code equip_learn_*} family and the model for the rest.
+     *
+     * <p>The premise is that a property announces itself when it does its job. A blow that lands
+     * less heavily than it should have is evidence that something is adding to the armour class,
+     * and a blow is the only thing that can produce that evidence — which is why armour is learned
+     * by being hit rather than by being examined.
+     *
+     * <p><b>Three sources are checked, and the first success ends the method.</b> The leading guard
+     * and the one at the foot of the loop are the same test: once
+     * {@link KnownObject#toAIsKnown} answers true there is nothing further to learn, so the walk
+     * stops rather than announcing the same rune from every remaining slot. That early return is
+     * also what makes the shape at the end reachable only for an unhelmeted, unarmoured player.
+     *
+     * <ol>
+     *   <li>each equipped item's own bonus, via {@link ItemObject#isBoostedToA} — currently stubbed
+     *       {@code false}, so this arm learns nothing yet;</li>
+     *   <li>each equipped item's curses, via {@link ItemObject#cursesFindToA}, which learns the
+     *       curse's rune as well as the to-AC one;</li>
+     *   <li>the player's assumed shape, whose {@link PlayerShape#getToAc} is a flat parsed
+     *       {@code int} — a bear's hide is a to-AC bonus like any other.</li>
+     * </ol>
+     *
+     * <p>An empty slot is skipped, standing in for C's {@code if (obj)} around the whole body:
+     * {@code slot_object} answers NULL for a slot with nothing in it, which is most of them for most
+     * characters. C's {@code assert(obj->known)} has no counterpart here — it is a debug-build check
+     * that the known counterpart was attached, never a condition on learning, and folding it into
+     * the test above would quietly skip items instead of failing loudly. See
+     * {@link ItemObject#isKnown} for why that reading of the name is a trap.
+     *
+     * <p>The shape branch drops C's {@code lookup_player_shape(p->shape->name)}, which re-fetches by
+     * name the definition {@code p->shape} already points at.
+     */
+    public void equipLearnOnDefend() {
+        if (itemKnowledge.toAIsKnown()) return;
+
+        for (EquipSlot slot : body.getSlots()) {
+            ItemObject slotObject = slot.getItem();
+            if (slotObject == null) continue;
+            if (slotObject.isBoostedToA()) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
+            }
+            slotObject.cursesFindToA(this);
+            if (itemKnowledge.toAIsKnown()) return;
+        }
+        if (shape != null) {
+            if (shape.getToAc() != 0) {
+                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
             }
         }
     }

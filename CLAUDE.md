@@ -35,6 +35,16 @@ any progress." So: re-read the changed files, REGENERATE anything generated (a s
 parser silently tests the wrong thing), run the cases against the C-derived expected values, report
 what passes and what doesn't. It is never permission to write code.
 
+**2a. Never state the current condition of a file you have not read in the current turn.** Words like
+"still", "remains", "hasn't been", "the one thing left" are the tell — they are all claims about now, sourced from then.
+A finding expires the moment Rowan edits anything, so a verify turn re-reads *every*
+file it reports on, not just the one under discussion. If a file wasn't re-read this turn, say nothing about it, or read
+it first.
+
+- No closing "still outstanding" list unless every item on it was re-checked in that same turn. If re-checking them all
+  is too much, the list gets cut to what was checked.
+- This is checkable: if Claude says "still", there should be a `Read` of that file above it in the same turn.
+
 **3. Never invoke `git`** — not commit or push, and not read-only status/diff/log either.
 Committing is reserved as Rowan's exercise. To check a file's state, diff it against a copy.
 

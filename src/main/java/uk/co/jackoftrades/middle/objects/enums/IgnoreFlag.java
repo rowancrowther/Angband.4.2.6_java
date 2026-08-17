@@ -29,7 +29,7 @@ package uk.co.jackoftrades.middle.objects.enums;
  * applying. Keeping the two apart is what lets that happen without the player having to intervene.
  *
  * <p>The transition is one-way and it runs through
- * {@link uk.co.jackoftrades.middle.player.Player#flavourAware}: a kind marked
+ * {@code Player.flavourAware}: a kind marked
  * {@code IGNORE_IF_UNAWARE} that the player becomes aware of picks up {@code IGNORE_IF_AWARE}, so a
  * standing decision to ignore the unidentified is carried across into a decision about the thing
  * itself rather than silently lapsing.

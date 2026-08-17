@@ -824,7 +824,7 @@ public class ObjectKind {
      *
      * <p>Held on the kind, not on any item, because that is the scope of the discovery: learning
      * that the pink potion is a Potion of Speed is learning it about every pink potion at once. See
-     * {@link uk.co.jackoftrades.middle.player.Player#flavourAware}, which sets it and then puts the
+     * {@code Player.flavourAware}, which sets it and then puts the
      * rest of the world in step.
      *
      * <p>Function isAware commented in full on 260816.
@@ -840,7 +840,7 @@ public class ObjectKind {
      * Records that the player has identified what this kind is — C's {@code kind->aware = true}.
      *
      * <p>Should generally be reached through
-     * {@link uk.co.jackoftrades.middle.player.Player#flavourAware} rather than called directly:
+     * {@code Player.flavourAware} rather than called directly:
      * awareness has consequences — the ignore fixup, the pack refresh, the floor redraw — and
      * setting the flag here does none of them.
      *
@@ -927,7 +927,7 @@ public class ObjectKind {
      * Sets whether identified items of this kind are ignored, the port of C's
      * {@code kind_ignore_when_aware}.
      *
-     * <p>Called by {@link uk.co.jackoftrades.middle.player.Player#flavourAware} to carry a standing
+     * <p>Called by {@code Player.flavourAware} to carry a standing
      * decision across the moment of identification: a player who was ignoring unknown potions is
      * taken to be ignoring this one, so the pile they were stepping over does not reappear under a
      * name. See {@link IgnoreFlag}.

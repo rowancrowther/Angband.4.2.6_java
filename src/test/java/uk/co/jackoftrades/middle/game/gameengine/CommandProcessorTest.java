@@ -42,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * matching helper - silently resolved to {@code javax.swing.UIManager.put(Object, Object)}. That
  * compiles cleanly, returns without complaint, and writes every entry into Swing's global
  * defaults table instead of the {@link java.util.EnumMap}, leaving {@code gameCommands} empty and
- * {@link CommandProcessor#process} a permanent no-op. A type checker cannot catch this because
+ * {@link CommandProcessor#processCommand} a permanent no-op. A type checker cannot catch this because
  * both arguments widen to {@code Object}; only asserting on the table's <em>contents</em> can.
  * So the first assertion here - that the table is non-empty - is the real guard, and the rest
  * pin the transcription so a future edit cannot quietly drop or mis-flag a command.

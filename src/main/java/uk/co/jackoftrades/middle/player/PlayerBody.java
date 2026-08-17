@@ -69,7 +69,7 @@ public class PlayerBody {
      * by object identity.
      *
      * <p>Worn is a different question from carried. An object in an equipment slot is still on the
-     * gear list, so {@link uk.co.jackoftrades.middle.player.Player#isCarried} answers {@code true}
+     * gear list, so {@code Player.isCarried} answers {@code true}
      * for it too; this narrows that to the objects actually in use, which is what decides whether an
      * object is labelled by its slot or by its position in the pack.
      *
@@ -135,7 +135,7 @@ public class PlayerBody {
      * why the size is returned up front rather than falling through the loop.
      *
      * <p>The reason it is an index and not a slot is that the index <em>is</em> the answer the
-     * callers want: {@link uk.co.jackoftrades.middle.player.Player#gearToLabel} uses it to
+     * callers want: {@code Player.gearToLabel} uses it to
      * subscript the equipment label string, so an item's slot position becomes the letter the
      * player selects it by.
      *

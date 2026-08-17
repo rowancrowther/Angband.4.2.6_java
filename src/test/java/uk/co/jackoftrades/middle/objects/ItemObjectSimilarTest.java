@@ -137,7 +137,7 @@ class ItemObjectSimilarTest {
      * Every modifier at zero. As with the element map, the weapon branch reads every key.
      *
      * <p>Values are {@link Integer}, not {@link String}. They were strings when this suite was
-     * written, because {@link ItemObject#modifiers} then held the unparsed dice text; the field was
+     * written, because {@code ItemObject.modifiers} then held the unparsed dice text; the field was
      * retyped during the 260816 knowledge work, which is right — C's {@code obj->modifiers[i]} is an
      * {@code int16_t} holding the value already rolled for this particular object, and it is the
      * {@link ObjectKind} that keeps the dice it was rolled from. This fixture writes the field

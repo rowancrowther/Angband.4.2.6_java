@@ -1831,7 +1831,7 @@ class PlayerRuneLearningTest {
 
     /**
      * {@link Player#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
-     * fixture does not hold, so each case registers it first. See {@link #addToDRune()}.
+     * fixture does not hold, so each case registers it first. See {@link #withToDRune()}.
      *
      * <p>Class CursesFindToD coded on 260815, commented in full on 260815, call sites turned round
      * on 260815 when the method moved to Player.

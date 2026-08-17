@@ -68,7 +68,7 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * system but writes nothing - so nothing here needs setup or teardown. {@link #aValidOptionChangesNothing}
  * pins that, since it is the property the separation depends on.
  *
- * <p>Several of these pin the behaviour of {@link String#split} at the edges rather than anything
+ * <p>Several of these pin the behaviour of {@link String#split(String, int)} at the edges rather than anything
  * the port chose. That is deliberate: the arity check is the only thing standing between a
  * malformed argument and an {@code ArrayIndexOutOfBoundsException} two lines later in
  * {@code main}. The split takes a limit of 2, which changes those edges considerably from the

@@ -50,7 +50,7 @@ C order is followed faithfully, so the blocks line up one-for-one.
 
 ### Combat details (555)
 
-```java
+```
 known.setToAC(item.getToAC() *itemKnowledge.
 
 getAc());
@@ -90,7 +90,7 @@ Three separate problems:
 
 ### Object flags (585–586)
 
-```java
+```
 Flag<ObjectFlag> knownFlags = known.getKnownFlags();
 knownFlags.copyFrom(item.getKnownFlags());
 ```
@@ -122,7 +122,7 @@ is now live.
 
 ### Brands (593–610)
 
-```java
+```
 if (!known.getBrands().contains(brand)) {
     known.getBrands().add(brand);
     knownBrand = true;
@@ -147,7 +147,7 @@ all throw `UnsupportedOperationException`, so this block cannot run at all once 
 
 Beyond that, the not-known branch does:
 
-```java
+```
 entry.curseData().setPower(0);
 ```
 
@@ -158,7 +158,7 @@ The `if (!knownCursed)` clear matches C, and so does the `else if` on a null cur
 
 ### Fully-known copy-back (701–706)
 
-```java
+```
 for(ElementEnum element :ElementEnum.
 
 values()){
@@ -217,7 +217,7 @@ the item's effect is what C reads.
 | all elements known                | correct        |
 | all brands / slays / curses known | correct        |
 
-```java
+```
 if (knownFlags.isSubset(egoFlags)) return false;
 ```
 
@@ -227,7 +227,7 @@ it currently rejects an ego precisely when the player *does* know all its flags.
 
 In the modifier loop:
 
-```java
+```
 Random egoModifier = ego.getModifier(modifier);
 if (egoModifier == null) return false;
 ```
@@ -249,7 +249,7 @@ never recognised. Treat a null as zero and `continue`.
 | brands / slays | correct        |
 | flags          | **needs work** |
 
-```java
+```
 return !knownFlags.isSubset(itemFlags);
 ```
 
@@ -266,7 +266,7 @@ not carry should compare equal, not fail. Worth walking
 
 The label string and the equipment and inventory branches match C. The quiver branch does not:
 
-```java
+```
 return (Character.toChars(index)[0]);
 ```
 

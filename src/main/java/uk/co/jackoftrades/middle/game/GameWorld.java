@@ -120,8 +120,6 @@ public class GameWorld {
      * current.
      *
      * <p>Field dayCount coded before 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private int dayCount;
 
@@ -170,7 +168,6 @@ public class GameWorld {
      * @param speed the actor's speed, used directly as the index into {@link #extractEnergy}
      *              (0–199, 110 = normal)
      * @return the energy banked this game turn at that speed
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -182,8 +179,6 @@ public class GameWorld {
      * Binds this world to the current game by caching the live {@link GameState} player and cave —
      * the two globals ({@code player}, {@code cave}) that C's {@code game-world.c} reaches for
      * directly.
-     *
-     * @author Rowan Crowther
      */
     public GameWorld() {
         player = GameState.getPlayer();
@@ -212,8 +207,6 @@ public class GameWorld {
      * subtle part: {@code break} means the player spent energy and the world should carry on;
      * {@code return} yields control back to the UI because a player pass used no energy and fresh
      * input is needed.
-     *
-     * @author Rowan Crowther
      */
     public void runGameLoop() {
         // Tidy up after the player's command
@@ -367,8 +360,6 @@ public class GameWorld {
      * keeps worn and carried objects on one {@code player->gear} chain and distinguishes them by
      * asking which slot holds them. Items with no kind are skipped; C asserts on them instead
      * ({@code game-world.c:206}), the port simply passes over them.
-     *
-     * @author Rowan Crowther
      */
     public void rechargeObjects() {
         boolean dischargedStack;
@@ -436,7 +427,6 @@ public class GameWorld {
      * @param item the object that has just recharged
      * @param all  {@code true} if the whole stack is now charged, {@code false} if a previously
      *             exhausted stack has regained its first charge
-     * @author Rowan Crowther
      */
     private void rechargedNotice(ItemObject item, boolean all) {
         boolean notify = false;
@@ -488,8 +478,6 @@ public class GameWorld {
      * at least {@link GameConstants#getWorldMoveEnergy() move-energy} so they can act on arrival —
      * without ever <em>reducing</em> a higher value carried over from a savefile (hence
      * {@link Math#max}, matching C's {@code if (energy < move_energy) energy = move_energy}).
-     *
-     * @author Rowan Crowther
      */
     private void onNewLevel() {
         // Arena levels are not really a level change
@@ -557,8 +545,6 @@ public class GameWorld {
      * passes (needed here because leaving may have changed inventory or state) and flushes queued
      * messages. Note it is deliberately {@code notice → update → redraw}, mirroring C's three separate
      * calls, rather than the bundled {@link Player#handleStuff()}.
-     *
-     * @author Rowan Crowther
      */
     private void onLeaveLevel() {
         // Cancel any command
@@ -592,8 +578,6 @@ public class GameWorld {
      * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
      * {@link EffectUtil#effectSimple} (the ore-detection effect), and
      * {@link Player#timedGradeEqual(TimedEffect, String)}.
-     *
-     * @author Rowan Crowther
      */
     private void processPlayer() {
         // check for interrupts
@@ -671,8 +655,6 @@ public class GameWorld {
      * apply any terrain damage, and (unless the player auto-dropped) flag the map for hallucination
      * and refresh multi-hued / marked monsters. In all cases it clears each monster's per-turn
      * {@code SHOW} flag and the drop status, then runs the update and redraw passes.
-     *
-     * @author Rowan Crowther
      */
     private void processPlayerCleanup() {
         // Significant
@@ -758,8 +740,6 @@ public class GameWorld {
      * <p><b>Stub:</b> not yet implemented. When ported it drives the slow, world-scale clock:
      * day/night and town-store restocking, the recharge of the player's light and regeneration,
      * timed-effect decay, random monster generation, and the other once-per-ten-turns upkeep.
-     *
-     * @author Rowan Crowther
      */
     private void processWorld() {
         int index;
@@ -1044,8 +1024,6 @@ public class GameWorld {
      *       the curse if it did anything visible) and the timeout is re-rolled
      *       from the curse template's interval.</li>
      * </ol>
-     *
-     * @author Rowan Crowther
      */
     private void decreaseTimeouts() {
         int adjust = (StatTables.adjConFix[player.getPlayerState().getStatInd(Stats.STAT_CON)] + 1);
@@ -1120,8 +1098,6 @@ public class GameWorld {
      * first band (depth {@code 1}–{@code 20}) up to {@code MSG_AMBIENT_DNG5} beyond depth {@code 80}.
      * Each is emitted through {@link Message#sound}, which the front end hooks to play the audio.
      * This is purely a sound cue — it changes no game state.
-     *
-     * @author Rowan Crowther
      */
     private void playAmbientSound() {
         if (player.getDepth() == 0) {
@@ -1159,8 +1135,6 @@ public class GameWorld {
      * {@link TimedEffect#TMD_COVERTRACKS} coarsens the increment from 1 to 4, shrinking the
      * range at which the noise stays low enough to be heard. Features that do not transmit
      * sound ({@link Chunk#squareIsNoFlow}) block propagation.
-     *
-     * @author Rowan Crowther
      */
     private void makeNoise() {
         Loc next = player.getGrid();
@@ -1235,8 +1209,6 @@ public class GameWorld {
      * — the adjacency test that keeps scent spreading along open floor rather than leaking through
      * walls. A player under {@link TimedEffect#TMD_COVERTRACKS} lays no new scent at all, so the
      * method returns after only the aging pass.
-     *
-     * @author Rowan Crowther
      */
     private void updateScent() {
         int[][] scentStrength = {
@@ -1305,7 +1277,6 @@ public class GameWorld {
      * lighting, level generation, feature projection) to decide whether the surface is lit.
      *
      * @return {@code true} during the first half of the day/night cycle, {@code false} otherwise
-     * @author Rowan Crowther
      */
     public static boolean isDaytime() {
         int turn = GameState.getTurn();

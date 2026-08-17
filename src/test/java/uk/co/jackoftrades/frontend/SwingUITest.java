@@ -60,8 +60,6 @@ class SwingUITest {
      * <p>Three {@code null}s are deliberate. Nothing on the shutdown path touches the channels -
      * {@code closeDown} disposes windows and sends nothing - so passing real ends would hide it if
      * that ever changed back, and would need a matching reader to keep the queues from filling.
-     *
-     * @author Rowan Crowther
      */
     private static SwingUI realisedFrontEnd() throws Exception {
         SwingUI swingUI = new SwingUI(null, null, null);
@@ -81,8 +79,6 @@ class SwingUITest {
      * The window is disposed. This is the whole of what the method promises now, and the last step
      * of the shutdown handshake - by the time it runs, the core has already reported that it has
      * finished.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void closeDownDisposesTheWindow() throws Exception {
@@ -105,8 +101,6 @@ class SwingUITest {
      * an exit, so a regression here does not fail this test: it kills the test JVM, and the build
      * reports the whole worker as having disappeared. Odd-looking, but a genuine signal, and a
      * loud one.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void closeDownDoesNotExitTheProcess() throws Exception {
@@ -121,8 +115,6 @@ class SwingUITest {
      * Disposing twice is harmless. The handshake should deliver exactly one {@code STOPPED}, but a
      * shutdown path that only works once is a bad shutdown path - and this is cheap insurance
      * against the day something retries.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void closeDownIsSafeToRepeat() throws Exception {

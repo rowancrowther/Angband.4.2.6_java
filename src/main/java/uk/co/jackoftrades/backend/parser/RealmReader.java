@@ -41,8 +41,6 @@ import java.util.List;
 public class RealmReader implements Reader<MagicRealm> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -64,7 +62,6 @@ public class RealmReader implements Reader<MagicRealm> {
      * @param filename the realm data file to read
      * @return the parse result: the realms plus any error messages
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<MagicRealm> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -83,7 +80,6 @@ public class RealmReader implements Reader<MagicRealm> {
      * @param errorCatcher collects syntax errors raised during the parse (thrown if any occurred)
      * @param errors       sink for soft, non-fatal messages such as a record-count mismatch
      * @return the raw parse records to hand to the assembler
-     * @author Rowan Crowther
      */
     private static @NotNull List<RealmParseRecord> extract(
             @NotNull RealmGrammar parser,

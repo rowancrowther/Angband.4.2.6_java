@@ -595,7 +595,6 @@ class RuneInitTest {
      * {@code initRunes} they must agree with it and with each other: {@code getMaxRunes} is the port
      * of C's {@code max_runes()}, which returns the {@code rune_max} set alongside {@code rune_list}
      * in {@code init_rune} ({@code [C] src/obj-knowledge.c:131, 230}).
-     *
      */
     @Test
     void theRuneAccessorsAgreeWithTheStoredList() throws Exception {

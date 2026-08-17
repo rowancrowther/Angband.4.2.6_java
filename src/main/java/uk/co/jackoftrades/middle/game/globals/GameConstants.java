@@ -65,8 +65,6 @@ import java.io.IOException;
 public class GameConstants {
     /**
      * Logger used to report load failures and premature/invalid access.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -112,7 +110,6 @@ public class GameConstants {
      * nothing else here depends on it, but the running game reads these values throughout.
      *
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     private static void loadGameConstants() throws IOException {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "constants.txt";
@@ -141,8 +138,6 @@ public class GameConstants {
      * and its per-base sval counters are rebuilt from scratch, so a re-init (e.g. between tests) does
      * not double-register kinds. Any failure is logged and rethrown wrapped in a
      * {@link RuntimeException}, since the game cannot run with partially-loaded data.
-     *
-     * @author Rowan Crowther
      */
     public static void init() {
         try {
@@ -264,8 +259,6 @@ public class GameConstants {
 
     /**
      * Private constructor preventing instantiation of this static-only registry.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     private GameConstants() {
@@ -306,7 +299,6 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code storeMax}
-     * @author Rowan Crowther
      */
     public static int getStoreMax() {
         return storeMax;
@@ -314,7 +306,6 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code randartActivationsMax}
-     * @author Rowan Crowther
      */
     public static int getRandartActivationsMax() {
         return ObjectRegistry.getRandartActivationsMax();
@@ -322,7 +313,6 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code caveProfileMax}
-     * @author Rowan Crowther
      */
     public static int getCaveProfileMax() {
         return caveProfileMax;
@@ -332,8 +322,6 @@ public class GameConstants {
     /**
      * @return the value of {@code level-max:monsters}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -344,8 +332,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:chance}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -356,8 +342,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:level-min}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -368,8 +352,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:town-day}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -380,8 +362,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:town-night}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -392,8 +372,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:repro-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -404,8 +382,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:ood-chance}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -416,8 +392,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:ood-amount}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -428,8 +402,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:group-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -440,8 +412,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-gen:group-dist}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -452,8 +422,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-play:break-glyph}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -464,8 +432,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-play:mult-rate}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -476,8 +442,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-play:life-drain}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -488,8 +452,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-play:flee-range}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -500,8 +462,6 @@ public class GameConstants {
     /**
      * @return the value of {@code mon-play:turn-range}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -512,8 +472,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:cent-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -524,8 +482,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:door-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -536,8 +492,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:wall-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -548,8 +502,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:tunn-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -560,8 +512,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:amt-room}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -572,8 +522,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:amt-item}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -584,8 +532,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:amt-gold}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -596,8 +542,6 @@ public class GameConstants {
     /**
      * @return the value of {@code dun-gen:pit-max}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -608,8 +552,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:max-depth}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -620,8 +562,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:day-length}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -632,8 +572,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:dungeon-hgt}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -644,8 +582,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:dungeon-wid}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -656,8 +592,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:town-hgt}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -668,8 +602,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:town-wid}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -680,8 +612,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:feeling-total}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -692,8 +622,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:feeling-need}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -704,8 +632,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:stair-skip}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -716,8 +642,6 @@ public class GameConstants {
     /**
      * @return the value of {@code world:move-energy}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -728,8 +652,6 @@ public class GameConstants {
     /**
      * @return the value of {@code carry-cap:pack-size}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -740,8 +662,6 @@ public class GameConstants {
     /**
      * @return the value of {@code carry-cap:quiver-size}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -752,8 +672,6 @@ public class GameConstants {
     /**
      * @return the value of {@code carry-cap:quiver-slot-size}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -764,8 +682,6 @@ public class GameConstants {
     /**
      * @return the value of {@code carry-cap:thrown-quiver-mult}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -776,8 +692,6 @@ public class GameConstants {
     /**
      * @return the value of {@code carry-cap:floor-size}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -788,8 +702,6 @@ public class GameConstants {
     /**
      * @return the value of {@code store:magic-level}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -800,8 +712,6 @@ public class GameConstants {
     /**
      * @return the value of {@code store:turns}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -812,8 +722,6 @@ public class GameConstants {
     /**
      * @return the value of {@code store:shuffle}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -824,8 +732,6 @@ public class GameConstants {
     /**
      * @return the value of {@code store:magic-level}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -836,8 +742,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:max-depth}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -848,8 +752,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:great-obj}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -860,8 +762,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:great-ego}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -872,8 +772,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:fuel-torch}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -884,8 +782,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:fuel-lamp}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -896,8 +792,6 @@ public class GameConstants {
     /**
      * @return the value of {@code obj-make:default-lamp}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -908,8 +802,6 @@ public class GameConstants {
     /**
      * @return the value of {@code player:max-sight}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -920,8 +812,6 @@ public class GameConstants {
     /**
      * @return the value of {@code player:max-range}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -932,8 +822,6 @@ public class GameConstants {
     /**
      * @return the value of {@code player:start-gold}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -944,8 +832,6 @@ public class GameConstants {
     /**
      * @return the value of {@code player:food-value}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -956,8 +842,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:debuff-toh}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -968,8 +852,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-weight-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -980,8 +862,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-toh-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -992,8 +872,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-level-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1004,8 +882,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-toh-skill-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1015,8 +891,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-offset}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1027,8 +901,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:chance-range}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1039,8 +911,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:power-weight-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1051,8 +921,6 @@ public class GameConstants {
     /**
      * @return the value of {@code melee-ranged:power-random}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1063,8 +931,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-level-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1075,8 +941,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-weight-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1087,8 +951,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-toh-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1099,8 +961,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-level-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1111,8 +971,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-launched-toh-skill-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1123,8 +981,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-thrown-toh-skill-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1135,8 +991,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-offset}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1148,8 +1002,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:chance-range}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1160,8 +1012,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:power-weight-scale}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1172,8 +1022,6 @@ public class GameConstants {
     /**
      * @return the value of {@code ranged-critical:power-random}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1184,8 +1032,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:debuff-toh}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1196,8 +1042,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:power-toh-scale-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1208,8 +1052,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:power-toh-scale-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1220,8 +1062,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:chance-add-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1232,8 +1072,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:chance-power-scale-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1244,8 +1082,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-melee-critical:chance-add-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1256,8 +1092,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:power-launched-toh-scale-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1268,8 +1102,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:power-launched-toh-scale-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1280,8 +1112,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:power-launched-toh-scale-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1292,8 +1122,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:power-thrown-toh-scale-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1304,8 +1132,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:power-thrown-toh-scale-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1316,8 +1142,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:chance-power-scale-numerator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1328,8 +1152,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:chance-power-scale-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -1340,8 +1162,6 @@ public class GameConstants {
     /**
      * @return the value of {@code o-ranged-critical:chance-add-denominator}
      * read from the constants.txt file.
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue

@@ -175,7 +175,6 @@ public class Curse {
      * @param conflictFlags conflicting object flags
      * @param description   description
      * @param message       trigger message
-     * @author Rowan Crowther
      */
     public Curse(String name,
                  List<ObjectBase> objectBases,
@@ -209,7 +208,6 @@ public class Curse {
 
     /**
      * @return the curse's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -217,7 +215,6 @@ public class Curse {
 
     /**
      * @return the object bases this curse may attach to
-     * @author Rowan Crowther
      */
     public List<ObjectBase> getObjectBases() {
         return objectBases;
@@ -225,7 +222,6 @@ public class Curse {
 
     /**
      * @return the weight this curse adds to its host object
-     * @author Rowan Crowther
      */
     public int getWeight() {
         return weight;
@@ -233,7 +229,6 @@ public class Curse {
 
     /**
      * @return the effect chain this curse triggers
-     * @author Rowan Crowther
      */
     public Effect getEffect() {
         return effect;
@@ -241,7 +236,6 @@ public class Curse {
 
     /**
      * @return the (non-element) object flags this curse grants
-     * @author Rowan Crowther
      */
     public List<ObjectFlag> getObjectFlags() {
         return objectFlags;
@@ -250,7 +244,6 @@ public class Curse {
     /**
      * @return the additive numeric modifiers this curse applies (obj_mods half of
      * the {@code values:} line); element resistances are held in {@link #getElInfo()}
-     * @author Rowan Crowther
      */
     public Map<ObjectModifier, Integer> getModifiers() {
         return modifiers;
@@ -259,7 +252,6 @@ public class Curse {
     /**
      * @return the per-element resistance levels and hates/ignores flags this curse
      * imposes (the {@code RES_*} values and {@code HATES_}/{@code IGNORE_} flags)
-     * @author Rowan Crowther
      */
     public Map<ElementEnum, ElementInfo> getElInfo() {
         return elInfo;
@@ -267,7 +259,6 @@ public class Curse {
 
     /**
      * @return the to-hit penalty imposed by the curse
-     * @author Rowan Crowther
      */
     public int getCombatToHit() {
         return combatToHit;
@@ -275,7 +266,6 @@ public class Curse {
 
     /**
      * @return the to-damage penalty imposed by the curse
-     * @author Rowan Crowther
      */
     public int getCombatDam() {
         return combatDam;
@@ -283,7 +273,6 @@ public class Curse {
 
     /**
      * @return the armour-class penalty imposed by the curse
-     * @author Rowan Crowther
      */
     public int getCombatAC() {
         return combatAC;
@@ -292,7 +281,6 @@ public class Curse {
     /**
      * @return the curses this one conflicts with, resolved by the second pass
      * (may be {@code null} before {@link #setConflict(List)} has run)
-     * @author Rowan Crowther
      */
     public List<Curse> getConflict() {
         return conflict;
@@ -300,7 +288,6 @@ public class Curse {
 
     /**
      * @return the object flags that conflict with this curse
-     * @author Rowan Crowther
      */
     public List<ObjectFlag> getConflictFlags() {
         return conflictFlags;
@@ -308,7 +295,6 @@ public class Curse {
 
     /**
      * @return the human-readable description of the curse
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;
@@ -316,7 +302,6 @@ public class Curse {
 
     /**
      * @return the flavour message shown when the curse triggers
-     * @author Rowan Crowther
      */
     public String getMessage() {
         return message;
@@ -325,7 +310,6 @@ public class Curse {
     /**
      * @return the raw names of curses this one conflicts with, for second-pass
      * resolution
-     * @author Rowan Crowther
      */
     public List<String> getConflictNames() {
         return conflictNames;
@@ -336,7 +320,6 @@ public class Curse {
      * once every curse has been built and can be looked up by name.
      *
      * @param conflict the resolved conflicting curses
-     * @author Rowan Crowther
      */
     public void setConflict(List<Curse> conflict) {
         this.conflict = conflict;
@@ -345,7 +328,6 @@ public class Curse {
     /**
      * @param objectBase the base to test
      * @return true if this curse may attach to the given object base
-     * @author Rowan Crowther
      */
     public boolean canAfflict(ObjectBase objectBase) {
         return objectBases.contains(objectBase);
@@ -353,7 +335,6 @@ public class Curse {
 
     /**
      * @return a debug string listing this curse's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

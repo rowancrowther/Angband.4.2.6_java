@@ -128,8 +128,6 @@ class PhaseEventRoutingTest {
      * <p>Parameterised over the events rather than written out five times because the failure this
      * catches is a mis-wired arm, and a mis-wired arm is only visible when every arm is exercised
      * the same way.
-     *
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(value = GameEventType.class, names = {
@@ -147,8 +145,6 @@ class PhaseEventRoutingTest {
      * The birth pair reaches {@code BirthEvents} rather than {@code MainEvents}. The two receivers
      * are the port's version of C's split between {@code ui-birth.c} and {@code ui-display.c}, and
      * this is what stops that split existing only in the file names.
-     *
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(value = GameEventType.class, names = {"EVENT_ENTER_BIRTH", "EVENT_LEAVE_BIRTH"})
@@ -165,8 +161,6 @@ class PhaseEventRoutingTest {
      * A phase event does not end the loop. Obvious, and worth stating because the same switch has
      * an arm that does end it: a {@code return} pasted into a phase arm would turn the first
      * transition of a session into a shutdown, and the game would close as the data load finished.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aPhaseEventLeavesTheLoopRunning() throws Exception {
@@ -181,8 +175,6 @@ class PhaseEventRoutingTest {
      * All seven in the order a session really produces them, on one loop. The individual tests each
      * start a fresh loop, which hides anything that only goes wrong the second time - a receiver
      * that cannot be built twice, or state left behind by the previous transition.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aWholeSessionOfTransitionsArrivesInOrder() throws Exception {

@@ -103,7 +103,6 @@ public enum ProjectionEnum {
      * @param elementEnum the element to find the projection for
      * @return the matching projection, or {@code null} if no constant of that name exists, which
      * means the two enums have drifted apart
-     * @author Rowan Crowther
      */
     public static ProjectionEnum getFromElementEnum(ElementEnum elementEnum) {
         try {

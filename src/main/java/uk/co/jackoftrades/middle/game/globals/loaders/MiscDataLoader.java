@@ -56,8 +56,6 @@ public class MiscDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the flavours that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>: the registry is left unset and the failure surfaces at first use.
-     *
-     * @author Rowan Crowther
      */
     public static void loadFlavours() {
         FlavourReader parser = new FlavourReader();
@@ -81,8 +79,6 @@ public class MiscDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the hints that did
      * assemble are registered regardless, per the partial-results contract. Nothing else loads from
      * the hint list, so an empty parse is harmless. An IO failure is logged and <em>swallowed</em>.
-     *
-     * @author Rowan Crowther
      */
     public static void loadHints() {
         HintReader parser = new HintReader();
@@ -106,8 +102,6 @@ public class MiscDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the name lists that
      * did assemble are registered regardless, per the partial-results contract. An IO failure is
      * logged and <em>swallowed</em>; character generation is the first thing to notice.
-     *
-     * @author Rowan Crowther
      */
     public static void loadNames() {
         NamesReader parser = new NamesReader();

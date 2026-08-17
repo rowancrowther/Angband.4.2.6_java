@@ -41,8 +41,6 @@ import java.util.List;
 public class MonsterReader implements Reader<MonsterRace> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

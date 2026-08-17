@@ -63,7 +63,6 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
      * @param filename the data file to read
      * @return the assembled profiles and any soft errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public @NotNull ParseResult<CaveProfile> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -86,7 +85,6 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
      * @param errorCatcher collects hard lexer/parser errors; fails the parse if any were seen
      * @param errors       the soft-error sink, appended to on a record-count mismatch
      * @return the parsed profile records, in file order
-     * @author Rowan Crowther
      */
     private static List<DungeonProfileParseRecord> extract(
             @NotNull DungeonProfileGrammar parser,

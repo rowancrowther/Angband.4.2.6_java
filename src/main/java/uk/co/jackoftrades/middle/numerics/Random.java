@@ -44,60 +44,42 @@ public class Random {
     /**
      * Unparsed string form of the base term, used by the constructors that take
      * the base as an expression rather than a resolved integer.
-     *
-     * @author Rowan Crowther
      */
     private String baseStr;
 
     private boolean isComplex;
     /**
      * The fixed base (minimum) contribution to the rolled value.
-     *
-     * @author Rowan Crowther
      */
     private int base;
     /**
      * Number of dice rolled (the {@code N} in {@code NdM}).
-     *
-     * @author Rowan Crowther
      */
     private int dice;
     /**
      * Unparsed string form of the sides term, for the expression-based constructor.
-     *
-     * @author Rowan Crowther
      */
     private String sidesStr;
     /**
      * Number of sides on each die (the {@code M} in {@code NdM}).
-     *
-     * @author Rowan Crowther
      */
     private int sides;
     /**
      * Level-scaling bonus multiplier ({@code m_bonus} in the C original); its
      * contribution grows with the dungeon level passed to {@link #randCalc(int, DamageAspect)}.
-     *
-     * @author Rowan Crowther
      */
     private int mBonus;
     /**
      * Flag set when the constructed value should ultimately represent a negative
      * range; consumed once by {@link #negate()}.
-     *
-     * @author Rowan Crowther
      */
     private boolean toNegate;
     /**
      * Guard ensuring {@link #negate()} only flips the value a single time.
-     *
-     * @author Rowan Crowther
      */
     private boolean negated;
     /**
      * Shared logger for parse/calculation diagnostics.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger(Random.class.getName());
     //private final boolean debug = false;
@@ -144,7 +126,6 @@ public class Random {
      * @param mBonus the level-scaling bonus multiplier
      * @param dice   the number of dice
      * @param sides  the sides per die
-     * @author Rowan Crowther
      */
     public Random(String base, int mBonus, int dice, int sides) {
         this.baseStr = base;
@@ -161,7 +142,6 @@ public class Random {
      * @param mBonus the level-scaling bonus multiplier
      * @param dice  the number of dice
      * @param sides the sides per die as a string expression
-     * @author Rowan Crowther
      */
     public Random(int base, int mBonus, int dice, String sides) {
         this.base = base;

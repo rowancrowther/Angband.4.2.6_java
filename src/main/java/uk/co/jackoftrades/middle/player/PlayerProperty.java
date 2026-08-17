@@ -89,7 +89,6 @@ public class PlayerProperty {
      * @param name               display name
      * @param description        human-readable description
      * @param value              the resistance level (for element properties)
-     * @author Rowan Crowther
      */
     public PlayerProperty(PlayerPropertyType playerPropertyType,
                           PlayerFlag pCode,

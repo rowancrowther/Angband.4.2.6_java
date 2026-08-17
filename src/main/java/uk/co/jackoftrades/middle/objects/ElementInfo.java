@@ -48,23 +48,17 @@ public class ElementInfo {
      *
      * <p>Not final: {@link #copy()} replaces the whole set rather than copying into the existing
      * one, so that the copy and its source cannot share a {@link Flag}.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ElementInfoEnum> flags;
     /**
      * The resistance level against this element, C's {@code element_info.res_level}. Zero is
      * neutral, positive resists and negative is a vulnerability; the scale is C's, so nothing
      * here interprets the number beyond passing it on.
-     *
-     * @author Rowan Crowther
      */
     private int resLevel;
 
     /**
      * Build an element-info with an empty flag set.
-     *
-     * @author Rowan Crowther
      */
     public ElementInfo() {
         this.flags = new Flag<>(ElementInfoEnum.class);
@@ -72,7 +66,6 @@ public class ElementInfo {
 
     /**
      * @return the resistance level against this element
-     * @author Rowan Crowther
      */
     public int getResLevel() {
         return resLevel;
@@ -82,7 +75,6 @@ public class ElementInfo {
      * Sets the resistance level against this element.
      *
      * @param resLevel the resistance level to store
-     * @author Rowan Crowther
      */
     public void setResLevel(int resLevel) {
         this.resLevel = resLevel;
@@ -95,7 +87,6 @@ public class ElementInfo {
      * the whole reason {@code copy()} exists.
      *
      * @return the hates/ignores/random flags for this element, shared with this instance
-     * @author Rowan Crowther
      */
     public Flag<ElementInfoEnum> getFlags() {
         return flags;
@@ -107,7 +98,6 @@ public class ElementInfo {
      * folded onto a derived kind (e.g. a synthesised spellbook) that must then be free to diverge.
      *
      * @return an independent copy of this element info
-     * @author Rowan Crowther
      */
     public ElementInfo copy() {
         ElementInfo ei = new ElementInfo();
@@ -125,7 +115,6 @@ public class ElementInfo {
      *
      * @param info the flag to set
      * @return true if the flag was newly set, false if it was already set
-     * @author Rowan Crowther
      * @see #has(ElementInfoEnum)
      */
     public boolean on(ElementInfoEnum info) {
@@ -139,7 +128,6 @@ public class ElementInfo {
      *
      * @param info the flag to test
      * @return true if the flag is set
-     * @author Rowan Crowther
      * @see #on(ElementInfoEnum)
      */
     public boolean has(ElementInfoEnum info) {

@@ -52,8 +52,6 @@ class ElementEnumTest {
     /**
      * C has 25 elements. This port brackets them with {@code ELEM_NONE} and the {@code ELEM_MAX}
      * count sentinel, giving 27.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theListIsCsTwentyFiveElementsPlusItsTwoSentinels() {
@@ -66,8 +64,6 @@ class ElementEnumTest {
     /**
      * The real elements, in C's order. Pinned as a list because the order is load-bearing for the
      * projection parser, not merely conventional.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theElementsAreInTheirCOrder() {
@@ -91,7 +87,6 @@ class ElementEnumTest {
      * Every real element resolves to the projection of the same name.
      *
      * @param element the element under test; the two sentinels are excluded by the test body
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(ElementEnum.class)
@@ -110,8 +105,6 @@ class ElementEnumTest {
     /**
      * The named cases from the Javadoc, spelled out so the mapping is legible without running the
      * parameterised test in one's head.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theWorkedExamplesFromTheJavadocHold() {
@@ -132,8 +125,6 @@ class ElementEnumTest {
      * <p>{@code ELEM_MAX} has no counterpart, so the lookup returns null rather than throwing.
      * Null is the signal that the two lists have drifted apart, which is exactly what a missing
      * {@code PROJ_MAX} looks like from here.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theSentinelsResolveOnlyAsFarAsTheirNamesExist() {
@@ -147,8 +138,6 @@ class ElementEnumTest {
      * The four base elements are exactly acid, electricity, fire and cold — C's {@code base}
      * column in {@code list-elements.h}. Objects ignore them as a group, so a fifth appearing
      * silently would change what a spellbook burns in.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void exactlyTheFourPhysicalElementsAreBaseElements() {
@@ -168,8 +157,6 @@ class ElementEnumTest {
      * <p>Since the flag is per-constant rather than positional, nothing stops it being set on an
      * element past the boundary; the test checks the set is the contiguous run C's bound describes,
      * which is the property the ordinal comparison gave for free.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theResistableElementsAreTheContiguousRunUpToDisenchantment() {
@@ -187,8 +174,6 @@ class ElementEnumTest {
      * Every base element is also resistable — the base elements are the first four of the
      * resistable run, so a flag set that violated this would mean one of the two columns had been
      * mistranscribed.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void everyBaseElementIsAlsoResistable() {

@@ -56,8 +56,6 @@ class EventsBusHandlerTest {
     /**
      * A fresh bus per test. The constructor calls {@code init()}, which clears every type, so
      * there is no leakage between tests even though handlers are registered freely below.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() {
@@ -66,8 +64,6 @@ class EventsBusHandlerTest {
 
     /**
      * The base case: register, signal, get called once with the type and payload as sent.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aRegisteredHandlerReceivesItsEvent() {
@@ -86,8 +82,6 @@ class EventsBusHandlerTest {
      * Registration is keyed by type. A handler listening for one event must stay silent when
      * another is signalled — otherwise every handler hears all traffic and the keying is
      * decorative.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aHandlerHearsOnlyTheEventItRegisteredFor() {
@@ -102,8 +96,6 @@ class EventsBusHandlerTest {
     /**
      * Several handlers on one event all fire, and in the order they were added. C's bus appends,
      * and order matters wherever one handler's drawing must land before another's.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void everyHandlerOnAnEventFiresInRegistrationOrder() {
@@ -121,8 +113,6 @@ class EventsBusHandlerTest {
     /**
      * Signalling an event nobody listens to is a no-op, not a failure. Most of the 65 event types
      * have no handler at any given moment.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void signallingAnEventWithNoHandlersDoesNothing() {
@@ -132,8 +122,6 @@ class EventsBusHandlerTest {
     /**
      * A null payload reaches the handler as null. {@code eventSignal} sends one for every
      * payload-free event, so the bus swallowing it would break the majority of the traffic.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aNullPayloadIsDeliveredRatherThanFiltered() {
@@ -148,8 +136,6 @@ class EventsBusHandlerTest {
 
     /**
      * A removed handler stops hearing the event, and the others carry on.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aRemovedHandlerStopsReceivingItsEvent() {
@@ -168,8 +154,6 @@ class EventsBusHandlerTest {
     /**
      * Clearing one type leaves the others registered — the difference between
      * {@code eventRemoveHandlerType} and {@code eventRemoveAllHandlers}.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void clearingOneEventTypeLeavesTheOthersAlone() {
@@ -191,8 +175,6 @@ class EventsBusHandlerTest {
      * {@code eventRemoveAllHandlers} clears every type, which is what {@code init()} relies on to
      * give a bus with no stale subscriptions. Checked across every one of the 65 types rather than
      * a sample, since the loop that clears them is the thing under test.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void removingAllHandlersClearsEveryEventType() {
@@ -218,8 +200,6 @@ class EventsBusHandlerTest {
     /**
      * A newly constructed bus has no handlers on any type. The constructor calls {@code init()},
      * and this is what makes a fresh bus safe to use in a test without a teardown.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aFreshBusHasNoSubscriptions() {
@@ -231,8 +211,6 @@ class EventsBusHandlerTest {
     /**
      * {@code eventAddHandlerSet} is C's {@code event_add_handler_set}: one handler, several event
      * types, one call. Each listed type must reach it, and exactly once.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void addingAHandlerToASetRegistersItForEveryTypeInTheSet() {
@@ -250,8 +228,6 @@ class EventsBusHandlerTest {
 
     /**
      * And the matching removal takes it off all of them.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void removingAHandlerFromASetUnregistersItEverywhereInTheSet() {
@@ -272,8 +248,6 @@ class EventsBusHandlerTest {
      * behaviour rather than endorsed: C's bus does not deduplicate either, but a double
      * registration during wiring would show up as doubled traffic on the channel, and this test is
      * where that behaviour is written down.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void registeringTheSameHandlerTwiceCallsItTwice() {
@@ -292,8 +266,6 @@ class EventsBusHandlerTest {
      * disturbed. Without that, wiring performed from inside a handler would throw a
      * {@code ConcurrentModificationException}, and the natural place to do such wiring is exactly
      * inside an {@code EVENT_ENTER_INIT} handler.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aHandlerMayRegisterAnotherWhileBeingDispatchedTo() {

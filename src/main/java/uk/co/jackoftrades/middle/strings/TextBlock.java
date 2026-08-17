@@ -38,15 +38,11 @@ public class TextBlock {
      * The ordered sequence of coloured characters making up this block; the
      * pairing of glyph and colour is what lets a block carry per-character
      * colouring through wrapping and output.
-     *
-     * @author Rowan Crowther
      */
     private final ArrayList<AngbandDisplayCharacter> textAndAttributes;
     /**
      * Logger used to report malformed append calls (e.g. mismatched
      * string/colour lengths).
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

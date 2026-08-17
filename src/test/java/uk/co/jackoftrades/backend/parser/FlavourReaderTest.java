@@ -95,8 +95,6 @@ class FlavourReaderTest {
      * Reproduces the real {@code init()} load order up to artifacts, then loads the real
      * {@code flavor.txt} once. The object-kind table must hold the artifact-synthesised special
      * kinds before flavours run, or every {@code fixed:} sval lookup returns null.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -131,8 +129,6 @@ class FlavourReaderTest {
     /**
      * Restores the registries mutated by {@link #seed()} so shared static state on
      * the registries do not leak into other suites.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {

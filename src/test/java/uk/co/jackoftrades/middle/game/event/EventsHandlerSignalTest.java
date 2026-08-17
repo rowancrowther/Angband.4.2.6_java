@@ -56,9 +56,6 @@ class EventsHandlerSignalTest {
 
     private CapturingHandler handler;
 
-    /**
-     * @author Rowan Crowther
-     */
     @BeforeEach
     void setUp() {
         handler = new CapturingHandler();
@@ -67,8 +64,6 @@ class EventsHandlerSignalTest {
     /**
      * The payload-free signal sends a null payload, which the bus is required to deliver as-is.
      * This is the shape most of the 65 event types travel in.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aBareSignalCarriesTheEventTypeAndNoPayload() {
@@ -78,9 +73,6 @@ class EventsHandlerSignalTest {
         assertNull(handler.lastData);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     void aFlagSignalWrapsItsBoolean() {
         handler.eventSignalFlag(GameEventType.EVENT_GEN_LEVEL_END, true);
@@ -89,9 +81,6 @@ class EventsHandlerSignalTest {
         assertEquals(new EventDataBoolean(true), handler.lastData);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     void aStringSignalWrapsItsText() {
         handler.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays...");
@@ -99,9 +88,6 @@ class EventsHandlerSignalTest {
         assertEquals(new EventDataString("Initializing arrays..."), handler.lastData);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     void aMessageSignalWrapsItsTypeAndText() {
         handler.eventSignalMessage(GameEventType.EVENT_MESSAGE, MessageType.MSG_HIT, "You hit the orc.");
@@ -117,8 +103,6 @@ class EventsHandlerSignalTest {
      *
      * <p>Driven with distinct values on purpose: {@code (17, 3)} and {@code (3, 17)} are different
      * grids, so a straight-through wrapping cannot pass this by accident.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aPointSignalCrossesFromXyToRowColumn() {
@@ -133,8 +117,6 @@ class EventsHandlerSignalTest {
      * The {@link Loc} overload has to agree with the loose-coordinate one: the same square
      * expressed either way must produce the same payload. This is the cheapest guard against the
      * two overloads drifting apart, and it needs no reference to C at all.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void bothPointOverloadsAgreeOnTheSameSquare() {
@@ -151,8 +133,6 @@ class EventsHandlerSignalTest {
     /**
      * The size signal is height-first, matching C's {@code event_signal_size(type, h, w)} and its
      * {@code struct { int h, w; }}.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aSizeSignalKeepsHeightFirst() {
@@ -164,8 +144,6 @@ class EventsHandlerSignalTest {
     /**
      * Six components, five of them {@code int}. Each given a distinct value so a transposed pair
      * changes the payload.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aTunnelSignalKeepsItsCountsInOrder() {
@@ -178,8 +156,6 @@ class EventsHandlerSignalTest {
      * The bolt signal now takes grids rather than four loose coordinates, so the transposition
      * risk has moved to the caller — but the three adjacent booleans remain, and are driven here
      * in a pattern that no single swap reproduces.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aBoltSignalPassesEveryComponentThrough() {
@@ -196,8 +172,6 @@ class EventsHandlerSignalTest {
     /**
      * The event type reaches the bus unchanged. Trivial, but it is the half of the dispatch that
      * says which handlers run, and nothing else here asserts it for a payload-carrying signal.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theEventTypeIsPassedThroughAlongsideThePayload() {

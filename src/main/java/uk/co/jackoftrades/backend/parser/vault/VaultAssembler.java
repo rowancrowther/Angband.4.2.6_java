@@ -58,7 +58,6 @@ public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>>
      * @param records the raw parse records to assemble
      * @param errors  soft-error sink; one message is appended per record that gets skipped
      * @return the successfully assembled vaults, in file order
-     * @author Rowan Crowther
      */
     @Override
     public List<Vault> assemble(@NotNull List<VaultParseRecord> records, @NotNull List<String> errors) {

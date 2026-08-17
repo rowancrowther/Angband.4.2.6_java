@@ -33,50 +33,34 @@ import java.util.List;
 public class BlowMethod {
     /**
      * The method's name (e.g. "HIT", "BITE").
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Whether this method can cause cuts.
-     *
-     * @author Rowan Crowther
      */
     private boolean cut;
     /**
      * Whether this method can cause stunning.
-     *
-     * @author Rowan Crowther
      */
     private boolean stun;
     /**
      * Whether this method can miss (vs. always landing).
-     *
-     * @author Rowan Crowther
      */
     private boolean miss;
     /**
      * Whether this method is a physical attack.
-     *
-     * @author Rowan Crowther
      */
     private boolean phys;
     /**
      * The message type/category used when reporting this blow.
-     *
-     * @author Rowan Crowther
      */
     private MessageType mesgT;
     /**
      * Flavour messages describing the blow landing.
-     *
-     * @author Rowan Crowther
      */
     private List<String> blowMessage;
     /**
      * Human-readable description of the method.
-     *
-     * @author Rowan Crowther
      */
     private String desc;
 
@@ -91,7 +75,6 @@ public class BlowMethod {
      * @param mesgT       message category
      * @param blowMessage flavour messages
      * @param desc        description
-     * @author Rowan Crowther
      */
     public BlowMethod(String name, boolean cut, boolean stun, boolean miss, boolean phys, MessageType mesgT,
                       List<String> blowMessage, String desc) {
@@ -107,7 +90,6 @@ public class BlowMethod {
 
     /**
      * @return this blow method's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -115,7 +97,6 @@ public class BlowMethod {
 
     /**
      * @return whether this method can inflict cuts on its target
-     * @author Rowan Crowther
      */
     public boolean isCut() {
         return cut;
@@ -123,7 +104,6 @@ public class BlowMethod {
 
     /**
      * @return whether this method can stun its target
-     * @author Rowan Crowther
      */
     public boolean isStun() {
         return stun;
@@ -135,7 +115,6 @@ public class BlowMethod {
      * read oddly (crawling, drooling, gazing, wailing), which simply stay silent.
      *
      * @return whether the player is told when this blow misses
-     * @author Rowan Crowther
      */
     public boolean isMiss() {
         return miss;
@@ -143,7 +122,6 @@ public class BlowMethod {
 
     /**
      * @return whether this method does physical damage
-     * @author Rowan Crowther
      */
     public boolean isPhys() {
         return phys;
@@ -155,7 +133,6 @@ public class BlowMethod {
      * whose data-file entry gave no {@code msg:}.
      *
      * @return this blow method's message type
-     * @author Rowan Crowther
      */
     public MessageType getMesgT() {
         return mesgT;
@@ -168,7 +145,6 @@ public class BlowMethod {
      * braces are placeholders still awaiting expansion at display time.
      *
      * @return this blow method's action messages, in data-file order; may be empty
-     * @author Rowan Crowther
      */
     public List<String> getBlowMessage() {
         return blowMessage;
@@ -176,7 +152,6 @@ public class BlowMethod {
 
     /**
      * @return the short phrase naming this method in monster lore, e.g. "hit", "drool on you"
-     * @author Rowan Crowther
      */
     public String getDesc() {
         return desc;

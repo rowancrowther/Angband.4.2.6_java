@@ -48,7 +48,6 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
      * @param records the parsed room lines, in file order
      * @param errors  the soft-error sink, appended to for each unusable line
      * @return the assembled room profiles, in file order, minus any that failed
-     * @author Rowan Crowther
      */
     @Override
     public List<RoomProfile> assemble(@NotNull List<DungeonProfileParseRecord.Room> records, @NotNull List<String> errors) {

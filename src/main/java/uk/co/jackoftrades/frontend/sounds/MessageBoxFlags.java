@@ -65,8 +65,6 @@ public enum MessageBoxFlags {
     /**
      * The sound file associated with this message-box style, or a {@link File}
      * wrapping an empty path when no sound is configured.
-     *
-     * @author Rowan Crowther
      */
     private File file;
 
@@ -74,7 +72,6 @@ public enum MessageBoxFlags {
      * Build the constant, wrapping the given path as its associated sound file.
      *
      * @param path the sound file path, or empty for no sound
-     * @author Rowan Crowther
      */
     MessageBoxFlags(String path) {
         file = new File(path);
@@ -82,7 +79,6 @@ public enum MessageBoxFlags {
 
     /**
      * @return the {@link File} associated with this message-box style
-     * @author Rowan Crowther
      */
     public File getFileName() {
         return file;

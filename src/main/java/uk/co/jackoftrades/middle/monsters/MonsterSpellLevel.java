@@ -31,56 +31,38 @@ import uk.co.jackoftrades.channel.colour.ColourEnum;
 public class MonsterSpellLevel {
     /**
      * The minimum spell power at which this level applies.
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * Lore description of the spell at this level.
-     *
-     * @author Rowan Crowther
      */
     private String loreDesc;
     /**
      * Colour used for the lore entry normally.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttr;
     /**
      * Colour used for the lore entry when the player resists.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttrResist;
     /**
      * Colour used for the lore entry when the player is immune.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttrImmune;
     /**
      * Message shown when the spell is cast and seen.
-     *
-     * @author Rowan Crowther
      */
     String message;
     /**
      * Message shown when the spell is cast and the player is blind.
-     *
-     * @author Rowan Crowther
      */
     String blindMessage;
     /**
      * Message shown when the spell misses.
-     *
-     * @author Rowan Crowther
      */
     String missMessage;
     /**
      * Message shown when the player saves against the spell.
-     *
-     * @author Rowan Crowther
      */
     String saveMessage;
 
@@ -96,7 +78,6 @@ public class MonsterSpellLevel {
      * @param blindMessage   blind-cast message
      * @param missMessage    miss message
      * @param saveMessage    save message
-     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     public MonsterSpellLevel(int power, String loreDesc, ColourEnum loreAttr, ColourEnum loreAttrResist,

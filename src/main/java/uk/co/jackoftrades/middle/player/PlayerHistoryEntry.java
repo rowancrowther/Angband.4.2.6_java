@@ -40,8 +40,6 @@ import org.apache.logging.log4j.Logger;
 public class PlayerHistoryEntry {
     /**
      * Logger for this type.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -56,7 +54,6 @@ public class PlayerHistoryEntry {
      *
      * @param roll the cumulative selection threshold
      * @param text the backstory text this entry adds
-     * @author Rowan Crowther
      */
     public PlayerHistoryEntry(int roll, String text) {
         this.roll = roll;
@@ -65,7 +62,6 @@ public class PlayerHistoryEntry {
 
     /**
      * @return the backstory text this entry contributes to the biography
-     * @author Rowan Crowther
      */
     public String getText() {
         return text;
@@ -73,7 +69,6 @@ public class PlayerHistoryEntry {
 
     /**
      * @return the cumulative probability threshold at which this entry is selected
-     * @author Rowan Crowther
      */
     public int getRoll() {
         return roll;

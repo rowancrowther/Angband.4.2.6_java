@@ -44,7 +44,6 @@ public class RoomProfileReader implements Reader<RoomTemplate> {
     /**
      * @param filename the data file to parse
      * @return the successfully assembled templates; soft errors are logged but not surfaced here
-     * @author Rowan Crowther
      */
     @Override
     public @NotNull List<RoomTemplate> parse(@NotNull String filename) throws IOException {
@@ -57,7 +56,6 @@ public class RoomProfileReader implements Reader<RoomTemplate> {
      *
      * @param filename the data file to parse
      * @return the assembled templates plus any soft errors gathered along the way
-     * @author Rowan Crowther
      */
     public ParseResult<RoomTemplate> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -79,7 +77,6 @@ public class RoomProfileReader implements Reader<RoomTemplate> {
      *                     rather than handing back a partially-built list
      * @param errors       soft-error sink for the record-count check
      * @return the raw parse records, in file order
-     * @author Rowan Crowther
      */
     private static List<RoomProfileParseRecord> extract(
             @NotNull RoomProfileGrammar parser,

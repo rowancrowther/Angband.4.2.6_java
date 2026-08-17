@@ -42,8 +42,6 @@ import java.util.Map;
 public class ObjectProperty {
     /**
      * Logger (reserved for diagnostics).
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -60,80 +58,54 @@ public class ObjectProperty {
 
     /**
      * The property's category.
-     *
-     * @author Rowan Crowther
      */
     private ObjPropertyType type;
     /**
      * The property's sub-type identifier.
-     *
-     * @author Rowan Crowther
      */
     private ObjectFlagType subtype;
     /**
      * How this property is identified by the player.
-     *
-     * @author Rowan Crowther
      */
     private ObjectFlagID idType;
     /**
      * The typed payload (flag/modifier/element) this property represents.
-     *
-     * @author Rowan Crowther
      */
     private ObjectPropertyTypeWrapper payload;
     /**
      * The property's base power (for item valuation).
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * The property's value multiplier.
-     *
-     * @author Rowan Crowther
      */
     private int mult;
     /**
      * Per-item-type multipliers applied to the property's value.
-     *
-     * @author Rowan Crowther
      */
     private Map<TValue, Integer> typeMults;
     /**
      * The property's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Adjective describing the positive form of the property.
-     *
-     * @author Rowan Crowther
      */
     private String adjective;
     /**
      * Adjective describing the negative form of the property.
-     *
-     * @author Rowan Crowther
      */
     private String negAdjective;
     /**
      * Message shown when the property is noticed.
-     *
-     * @author Rowan Crowther
      */
     private String message;
     /**
      * Human-readable description of the property.
-     *
-     * @author Rowan Crowther
      */
     private String description;
     /**
      * The UI entries this property contributes to, with their payloads.
-     *
-     * @author Rowan Crowther
      */
     private List<UIBinding> boundEntries;
 
@@ -153,7 +125,6 @@ public class ObjectProperty {
      * @param message      notice message
      * @param description  description
      * @param boundEntries bound UI entries
-     * @author Rowan Crowther
      */
     public ObjectProperty(ObjPropertyType type, ObjectFlagType subtype,
                           ObjectFlagID idType, ObjectPropertyTypeWrapper payload,
@@ -178,7 +149,6 @@ public class ObjectProperty {
 
     /**
      * @return the property's category, which decides how {@link #getPayload} is to be read
-     * @author Rowan Crowther
      */
     public ObjPropertyType getType() {
         return type;
@@ -187,7 +157,6 @@ public class ObjectProperty {
     /**
      * @return the property's sub-type, which for flags distinguishes sustains, protections and the
      * like, and marks those that are not learnable properties at all
-     * @author Rowan Crowther
      */
     public ObjectFlagType getSubtype() {
         return subtype;
@@ -195,7 +164,6 @@ public class ObjectProperty {
 
     /**
      * @return the typed payload identifying which flag, modifier or element this property describes
-     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper getPayload() {
         return payload;
@@ -203,7 +171,6 @@ public class ObjectProperty {
 
     /**
      * @return the property's name, as shown to the player
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

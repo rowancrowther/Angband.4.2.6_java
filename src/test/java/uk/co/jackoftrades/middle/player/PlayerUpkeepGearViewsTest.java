@@ -49,9 +49,6 @@ class PlayerUpkeepGearViewsTest {
 
     private PlayerUpkeep upkeep;
 
-    /**
-     * @author Rowan Crowther
-     */
     @BeforeEach
     void setUp() {
         upkeep = new PlayerUpkeep();
@@ -67,9 +64,6 @@ class PlayerUpkeepGearViewsTest {
     @DisplayName("orNoticeFlag")
     class NoticeFlags {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("setting a flag for the first time reports it as new")
         void firstSetIsNew() {
@@ -79,8 +73,6 @@ class PlayerUpkeepGearViewsTest {
         /**
          * The idempotence that makes the flag a request rather than a counter. A second caller asking
          * for the same pass changes nothing, and is told so.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("setting a flag again reports it as already set")
@@ -93,8 +85,6 @@ class PlayerUpkeepGearViewsTest {
         /**
          * Or, not assignment. C's operator is bitwise or for a reason: several requests can be
          * outstanding at once, and setting one must not clear another.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("setting one flag leaves another untouched")
@@ -108,8 +98,6 @@ class PlayerUpkeepGearViewsTest {
 
         /**
          * A fresh upkeep has no requests outstanding — the state a newborn player is in.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a fresh upkeep has no notices set")
@@ -127,9 +115,6 @@ class PlayerUpkeepGearViewsTest {
     @DisplayName("the quiver and the pack")
     class GearViews {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("both start empty rather than null")
         void bothStartEmpty() {
@@ -139,8 +124,6 @@ class PlayerUpkeepGearViewsTest {
 
         /**
          * Live, not copied. If the getter snapshotted, the second read would not see the write.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the quiver is a live view, not a snapshot")
@@ -152,9 +135,6 @@ class PlayerUpkeepGearViewsTest {
             assertSame(arrows, upkeep.getQuiver().get(0));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("the pack is a live view, not a snapshot")
         void inventoryIsLive() {
@@ -168,8 +148,6 @@ class PlayerUpkeepGearViewsTest {
         /**
          * Successive reads hand back the one list, which is the strongest form of the same claim and
          * the one a defensive copy would fail outright.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("successive reads return the same list object")
@@ -181,8 +159,6 @@ class PlayerUpkeepGearViewsTest {
         /**
          * Order is preserved, because order is meaning: an object's position in these lists is the
          * key the player presses to select it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("slot order is the order things were put in")
@@ -199,8 +175,6 @@ class PlayerUpkeepGearViewsTest {
         /**
          * The two views are separate lists. Ammunition goes in one and everything else in the other,
          * and an object added to the pack must not appear in the quiver.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the quiver and the pack are distinct")

@@ -57,7 +57,6 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * @param records the raw class records, in file order
      * @param errors  the soft-error channel; every unknown name or malformed value is appended here
      * @return the resolved classes, minus any dropped for a resolution failure
-     * @author Rowan Crowther
      */
     @Override
     public List<PlayerClass> assemble(@NotNull List<PlayerClassParseRecord> records, @NotNull List<String> errors) {

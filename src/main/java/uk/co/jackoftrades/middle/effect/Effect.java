@@ -37,64 +37,46 @@ import java.util.List;
 public class Effect {
     /**
      * This effect's type
-     *
-     * @author Rowan Crowther
      */
     private EffectEnum index;
 
     /**
      * The dice expression giving the effect's primary magnitude.
-     *
-     * @author Rowan Crowther
      */
     private Random dice;
 
     /**
      * The unparsed complex dice string linked with an expression (retained until expression is resolved).
-     *
-     * @author Rowan Crowther
      */
     private String diceString;
 
     /**
      * Target vertical offset (for positioned effects).
-     *
-     * @author Rowan Crowther
      */
     private int y;
 
     /**
      * Target horizontal offset (for positioned effects).
-     *
-     * @author Rowan Crowther
      */
     private int x;
 
     /**
      * The effect's sub-type category.
-     *
-     * @author Rowan Crowther
      */
     private EffectSubTypeEnum subType;
 
     /**
      * The typed sub-type payload (its meaning depends on {@link #subType}).
-     *
-     * @author Rowan Crowther
      */
     private EffectSubTypeWrapper value;
 
     /**
      * The effect's radius, as an int
-     *
-     * @author Rowan Crowther
      */
     private int radius;
 
     /**
      * A free-form extra parameter whose meaning depends on the effect.
-     *
-     * @author Rowan Crowther
      */
     private int otherParameter;
 
@@ -104,15 +86,11 @@ public class Effect {
 
     /**
      * The message displayed when the effect triggers
-     *
-     * @author Rowan Crowther
      */
     private String msg;
 
     /**
      * The effect's timing/duration, as a Random expression.
-     *
-     * @author Rowan Crowther
      */
     private Random time;
 
@@ -122,8 +100,6 @@ public class Effect {
      * which value is plugged into the equation to create the dice value, and
      * an operation, which is a string representation of a set of operator/operand
      * values used to calculate the exact value plugged into the dice value
-     *
-     * @author Rowan Crowther
      */
     private final List<Expression> expression;
 
@@ -142,8 +118,6 @@ public class Effect {
      * @param time           timing dice
      * @param expression     value-scaling expressions
      * @param msg            String message on effect triggering
-     *
-     * @author Rowan Crowther
      */
     public Effect(EffectEnum index, Random dice, String diceString, int y, int x, EffectSubTypeEnum subType,
                   EffectSubTypeWrapper value, int radius, int otherParameter, Random time,
@@ -176,8 +150,6 @@ public class Effect {
      * Determines whether this Effect has a valid Effect index
      *
      * @return true if the index is not EF_NONE or EF_MAX, false otherwise
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public boolean isValid() {
@@ -189,8 +161,6 @@ public class Effect {
      * Determines whether this effect is aimed
      *
      * @return True if this effect is aimed, false otherwise
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public boolean isAim() {
@@ -204,8 +174,6 @@ public class Effect {
      * Get the information label for this effect
      *
      * @return the information label for this, or null if no label exists
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getInfo() {
@@ -231,8 +199,6 @@ public class Effect {
      * Get the description label for this effect
      *
      * @return the description label for this effect, or null if none exists
-     *
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getDescription() {

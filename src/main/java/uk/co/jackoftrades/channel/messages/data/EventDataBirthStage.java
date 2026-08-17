@@ -30,44 +30,30 @@ import java.util.ArrayList;
 public class EventDataBirthStage implements GameEventData {
     /**
      * Whether this stage resets earlier choices.
-     *
-     * @author Rowan Crowther
      */
     private boolean reset;
     /**
      * A hint prompting the player for this stage's decision.
-     *
-     * @author Rowan Crowther
      */
     private final String hint;
     /**
      * The number of choices available at this stage.
-     *
-     * @author Rowan Crowther
      */
     private int nChoices;
     /**
      * The index of the initially selected choice.
-     *
-     * @author Rowan Crowther
      */
     private int initialChoice;
     /**
      * The selectable choices for this stage.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<String> choices;
     /**
      * Help text for each choice (parallel to {@link #choices}).
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<String> helpTexts;
     /**
      * Extra stage-specific data, if any.
-     *
-     * @author Rowan Crowther
      */
     private Object xtra;
 
@@ -81,7 +67,6 @@ public class EventDataBirthStage implements GameEventData {
      * @param choices       the choices
      * @param helpTexts     per-choice help text
      * @param xtra          extra stage-specific data
-     * @author Rowan Crowther
      */
     public EventDataBirthStage(boolean reset,
                                String hint,
@@ -101,7 +86,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return whether this stage resets earlier choices
-     * @author Rowan Crowther
      */
     public boolean isReset() {
         return reset;
@@ -109,7 +93,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the prompt hint
-     * @author Rowan Crowther
      */
     public String getHint() {
         return hint;
@@ -117,7 +100,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the number of choices
-     * @author Rowan Crowther
      */
     public int getnChoices() {
         return nChoices;
@@ -125,7 +107,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the default-selected choice index
-     * @author Rowan Crowther
      */
     public int getInitialChoice() {
         return initialChoice;
@@ -133,7 +114,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the selectable choices
-     * @author Rowan Crowther
      */
     public ArrayList<String> getChoices() {
         return choices;
@@ -141,7 +121,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the per-choice help text
-     * @author Rowan Crowther
      */
     public ArrayList<String> getHelpTexts() {
         return helpTexts;
@@ -149,7 +128,6 @@ public class EventDataBirthStage implements GameEventData {
 
     /**
      * @return the extra stage-specific data
-     * @author Rowan Crowther
      */
     public Object getXtra() {
         return xtra;

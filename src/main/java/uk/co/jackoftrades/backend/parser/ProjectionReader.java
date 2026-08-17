@@ -51,7 +51,6 @@ public class ProjectionReader implements Reader<Projection> {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      * @throws IOException if there is an issue with creating the CharStream
-     * @author Rowan Crowther
      */
     @NotNull
     @Contract("_ -> !null")
@@ -70,7 +69,6 @@ public class ProjectionReader implements Reader<Projection> {
      * @return A {@link ParseResult} of type {@link Projection}
      * @throws IOException when there is a problem finding or reading
      *                     the file
-     * @author Rowan Crowther
      */
     public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename, ProjectionLexer::new,

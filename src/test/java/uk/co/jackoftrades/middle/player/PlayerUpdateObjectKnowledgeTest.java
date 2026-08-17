@@ -71,8 +71,6 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * Writes a private field on anything, for the state a running game would have filled in and this
      * suite does not run.
-     *
-     * @author Rowan Crowther
      */
     private static void poke(Object target, String name, Object value) throws Exception {
         Field f = target.getClass().getDeclaredField(name);
@@ -83,8 +81,6 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * Writes a private field declared on {@link Player} itself, which {@link #poke} cannot reach on a
      * subclass instance — {@code getDeclaredField} does not search superclasses.
-     *
-     * @author Rowan Crowther
      */
     private static void pokePlayer(Player target, String name, Object value) throws Exception {
         Field f = Player.class.getDeclaredField(name);
@@ -92,9 +88,6 @@ class PlayerUpdateObjectKnowledgeTest {
         f.set(target, value);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @BeforeEach
     void setUp() {
         player = new CountingPlayer();
@@ -103,9 +96,6 @@ class PlayerUpdateObjectKnowledgeTest {
         GameEngine.setEventsBusHandler(bus);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @AfterEach
     void tearDown() {
         GameEngine.setEventsBusHandler(realBus);
@@ -114,8 +104,6 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * A level holding the given objects. The smallest legal chunk is 0×0 — nothing here reads a
      * square, and a real level's dimensions would only slow the fixture down.
-     *
-     * @author Rowan Crowther
      */
     private Chunk levelHolding(ItemObject... items) throws Exception {
         Chunk chunk = new Chunk("test", 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, player);
@@ -126,8 +114,6 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * Puts the given items in the player's pack. C walks {@code p->gear} as a linked list; the port
      * holds an {@link ArrayList}, which is why the method needs a null guard where C needs none.
-     *
-     * @author Rowan Crowther
      */
     private void carrying(ItemObject... items) throws Exception {
         pokePlayer(player, "gear", new ArrayList<>(List.of(items)));
@@ -187,9 +173,6 @@ class PlayerUpdateObjectKnowledgeTest {
     @DisplayName("the populations it walks")
     class Populations {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("every object on the level is visited")
         void levelObjectsAreVisited() throws Exception {
@@ -203,9 +186,6 @@ class PlayerUpdateObjectKnowledgeTest {
             assertEquals(List.of(first, second), player.visited);
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("every object in the pack is visited")
         void gearObjectsAreVisited() throws Exception {
@@ -221,8 +201,6 @@ class PlayerUpdateObjectKnowledgeTest {
         /**
          * Both populations in one call, and the level before the pack — C's order. Nothing depends on
          * it today, but a walk that reordered itself would be a divergence worth noticing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the level is walked before the pack")
@@ -241,8 +219,6 @@ class PlayerUpdateObjectKnowledgeTest {
          * The same object in both populations is visited twice. C does the same — the loops do not
          * consult each other — and `player_know_object` is idempotent, so the repeat is wasted work
          * rather than a bug.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an object in both populations is visited from each")
@@ -257,9 +233,6 @@ class PlayerUpdateObjectKnowledgeTest {
             assertSame(player.visited.get(0), player.visited.get(1));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an empty level and an empty pack visit nothing")
         void emptyPopulationsVisitNothing() throws Exception {
@@ -284,8 +257,6 @@ class PlayerUpdateObjectKnowledgeTest {
         /**
          * C guards the level walk with {@code if (cave)} for a real reason: knowledge is updated
          * during birth and on loading a save, before any level exists.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("no level is not an error, and the pack is still walked")
@@ -303,8 +274,6 @@ class PlayerUpdateObjectKnowledgeTest {
          * obj = obj->next)} on a null head is simply an empty loop. A Java {@code null} list would
          * throw, so this guard is the port paying for the container change rather than copying
          * anything.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("no pack is not an error, and the level is still walked")
@@ -320,8 +289,6 @@ class PlayerUpdateObjectKnowledgeTest {
 
         /**
          * A player with neither — the state a fresh {@link Player} is in before birth fills it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("neither level nor pack is not an error")
@@ -344,9 +311,6 @@ class PlayerUpdateObjectKnowledgeTest {
     @DisplayName("the events it signals")
     class Signals {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("inventory and equipment are both signalled, in that order")
         void bothEventsAreSignalled() throws Exception {
@@ -363,8 +327,6 @@ class PlayerUpdateObjectKnowledgeTest {
          * still went out. C puts them after the guards rather than inside them, because the display
          * has to be redrawn on the strength of the rune that was just learned even if no object in
          * play happens to carry it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("both are signalled even when nothing was visited")
@@ -379,8 +341,6 @@ class PlayerUpdateObjectKnowledgeTest {
 
         /**
          * Once per call, not once per object — a walk of three items still redraws twice.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("signalled once per call, whatever the population size")

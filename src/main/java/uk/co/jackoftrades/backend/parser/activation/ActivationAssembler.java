@@ -49,7 +49,6 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * @param errors  the soft-error channel; assembly failures are appended here and the
      *                offending record is dropped rather than aborting the whole file
      * @return the successfully assembled activations, in source order
-     * @author Rowan Crowther
      */
     @Override
     public List<Activation> assemble(@NotNull List<ActivationParseRecord> records, @NotNull List<String> errors) {

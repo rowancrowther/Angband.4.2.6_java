@@ -43,8 +43,6 @@ import java.util.List;
 public class BrandReader implements Reader<Brand> {
     /**
      * Logger used to report file-loading (IO) failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

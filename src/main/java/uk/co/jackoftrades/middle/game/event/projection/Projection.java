@@ -37,100 +37,68 @@ import uk.co.jackoftrades.middle.enums.MessageType;
 public class Projection {
     /**
      * The projection's identity/code.
-     *
-     * @author Rowan Crowther
      */
     private ProjectionEnum projection;
     /**
      * The projection's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The projection's broad category (element/environs/monster).
-     *
-     * @author Rowan Crowther
      */
     private ProjectionType type;
     /**
      * General description of the projection.
-     *
-     * @author Rowan Crowther
      */
     private String description;
     /**
      * Description used when the projection affects the player.
-     *
-     * @author Rowan Crowther
      */
     private String playerDescription;
     /**
      * Description used when the player is blind.
-     *
-     * @author Rowan Crowther
      */
     private String blindDescription;
     /**
      * Description used for the "lash" (short beam) form.
-     *
-     * @author Rowan Crowther
      */
     private String lashDescription;
     /**
      * Numerator of the damage-scaling fraction.
-     *
-     * @author Rowan Crowther
      */
     private int numerator;
     /**
      * Integer denominator of the damage-scaling fraction ({@code -1} when a dice
      * denominator is used instead).
-     *
-     * @author Rowan Crowther
      */
     private int denominator;
     /**
      * Dice-expression denominator of the damage-scaling fraction (used instead of
      * {@link #denominator} for the dice-based constructor).
-     *
-     * @author Rowan Crowther
      */
     private Random diceDenominator;
     /**
      * Divisor applied to scaled damage.
-     *
-     * @author Rowan Crowther
      */
     private int divisor;
     /**
      * Maximum damage this projection can deal.
-     *
-     * @author Rowan Crowther
      */
     private int damageCap;
     /**
      * The message shown when this projection is used.
-     *
-     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Whether the projection's effect is obvious to the player.
-     *
-     * @author Rowan Crowther
      */
     private boolean isObvious;
     /**
      * Whether the projection wakes sleeping monsters.
-     *
-     * @author Rowan Crowther
      */
     private boolean willWake;
     /**
      * The colour used to draw this projection.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum colour;
 
@@ -152,7 +120,6 @@ public class Projection {
      * @param isObvious         whether the effect is obvious
      * @param willwake          whether it wakes monsters
      * @param colour            display colour
-     * @author Rowan Crowther
      */
     public Projection(ProjectionEnum projection,
                       String name,
@@ -205,7 +172,6 @@ public class Projection {
      * @param isObvious         whether the effect is obvious
      * @param willWake          whether it wakes monsters
      * @param colour            display colour
-     * @author Rowan Crowther
      */
     public Projection(ProjectionEnum projection,
                       String name,
@@ -243,7 +209,6 @@ public class Projection {
     /**
      * @return the projection's name — for the elemental projections, the name a resistance rune is
      * displayed under
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -251,7 +216,6 @@ public class Projection {
 
     /**
      * @return the projection's broad category (element/environs/monster)
-     * @author Rowan Crowther
      */
     public ProjectionType getType() {
         return type;
@@ -259,7 +223,6 @@ public class Projection {
 
     /**
      * @return the lash-form description
-     * @author Rowan Crowther
      */
     public String getLashDescription() {
         return lashDescription;
@@ -267,7 +230,6 @@ public class Projection {
 
     /**
      * @return the projection's code — its identity, and the key it is looked up by
-     * @author Rowan Crowther
      */
     public ProjectionEnum getProjection() {
         return projection;
@@ -275,7 +237,6 @@ public class Projection {
 
     /**
      * @return a debug string listing this projection's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

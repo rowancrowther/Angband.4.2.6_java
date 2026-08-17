@@ -44,127 +44,89 @@ import java.util.Map;
 public class Monster {
     /**
      * The race this monster currently is.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRace monsterRace;
     /**
      * The race this monster originally was (before any shapechange).
-     *
-     * @author Rowan Crowther
      */
     private MonsterRace originalRace;
     /**
      * The monster's current grid location.
-     *
-     * @author Rowan Crowther
      */
     private Loc grid;
 
     /**
      * Current hit points.
-     *
-     * @author Rowan Crowther
      */
     private int hp;
     /**
      * Maximum hit points.
-     *
-     * @author Rowan Crowther
      */
     private int maxHp;
 
     /**
      * Remaining duration of each active timed effect.
-     *
-     * @author Rowan Crowther
      */
     private Map<MonTimed, Integer> mTimed;
 
     /**
      * The monster's current speed.
-     *
-     * @author Rowan Crowther
      */
     private int mSpeed;
     /**
      * Accumulated energy (the monster acts when it has enough).
-     *
-     * @author Rowan Crowther
      */
     private int energy;
 
     /**
      * Current distance from the player.
-     *
-     * @author Rowan Crowther
      */
     private int cDistance;
 
     /**
      * The monster's transient status flags.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterFlag> monsterFlag;
 
     /**
      * The object this monster is mimicking, if any.
-     *
-     * @author Rowan Crowther
      */
     private ItemObject mimickedObject;
     /**
      * Objects this monster is carrying (dropped on death).
-     *
-     * @author Rowan Crowther
      */
     private List<ItemObject> heldObject;
 
     /**
      * The colour this monster is currently drawn in.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum colourAttr;
 
     /**
      * A snapshot of the player state as known/used by this monster.
-     *
-     * @author Rowan Crowther
      */
     private PlayerState knownPState;
 
     /**
      * The monster's current target.
-     *
-     * @author Rowan Crowther
      */
     private Target target;
 
     /**
      * This monster's membership in one or more groups.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterGroupInfo> groupInfo;
     /**
      * The monster's personal flow/heatmap used for pathfinding.
-     *
-     * @author Rowan Crowther
      */
     private Heatmap heatmap;
 
     /**
      * The minimum range at which the monster prefers to engage.
-     *
-     * @author Rowan Crowther
      */
     private int minRange;
     /**
      * The range at which the monster fights most effectively.
-     *
-     * @author Rowan Crowther
      */
     private int bestRange;
 
@@ -190,7 +152,6 @@ public class Monster {
      * @param heatmap        personal flow map
      * @param minRange       preferred minimum engagement range
      * @param bestRange      most-effective fighting range
-     * @author Rowan Crowther
      */
     public Monster(MonsterRace monsterRace, MonsterRace originalRace, Loc grid, int hp, int maxHp,
                    Map<MonTimed, Integer> mTimed, int mSpeed, int energy, int cDistance, Flag<MonsterFlag> monsterFlag,
@@ -220,7 +181,6 @@ public class Monster {
 
     /**
      * @return this monster's current race
-     * @author Rowan Crowther
      */
     public MonsterRace getMonsterRace() {
         return monsterRace;
@@ -231,7 +191,6 @@ public class Monster {
      *
      * @param flag the flag to test
      * @return true if the flag is set
-     * @author Rowan Crowther
      */
     public boolean hasMonsterFlag(MonsterFlag flag) {
         return monsterFlag.has(flag);
@@ -242,7 +201,6 @@ public class Monster {
      * the flag clear whether or not it was previously set.
      *
      * @param flag the flag to clear
-     * @author Rowan Crowther
      */
     public void monsterFlagOff(MonsterFlag flag) {
         monsterFlag.off(flag);
@@ -250,7 +208,6 @@ public class Monster {
 
     /**
      * @return this monster's current grid location
-     * @author Rowan Crowther
      */
     public Loc getGrid() {
         return grid;
@@ -258,7 +215,6 @@ public class Monster {
 
     /**
      * @return this monster's distance from the player, in grids (C: {@code cdis})
-     * @author Rowan Crowther
      */
     public int getcDistance() {
         return cDistance;
@@ -267,7 +223,6 @@ public class Monster {
     /**
      * @return {@code true} if this monster is a unique — tested against its original race if it has
      * shapechanged, otherwise its current race
-     * @author Rowan Crowther
      */
     public boolean isUnique() {
         return (originalRace != null) ? originalRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE)
@@ -277,7 +232,6 @@ public class Monster {
     /**
      * @param timed the monster timed effect to query
      * @return the turns remaining on that effect, or {@code 0} if the monster is not under it
-     * @author Rowan Crowther
      */
     public int getMonTimed(MonTimed timed) {
         return mTimed.get(timed);
@@ -291,7 +245,6 @@ public class Monster {
      * @param timed the monster timed effect to clear
      * @param flag  behavioural flags controlling messaging/notification
      * @return {@code true} if the effect was active and has now been cleared
-     * @author Rowan Crowther
      */
     public boolean clearTimed(MonTimed timed, Flag<MonTimedFlags> flag) {
         if (mTimed.get(timed) == 0) {
@@ -312,7 +265,6 @@ public class Monster {
      * @param timer the new duration in turns
      * @param flag  behavioural flags controlling messaging/notification
      * @return {@code true} if the effect's value actually changed
-     * @author Rowan Crowther
      */
     public boolean setTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
         // Stub class: TODO: implement
@@ -328,7 +280,6 @@ public class Monster {
      * @param timer the number of turns to remove
      * @param flag  behavioural flags controlling messaging/notification
      * @return {@code true} if the effect's value actually changed
-     * @author Rowan Crowther
      */
     public boolean decrementTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
         int newLevel = mTimed.get(timed) - timer;

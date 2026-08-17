@@ -41,8 +41,6 @@ import java.util.List;
 public class BlowMethodReader implements Reader<BlowMethod> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -69,7 +67,6 @@ public class BlowMethodReader implements Reader<BlowMethod> {
      * @param filename the data file to parse
      * @return the assembled blow methods plus any soft errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<BlowMethod> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -94,7 +91,6 @@ public class BlowMethodReader implements Reader<BlowMethod> {
      * @param errorCatcher the shared hard-error listener installed by the driver
      * @param errors       the soft-error sink, mutated in place
      * @return the parsed records, in file order
-     * @author Rowan Crowther
      */
     private static List<BlowMethodParseRecord> extract(
             @NotNull BlowMethodGrammar parser,

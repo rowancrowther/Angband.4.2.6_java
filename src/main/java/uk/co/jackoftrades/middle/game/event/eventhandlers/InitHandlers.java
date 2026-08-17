@@ -65,8 +65,6 @@ import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 public class InitHandlers {
     /**
      * Logger for the phase transitions, which is currently all most of these handlers do.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(InitHandlers.class);
 
@@ -84,8 +82,6 @@ public class InitHandlers {
      * <p>{@code final}, so it is safely published: the object is constructed on the game thread
      * today, but a final field is visible to any thread that sees the object at all, which does not
      * depend on that staying true.
-     *
-     * @author Rowan Crowther
      */
     private final Sender<CoreMessage> coreSender;
 
@@ -98,7 +94,6 @@ public class InitHandlers {
      *
      * @param coreSender the core's sending end of the core channel; not checked for null, and a
      *                   null would fail at the first event rather than here
-     * @author Rowan Crowther
      */
     public InitHandlers(Sender<CoreMessage> coreSender) {
         this.coreSender = coreSender;
@@ -126,8 +121,6 @@ public class InitHandlers {
      * <p>{@code UIBirth} is constructed here with the same {@link #coreSender} and asked to
      * subscribe its own pair, so start-up still has one entry point and both halves of it report
      * on one channel end.
-     *
-     * @author Rowan Crowther
      */
     public void initHandlers() {
         EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
@@ -182,7 +175,6 @@ public class InitHandlers {
      * @param eventType the event being handled, always {@code EVENT_ENTER_INIT}; forwarded as the
      *                  message's type
      * @param data      the payload; must be an {@link EventDataString} or nothing happens
-     * @author Rowan Crowther
      */
     private void enterInit(GameEventType eventType, GameEventData data) {
         // logger.info("Entering init");
@@ -224,7 +216,6 @@ public class InitHandlers {
      *                  message's type
      * @param data      the payload carrying the note; must be an {@link EventDataString} or nothing
      *                  is forwarded
-     * @author Rowan Crowther
      */
     private void splashScreenNote(GameEventType eventType, GameEventData data) {
         logger.info("Splash screen note");
@@ -239,7 +230,6 @@ public class InitHandlers {
      *
      * @param eventType the event being handled, always {@code EVENT_LEAVE_INIT}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void leaveInit(GameEventType eventType, GameEventData data) {
         logger.info("Leaving init");
@@ -252,7 +242,6 @@ public class InitHandlers {
      *
      * @param eventType the event being handled, always {@code EVENT_ENTER_GAME}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void enterGame(GameEventType eventType, GameEventData data) {
         logger.info("Entering game");
@@ -265,7 +254,6 @@ public class InitHandlers {
      *
      * @param eventType the event being handled, always {@code EVENT_LEAVE_GAME}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void leaveGame(GameEventType eventType, GameEventData data) {
         logger.info("Leaving game");
@@ -278,7 +266,6 @@ public class InitHandlers {
      *
      * @param eventType the event being handled, always {@code EVENT_ENTER_WORLD}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void enterWorld(GameEventType eventType, GameEventData data) {
         logger.info("Entering world");
@@ -290,7 +277,6 @@ public class InitHandlers {
      *
      * @param eventType the event being handled, always {@code EVENT_LEAVE_WORLD}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void leaveWorld(GameEventType eventType, GameEventData data) {
         logger.info("Leaving world");

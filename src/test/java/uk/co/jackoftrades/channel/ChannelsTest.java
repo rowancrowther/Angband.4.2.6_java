@@ -88,7 +88,6 @@ class ChannelsTest {
      * @param name what to call the thread, so a stack trace says which half failed
      * @param body what the thread should do
      * @return the running thread
-     * @author Rowan Crowther
      */
     private static Thread run(String name, ThrowingRunnable body) {
         AtomicReference<Throwable> failure = new AtomicReference<>();
@@ -117,7 +116,6 @@ class ChannelsTest {
      *
      * @param receiver the receiver that should stay empty
      * @param what     what would have arrived, for the failure message
-     * @author Rowan Crowther
      */
     private static void assertNothingArrives(Receiver<?> receiver, String what)
             throws InterruptedException {
@@ -153,7 +151,6 @@ class ChannelsTest {
         /**
          * @param notes the text of each message to send, in order
          * @return the messages sent, in the same order
-         * @author Rowan Crowther
          */
         List<CoreMessage> sendNotes(String... notes) {
             List<CoreMessage> sent = new ArrayList<>();
@@ -181,8 +178,6 @@ class ChannelsTest {
         /**
          * The core's route to the front end. This is the one that carries every game event, so a
          * break here is a game that runs invisibly.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void coreSenderReachesUiReceiver() throws InterruptedException {
@@ -195,8 +190,6 @@ class ChannelsTest {
 
         /**
          * The front end's route to the core, and the only way the player reaches the game.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void uiSenderReachesCoreReceiver() throws InterruptedException {
@@ -212,8 +205,6 @@ class ChannelsTest {
          * the delivery tests above would still pass — each half would simply read its own
          * traffic back, and the shutdown handshake would appear to work while the other thread
          * heard nothing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aSenderDoesNotFeedItsOwnHalfsReceiver() throws InterruptedException {
@@ -226,8 +217,6 @@ class ChannelsTest {
 
         /**
          * The mirror of the above, for the UI half.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void uiSenderDoesNotFeedUiReceiver() throws InterruptedException {
@@ -242,8 +231,6 @@ class ChannelsTest {
          * Two sets of channels must not share queues. This is what makes the class safe to
          * construct per test — and it is the property a static field would have destroyed, since
          * one test's unread message would then surface in the next.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void separateChannelsAreIndependent() throws InterruptedException {
@@ -260,8 +247,6 @@ class ChannelsTest {
         /**
          * The views are handed out as constructed, not rebuilt per call, so a half can hold on to
          * its sender rather than reaching through the record every time.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void accessorsReturnTheSameViewsEachTime() {
@@ -290,8 +275,6 @@ class ChannelsTest {
 
         /**
          * A window event reaches the UI thread. Without this the close button does nothing at all.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void edtSenderReachesUiReceiver() throws InterruptedException {
@@ -307,8 +290,6 @@ class ChannelsTest {
          * And does not reach the core. The core has an arm for this message and ignores it, so a
          * crossed wire here would not throw or hang - the click would be swallowed silently and
          * the game would look frozen rather than broken.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void edtSenderDoesNotReachTheCore() throws InterruptedException {
@@ -322,8 +303,6 @@ class ChannelsTest {
         /**
          * The EDT writes to the same queue the core does, so the UI thread has one inbox rather
          * than two to choose between - which is what lets its loop be a single blocking receive.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void bothWritersShareTheUiInboxAndKeepTheirOrder() throws InterruptedException {
@@ -343,8 +322,6 @@ class ChannelsTest {
          * rather than a convenience it happens to lack. A receiver added here would compile and
          * work; the first listener to call it would block the event dispatch thread and freeze the
          * window, and nothing else in the build would object. So the absence is asserted.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theEdtIsGivenNoReceiver() {
@@ -361,8 +338,6 @@ class ChannelsTest {
         /**
          * One EDT sender per set, handed out as constructed - the window listener keeps a
          * reference to it for the life of the window.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theEdtSenderIsTheSameViewEachTime() {
@@ -375,8 +350,6 @@ class ChannelsTest {
         /**
          * Posting never waits. This matters more here than on the other senders: this call happens
          * on the EDT, so a send that blocked would freeze the window it was trying to close.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void postingFromTheEdtDoesNotWaitForAReader() {
@@ -402,8 +375,6 @@ class ChannelsTest {
          * saying so: a progress line that overtook the message announcing the stage it belongs to
          * would be nonsense, and the shutdown handshake depends on {@code STOPPED} arriving after
          * everything the core sent before it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void messagesArriveInTheOrderSent() throws InterruptedException {
@@ -424,8 +395,6 @@ class ChannelsTest {
          * Both branches of {@link ChannelMessage} fit down the UI thread's inbox. That queue is
          * typed to the root interface precisely so the EDT can post to it later, and this pins
          * that it really does carry more than {@link CoreMessage}.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theUiInboxCarriesBothSenders() throws InterruptedException {
@@ -441,8 +410,6 @@ class ChannelsTest {
          * Sending never blocks, however far behind the reader is. The core must not be paced by
          * the display: a burst of events during level generation has to be absorbed, not waited
          * on.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void sendingDoesNotWaitForAReader() {
@@ -468,8 +435,6 @@ class ChannelsTest {
          * A receiver with nothing to read sleeps until the other half speaks, rather than
          * returning null or spinning. This is the property the whole design rests on — it is why
          * the UI thread costs nothing while the player is thinking.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void receiveBlocksUntilAMessageArrives() throws Exception {
@@ -499,8 +464,6 @@ class ChannelsTest {
          * Interrupting a blocked receiver raises {@link InterruptedException} rather than
          * returning. That is how a thread parked on an empty channel is told to shut down, so it
          * has to escape the queue rather than be swallowed by it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void interruptingABlockedReceiverEndsTheWait() throws Exception {
@@ -533,8 +496,6 @@ class ChannelsTest {
          * hears it, does its work, reports {@code STOPPED}, and only then may the front end
          * finish. A break anywhere in that chain leaves one thread waiting forever, which the
          * class timeout turns into a failure rather than a hung build.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theShutdownHandshakeCompletes() throws Exception {

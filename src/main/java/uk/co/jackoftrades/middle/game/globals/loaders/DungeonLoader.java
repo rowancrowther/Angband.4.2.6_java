@@ -50,8 +50,6 @@ public class DungeonLoader {
      * unreadable file is logged and swallowed, leaving the registry unset; C by contrast quits the
      * game outright, since {@code run_parse_profile} uses {@code parse_file_quit_not_found}
      * ({@code generate.c:219}).
-     *
-     * @author Rowan Crowther
      */
     public static void loadDungeonProfiles() {
         DungeonProfileReader parser = new DungeonProfileReader();
@@ -78,8 +76,6 @@ public class DungeonLoader {
      * logged and swallowed, leaving the registry unset; C by contrast quits the game outright,
      * since {@code run_parse_room} also uses {@code parse_file_quit_not_found}
      * ({@code generate.c}).
-     *
-     * @author Rowan Crowther
      */
     public static void loadRoomTemplates() {
         RoomProfileReader parser = new RoomProfileReader();
@@ -109,8 +105,6 @@ public class DungeonLoader {
      * <p>Must run after {@code GameConstants}, because the assembler needs the world's maximum
      * depth: {@code vault.txt} writes {@code max-depth:0} to mean "no maximum", and C rewrites that
      * to {@code z_info->max_depth} while parsing ({@code [C] src/generate.c:561}).
-     *
-     * @author Rowan Crowther
      */
     public static void loadVaultTemplates() {
         VaultReader parser = new VaultReader();

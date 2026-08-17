@@ -29,14 +29,10 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
 public class Grouper {
     /**
      * The item type this grouper covers.
-     *
-     * @author Rowan Crowther
      */
     private final TValue tValue;
     /**
      * The group's display name.
-     *
-     * @author Rowan Crowther
      */
     private final String name;
 

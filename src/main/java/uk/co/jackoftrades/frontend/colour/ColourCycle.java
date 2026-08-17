@@ -42,16 +42,12 @@ public final class ColourCycle {
      * The cycle's name. For a {@link VisualsCycler} entry this is the {@code cycle:} block name (the
      * inner lookup key); for a {@link FlickerTable} entry there is no meaningful name, so the flicker
      * assembler passes the base-attribute code here purely as a label.
-     *
-     * @author Rowan Crowther
      */
     private final String name;
 
     /**
      * The ordered animation frames. Index {@code i} is the colour shown at cycle position {@code i};
      * the intended runtime lookup wraps with {@code floorMod(frame, steps.size())}.
-     *
-     * @author Rowan Crowther
      */
     private final List<ColourEnum> steps;
 
@@ -60,7 +56,6 @@ public final class ColourCycle {
      *
      * @param name  the cycle name (or, for a flicker entry, its base-attribute label)
      * @param steps the ordered frames; defensively copied, so the caller may keep mutating its list
-     * @author Rowan Crowther
      */
     public ColourCycle(String name, List<ColourEnum> steps) {
         this.name = name;

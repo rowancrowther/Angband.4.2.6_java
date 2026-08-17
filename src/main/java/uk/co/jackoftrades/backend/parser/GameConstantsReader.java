@@ -53,8 +53,6 @@ public class GameConstantsReader {
     /**
      * Dispatch a record to the builder passing through the current list of errors
      * @param filename The name of the file to parse
-     *
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     public GameConstantsParseResult parseWithResults(@NotNull String filename) throws IOException {

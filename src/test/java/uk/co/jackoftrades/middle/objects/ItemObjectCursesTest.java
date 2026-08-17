@@ -68,7 +68,6 @@ class ItemObjectCursesTest {
      *
      * @param name the curse's name
      * @return a curse with every other field empty
-     * @author Rowan Crowther
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
@@ -79,8 +78,6 @@ class ItemObjectCursesTest {
      * A fresh item straight from the no-argument constructor, whose curse map is still null. That is
      * the starting state every test here needs — creating the map first would hide the on-demand
      * behaviour that half of them are about.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() {
@@ -103,8 +100,6 @@ class ItemObjectCursesTest {
          * copying a power onto a known counterpart with {@code obj->known->curses[i].power =
          * obj->curses[i].power} and leaving the timeout at zero — so the object it stores must be a
          * fresh one rather than the real item's, or the counterpart would share the countdown.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the power/timeout form builds its own data")
@@ -121,8 +116,6 @@ class ItemObjectCursesTest {
          * The other form stores what it is given, by reference. That is deliberate — a caller that
          * has just installed data can keep reading it — and it is the reason the callers holding a
          * template's data have to copy before calling.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the data form stores the instance it is handed")
@@ -137,8 +130,6 @@ class ItemObjectCursesTest {
          * Adding a curse the object already carries replaces its data outright, matching the plain
          * assignment C makes into its array. Worth stating because the alternative — merging, or
          * refusing — would both be defensible designs and neither is what happens.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("adding a curse twice replaces its data")
@@ -155,8 +146,6 @@ class ItemObjectCursesTest {
          * The batch form adds rather than replaces, which is what an object picking up an ego's
          * curses on top of its kind's needs. The contrast with {@code clearAndPutCurses} next door is
          * the whole reason both exist.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("addCurses keeps the curses already there")
@@ -174,8 +163,6 @@ class ItemObjectCursesTest {
          * The replacing form discards what was there, so the object ends up carrying exactly what it
          * was given. The pair of assertions is what separates it from {@code addCurses}: one that the
          * new curse arrived, one that the old one left.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("clearAndPutCurses replaces the whole set")
@@ -195,8 +182,6 @@ class ItemObjectCursesTest {
          * from that state in turn — one of them missing the guard would be a null pointer on a path
          * that only fires for uncursed items, which is the common case and so the least likely to be
          * met in casual play.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every writer copes with a map that does not exist yet")
@@ -225,8 +210,6 @@ class ItemObjectCursesTest {
          * The port of C's bare {@code obj->curses[i].power = ...}. The timeout is deliberately left
          * where it was: a curse being weakened has not had its countdown reset, and re-arming it
          * silently would give the player a reprieve C does not.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("setCursePower changes the power and leaves the timeout")
@@ -245,8 +228,6 @@ class ItemObjectCursesTest {
          * throw, and it does not invent the curse. Inventing it would be the worse of the two: the
          * object would come away cursed with something it was never given, and by a call whose name
          * suggests it only adjusts.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("setCursePower ignores a curse the object does not have")
@@ -262,8 +243,6 @@ class ItemObjectCursesTest {
 
         /**
          * A null curse takes the same silent exit rather than reaching the map with it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("setCursePower ignores a null curse")
@@ -278,8 +257,6 @@ class ItemObjectCursesTest {
          * convention the whole representation rests on: {@code cursesAreEqual} compares two maps
          * directly, so an object left holding a zero-power entry would refuse to stack with one that
          * simply lacks the curse, though C considers the two identical.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("removeCurse takes the entry out rather than zeroing it")
@@ -296,8 +273,6 @@ class ItemObjectCursesTest {
         /**
          * Removing something that is not there is not an error. C reaches the same place by assigning
          * zero to a slot that already held zero.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("removing an absent curse changes nothing")
@@ -314,8 +289,6 @@ class ItemObjectCursesTest {
          * an empty map rather than a null one, which callers cannot tell apart — {@link
          * ItemObject#getCurses} reports empty for both — and that indistinguishability is the reason
          * the null field never needs to be restored.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("clearCurses empties the set")
@@ -343,8 +316,6 @@ class ItemObjectCursesTest {
          * over the live map. A caller holding the result of {@link ItemObject#getCurses} across a
          * mutation is therefore not looking at a stale snapshot — which matters most for the curse
          * tick, which walks what it read while the knowledge code may be writing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a view taken early sees later writes")
@@ -363,8 +334,6 @@ class ItemObjectCursesTest {
          * here so that a test elsewhere written against an accidental ordering has something to point
          * at — and so that a later switch to a {@link LinkedHashMap} is a deliberate widening of the
          * contract rather than a silent one.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the curse map promises no ordering")

@@ -57,178 +57,124 @@ import java.util.stream.Stream;
 public class Chunk {
     /**
      * Logger used to report out-of-bounds access and similar errors.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The chunk's name (e.g. the level/vault it represents).
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The game turn this chunk was generated/last updated.
-     *
-     * @author Rowan Crowther
      */
     private int turn;
     /**
      * The dungeon depth (level) of this chunk.
-     *
-     * @author Rowan Crowther
      */
     private int depth;
 
     /**
      * The level feeling value (how dangerous/rewarding the level feels).
-     *
-     * @author Rowan Crowther
      */
     private int feeling;
     /**
      * Accumulated rating of the objects on this level.
-     *
-     * @author Rowan Crowther
      */
     private int objectRating;
     /**
      * Accumulated rating of the monsters on this level.
-     *
-     * @author Rowan Crowther
      */
     private int monsterRating;
     /**
      * Whether the level contains a notably good item.
-     *
-     * @author Rowan Crowther
      */
     private boolean goodItem;
 
     /**
      * Level height in rows.
-     *
-     * @author Rowan Crowther
      */
     private int height;
     /**
      * Level width in columns.
-     *
-     * @author Rowan Crowther
      */
     private int width;
 
     /* How many feeling squares the player has visited */
     /**
      * How many feeling squares the player has visited so far.
-     *
-     * @author Rowan Crowther
      */
     private int feelingSquares;
     /**
      * Count of grids carrying each terrain-feature flag (used for level feeling).
-     *
-     * @author Rowan Crowther
      */
     private HashMap<TerrainFeatureFlags, Integer> featCount;
 
     /**
      * The grid of squares, indexed {@code [y][x]}.
-     *
-     * @author Rowan Crowther
      */
     private Square[][] squares;
     /**
      * Noise flow map used for monster pathfinding toward sound.
-     *
-     * @author Rowan Crowther
      */
     private Heatmap noise;
     /**
      * Scent flow map used for monsters that track by smell.
-     *
-     * @author Rowan Crowther
      */
     private Heatmap scent;
     /**
      * Location of the player's decoy, if one is placed.
-     *
-     * @author Rowan Crowther
      */
     private Loc decoy;
 
     /**
      * Master list of all objects in this chunk.
-     *
-     * @author Rowan Crowther
      */
     private List<ItemObject> objects; // Should this be ItemObject[][] objects?
     /**
      * Highest object index in use.
-     *
-     * @author Rowan Crowther
      */
     private int objMax;
 
     /**
      * The monsters present in this chunk, indexed by monster index.
-     *
-     * @author Rowan Crowther
      */
     private Monster[] monsters;
     /**
      * Capacity of the {@link #monsters} array (maximum monster index).
-     *
-     * @author Rowan Crowther
      */
     private int monMax;
     /**
      * Current count of live monsters.
-     *
-     * @author Rowan Crowther
      */
     private int monCnt;
     /**
      * Index of the monster currently being processed.
-     *
-     * @author Rowan Crowther
      */
     private int monCurrent;
     /**
      * Number of breeding monsters currently on the level.
-     *
-     * @author Rowan Crowther
      */
     private int numRepro;
 
     /**
      * The monster groups (packs) on this level.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<MonsterGroup> monsterGroups;
 
     /**
      * Connection points used when stitching this chunk into a larger level.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<Connector> join;
 
     /**
      * The player associated with this chunk, used by the knowledge accessors that compare this chunk
      * against the player's remembered cave (see {@link #isKnown} and {@link #squareSetKnownFeat}).
-     *
-     * @author Rowan Crowther
      */
     private Player player;
     /**
      * The live current level — {@link GameState#getCave()} at construction. Several accessors compare
      * {@code this} against it to tell whether this chunk is the real cave or the player's remembered
      * copy, since the two share the same {@code Chunk} type.
-     *
-     * @author Rowan Crowther
      */
     private Chunk currentLevel;
 
@@ -253,7 +199,6 @@ public class Chunk {
      * @param monCurrent     index of the monster being processed
      * @param numRepro       number of breeding monsters
      * @param player         the player associated with this chunk
-     * @author Rowan Crowther
      */
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
@@ -1411,7 +1356,6 @@ public class Chunk {
      * @return the raw monster array, indexed by monster index — the port of reading C's
      * {@code cave->monsters}. Index 0 is a reserved dummy and unused slots are {@code null} (C's
      * empty, {@code race == NULL} slots), so callers iterating this must skip {@code null} entries.
-     * @author Rowan Crowther
      */
     public Monster[] getMonsters() {
         return monsters;
@@ -1424,7 +1368,6 @@ public class Chunk {
      * change) on the next refresh; out-of-bounds grids are ignored.
      *
      * @param grid the grid whose display needs refreshing
-     * @author Rowan Crowther
      */
     public void squareLightSpot(@NotNull Loc grid) {
         if (!inBounds(grid)) return;
@@ -1436,7 +1379,6 @@ public class Chunk {
 
     /**
      * @return the number of monster slots in this chunk's monster array
-     * @author Rowan Crowther
      */
     public int monsterCount() {
         return Arrays.stream(monsters).toList().size();
@@ -1451,7 +1393,6 @@ public class Chunk {
      *
      * @param numToCompact the minimum number of monsters to remove; {@code 0} simply excises the
      *                     already-dead entries without a "Compacting monsters..." message
-     * @author Rowan Crowther
      */
     public void compactMonsters(int numToCompact) {
         int monIndex;
@@ -1529,7 +1470,6 @@ public class Chunk {
      *
      * @param fromIndex the monster's current index
      * @param toIndex   the index to move it to
-     * @author Rowan Crowther
      */
     public void monsterIndexMove(int fromIndex, int toIndex) {
         // Stub function : TODO: implement this
@@ -1541,7 +1481,6 @@ public class Chunk {
      * {@link #deleteMonsterIndex(int)}; out-of-bounds grids are ignored.
      *
      * @param grid the map location to clear of its monster
-     * @author Rowan Crowther
      */
     private void deleteMonster(@NotNull Loc grid) {
         if (!inBounds(grid)) return;
@@ -1558,7 +1497,6 @@ public class Chunk {
      * <p><b>Stub:</b> not yet implemented.
      *
      * @param monsterIndex the index of the monster to delete
-     * @author Rowan Crowther
      */
     private void deleteMonsterIndex(int monsterIndex) {
         // Stub function : TODO: implement this
@@ -1571,7 +1509,6 @@ public class Chunk {
      * <p><b>Stub:</b> not yet implemented.
      *
      * @param daytime {@code true} if it is daytime (relevant in the town)
-     * @author Rowan Crowther
      */
     public void illuminate(boolean daytime) {
         // Stub function : TODO: implement this
@@ -1590,7 +1527,6 @@ public class Chunk {
      * @param sleep    whether the placed monster starts asleep
      * @param depth    the depth to generate the monster at
      * @return {@code true} if a monster was placed
-     * @author Rowan Crowther
      */
     public boolean pickAndPlaceDistantMonster(Loc toAvoid, int distance, boolean sleep, int depth) {
         // Stub function : TODO: implement this
@@ -1604,7 +1540,6 @@ public class Chunk {
      * <p><b>Stub:</b> not yet implemented.
      *
      * @param grid the grid whose traps to memorize
-     * @author Rowan Crowther
      */
     public void squareMemorizeTraps(Loc grid) {
         // Stub function : TODO: implement this
@@ -1614,8 +1549,6 @@ public class Chunk {
      * Ticks every trap on the level down by one turn, re-memorising and re-lighting any square whose
      * trap just became active again (timeout reaching zero) while it is in view. Mirrors the trap
      * half of C's per-turn trap ageing.
-     *
-     * @author Rowan Crowther
      */
     public void decreaseTrapTimeout() {
         for (int y = 0; y < squares.length; y++) {
@@ -1639,7 +1572,6 @@ public class Chunk {
 
     /**
      * @return an unmodifiable view of the objects lying on this chunk's floor
-     * @author Rowan Crowther
      */
     public List<ItemObject> getObjects() {
         return Collections.unmodifiableList(objects);
@@ -1650,8 +1582,6 @@ public class Chunk {
      * Heatmap} (every grid {@code 0}). Ports the "set all the grids to silence" loop that opens
      * C's {@code make_noise} ({@code src/game-world.c}); a new zeroed map is equivalent to
      * zeroing the interior in place, since only interior grids are ever read.
-     *
-     * @author Rowan Crowther
      */
     public void resetNoise() {
         noise = new Heatmap(width, height);
@@ -1663,8 +1593,6 @@ public class Chunk {
      * src/game-world.c}): only grids that already carry scent ({@code > 0}) are incremented, so
      * never-visited grids stay at the {@code 0} baseline, and only the interior is scanned (the
      * outermost ring is skipped, matching the {@code 1 .. dimension - 2} bounds in C).
-     *
-     * @author Rowan Crowther
      */
     public void updateScent() {
         // ignore outside boundary of cave
@@ -1683,7 +1611,6 @@ public class Chunk {
      * cave->noise} ({@code src/cave.h}).
      *
      * @return the noise {@link Heatmap} for this chunk
-     * @author Rowan Crowther
      */
     public Heatmap getNoise() {
         return noise;
@@ -1695,7 +1622,6 @@ public class Chunk {
      * ({@code src/cave.h}).
      *
      * @return the scent {@link Heatmap} for this chunk
-     * @author Rowan Crowther
      */
     public Heatmap getScent() {
         return scent;
@@ -1717,7 +1643,6 @@ public class Chunk {
      *
      * @param objectOnly {@code true} to report only the object half of the feeling, as C does when
      *                   the threshold for knowing it has just been crossed
-     * @author Rowan Crowther
      */
     public void displayFeeling(boolean objectOnly) {
         // Stub class TODO: Implement

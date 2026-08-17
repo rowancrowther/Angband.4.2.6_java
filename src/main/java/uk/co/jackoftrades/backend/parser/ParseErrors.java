@@ -55,7 +55,6 @@ public final class ParseErrors extends BaseErrorListener {
      * method
      *
      * @param sourceName The name of the file we are parsing
-     * @author Rowan Crowther
      */
     private ParseErrors(String sourceName) {
         this.sourceName = sourceName;
@@ -69,7 +68,6 @@ public final class ParseErrors extends BaseErrorListener {
      * @param filename The filename of the file we are lexing/parsing
      * @return The ParseErrors class set up for this lexer/parser combination
      * parsing filename
-     * @author Rowan Crowther
      */
     public static ParseErrors install(Lexer lexer, Parser parser, String filename) {
         ParseErrors collector = new ParseErrors(filename);
@@ -101,7 +99,6 @@ public final class ParseErrors extends BaseErrorListener {
      *                           ---
      *                           Overridden to add an error to the error list and then return without
      *                           throwing it.
-     * @author Rowan Crowther
      */
     @Override
     public void syntaxError(Recognizer<?, ?> recognizer, Object offendingSymbol, int line, int charPositionInLine, String msg, RecognitionException e) {
@@ -111,8 +108,6 @@ public final class ParseErrors extends BaseErrorListener {
     /**
      * Final method - if no errors have been collected returns otherwise uses the logger
      * to throw them all
-     *
-     * @author Rowan Crowther
      */
     public void throwIfAny() {
         if (errors.isEmpty())
@@ -130,7 +125,6 @@ public final class ParseErrors extends BaseErrorListener {
      *
      * @param line the line number of the file being parsed where the error occured
      * @param msg  the error message
-     * @author Rowan Crowther
      */
     public void add(int line, String msg) {
         errors.add("file: " + sourceName + " line " + line + " " + msg);
@@ -140,7 +134,6 @@ public final class ParseErrors extends BaseErrorListener {
      * Add in a new file error outside the syntaxError route
      *
      * @param msg the error message
-     * @author Rowan Crowther
      */
     public void add(String msg) {
         errors.add("file: " + sourceName + " " + msg);
@@ -151,7 +144,6 @@ public final class ParseErrors extends BaseErrorListener {
      *
      * @return true if an error has been caught and is in the queue, false
      * otherwise
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -163,7 +155,6 @@ public final class ParseErrors extends BaseErrorListener {
      * Return the current list of errors for external examination
      *
      * @return the current list of errors
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)

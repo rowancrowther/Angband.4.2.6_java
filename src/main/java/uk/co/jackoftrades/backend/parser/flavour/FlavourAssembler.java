@@ -46,7 +46,6 @@ public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flav
      * @param records the raw flavour/fixed records of a single {@code kind:} block
      * @param errors  the soft-error sink, appended to when a record is dropped
      * @return the assembled flavours (fixed ones still awaiting sval resolution)
-     * @author Rowan Crowther
      */
     @Override
     public List<Flavour> assemble(@NotNull List<FlavourParseRecord> records, @NotNull List<String> errors) {

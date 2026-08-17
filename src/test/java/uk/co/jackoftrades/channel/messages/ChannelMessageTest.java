@@ -64,7 +64,6 @@ class ChannelMessageTest {
     /**
      * @param sealedType the sealed interface to read
      * @return the classes the interface permits, as a set so declaration order is not pinned
-     * @author Rowan Crowther
      */
     private static Set<Class<?>> permitted(Class<?> sealedType) {
         return Set.of(sealedType.getPermittedSubclasses());
@@ -73,7 +72,6 @@ class ChannelMessageTest {
     /**
      * @param constants the enum constants to name
      * @return their names as a set
-     * @author Rowan Crowther
      */
     private static Set<String> names(Enum<?>[] constants) {
         return java.util.Arrays.stream(constants).map(Enum::name).collect(Collectors.toSet());
@@ -83,8 +81,6 @@ class ChannelMessageTest {
      * The protocol root's two branches, one per sender. If a third ever appears, this fails and
      * whoever added it has to decide consciously whether a message that is neither the core's nor
      * the UI's makes sense.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void channelMessageIsSealedOverExactlyTheTwoSenders() {
@@ -97,8 +93,6 @@ class ChannelMessageTest {
     /**
      * Both branches are themselves sealed, so a switch can go a level deeper and still be
      * exhaustive without a default arm.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void bothBranchesAreThemselvesSealed() {
@@ -109,8 +103,6 @@ class ChannelMessageTest {
     /**
      * Every leaf of the protocol is a record. Anything that is not brings mutable state or
      * identity equality onto a queue shared by two threads.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void everyLeafOfTheProtocolIsARecord() {
@@ -130,8 +122,6 @@ class ChannelMessageTest {
      * The core channel is the UI thread's single inbox, so it is typed as the protocol root and
      * has to carry both senders' messages. Checked against a real queue rather than inferred from
      * the declaration.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void bothSendersFitThroughOneChannelInOrder() throws InterruptedException {
@@ -152,8 +142,6 @@ class ChannelMessageTest {
      * The UI channel is typed to the UI's messages alone, so the core cannot send on it by type.
      * Nothing to assert at runtime — the check is that this compiles with the narrower element
      * type, and would not if {@code UIMessage} stopped being a distinct branch.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theUiChannelAcceptsOnlyUiMessages() throws InterruptedException {
@@ -172,9 +160,6 @@ class ChannelMessageTest {
     @Nested
     class CoreMessages {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aSimpleMessageCarriesItsEventTypeAndNothingElse() {
             CoreMessage.SimpleCoreMessage message = new CoreMessage.SimpleCoreMessage(GameEventType.EVENT_HP);
@@ -188,8 +173,6 @@ class ChannelMessageTest {
          * The point of one record serving many events: the payload-free constants all ride the
          * same shape, and only the event type tells them apart. If that stopped being true the
          * record count would start tracking game content instead of payload variety.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void simpleMessagesDifferOnlyByEventType() {
@@ -200,9 +183,6 @@ class ChannelMessageTest {
             assertNotEquals(hp, gold);
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aTextMessageCarriesItsEventTypeAndText() {
             CoreMessage.TextCoreMessage message =
@@ -216,8 +196,6 @@ class ChannelMessageTest {
          * Same text under a different event is a different message. Worth pinning because the
          * event type is what the UI switches on, and equality that ignored it would let a test
          * pass while the wrong branch ran.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void textMessagesAreDistinguishedByEventTypeAsWellAsText() {
@@ -232,8 +210,6 @@ class ChannelMessageTest {
         /**
          * The shutdown sentinel compares equal to any other instance of itself, which is what lets
          * the stage 3 handshake test assert on it without holding the original reference.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theLifecycleMessageIsComparableByValue() {
@@ -253,8 +229,6 @@ class ChannelMessageTest {
         /**
          * Start and save-and-stop share one record and are told apart by the enum inside it, which
          * is the same construction the core's lifecycle uses.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void startAndSaveAndStopAreOneRecordDistinguishedByTheirEvent() {
@@ -271,8 +245,6 @@ class ChannelMessageTest {
          * The two halves' lifecycle vocabularies are separate enums, so neither end can name a
          * signal it has no business sending. This is a compile-time property; the test records the
          * intent so that merging them reads as the decision it would be.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void eachHalfHasItsOwnLifecycleVocabulary() {

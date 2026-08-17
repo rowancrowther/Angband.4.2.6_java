@@ -92,7 +92,6 @@ public class RoomProfile {
      * @param pit      whether the room is a pit or nest
      * @param rarity   how unusual the room is
      * @param cutoff   the room is eligible if a 0-99 roll comes in under this
-     * @author Rowan Crowther
      */
     public RoomProfile(String name, RoomType roomType, int rating, int height,
                        int width, int level, boolean pit, int rarity, int cutoff) {

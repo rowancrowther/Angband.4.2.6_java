@@ -75,8 +75,6 @@ public class SwingUI {
     /**
      * This half's pair of channel ends: the inbox {@link #uiLoop} reads, and the sender
      * {@link #sendStartToCore} reports readiness on.
-     *
-     * @author Rowan Crowther
      */
     private UIChannel uiChannel;
 
@@ -87,23 +85,17 @@ public class SwingUI {
      * and park the event dispatch thread, which is the one thing the front end must never do; there
      * is no method here to do it with, so the rule is enforced by what the EDT was handed rather
      * than by remembering it.
-     *
-     * @author Rowan Crowther
      */
     private EDTChannel edtChannel;
 
     /**
      * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
      * for now; C's terms are a fixed array of eight.
-     *
-     * @author Rowan Crowther
      */
     private List<Window> windows;
     /**
      * The window currently being drawn to and configured - C's {@code Term}, the term that
      * display calls implicitly act on.
-     *
-     * @author Rowan Crowther
      */
     private Window activeWindow;
 
@@ -118,8 +110,6 @@ public class SwingUI {
      * {@code main()} to build the loop and pass it the front end, which would make this class the
      * display and nothing else; keeping it here makes {@code SwingUI} the single public face of the
      * front end. Either is defensible, and the choice is recorded rather than settled.
-     *
-     * @author Rowan Crowther
      */
     private UILoop uiLoop;
 
@@ -132,8 +122,6 @@ public class SwingUI {
      * <p>Nothing reads it yet. {@code requestGraphicsMode} is the component that belongs to this
      * class - tiles or plain text is a decision taken while building the window - and the
      * savefile group is not the front end's to act on.
-     *
-     * @author Rowan Crowther
      */
     private StartupOptions startupOptions;
 
@@ -153,7 +141,6 @@ public class SwingUI {
      * @param uiChannel      this half's pair of channel ends
      * @param edtChannel     the send-only end the window listener will post on
      * @param startupOptions the parsed command line
-     * @author Rowan Crowther
      */
     public SwingUI(UIChannel uiChannel, EDTChannel edtChannel, StartupOptions startupOptions) {
         this.uiChannel = uiChannel;
@@ -171,8 +158,6 @@ public class SwingUI {
     /**
      * The game window's window events. Only {@code windowClosing} does anything; the rest are
      * generated overrides that call {@code super} and could go.
-     *
-     * @author Rowan Crowther
      */
     private WindowListener windowListener = new WindowAdapter() {
         /**
@@ -196,7 +181,6 @@ public class SwingUI {
          *
          * @param e the close event, not inspected - there is one window, and its identity is
          *          implied
-         * @author Rowan Crowther
          */
         public void windowClosing(WindowEvent e) {
             UIMessage closingDown = new UIMessage.WindowCloseRequested();
@@ -323,8 +307,6 @@ public class SwingUI {
      * port's equivalent of C routing a quit through {@code quit_aux} rather than letting the
      * display vanish underneath the game. What C does inside {@code quit_aux} - logging, the front
      * end's cleanup hook - has no equivalent here yet.
-     *
-     * @author Rowan Crowther
      */
     public void closeDown() {
         for (Window window : windows) {
@@ -355,8 +337,6 @@ public class SwingUI {
      * that end writes to this half's own inbox, not the core's, so the EDT would be telling the UI
      * thread to tell the core - the shape the close request already has, and a defensible answer,
      * but a different one from what this line does today.
-     *
-     * @author Rowan Crowther
      */
     private void sendStartToCore() {
         UIMessage.LifecycleUIMessage uiMessage = new UIMessage.LifecycleUIMessage(UILifecycleEvent.START);
@@ -367,7 +347,6 @@ public class SwingUI {
      * The window display calls currently act on - C's {@code Term}.
      *
      * @return the active window
-     * @author Rowan Crowther
      */
     public Window getActiveWindow() {
         return activeWindow;
@@ -415,16 +394,12 @@ public class SwingUI {
          *
          * <p>Allocated {@code [row][column]}, matching {@link #put}, {@link #paintComponent}, the
          * callers of {@link #setChars}, and C's {@code term_win} grids.
-         *
-         * @author Rowan Crowther
          */
         private AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
 
         /**
          * Build a panel over a blank screen: every cell a dark space, so the grid is fully
          * populated before anything paints and no cell is ever null on the first repaint.
-         *
-         * @author Rowan Crowther
          */
         public JPanelArea() {
             super();
@@ -448,7 +423,6 @@ public class SwingUI {
          *
          * @param display the replacement grid, which must be exactly 24 rows of 80 columns
          * @throws IllegalStateException if the grid is not 24x80
-         * @author Rowan Crowther
          */
         public void setChars(AngbandDisplayCharacter[][] display) {
             if (display.length != 24 || display[0].length != 80) {
@@ -484,7 +458,6 @@ public class SwingUI {
          *
          * @param g the graphics context, which Swing may pass as {@code null} before the panel is
          *          realised
-         * @author Rowan Crowther
          */
         @Override
         public void paintComponent(Graphics g) {
@@ -535,7 +508,6 @@ public class SwingUI {
          * @param col    the column to write to, from the left
          * @param c      the glyph
          * @param colour the colour to draw it in
-         * @author Rowan Crowther
          */
         public void put(int row, int col, char c, ColourEnum colour) {
             if (row >= 24 || row < 0 || col >= 80 || col < 0)
@@ -555,7 +527,6 @@ public class SwingUI {
          * @param col    the column to start at, from the left
          * @param s      the string to write
          * @param colour the colour to draw it in
-         * @author Rowan Crowther
          */
         public void put(int row, int col, String s, ColourEnum colour) {
             int end = col + s.length();
@@ -579,8 +550,6 @@ public class SwingUI {
      * <p>Called after {@link #init()} has been queued but without waiting for it. Safe because the
      * core sends nothing before the {@code START} that {@code init} ends with, so this loop cannot
      * be handed anything to paint before there is a window to paint it into.
-     *
-     * @author Rowan Crowther
      */
     public void startLoop() {
         uiLoop.loop();
@@ -617,8 +586,6 @@ public class SwingUI {
      * <p><b>This method returns as soon as the window is up; it waits for nothing.</b> The session
      * carries on in two other places: {@link #startLoop()} on the UI thread, and the core on its.
      * The program ends when both of those finish and {@code main()}'s two joins return.
-     *
-     * @author Rowan Crowther
      */
     public void init() {
         Colour.init();

@@ -40,15 +40,11 @@ import java.util.ArrayList;
 public abstract class NumberUtils {
     /**
      * Shared logger (reserved for diagnostics in this utility holder).
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * Private constructor preventing instantiation of this static-only utility class.
-     *
-     * @author Rowan Crowther
      */
     private NumberUtils() {
     }

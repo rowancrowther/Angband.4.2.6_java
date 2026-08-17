@@ -240,7 +240,6 @@ class BoundaryTest {
      * examines zero files is worse than no boundary test, because it is green.
      *
      * @return the directory holding {@code src} and {@code docs}
-     * @author Rowan Crowther
      */
     private static Path projectRoot() {
         Path candidate = Path.of("").toAbsolutePath();
@@ -260,7 +259,6 @@ class BoundaryTest {
 
     /**
      * @return the directory holding our top-level packages
-     * @author Rowan Crowther
      */
     private static Path sourceRoot() {
         return projectRoot().resolve("src/main/java/uk/co/jackoftrades");
@@ -270,7 +268,6 @@ class BoundaryTest {
      * Reads and blanks every {@code .java} file under the source root, once.
      *
      * @return the source files, in a stable order so failure messages do not shuffle between runs
-     * @author Rowan Crowther
      */
     private static synchronized List<SourceFile> sources() {
         if (sources != null) {
@@ -298,7 +295,6 @@ class BoundaryTest {
      * @param offender which half's files are being checked
      * @param rule     answers "may a file in {@code offender} name this half?"
      * @return the violations, in file order
-     * @author Rowan Crowther
      */
     private static List<Violation> violations(String offender, PermittedTarget rule) {
         List<Violation> found = new ArrayList<>();
@@ -334,7 +330,6 @@ class BoundaryTest {
      * @param permitted answers "may a file in {@code offender} name this half?"
      * @param baseline  the crossings known and accepted today, as {@code path -> name} keys
      * @param field     the constant to edit, named so the failure message can say where to go
-     * @author Rowan Crowther
      */
     private static void assertOnlyBaselineCrossings(String rule, String offender,
                                                     PermittedTarget permitted,
@@ -374,7 +369,6 @@ class BoundaryTest {
      * @param arrived the new crossings; must not be empty when this is called
      * @param field   the constant to paste into
      * @return the message to hand to the assertion
-     * @author Rowan Crowther
      */
     private static String reportArrived(String rule, List<Violation> arrived, String field) {
         StringBuilder message = new StringBuilder()
@@ -415,7 +409,6 @@ class BoundaryTest {
      * @param departed the entries with nothing left to suppress; must not be empty
      * @param field    the constant to delete them from
      * @return the message to hand to the assertion
-     * @author Rowan Crowther
      */
     private static String reportDeparted(List<String> departed, String field) {
         StringBuilder message = new StringBuilder()
@@ -447,7 +440,6 @@ class BoundaryTest {
         /**
          * @param half the top-level package being named, or {@code ""} for the root package
          * @return whether naming it is allowed
-         * @author Rowan Crowther
          */
         boolean permits(String half);
     }
@@ -482,7 +474,6 @@ class BoundaryTest {
          * name in one file collapse to one entry, which is what you want.
          *
          * @return the {@code path -> name} key
-         * @author Rowan Crowther
          */
         String key() {
             return path + " -> " + reference.name();
@@ -506,7 +497,6 @@ class BoundaryTest {
          * @param root the source root, so the stored path is relative to it
          * @param path the file to read
          * @return the parsed file
-         * @author Rowan Crowther
          */
         static SourceFile read(Path root, Path path) {
             String source;
@@ -530,7 +520,6 @@ class BoundaryTest {
          *
          * @param code the source with comments and literals blanked out
          * @return the references, in the order they appear
-         * @author Rowan Crowther
          */
         private static List<Reference> referencesIn(String code) {
             List<Reference> found = new ArrayList<>();
@@ -552,7 +541,6 @@ class BoundaryTest {
          * @param code   the text being scanned
          * @param offset a character index into it
          * @return the one-based line number that index falls on
-         * @author Rowan Crowther
          */
         private static int lineOf(String code, int offset) {
             int line = 1;
@@ -582,7 +570,6 @@ class BoundaryTest {
          *
          * @param source the file as read
          * @return the same text with everything but code blanked
-         * @author Rowan Crowther
          */
         private static String blankCommentsAndLiterals(String source) {
             char[] out = source.toCharArray();
@@ -630,7 +617,6 @@ class BoundaryTest {
          * @param out   the buffer being blanked in place
          * @param start the index of the first of the three opening quotes
          * @return the index just past the closing quotes
-         * @author Rowan Crowther
          */
         private static int blankTextBlock(char[] out, int start) {
             int i = start;
@@ -673,7 +659,6 @@ class BoundaryTest {
          * @param start the index of the opening quote
          * @param quote which quote character opened it
          * @return the index just past the closing quote
-         * @author Rowan Crowther
          */
         private static int blankSimpleLiteral(char[] out, int start, char quote) {
             int i = start;
@@ -715,8 +700,6 @@ class BoundaryTest {
 
         /**
          * A boundary test that examined nothing would pass every rule.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void findsTheSourceTree() {
@@ -726,8 +709,6 @@ class BoundaryTest {
 
         /**
          * All four halves must be present, or a rule is being enforced over an empty set.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void seesAllFourHalves() {
@@ -740,8 +721,6 @@ class BoundaryTest {
         /**
          * The scan must see ordinary imports, or every rule below is vacuous. {@code channel}
          * naming itself is the traffic it is guaranteed to have.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void seesReferencesInCode() {
@@ -757,8 +736,6 @@ class BoundaryTest {
 
         /**
          * A line comment must not contribute a dependency — nor hide the code on the next line.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void ignoresLineComments() {
@@ -773,8 +750,6 @@ class BoundaryTest {
         /**
          * Javadoc is where the cross-boundary names actually are: this document names
          * {@code middle} and {@code frontend} repeatedly and must not fail its own test.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void ignoresBlockCommentsAndJavadoc() {
@@ -789,8 +764,6 @@ class BoundaryTest {
         /**
          * A name inside a string is a log line or a class-name lookup, not an import. Both quote
          * forms, and the escapes that would otherwise end a literal early.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void ignoresStringAndCharacterLiterals() {
@@ -805,8 +778,6 @@ class BoundaryTest {
 
         /**
          * The trap a regex-based stripper falls into: a comment opener inside a string.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void isNotFooledByACommentMarkerInsideAString() {
@@ -821,8 +792,6 @@ class BoundaryTest {
          * Line numbers are only useful if they are true, and they are true only if blanking
          * preserves every newline it passes over — including the ones inside block comments and
          * text blocks.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void keepsLineNumbersTrueThroughMultiLineConstructs() {
@@ -843,8 +812,6 @@ class BoundaryTest {
          * <p>{@code Main} is the fixture for the root-package case on purpose. It is the one type
          * that cannot migrate into a half without ceasing to be the entry point, so it will not
          * drift out from under this test the way any other example would.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void attributesNamesToTheHalfTheyPointAt() {
@@ -871,8 +838,6 @@ class BoundaryTest {
          * rule would fail twice over on a change that altered nothing. Then the natural fix is to
          * paste the new line in — and after a few rounds the baseline is a list of things that have
          * moved rather than a list of things that remain.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aBaselineKeyIgnoresTheLineTheCrossingSitsOn() {
@@ -892,8 +857,6 @@ class BoundaryTest {
          * <p>The stale-entry half of the ratchet would catch a typo eventually, but it would report
          * it as "no longer crosses the boundary" — which reads as good news and is the opposite of
          * the truth. Checking the shape up front means a mistyped path fails as a mistyped path.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void everyBaselineEntryIsWellFormed() {
@@ -926,9 +889,6 @@ class BoundaryTest {
     @Nested
     class TheFrontEndSeesOnlyTheChannel {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void frontendNamesNothingOfOursOutsideChannelBeyondTheBaseline() {
             assertOnlyBaselineCrossings(
@@ -953,9 +913,6 @@ class BoundaryTest {
     @Nested
     class TheCoreDoesNotKnowTheFrontEnd {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void middleNamesNothingInFrontendBeyondTheBaseline() {
             assertOnlyBaselineCrossings(
@@ -966,9 +923,6 @@ class BoundaryTest {
                     "MIDDLE_BASELINE");
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void backendNamesNothingInFrontendBeyondTheBaseline() {
             assertOnlyBaselineCrossings(
@@ -993,9 +947,6 @@ class BoundaryTest {
     @Nested
     class TheRulesAreDocumented {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void theMigrationDocumentStillStatesTheThreeRules() throws IOException {
             Path document = projectRoot().resolve("docs/Architecture_migration.md");
@@ -1014,7 +965,6 @@ class BoundaryTest {
          * enforced above and do not depend on the prose being findable.
          *
          * @param document where the document is expected to be
-         * @author Rowan Crowther
          */
         private void assumeDocumentExists(Path document) {
             org.junit.jupiter.api.Assumptions.assumeTrue(Files.isRegularFile(document),

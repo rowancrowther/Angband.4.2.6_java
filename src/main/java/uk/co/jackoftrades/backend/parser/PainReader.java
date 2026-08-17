@@ -47,8 +47,6 @@ public class PainReader implements Reader<MonsterPain> {
     /**
      * Logger passed to {@link GrammarDriver#run} so an IO failure is reported under this reader's
      * name.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -60,7 +58,6 @@ public class PainReader implements Reader<MonsterPain> {
      * @param filename the data file to parse
      * @return the assembled {@link MonsterPain} list (empty if the parse failed closed)
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     @NotNull
     @Override
@@ -77,7 +74,6 @@ public class PainReader implements Reader<MonsterPain> {
      * @param filename the data file to parse
      * @return a {@link ParseResult} of the assembled sets plus any soft errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<MonsterPain> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -102,7 +98,6 @@ public class PainReader implements Reader<MonsterPain> {
      * @param errorCatcher the live hard-error collector installed by the driver
      * @param errors       the soft-error sink, mutated in place
      * @return the parsed {@link PainParseRecord}s
-     * @author Rowan Crowther
      */
     private static List<PainParseRecord> extract(
             @NotNull PainGrammar parser,

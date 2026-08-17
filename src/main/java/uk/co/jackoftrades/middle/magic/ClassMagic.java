@@ -31,50 +31,37 @@ import java.util.List;
 public class ClassMagic {
     /**
      * The character level at which this class can first cast spells.
-     *
-     * @author Rowan Crowther
      */
     private int firstSpellLevel;
 
     /**
      * Weight contributed by each spellbook (affects encumbrance/casting).
-     *
-     * @author Rowan Crowther
      */
     private int spellWeight;
 
     /**
      * Number of spellbooks this class uses.
-     *
-     * @author Rowan Crowther
      */
     private int numBooks;
 
     /**
      * The spellbooks available to this class.
-     *
-     * @author Rowan Crowther
      */
     private List<MagicBook> magicBooks;
 
     /**
      * Total of all spells across all the books for this magic class
-     *
-     * @author Rowan Crowther
      */
     private int totalSpells;
 
     /**
      * The shared "no magic" sentinel assigned to non-caster classes (Warrior), so callers can rely
      * on {@code magic} never being {@code null} and simply test {@link #isCaster()}.
-     *
-     * @author Rowan Crowther
      */
     public static final ClassMagic NONE = new ClassMagic(0, 0, 0, List.of());
 
     /**
      * @return {@code true} if this class can cast — i.e. it defines at least one spellbook
-     * @author Rowan Crowther
      */
     public boolean isCaster() {
         return numBooks > 0;
@@ -88,7 +75,6 @@ public class ClassMagic {
      * @param spellWeight     per-book weight
      * @param numBooks        number of books used
      * @param books           the spellbooks available to the class (defensively copied)
-     * @author Rowan Crowther
      */
     public ClassMagic(int firstSpellLevel, int spellWeight, int numBooks, List<MagicBook> books) {
         this.firstSpellLevel = firstSpellLevel;
@@ -105,7 +91,6 @@ public class ClassMagic {
     /**
      * @return the spellbooks available to this class, in class-load order - the order the flattened
      * spell-index space runs across (see {@link #spellByIndex(int)})
-     * @author Rowan Crowther
      */
     public List<MagicBook> getMagicBooks() {
         return magicBooks;
@@ -120,7 +105,6 @@ public class ClassMagic {
      *
      * @param spell the spell to locate, matched by identity
      * @return the spell's flattened index, or {@code -1} if it belongs to none of this class's books
-     * @author Rowan Crowther
      */
     public int indexOfSpell(MagicSpell spell) {
         boolean spellFound = false;
@@ -148,7 +132,6 @@ public class ClassMagic {
      *
      * @param spellIndex the flattened index into this class's books
      * @return the spell at that index, or {@code null} if the index is out of range
-     * @author Rowan Crowther
      */
     public MagicSpell spellByIndex(int spellIndex) {
         if (spellIndex < 0 || spellIndex >= totalSpells) return null;

@@ -66,34 +66,24 @@ public class Colour {
 
     /**
      * Total number of palette slots (basic colours plus shade/extra entries).
-     *
-     * @author Rowan Crowther
      */
     public final static int maxColours = 32;
     /**
      * Number of "basic" named colours before the extra/shade entries.
-     *
-     * @author Rowan Crowther
      */
     public final static int basicColours = 29;
 
     /**
      * The colours as originally defined, kept so customised colours can be reset.
-     *
-     * @author Rowan Crowther
      */
     private static EnumMap<ColourEnum, Color> originalColours = new EnumMap<>(ColourEnum.class);
     /**
      * The colours currently in effect (may differ from the originals after customisation).
-     *
-     * @author Rowan Crowther
      */
     private static EnumMap<ColourEnum, Color> currentColours = new EnumMap<>(ColourEnum.class);
 
     /**
      * Private constructor preventing instantiation of this static colour holder.
-     *
-     * @author Rowan Crowther
      */
     private Colour() {
     }
@@ -101,8 +91,6 @@ public class Colour {
     /**
      * Populate both the original and current colour tables from the
      * {@link ColourEnum} definitions, indexed in declaration order.
-     *
-     * @author Rowan Crowther
      */
     public static void init() {
         int index = 0;

@@ -59,7 +59,6 @@ public class TerrainRegistry {
      * @param flag the terrain code
      * @return the matching {@link Feature}, or {@code null} if none matches
      * @throws IllegalStateException if features have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static Feature lookupFeature(@NotNull TerrainFlags flag) {
@@ -80,7 +79,6 @@ public class TerrainRegistry {
      *
      * @param description the trap description
      * @return the matching {@link TrapKind}, or {@code null} if none matches
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
@@ -112,7 +110,6 @@ public class TerrainRegistry {
 
     /**
      * @return the configured value of {@code trapMax}
-     * @author Rowan Crowther
      */
     public static int getTrapMax() {
         return trapMax;

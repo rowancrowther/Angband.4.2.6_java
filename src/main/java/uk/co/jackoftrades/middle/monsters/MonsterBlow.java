@@ -31,26 +31,18 @@ import uk.co.jackoftrades.middle.combat.BlowMethod;
 public class MonsterBlow {
     /**
      * How the blow is delivered (hit, bite, claw, …).
-     *
-     * @author Rowan Crowther
      */
     private BlowMethod method;
     /**
      * What the blow does on landing.
-     *
-     * @author Rowan Crowther
      */
     private BlowEffect effect;
     /**
      * The blow's damage dice.
-     *
-     * @author Rowan Crowther
      */
     private Random dice;
     /**
      * How many times the player has seen this blow land (for lore).
-     *
-     * @author Rowan Crowther
      */
     private int timesSeen;
 
@@ -60,7 +52,6 @@ public class MonsterBlow {
      * @param method how the blow is delivered
      * @param effect what the blow does
      * @param dice   the damage dice
-     * @author Rowan Crowther
      */
     public MonsterBlow(BlowMethod method, BlowEffect effect, Random dice) {
         this.method = method;

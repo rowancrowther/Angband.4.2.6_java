@@ -35,52 +35,36 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 public class BlowEffect {
     /**
      * The effect's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The effect's power rating.
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * The effect's evaluation weight (used in danger rating).
-     *
-     * @author Rowan Crowther
      */
     private int eval;
     /**
      * Human-readable description of the effect.
-     *
-     * @author Rowan Crowther
      */
     private String desc;
     /**
      * Lore colour used normally.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttr;
     /**
      * Lore colour used when the player resists.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttrResist;
     /**
      * Lore colour used when the player is immune.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum loreAttrImmune;
     /**
      * What kind of player attribute protects against this effect, and so which of the two
      * resist fields below carries a value. {@code null} for the effects that name no
      * {@code effect-type:} at all, which is legal.
-     *
-     * @author Rowan Crowther
      */
     private BlowEffectType effectType;
     /**
@@ -91,22 +75,16 @@ public class BlowEffect {
      * of the C original ({@code parse_eff_resist}, [C] {@code src/mon-init.c:388-400}),
      * which holds an object-flag index or an element index depending on the effect type.
      * Splitting them keeps that distinction in the type system rather than in a convention.
-     *
-     * @author Rowan Crowther
      */
     private ObjectFlag objectFlagResist;
     /**
      * The element resisted when {@link #effectType} is {@link BlowEffectType#BET_ELEMENT},
      * otherwise {@link ElementEnum#ELEM_NONE}. See {@link #objectFlagResist} for why the
      * two are held separately.
-     *
-     * @author Rowan Crowther
      */
     private ElementEnum elementEnumResist;
     /**
      * The projection used when this effect is delivered as a "lash".
-     *
-     * @author Rowan Crowther
      */
     private Projection lashType;
 
@@ -125,7 +103,6 @@ public class BlowEffect {
      * @param objectFlagResist  protecting object flag, or {@link ObjectFlag#OF_NONE}
      * @param elementEnumResist resisted element, or {@link ElementEnum#ELEM_NONE}
      * @param lashType          lash-form projection
-     * @author Rowan Crowther
      */
     public BlowEffect(String name, int power, int eval, String desc, ColourEnum loreAttr, ColourEnum loreAttrResist,
                       ColourEnum loreAttrImmune, BlowEffectType effectType, ObjectFlag objectFlagResist, ElementEnum elementEnumResist,
@@ -145,7 +122,6 @@ public class BlowEffect {
 
     /**
      * @return this blow effect's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -153,7 +129,6 @@ public class BlowEffect {
 
     /**
      * @return this effect's power rating, used in the monster to-hit calculation
-     * @author Rowan Crowther
      */
     public int getPower() {
         return power;
@@ -161,7 +136,6 @@ public class BlowEffect {
 
     /**
      * @return this effect's evaluation weight, used when rating a monster's danger
-     * @author Rowan Crowther
      */
     public int getEval() {
         return eval;
@@ -169,7 +143,6 @@ public class BlowEffect {
 
     /**
      * @return the description used in monster recall, e.g. {@code "reduce strength"}
-     * @author Rowan Crowther
      */
     public String getDesc() {
         return desc;
@@ -177,7 +150,6 @@ public class BlowEffect {
 
     /**
      * @return the lore colour used when the player has no protection
-     * @author Rowan Crowther
      */
     public ColourEnum getLoreAttr() {
         return loreAttr;
@@ -185,7 +157,6 @@ public class BlowEffect {
 
     /**
      * @return the lore colour used when the player resists
-     * @author Rowan Crowther
      */
     public ColourEnum getLoreAttrResist() {
         return loreAttrResist;
@@ -193,7 +164,6 @@ public class BlowEffect {
 
     /**
      * @return the lore colour used when the player is immune
-     * @author Rowan Crowther
      */
     public ColourEnum getLoreAttrImmune() {
         return loreAttrImmune;
@@ -202,7 +172,6 @@ public class BlowEffect {
     /**
      * @return what kind of attribute protects against this effect, or {@code null} if the
      * data file names none
-     * @author Rowan Crowther
      */
     public BlowEffectType getEffectType() {
         return effectType;
@@ -211,7 +180,6 @@ public class BlowEffect {
     /**
      * @return the protecting object flag, or {@link ObjectFlag#OF_NONE} unless
      * {@link #getEffectType()} is {@link BlowEffectType#BET_FLAG}
-     * @author Rowan Crowther
      */
     public ObjectFlag getObjectFlagResist() {
         return objectFlagResist;
@@ -220,7 +188,6 @@ public class BlowEffect {
     /**
      * @return the resisted element, or {@link ElementEnum#ELEM_NONE} unless
      * {@link #getEffectType()} is {@link BlowEffectType#BET_ELEMENT}
-     * @author Rowan Crowther
      */
     public ElementEnum getElementEnumResist() {
         return elementEnumResist;
@@ -229,7 +196,6 @@ public class BlowEffect {
     /**
      * @return the projection this effect uses in its lash form; never {@code null} for an
      * effect whose data-file entry names a {@code lash-type:}
-     * @author Rowan Crowther
      */
     public Projection getLashType() {
         return lashType;

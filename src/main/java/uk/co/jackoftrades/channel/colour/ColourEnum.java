@@ -84,20 +84,14 @@ public enum ColourEnum {
 
     /**
      * Single-character code identifying this colour in data files/preferences.
-     *
-     * @author Rowan Crowther
      */
     private final char colourCharacter;
     /**
      * Human-readable name of this colour.
-     *
-     * @author Rowan Crowther
      */
     private final String colourName;
     /**
      * Per-context translation table: indexed by {@link ColourTranslation}.
-     *
-     * @author Rowan Crowther
      */
     private final char[] colourTranslate;
     /**
@@ -106,7 +100,6 @@ public enum ColourEnum {
      * @param c      the single-character colour code
      * @param name   the colour's display name
      * @param table  the 9-entry per-context translation table
-     * @author Rowan Crowther
      */
     ColourEnum(char c, String name, char[] table) {
         colourCharacter = c;
@@ -120,7 +113,6 @@ public enum ColourEnum {
      *
      * @param colour the colour to name
      * @return its display name, e.g. {@code "Light Green"}
-     * @author Rowan Crowther
      */
     @NotNull
     @Contract(pure = true)
@@ -150,7 +142,6 @@ public enum ColourEnum {
      *
      * @param code a one-character index code, or a full display name
      * @return the matching colour, or {@code null} if the code names none
-     * @author Rowan Crowther
      */
     @Nullable
     @CheckReturnValue
@@ -177,7 +168,6 @@ public enum ColourEnum {
      *
      * @param c the index character from a data file
      * @return the matching colour, or {@code null} if no colour uses that character
-     * @author Rowan Crowther
      */
     @Nullable
     @CheckReturnValue

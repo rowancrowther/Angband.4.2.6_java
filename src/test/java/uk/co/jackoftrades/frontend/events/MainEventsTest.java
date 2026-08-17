@@ -87,8 +87,6 @@ class MainEventsTest {
     /**
      * Every method announces its own event and no other. The test that catches a copy-pasted
      * method body, which is the only way these five can currently be wrong.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void eachTransitionAnnouncesItsOwnEvent() {
@@ -105,8 +103,6 @@ class MainEventsTest {
     /**
      * Calling all five produces five different lines. Distinctness stated directly: if two methods
      * were pasted from the same source the count drops, whichever pair it was.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theFiveTransitionsAreDistinct() {
@@ -125,8 +121,6 @@ class MainEventsTest {
      * game and world transitions plus {@code EVENT_LEAVE_INIT}, while {@code EVENT_ENTER_INIT}
      * stays in {@code UILoop} (it paints the splash screen) and the birth pair belongs to
      * {@code BirthEvents}. If a later stage moves one of those, this fails and says so.
-     *
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(value = GameEventType.class, names = {
@@ -139,8 +133,6 @@ class MainEventsTest {
 
     /**
      * The events this class deliberately does not handle.
-     *
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(value = GameEventType.class, names = {

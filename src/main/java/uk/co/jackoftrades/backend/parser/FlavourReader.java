@@ -61,7 +61,6 @@ public class FlavourReader implements Reader<FlavourKind> {
      * @param filename the file to read
      * @return the parse result — items plus collected errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public @NotNull ParseResult<FlavourKind> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -80,7 +79,6 @@ public class FlavourReader implements Reader<FlavourKind> {
      * @param errorCatcher collects syntax errors raised during the parse
      * @param errors       the soft-error sink for the record-count check
      * @return the raw {@link FlavourKindParseRecord}s for the assembler
-     * @author Rowan Crowther
      */
     private static List<FlavourKindParseRecord> extract(
             @NotNull FlavourGrammar parser,

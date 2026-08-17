@@ -38,22 +38,16 @@ import java.util.*;
 public class Flag<E extends Enum<E>> implements Iterable<E> {
     /**
      * The flags currently switched on.
-     *
-     * @author Rowan Crowther
      */
     private final EnumSet<E> flagSet;
 
     /**
      * The full set of every possible flag, cached for full/negate/mask operations.
-     *
-     * @author Rowan Crowther
      */
     private final EnumSet<E> all;
     /**
      * The enum class, retained so new {@link EnumSet}s can be built generically
      * (e.g. in {@link #copyFrom} and {@link #mask}).
-     *
-     * @author Rowan Crowther
      */
     private final Class<E> eClass;
 
@@ -121,7 +115,6 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * iterator cannot mutate this {@code Flag} (its {@code remove()} throws).
      *
      * @return a read-only iterator over the flags that are on
-     * @author Rowan Crowther
      */
     @Override
     @CheckReturnValue
@@ -312,7 +305,6 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * the receiver itself, silently wiping the set being intersected.
      *
      * @param flag the flag set to copy from, left unmodified
-     * @author Rowan Crowther
      */
     public void copyFrom(Flag<E> flag) {
         wipe();

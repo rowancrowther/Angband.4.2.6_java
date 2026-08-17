@@ -29,8 +29,6 @@ package uk.co.jackoftrades.middle.cave;
 public class Heatmap {
     /**
      * Per-grid scalar values, indexed {@code [y][x]}.
-     *
-     * @author Rowan Crowther
      */
     private int[][] grids;
 
@@ -51,7 +49,6 @@ public class Heatmap {
      *
      * @param width  the map width in grids
      * @param height the map height in grids
-     * @author Rowan Crowther
      */
     public Heatmap(int width, int height) {
         grids = new int[height][width];
@@ -63,7 +60,6 @@ public class Heatmap {
      * @param y the row (y-coordinate)
      * @param x the column (x-coordinate)
      * @return the scalar stored at that grid
-     * @author Rowan Crowther
      */
     public int getValue(int y, int x) {
         return grids[y][x];
@@ -75,7 +71,6 @@ public class Heatmap {
      * @param y     the row (y-coordinate)
      * @param x     the column (x-coordinate)
      * @param value the scalar to store at that grid
-     * @author Rowan Crowther
      */
     public void setValue(int y, int x, int value) {
         grids[y][x] = value;
@@ -86,7 +81,6 @@ public class Heatmap {
      *
      * @param loc the grid to read
      * @return the scalar stored at that grid
-     * @author Rowan Crowther
      */
     public int getValue(Loc loc) {
         return grids[loc.getY()][loc.getX()];
@@ -97,7 +91,6 @@ public class Heatmap {
      *
      * @param loc   the grid to write
      * @param value the scalar to store at that grid
-     * @author Rowan Crowther
      */
     public void setValue(Loc loc, int value) {
         grids[loc.getY()][loc.getX()] = value;

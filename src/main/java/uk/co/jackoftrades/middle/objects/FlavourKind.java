@@ -36,22 +36,16 @@ import java.util.List;
 public class FlavourKind {
     /**
      * The object type these flavours disguise (rings, potions, scrolls, ...).
-     *
-     * @author Rowan Crowther
      */
     private TValue value;
 
     /**
      * The glyph every object of this type is drawn with while unidentified.
-     *
-     * @author Rowan Crowther
      */
     private char glyph;
 
     /**
      * The flavours available to this type, in file order.
-     *
-     * @author Rowan Crowther
      */
     private List<Flavour> flavours;
 
@@ -59,7 +53,6 @@ public class FlavourKind {
      * @param value    the object type these flavours belong to
      * @param glyph    the shared display glyph
      * @param flavours the flavours for this type
-     * @author Rowan Crowther
      */
     public FlavourKind(TValue value, char glyph, List<Flavour> flavours) {
         this.value = value;
@@ -69,7 +62,6 @@ public class FlavourKind {
 
     /**
      * @return the object type these flavours disguise
-     * @author Rowan Crowther
      */
     public TValue getValue() {
         return value;
@@ -77,7 +69,6 @@ public class FlavourKind {
 
     /**
      * @return the shared display glyph
-     * @author Rowan Crowther
      */
     public char getGlyph() {
         return glyph;
@@ -85,7 +76,6 @@ public class FlavourKind {
 
     /**
      * @return the flavours for this type, as an unmodifiable list
-     * @author Rowan Crowther
      */
     public List<Flavour> getFlavours() {
         return Collections.unmodifiableList(flavours);

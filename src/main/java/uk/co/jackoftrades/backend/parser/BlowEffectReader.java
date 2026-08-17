@@ -41,8 +41,6 @@ import java.util.List;
 public class BlowEffectReader implements Reader<BlowEffect> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -64,7 +62,6 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      * @param filename the name of the file
      * @return the assembled blow effects plus the errors collected while assembling them
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -86,7 +83,6 @@ public class BlowEffectReader implements Reader<BlowEffect> {
      * @param errorCatcher collector for the lexer/parser syntax errors
      * @param errors       collector for soft errors, shared with the assembler
      * @return the parsed records in file order
-     * @author Rowan Crowther
      */
     private static List<BlowEffectParseRecord> extract(
             @NotNull BlowEffectGrammar parser,

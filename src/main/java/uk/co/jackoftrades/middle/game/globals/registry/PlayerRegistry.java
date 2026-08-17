@@ -230,7 +230,6 @@ public class PlayerRegistry {
      * @param chartId the chart number
      * @return the matching {@link PlayerHistoryChart}, or {@code null} if none matches
      * @throws IllegalStateException if history charts have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static PlayerHistoryChart lookupPlayerHistoryChart(int chartId) {
@@ -252,7 +251,6 @@ public class PlayerRegistry {
      * @param name the race's display name, e.g. {@code "Half-Troll"}
      * @return the matching {@link PlayerRace}, or {@code null} if no race has that name
      * @throws IllegalStateException if player races have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static PlayerRace lookupPlayerRace(@NotNull String name) {
@@ -276,7 +274,6 @@ public class PlayerRegistry {
      * @return the {@link PlayerBody} at that index (never {@code null})
      * @throws IllegalStateException     if player bodies have not been loaded
      * @throws IndexOutOfBoundsException if {@code number} is not a valid body index
-     * @author Rowan Crowther
      */
     public static PlayerBody lookupPlayerBody(int number) {
         if (playerBodies == null) {
@@ -301,7 +298,6 @@ public class PlayerRegistry {
      * @param name the shape name
      * @return the matching {@link PlayerShape}, or {@code null} if none matches
      * @throws IllegalStateException if player shapes have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static PlayerShape lookupPlayerShape(@NotNull String name) {
@@ -318,7 +314,6 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code magicSpellMax}
-     * @author Rowan Crowther
      */
     public static int getMagicSpellMax() {
         return magicSpellMax;
@@ -326,7 +321,6 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code playerEquipmentSlotsMax}
-     * @author Rowan Crowther
      */
     public static int getPlayerEquipmentSlotsMax() {
         return playerEquipmentSlotsMax;
@@ -334,7 +328,6 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code playerShapeMax}
-     * @author Rowan Crowther
      */
     public static int getPlayerShapeMax() {
         return playerShapeMax;

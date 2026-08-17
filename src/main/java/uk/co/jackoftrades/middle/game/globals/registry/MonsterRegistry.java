@@ -208,7 +208,6 @@ public class MonsterRegistry {
      * @param name the race name to look up
      * @return the exact match, the closest substring match, or {@code null} if neither exists
      * @throws IllegalStateException if the monster races have not been loaded yet
-     * @author Rowan Crowther
      */
     @Nullable
     public static MonsterRace lookupMonsterRace(@NotNull String name) {
@@ -258,7 +257,6 @@ public class MonsterRegistry {
      * @param name the monster base code name
      * @return the matching {@link MonsterBase}, or {@code null} if none matches
      * @throws IllegalStateException if monster bases have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static MonsterBase lookupMonsterBase(@NotNull String name) {
@@ -306,7 +304,6 @@ public class MonsterRegistry {
      * @param effectName the blow effect name
      * @return the matching {@link BlowEffect}, or {@code null} if none matches
      * @throws IllegalStateException if blow effects have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static BlowEffect lookupBlowEffect(@NotNull String effectName) {
@@ -327,7 +324,6 @@ public class MonsterRegistry {
      * @param methodName the blow method name
      * @return the matching {@link BlowMethod}, or {@code null} if none matches
      * @throws IllegalStateException if blow methods have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static BlowMethod lookupBlowMethod(@NotNull String methodName) {
@@ -347,7 +343,6 @@ public class MonsterRegistry {
      *
      * @param index the pain-record index
      * @return the matching {@link MonsterPain}, or {@code null} if none matches
-     * @author Rowan Crowther
      */
     public static @Nullable MonsterPain getPainFromIndex(int index) {
         if (monsterPains == null) {
@@ -368,7 +363,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterRaceMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterRaceMax() {
         return monsterRaceMax;
@@ -376,7 +370,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterPainMsgMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterPainMsgMax() {
         return monsterPainMsgMax;
@@ -384,7 +377,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterPitTypeMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterPitTypeMax() {
         return monsterPitTypeMax;
@@ -392,7 +384,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterBlowsMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterBlowsMax() {
         return monsterBlowsMax;
@@ -400,7 +391,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterBlowsMethodsMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterBlowsMethodsMax() {
         return monsterBlowsMethodsMax;
@@ -408,7 +398,6 @@ public class MonsterRegistry {
 
     /**
      * @return the configured value of {@code monsterBlowsEffectsMax}
-     * @author Rowan Crowther
      */
     public static int getMonsterBlowsEffectsMax() {
         return monsterBlowsEffectsMax;
@@ -419,7 +408,6 @@ public class MonsterRegistry {
      *
      * @param name the monster base code name
      * @return the matching {@link MonsterBase}, or {@code null} if none matches
-     * @author Rowan Crowther
      */
     public static @Nullable MonsterBase getBaseFromName(String name) {
         for (MonsterBase monsterBase : monsterBases) {
@@ -433,7 +421,6 @@ public class MonsterRegistry {
 
     /**
      * @return the loaded colour-cycling table
-     * @author Rowan Crowther
      */
     public static VisualsCycler getVisualsCyclerTable() {
         return visualsCyclerTable;

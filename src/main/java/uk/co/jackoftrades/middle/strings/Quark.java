@@ -45,21 +45,15 @@ import java.util.Map;
 public class Quark implements AngbandModule {
     /**
      * This module's display name, set during {@link #init()}.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The key-to-string table; insertion-ordered so iteration is stable.
      * {@code null} until {@link #init()} runs and again after {@link #cleanup()}.
-     *
-     * @author Rowan Crowther
      */
     private Map<Integer, String> quarks;
     /**
      * Logger used to report misuse (e.g. operating on an uninitialised table).
-     *
-     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 

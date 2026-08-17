@@ -62,7 +62,6 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
      * @param errors  the soft-error sink; malformed numbers, non-uniform successors and dangling
      *                successor references are appended here rather than aborting the load
      * @return the assembled {@link PlayerHistoryChart}s, each linked to its successor
-     * @author Rowan Crowther
      */
     @Override
     public List<PlayerHistoryChart> assemble(@NotNull List<HistoryParseRecord> records, @NotNull List<String> errors) {

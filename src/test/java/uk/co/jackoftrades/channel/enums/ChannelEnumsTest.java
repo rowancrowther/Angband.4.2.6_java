@@ -50,7 +50,6 @@ class ChannelEnumsTest {
 
     /**
      * @param constants the constants to check
-     * @author Rowan Crowther
      */
     private static void assertNoDuplicates(Enum<?>[] constants) {
         long distinct = Arrays.stream(constants).map(Enum::name).distinct().count();
@@ -71,8 +70,6 @@ class ChannelEnumsTest {
         /**
          * C's enum runs from {@code EVENT_MAP} to {@code EVENT_END} and has 65 members. A port
          * that has drifted by one has almost certainly lost a constant in the middle.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void thereAreAsManyEventTypesAsInTheCOriginal() {
@@ -82,8 +79,6 @@ class ChannelEnumsTest {
 
         /**
          * The ends of the list, which is where a truncated paste shows up.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theListStartsAndEndsWhereCsDoes() {
@@ -96,8 +91,6 @@ class ChannelEnumsTest {
         /**
          * The events this migration actually uses, named individually because stage 2 and stage 3
          * reference them by name and a rename would otherwise fail somewhere less obvious.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theEventsThisMigrationDependsOnExist() {
@@ -107,9 +100,6 @@ class ChannelEnumsTest {
             assertNotNull(GameEventType.EVENT_MESSAGE);
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void noEventTypeIsListedTwice() {
             assertNoDuplicates(GameEventType.values());
@@ -135,8 +125,6 @@ class ChannelEnumsTest {
          * {@code proj_to_attr[typ][motion]}, {@code proj_to_char[typ][motion]}. If those tables
          * are ever ported, this test is the reminder that the index must be adjusted or resolved
          * by name.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theProjectionListIsCsPlusAZeroPlaceholder() {
@@ -151,8 +139,6 @@ class ChannelEnumsTest {
          * the projection parser in C refuses to load {@code projection.txt} unless that stays
          * true. Pinned as a run rather than one by one, because it is the <em>order</em> that
          * carries the meaning.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theElementsComeFirstInTheirCOrder() {
@@ -173,9 +159,6 @@ class ChannelEnumsTest {
                     + "list-elements.h order - C's parser checks this and refuses to load if it drifts");
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void noProjectionIsListedTwice() {
             assertNoDuplicates(ProjectionEnum.values());
@@ -185,8 +168,6 @@ class ChannelEnumsTest {
          * Every element resolves to the projection of the same name. This is the correspondence
          * C relies on positionally and this port resolves by name; if the two lists drift apart,
          * the lookup starts returning null and this is where it shows.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void everyRealElementHasAMatchingProjection() {
@@ -214,8 +195,6 @@ class ChannelEnumsTest {
         /**
          * C has eight kinds plus {@code EVT_NONE}. The three basic ones and {@code EVT_BUTTON}
          * come first, then the four "abstract" menu events.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theUiEventKindsMatchTheCOriginal() {
@@ -237,8 +216,6 @@ class ChannelEnumsTest {
         /**
          * Kept small on purpose. Every constant added here is a state the two halves have to agree
          * about, so growth should be a decision rather than a drift.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theLifecycleVocabulariesAreMinimal() {

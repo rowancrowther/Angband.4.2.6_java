@@ -33,53 +33,37 @@ import java.util.Iterator;
 public class Pile {
     /**
      * Logger used to report pile integrity failures.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
     /**
      * The backing LIFO list of items.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<ItemObject> pile;
 
     /**
      * Diagnostic snapshot of the pile that triggered an integrity failure.
-     *
-     * @author Rowan Crowther
      */
     private static ArrayList<ItemObject> failPile;
     /**
      * Diagnostic snapshot of the object list around a failure.
-     *
-     * @author Rowan Crowther
      */
     private static ArrayList<ItemObject> failObject;
     /**
      * Index of the offending object within {@link #failObject}.
-     *
-     * @author Rowan Crowther
      */
     private static int failObjectIndex;
 
     /**
      * Source file recorded for an integrity failure (legacy; see {@link #integrityFail}).
-     *
-     * @author Rowan Crowther
      */
     private static String failFile;
     /**
      * Source line recorded for an integrity failure (legacy).
-     *
-     * @author Rowan Crowther
      */
     private static int failLine;
 
     /**
      * Build an empty pile.
-     *
-     * @author Rowan Crowther
      */
     public Pile() {
         pile = new ArrayList<>();
@@ -283,8 +267,6 @@ public class Pile {
 
     /**
      * Test-only helper that empties the pile.
-     *
-     * @author Rowan Crowther
      */
     @TestOnly
     public void clear() {

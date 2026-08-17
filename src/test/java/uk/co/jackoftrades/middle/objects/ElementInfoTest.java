@@ -44,8 +44,6 @@ class ElementInfoTest {
 
     /**
      * A fresh instance is C's zeroed struct: no flags, no resistance.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a new element info is empty and neutral")
@@ -67,9 +65,6 @@ class ElementInfoTest {
     @DisplayName("resistance level")
     class ResistanceLevel {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("round-trips a positive level")
         void roundTripsPositive() {
@@ -83,8 +78,6 @@ class ElementInfoTest {
         /**
          * A negative level is a vulnerability rather than a resistance, and is stored as given.
          * C's field is an {@code int16_t}, so nothing clamps it at zero and neither does this.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("stores a negative level unchanged")
@@ -109,8 +102,6 @@ class ElementInfoTest {
         /**
          * {@code on} delegates to {@link Flag#on}, so it answers C's "did this change anything"
          * question: true the first time, false on a repeat.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("on reports only the first set as a change")
@@ -121,9 +112,6 @@ class ElementInfoTest {
             assertFalse(info.on(ElementInfoEnum.EL_INFO_IGNORE));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("has sees what on set, and nothing else")
         void hasSeesWhatOnSet() {
@@ -139,8 +127,6 @@ class ElementInfoTest {
         /**
          * The three flags are independent — C packs them into one bitflag, and a port that
          * accidentally made them exclusive would still pass a single-flag test.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("all three flags can be on at once")
@@ -161,8 +147,6 @@ class ElementInfoTest {
          * {@code el_info[i].flags} is a bitflag inside the owning struct that callers manipulate in
          * place. This pins that down, because the opposite choice would look equally reasonable
          * from the signature alone.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getFlags returns the live set, so writes through it are seen")
@@ -187,9 +171,6 @@ class ElementInfoTest {
     @DisplayName("copy")
     class Copy {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("carries both fields across")
         void copiesBothFields() {
@@ -206,8 +187,6 @@ class ElementInfoTest {
         /**
          * The copy is deep in the sense that matters: the flag set is a new object, so folding a
          * base's defaults onto a derived kind leaves the derived kind free to diverge.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("gives the copy its own flag set")
@@ -224,8 +203,6 @@ class ElementInfoTest {
          * Both directions, because a copy that shares state usually fails only one of them: a
          * {@code copyFrom} into a shared set breaks the first, and returning the receiver breaks
          * the second.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("neither copy nor original can change the other")
@@ -248,8 +225,6 @@ class ElementInfoTest {
         /**
          * A copy taken from an empty instance must not pick up the source's flags <em>later</em>,
          * which is the failure mode of copying a reference and only filling it in afterwards.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("copying an empty info still detaches it")

@@ -47,14 +47,11 @@ public enum BlowEffectType {
 
     /**
      * The spelling this type has in {@code blow_effects.txt}.
-     *
-     * @author Rowan Crowther
      */
     private final String type;
 
     /**
      * @param type the data-file spelling this constant is known by
-     * @author Rowan Crowther
      */
     BlowEffectType(String type) {
         this.type = type;
@@ -62,7 +59,6 @@ public enum BlowEffectType {
 
     /**
      * @return the data-file spelling of this effect type
-     * @author Rowan Crowther
      */
     public String getType() {
         return type;
@@ -74,7 +70,6 @@ public enum BlowEffectType {
      * @param type the spelling read from the data file
      * @return the matching constant, or {@code null} if none matches - which includes the
      * empty string, since an effect is allowed to name no {@code effect-type:} at all
-     * @author Rowan Crowther
      */
     public static BlowEffectType getFromString(String type) {
         return Arrays.stream(BlowEffectType.values()).filter(s -> s.getType().equals(type))

@@ -39,52 +39,36 @@ import java.util.Set;
 public class Artifact {
     /**
      * The artifact's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
-     *
-     * @author Rowan Crowther
      */
     private String text;
 
     /**
      * The base item type value (tval) the artifact is built on.
-     *
-     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
      * The base sub-type value (sval).
-     *
-     * @author Rowan Crowther
      */
     private String sValue;
 
     /**
      * To-hit bonus.
-     *
-     * @author Rowan Crowther
      */
     private int toHit;
     /**
      * To-damage bonus.
-     *
-     * @author Rowan Crowther
      */
     private int toDam;
     /**
      * To-armour-class bonus.
-     *
-     * @author Rowan Crowther
      */
     private int toAC;
     /**
      * Base armour class.
-     *
-     * @author Rowan Crowther
      */
     private int ac;
 
@@ -92,107 +76,75 @@ public class Artifact {
     // private int damageSides;
     /**
      * Damage dice expression as a string.
-     *
-     * @author Rowan Crowther
      */
     private String diceString;
 
     /**
      * Weight.
-     *
-     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Cost/value.
-     *
-     * @author Rowan Crowther
      */
     private int cost;
 
     /**
      * Object flags this artifact grants.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
 
     /**
      * Numeric modifiers granted, keyed by modifier.
-     *
-     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
      * Per-element relation info.
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Brands the artifact carries.
-     *
-     * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
      * Slays the artifact carries.
-     *
-     * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
      * Curses the artifact carries, each with its instance data.
-     *
-     * @author Rowan Crowther
      */
     private Map<Curse, CurseData> curses;
 
     /**
      * The artifact's native level.
-     *
-     * @author Rowan Crowther
      */
     private int level;
 
     /**
      * Allocation probability weight.
-     *
-     * @author Rowan Crowther
      */
     private int allocProb;
     /**
      * Minimum allocation depth.
-     *
-     * @author Rowan Crowther
      */
     private int allocMin;
     /**
      * Maximum allocation depth.
-     *
-     * @author Rowan Crowther
      */
     private int allocMax;
 
     /**
      * The artifact's activation, if any.
-     *
-     * @author Rowan Crowther
      */
     private Activation activation;
     /**
      * Message shown when the activation is used.
-     *
-     * @author Rowan Crowther
      */
     private String activationMessage;
 
     /**
      * Recharge time for the activation, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random time;
 

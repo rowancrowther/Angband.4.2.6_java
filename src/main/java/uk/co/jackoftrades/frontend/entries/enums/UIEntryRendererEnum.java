@@ -78,7 +78,6 @@ public enum UIEntryRendererEnum {
      * @param defaultSymbols      per-state symbol table
      * @param defaultDigits       digit count for numeric rendering
      * @param entry               sign-display mode
-     * @author Rowan Crowther
      */
     UIEntryRendererEnum(CombinerName combiner, String defaultColours, String defaultLabelColours, String defaultSymbols, int defaultDigits, UIEntryEnum entry) {
         this.combiner = combiner;
@@ -93,7 +92,6 @@ public enum UIEntryRendererEnum {
      * Get the default digits to display for UI Entry Renderers
      *
      * @return the default number of digits for this UI Entry Renderer enum
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -105,7 +103,6 @@ public enum UIEntryRendererEnum {
      * Get the default sign for UI Entry Renderers
      *
      * @return the default sign for this UI Entry Renderer enum
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -117,7 +114,6 @@ public enum UIEntryRendererEnum {
      * Get the default colours for UI Entry Renderers
      *
      * @return the default colours for UI Entry Renderers
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -129,7 +125,6 @@ public enum UIEntryRendererEnum {
      * Get the default label colours for UI Entry Renderers
      *
      * @return the default label colours for UI Entry Renderers
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -141,7 +136,6 @@ public enum UIEntryRendererEnum {
      * Get the default symbols for UI Entry Renderers
      *
      * @return the default symbols for UI Entry Renderers
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue

@@ -58,7 +58,6 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * @param records the parsed {@code flicker:} blocks
      * @param errors  the soft-error sink; an unrecognised colour appends here and drops its record
      * @return a one-element list holding the assembled {@link FlickerTable}
-     * @author Rowan Crowther
      */
     @Override
     public List<FlickerTable> assemble(@NotNull List<VisualsFlickerParseRecord> records, @NotNull List<String> errors) {

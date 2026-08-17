@@ -69,7 +69,6 @@ public class MonsterUtils {
      * Scans the current level's monster list and returns the first match.
      *
      * @return the commanded monster, or {@code null} if none is under command
-     * @author Rowan Crowther
      */
     public static Monster getCommandMonster() {
         Chunk currentCave = GameState.getCave();

@@ -62,7 +62,6 @@ public class WorldDataLoader {
      * and <em>rethrown</em>: there is no game without a dungeon, so this one stops the load.
      *
      * @throws IOException if there is a problem loading the file
-     * @author Rowan Crowther
      */
     public static void loadWorld() throws IOException {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "world.txt";
@@ -91,7 +90,6 @@ public class WorldDataLoader {
      * real file rather than surfacing as an unresolvable element much later.
      *
      * @throws IOException if there is a problem loading the file
-     * @author Rowan Crowther
      */
     public static void loadProjections() throws IOException {
         String filename = AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "projection.txt";
@@ -118,8 +116,6 @@ public class WorldDataLoader {
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>: nothing else loads from the quest list, so a missing file costs the
      * quests rather than the game.
-     *
-     * @author Rowan Crowther
      */
     public static void loadQuests() {
         QuestReader parser = new QuestReader();

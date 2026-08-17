@@ -61,7 +61,6 @@ public class TrapReader implements Reader<TrapKind> {
      * @param filename path to the trap data file
      * @return the parse result: the trap kinds and any errors collected
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<TrapKind> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -80,7 +79,6 @@ public class TrapReader implements Reader<TrapKind> {
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
      * @param errors       the soft-error channel (e.g. a record-count mismatch)
      * @return the raw parsed trap records for the assembler
-     * @author Rowan Crowther
      */
     private static List<TrapParseRecord> extract(
             @NotNull TrapGrammar parser,

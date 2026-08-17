@@ -33,68 +33,46 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 public class Slay {
     /**
      * The slay's code, encoding monster type and level (e.g. {@code EVIL_2}).
-     *
-     * @author Rowan Crowther
      */
     private String code;
     /**
      * The monster race flag this slay targets (parsed from {@link #code}).
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag monsterType;
     /**
      * The monster level component parsed from {@link #code}.
-     *
-     * @author Rowan Crowther
      */
     private int monsterLevel;
     /**
      * The slay's display name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * A specific monster base targeted by the slay, if any.
-     *
-     * @author Rowan Crowther
      */
     private MonsterBase base;
     /**
      * The verb used when the slay triggers in melee.
-     *
-     * @author Rowan Crowther
      */
     private String meleeVerb;
     /**
      * The verb used when the slay triggers at range.
-     *
-     * @author Rowan Crowther
      */
     private String rangedVerb;
     /**
      * The race flag identifying eligible targets.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag raceFlag;
     /**
      * Damage multiplier in the standard combat system.
-     *
-     * @author Rowan Crowther
      */
     private int multiplier;
     /**
      * Damage multiplier in the O-combat system.
-     *
-     * @author Rowan Crowther
      */
     private int oMultiplier;
     /**
      * The slay's power rating (for item valuation).
-     *
-     * @author Rowan Crowther
      */
     private int power;
 
@@ -111,7 +89,6 @@ public class Slay {
      * @param multiplier  standard damage multiplier
      * @param oMultiplier O-combat damage multiplier
      * @param power       power rating
-     * @author Rowan Crowther
      */
     public Slay(String code, String name, MonsterBase base, String meleeVerb, String rangedVerb,
                 MonsterRaceFlag raceFlag, int multiplier, int oMultiplier, int power) {
@@ -131,7 +108,6 @@ public class Slay {
 
     /**
      * @return the slay's code
-     * @author Rowan Crowther
      */
     public String getCode() {
         return code;
@@ -139,7 +115,6 @@ public class Slay {
 
     /**
      * @return the slay's display name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -147,7 +122,6 @@ public class Slay {
 
     /**
      * @return a debug string listing this slay's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -181,7 +155,6 @@ public class Slay {
      *
      * @param other the slay to compare against
      * @return {@code true} if both slays kill the same monsters
-     * @author Rowan Crowther
      */
     public boolean sameMonsterSlain(Slay other) {
         if (this.raceFlag != other.raceFlag) return false;

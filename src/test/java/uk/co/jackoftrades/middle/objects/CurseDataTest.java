@@ -59,7 +59,6 @@ class CurseDataTest {
      *
      * @param name the curse's name
      * @return a curse with every other field empty
-     * @author Rowan Crowther
      */
     private static Curse curse(String name) {
         return new Curse(name, java.util.List.of(), 0, null, java.util.List.of(), Map.of(),
@@ -79,8 +78,6 @@ class CurseDataTest {
          * The rule in one line: same power, equal, whatever the timeouts. C's
          * {@code curses_are_equal} ({@code obj-curse.c}) compares nothing but {@code power} across
          * the two curse arrays, and this is the port of that comparison.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("power alone decides equality")
@@ -94,8 +91,6 @@ class CurseDataTest {
          * The hash has to follow equality or two curses of the same power at different timeouts land
          * in different buckets, and the map comparison that {@code cursesAreEqual} relies on stops
          * working for reasons that have nothing to do with curses.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the hash follows equality rather than the timeout")
@@ -106,8 +101,6 @@ class CurseDataTest {
         /**
          * Not equal to a non-{@link CurseData} and not equal to null — the pattern-matching
          * {@code instanceof} gives both, and a test holds them if it is ever rewritten.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("nothing else is equal to curse data")
@@ -123,8 +116,6 @@ class CurseDataTest {
          * The reason equality is defined at all: {@code ItemObject.cursesAreEqual} compares two
          * curse maps with {@code Map.equals}, which defers to this for the values. This asserts the
          * composition rather than the parts, since that is what the stacking code actually does.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("map comparison reaches C's answer through it")
@@ -153,8 +144,6 @@ class CurseDataTest {
          * C's curse tick is {@code obj->curses[i].timeout--}, one turn at a time, and this is that
          * decrement. It is a separate operation from {@link CurseData#setTimeout} because the
          * re-arming after an effect fires is an assignment of a freshly rolled interval, not a step.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the timeout steps down by one and is re-armed by assignment")
@@ -173,8 +162,6 @@ class CurseDataTest {
          * on the way past and re-arms there, so the value is never left to run on. Pinning it means a
          * future clamp has to be a deliberate change rather than an accident, and says where the
          * responsibility for the boundary lies.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the timeout is not clamped at zero")
@@ -190,8 +177,6 @@ class CurseDataTest {
          * The copy constructor takes both fields and shares nothing. The independence is the point:
          * mutating the copy must leave the original alone, since the whole reason for copying is that
          * one of the two is a template that outlives the object made from it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a copy carries both fields and is independent")
@@ -216,8 +201,6 @@ class CurseDataTest {
          * A copy is equal to its original, the copy constructor and {@code equals} agreeing that the
          * power is what identifies the data. Worth stating because the two were written for opposite
          * reasons — one to keep instances apart, the other to treat them as interchangeable.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a copy is equal to what it was copied from")

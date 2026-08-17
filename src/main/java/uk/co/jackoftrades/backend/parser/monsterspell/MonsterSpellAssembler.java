@@ -59,7 +59,6 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
      * @param records the raw parse records, in file order
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled monster spells, excluding any record that was skipped
-     * @author Rowan Crowther
      */
     @Override
     public List<MonsterSpellType> assemble(@NotNull List<MonsterSpellParseRecord> records, @NotNull List<String> errors) {

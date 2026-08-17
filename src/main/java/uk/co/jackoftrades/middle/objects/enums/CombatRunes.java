@@ -48,8 +48,6 @@ public enum CombatRunes {
     /**
      * The player-visible description of this rune, as shown in the knowledge menu. Empty for the
      * {@code COMBAT_RUNE_MAX} sentinel.
-     *
-     * @author Rowan Crowther
      */
     private final String description;
 
@@ -57,7 +55,6 @@ public enum CombatRunes {
      * Bind a combat rune to its player-visible description.
      *
      * @param description the description shown to the player
-     * @author Rowan Crowther
      */
     CombatRunes(String description) {
         this.description = description;
@@ -65,7 +62,6 @@ public enum CombatRunes {
 
     /**
      * @return this rune's player-visible description, or the empty string for the sentinel
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

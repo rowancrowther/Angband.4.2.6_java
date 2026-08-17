@@ -56,8 +56,6 @@ public class TerrainReader implements Reader<Feature> {
     /**
      * Logger handed to {@link GrammarDriver} so I/O failures opening the data file are reported
      * (and rethrown) with the offending filename.
-     *
-     * @author Rowan Crowther
      */
     Logger logger = LogManager.getLogger();
 
@@ -69,7 +67,6 @@ public class TerrainReader implements Reader<Feature> {
      * @param filename the terrain data file to load
      * @return the features that assembled cleanly (bad records are skipped, not thrown)
      * @throws IOException if the file cannot be opened/read
-     * @author Rowan Crowther
      */
     @NotNull
     @Override
@@ -87,7 +84,6 @@ public class TerrainReader implements Reader<Feature> {
      * @param filename the terrain data file to load
      * @return the assembled features paired with any soft-error messages
      * @throws IOException if the file cannot be opened/read
-     * @author Rowan Crowther
      */
     public ParseResult<Feature> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -111,7 +107,6 @@ public class TerrainReader implements Reader<Feature> {
      * @param errorCatcher hard-error channel; {@link ParseErrors#throwIfAny()} aborts the file
      * @param errors       soft-error channel; the record-count mismatch message is added here
      * @return the parse records for the assembler to resolve into {@link Feature} objects
-     * @author Rowan Crowther
      */
     private static List<TerrainFeatureParseRecord> extract(
             @NotNull TerrainFeatureGrammar parser,

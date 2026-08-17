@@ -30,8 +30,6 @@ import uk.co.jackoftrades.channel.colour.ColourEnum;
 public class Flavour {
     /**
      * The flavour text shown for the unidentified object (e.g. "Azure").
-     *
-     * @author Rowan Crowther
      */
     private String text;
 
@@ -41,8 +39,6 @@ public class Flavour {
      * one; it is {@code null} for a randomly-assigned flavour. Resolved to the
      * numeric {@link #sVal} against the object-kind table, the way C's
      * {@code lookup_sval} does.
-     *
-     * @author Rowan Crowther
      */
     private String sValStr;
 
@@ -50,32 +46,24 @@ public class Flavour {
      * The resolved numeric sub-type value. For a fixed flavour this is the sval
      * of the kind {@link #sValStr} names; for a random flavour it stays 0, which
      * is C's {@code SV_UNKNOWN} ({@code obj-tval.h}).
-     *
-     * @author Rowan Crowther
      */
     private int sVal;
 
     /**
      * The colour the flavoured object is drawn in until identified. The glyph is
      * shared across the whole block and lives on the owning {@link FlavourKind}.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum colour;
 
     /**
      * The flavour's index within the file ({@code fidx} in C) — the stable
      * identity used to pair a flavour with the objects it disguises.
-     *
-     * @author Rowan Crowther
      */
     private int index;
 
     /**
      * Whether this is a {@code fixed:} flavour (pinned to a named sub-type) as
      * opposed to a randomly-assigned {@code flavor:} one.
-     *
-     * @author Rowan Crowther
      */
     private boolean isFixed;
 
@@ -86,7 +74,6 @@ public class Flavour {
      * @param sVal   the sub-type symbol this flavour is pinned to (unresolved)
      * @param colour the colour the object is drawn in
      * @param index  the flavour's file index
-     * @author Rowan Crowther
      */
     public Flavour(String text, String sVal, ColourEnum colour, int index) {
         this.text = text;
@@ -105,7 +92,6 @@ public class Flavour {
      *               it, as scrolls do)
      * @param colour the colour the object is drawn in
      * @param index  the flavour's file index
-     * @author Rowan Crowther
      */
     public Flavour(String text, ColourEnum colour, int index) {
         this.text = text;
@@ -119,7 +105,6 @@ public class Flavour {
      * looked up against the object-kind table.
      *
      * @param sVal the resolved sval
-     * @author Rowan Crowther
      */
     public void setsVal(int sVal) {
         this.sVal = sVal;
@@ -127,7 +112,6 @@ public class Flavour {
 
     /**
      * @return the displayed flavour text, or {@code null} if the file omitted it
-     * @author Rowan Crowther
      */
     public String getText() {
         return text;
@@ -136,7 +120,6 @@ public class Flavour {
     /**
      * @return the unresolved sub-type symbol for a fixed flavour, or {@code null}
      * for a random one
-     * @author Rowan Crowther
      */
     public String getsValStr() {
         return sValStr;
@@ -145,7 +128,6 @@ public class Flavour {
     /**
      * @return the resolved numeric sub-type value (0 = {@code SV_UNKNOWN} for a
      * random flavour)
-     * @author Rowan Crowther
      */
     public int getsVal() {
         return sVal;
@@ -153,7 +135,6 @@ public class Flavour {
 
     /**
      * @return the colour the flavoured object is drawn in
-     * @author Rowan Crowther
      */
     public ColourEnum getColour() {
         return colour;
@@ -161,7 +142,6 @@ public class Flavour {
 
     /**
      * @return the flavour's file index ({@code fidx})
-     * @author Rowan Crowther
      */
     public int getIndex() {
         return index;
@@ -169,7 +149,6 @@ public class Flavour {
 
     /**
      * @return {@code true} for a fixed flavour, {@code false} for a random one
-     * @author Rowan Crowther
      */
     public boolean isFixed() {
         return isFixed;

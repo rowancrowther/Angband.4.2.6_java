@@ -55,8 +55,6 @@ public class ObjectDataLoader {
      * did assemble are registered regardless, per the partial-results contract. An IO failure is
      * logged and <em>swallowed</em>; only the renderer reads these, so the cost is a blank entry on
      * the character sheet rather than a failed load.
-     *
-     * @author Rowan Crowther
      */
     public static void loadObjectProperties() {
         ObjectPropertyReader parser = new ObjectPropertyReader();
@@ -85,8 +83,6 @@ public class ObjectDataLoader {
      * of {@code chest_trap.txt}, the assembler returns an empty list and the registry is left with no
      * traps at all rather than a partial set. An IO failure is logged and <em>swallowed</em>; the
      * cost is chests that generate untrapped.
-     *
-     * @author Rowan Crowther
      */
     public static void loadChestTraps() {
         ChestTrapReader parser = new ChestTrapReader();
@@ -114,8 +110,6 @@ public class ObjectDataLoader {
      * logged and <em>swallowed</em>. Note the synthesis side effect: a dropped artifact also means
      * its special object kind is never added, so the kind table silently differs from the C
      * original's - worth remembering when comparing counts.
-     *
-     * @author Rowan Crowther
      */
     public static void loadArtifacts() {
         ArtifactReader parser = new ArtifactReader();
@@ -140,8 +134,6 @@ public class ObjectDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the ego items that
      * did assemble are registered regardless, per the partial-results contract. An IO failure is
      * logged and <em>swallowed</em>, leaving item generation with fewer ego types to choose from.
-     *
-     * @author Rowan Crowther
      */
     public static void loadEgoItems() {
         EgoItemReader reader = new EgoItemReader();
@@ -166,8 +158,6 @@ public class ObjectDataLoader {
      * did assemble are registered regardless, per the partial-results contract. An IO failure is
      * logged and <em>swallowed</em>; a dropped activation surfaces as an unresolved name in the two
      * loaders that follow.
-     *
-     * @author Rowan Crowther
      */
     public static void loadActivations() {
         ActivationReader reader = new ActivationReader();
@@ -196,7 +186,6 @@ public class ObjectDataLoader {
      * suite, and continuing without it turns one failure into many.
      *
      * @throws IOException an IO error occurred during parsing
-     * @author Rowan Crowther
      */
     public static void loadItemObjects() throws IOException {
         ItemObjectReader parser = new ItemObjectReader();
@@ -284,7 +273,6 @@ public class ObjectDataLoader {
      * with its neighbours.)
      *
      * @throws IOException an IO error occurred during parsing
-     * @author Rowan Crowther
      */
     public static void loadSlays() throws IOException {
         SlayReader parser = new SlayReader();

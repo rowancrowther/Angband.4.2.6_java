@@ -48,7 +48,6 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
      * @param records the raw parse records to assemble
      * @param errors  soft-error sink; one message is appended per record that gets skipped
      * @return the successfully assembled templates, in file order
-     * @author Rowan Crowther
      */
     @Override
     public List<RoomTemplate> assemble(@NotNull List<RoomProfileParseRecord> records, @NotNull List<String> errors) {

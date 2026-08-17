@@ -56,8 +56,6 @@ public enum ObjectKindFlag {
 
     /**
      * Optional descriptive string associated with the flag (often empty).
-     *
-     * @author Rowan Crowther
      */
     private String flag;
 
@@ -65,7 +63,6 @@ public enum ObjectKindFlag {
      * Bind a kind flag to its descriptive string.
      *
      * @param flag the descriptive string
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     ObjectKindFlag(String flag) {
@@ -74,7 +71,6 @@ public enum ObjectKindFlag {
 
     /**
      * @return this flag's descriptive string
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getFlag() {

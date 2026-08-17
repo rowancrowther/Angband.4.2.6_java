@@ -87,7 +87,6 @@ class MainTest {
      * by returning {@code null} rather than an empty string.
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
-     * @author Rowan Crowther
      */
     @Test
     void aWellFormedOverrideOfAKnownDirectoryIsAccepted(@TempDir Path tempDir) {
@@ -109,7 +108,6 @@ class MainTest {
      *
      * @param dir     the directory constant under test
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @EnumSource(AngbandDirs.ANGBAND_DIRS.class)
@@ -129,7 +127,6 @@ class MainTest {
      * JVM.
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
-     * @author Rowan Crowther
      */
     @Test
     void aValidOptionChangesNothing(@TempDir Path tempDir) {
@@ -162,7 +159,6 @@ class MainTest {
      * is that the player is told what they typed, not the exact wording around it.
      *
      * @param arg the malformed argument
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @ValueSource(strings = {"-dsave", "-d"})
@@ -193,7 +189,6 @@ class MainTest {
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
      * @throws IOException if the temporary directory cannot be created
-     * @author Rowan Crowther
      */
     @Test
     void aPathContainingAnEqualsSignIsAccepted(@TempDir Path tempDir) throws IOException {
@@ -225,7 +220,6 @@ class MainTest {
      * path guard comes first, so this is the branch it actually takes.
      *
      * @param arg an argument whose path half is empty
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @ValueSource(strings = {"-dsave=", "-d="})
@@ -247,7 +241,6 @@ class MainTest {
      * worth pinning because it is the mistake a player is most likely to make.
      *
      * @param name the unknown directory name
-     * @author Rowan Crowther
      */
     @ParameterizedTest
     @ValueSource(strings = {"nosuchdir", "SAVE", "archives", "gamedata "})
@@ -267,8 +260,6 @@ class MainTest {
      * runs first, so {@code -d=}, which is empty on both sides, is rejected for its path and never
      * reaches the name check - that ordering is pinned in
      * {@link #anEmptyPathIsRejectedRatherThanTakenAsTheWorkingDirectory}, not here.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void anEmptyDirectoryNameIsRejected() {
@@ -289,7 +280,6 @@ class MainTest {
      * depend on some absolute path being absent from the machine it runs on.
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
-     * @author Rowan Crowther
      */
     @Test
     void aPathThatDoesNotExistIsRejectedAndQuoted(@TempDir Path tempDir) {
@@ -310,7 +300,6 @@ class MainTest {
      * behaviour C has too, since its checks are sequential and each one quits.
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
-     * @author Rowan Crowther
      */
     @Test
     void theNameIsCheckedBeforeThePath(@TempDir Path tempDir) {
@@ -343,7 +332,6 @@ class MainTest {
      *
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
      * @throws IOException if the temporary file cannot be created
-     * @author Rowan Crowther
      */
     @Test
     void aPlainFileIsRejectedWhereADirectoryIsRequired(@TempDir Path tempDir) throws IOException {
@@ -444,7 +432,6 @@ class MainTest {
          * Builds the real UI body and hands it a thread, as {@code main} does.
          *
          * @throws Exception if the private factory cannot be reached
-         * @author Rowan Crowther
          */
         private void startTheUiHalf() throws Exception {
             Method factory = Main.class.getDeclaredMethod("startSwingUI",
@@ -531,8 +518,6 @@ class MainTest {
          * <p>The first of the two things it owes. Without this the core sits in {@code receive()}
          * for ever, waiting for a front end that no longer exists - a thread that cannot be joined
          * and a program that cannot end.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aCrashSendsSaveAndStopToTheCore() throws Exception {
@@ -550,8 +535,6 @@ class MainTest {
          *
          * <p>This is the assertion the original bug would have failed: the loop died, nothing
          * disposed anything, and the event dispatch thread kept a dead program alive.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aCrashDisposesTheWindow() throws Exception {
@@ -571,8 +554,6 @@ class MainTest {
          * caught where the front end it has to shut down is in scope, so nothing reaches the
          * handler. A recorded throwable here means the {@code catch} has stopped covering what the
          * loop can throw.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aCrashEndsTheThreadByReturningNotThrowing() throws Exception {
@@ -594,8 +575,6 @@ class MainTest {
          * so the {@code finally} makes it happen twice. That is the point of the test: disposing a
          * disposed window does nothing, while a missing disposal hangs the program, so the
          * duplicate is the right way to be wrong.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theCleanPathDisposesTheWindowThroughTheSameFinally() throws Exception {

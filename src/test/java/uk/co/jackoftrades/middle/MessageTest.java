@@ -67,8 +67,6 @@ class MessageTest {
     /**
      * Gives each test its own text, so nothing it sends can coalesce with an entry left in the
      * static log by an earlier test.
-     *
-     * @author Rowan Crowther
      */
     private static final AtomicInteger UNIQUE = new AtomicInteger();
     private EventsHandler realBus;
@@ -77,7 +75,6 @@ class MessageTest {
     /**
      * @param stem a readable stem for the message
      * @return the stem made unique to this test run
-     * @author Rowan Crowther
      */
     private static String unique(String stem) {
         return stem + " #" + UNIQUE.incrementAndGet();
@@ -87,8 +84,6 @@ class MessageTest {
      * Swaps the engine's bus for a capture. {@code Message} reaches it through
      * {@link GameEngine#getEventsBusHandler()}, which is static, so the original is put back
      * afterwards to leave the rest of the suite as it was found.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() {
@@ -97,9 +92,6 @@ class MessageTest {
         GameEngine.setEventsBusHandler(bus);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @AfterEach
     void tearDown() {
         GameEngine.setEventsBusHandler(realBus);
@@ -108,8 +100,6 @@ class MessageTest {
     /**
      * The plain {@code message} call is C's {@code msg}: tagged generic, and raised as an
      * {@code EVENT_MESSAGE} rather than shown directly.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aPlainMessageIsSignalledAsGeneric() {
@@ -124,8 +114,6 @@ class MessageTest {
 
     /**
      * The type travels with the message when one is given, so the display can colour it.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aTypedMessageKeepsItsType() {
@@ -140,8 +128,6 @@ class MessageTest {
     /**
      * Format arguments are substituted before the message goes anywhere — C's {@code msg} is a
      * printf-family call, and this is the port of that.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void formatArgumentsAreSubstituted() {
@@ -156,8 +142,6 @@ class MessageTest {
      * The reason the Javadoc tells callers to pass caller-controlled text as a {@code "%s"}
      * argument rather than as the pattern: a stray {@code %} in a monster or object name would
      * otherwise be read as a format directive. Passed correctly, the percent survives untouched.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void textPassedAsAnArgumentSurvivesAStrayPercentSign() {
@@ -171,8 +155,6 @@ class MessageTest {
     /**
      * A run of identical messages collapses: still one signal per call, but the text gains the
      * repeat count. This is the behaviour a player sees as "You miss the orc. (x3)".
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aBurstOfIdenticalMessagesGainsARepeatCount() {
@@ -193,8 +175,6 @@ class MessageTest {
     /**
      * Coalescing compares text <em>and</em> type. The same words under a different type are a
      * different message and start their own count.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theSameTextUnderADifferentTypeDoesNotCoalesce() {
@@ -211,8 +191,6 @@ class MessageTest {
      * The "newest entry only" rule, which is the detail most easily lost when reading C's
      * {@code message_add}. A, B, A must leave the second A uncounted — it is a recurrence, not a
      * burst, and C keeps them apart.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aMessageThatMerelyRecursDoesNotCoalesceWithAnEarlierOne() {
@@ -230,8 +208,6 @@ class MessageTest {
     /**
      * Interrupting a run resets it: after A, B, the next A starts counting from one again rather
      * than resuming the earlier run's count.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void anInterruptedRunStartsCountingAgain() {
@@ -256,8 +232,6 @@ class MessageTest {
      * added to the outgoing text only. Two sends of the same line therefore produce two
      * <em>different</em> payloads, which is exactly what C would not do — and is why the stored
      * text has to stay plain, or the count would start compounding into the log.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theRepeatCountDecoratesTheOutgoingTextOnly() {
@@ -282,8 +256,6 @@ class MessageTest {
     /**
      * Every message goes out as {@code EVENT_MESSAGE}, whatever its type. The type distinguishes
      * categories <em>within</em> that event; it is not a second event channel.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void everyMessageIsSignalledOnTheSameEventType() {

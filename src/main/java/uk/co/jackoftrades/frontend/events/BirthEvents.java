@@ -47,15 +47,11 @@ import org.apache.logging.log4j.Logger;
 public class BirthEvents {
     /**
      * Logger for the two transitions, which is currently all these methods do.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(BirthEvents.class);
 
     /**
      * Builds the receiver. Nothing to wire, for the reason {@link MainEvents#MainEvents()} gives.
-     *
-     * @author Rowan Crowther
      */
     public BirthEvents() {
     }
@@ -71,8 +67,6 @@ public class BirthEvents {
      * {@code SimpleCoreMessage} - it needs the boolean, and {@code EventDataBoolean} is the
      * payload type that already exists to hold one. Nothing reads it yet because nothing draws the
      * menus yet, so the wire stays simple until the menus need it.
-     *
-     * @author Rowan Crowther
      */
     public void enterBirth() {
         logger.info("Executing EVENT_ENTER_BIRTH");
@@ -86,8 +80,6 @@ public class BirthEvents {
      * <p>Only the second of those belongs on this side. Naming the savefile is core work that C
      * happens to do from a UI file - the port should not inherit that, and this method is the
      * place the split gets decided when birth is written.
-     *
-     * @author Rowan Crowther
      */
     public void leaveBirth() {
         logger.info("Executing EVENT_LEAVE_BIRTH");

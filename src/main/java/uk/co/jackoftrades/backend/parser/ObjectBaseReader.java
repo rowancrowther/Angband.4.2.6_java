@@ -41,8 +41,6 @@ import java.util.List;
 public class ObjectBaseReader implements Reader<ObjectBase> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     public static final Logger logger = LogManager.getLogger();
 

@@ -25,8 +25,6 @@ public class AngPath {
      * Backing string for a filesystem path. Currently a placeholder: the class
      * is a stub awaiting the port of the C path-building helpers
      * (e.g. {@code path_build}/{@code path_parse} in {@code src/z-file.c}).
-     *
-     * @author Rowan Crowther
      */
     private String pathString;
 }

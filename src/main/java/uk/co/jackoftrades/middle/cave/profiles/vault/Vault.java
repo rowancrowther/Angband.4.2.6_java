@@ -109,7 +109,6 @@ public class Vault {
      * @param minLevel shallowest depth this may appear at; 0 for no minimum
      * @param maxLevel deepest depth this may appear at, already resolved from a declared 0 to the
      *                 world maximum
-     * @author Rowan Crowther
      */
     public Vault(String name, RoomType type, String mapLines, List<String> map,
                  Flag<RoomFlags> flags, int rating, int height, int width, int minLevel, int maxLevel) {
@@ -127,7 +126,6 @@ public class Vault {
 
     /**
      * @return the vault's name, from {@code name:}
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -135,7 +133,6 @@ public class Vault {
 
     /**
      * @return the room builder that lays this out
-     * @author Rowan Crowther
      */
     public RoomType getType() {
         return type;
@@ -144,7 +141,6 @@ public class Vault {
     /**
      * @return the layout as one flat {@code width * height} string, indexed as
      *         {@code charAt(y * width + x)}
-     * @author Rowan Crowther
      */
     public String getMapLines() {
         return mapLines;
@@ -152,7 +148,6 @@ public class Vault {
 
     /**
      * @return the layout as one string per row, in top-to-bottom order
-     * @author Rowan Crowther
      */
     public List<String> getMap() {
         return map;
@@ -160,7 +155,6 @@ public class Vault {
 
     /**
      * @return the room flags; empty rather than {@code null} when the record had none
-     * @author Rowan Crowther
      */
     public Flag<RoomFlags> getFlags() {
         return flags;
@@ -168,7 +162,6 @@ public class Vault {
 
     /**
      * @return what placing this adds to a level's danger component
-     * @author Rowan Crowther
      */
     public int getRating() {
         return rating;
@@ -176,7 +169,6 @@ public class Vault {
 
     /**
      * @return rows in the layout
-     * @author Rowan Crowther
      */
     public int getHeight() {
         return height;
@@ -184,7 +176,6 @@ public class Vault {
 
     /**
      * @return columns in the layout, and the length of every row
-     * @author Rowan Crowther
      */
     public int getWidth() {
         return width;
@@ -192,7 +183,6 @@ public class Vault {
 
     /**
      * @return the shallowest depth this may appear at; 0 means no minimum
-     * @author Rowan Crowther
      */
     public int getMinLevel() {
         return minLevel;
@@ -200,7 +190,6 @@ public class Vault {
 
     /**
      * @return the deepest depth this may appear at; never 0
-     * @author Rowan Crowther
      */
     public int getMaxLevel() {
         return maxLevel;

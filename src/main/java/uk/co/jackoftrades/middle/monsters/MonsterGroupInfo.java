@@ -29,14 +29,10 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 public class MonsterGroupInfo {
     /**
      * The index of the group this monster belongs to.
-     *
-     * @author Rowan Crowther
      */
     private int index;
     /**
      * The role this monster plays in its group.
-     *
-     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
 }

@@ -68,7 +68,6 @@ public class UIEntryRenderer {
      * @param symbols      per-state symbol table
      * @param nDigit       digit count for numeric rendering
      * @param sign         sign-display mode
-     * @author Rowan Crowther
      */
     public UIEntryRenderer(String name,
                            UIEntryRendererEnum code,
@@ -88,7 +87,6 @@ public class UIEntryRenderer {
 
     /**
      * @return a debug string listing this renderer's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -105,7 +103,6 @@ public class UIEntryRenderer {
 
     /**
      * @return this renderer's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

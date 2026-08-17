@@ -61,7 +61,6 @@ public class GameConstantsParseRecord {
      * @param category   the main category for this group of fields
      * @param fields     the remaining strings in this group of files
      * @param lineNumber the line number of this line - used in error handling
-     * @author Rowan Crowther
      */
     public GameConstantsParseRecord(String category, List<String> fields, int lineNumber) {
         this.category = category;
@@ -73,7 +72,6 @@ public class GameConstantsParseRecord {
      * Accessor
      *
      * @return the line this group of fields was on in the datafile 'contants.txt'
-     * @author Rowan Crowther
      */
     public int getLineNumber() {
         return lineNumber;
@@ -93,7 +91,6 @@ public class GameConstantsParseRecord {
      * Accessor
      *
      * @return the fields of this line, separated into a List of Strings.
-     * @author Rowan Crowther
      */
     public List<String> getFields() {
         return fields;

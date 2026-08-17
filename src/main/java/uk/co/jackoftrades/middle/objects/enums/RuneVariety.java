@@ -50,7 +50,6 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
         RuneVariety.ResistKey, RuneVariety.BrandKey, RuneVariety.SlayKey, RuneVariety.CurseKey, RuneVariety.FlagKey {
     /**
      * @return the knowledge-menu heading this variety is listed under
-     * @author Rowan Crowther
      */
     RuneGroup group();
 
@@ -74,7 +73,6 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * that second lookup unnecessary and keeps the two in step if the underlying data changes.
      *
      * @return the rune's name as the player sees it
-     * @author Rowan Crowther
      */
     String runeName();
 
@@ -103,7 +101,6 @@ public sealed interface RuneVariety permits RuneVariety.CombatKey, RuneVariety.M
      * a plain accessor.
      *
      * @return the rune's description as the player sees it
-     * @author Rowan Crowther
      */
     String runeDesc();
 

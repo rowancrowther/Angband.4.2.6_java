@@ -63,7 +63,6 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
      * @param records the raw terrain parse records, in file order
      * @param errors  the soft-error channel; one message is appended per skipped record
      * @return the features that resolved cleanly (may be shorter than {@code records})
-     * @author Rowan Crowther
      */
     @Override
     public List<Feature> assemble(@NotNull List<TerrainFeatureParseRecord> records, @NotNull List<String> errors) {

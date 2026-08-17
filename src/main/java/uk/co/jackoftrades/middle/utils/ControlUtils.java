@@ -35,8 +35,6 @@ import uk.co.jackoftrades.middle.utils.quit.Quit;
 public abstract class ControlUtils {
     /**
      * Shared logger backing the {@code plog}/{@code plogFmt} helpers.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

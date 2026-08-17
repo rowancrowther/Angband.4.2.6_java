@@ -40,8 +40,6 @@ import java.util.List;
 public class ObjectPropertyReader implements Reader<ObjectProperty> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

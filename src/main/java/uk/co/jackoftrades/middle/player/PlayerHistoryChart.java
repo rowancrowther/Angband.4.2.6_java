@@ -42,8 +42,6 @@ import java.util.List;
 public class PlayerHistoryChart {
     /**
      * Logger for this type.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -74,7 +72,6 @@ public class PlayerHistoryChart {
      * @param chartNumber     this chart's identifier
      * @param successorNumber the number of the chart to roll on next, or {@code 0} for end-of-chain;
      *                        resolved into a {@link #successor} reference after all charts are read
-     * @author Rowan Crowther
      */
     public PlayerHistoryChart(int chartNumber, int successorNumber) {
         this.chartNumber = chartNumber;
@@ -86,7 +83,6 @@ public class PlayerHistoryChart {
      * Adds one candidate entry to this chart.
      *
      * @param entry the {@link PlayerHistoryEntry} to add
-     * @author Rowan Crowther
      */
     public void addEntry(PlayerHistoryEntry entry) {
         entries.add(entry);
@@ -97,7 +93,6 @@ public class PlayerHistoryChart {
      * the target chart is known to exist.
      *
      * @param chart the successor {@link PlayerHistoryChart} this chart chains to
-     * @author Rowan Crowther
      */
     public void setSuccessor(PlayerHistoryChart chart) {
         this.successor = chart;
@@ -105,7 +100,6 @@ public class PlayerHistoryChart {
 
     /**
      * @return this chart's identifying number
-     * @author Rowan Crowther
      */
     public int getChartNumber() {
         return chartNumber;
@@ -113,7 +107,6 @@ public class PlayerHistoryChart {
 
     /**
      * @return the raw successor-chart number from the file ({@code 0} = end-of-chain)
-     * @author Rowan Crowther
      */
     public int getSuccessorNumber() {
         return successorNumber;
@@ -121,7 +114,6 @@ public class PlayerHistoryChart {
 
     /**
      * @return the resolved successor chart, or {@code null} if this chart ends the chain
-     * @author Rowan Crowther
      */
     public PlayerHistoryChart getSuccessor() {
         return successor;

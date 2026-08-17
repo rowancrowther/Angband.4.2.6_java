@@ -59,14 +59,10 @@ public enum ObjectOriginEnum {
     /**
      * Number of {@code %s} parameters the {@link #name} template expects
      * ({@code -1} for origins with no displayed history line).
-     *
-     * @author Rowan Crowther
      */
     private final int numParameters;
     /**
      * The history-line template for this origin (with {@code %s} placeholders).
-     *
-     * @author Rowan Crowther
      */
     private final String name;
 
@@ -75,7 +71,6 @@ public enum ObjectOriginEnum {
      *
      * @param numParameters number of template parameters
      * @param name          the history-line template
-     * @author Rowan Crowther
      */
     ObjectOriginEnum(int numParameters, String name) {
         this.numParameters = numParameters;

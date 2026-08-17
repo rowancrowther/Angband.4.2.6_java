@@ -58,8 +58,6 @@ public class MonsterDataLoader {
      * and <em>swallowed</em>. Watch the second pass here: friend and shape references are resolved
      * against the races just registered, so a race dropped by a soft error becomes an unresolvable
      * reference for its neighbours rather than a silent absence.
-     *
-     * @author Rowan Crowther
      */
     public static void loadMonsters() {
         MonsterReader parser = new MonsterReader();
@@ -93,8 +91,6 @@ public class MonsterDataLoader {
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>: pits are a dungeon-generation flourish, so losing them costs variety
      * rather than the game.
-     *
-     * @author Rowan Crowther
      */
     public static void loadPitProfiles() {
         PitReader parser = new PitReader();
@@ -123,8 +119,6 @@ public class MonsterDataLoader {
      * Note both registrations take {@code items().getFirst()}, so unlike its neighbours this loader
      * needs a non-empty parse: an empty table would fail on the {@code getFirst()} rather than
      * degrade. That makes it the clearest candidate for acting on the helper's return value.
-     *
-     * @author Rowan Crowther
      */
     public static void loadVisualTables() {
         VisualsReader parser = new VisualsReader();
@@ -155,8 +149,6 @@ public class MonsterDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the spells that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>.
-     *
-     * @author Rowan Crowther
      */
     public static void loadMonsterSpellTypes() {
         MonsterSpellReader parser = new MonsterSpellReader();
@@ -182,8 +174,6 @@ public class MonsterDataLoader {
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>; a missing blow effect surfaces the first time a monster attacks with
      * it.
-     *
-     * @author Rowan Crowther
      */
     public static void loadBlowEffects() {
         BlowEffectReader parser = new BlowEffectReader();
@@ -207,8 +197,6 @@ public class MonsterDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the methods that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>, leaving the monsters that name a missing method to report it.
-     *
-     * @author Rowan Crowther
      */
     public static void loadBlowMethods() {
         BlowMethodReader parser = new BlowMethodReader();

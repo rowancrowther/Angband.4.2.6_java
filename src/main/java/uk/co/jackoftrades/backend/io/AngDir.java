@@ -46,40 +46,28 @@ public class AngDir {
 
     /**
      * Path of the directory this handle was opened on.
-     *
-     * @author Rowan Crowther
      */
     private final Path directoryPath;
     /**
      * Snapshot of the directory's entries taken at construction time. Plain
      * files are stored by name; sub-directories are stored prefixed with
      * {@code "DIR:" + pathSeparator} so they can be told apart from files.
-     *
-     * @author Rowan Crowther
      */
     private final List<String> dirFiles;
     /**
      * Name of the first plain (non-directory) file found, or empty if none.
-     *
-     * @author Rowan Crowther
      */
     private String firstFileName;
     /**
      * True when the very first entry encountered was a sub-directory.
-     *
-     * @author Rowan Crowther
      */
     private boolean firstFileIsDirectory;
     /**
      * When true, iteration is intended to yield files only (not directories).
-     *
-     * @author Rowan Crowther
      */
     private boolean onlyFiles;
     /**
      * Platform path separator, used to build/detect the {@code "DIR:"} tag.
-     *
-     * @author Rowan Crowther
      */
     private final char pathSeparator = File.separatorChar;
 

@@ -38,40 +38,28 @@ import java.util.List;
 public class Summon {
     /**
      * The summon type's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The message/sound category used when this summon occurs.
-     *
-     * @author Rowan Crowther
      */
     private MessageType messageType;
     /**
      * Whether unique monsters may be chosen by this summon.
-     *
-     * @author Rowan Crowther
      */
     private boolean uniquesAllowed;
     /**
      * The monster base types this summon may draw from.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterBase> bases;
     /**
      * A race flag restricting which monsters this summon may choose.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag raceFlag;
     /**
      * The summon type to fall back to when this one can find no valid monster, or {@code null} if
      * it has none. This is the resolved reference; it is left {@code null} at construction and wired
      * up later by {@code SummonAssembler}'s second pass (see {@link #fallbackName} for why).
-     *
-     * @author Rowan Crowther
      */
     private Summon fallback;
 
@@ -81,14 +69,10 @@ public class Summon {
      * fallback cross-references cannot be resolved during construction. The assembler builds every
      * summon first, then makes a second pass turning each {@code fallbackName} into the
      * {@link #fallback} reference above via {@link #setFallback}.
-     *
-     * @author Rowan Crowther
      */
     private String fallbackName;
     /**
      * Human-readable description of the summon.
-     *
-     * @author Rowan Crowther
      */
     private String description;
 
@@ -107,7 +91,6 @@ public class Summon {
      * @param fallback       the resolved fallback summon, or {@code null} (usually resolved later)
      * @param fallbackName   the raw fallback summon name, or {@code ""}; see {@link #fallbackName}
      * @param description    description used in messages
-     * @author Rowan Crowther
      */
     public Summon(String name, MessageType messageType, boolean uniquesAllowed, List<MonsterBase> bases,
                   MonsterRaceFlag raceFlag, Summon fallback, String fallbackName, String description) {
@@ -129,7 +112,6 @@ public class Summon {
      * back-patching a fallback index in {@code finish_parse_summon}.
      *
      * @param fallback the summon this one falls back to, or {@code null} for none
-     * @author Rowan Crowther
      */
     public void setFallback(Summon fallback) {
         this.fallback = fallback;
@@ -137,7 +119,6 @@ public class Summon {
 
     /**
      * @return the summon type's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -145,7 +126,6 @@ public class Summon {
 
     /**
      * @return the message category used when this summon occurs
-     * @author Rowan Crowther
      */
     public MessageType getMessageType() {
         return messageType;
@@ -153,7 +133,6 @@ public class Summon {
 
     /**
      * @return whether unique monsters may be summoned
-     * @author Rowan Crowther
      */
     public boolean isUniquesAllowed() {
         return uniquesAllowed;
@@ -161,7 +140,6 @@ public class Summon {
 
     /**
      * @return the monster base types this summon may draw from
-     * @author Rowan Crowther
      */
     public List<MonsterBase> getBases() {
         return bases;
@@ -169,7 +147,6 @@ public class Summon {
 
     /**
      * @return the restricting race flag
-     * @author Rowan Crowther
      */
     public MonsterRaceFlag getRaceFlag() {
         return raceFlag;
@@ -177,7 +154,6 @@ public class Summon {
 
     /**
      * @return the resolved fallback summon, or {@code null} if this summon has no fallback
-     * @author Rowan Crowther
      */
     public Summon getFallback() {
         return fallback;
@@ -186,7 +162,6 @@ public class Summon {
     /**
      * @return the raw fallback summon name from the data file, or {@code ""} if none; see
      * {@link #fallbackName}
-     * @author Rowan Crowther
      */
     public String getFallbackName() {
         return fallbackName;
@@ -194,7 +169,6 @@ public class Summon {
 
     /**
      * @return the summon's description
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;
@@ -202,7 +176,6 @@ public class Summon {
 
     /**
      * @return a debug string summarising this summon type
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

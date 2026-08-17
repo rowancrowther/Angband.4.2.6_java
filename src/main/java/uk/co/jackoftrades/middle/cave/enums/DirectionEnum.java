@@ -61,20 +61,14 @@ public enum DirectionEnum {
 
     /**
      * The numeric-keypad key (1–9) that selects this direction.
-     *
-     * @author Rowan Crowther
      */
     private final int key;
     /**
      * Change in column for one step in this direction.
-     *
-     * @author Rowan Crowther
      */
     private final int xOffset;
     /**
      * Change in row for one step in this direction (south is positive).
-     *
-     * @author Rowan Crowther
      */
     private final int yOffset;
 
@@ -86,7 +80,6 @@ public enum DirectionEnum {
      * @param key     the numpad key
      * @param xOffset the column step
      * @param yOffset the row step
-     * @author Rowan Crowther
      */
     DirectionEnum(int key, int xOffset, int yOffset, boolean standard) {
         this.key = key;
@@ -97,7 +90,6 @@ public enum DirectionEnum {
 
     /**
      * @return the column step for this direction (the C {@code ddx} value)
-     * @author Rowan Crowther
      */
     public int ddx() {
         return xOffset;
@@ -105,7 +97,6 @@ public enum DirectionEnum {
 
     /**
      * @return the row step for this direction (the C {@code ddy} value)
-     * @author Rowan Crowther
      */
     public int ddy() {
         return yOffset;
@@ -113,7 +104,6 @@ public enum DirectionEnum {
 
     /**
      * @return the step offset as a {@link Loc} (the C {@code ddgrid} value)
-     * @author Rowan Crowther
      */
     public Loc ddgrid() {
         return Loc.row(yOffset).col(xOffset);
@@ -121,7 +111,6 @@ public enum DirectionEnum {
 
     /**
      * @return the numpad key associated with this direction
-     * @author Rowan Crowther
      */
     public int getKey() {
         return key;
@@ -132,7 +121,6 @@ public enum DirectionEnum {
      *
      * @param key the numpad key (1–9)
      * @return the matching direction, or {@link #DIR_UNKNOWN} if none matches
-     * @author Rowan Crowther
      */
     public static DirectionEnum fromKey(int key) {
         for (DirectionEnum d : DirectionEnum.values()) {
@@ -151,7 +139,6 @@ public enum DirectionEnum {
      * {@link #values()} and skip anything that is not a real one-step neighbour offset.
      *
      * @return true if this direction is a standard eight-way neighbour step
-     * @author Rowan Crowther
      */
     public boolean isStandard() {
         return standard;

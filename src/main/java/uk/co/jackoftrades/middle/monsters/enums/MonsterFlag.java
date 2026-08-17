@@ -42,8 +42,6 @@ public enum MonsterFlag {
 
     /**
      * Human-readable description of what this flag means.
-     *
-     * @author Rowan Crowther
      */
     private final String description;
 
@@ -51,7 +49,6 @@ public enum MonsterFlag {
      * Bind a monster flag to its description.
      *
      * @param description the flag's description
-     * @author Rowan Crowther
      */
     MonsterFlag(String description) {
         this.description = description;

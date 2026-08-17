@@ -101,7 +101,6 @@ public class CaveProfile {
      * @param roomProfiles the rooms this style may contain, in file order
      * @param minLevel     the shallowest usable depth
      * @param alloc        the selection weight
-     * @author Rowan Crowther
      */
     public CaveProfile(String name, int blockSize, int dunRooms, int dunUnusual, int maxRarity,
                        TunnelProfile tun, StreamerProfile str, List<RoomProfile> roomProfiles,

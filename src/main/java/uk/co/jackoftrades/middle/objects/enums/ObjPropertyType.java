@@ -56,8 +56,6 @@ public enum ObjPropertyType {
 
     /**
      * The {@code type:} token this constant is written as in the data file.
-     *
-     * @author Rowan Crowther
      */
     private final String value;
 
@@ -65,7 +63,6 @@ public enum ObjPropertyType {
      * Bind a category to its data-file token.
      *
      * @param value the {@code type:} token
-     * @author Rowan Crowther
      */
     ObjPropertyType(String value) {
         this.value = value;
@@ -73,7 +70,6 @@ public enum ObjPropertyType {
 
     /**
      * @return the {@code type:} token for this category
-     * @author Rowan Crowther
      */
     private String getValue() {
         return value;
@@ -87,7 +83,6 @@ public enum ObjPropertyType {
      * @return the matching category, or {@code null} if the token is unrecognised
      * (the caller reports it as a soft error, as C returns
      * {@code PARSE_ERROR_INVALID_PROPERTY})
-     * @author Rowan Crowther
      */
     public static ObjPropertyType fromValue(String value) {
         return Arrays.stream(values())

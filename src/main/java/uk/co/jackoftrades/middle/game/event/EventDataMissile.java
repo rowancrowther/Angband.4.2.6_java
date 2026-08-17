@@ -30,26 +30,18 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 public class EventDataMissile implements GameEventData {
     /**
      * The missile object in flight.
-     *
-     * @author Rowan Crowther
      */
     private ItemObject itemObject;
     /**
      * Whether the player can see the missile.
-     *
-     * @author Rowan Crowther
      */
     private boolean seen;
     /**
      * Current row.
-     *
-     * @author Rowan Crowther
      */
     private int y;
     /**
      * Current column.
-     *
-     * @author Rowan Crowther
      */
     private int x;
 
@@ -60,7 +52,6 @@ public class EventDataMissile implements GameEventData {
      * @param seen       whether the player sees it
      * @param y          current row
      * @param x          current column
-     * @author Rowan Crowther
      */
     public EventDataMissile(ItemObject itemObject, boolean seen, int y, int x) {
         this.itemObject = itemObject;
@@ -71,7 +62,6 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the missile object
-     * @author Rowan Crowther
      */
     public ItemObject getItemObject() {
         return itemObject;
@@ -79,7 +69,6 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return whether the player sees the missile
-     * @author Rowan Crowther
      */
     public boolean isSeen() {
         return seen;
@@ -87,7 +76,6 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the current row
-     * @author Rowan Crowther
      */
     public int getY() {
         return y;
@@ -95,7 +83,6 @@ public class EventDataMissile implements GameEventData {
 
     /**
      * @return the current column
-     * @author Rowan Crowther
      */
     public int getX() {
         return x;

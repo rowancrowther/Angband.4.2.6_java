@@ -51,7 +51,6 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
      * @param records the raw per-realm parse records, in file order
      * @param errors  sink for human-readable messages describing each dropped record
      * @return the successfully assembled realms, in file order (dropped records omitted)
-     * @author Rowan Crowther
      */
     @Override
     public List<MagicRealm> assemble(@NotNull List<RealmParseRecord> records, @NotNull List<String> errors) {

@@ -55,7 +55,6 @@ public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, L
      * @param records the raw {@code kind:} blocks parsed from the file
      * @param errors  the soft-error sink, appended to when a block is dropped
      * @return the assembled flavour kinds
-     * @author Rowan Crowther
      */
     @Override
     public List<FlavourKind> assemble(@NotNull List<FlavourKindParseRecord> records, @NotNull List<String> errors) {

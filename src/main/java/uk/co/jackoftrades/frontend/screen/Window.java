@@ -44,16 +44,12 @@ public class Window extends JFrame {
     /**
      * The character grid this window displays, captured by {@link #add}. Null until a
      * {@code JPanelArea} has been added, which {@code SwingUI.init} does during start-up.
-     *
-     * @author Rowan Crowther
      */
     private SwingUI.JPanelArea area;
 
     /**
      * Build an empty window with a placeholder title. Nothing is sized, laid out or shown here -
      * {@code SwingUI.init} does all of that once it has measured the font.
-     *
-     * @author Rowan Crowther
      */
     public Window() {
         super("Welcome");
@@ -67,7 +63,6 @@ public class Window extends JFrame {
      * fills in.
      *
      * @param string the title to show
-     * @author Rowan Crowther
      */
     public void displayString(String string) {
         super.setTitle(string);
@@ -87,7 +82,6 @@ public class Window extends JFrame {
      * @param comp the component to add; kept as this window's grid if it is a {@code JPanelArea}
      * @return the component argument, as {@code Container.add} contracts
      * @throws NullPointerException if {@code comp} is {@code null}
-     * @author Rowan Crowther
      */
     @Override
     public Component add(Component comp) {
@@ -116,7 +110,6 @@ public class Window extends JFrame {
      * window with no grid added yet fails inside the EDT rather than here.
      *
      * @param display the character grid to show, indexed {@code [row][column]}
-     * @author Rowan Crowther
      */
     public void display(AngbandDisplayCharacter[][] display) {
         SwingUtilities.invokeLater(() -> {
@@ -129,7 +122,6 @@ public class Window extends JFrame {
      * The character grid this window displays.
      *
      * @return the grid, or {@code null} if none has been added yet
-     * @author Rowan Crowther
      */
     public SwingUI.JPanelArea getArea() {
         return area;
@@ -146,8 +138,6 @@ public class Window extends JFrame {
      * for a repaint is the only way a change survives.
      *
      * <p>Built {@code [row][column]}, matching the panel's own grid and C's {@code term_win}.
-     *
-     * @author Rowan Crowther
      */
     public void clear() {
         AngbandDisplayCharacter[][] clearedDisplay = new AngbandDisplayCharacter[24][80];

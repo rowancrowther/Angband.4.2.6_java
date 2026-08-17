@@ -59,7 +59,6 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * @param errors  out-parameter: one message is appended per unresolvable field
      * @return the resolved properties (records with an essential unresolvable field
      * are omitted and reported via {@code errors})
-     * @author Rowan Crowther
      */
     @Override
     public List<ObjectProperty> assemble(@NotNull List<ObjectPropertyParseRecord> records, @NotNull List<String> errors) {

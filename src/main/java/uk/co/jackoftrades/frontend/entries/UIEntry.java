@@ -36,80 +36,54 @@ import java.util.List;
 public class UIEntry {
     /**
      * The entry's internal name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The element this entry tracks, when its parameter is an element.
-     *
-     * @author Rowan Crowther
      */
     private ElementEnum parameter;
     /**
      * True if the parameter is an element; false if it is a stat.
-     *
-     * @author Rowan Crowther
      */
     private StatElemType statOrElement;
     /**
      * The renderer used to draw this entry's value.
-     *
-     * @author Rowan Crowther
      */
     private UIEntryRenderer renderer;
     /**
      * How multiple contributing values for this entry are combined.
-     *
-     * @author Rowan Crowther
      */
     private CombinerName combineType;
     /**
      * Numeric display priority (used when space is limited).
-     *
-     * @author Rowan Crowther
      */
     private int priorityNum;
     /**
      * Behavioural flag for this entry.
-     *
-     * @author Rowan Crowther
      */
     private EntryFlag entryFlag;
     /**
      * Human-readable description.
-     *
-     * @author Rowan Crowther
      */
     private String description;
     /**
      * Default-width label text.
-     *
-     * @author Rowan Crowther
      */
     private String label;
     /**
      * Two-character label variant.
-     *
-     * @author Rowan Crowther
      */
     private String label2;
     /**
      * Five-character label variant.
-     *
-     * @author Rowan Crowther
      */
     private String label5;
     /**
      * Categories this entry belongs to (used for grouping on screen).
-     *
-     * @author Rowan Crowther
      */
     private List<String> categories;
     /**
      * The template this entry inherits defaults from, if any.
-     *
-     * @author Rowan Crowther
      */
     private UIEntryBase template;
 
@@ -131,7 +105,6 @@ public class UIEntry {
      * @param label5      five-character label variant
      * @param label2      two-character label variant
      * @param template    optional template supplying defaults
-     * @author Rowan Crowther
      */
     public UIEntry(String name,
                    ElementEnum parameter,
@@ -163,7 +136,6 @@ public class UIEntry {
 
     /**
      * @return this entry's internal name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -199,7 +171,6 @@ public class UIEntry {
 
     /**
      * @return a debug string listing this entry's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

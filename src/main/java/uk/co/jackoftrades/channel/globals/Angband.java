@@ -20,34 +20,24 @@ package uk.co.jackoftrades.channel.globals;
 public class Angband {
     /**
      * The game's name.
-     *
-     * @author Rowan Crowther
      */
     public static final String versionName = "Angband";
     /**
      * The game's version number.
-     *
-     * @author Rowan Crowther
      */
     public static final String versionString = "4.2.6";
 
     /**
      * Combined build identifier (name + version).
-     *
-     * @author Rowan Crowther
      */
     public static final String buildId = versionName + " " + versionString;
     /**
      * Build version (same as {@link #versionString}).
-     *
-     * @author Rowan Crowther
      */
     public static final String buildVer = versionString;
 
     /**
      * The full copyright and licence notice shown to the player.
-     *
-     * @author Rowan Crowther
      */
     public static final String copyright =
             """

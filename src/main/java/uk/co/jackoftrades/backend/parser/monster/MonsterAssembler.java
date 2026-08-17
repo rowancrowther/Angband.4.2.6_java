@@ -71,7 +71,6 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
      * @param records the parsed monster records, in file order
      * @param errors  collects one message per soft failure; the caller decides whether any is fatal
      * @return the successfully assembled races, in file order
-     * @author Rowan Crowther
      */
     @Override
     public List<MonsterRace> assemble(@NotNull List<MonsterParseRecord> records, @NotNull List<String> errors) {

@@ -35,21 +35,15 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 public class KeypadDirectionLoop {
     /**
      * The ring cursor: the direction node currently pointed at.
-     *
-     * @author Rowan Crowther
      */
     private static DirectionNode keypadDirection;
     /**
      * The singleton instance (constructing it builds and links the ring).
-     *
-     * @author Rowan Crowther
      */
     private static final KeypadDirectionLoop instance = new KeypadDirectionLoop();
 
     /**
      * Private constructor: builds and links the keypad-order direction ring.
-     *
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -59,7 +53,6 @@ public class KeypadDirectionLoop {
 
     /**
      * @return the singleton keypad direction loop
-     * @author Rowan Crowther
      */
     public static KeypadDirectionLoop getLoop() {
         return instance;
@@ -67,8 +60,6 @@ public class KeypadDirectionLoop {
 
     /**
      * Build the nine direction nodes and link them into the keypad-order ring.
-     *
-     * @author Rowan Crowther
      */
     private static void createAndLinkKeypadDirection() {
         DirectionNode south = new DirectionNode(DirectionEnum.DIR_S, DirectionEnum.DIR_S.ddx(), DirectionEnum.DIR_S.ddy());
@@ -94,7 +85,6 @@ public class KeypadDirectionLoop {
 
     /**
      * @return the column step of the current direction
-     * @author Rowan Crowther
      */
     public static int getXOffset() {
         return keypadDirection.xOff;
@@ -102,7 +92,6 @@ public class KeypadDirectionLoop {
 
     /**
      * @return the row step of the current direction
-     * @author Rowan Crowther
      */
     public static int getYOffset() {
         return keypadDirection.yOff;
@@ -110,7 +99,6 @@ public class KeypadDirectionLoop {
 
     /**
      * @return the current direction's step as a {@link Loc}
-     * @author Rowan Crowther
      */
     @Contract(" -> new")
     public static @NotNull Loc getGrid() {
@@ -119,8 +107,6 @@ public class KeypadDirectionLoop {
 
     /**
      * Advance the shared cursor to the next direction in the keypad-order ring.
-     *
-     * @author Rowan Crowther
      */
     public static void moveNext() {
         keypadDirection = keypadDirection.getNext();
@@ -135,27 +121,19 @@ public class KeypadDirectionLoop {
     private static class DirectionNode {
         /**
          * The direction this node represents.
-         *
-         * @author Rowan Crowther
          */
         private final DirectionEnum dir;
         /**
          * Column step for this direction.
-         *
-         * @author Rowan Crowther
          */
         private int xOff;
         /**
          * Row step for this direction.
-         *
-         * @author Rowan Crowther
          */
         private int yOff;
 
         /**
          * The next node in the ring.
-         *
-         * @author Rowan Crowther
          */
         private DirectionNode next;
 
@@ -165,7 +143,6 @@ public class KeypadDirectionLoop {
          * @param direction the direction
          * @param xOffset   the column step
          * @param yOffset   the row step
-         * @author Rowan Crowther
          */
         public DirectionNode(@NotNull DirectionEnum direction, int xOffset, int yOffset) {
             dir = direction;
@@ -177,7 +154,6 @@ public class KeypadDirectionLoop {
          * Link this node to the next one in the ring.
          *
          * @param next the following node
-         * @author Rowan Crowther
          */
         public void setNext(@NotNull DirectionNode next) {
             this.next = next;
@@ -185,7 +161,6 @@ public class KeypadDirectionLoop {
 
         /**
          * @return the next node in the ring
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(pure = true)

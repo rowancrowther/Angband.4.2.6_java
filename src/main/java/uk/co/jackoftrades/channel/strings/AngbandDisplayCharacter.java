@@ -31,14 +31,10 @@ public class AngbandDisplayCharacter {
     private static final Logger logger = LogManager.getLogger();
     /**
      * The glyph to display.
-     *
-     * @author Rowan Crowther
      */
     private final char character;
     /**
      * The colour the glyph is drawn in, resolved to a concrete attribute colour.
-     *
-     * @author Rowan Crowther
      */
     private final ColourEnum attributeColour;
 

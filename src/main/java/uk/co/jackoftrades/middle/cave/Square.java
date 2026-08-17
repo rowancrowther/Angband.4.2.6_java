@@ -44,39 +44,27 @@ import java.util.Iterator;
 public class Square {
     /**
      * The terrain feature occupying this grid.
-     *
-     * @author Rowan Crowther
      */
     private Feature feat;
     /**
      * Per-grid info flags (seen, view, room, vault, generation hints, …).
-     *
-     * @author Rowan Crowther
      */
     private final Flag<SquareEnum> info;
 
     /**
      * Current light intensity of this grid (>0 means lit).
-     *
-     * @author Rowan Crowther
      */
     private int light;
     /**
      * Occupant index: positive for a monster, negative for the player, 0 if empty.
-     *
-     * @author Rowan Crowther
      */
     private int monsterIndex;
     /**
      * The pile of objects lying on this grid.
-     *
-     * @author Rowan Crowther
      */
     private Pile objectPile;
     /**
      * The traps present on this grid.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<Trap> traps;
 
@@ -87,7 +75,6 @@ public class Square {
      * @param feature      the terrain feature
      * @param light        the initial light level
      * @param monsterIndex the occupant index (monster &gt; 0, player &lt; 0, 0 if empty)
-     * @author Rowan Crowther
      */
     public Square(Feature feature, int light, int monsterIndex) {
         this.feat = feature;
@@ -170,7 +157,6 @@ public class Square {
      *
      * @param object the object we are looking for
      * @return {@code true} if the object is in this square's pile
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -1133,7 +1119,6 @@ public class Square {
      * an empty, dark, unknown square holding the player.
      *
      * @param full whether to build the fully-populated fixture
-     * @author Rowan Crowther
      */
     @TestOnly
     void setUpTest(boolean full) {
@@ -1174,7 +1159,6 @@ public class Square {
      * <p>Function getObjectPile commented in full on 260816.
      *
      * @return this square's object pile, shared with this instance
-     * @author Rowan Crowther
      */
     public Pile getObjectPile() {
         return objectPile;
@@ -1193,8 +1177,6 @@ public class Square {
      * so callers currently make their decisions correctly and simply leave the screen stale.
      *
      * <p>Function lightSpot coded before 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     public void lightSpot() {
         // STUB function. TODO: Implement

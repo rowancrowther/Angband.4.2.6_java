@@ -28,32 +28,22 @@ import uk.co.jackoftrades.middle.enums.MessageType;
 public class CriticalLevel {
     /**
      * Power cut-off: this level applies when the hit's power is below this value.
-     *
-     * @author Rowan Crowther
      */
     private int cutOff;
     /**
      * Damage multiplier applied at this critical level.
-     *
-     * @author Rowan Crowther
      */
     private int mult;
     /**
      * Flat damage added at this critical level.
-     *
-     * @author Rowan Crowther
      */
     private int add;
     /**
      * The message shown to the player for this critical level.
-     *
-     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Logger (reserved for diagnostics).
-     *
-     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 
@@ -64,7 +54,6 @@ public class CriticalLevel {
      * @param mult   damage multiplier
      * @param add    flat damage bonus
      * @param msgt   message to display
-     * @author Rowan Crowther
      */
     public CriticalLevel(int cutOff, int mult, int add, MessageType msgt) {
         this.cutOff = cutOff;
@@ -75,7 +64,6 @@ public class CriticalLevel {
 
     /**
      * @return this level's power cut-off
-     * @author Rowan Crowther
      */
     public int getCutOff() {
         return cutOff;
@@ -83,7 +71,6 @@ public class CriticalLevel {
 
     /**
      * @return this level's damage multiplier
-     * @author Rowan Crowther
      */
     public int getMult() {
         return mult;
@@ -91,7 +78,6 @@ public class CriticalLevel {
 
     /**
      * @return this level's flat damage bonus
-     * @author Rowan Crowther
      */
     public int getAdd() {
         return add;
@@ -99,7 +85,6 @@ public class CriticalLevel {
 
     /**
      * @return this level's display message
-     * @author Rowan Crowther
      */
     public MessageType getMsgt() {
         return msgt;

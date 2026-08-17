@@ -78,7 +78,6 @@ public class PlayerUtils {
      *
      * @param damage the amount of damage to inflict
      * @param cause  the death-message cause, used if the hit is fatal
-     * @author Rowan Crowther
      */
     public static void takeHit(int damage, String cause) {
         // Stub class TODO: implement
@@ -91,7 +90,6 @@ public class PlayerUtils {
      *
      * @param damage the raw incoming damage
      * @return the damage remaining after reduction (never negative)
-     * @author Rowan Crowther
      */
     public static int applyDamageReduction(int damage) {
         // Hack - apply invulnerability
@@ -116,7 +114,6 @@ public class PlayerUtils {
      * @param flag   the set of over-exertion penalties permitted
      * @param chance the percentage chance each penalty triggers
      * @param amount the magnitude of the penalty
-     * @author Rowan Crowther
      */
     public static void overExert(Flag<PlayerOverExertion> flag, int chance, int amount) {
         // Stub class TODO: implement
@@ -127,8 +124,6 @@ public class PlayerUtils {
      * {@code disturb} ({@code player-util.c}), called when something demands the player's attention.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public static void disturb() {
         // Stub class TODO: implement
@@ -139,8 +134,6 @@ public class PlayerUtils {
      * {@code player-util.c}.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public static void regenHP() {
         // Stub class TODO: implement
@@ -151,8 +144,6 @@ public class PlayerUtils {
      * in {@code player-util.c}.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public static void regenMana() {
         // Stub class TODO: implement
@@ -163,8 +154,6 @@ public class PlayerUtils {
      * light-update handling.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public static void updateLight() {
         // Stub class TODO: Implement this
@@ -176,7 +165,6 @@ public class PlayerUtils {
      * after the first day, flags a fresh level for generation, and requests an autosave.
      *
      * @param dungeonLevel the depth to descend/ascend to (0 = town)
-     * @author Rowan Crowther
      */
     public static void dungeonChangeLevel(int dungeonLevel) {
         // Record the new depth
@@ -202,7 +190,6 @@ public class PlayerUtils {
      * @param dungeonLevel the current depth
      * @param added        the number of levels to move (may be scaled by the stair-skip)
      * @return the resulting depth, clamped to the dungeon's limits and to any intervening quest
-     * @author Rowan Crowther
      */
     public static int dungeonGetNextLevel(int dungeonLevel, int added) {
         int targetLevel;

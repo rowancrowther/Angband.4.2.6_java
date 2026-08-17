@@ -28,20 +28,14 @@ package uk.co.jackoftrades.middle.cave;
 public class Connector {
     /**
      * The grid where this connection is made.
-     *
-     * @author Rowan Crowther
      */
     private Loc grid;
     /**
      * The terrain feature to place at the connection grid.
-     *
-     * @author Rowan Crowther
      */
     private int feat;
     /**
      * Extra connection info flags (type still to be determined in the port).
-     *
-     * @author Rowan Crowther
      */
     private Object info;   // TODO: Change this to a Flag<bitfield> when we find out what bitflags are being used here
 }

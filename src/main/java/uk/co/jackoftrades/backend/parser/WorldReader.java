@@ -50,8 +50,6 @@ public class WorldReader implements Reader<World> {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
-     *
-     * @author Rowan Crowther
      */
     @NotNull
     @Override
@@ -69,7 +67,6 @@ public class WorldReader implements Reader<World> {
      * @return A {@link ParseResult} of type {@link WorldParseRecord}
      * @throws IOException when there is a problem finding or reading
      *                     the file
-     * @author Rowan Crowther
      */
     public ParseResult<World> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

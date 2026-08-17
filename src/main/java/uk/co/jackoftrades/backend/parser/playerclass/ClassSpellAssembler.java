@@ -44,7 +44,6 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
      * @param records the raw spell blocks for one book, in file order
      * @param errors  the soft-error channel; malformed scalars and unresolved effects are appended here
      * @return the resolved spells, minus any dropped for a malformed scalar
-     * @author Rowan Crowther
      */
     @Override
     public List<MagicSpell> assemble(@NotNull List<ClassSpellParseRecord> records, @NotNull List<String> errors) {

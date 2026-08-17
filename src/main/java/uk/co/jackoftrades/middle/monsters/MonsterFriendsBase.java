@@ -31,32 +31,22 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
 public class MonsterFriendsBase {
     /**
      * The companion monster base type.
-     *
-     * @author Rowan Crowther
      */
     private MonsterBase base;
     /**
      * The group role the companions take.
-     *
-     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
     /**
      * Percentage chance the companions appear.
-     *
-     * @author Rowan Crowther
      */
     private int percentChance;
     /**
      * Number of dice for the companion count.
-     *
-     * @author Rowan Crowther
      */
     private int numberDice;
     /**
      * Sides per die for the companion count.
-     *
-     * @author Rowan Crowther
      */
     private int numberSides;
 
@@ -68,7 +58,6 @@ public class MonsterFriendsBase {
      * @param percentChance appearance chance
      * @param numberDice    dice for the count
      * @param numberSides   sides per die for the count
-     * @author Rowan Crowther
      */
     public MonsterFriendsBase(MonsterBase base, MonsterGroupRole role, int percentChance, int numberDice,
                               int numberSides) {

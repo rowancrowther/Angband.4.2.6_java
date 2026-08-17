@@ -68,7 +68,6 @@ public interface EventsHandler {
      *
      * @param eventType the event type to listen for
      * @param handler   the handler to dispatch when that type is signalled
-     * @author Rowan Crowther
      */
     void eventAddHandler(GameEventType eventType, EventHandlerInterface handler);
 
@@ -80,7 +79,6 @@ public interface EventsHandler {
      *
      * @param eventType the event type to stop dispatching the handler for
      * @param handler   the handler to remove
-     * @author Rowan Crowther
      */
     void eventRemoveHandler(GameEventType eventType, EventHandlerInterface handler);
 
@@ -100,7 +98,6 @@ public interface EventsHandler {
      *
      * @param eventType the kind of event being dispatched
      * @param data      the payload handed to each handler, or {@code null} for a bare signal
-     * @author Rowan Crowther
      */
     void gameEventDispatch(GameEventType eventType, GameEventData data);
 
@@ -110,7 +107,6 @@ public interface EventsHandler {
      * Other event types are untouched.
      *
      * @param eventType the event type to clear
-     * @author Rowan Crowther
      */
     void eventRemoveHandlerType(GameEventType eventType);
 
@@ -121,8 +117,6 @@ public interface EventsHandler {
      * event type with an empty list. The per-type lists themselves stay in place (the
      * implementation populates them once when the bus is built), so this only empties
      * their contents. The port of C's start-of-game handler reset.
-     *
-     * @author Rowan Crowther
      */
     default void init() {
         eventRemoveAllHandlers();

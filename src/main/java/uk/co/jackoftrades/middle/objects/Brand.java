@@ -33,51 +33,35 @@ import java.util.Objects;
 public class Brand {
     /**
      * The brand's code (used for cross-references).
-     *
-     * @author Rowan Crowther
      */
     private String code;
     /**
      * The brand's display name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The verb describing the brand's damage (e.g. "burns").
-     *
-     * @author Rowan Crowther
      */
     private String verb;
     /**
      * Monster flag granting resistance to this brand.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag resistFlag;
     /**
      * Monster flag marking vulnerability to this brand.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag vulnerableFlag;
 
     /**
      * Damage multiplier in the standard combat system.
-     *
-     * @author Rowan Crowther
      */
     private int multiplier;
     /**
      * Damage multiplier in the O-combat system.
-     *
-     * @author Rowan Crowther
      */
     private int oMultiplier;
     /**
      * The brand's power rating (for item valuation).
-     *
-     * @author Rowan Crowther
      */
     private int power;
 
@@ -92,7 +76,6 @@ public class Brand {
      * @param multiplier     standard damage multiplier
      * @param oMultiplier    O-combat damage multiplier
      * @param power          power rating
-     * @author Rowan Crowther
      */
     public Brand(String code, String name, String verb, MonsterRaceFlag resistFlag, MonsterRaceFlag vulnerableFlag, int multiplier, int oMultiplier, int power) {
         this.code = code;
@@ -107,7 +90,6 @@ public class Brand {
 
     /**
      * @return the brand's display name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -115,7 +97,6 @@ public class Brand {
 
     /**
      * @return the brand's code
-     * @author Rowan Crowther
      */
     public String getCode() {
         return code;
@@ -123,7 +104,6 @@ public class Brand {
 
     /**
      * @return a debug string listing this brand's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -146,7 +126,6 @@ public class Brand {
      *
      * @param o the object to compare against
      * @return {@code true} if {@code o} is a brand with identical fields
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object o) {
@@ -163,7 +142,6 @@ public class Brand {
 
     /**
      * @return a hash consistent with {@link #equals}
-     * @author Rowan Crowther
      */
     @Override
     public int hashCode() {

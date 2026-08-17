@@ -549,7 +549,6 @@ public class ObjectRegistry {
      * @param sValue the numeric sub-type value
      * @return the matching {@link ObjectKind}, or {@code null} if none is indexed
      * @throws IllegalStateException if object kinds have not been loaded
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
@@ -597,7 +596,6 @@ public class ObjectRegistry {
      * @param ref  the sval reference — either a decimal sval or a sub-type name
      * @return the matching {@link ObjectKind}, or {@code null} if none matches
      * @throws IllegalStateException if object kinds have not been loaded
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
@@ -699,7 +697,6 @@ public class ObjectRegistry {
      * ones.
      *
      * @param toAdd the ObjectKind to register
-     * @author Rowan Crowther
      */
     public static void addObjectKind(@NotNull ObjectKind toAdd) {
         ObjectBase base = toAdd.getBase();

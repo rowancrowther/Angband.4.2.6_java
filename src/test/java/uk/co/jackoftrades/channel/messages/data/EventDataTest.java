@@ -52,8 +52,6 @@ class EventDataTest {
     /**
      * Every payload shape is a {@link GameEventData}, which is what lets the bus carry them all
      * through one dispatch signature.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void everyShapeIsAGameEventData() {
@@ -79,8 +77,6 @@ class EventDataTest {
          * Row first, column second. C's {@code struct loc} is {@code {int x, y;}}, so anything
          * translating from the core's own {@code Loc} crosses the order, and this is the assertion
          * that would fail if it stopped doing so.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aGridIsRowThenColumn() {
@@ -93,17 +89,12 @@ class EventDataTest {
         /**
          * The transposition guard proper: the same two numbers the other way round must not be an
          * equal grid.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aTransposedGridIsADifferentGrid() {
             assertNotEquals(new EventDataGrid(3, 17), new EventDataGrid(17, 3));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void gridsAreComparedByValue() {
             assertEquals(new EventDataGrid(3, 17), new EventDataGrid(3, 17));
@@ -112,8 +103,6 @@ class EventDataTest {
         /**
          * A grid is a payload in its own right, not only a component of one — C's union carries a
          * bare {@code struct loc} for events that concern a single square.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aGridIsItselfAPayload() {
@@ -134,8 +123,6 @@ class EventDataTest {
          * {@code event_signal_size(type, h, w)} — while the natural English phrase is "width and
          * height", which is the wrong way round. That mismatch is the whole reason this test
          * exists.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aSizeIsHeightThenWidth() {
@@ -145,9 +132,6 @@ class EventDataTest {
             assertEquals(33, size.width(), "second component is the width - C's w");
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aTransposedSizeIsADifferentSize() {
             assertNotEquals(new EventDataSize(11, 33), new EventDataSize(33, 11));
@@ -162,26 +146,17 @@ class EventDataTest {
     @Nested
     class SimplePayloads {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aStringPayloadCarriesItsText() {
             assertEquals("Initializing arrays...", new EventDataString("Initializing arrays...").string());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void stringPayloadsAreComparedByValue() {
             assertEquals(new EventDataString("room"), new EventDataString("room"));
             assertNotEquals(new EventDataString("room"), new EventDataString("vault"));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aBooleanPayloadCarriesItsFlag() {
             assertTrue(new EventDataBoolean(true).value());
@@ -192,8 +167,6 @@ class EventDataTest {
          * The no-argument constructor is a convenience for the negative case, so it has to
          * actually produce the negative case — and produce something equal to the explicit form,
          * or callers using the two spellings would build unequal messages meaning the same thing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theDefaultBooleanPayloadIsFalse() {
@@ -211,9 +184,6 @@ class EventDataTest {
     @Nested
     class Messages {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         void aMessagePayloadCarriesItsTypeAndText() {
             EventDataMessage message = new EventDataMessage(MessageType.MSG_GENERIC, "You miss the orc.");
@@ -225,8 +195,6 @@ class EventDataTest {
         /**
          * The type is what the display colours and sounds by, so the same words under two
          * categories are two different messages.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theSameTextUnderADifferentTypeIsADifferentMessage() {
@@ -249,8 +217,6 @@ class EventDataTest {
          * permutation of them reproduces (true, false, true would survive a swap of the outer
          * two; true, true, false does not survive any single swap that matters here, so each is
          * asserted by name rather than trusting the shape).
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aBoltCarriesEveryComponentInOrder() {
@@ -269,8 +235,6 @@ class EventDataTest {
          * Origin and current are both grids, so swapping them compiles. C passes
          * {@code (oy, ox, y, x)} — origin before current — and a bolt drawn from the wrong end
          * animates backwards.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void swappingOriginAndCurrentIsADifferentBolt() {
@@ -284,8 +248,6 @@ class EventDataTest {
         /**
          * A bolt that is not seen must not be equal to one that is, because {@code seen} is what
          * suppresses drawing entirely.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theVisibilityFlagIsPartOfABoltsIdentity() {
@@ -308,8 +270,6 @@ class EventDataTest {
         /**
          * All five counts given distinct values, so any two being swapped shows up. Reading them
          * back by name is the only thing that pins the order of a run of same-typed components.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aTunnelCarriesItsCountsInOrder() {
@@ -326,8 +286,6 @@ class EventDataTest {
         /**
          * The documented success test: {@code dEnd} of zero means the tunneller arrived. Nothing
          * enforces that reading, so this pins the two cases the Javadoc describes.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aTunnelThatStoppedShortIsDistinguishableFromOneThatArrived() {

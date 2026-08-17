@@ -49,7 +49,6 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * @param records the raw equipment lines for one class, in file order
      * @param errors  the soft-error channel; per-entry failures are appended here
      * @return the resolved starting items, minus any that failed to resolve
-     * @author Rowan Crowther
      */
     @Override
     public List<StartItem> assemble(@NotNull List<ClassEquipParseRecord> records, @NotNull List<String> errors) {
@@ -103,7 +102,6 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * @param eopts  the raw exclusion clause text
      * @param errors the soft-error channel; unknown/non-birth options are appended here
      * @return the resolved exclusions (possibly empty)
-     * @author Rowan Crowther
      */
     @Contract("_, _ -> new")
     @NotNull

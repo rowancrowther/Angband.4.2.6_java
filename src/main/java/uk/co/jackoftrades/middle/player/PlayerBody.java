@@ -56,7 +56,6 @@ public class PlayerBody {
      *
      * @param name  the body's display name
      * @param slots the equipment slots in declared order (defensively copied and kept immutable)
-     * @author Rowan Crowther
      */
     public PlayerBody(String name, List<EquipSlot> slots) {
         this.name = name;
@@ -77,7 +76,6 @@ public class PlayerBody {
      *
      * @param item the item to look for
      * @return {@code true} if the item occupies one of this body's slots
-     * @author Rowan Crowther
      */
     public boolean itemIsEquipped(ItemObject item) {
         for (EquipSlot slot : slots) {
@@ -93,7 +91,6 @@ public class PlayerBody {
 
     /**
      * @return this body's display name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -101,7 +98,6 @@ public class PlayerBody {
 
     /**
      * @return the number of equipment slots this body provides (C: {@code player_body.count})
-     * @author Rowan Crowther
      */
     public int getCount() {
         return slots.size();
@@ -109,7 +105,6 @@ public class PlayerBody {
 
     /**
      * @return the slots in body order (unmodifiable)
-     * @author Rowan Crowther
      */
     public List<EquipSlot> getSlots() {
         return Collections.unmodifiableList(slots);
@@ -118,7 +113,6 @@ public class PlayerBody {
     /**
      * @param index the slot's position, its C {@code slots[i]} address
      * @return the slot at the given index
-     * @author Rowan Crowther
      */
     public EquipSlot getSlot(int index) {
         return slots.get(index);
@@ -147,7 +141,6 @@ public class PlayerBody {
      *
      * @param item the item to locate, or {@code null}
      * @return the slot's index, or {@link #getCount()} if the item is not worn
-     * @author Rowan Crowther
      */
     public int equippedItemSlot(ItemObject item) {
         if (item == null) return slots.size();

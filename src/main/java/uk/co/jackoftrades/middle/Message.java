@@ -48,8 +48,6 @@ public class Message {
      * How many messages the log keeps before the oldest is discarded - the port of C's
      * {@code messages->max}, set to the same 2048 in {@code messages_init} ({@code
      * src/message.c}).
-     *
-     * @author Rowan Crowther
      */
     private final static int queueSize = 2048;
 
@@ -66,8 +64,6 @@ public class Message {
      * <p>The {@code queueSize} passed to the constructor is only an initial-capacity hint;
      * {@link ArrayDeque} is unbounded, so the cap is enforced explicitly by the
      * {@code removeLast} in {@link #messageType}.
-     *
-     * @author Rowan Crowther
      */
     private static Deque<MessageT> messageLog = new ArrayDeque<>(queueSize);
 
@@ -90,7 +86,6 @@ public class Message {
      *
      * @param message the message text, or a {@link String#format} pattern when {@code args} is given
      * @param args    optional format arguments substituted into {@code message}
-     * @author Rowan Crowther
      */
     public static void message(String message, Object... args) {
         messageType(MessageType.MSG_GENERIC, message, args);
@@ -122,7 +117,6 @@ public class Message {
      * @param messageType the category to tag the message with
      * @param message     the message text, or a {@link String#format} pattern when {@code args} is given
      * @param args        optional format arguments substituted into {@code message}
-     * @author Rowan Crowther
      */
     public static void messageType(MessageType messageType, String message, Object... args) {
         String toSend = String.format(message, args);
@@ -171,7 +165,6 @@ public class Message {
      *
      * @param messageType the sound category to play
      * @param player      the player whose sound option gates the event
-     * @author Rowan Crowther
      */
     public static void sound(MessageType messageType, Player player) {
         if (!player.getPlayerOptions().has(PlayerOptionEnum.OP_use_sound))
@@ -193,24 +186,18 @@ public class Message {
     private static class MessageT {
         /**
          * The formatted message text, stored plain - C's {@code message_t.str}.
-         *
-         * @author Rowan Crowther
          */
         private String text;
 
         /**
          * The category the message was raised under - C's {@code message_t.type}. Part of the
          * repeat test: the same words under a different type are a different message.
-         *
-         * @author Rowan Crowther
          */
         private MessageType type;
 
         /**
          * How many times this message has been raised consecutively - C's
          * {@code message_t.count}, which starts at 1 for a message seen once.
-         *
-         * @author Rowan Crowther
          */
         private int count;
 
@@ -220,7 +207,6 @@ public class Message {
          * @param count the number of consecutive occurrences so far, 1 for a first sighting
          * @param text  the formatted message text, without any repeat-count decoration
          * @param type  the category the message was raised under
-         * @author Rowan Crowther
          */
         public MessageT(int count, String text, MessageType type) {
             this.count = count;
@@ -231,8 +217,6 @@ public class Message {
         /**
          * Records one more consecutive sighting of this message. C guards the equivalent
          * increment against wrapping its 16-bit counter; a Java {@code int} has room to spare.
-         *
-         * @author Rowan Crowther
          */
         public void incrementCount() {
             count++;
@@ -240,7 +224,6 @@ public class Message {
 
         /**
          * @return how many times this message has been raised consecutively
-         * @author Rowan Crowther
          */
         public int getCount() {
             return count;
@@ -248,7 +231,6 @@ public class Message {
 
         /**
          * @return the message text, without repeat-count decoration
-         * @author Rowan Crowther
          */
         public String getText() {
             return text;
@@ -256,7 +238,6 @@ public class Message {
 
         /**
          * @return the category the message was raised under
-         * @author Rowan Crowther
          */
         public MessageType getType() {
             return type;

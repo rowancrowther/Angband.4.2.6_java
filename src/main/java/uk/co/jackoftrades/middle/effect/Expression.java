@@ -32,26 +32,18 @@ import uk.co.jackoftrades.middle.enums.EffectBaseType;
 public class Expression {
     /**
      * The single-letter placeholder this expression substitutes for in the dice string.
-     *
-     * @author Rowan Crowther
      */
     private char codeLetter;
     /**
      * The base game quantity the expression starts from.
-     *
-     * @author Rowan Crowther
      */
     private EffectBaseType baseType;
     /**
      * The chain of arithmetic operations applied to the base value.
-     *
-     * @author Rowan Crowther
      */
     private String operations;
     /**
      * The dice string the evaluated expression feeds into.
-     *
-     * @author Rowan Crowther
      */
     private String diceString;
 
@@ -61,7 +53,6 @@ public class Expression {
      * @param codeLetter the placeholder letter
      * @param baseType   the base quantity
      * @param operations the arithmetic operation chain
-     * @author Rowan Crowther
      */
     public Expression(char codeLetter, EffectBaseType baseType, String operations) {
         this.codeLetter = codeLetter;
@@ -74,7 +65,6 @@ public class Expression {
      * Set the dice string this expression applies to.
      *
      * @param diceString the dice expression string
-     * @author Rowan Crowther
      */
     public void setDiceString(String diceString) {
         this.diceString = diceString;

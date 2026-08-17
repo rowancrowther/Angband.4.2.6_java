@@ -41,8 +41,6 @@ import java.util.List;
 public class PlayerClassReader implements Reader<PlayerClass> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -66,7 +64,6 @@ public class PlayerClassReader implements Reader<PlayerClass> {
      * @param filename the class data file to read
      * @return the parse result: the classes plus any error messages
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<PlayerClass> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

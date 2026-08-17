@@ -107,7 +107,6 @@ public class UIEntryRendererReader implements Reader<UIEntryRenderer> {
      * @param record the list of strings that have been read in from
      *               lib/gamedata/ui_entry_renderer.txt
      * @return A UIEntryRendererParseRecord
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @NotNull

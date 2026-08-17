@@ -31,8 +31,6 @@ import uk.co.jackoftrades.channel.enums.UiEventType;
 public interface Event {
     /**
      * The set of event categories this event belongs to.
-     *
-     * @author Rowan Crowther
      */
     Flag<UiEventType> uiEventType = new Flag<>(UiEventType.class);
 }

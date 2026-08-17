@@ -34,7 +34,6 @@ public interface EventHandlerInterface {
      *
      * @param eventType the kind of event
      * @param data      the event's payload
-     * @author Rowan Crowther
      */
     public void dispatch(GameEventType eventType, GameEventData data);
 }

@@ -223,15 +223,12 @@ public enum TValue {
 
     /**
      * The display name of this item type.
-     *
-     * @author Rowan Crowther
      */
     private final String name;
     /**
      * Bind a tval to its display name.
      *
      * @param name the display name
-     * @author Rowan Crowther
      */
     TValue(String name) {
         this.name = name;
@@ -244,7 +241,6 @@ public enum TValue {
      * {@link #TV_DIGGING} ({@code "digger"}) or {@link #TV_DRAG_ARMOR} ({@code "dragon armor"}).
      *
      * @return The type name of this TValue
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -252,7 +248,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a staff
-     * @author Rowan Crowther
      */
     public boolean isStaff() {
         return this == TV_STAFF;
@@ -260,7 +255,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a wand
-     * @author Rowan Crowther
      */
     public boolean isWand() {
         return this == TV_WAND;
@@ -268,7 +262,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a rod
-     * @author Rowan Crowther
      */
     public boolean isRod() {
         return this == TV_ROD;
@@ -276,7 +269,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a potion
-     * @author Rowan Crowther
      */
     public boolean isPotion() {
         return this == TV_POTION;
@@ -284,7 +276,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a scroll
-     * @author Rowan Crowther
      */
     public boolean isScroll() {
         return this == TV_SCROLL;
@@ -292,7 +283,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is (non-mushroom) food
-     * @author Rowan Crowther
      */
     public boolean isFood() {
         return this == TV_FOOD;
@@ -300,7 +290,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a mushroom
-     * @author Rowan Crowther
      */
     public boolean isMushroom() {
         return this == TV_MUSHROOM;
@@ -308,7 +297,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a light source
-     * @author Rowan Crowther
      */
     public boolean isLight() {
         return this == TV_LIGHT;
@@ -316,7 +304,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a ring
-     * @author Rowan Crowther
      */
     public boolean isRing() {
         return this == TV_RING;
@@ -324,7 +311,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a chest
-     * @author Rowan Crowther
      */
     public boolean isChest() {
         return this == TV_CHEST;
@@ -332,7 +318,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is fuel (a flask of oil)
-     * @author Rowan Crowther
      */
     public boolean isFuel() {
         return this == TV_FLASK;
@@ -340,7 +325,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is money (gold)
-     * @author Rowan Crowther
      */
     public boolean isMoney() {
         return this == TV_GOLD;
@@ -348,7 +332,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a digging tool
-     * @author Rowan Crowther
      */
     public boolean isDigger() {
         return this == TV_DIGGING;
@@ -356,7 +339,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval can provide nourishment (food, potions, mushrooms)
-     * @author Rowan Crowther
      */
     public boolean canHaveNourishment() {
         return this == TV_FOOD || this == TV_POTION
@@ -365,7 +347,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval hold a number of charges (staves and wands)
-     * @author Rowan Crowther
      */
     public boolean canHaveCharges() {
         return this == TV_STAFF || this == TV_WAND;
@@ -373,7 +354,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval recharge on a timeout (rods)
-     * @author Rowan Crowther
      */
     public boolean canHaveTimeout() {
         return this == TV_ROD;
@@ -381,7 +361,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is body armour (soft, hard or dragon-scale armour)
-     * @author Rowan Crowther
      */
     public boolean isBodyArmour() {
         return switch (this) {
@@ -392,7 +371,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is head armour (a helm or crown)
-     * @author Rowan Crowther
      */
     public boolean isHeadArmour() {
         return this == TV_CROWN || this == TV_HELM;
@@ -400,7 +378,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is ammunition (shots, arrows or bolts)
-     * @author Rowan Crowther
      */
     public boolean isAmmo() {
         return switch (this) {
@@ -411,7 +388,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a sharp missile (an arrow or bolt)
-     * @author Rowan Crowther
      */
     public boolean isSharpMissile() {
         return switch (this) {
@@ -422,7 +398,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a crossbow bolt
-     * @author Rowan Crowther
      */
     public boolean isBolt() {
         return this == TV_BOLT;
@@ -430,7 +405,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a missile launcher (a bow, sling or crossbow)
-     * @author Rowan Crowther
      */
     public boolean isLauncher() {
         return this == TV_BOW;
@@ -438,7 +412,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval can be "used" (rods, wands, staves, scrolls, potions, food, mushrooms)
-     * @author Rowan Crowther
      */
     public boolean isUseable() {
         return switch (this) {
@@ -449,7 +422,6 @@ public enum TValue {
 
     /**
      * @return whether use of this tval can fail based on the device skill (staves, wands, rods)
-     * @author Rowan Crowther
      */
     public boolean canHaveFailure() {
         return switch (this) {
@@ -460,7 +432,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is jewelry (a ring or amulet)
-     * @author Rowan Crowther
      */
     public boolean isJewelry() {
         return this == TV_RING || this == TV_AMULET;
@@ -468,7 +439,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a weapon (melee weapon, launcher or ammunition)
-     * @author Rowan Crowther
      */
     public boolean isWeapon() {
         return switch (this) {
@@ -480,7 +450,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is any kind of armour (body, shield, cloak, headgear, boots or gloves)
-     * @author Rowan Crowther
      */
     public boolean isArmour() {
         return switch (this) {
@@ -492,7 +461,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a melee weapon (sword, hafted, polearm or digger)
-     * @author Rowan Crowther
      */
     public boolean isMeleeWeapon() {
         return switch (this) {
@@ -503,7 +471,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval have a variable power/pval (weapons, armour, lights and jewelry)
-     * @author Rowan Crowther
      */
     public boolean hasVariablePower() {
         return switch (this) {
@@ -516,7 +483,6 @@ public enum TValue {
 
     /**
      * @return whether items of this tval can be worn or wielded (weapons, armour, lights and jewelry)
-     * @author Rowan Crowther
      */
     public boolean isWearable() {
         return switch (this) {
@@ -529,7 +495,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is edible (food or mushroom)
-     * @author Rowan Crowther
      */
     public boolean isEdible() {
         return this == TV_FOOD || this == TV_MUSHROOM;
@@ -539,7 +504,6 @@ public enum TValue {
      * @return whether items of this type get a randomised "flavour" (e.g. an
      * unidentified potion's colour) — amulets, rings, the magic devices,
      * potions, mushrooms and scrolls
-     * @author Rowan Crowther
      */
     public boolean canHaveFlavour() {
         return switch (this) {
@@ -550,7 +514,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a spellbook of any realm
-     * @author Rowan Crowther
      */
     public boolean isBook() {
         return switch (this) {
@@ -561,7 +524,6 @@ public enum TValue {
 
     /**
      * @return whether this tval is a "zapper" device (wand or staff)
-     * @author Rowan Crowther
      */
     public boolean isZapper() {
         return this == TV_WAND || this == TV_STAFF;
@@ -603,7 +565,6 @@ public enum TValue {
      *
      * @param name the tval text to resolve: a number, a display name, or an enum identifier
      * @return the matching {@link TValue}, or {@code null} if the text resolves to no tval
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -652,7 +613,6 @@ public enum TValue {
      *
      * @param i the numeric tval, from {@code 0} ({@link #TV_NONE}) to {@code values().length - 1}
      * @return the tval with that value, or {@code null} if {@code i} falls outside that range
-     * @author Rowan Crowther
      */
     public static TValue fromName(int i) {
         if (i < 0 || i >= TValue.values().length)
@@ -673,7 +633,6 @@ public enum TValue {
      *
      * @param name the tval text, in any of the forms {@link #fromName(String)} accepts
      * @return how many object kinds carry that tval; {@code 0} if the name resolves to none
-     * @author Rowan Crowther
      */
     public static int tValSValCount(String name) {
         TValue tValue = fromName(name);
@@ -696,7 +655,6 @@ public enum TValue {
      *
      * @param name the tval text, in any of the forms {@link #fromName(String)} accepts
      * @return the svals of the matching kinds, empty if the name resolves to none
-     * @author Rowan Crowther
      */
     @NotNull
     public static List<Integer> tvalSvalList(String name) {

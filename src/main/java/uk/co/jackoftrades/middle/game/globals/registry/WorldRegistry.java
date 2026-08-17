@@ -124,7 +124,6 @@ public class WorldRegistry {
      * @param lashType the projection code to find
      * @return the matching {@link Projection}, or {@code null} if none matches
      * @throws IllegalStateException if projections have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static Projection lookupProjectionByLash(ProjectionEnum lashType) {
@@ -148,7 +147,6 @@ public class WorldRegistry {
      * @param name the projection's lash description to find
      * @return the matching {@link Projection}, or {@code null} if none matches
      * @throws IllegalStateException if projections have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static Projection lookupProjectionByName(String name) {
@@ -176,7 +174,6 @@ public class WorldRegistry {
      * @param type the category to find a projection for
      * @return the first {@link Projection} of that category, or {@code null} if none is loaded
      * @throws IllegalStateException if projections have not been loaded
-     * @author Rowan Crowther
      */
     @Nullable
     public static Projection lookupProjectionByCode(ProjectionType type) {
@@ -194,7 +191,6 @@ public class WorldRegistry {
 
     /**
      * @return the number of loaded quests (C's {@code z_info->quest_max})
-     * @author Rowan Crowther
      */
     public static int getQuestMax() {
         return quests.size();
@@ -202,7 +198,6 @@ public class WorldRegistry {
 
     /**
      * @return the number of loaded projection types (C's {@code z_info->proj_max})
-     * @author Rowan Crowther
      */
     public static int getProjMax() {
         return projections.size();
@@ -210,7 +205,6 @@ public class WorldRegistry {
 
     /**
      * @return the deepest reachable dungeon level — the number of loaded world levels
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -232,7 +226,6 @@ public class WorldRegistry {
      * @param name the level name to search for
      * @return the matching {@link World}, or {@link Optional#empty()} if no level has that name
      * @throws IllegalStateException if the world list has not been initialised
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static Optional<World> getLevelByName(String name) {
@@ -254,7 +247,6 @@ public class WorldRegistry {
      * @param depth the dungeon depth to search for
      * @return the matching {@link World}, or {@link Optional#empty()} if no level is at that depth
      * @throws IllegalStateException if the world list has not been initialised
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static Optional<World> getLevelByDepth(int depth) {

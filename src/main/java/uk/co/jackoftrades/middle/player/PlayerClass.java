@@ -50,8 +50,6 @@ import java.util.Map;
 public class PlayerClass {
     /**
      * Logger for this class.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
     /**

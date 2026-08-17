@@ -245,8 +245,6 @@ public class PlayerUpkeep {
      *
      * <p>Constructor PlayerUpkeep commented in full on 260816, {@code steps} changed from an empty
      * list to null the same day.
-     *
-     * @author Rowan Crowther
      */
     public PlayerUpkeep() {
         // C allocates these two explicitly; the rest of the struct is covered by mem_zalloc
@@ -444,7 +442,6 @@ public class PlayerUpkeep {
      * update pass.
      *
      * @param flag the {@link PlayerUpkeepEnum} recalculation to request
-     * @author Rowan Crowther
      */
     public void updateFlagOn(PlayerUpkeepEnum flag) {
         updateFlags.on(flag);
@@ -465,7 +462,6 @@ public class PlayerUpkeep {
      * <p>Function updateFlagsOn commented in full on 260816.
      *
      * @param flags the {@link PlayerUpkeepEnum} recalculations to request
-     * @author Rowan Crowther
      */
     public void updateFlagsOn(PlayerUpkeepEnum... flags) {
         updateFlags.set(flags);
@@ -475,7 +471,6 @@ public class PlayerUpkeep {
      * Raises a notice ({@code PN_*}) flag, queuing a housekeeping action for the next notice pass.
      *
      * @param flag the {@link PlayerNotice} action to request
-     * @author Rowan Crowther
      */
     public void noticeFlagOn(PlayerNotice flag) {
         noticeFlags.on(flag);
@@ -483,7 +478,6 @@ public class PlayerUpkeep {
 
     /**
      * @return the number of turns of rest remaining (the resting countdown)
-     * @author Rowan Crowther
      */
     public int getRestingCounter() {
         return restingCounter;
@@ -493,7 +487,6 @@ public class PlayerUpkeep {
      * Sets whether the game should autosave at the next opportunity (e.g. on reaching a new level).
      *
      * @param autosave {@code true} to request an autosave
-     * @author Rowan Crowther
      */
     public void setAutosave(boolean autosave) {
         this.autosave = autosave;
@@ -519,7 +512,6 @@ public class PlayerUpkeep {
      * <p>Function healthTrack commented in full on 260816.
      *
      * @param monster the monster to track, or {@code null} to stop tracking
-     * @author Rowan Crowther
      */
     public void healthTrack(Monster monster) {
         healthWho = monster;
@@ -543,7 +535,6 @@ public class PlayerUpkeep {
      *
      * @param flag the notice to request
      * @return {@code false} if the flag was already set, {@code true} if this call set it
-     * @author Rowan Crowther
      */
     public boolean orNoticeFlag(PlayerNotice flag) {
         return noticeFlags.on(flag);
@@ -559,7 +550,6 @@ public class PlayerUpkeep {
      * <p>Function getQuiver coded on 260816, commented in full on 260816.
      *
      * @return the quiver slots, shared with this instance
-     * @author Rowan Crowther
      */
     public List<ItemObject> getQuiver() {
         return quiverObjects;
@@ -580,7 +570,6 @@ public class PlayerUpkeep {
      * <p>Function getInventory coded on 260816, commented in full on 260816.
      *
      * @return the pack slots, shared with this instance
-     * @author Rowan Crowther
      */
     public List<ItemObject> getInventory() {
         return inventoryObjects;

@@ -61,8 +61,6 @@ public class EventsBusHandler implements EventsHandler {
      * allocation-free. The write cost - copying the backing array on each
      * registration - is paid off the hot path and is trivial here, as the lists are
      * short (typically one handler, at most a few).
-     *
-     * @author Rowan Crowther
      */
     private final HashMap<GameEventType, CopyOnWriteArrayList<EventHandlerInterface>> handlers = new HashMap<>();
 
@@ -76,8 +74,6 @@ public class EventsBusHandler implements EventsHandler {
      * {@link #handlers} is assigned at its declaration, which runs before this body; the
      * class is not designed to be subclassed with an {@code init()} that reads other,
      * not-yet-initialised fields.
-     *
-     * @author Rowan Crowther
      */
     public EventsBusHandler() {
         init();
@@ -150,8 +146,6 @@ public class EventsBusHandler implements EventsHandler {
      * default via {@code EventsHandler.super.init()}. It is retained as an explicit,
      * concrete reset entry point and as the method the {@linkplain #EventsBusHandler()
      * constructor} calls to first populate the registry.
-     *
-     * @author Rowan Crowther
      */
     @Override
     public void init() {

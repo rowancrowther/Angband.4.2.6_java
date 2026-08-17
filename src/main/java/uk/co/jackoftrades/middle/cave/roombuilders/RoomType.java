@@ -227,7 +227,6 @@ public enum RoomType {
      *
      * @param name the name to look for
      * @return the matching room type, or {@code null} if no room type has that name
-     * @author Rowan Crowther
      */
     public static RoomType getRoomTypeFromName(String name) {
         return Stream.of(values())

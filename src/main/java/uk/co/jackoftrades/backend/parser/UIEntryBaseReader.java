@@ -50,7 +50,6 @@ public class UIEntryBaseReader implements Reader<UIEntryBase> {
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
      * @throws IOException if there is an error loading the file stream
-     * @author Rowan Crowther
      */
     @NotNull
     @Contract("_ -> !null")
@@ -71,7 +70,6 @@ public class UIEntryBaseReader implements Reader<UIEntryBase> {
      * templates and any non-fatal errors collected along the way
      * @throws IOException if the file cannot be found or its {@code CharStream}
      *                     cannot be created
-     * @author Rowan Crowther
      */
     public ParseResult<UIEntryBase> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -93,7 +91,6 @@ public class UIEntryBaseReader implements Reader<UIEntryBase> {
      * @param errorCatcher accumulator of syntax errors gathered during the parse
      * @param errors       collector for non-syntax (e.g. record-count) problems
      * @return the list of raw records parsed from the file
-     * @author Rowan Crowther
      */
     private static List<UIEntryBaseParseRecord> extract(
             @NotNull UIEntryBaseGrammar parser,

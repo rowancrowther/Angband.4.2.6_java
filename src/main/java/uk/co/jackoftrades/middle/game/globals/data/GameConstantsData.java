@@ -194,7 +194,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value denominator scale factor for the critical power chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -210,7 +209,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value denominator scale factor for the critical power chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -226,7 +224,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value numerator scale factor for the critical power chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -242,7 +239,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor denominator for to-hit value used to get power of thrown attack
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -258,7 +254,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor numerator for to-hit value used to get power of thrown attack
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -274,7 +269,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor denominator for to-hit value used to get power of launched ranged attacks
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -290,7 +284,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor numerator for to-hit value used to get power of launched ranged attack
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -306,7 +299,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value added to to-hit value for debuffed target
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -332,7 +324,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value value of added term in denominator for critical chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -348,7 +339,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value numerator of scale factor applied to combined to-hit value
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -364,7 +354,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value numerator of scale factor applied to critical's power
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -380,7 +369,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value denominator of scale factor applied to combined to-hit value
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -396,7 +384,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value numerator of scale factor applied to combined to-hit value
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -412,7 +399,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value amount added to to-hit if target is debuffed
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -437,7 +423,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value minimum of random part of power
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -453,7 +438,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for missile weight
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -469,7 +453,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value maximum range for a ranged critical chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -485,7 +468,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value added to chance for a ranged critical
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -501,7 +483,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for the thrown to-hit skill
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -517,7 +498,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for the launched to-hit skill
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -533,7 +513,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for player level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -549,7 +528,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale-factor for overall ranged to-hit value
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -565,7 +543,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for the missile's weight
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -582,7 +559,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          *              against a debuffed target
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -607,7 +583,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value added to the to-hit value when the target is debuffed
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -623,7 +598,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for the weapon weight in the power of a mêlée critical
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -639,7 +613,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value maximum range for mêlée critical chance
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -655,7 +628,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value value added to chance for calculating mêlée critical
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -671,7 +643,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for the to-hit skill
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -687,7 +658,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for player level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -703,7 +673,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value scale factor for overall to-hit
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -719,7 +688,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value Scale factor for the weapon's weight
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -735,7 +703,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value added to the to-hit value when the target is debuffed
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -751,7 +718,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of turns that 1% of the player food capacity feeds them for
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -767,7 +733,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the starting gold of the player
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -783,7 +748,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum missile and spell range
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -799,7 +763,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum visual range of the player
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -815,7 +778,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value normal amount of fuel in a lamp
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -831,7 +793,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value maximum amount of fuel in a lantern
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -847,7 +808,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value maximum amount of fuel in a torch
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -863,7 +823,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value 1/chance of inflating the requested ego item level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -879,7 +838,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value 1/chance of inflating the requested object's level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -895,7 +853,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value maximum depth to be used in object allocation
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -911,7 +868,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the level to apply magic to objects for normal stores
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -927,7 +883,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the 1/chance per day of a shop owner changing
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -943,7 +898,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of turns between turnovers
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -959,7 +913,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of items per shop
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -975,7 +928,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of items per square
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -991,7 +943,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the multiplier for non-ammo thrown items
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1007,7 +958,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of missiles per quiver slot
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1023,7 +973,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of quiver slots
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1039,7 +988,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of item slots in the inventory
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1055,7 +1003,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the amount of energy for a monster or player to move
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1071,7 +1018,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of levels for each stair
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1087,7 +1033,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the minimum number of squares to vidit to get first feeling
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1103,7 +1048,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of feeling squares per level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1119,7 +1063,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of horizontal grids in a town level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1135,7 +1078,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of vertical grids in a town level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1151,7 +1093,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of horizontal grids in a dungeon level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1167,7 +1108,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of vertical grids in a dungeon level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1183,7 +1123,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the number of turns from dawn to dawn
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1199,7 +1138,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum dungeon level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1215,7 +1153,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of pits or nests allowed on a level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1231,7 +1168,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the average number of treasure to place in rooms/corridors
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1247,7 +1183,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the average number of items to place in rooms/corridors
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1263,7 +1198,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the average number of objects to place in rooms
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1279,7 +1213,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of tunnel grids
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1296,7 +1229,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of places to potentially pierce room walls with tunnels on a level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1312,7 +1244,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of potential door locations on a level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1328,7 +1259,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of room centres on a level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1344,7 +1274,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value how close a slow scared monster must be to turn and fight
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1360,7 +1289,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value number of grids out of sight a monster will flee
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1376,7 +1304,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the % of player exp drained per hit
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1392,7 +1319,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value a value inversely related to the speed of monster multiplication
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1408,7 +1334,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the rune of protection's resistance to monster breaking
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1424,7 +1349,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum distance of a group of monsters from a related group
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1440,7 +1364,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of monsters in a group
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1456,7 +1379,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum out of depth amount for a monster spawn
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1472,7 +1394,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the chance of a generated monster's level being inflated
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1488,7 +1409,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the maximum number of breeding monsters allowed on a level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1504,7 +1424,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the value of the number of townsfolk spawned during the night
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1520,7 +1439,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the value of the number of townsfolk spawned during the day
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1536,7 +1454,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the value of the minimum number of monsters spawned per level
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1552,7 +1469,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value the value of max monsters on a given level from constants.txt
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1568,7 +1484,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param value The 1/turn chance of new monster generation
          * @return false if this value has already been set (duplicate values are not allowed),
          * true otherwise
-         * @author Rowan Crowther
          */
         @CheckReturnValue
         @Contract(mutates = "this")
@@ -1586,7 +1501,6 @@ public record GameConstantsData(LevelMaxData levelMax, MonGenData monGen, MonPla
          * @param errors The list of errors at this point in time
          * @return The GameConstantsData record, fully filled with its values, or null if
          * an error occurred
-         * @author Rowan Crowther
          */
         @Nullable
         @CheckReturnValue

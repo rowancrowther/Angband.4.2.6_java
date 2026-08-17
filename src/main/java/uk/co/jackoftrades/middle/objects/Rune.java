@@ -49,8 +49,6 @@ public class Rune {
 
     /**
      * What this is a rune of — the property the player learns, and the object it applies to.
-     *
-     * @author Rowan Crowther
      */
     private final RuneVariety variety;
 
@@ -61,8 +59,6 @@ public class Rune {
      * an empty string, which would read as an inscription of nothing.
      *
      * <p>This is the only mutable state on a rune, and the only part of one that C persists.
-     *
-     * @author Rowan Crowther
      */
     private String note;
 
@@ -70,7 +66,6 @@ public class Rune {
      * Build a rune for the given property. The auto-inscription starts unset.
      *
      * @param variety what this is a rune of
-     * @author Rowan Crowther
      */
     public Rune(RuneVariety variety) {
         this.variety = variety;
@@ -103,7 +98,6 @@ public class Rune {
      * enums have drifted apart, which is worth failing loudly for.
      *
      * @throws RuntimeException if a modifier, flag or element cannot be resolved to its definition
-     * @author Rowan Crowther
      */
 
     public static void initRunes() {
@@ -220,7 +214,6 @@ public class Rune {
 
     /**
      * @return the player's auto-inscription for this rune, or {@code null} if none is set
-     * @author Rowan Crowther
      */
     public String getNote() {
         return note;
@@ -231,7 +224,6 @@ public class Rune {
      * which likewise treats a null argument as "uninscribe".
      *
      * @param note the inscription to apply, or {@code null} to clear it
-     * @author Rowan Crowther
      */
     public void setNote(String note) {
         this.note = note;
@@ -239,7 +231,6 @@ public class Rune {
 
     /**
      * @return what this is a rune of
-     * @author Rowan Crowther
      */
     public RuneVariety getVariety() {
         return variety;
@@ -273,7 +264,6 @@ public class Rune {
      *
      * @param key which combat enchantment
      * @return the rune for that enchantment, or {@code null} if there is none
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(CombatRunes key) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -296,7 +286,6 @@ public class Rune {
      *
      * @param key which modifier
      * @return the rune for that modifier, or {@code null} if there is none
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(ObjectModifier key) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -320,7 +309,6 @@ public class Rune {
      *
      * @param key which element
      * @return the rune for that element's resistance, or {@code null} if it has none
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(ElementEnum key) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -345,7 +333,6 @@ public class Rune {
      *
      * @param key any brand of the wanted kind, at any strength
      * @return the rune covering brands of that name, or {@code null} if there is none
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(Brand key) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -370,7 +357,6 @@ public class Rune {
      *
      * @param slay any slay of the wanted kind, at any strength
      * @return the rune covering slays that kill the same monsters, or {@code null} if there is none
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(Slay slay) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -396,7 +382,6 @@ public class Rune {
      * @param curse the curse to look up
      * @return the rune for that curse, or {@code null} if there is none — C's {@code lookup_curse}
      *         miss, which it reports as {@code -1} and its callers largely do not check
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(Curse curse) {
         List<Rune> runes = ObjectRegistry.getRunes();
@@ -420,7 +405,6 @@ public class Rune {
      *
      * @param flag which flag
      * @return the rune for that flag, or {@code null} if it is not a learnable property
-     * @author Rowan Crowther
      */
     public static Rune runeIndex(ObjectFlag flag) {
         List<Rune> runes = ObjectRegistry.getRunes();

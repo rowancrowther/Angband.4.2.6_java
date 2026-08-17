@@ -34,45 +34,31 @@ import java.util.List;
 public class UIEntryBase {
     /**
      * Logger (reserved for diagnostics).
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 
     /**
      * The template's name, referenced by entries that use it.
-     *
-     * @author Rowan Crowther
      */
     private final String name;
     /**
      * Default renderer for entries built from this template.
-     *
-     * @author Rowan Crowther
      */
     private final UIEntryRenderer renderer;
     /**
      * Default value-combining strategy.
-     *
-     * @author Rowan Crowther
      */
     private final CombinerName combine;
     /**
      * Categories this template belongs to (used to group entries on screen).
-     *
-     * @author Rowan Crowther
      */
     private final List<String> categories;
     /**
      * Raw flag string applied to entries built from this template.
-     *
-     * @author Rowan Crowther
      */
     private final String flags;
     /**
      * Human-readable description.
-     *
-     * @author Rowan Crowther
      */
     private final String desc;
 
@@ -85,7 +71,6 @@ public class UIEntryBase {
      * @param categories categories the template belongs to
      * @param flags      raw flag string
      * @param desc       description
-     * @author Rowan Crowther
      */
     public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine, List<String> categories, String flags, String desc) {
         this.name = name;
@@ -107,7 +92,6 @@ public class UIEntryBase {
 
     /**
      * @return a debug string listing this template's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

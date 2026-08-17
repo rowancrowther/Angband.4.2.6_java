@@ -27,8 +27,6 @@ package uk.co.jackoftrades.middle.monsters;
 public class MonGroupListEntry {
     /**
      * The monster index of this group member.
-     *
-     * @author Rowan Crowther
      */
     private int mIdx;
 }

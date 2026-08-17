@@ -41,8 +41,6 @@ import java.util.List;
 public class CurseReader implements Reader<Curse> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

@@ -41,20 +41,14 @@ import java.nio.file.Paths;
 public class AngFile {
     /**
      * The access mode (read/write/append) this file was created for.
-     *
-     * @author Rowan Crowther
      */
     private final FileModeEnum mode;
     /**
      * The lower-level handler that owns the actual input/output streams.
-     *
-     * @author Rowan Crowther
      */
     private final FileHandler fileHandler;
     /**
      * The path/name of the file, retained for reference and reopening.
-     *
-     * @author Rowan Crowther
      */
     private final String filename;
 

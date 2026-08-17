@@ -67,7 +67,6 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
      * @param errors  collector for soft failures; a record named here is skipped, and a
      *                non-empty list makes the caller treat the whole file as invalid
      * @return the assembled blow effects, excluding any record reported in {@code errors}
-     * @author Rowan Crowther
      */
     @Override
     public List<BlowEffect> assemble(@NotNull List<BlowEffectParseRecord> records, @NotNull List<String> errors) {

@@ -44,8 +44,6 @@ public final class FlickerTable {
     /**
      * Cycles indexed by the base attribute they animate. The key is the monster's static colour; the
      * value is the frame sequence to show instead while it flickers.
-     *
-     * @author Rowan Crowther
      */
     private final Map<ColourEnum, ColourCycle> byAttr;
 
@@ -53,7 +51,6 @@ public final class FlickerTable {
      * Wrap an already-built base-attribute-to-cycle map. Ownership of the map passes to the table.
      *
      * @param byAttr the base-attribute-keyed cycles, as assembled from the {@code flicker:} blocks
-     * @author Rowan Crowther
      */
     public FlickerTable(Map<ColourEnum, ColourCycle> byAttr) {
         this.byAttr = byAttr;

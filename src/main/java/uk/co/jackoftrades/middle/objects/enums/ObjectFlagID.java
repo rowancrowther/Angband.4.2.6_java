@@ -51,8 +51,6 @@ public enum ObjectFlagID {
 
     /**
      * The {@code id-type:} token this constant is written as in the data file.
-     *
-     * @author Rowan Crowther
      */
     private final String idMethod;
 
@@ -60,7 +58,6 @@ public enum ObjectFlagID {
      * Bind an identification category to its data-file token.
      *
      * @param idMethod the {@code id-type:} token
-     * @author Rowan Crowther
      */
     private ObjectFlagID(String idMethod) {
         this.idMethod = idMethod;
@@ -68,7 +65,6 @@ public enum ObjectFlagID {
 
     /**
      * @return the {@code id-type:} token for this category
-     * @author Rowan Crowther
      */
     public String getIdMethod() {
         return this.idMethod;
@@ -81,7 +77,6 @@ public enum ObjectFlagID {
      * @param idMethod the token from {@code object_property.txt}
      * @return the matching category, or {@code null} if the token is unrecognised
      * (C returns {@code PARSE_ERROR_INVALID_ID_TYPE})
-     * @author Rowan Crowther
      */
     public static ObjectFlagID getFlagID(String idMethod) {
         return Arrays.stream(values()).filter(o -> o.getIdMethod().equals(idMethod))

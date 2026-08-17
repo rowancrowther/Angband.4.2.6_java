@@ -68,7 +68,6 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * @param records the raw parse records, in file order
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled blow methods, excluding any record that was skipped
-     * @author Rowan Crowther
      */
     @Override
     public List<BlowMethod> assemble(@NotNull List<BlowMethodParseRecord> records, @NotNull List<String> errors) {

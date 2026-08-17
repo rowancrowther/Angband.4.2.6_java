@@ -30,14 +30,10 @@ import uk.co.jackoftrades.middle.monsters.Monster;
 public class Target {
     /**
      * The targeted grid location.
-     *
-     * @author Rowan Crowther
      */
     private Loc grid;
     /**
      * The targeted monster, or {@code null} when only a grid is targeted.
-     *
-     * @author Rowan Crowther
      */
     private Monster monster;
 

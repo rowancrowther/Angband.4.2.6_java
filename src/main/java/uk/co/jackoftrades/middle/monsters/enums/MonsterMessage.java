@@ -97,20 +97,14 @@ public enum MonsterMessage {
 
     /**
      * The message/sound category for this message.
-     *
-     * @author Rowan Crowther
      */
     private MessageType type;
     /**
      * Whether the monster's name is omitted when displaying the message.
-     *
-     * @author Rowan Crowther
      */
     private boolean omitMonsterName;
     /**
      * The message template, with pluralisation markers.
-     *
-     * @author Rowan Crowther
      */
     private String message;
 
@@ -120,7 +114,6 @@ public enum MonsterMessage {
      * @param type            the message category
      * @param omitMonsterName whether to omit the monster's name
      * @param message         the message template
-     * @author Rowan Crowther
      */
     MonsterMessage(MessageType type, boolean omitMonsterName, String message) {
         this.type = type;

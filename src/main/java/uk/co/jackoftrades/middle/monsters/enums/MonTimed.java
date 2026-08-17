@@ -42,44 +42,30 @@ public enum MonTimed {
 
     /**
      * Whether the monster gets a saving throw against this effect.
-     *
-     * @author Rowan Crowther
      */
     private boolean saveThrow;
     /**
      * How re-applying this effect combines with an existing instance.
-     *
-     * @author Rowan Crowther
      */
     private MonTimedStack stackStyle;
     /**
      * Race flag that makes a monster immune to this effect.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceFlag resistFlag;
     /**
      * Duration cap/scaling value for this effect.
-     *
-     * @author Rowan Crowther
      */
     private int time;
     /**
      * Message shown when the effect begins.
-     *
-     * @author Rowan Crowther
      */
     private MonsterMessage messageBegin;
     /**
      * Message shown when the effect ends.
-     *
-     * @author Rowan Crowther
      */
     private MonsterMessage messageEnd;
     /**
      * Message shown when the effect's duration increases.
-     *
-     * @author Rowan Crowther
      */
     private MonsterMessage messageIncrease;
 
@@ -93,7 +79,6 @@ public enum MonTimed {
      * @param begin    begin message
      * @param end      end message
      * @param increase increase message
-     * @author Rowan Crowther
      */
     MonTimed(boolean save, MonTimedStack stc, MonsterRaceFlag flag,
              int time, MonsterMessage begin, MonsterMessage end,

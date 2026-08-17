@@ -23,14 +23,10 @@ package uk.co.jackoftrades.middle.numerics;
 public class RandomChance {
     /**
      * The {@code X} in an "X in Y" chance (number of favourable outcomes).
-     *
-     * @author Rowan Crowther
      */
     private final int numerator;
     /**
      * The {@code Y} in an "X in Y" chance (total number of outcomes).
-     *
-     * @author Rowan Crowther
      */
     private final int denominator;
 

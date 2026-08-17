@@ -83,8 +83,6 @@ class ItemObjectSimilarTest {
     /**
      * Installs a player whose body has no equipment slots, so {@code itemIsEquipped} is always
      * false. The real player is put back afterwards, since {@link GameState} is process-wide.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void installPlayer() throws Exception {
@@ -99,9 +97,6 @@ class ItemObjectSimilarTest {
         kind = new ObjectKind();
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @AfterAll
     static void restorePlayer() {
         GameState.setPlayer(savedPlayer);
@@ -123,7 +118,6 @@ class ItemObjectSimilarTest {
      * check, so a partial map is not a smaller fixture but a crash.
      *
      * @return a complete element map
-     * @author Rowan Crowther
      */
     private static Map<ElementEnum, ElementInfo> elements() {
         Map<ElementEnum, ElementInfo> elInfo = new EnumMap<>(ElementEnum.class);
@@ -145,7 +139,6 @@ class ItemObjectSimilarTest {
      * down with a {@code ClassCastException} instead.
      *
      * @return a complete modifier map
-     * @author Rowan Crowther
      */
     private static Map<ObjectModifier, Integer> modifiers() {
         Map<ObjectModifier, Integer> mods = new EnumMap<>(ObjectModifier.class);
@@ -161,7 +154,6 @@ class ItemObjectSimilarTest {
      * curses rather than answering outright.
      *
      * @return an item that stacks with any other built the same way
-     * @author Rowan Crowther
      */
     private static ItemObject weapon() {
         return item(TValue.TV_SWORD);
@@ -172,7 +164,6 @@ class ItemObjectSimilarTest {
      *
      * @param tValue the item type, which decides which branch {@code similar} takes
      * @return the constructed item
-     * @author Rowan Crowther
      */
     private static ItemObject item(TValue tValue) {
         ItemObject item = new ItemObject();
@@ -197,7 +188,6 @@ class ItemObjectSimilarTest {
      *
      * @param name the curse's name
      * @return a curse with every other field empty
-     * @author Rowan Crowther
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
@@ -209,7 +199,6 @@ class ItemObjectSimilarTest {
      * read and the fixture exists solely to be a distinct non-null {@link EgoItem}.
      *
      * @return an ego with every field empty
-     * @author Rowan Crowther
      */
     private static EgoItem ego() {
         return new EgoItem("of Testing", null, 0, 0, new Flag<>(ObjectFlag.class),
@@ -227,8 +216,6 @@ class ItemObjectSimilarTest {
     /**
      * A fresh pair of identical swords per test, so that a test which breaks one of them cannot
      * leak into the next.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void newPair() {
@@ -247,8 +234,6 @@ class ItemObjectSimilarTest {
 
         /**
          * The premise every other test rests on.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("two identical plain weapons stack")
@@ -260,8 +245,6 @@ class ItemObjectSimilarTest {
          * C's {@code if (obj1 == obj2) return false}. An item is not similar to itself, because the
          * caller is asking whether to merge two stacks and merging a stack into itself would double
          * it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item never stacks with itself")
@@ -272,8 +255,6 @@ class ItemObjectSimilarTest {
         /**
          * A mimic is a monster wearing an item's appearance. Stacking it would merge a creature into
          * the floor pile, so either side mimicking is enough to refuse.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a mimicking item stacks with nothing")
@@ -286,9 +267,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different kinds do not stack")
         void differentKinds() {
@@ -297,9 +275,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different tvals do not stack")
         void differentTvals() {
@@ -308,9 +283,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different object flags do not stack")
         void differentFlags() {
@@ -324,8 +296,6 @@ class ItemObjectSimilarTest {
         /**
          * An artifact is unique by definition, so it cannot share a stack even with a copy of
          * itself — and the clause is checked on both sides.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an artifact stacks with nothing")
@@ -351,9 +321,6 @@ class ItemObjectSimilarTest {
     @DisplayName("element info")
     class Elements {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different resistance levels do not stack")
         void differentResistance() {
@@ -362,9 +329,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("one item hating an element and the other not do not stack")
         void differentHates() {
@@ -373,9 +337,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("one item ignoring an element and the other not do not stack")
         void differentIgnores() {
@@ -388,8 +349,6 @@ class ItemObjectSimilarTest {
          * The third flag is deliberately <em>not</em> compared: C reads only hates and ignores, both
          * of which change what happens to the item when the element strikes it. This pins that the
          * omission is the original's and has been carried across rather than introduced.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the random flag is not part of the comparison")
@@ -409,8 +368,6 @@ class ItemObjectSimilarTest {
          * other. {@code similar} answers that by running the comparison twice with the arguments
          * swapped. Asserting both directions is what would catch a future simplification back down
          * to a single pass — which would still pass every other test in this class.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an element on one item only refuses in both directions")
@@ -449,8 +406,6 @@ class ItemObjectSimilarTest {
         /**
          * Chests never stack: each has its own contents and its own trap, so two identical-looking
          * chests are not interchangeable.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("chests never stack")
@@ -461,8 +416,6 @@ class ItemObjectSimilarTest {
         /**
          * Consumables stack on kind alone — everything that distinguishes two potions has already
          * been compared by the time the branch is reached, so the branch answers yes outright.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("potions, scrolls, food and rods stack on kind alone")
@@ -475,8 +428,6 @@ class ItemObjectSimilarTest {
         /**
          * Charged items merge their charges, so the only question is whether the pooled total still
          * fits — C's {@code MAX_PVAL} guard.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("charged items stack while their pooled charges fit")
@@ -491,8 +442,6 @@ class ItemObjectSimilarTest {
 
         /**
          * And refuse when they do not, rather than overflowing the field.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("charged items refuse when the pooled charges overflow")
@@ -515,9 +464,6 @@ class ItemObjectSimilarTest {
     @DisplayName("wearables")
     class Wearables {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different armour classes do not stack")
         void differentAc() {
@@ -526,9 +472,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different damage dice do not stack")
         void differentDice() {
@@ -537,9 +480,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different damage sides do not stack")
         void differentSides() {
@@ -558,8 +498,6 @@ class ItemObjectSimilarTest {
          * enchanted swords would then refuse to stack. Moving the fields to the rolled {@code int}
          * — which is what C's {@code struct object} carries — turned the same {@code !=} into the
          * comparison it always read as.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("combat bonuses are compared by value")
@@ -574,8 +512,6 @@ class ItemObjectSimilarTest {
 
         /**
          * All three are compared, not just the one above.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("each combat bonus is compared separately")
@@ -588,9 +524,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different modifiers do not stack")
         void differentModifiers() {
@@ -605,8 +538,6 @@ class ItemObjectSimilarTest {
          * A modifier recorded on one item and absent from the other refuses the stack from either
          * side, for the same reason as the element case: the maps are sparse, so the comparison runs
          * once per direction.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a modifier on one item only refuses in both directions")
@@ -627,8 +558,6 @@ class ItemObjectSimilarTest {
         /**
          * Egos are compared by reference, which is right when they come from the registry: two
          * items of the same ego hold the same definition.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("different egos do not stack")
@@ -638,9 +567,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("different curses do not stack")
         void differentCurses() {
@@ -660,8 +586,6 @@ class ItemObjectSimilarTest {
          *
          * <p>Worth its own test because it is the case a naive field-by-field comparison gets
          * wrong, and it would look like a rule about curses rather than the bug it is.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the same curse at the same power stacks whatever the timeouts")
@@ -681,8 +605,6 @@ class ItemObjectSimilarTest {
         /**
          * The same curse at different powers is a real difference — power is what the curse does —
          * so the two refuse.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the same curse at different powers does not stack")
@@ -703,8 +625,6 @@ class ItemObjectSimilarTest {
          * A wearable part-way through recharging is not interchangeable with a ready one, so it
          * refuses even against another item at the same timeout. Lights are the exception, being the
          * one wearable whose timeout is fuel rather than a cooldown.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a recharging wearable stacks with nothing")
@@ -715,9 +635,6 @@ class ItemObjectSimilarTest {
             assertFalse(first.similar(second, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("lights with equal fuel stack")
         void lightsWithEqualFuel() {
@@ -729,9 +646,6 @@ class ItemObjectSimilarTest {
             assertTrue(lamp.similar(other, mode()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("lights with different fuel do not stack")
         void lightsWithDifferentFuel() {

@@ -39,7 +39,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * @param records The list of records to create the {@link Projection} list from
      * @param errors  A list of errors which is returned to the builder
      * @return a List of {@link Projection} objects
-     * @author Rowan Crowther
      */
     @Override
     public List<Projection> assemble(@NotNull List<ProjectionParseRecord> records, @NotNull List<String> errors) {
@@ -119,7 +118,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *               errors arising during the resolution process.
      * @return a {@link ProjectionEnum} value which is of the form
      * {@code "PROJ_" + code}
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
@@ -147,7 +145,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *               errors arising during the resolution process.
      * @return a {@link ProjectionType} value which is of the form
      * {@code "PT_" + type}
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
@@ -175,7 +172,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      *               errors arising during the resolution process.
      * @return a {@link MessageType} value which is of the form
      * {@code "MSG_" + msgt}
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable
@@ -206,7 +202,6 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
      * @return a {@link ColourEnum} whose name matches the case-insensitive name
      * of a {@link ColourEnum}, or the case-sensitive single character colour
      * letter code, or {@code null} if neither match.
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable

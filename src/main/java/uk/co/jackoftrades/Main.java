@@ -124,7 +124,6 @@ public class Main {
      * @param edtChannel     the send-only end the window listener posts close requests on
      * @param startupOptions the parsed command line
      * @return the body for the {@code angband-ui} thread
-     * @author Rowan Crowther
      */
     private static Runnable startSwingUI(UIChannel uiChannel, EDTChannel edtChannel,
                                          StartupOptions startupOptions) {
@@ -156,7 +155,6 @@ public class Main {
      * @param coreChannel    the core's pair of ends - its inbox, and its way of reaching the UI
      * @param startupOptions the parsed command line
      * @return the body for the {@code angband-core} thread
-     * @author Rowan Crowther
      */
     private static Runnable startCore(CoreChannel coreChannel, StartupOptions startupOptions) {
         return () -> {
@@ -226,7 +224,6 @@ public class Main {
      *
      * @param args the raw command line
      * @throws IOException if {@code -l} cannot read the save directory
-     * @author Rowan Crowther
      */
     public static void main(String[] args) throws IOException {
         // Declare the start option defaults
@@ -327,8 +324,6 @@ public class Main {
      *
      * <p>The sound and module lines are commented out because neither option is parsed yet;
      * they are left in place as the shape of what C prints there.
-     *
-     * @author Rowan Crowther
      */
     private static void printUsage() {
         List<String> output = new ArrayList<>();
@@ -362,7 +357,6 @@ public class Main {
      * {@code -d} earlier on the same command line is honoured.
      *
      * @throws IOException if the save directory cannot be read
-     * @author Rowan Crowther
      */
     private static void listSaves() throws IOException {
         List<String> saves = new ArrayList<>();
@@ -397,7 +391,6 @@ public class Main {
      * {@code setVisible}.
      *
      * @param messages the lines to show, in order
-     * @author Rowan Crowther
      */
     private static void displayText(List<String> messages) {
         OutputWindow window = new OutputWindow();

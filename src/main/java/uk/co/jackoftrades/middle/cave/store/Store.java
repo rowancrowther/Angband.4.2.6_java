@@ -32,8 +32,6 @@ public class Store {
      * run on the game's daily/periodic cycle to retire old inventory and introduce new items.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public static void storeUpdate() {
         // Stub function : TODO: implement this

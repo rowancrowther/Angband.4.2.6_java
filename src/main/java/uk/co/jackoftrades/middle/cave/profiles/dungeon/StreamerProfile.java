@@ -69,7 +69,6 @@ public class StreamerProfile {
      * @param mc  reciprocal chance of treasure in magma
      * @param qua how many quartz streamers the level gets
      * @param qc  reciprocal chance of treasure in quartz
-     * @author Rowan Crowther
      */
     public StreamerProfile(int den, int rng, int mam, int mc, int qua, int qc) {
         this.den = den;

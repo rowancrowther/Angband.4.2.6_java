@@ -68,7 +68,6 @@ class ItemObjectAccessorsTest {
      * @param item  the item to modify
      * @param name  the declared field name
      * @param value the value to write
-     * @author Rowan Crowther
      */
     private static void set(ItemObject item, String name, Object value) {
         try {
@@ -88,7 +87,6 @@ class ItemObjectAccessorsTest {
      * @param pValue the extra-parameter value, as the constructor takes it: a string
      * @param note   the inscription
      * @return the constructed item
-     * @author Rowan Crowther
      */
     private static ItemObject item(TValue tValue, String pValue, String note) {
         return new ItemObject(new ObjectKind(), null, null, null, Loc.zero, tValue, 0, pValue,
@@ -105,7 +103,6 @@ class ItemObjectAccessorsTest {
      * @param item the item to read
      * @param name the declared field name
      * @return the field's value
-     * @author Rowan Crowther
      */
     private static Object read(ItemObject item, String name) throws Exception {
         Field field = ItemObject.class.getDeclaredField(name);
@@ -122,7 +119,6 @@ class ItemObjectAccessorsTest {
      *
      * @param name the curse's name
      * @return a curse with every other field empty
-     * @author Rowan Crowther
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
@@ -135,7 +131,6 @@ class ItemObjectAccessorsTest {
      * solely to be a non-null {@link Artifact}.
      *
      * @return an artifact with every field empty
-     * @author Rowan Crowther
      */
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
@@ -146,8 +141,6 @@ class ItemObjectAccessorsTest {
     /**
      * A sanity check that the element map the constructor is given is the one the item keeps, since
      * {@code similar} walks it for every element including the sentinels and would throw on a gap.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the element map is kept as given")
@@ -161,9 +154,6 @@ class ItemObjectAccessorsTest {
         assertSame(elInfo, field.get(item));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("the kind is kept as given")
     void kindIsKept() {
@@ -181,8 +171,6 @@ class ItemObjectAccessorsTest {
     /**
      * The stack count is the one numeric field the constructor takes and the recharge code divides
      * by, so it is worth knowing it survives construction unaltered.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the stack count is kept as given")
@@ -199,9 +187,6 @@ class ItemObjectAccessorsTest {
     @DisplayName("a blank item")
     class Blank {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("has no kind, no location and no inscription")
         void isEmpty() {
@@ -215,8 +200,6 @@ class ItemObjectAccessorsTest {
         /**
          * An item with no artifact definition is not an artifact — the test C writes as
          * {@code obj->artifact != NULL}.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not an artifact")
@@ -224,9 +207,6 @@ class ItemObjectAccessorsTest {
             assertFalse(new ItemObject().isArtifact());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("carries no charges and no timeout")
         void hasNoCharge() {
@@ -250,8 +230,6 @@ class ItemObjectAccessorsTest {
         /**
          * The empty string is how the data files spell "no pval", and it has to become zero rather
          * than reach {@code Integer.parseInt} — which is the guard the constructor opens with.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("reads an empty pValue as zero")
@@ -262,9 +240,6 @@ class ItemObjectAccessorsTest {
             assertEquals(0, read(item, "pValue"));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("parses a numeric pValue")
         void numericPValue() throws Exception {
@@ -278,8 +253,6 @@ class ItemObjectAccessorsTest {
          * A dice string becomes a {@link uk.co.jackoftrades.middle.numerics.Random}, so {@code time}
          * is non-null even when the interval is a flat zero — which is what distinguishes a rod with
          * no wait from a non-rod, where C leaves the field alone entirely.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("turns the recharge string into a dice value")
@@ -289,9 +262,6 @@ class ItemObjectAccessorsTest {
             assertEquals(0, item.getTime().getBase());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("keeps the inscription it was given")
         void keepsTheNote() {
@@ -303,8 +273,6 @@ class ItemObjectAccessorsTest {
         /**
          * C stores the inscription as a {@code quark_t} where {@code 0} means "uninscribed"; the
          * port holds the text, so {@code null} is the equivalent and callers test for it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an uninscribed item has a null note rather than an empty one")
@@ -322,9 +290,6 @@ class ItemObjectAccessorsTest {
     @DisplayName("accessors")
     class Accessors {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("the grid round-trips, and null means not on the floor")
         void gridRoundTrips() {
@@ -337,9 +302,6 @@ class ItemObjectAccessorsTest {
             assertNull(item.getGrid());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an item with an artifact definition is an artifact")
         void artifactIsDetected() {
@@ -352,8 +314,6 @@ class ItemObjectAccessorsTest {
         /**
          * {@code orNotice} is C's {@code obj->notice |= flag}, so it accumulates rather than
          * replaces — the name says so, and a setter would look identical from the call site.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("notice flags accumulate rather than replace")
@@ -373,8 +333,6 @@ class ItemObjectAccessorsTest {
          * The brand set is handed out live, matching C, where {@code obj->brands} is an array on the
          * struct that callers read and write in place. Stated because the opposite choice would look
          * equally reasonable from the signature.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getBrands returns the live set")
@@ -402,8 +360,6 @@ class ItemObjectAccessorsTest {
          * the {@link CurseData} it reads out of this map, which only works because the values are
          * the live instances rather than copies. Both halves are asserted here — the structure is
          * closed, the values are shared.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getCurses returns an unmodifiable view over the live map")
@@ -435,8 +391,6 @@ class ItemObjectAccessorsTest {
          *
          * <p>The returned map must still refuse writes, or a caller that happens to meet an
          * uncursed object would find the contract quietly different.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getCurses reports an empty unmodifiable map when the field is null")
@@ -453,8 +407,6 @@ class ItemObjectAccessorsTest {
          * The two monster indices have setters and no getters, so the round-trip is read back by
          * reflection. They are worth covering at all because {@code similar} refuses to stack a
          * mimicking item, and that refusal is only as good as the field it reads.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the monster indices round-trip")

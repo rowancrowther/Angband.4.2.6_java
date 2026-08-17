@@ -54,7 +54,6 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * @param records the parsed level blocks for a single spell
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled levels in file order, or {@code null} if any block failed
-     * @author Rowan Crowther
      */
     @Override
     public List<MonsterSpellLevel> assemble(@NotNull List<MonsterSpellParseRecord.MonsterSpellLevelParseRecord> records, @NotNull List<String> errors) {

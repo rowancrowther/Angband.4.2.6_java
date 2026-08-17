@@ -43,32 +43,22 @@ public enum EquipmentSlotsEnum {
 
     /**
      * Whether items worn in this slot are treated as acid-resistant by location.
-     *
-     * @author Rowan Crowther
      */
     private final boolean acidResistant;
     /**
      * Whether the slot's name is mentioned (e.g. which finger a ring is on).
-     *
-     * @author Rowan Crowther
      */
     private final boolean mentionName;
     /**
      * Template for mentioning what is worn in this slot.
-     *
-     * @author Rowan Crowther
      */
     private final String mentionString;
     /**
      * Description used when the item is too heavy to use effectively.
-     *
-     * @author Rowan Crowther
      */
     private final String heavyDescribe;
     /**
      * Description of how the item in this slot is used.
-     *
-     * @author Rowan Crowther
      */
     private final String describe;
 
@@ -80,7 +70,6 @@ public enum EquipmentSlotsEnum {
      * @param mentionString mention template
      * @param heavyDescribe too-heavy description
      * @param describe      usage description
-     * @author Rowan Crowther
      */
     EquipmentSlotsEnum(boolean acidResistant, boolean mentionName, String mentionString, String heavyDescribe, String describe) {
         this.acidResistant = acidResistant;

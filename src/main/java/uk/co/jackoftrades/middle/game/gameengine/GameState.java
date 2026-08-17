@@ -167,8 +167,6 @@ public class GameState {
      *
      * <p>This method runs from {@code GameEngine.initGame()}, i.e. <em>before</em> that load, so
      * everything it makes here is discarded moments later. Nothing reads it in between.
-     *
-     * @author Rowan Crowther
      */
     public static void initGameState() {
     }

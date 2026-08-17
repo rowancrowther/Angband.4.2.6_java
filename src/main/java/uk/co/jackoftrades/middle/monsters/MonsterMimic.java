@@ -31,8 +31,6 @@ import java.util.List;
 public class MonsterMimic {
     /**
      * The object kinds this monster can mimic.
-     *
-     * @author Rowan Crowther
      */
     private List<ObjectKind> kinds;
 
@@ -40,7 +38,6 @@ public class MonsterMimic {
      * Build a mimic entry from its allowed object kinds.
      *
      * @param kinds the object kinds the monster can mimic
-     * @author Rowan Crowther
      */
     public MonsterMimic(List<ObjectKind> kinds) {
         this.kinds = kinds;

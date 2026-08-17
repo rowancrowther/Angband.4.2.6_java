@@ -48,8 +48,6 @@ import java.util.Arrays;
 public class AngbandDirs {
     /**
      * Logger for rejected directory names.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(AngbandDirs.class);
 
@@ -59,8 +57,6 @@ public class AngbandDirs {
 
     /**
      * The directory the game was launched from, which every default path is built on.
-     *
-     * @author Rowan Crowther
      */
     public static String BASE_DIR = System.getProperty("user.dir");
     /*
@@ -106,7 +102,6 @@ public class AngbandDirs {
      *
      * @param name      the directory's data-file name, as it appears in {@link ANGBAND_DIRS}
      * @param directory the absolute path to use instead
-     * @author Rowan Crowther
      */
     public static void setDirectory(String name, String directory) {
         ANGBAND_DIRS dir = ANGBAND_DIRS.getDirectory(name);
@@ -150,22 +145,17 @@ public class AngbandDirs {
 
         /**
          * The name this directory goes by on the command line and in data files. Fixed.
-         *
-         * @author Rowan Crowther
          */
         private final String name;
         /**
          * Where this directory currently points. Not final - {@code -d} replaces it during
          * argument parsing, and this field is the only copy anyone reads.
-         *
-         * @author Rowan Crowther
          */
         private String path;
 
         /**
          * @param name the data-file name for this directory
          * @param path the default path, taken from the enclosing class's constants
-         * @author Rowan Crowther
          */
         ANGBAND_DIRS(final String name, final String path) {
             this.name = name;
@@ -174,7 +164,6 @@ public class AngbandDirs {
 
         /**
          * @return the data-file name for this directory, which is what the command line matches on
-         * @author Rowan Crowther
          */
         public String getName() {
             return name;
@@ -182,7 +171,6 @@ public class AngbandDirs {
 
         /**
          * @return the path in force now, with a trailing separator; overrides included
-         * @author Rowan Crowther
          */
         public String getPath() {
             return path;
@@ -194,7 +182,6 @@ public class AngbandDirs {
          * moves one has to put it back.
          *
          * @param path the absolute path to use, which should end in a separator like the defaults
-         * @author Rowan Crowther
          */
         public void setPath(String path) {
             this.path = path;
@@ -205,7 +192,6 @@ public class AngbandDirs {
          *
          * @param name the data-file name to look for
          * @return the matching constant, or {@code null} if the name is not one of these
-         * @author Rowan Crowther
          */
         public static ANGBAND_DIRS getDirectory(@NotNull String name) {
             return Arrays.stream(ANGBAND_DIRS.values())
@@ -221,7 +207,6 @@ public class AngbandDirs {
          *
          * @param dirName the data-file name to test
          * @return {@code true} if some constant uses that name
-         * @author Rowan Crowther
          */
         public static boolean contains(String dirName) {
             for (ANGBAND_DIRS dir : ANGBAND_DIRS.values()) {

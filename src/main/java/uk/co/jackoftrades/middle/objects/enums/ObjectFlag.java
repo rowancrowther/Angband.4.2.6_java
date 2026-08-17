@@ -72,8 +72,6 @@ public enum ObjectFlag {
 
     /**
      * The short display label for this flag (used in resistance grids).
-     *
-     * @author Rowan Crowther
      */
     private String flag;
 
@@ -81,7 +79,6 @@ public enum ObjectFlag {
      * Bind an object flag to its display label.
      *
      * @param flag the display label
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     ObjectFlag(String flag) {
@@ -90,7 +87,6 @@ public enum ObjectFlag {
 
     /**
      * @return this flag's short display label
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getFlag() {

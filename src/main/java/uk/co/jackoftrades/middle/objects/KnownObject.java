@@ -76,15 +76,11 @@ public class KnownObject {
      * truth, so a {@link Flag} loses nothing. It does change the call sites that multiply by it —
      * {@code player-calcs.c} computes {@code stat_add[STAT_STR] * obj_k->modifiers[OBJ_MOD_STR]}
      * to zero out an unknown bonus, which becomes a conditional here.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectModifier> modifierFlag;
     /**
      * Which object flags the player can read, C's {@code obj_k->flags}. The one field where C's
      * representation and this one already agree, both being a set of flags.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> objectFlags;
     /**
@@ -93,28 +89,20 @@ public class KnownObject {
      * <p>A boolean rather than an {@link ElementInfo}, because on the knowledge side the level is
      * not a level: C writes 1 to mean "known" and tests it for truth. The {@code flags} half of
      * C's {@code element_info} is dropped, being savefile-only.
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, Boolean> elementResistInfo;
     /**
      * Whether the player can read to-hit bonuses, C's {@code obj_k->to_h}. Kept as an int rather
      * than a boolean because C multiplies by it — {@code obj->known->to_h = p->obj_k->to_h *
      * obj->to_h} — so the 0/1 value does the masking directly.
-     *
-     * @author Rowan Crowther
      */
     private int toH;
     /**
      * Whether the player can read to-damage bonuses, C's {@code obj_k->to_d}. See {@link #toH}.
-     *
-     * @author Rowan Crowther
      */
     private int toD;
     /**
      * Whether the player can read to-armour bonuses, C's {@code obj_k->to_a}. See {@link #toH}.
-     *
-     * @author Rowan Crowther
      */
     private int toA;
     /**
@@ -124,8 +112,6 @@ public class KnownObject {
      * power, and only as 0/1 — {@code player_knows_curse} is {@code curses[index].power == 1}.
      * Held as a map rather than a set because, unlike brands and slays, it is populated up front
      * from the registry so that an unrecognised curse is distinguishable from a known-false one.
-     *
-     * @author Rowan Crowther
      */
     private Map<Curse, Boolean> curses;
     /**
@@ -134,15 +120,11 @@ public class KnownObject {
      * <p>A set rather than a map, because membership is the whole of the state: C's array is
      * indexed by registry position and holds nothing but a bool. Membership stands for the brand's
      * whole equivalence class — see {@link #learnBrand(Brand)}.
-     *
-     * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
      * Which slays the player recognises, C's {@code obj_k->slays[]}. As {@link #brands}, with the
      * class defined by monsters slain rather than by name — see {@link #learnSlay(Slay)}.
-     *
-     * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
@@ -152,22 +134,16 @@ public class KnownObject {
      *
      * <p>Zero here is the pre-birth state. {@code player_outfit} raises it to 1 as part of the
      * "obvious object knowledge" every character starts with, so it is 1 for the whole of play.
-     *
-     * @author Rowan Crowther
      */
     private int ac = 0;
     /**
      * Whether the player can read damage dice, C's {@code obj_k->dd}. See {@link #ac} for the
      * multiplier convention and the birth-time initialisation; {@code obj-desc.c} prints the dice
      * only when this and {@link #ds} are both set.
-     *
-     * @author Rowan Crowther
      */
     private int dd = 0;
     /**
      * Whether the player can read damage sides, C's {@code obj_k->ds}. See {@link #dd}.
-     *
-     * @author Rowan Crowther
      */
     private int ds = 0;
 
@@ -181,8 +157,6 @@ public class KnownObject {
      * {@code obj_k}'s arrays from {@code z_info->curse_max} and friends — which is why
      * {@code p->obj_k} is allocated in {@code init_player} rather than when the player struct
      * itself is created.
-     *
-     * @author Rowan Crowther
      */
     public KnownObject() {
         initSlays();
@@ -197,8 +171,6 @@ public class KnownObject {
     /**
      * Populates the curse map with every registered curse, all unrecognised. C reaches the same
      * state with {@code mem_zalloc(z_info->curse_max * sizeof(struct curse_data))}.
-     *
-     * @author Rowan Crowther
      */
     private void initCurses() {
         curses = new HashMap<>();
@@ -215,7 +187,6 @@ public class KnownObject {
      *
      * @param curse the curse to ask about
      * @return true if the player recognises this curse
-     * @author Rowan Crowther
      */
     public boolean curseIsKnown(Curse curse) {
         if (curses.containsKey(curse))
@@ -229,7 +200,6 @@ public class KnownObject {
      *
      * @param curse the curse now recognised
      * @return true if this was new knowledge, false if the curse was already recognised
-     * @author Rowan Crowther
      */
     public boolean learnCurse(Curse curse) {
         boolean learned = !curseIsKnown(curse);
@@ -241,8 +211,6 @@ public class KnownObject {
      * Clears the three combat bonuses to unknown. Written out rather than left to Java's default
      * field initialisation so that the constructor's list of {@code init} calls reads as the
      * complete account of the starting state.
-     *
-     * @author Rowan Crowther
      */
     private void initToValues() {
         toH = 0;
@@ -252,7 +220,6 @@ public class KnownObject {
 
     /**
      * @return true if the player can read an item's to-hit bonus
-     * @author Rowan Crowther
      */
     public boolean toHIsKnown() {
         return toH != 0;
@@ -263,7 +230,6 @@ public class KnownObject {
      * arm of {@code player_learn_rune}.
      *
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnToH() {
         boolean learned = toH == 0;
@@ -273,7 +239,6 @@ public class KnownObject {
 
     /**
      * @return true if the player can read an item's to-damage bonus
-     * @author Rowan Crowther
      */
     public boolean toDIsKnown() {
         return toD != 0;
@@ -283,7 +248,6 @@ public class KnownObject {
      * Records that the player can now read to-damage bonuses. See {@link #learnToH()}.
      *
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnToD() {
         boolean learned = toD == 0;
@@ -293,7 +257,6 @@ public class KnownObject {
 
     /**
      * @return true if the player can read an item's to-armour bonus
-     * @author Rowan Crowther
      */
     public boolean toAIsKnown() {
         return toA != 0;
@@ -303,7 +266,6 @@ public class KnownObject {
      * Records that the player can now read to-armour bonuses. See {@link #learnToH()}.
      *
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnToA() {
         boolean learned = toA == 0;
@@ -315,8 +277,6 @@ public class KnownObject {
      * Populates the resistance map with every real element, all unknown. C indexes an array by
      * element, so its bounds are the elements; here the two sentinels have to be skipped by hand,
      * and are skipped again on the way in and out so that neither can be marked or reported known.
-     *
-     * @author Rowan Crowther
      */
     private void initResistances() {
         elementResistInfo = new HashMap<>();
@@ -334,7 +294,6 @@ public class KnownObject {
      *
      * @param element the element to ask about
      * @return true if the player can read resistance to this element; false for the sentinels
-     * @author Rowan Crowther
      */
     public boolean resistanceIsKnown(ElementEnum element) {
         if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
@@ -349,7 +308,6 @@ public class KnownObject {
      *
      * @param element the element whose resistance is now readable
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnResistance(ElementEnum element) {
         if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
@@ -362,8 +320,6 @@ public class KnownObject {
 
     /**
      * Creates the empty object-flag set, the port of the zeroed {@code obj_k->flags}.
-     *
-     * @author Rowan Crowther
      */
     private void initObjectFlags() {
         objectFlags = new Flag<>(ObjectFlag.class);
@@ -374,7 +330,6 @@ public class KnownObject {
      *
      * @param flag the object flag to ask about
      * @return true if the player can read this flag on an item
-     * @author Rowan Crowther
      */
     public boolean flagIsKnown(ObjectFlag flag) {
         return objectFlags.has(flag);
@@ -388,7 +343,6 @@ public class KnownObject {
      *
      * @param flag the object flag now readable
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnFlag(ObjectFlag flag) {
         return objectFlags.on(flag);
@@ -405,7 +359,6 @@ public class KnownObject {
      * never the player's own flags.
      *
      * @return an independent copy of the known object flags
-     * @author Rowan Crowther
      */
     public Flag<ObjectFlag> getFlags() {
         Flag<ObjectFlag> flag = new Flag<>(ObjectFlag.class);
@@ -415,8 +368,6 @@ public class KnownObject {
 
     /**
      * Creates the empty modifier set, the port of the zeroed {@code obj_k->modifiers[]}.
-     *
-     * @author Rowan Crowther
      */
     private void initModifiers() {
         modifierFlag = new Flag<>(ObjectModifier.class);
@@ -427,7 +378,6 @@ public class KnownObject {
      *
      * @param modifier the modifier to ask about
      * @return true if the player can read this modifier on an item
-     * @author Rowan Crowther
      */
     public boolean modifierIsKnown(ObjectModifier modifier) {
         return modifierFlag.has(modifier);
@@ -438,7 +388,6 @@ public class KnownObject {
      *
      * @param modifier the modifier now readable
      * @return true if this was new knowledge
-     * @author Rowan Crowther
      */
     public boolean learnModifier(ObjectModifier modifier) {
         return modifierFlag.on(modifier);
@@ -451,7 +400,6 @@ public class KnownObject {
      *
      * @param brand the brand to ask about
      * @return true if the player recognises this brand
-     * @author Rowan Crowther
      */
     public boolean brandIsKnown(Brand brand) {
         return brands.contains(brand);
@@ -484,7 +432,6 @@ public class KnownObject {
      *
      * @param brand any brand of the wanted kind, at any strength
      * @return true if this was new knowledge for any member of the group
-     * @author Rowan Crowther
      */
     public boolean learnBrand(Brand brand) {
         if (brandIsKnown(brand)) return false;
@@ -503,8 +450,6 @@ public class KnownObject {
     /**
      * Creates the empty brand set. Nothing is pre-populated from the registry, because membership
      * is the state: an absent brand is an unrecognised one.
-     *
-     * @author Rowan Crowther
      */
     private void initBrands() {
         brands = new HashSet<>();
@@ -516,7 +461,6 @@ public class KnownObject {
      *
      * @param slay the slay to ask about
      * @return true if the player recognises this slay
-     * @author Rowan Crowther
      */
     public boolean slayIsKnown(Slay slay) {
         return slays.contains(slay);
@@ -536,7 +480,6 @@ public class KnownObject {
      *
      * @param slay any slay of the wanted kind, at any strength
      * @return true if this was new knowledge for any member of the group
-     * @author Rowan Crowther
      */
     public boolean learnSlay(Slay slay) {
         if (slayIsKnown(slay)) return false;
@@ -555,8 +498,6 @@ public class KnownObject {
 
     /**
      * Creates the empty slay set. See {@link #initBrands()}.
-     *
-     * @author Rowan Crowther
      */
     private void initSlays() {
         slays = new HashSet<>();
@@ -567,7 +508,6 @@ public class KnownObject {
      * write {@code item.getAc() * knowledge.getAc()} and get either the real value or nothing.
      *
      * @return 1 if the player can read armour class, 0 if not
-     * @author Rowan Crowther
      */
     public int getAc() {
         return ac;
@@ -575,7 +515,6 @@ public class KnownObject {
 
     /**
      * @return 1 if the player can read damage dice, 0 if not
-     * @author Rowan Crowther
      * @see #getAc()
      */
     public int getDd() {
@@ -584,7 +523,6 @@ public class KnownObject {
 
     /**
      * @return 1 if the player can read damage sides, 0 if not
-     * @author Rowan Crowther
      * @see #getAc()
      */
     public int getDs() {
@@ -593,7 +531,6 @@ public class KnownObject {
 
     /**
      * @return 1 if the player can read to-hit bonuses, 0 if not
-     * @author Rowan Crowther
      * @see #getAc()
      */
     public int getToH() {
@@ -602,7 +539,6 @@ public class KnownObject {
 
     /**
      * @return 1 if the player can read to-damage bonuses, 0 if not
-     * @author Rowan Crowther
      * @see #getAc()
      */
     public int getToD() {
@@ -623,7 +559,6 @@ public class KnownObject {
      * <p>Function getElementResistInfo commented in full on 260816.
      *
      * @return the per-element knowledge bits, shared with this instance
-     * @author Rowan Crowther
      */
     public Map<ElementEnum, Boolean> getElementResistInfo() {
         return elementResistInfo;
@@ -631,7 +566,6 @@ public class KnownObject {
 
     /**
      * @return 1 if the player can read to-armour bonuses, 0 if not
-     * @author Rowan Crowther
      * @see #getAc()
      */
     public int getToA() {

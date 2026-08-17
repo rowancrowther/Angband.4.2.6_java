@@ -34,7 +34,6 @@ public interface TermEventHook {
      *
      * @param event the kind of action requested
      * @param value an event-specific parameter (e.g. a delay in milliseconds)
-     * @author Rowan Crowther
      */
     public void doSomething(TermXtraEventEnum event, int value);
 }

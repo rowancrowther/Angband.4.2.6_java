@@ -70,7 +70,6 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      * @param errors  the soft-error channel; assembly failures are appended here and the offending
      *                record is dropped rather than aborting the whole file
      * @return the successfully assembled trap kinds, in source order
-     * @author Rowan Crowther
      */
     @Override
     public List<TrapKind> assemble(@NotNull List<TrapParseRecord> records, @NotNull List<String> errors) {

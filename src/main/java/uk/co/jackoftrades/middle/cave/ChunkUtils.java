@@ -30,7 +30,6 @@ public class ChunkUtils {
      * @param grid1 one endpoint
      * @param grid2 the other endpoint
      * @return {@code true} if the two grids can see each other
-     * @author Rowan Crowther
      */
     public static boolean los(Chunk cave, Loc grid1, Loc grid2) {
         // Stub function TODO: Implement

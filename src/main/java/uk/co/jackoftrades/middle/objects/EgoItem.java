@@ -42,174 +42,120 @@ import java.util.Set;
 public class EgoItem {
     /**
      * The ego type's name (e.g. "of Slaying").
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
-     *
-     * @author Rowan Crowther
      */
     private String text;
     /**
      * The item type this ego applies to.
-     *
-     * @author Rowan Crowther
      */
     private List<ObjectKind> possItems;
 
     /**
      * Index in the global ego-item table.
-     *
-     * @author Rowan Crowther
      */
     private int egoIndex;
 
     /**
      * Added cost, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private int cost;
 
     /**
      * Object flags this ego adds.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
      * Object flags this ego removes.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flagsOff;
     /**
      * Kind flags this ego adds.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFLags;
 
     /**
      * Modifiers this ego grants, as dice expressions.
-     *
-     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Random> modifiers;
     /**
      * Minimum guaranteed values for the granted modifiers.
-     *
-     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Integer> minModifiers;
     /**
      * Per-element relation info added by this ego.
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * Brands this ego adds (intrinsic flag).
-     *
-     * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
      * Slays this ego adds (intrinsic flag).
-     *
-     * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
      * Curses this ego adds, with their power.
-     *
-     * @author Rowan Crowther
      */
     private Map<Curse, CurseData> curses;
 
     /**
      * Level-feeling rating contribution, as an integer expression.
-     *
-     * @author Rowan Crowther
      */
     private int rating;
     /**
      * Allocation probability, as an integer expression.
-     *
-     * @author Rowan Crowther
      */
     private int allocProb;
     /**
      * Minimum allocation depth.
-     *
-     * @author Rowan Crowther
      */
     private int allocMin;
     /**
      * Maximum allocation depth.
-     *
-     * @author Rowan Crowther
      */
     private int allocMax;
 
     /**
      * To-hit bonus range, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toHit;
     /**
      * To-damage bonus range, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toDam;
     /**
      * To-armour-class bonus range, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toAC;
 
     /**
      * Minimum guaranteed to-hit bonus.
-     *
-     * @author Rowan Crowther
      */
     private int minToHit;
     /**
      * Minimum guaranteed to-damage bonus.
-     *
-     * @author Rowan Crowther
      */
     private int minToDam;
     /**
      * Minimum guaranteed to-armour-class bonus.
-     *
-     * @author Rowan Crowther
      */
     private int minToAC;
 
     /**
      * An activation this ego grants, if any.
-     *
-     * @author Rowan Crowther
      */
     private Activation activation;
     /**
      * Recharge time for the activation, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random time;
 
     /**
      * Whether the player has ever seen this ego type.
-     *
-     * @author Rowan Crowther
      */
     private boolean everSeen;
 
@@ -245,7 +191,6 @@ public class EgoItem {
      * @param activation   granted activation
      * @param time         activation recharge time
      * @param everSeen     whether ever seen
-     * @author Rowan Crowther
      */
     public EgoItem(String name, String desc, int egoIndex,
                    int cost, Flag<ObjectFlag> flags,
@@ -303,7 +248,6 @@ public class EgoItem {
      * <p>Function isEverSeen commented in full on 260816.
      *
      * @return {@code true} if an ego of this type has been seen before
-     * @author Rowan Crowther
      */
     public boolean isEverSeen() {
         return everSeen;
@@ -319,7 +263,6 @@ public class EgoItem {
      * <p>Function getFlags commented in full on 260816.
      *
      * @return this ego's flags, shared with this instance
-     * @author Rowan Crowther
      */
     public Flag<ObjectFlag> getFlags() {
         return flags;
@@ -341,7 +284,6 @@ public class EgoItem {
      *
      * @param modifier the modifier to look up
      * @return the range this ego rolls for that modifier, or {@code null} if it does not affect it
-     * @author Rowan Crowther
      */
     public Random getModifier(ObjectModifier modifier) {
         return modifiers.get(modifier);
@@ -354,7 +296,6 @@ public class EgoItem {
      * <p>Function getElInfo commented in full on 260816.
      *
      * @return this ego's element info by element, shared with this instance
-     * @author Rowan Crowther
      */
     public Map<ElementEnum, ElementInfo> getElInfo() {
         return elInfo;
@@ -366,7 +307,6 @@ public class EgoItem {
      * <p>Function getBrands commented in full on 260816.
      *
      * @return this ego's brands, shared with this instance
-     * @author Rowan Crowther
      */
     public Set<Brand> getBrands() {
         return brands;
@@ -378,7 +318,6 @@ public class EgoItem {
      * <p>Function getSlays commented in full on 260816.
      *
      * @return this ego's slays, shared with this instance
-     * @author Rowan Crowther
      */
     public Set<Slay> getSlays() {
         return slays;
@@ -393,7 +332,6 @@ public class EgoItem {
      * <p>Function getCurses commented in full on 260816.
      *
      * @return this ego's curses and their data, shared with this instance
-     * @author Rowan Crowther
      */
     public Map<Curse, CurseData> getCurses() {
         return curses;

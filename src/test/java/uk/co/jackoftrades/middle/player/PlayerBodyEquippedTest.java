@@ -53,8 +53,6 @@ class PlayerBodyEquippedTest {
 
     /**
      * Fills a slot, standing in for the wield code that would normally do it.
-     *
-     * @author Rowan Crowther
      */
     private static void wear(EquipSlot slot, ItemObject item) throws Exception {
         Field f = EquipSlot.class.getDeclaredField("item");
@@ -65,23 +63,15 @@ class PlayerBodyEquippedTest {
     /**
      * An empty slot of an arbitrary kind. Which kind it is never matters here — the method walks
      * every slot without consulting its type.
-     *
-     * @author Rowan Crowther
      */
     private static EquipSlot emptySlot() {
         return new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "wielding");
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     private static PlayerBody bodyOf(EquipSlot... slots) {
         return new PlayerBody("test", new ArrayList<>(List.of(slots)));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("an item in a slot is equipped")
     void wornItemIsEquipped() throws Exception {
@@ -92,9 +82,6 @@ class PlayerBodyEquippedTest {
         assertTrue(bodyOf(slot).itemIsEquipped(sword));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("an item in no slot is not equipped")
     void unwornItemIsNotEquipped() throws Exception {
@@ -107,8 +94,6 @@ class PlayerBodyEquippedTest {
     /**
      * The gap before the match. Reaching the item at all means the null in the first slot was
      * survived, which is the guard C does not need.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("an empty slot before the match is stepped over")
@@ -125,8 +110,6 @@ class PlayerBodyEquippedTest {
      * The gap after the match, and the gap with no match at all. The second is the case that would
      * throw rather than answer if the guard were missing: the walk runs to the end without finding
      * anything, so every null in the body is dereferenced.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a body of empty slots answers no rather than throwing")
@@ -140,8 +123,6 @@ class PlayerBodyEquippedTest {
     /**
      * A body with no slots at all — not a state the game produces, but the loop's degenerate case
      * and free to check.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a body with no slots equips nothing")
@@ -152,8 +133,6 @@ class PlayerBodyEquippedTest {
     /**
      * Every filled slot is searched, not merely the first. C loops to {@code body->count}, and a
      * match in the last slot of a full body is the case that says the port does too.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a match in the last slot is found")
@@ -173,8 +152,6 @@ class PlayerBodyEquippedTest {
      * Two objects alike in every field are still distinguished, as on the floor — see
      * {@code SquareHoldsObjectTest}. A player wearing one of two identical rings has one equipped and
      * one in the pack, and the difference matters when the pack one is dropped.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("an identical object that is not the worn one is not equipped")

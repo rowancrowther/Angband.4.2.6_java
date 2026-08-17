@@ -71,7 +71,6 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
      * @param records the raw book records for one class, in file order
      * @param errors  the soft-error channel; unresolved realms/bases and malformed scalars are appended here
      * @return the resolved magic books, minus any dropped for a failed lookup
-     * @author Rowan Crowther
      */
     @Override
     public List<MagicBook> assemble(@NotNull List<ClassSpellBookParseRecord> records, @NotNull List<String> errors) {

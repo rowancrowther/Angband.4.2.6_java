@@ -43,8 +43,6 @@ import java.util.List;
 public class PlayerPropertyReader implements Reader<PlayerProperty> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

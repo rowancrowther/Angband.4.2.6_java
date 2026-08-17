@@ -61,8 +61,6 @@ class BirthEventsTest {
 
     /**
      * Entering the birth screen announces entering, and nothing else.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void enteringAnnouncesEnterBirth() {
@@ -74,8 +72,6 @@ class BirthEventsTest {
     /**
      * Leaving the birth screen announces leaving. Worth its own test next to the one above for the
      * reason two-line classes usually are: the pair is exactly where a copy-paste lands.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void leavingAnnouncesLeaveBirth() {
@@ -88,8 +84,6 @@ class BirthEventsTest {
      * The two are not the same line. Implied by the two tests above, and stated anyway because it
      * is the actual claim: the log is how these transitions will be read while they are stubs, and
      * a log that cannot tell them apart is worse than no log.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void theTwoEndsAreDistinct() {

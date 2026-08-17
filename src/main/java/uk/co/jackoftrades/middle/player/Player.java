@@ -474,7 +474,6 @@ public class Player {
     /**
      * @param flag the object flag to test
      * @return {@code true} if the player's calculated state carries the given object flag
-     * @author Rowan Crowther
      */
     public boolean hasObjectFlag(@NotNull ObjectFlag flag) {
         return state.hasOFlag(flag);
@@ -549,7 +548,6 @@ public class Player {
      *
      * @param item the item to test
      * @return {@code true} if every non-curse rune on the item has been learned
-     * @author Rowan Crowther
      */
     public static boolean nonCurseRunesKnown(ItemObject item) {
         if (item == null || item.getKnown() == null)
@@ -643,7 +641,6 @@ public class Player {
      *
      * @param item the object whose known counterpart should be brought up to date; may be
      *             {@code null}, matching C's {@code if (!obj) return}
-     * @author Rowan Crowther
      */
     public void knowObject(ItemObject item) {
         boolean seen = true;
@@ -865,7 +862,6 @@ public class Player {
      *
      * @param item the item to label
      * @return the character the item is selected by, or {@code '\0'} if it is not in the gear
-     * @author Rowan Crowther
      */
     private char gearToLabel(ItemObject item) {
         String labels = "abcdefgimnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -910,7 +906,6 @@ public class Player {
      *
      * @param item the object to look for
      * @return {@code true} if the object is in the player's gear
-     * @author Rowan Crowther
      */
     private boolean isCarried(ItemObject item) {
         return gear.contains(item);
@@ -952,7 +947,6 @@ public class Player {
      * <p>Function flavourAware coded on 260816, commented in full on 260816.
      *
      * @param item an object of the kind the player has just become aware of
-     * @author Rowan Crowther
      */
     private void flavourAware(ItemObject item) {
         ItemObject known = item.getKnown();
@@ -1022,7 +1016,6 @@ public class Player {
      * @param item the item whose ego is being tested
      * @return {@code true} if the ego is one the player could now identify, {@code false} for an
      * item with no ego at all
-     * @author Rowan Crowther
      */
     private boolean knowsEgo(ItemObject item) {
         EgoItem ego = item.getEgo();
@@ -1110,7 +1103,6 @@ public class Player {
      *
      * @param item the item whose known counterpart is being brought up to date
      * @throws RuntimeException if the item or its known counterpart is missing
-     * @author Rowan Crowther
      */
     private void setBaseKnown(ItemObject item) {
         if (item == null || item.getKnown() == null) {
@@ -1350,7 +1342,6 @@ public class Player {
 
     /**
      * @return the player's current dungeon depth (0 = town)
-     * @author Rowan Crowther
      */
     public int getDepth() {
         return depth;
@@ -1358,7 +1349,6 @@ public class Player {
 
     /**
      * @return the player's current hit points
-     * @author Rowan Crowther
      */
     public int getCurrentHP() {
         return currentHP;
@@ -1373,7 +1363,6 @@ public class Player {
      * @param stat      the stat to lower
      * @param permanant whether the loss also reduces the stat's maximum
      * @return {@code true} if the stat actually changed
-     * @author Rowan Crowther
      */
     public boolean statDec(Stats stat, boolean permanant) {
         // Stub function TODO: implement
@@ -1387,7 +1376,6 @@ public class Player {
      *
      * @param amount    the experience to remove
      * @param permanent whether the loss also reduces the player's maximum experience
-     * @author Rowan Crowther
      */
     public void expLose(int amount, boolean permanent) {
         if (exp < amount) {
@@ -1407,7 +1395,6 @@ public class Player {
      * <p><b>Stub:</b> not yet implemented.
      *
      * @param verbose whether to announce level changes to the player
-     * @author Rowan Crowther
      */
     private void adjustLevel(boolean verbose) {
         // Stub function TODO: implement
@@ -1415,7 +1402,6 @@ public class Player {
 
     /**
      * @return the player's current experience points
-     * @author Rowan Crowther
      */
     public int getExp() {
         return exp;
@@ -1459,7 +1445,6 @@ public class Player {
      * @param canDisturb  whether the change may interrupt resting/running
      * @param check       whether to honour the effect's failure conditions before applying it
      * @return {@code true} if the effect's value actually changed
-     * @author Rowan Crowther
      */
     public boolean incTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb, boolean check) {
         // Stub function TODO: implement
@@ -1487,7 +1472,6 @@ public class Player {
 
     /**
      * @return the player's maximum hit points
-     * @author Rowan Crowther
      */
     public int getMaxHP() {
         return maxHP;
@@ -1496,7 +1480,6 @@ public class Player {
     /**
      * @return {@code true} if the player is currently resting — either the resting counter is still
      * running or a special stop-condition rest is in progress
-     * @author Rowan Crowther
      */
     public boolean isResting() {
         return (playerUpkeep.getRestingCounter() > 0 || restingIsSpecial(playerUpkeep.getRestingCounter()));
@@ -1511,7 +1494,6 @@ public class Player {
      *
      * @param restingCounter the resting counter to classify
      * @return {@code true} if the counter is a special "rest until…" value
-     * @author Rowan Crowther
      */
     private boolean restingIsSpecial(int restingCounter) {
         // Stub function TODO: implement
@@ -1520,7 +1502,6 @@ public class Player {
 
     /**
      * @return the turns remaining until Word of Recall activates (0 = inactive)
-     * @author Rowan Crowther
      */
     public int getWordRecall() {
         return wordRecall;
@@ -1528,8 +1509,6 @@ public class Player {
 
     /**
      * Ticks the Word of Recall countdown down by one turn.
-     *
-     * @author Rowan Crowther
      */
     public void decrementWordRecall() {
         wordRecall--;
@@ -1539,7 +1518,6 @@ public class Player {
      * Sets the player's current dungeon depth.
      *
      * @param depth the new depth (0 = town)
-     * @author Rowan Crowther
      */
     public void setDepth(int depth) {
         this.depth = depth;
@@ -1547,7 +1525,6 @@ public class Player {
 
     /**
      * @return the depth Word of Recall will return the player to
-     * @author Rowan Crowther
      */
     public int getRecallDepth() {
         return recallDepth;
@@ -1558,8 +1535,6 @@ public class Player {
      * recall-depth handling.
      *
      * <p><b>Stub:</b> not yet implemented.
-     *
-     * @author Rowan Crowther
      */
     public void setRecallDepth() {
         // Stub function TODO: implement
@@ -1567,7 +1542,6 @@ public class Player {
 
     /**
      * @return the turns remaining until a Deep Descent triggers (0 = inactive)
-     * @author Rowan Crowther
      */
     public int getDeepDescent() {
         return deepDescent;
@@ -1575,8 +1549,6 @@ public class Player {
 
     /**
      * Ticks the Deep Descent countdown down by one turn.
-     *
-     * @author Rowan Crowther
      */
     public void decrementDeepDescent() {
         deepDescent--;
@@ -1588,7 +1560,6 @@ public class Player {
      *
      * @param level the dungeon level to test
      * @return {@code true} if a quest target lives on that level
-     * @author Rowan Crowther
      */
     public boolean isQuest(int level) {
         // No quests on town level
@@ -1603,7 +1574,6 @@ public class Player {
 
     /**
      * @return the deepest dungeon level the player has reached
-     * @author Rowan Crowther
      */
     public int getMaxDepth() {
         return maxDepth;
@@ -1611,7 +1581,6 @@ public class Player {
 
     /**
      * @return the player's carried gear (inventory and equipment)
-     * @author Rowan Crowther
      */
     public ArrayList<ItemObject> getGear() {
         return gear;
@@ -1642,7 +1611,6 @@ public class Player {
 
     /**
      * @return this player's option settings, the port of C's {@code player->opts}
-     * @author Rowan Crowther
      */
     public PlayerOptions getPlayerOptions() {
         return options;
@@ -2396,7 +2364,6 @@ public class Player {
      * from {@link ItemObject} on 260815 and its arguments turned round to C's order.
      *
      * @param item the item whose curses are being read
-     * @author Rowan Crowther
      */
     void cursesFindToA(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A);
@@ -2432,7 +2399,6 @@ public class Player {
      * {@link ItemObject} on 260815 and its arguments turned round to C's order.
      *
      * @param item the item whose curses are being read
-     * @author Rowan Crowther
      */
     void cursesFindToD(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D);
@@ -2471,7 +2437,6 @@ public class Player {
      * {@link ItemObject} on 260815 and its arguments turned round to C's order.
      *
      * @param item the item whose curses are being read
-     * @author Rowan Crowther
      */
     void cursesFindToH(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H);
@@ -2543,7 +2508,6 @@ public class Player {
      * @param item      the item whose curses are being read
      * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}
      * @return whether any flag was learned that the player did not already know
-     * @author Rowan Crowther
      */
     boolean cursesFindFlags(ItemObject item, Flag<ObjectFlag> testFlags) {
         boolean curseLearned = false;

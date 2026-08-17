@@ -45,7 +45,6 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
      * @param records the raw magic record(s) for one class
      * @param errors  the soft-error channel; malformed scalars and book failures are appended here
      * @return the resolved caster profile(s)
-     * @author Rowan Crowther
      */
     @Override
     public List<ClassMagic> assemble(@NotNull List<ClassMagicParseRecord> records, @NotNull List<String> errors) {

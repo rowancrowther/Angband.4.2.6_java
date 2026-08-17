@@ -37,8 +37,6 @@ public enum CoreLifecycleEvent {
      * end. Sent in reply to {@link UILifecycleEvent#SAVE_AND_STOP}, and the front end's cue that
      * it may now close the window and exit. Waiting for it is what stops the process dying
      * mid-save.
-     *
-     * @author Rowan Crowther
      */
     STOPPED
 }

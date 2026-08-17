@@ -67,8 +67,6 @@ import java.util.Scanner;
 public class SplashScreen {
     /**
      * Logger for read failures on {@code news.txt}.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(SplashScreen.class);
 
@@ -78,8 +76,6 @@ public class SplashScreen {
      * <p>Captured rather than looked up per call, so this splash screen is pinned to whichever
      * window was active when it was built. Fine while there is exactly one window; C's terms are an
      * array of eight, and the title screen belongs to the main one.
-     *
-     * @author Rowan Crowther
      */
     private Window activeWindow;
 
@@ -89,8 +85,6 @@ public class SplashScreen {
      * <p>{@code static}, so it belongs to the class rather than to a splash screen - see
      * {@link #splashScreenBirthNote(String)}, which is where that matters and where C's own
      * function-static is discussed.
-     *
-     * @author Rowan Crowther
      */
     private static int birthLine = 2;
 
@@ -105,8 +99,6 @@ public class SplashScreen {
      *
      * <p>Cells never written stay {@code null} and are painted as blanks, so a short news line does
      * not need padding.
-     *
-     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
 
@@ -114,7 +106,6 @@ public class SplashScreen {
      * Build the title screen against a front end's active window.
      *
      * @param swingUI the front end whose active window this paints into
-     * @author Rowan Crowther
      */
     public SplashScreen(SwingUI swingUI) {
         activeWindow = swingUI.getActiveWindow();
@@ -141,7 +132,6 @@ public class SplashScreen {
      *
      * @param path the news file to read, resolved by the caller so a {@code -d} override is honoured
      * @return this splash screen's character grid, filled in
-     * @author Rowan Crowther
      */
     public AngbandDisplayCharacter[][] readAndParse(Path path) {
         int row = 0;
@@ -233,8 +223,6 @@ public class SplashScreen {
      * through a different route. One of the two routes should win - either this method is how a
      * splash screen paints itself, or {@code Window.display} is how anything paints and this method
      * goes. Worth settling before stage 5 adds more painting to the loop.
-     *
-     * @author Rowan Crowther
      */
     public void showSplashScreen() {
 //        String filename = AngbandDirs.ANGBAND_DIRS.SCREENS.getPath() + "news.txt";
@@ -263,7 +251,6 @@ public class SplashScreen {
      * how it would deadlock if the EDT ever came to need something from it.
      *
      * @param event the block to run on the EDT
-     * @author Rowan Crowther
      */
     private void onEventDispatchThread(Runnable event) {
         SwingUtilities.invokeLater(event);
@@ -309,7 +296,6 @@ public class SplashScreen {
      * exists. Chapter 3 supplies the distinction.
      *
      * @param message the progress note to show, unbracketed; the brackets are added here
-     * @author Rowan Crowther
      */
 
     public void splashScreenNote(@NotNull String message) {
@@ -399,7 +385,6 @@ public class SplashScreen {
      * the port will probably follow. The painting below is written and waiting.
      *
      * @param message the note to show, written from column 0 as given
-     * @author Rowan Crowther
      */
     public void splashScreenBirthNote(@NotNull String message) {
         SwingUI.JPanelArea panel = activeWindow.getArea();

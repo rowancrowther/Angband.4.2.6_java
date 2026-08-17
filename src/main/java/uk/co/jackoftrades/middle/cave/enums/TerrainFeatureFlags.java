@@ -64,8 +64,6 @@ public enum TerrainFeatureFlags {
 
     /**
      * Human-readable description of what this terrain-feature flag means.
-     *
-     * @author Rowan Crowther
      */
     private final String description;
 
@@ -73,7 +71,6 @@ public enum TerrainFeatureFlags {
      * Bind a terrain-feature flag to its description.
      *
      * @param description the flag's human-readable description
-     * @author Rowan Crowther
      */
     TerrainFeatureFlags(String description) {
         this.description = description;
@@ -81,7 +78,6 @@ public enum TerrainFeatureFlags {
 
     /**
      * @return this flag's human-readable description
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

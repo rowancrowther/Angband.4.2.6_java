@@ -57,7 +57,6 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      * @param errors  the soft-error sink; a message is appended for each unresolvable field and the
      *                offending record is skipped rather than aborting the whole load
      * @return the successfully assembled pit profiles, in file order
-     * @author Rowan Crowther
      */
     @Override
     public List<PitProfile> assemble(@NotNull List<PitParseRecord> records, @NotNull List<String> errors) {

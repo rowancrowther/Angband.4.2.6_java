@@ -47,8 +47,6 @@ public enum RuneGroup {
 
     /**
      * The heading shown to the player for this group.
-     *
-     * @author Rowan Crowther
      */
     private final String name;
 
@@ -56,7 +54,6 @@ public enum RuneGroup {
      * Bind a group to its player-visible heading.
      *
      * @param name the heading shown in the knowledge menu
-     * @author Rowan Crowther
      */
     RuneGroup(String name) {
         this.name = name;
@@ -64,7 +61,6 @@ public enum RuneGroup {
 
     /**
      * @return the player-visible heading for this group
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

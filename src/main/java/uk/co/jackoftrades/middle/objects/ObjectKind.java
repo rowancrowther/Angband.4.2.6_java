@@ -42,34 +42,24 @@ import java.util.*;
 public class ObjectKind {
     /**
      * The kind's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
-     *
-     * @author Rowan Crowther
      */
     private String text;
 
     /**
      * The base type this kind belongs to.
-     *
-     * @author Rowan Crowther
      */
     private ObjectBase base;
     /**
      * Index of this kind in the global kind table.
-     *
-     * @author Rowan Crowther
      */
     private int kindIndex;
 
     /**
      * The item type value (tval).
-     *
-     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
@@ -77,106 +67,74 @@ public class ObjectKind {
      * ({@link #stripToRawSval}). This is the human-readable reference the data files use; the numeric
      * {@link #sVal} is the resolved index. Kept separate because C's sval is always an int at runtime
      * but a name-or-digit reference in the data files (see {@code lookup_sval}).
-     *
-     * @author Rowan Crowther
      */
     private String sValueName;
 
     /**
      * The resolved numeric sub-type value (sval), assigned when the kind is registered under its
      * base (see {@link ObjectRegistry#addObjectKind}).
-     *
-     * @author Rowan Crowther
      */
     private int sVal;
 
     /**
      * Extra parameter value (the item's "pval"), as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random pVal; // Item extra parameter
 
     /**
      * Base to-hit bonus, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toH;
     /**
      * Base to-damage bonus, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toD;
     /**
      * Base to-armour-class bonus, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random toA;
 
     /**
      * Base armour class.
-     *
-     * @author Rowan Crowther
      */
     private int ac;
     /**
      * Base damage, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random baseDamage;
     /**
      * Number of damage dice.
-     *
-     * @author Rowan Crowther
      */
     private int damageDice;
     /**
      * Sides per damage die.
-     *
-     * @author Rowan Crowther
      */
     private int damageSides;
     /**
      * Base weight.
-     *
-     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Base cost/value.
-     *
-     * @author Rowan Crowther
      */
     private int cost;
 
     /**
      * Object flags this kind grants.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
      * Kind flags controlling generation/display.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFlags;
 
     /**
      * Numeric modifiers granted, keyed by modifier, as dice expressions.
-     *
-     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Random> modifiers;
     /**
      * Per-element relation info (resist/ignore/etc.).
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
 
@@ -185,16 +143,12 @@ public class ObjectKind {
      * is the whole of the state; C indexes an array by registry position and stores a bare boolean.
      *
      * <p>Field brands commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
      * Slays every item of this kind carries — C's {@code kind->slays}. As {@link #brands}.
      *
      * <p>Field slays commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
@@ -207,143 +161,99 @@ public class ObjectKind {
      * count down the template every other sword is made from.
      *
      * <p>Field curses commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Map<Curse, CurseData> curses;
 
     /**
      * The display glyph and colour.
-     *
-     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter character;
 
     /**
      * Allocation probability weight.
-     *
-     * @author Rowan Crowther
      */
     private int alloc_prob;
     /**
      * Minimum depth at which the kind is allocated.
-     *
-     * @author Rowan Crowther
      */
     private int alloc_min;
     /**
      * Maximum depth at which the kind is allocated.
-     *
-     * @author Rowan Crowther
      */
     private int alloc_max;
     /**
      * The kind's native level.
-     *
-     * @author Rowan Crowther
      */
     private int level;
 
     /**
      * Activations this kind provides.
-     *
-     * @author Rowan Crowther
      */
     private List<Activation> activations;
     /**
      * Effects this kind produces when used.
-     *
-     * @author Rowan Crowther
      */
     private List<Effect> effect;
     /**
      * The kind's power rating.
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * Message shown when the kind's effect is used.
-     *
-     * @author Rowan Crowther
      */
     private String effectMessage;
     /**
      * Message shown when the effect is seen.
-     *
-     * @author Rowan Crowther
      */
     private String visMessage;
     /**
      * Recharge/effect timing, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random time;
     /**
      * Charge count (for wands/staves), as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random charge;
 
     /**
      * Probability used when generating multiple of this kind.
-     *
-     * @author Rowan Crowther
      */
     private int genMultProb;
     /**
      * Stack size when generated, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random stackSize;
 
     /**
      * The randomised flavour for unidentified instances.
-     *
-     * @author Rowan Crowther
      */
     private Flavour flavour;
 
     /**
      * Inscription note used once the kind is identified.
-     *
-     * @author Rowan Crowther
      */
     private String noteAware;
     /**
      * Inscription note used while the kind is unidentified.
-     *
-     * @author Rowan Crowther
      */
     private String noteUnaware;
 
     /**
      * Whether the player is aware of (has identified) this kind.
-     *
-     * @author Rowan Crowther
      */
     private boolean aware;
     /**
      * Whether the player has tried this kind.
-     *
-     * @author Rowan Crowther
      */
     private boolean tried;
 
     /**
      * The player's ignore setting for this kind.
-     *
-     * @author Rowan Crowther
      */
     private Flag<IgnoreFlag> ignore;
     
     /**
      * Whether the player has ever seen this kind.
-     *
-     * @author Rowan Crowther
      */
     private boolean everseen;
 
@@ -361,15 +271,11 @@ public class ObjectKind {
      * non-jewellery special artifact outright rather than waiting for its runes to be read.
      *
      * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private boolean isSpecialArtifactKind;
 
     /**
      * Build an empty object kind with fresh collections.
-     *
-     * @author Rowan Crowther
      */
     public ObjectKind() {
         elInfo = new HashMap<>();
@@ -388,7 +294,6 @@ public class ObjectKind {
      * Set the kind's display glyph/colour.
      *
      * @param character the display character
-     * @author Rowan Crowther
      */
     public void setCharacter(AngbandDisplayCharacter character) {
         this.character = character;
@@ -409,7 +314,6 @@ public class ObjectKind {
      * @param sValueName    sub-type value
      * @param base      base type
      * @param isDungeon whether this is a dungeon-generated kind
-     * @author Rowan Crowther
      */
     public ObjectKind(AngbandDisplayCharacter adc, int cost,
                       int level, int min, int max,
@@ -500,7 +404,6 @@ public class ObjectKind {
      * @param ignore        ignore setting
      * @param everseen      whether ever seen
      * @param tValue        item type value
-     * @author Rowan Crowther
      */
     public ObjectKind(String name, String text, ObjectBase base,
                       int kindIndex, Random pVal, Random toH,
@@ -583,7 +486,6 @@ public class ObjectKind {
      * @param artifact the artifact this kind is being created for
      * @param sValName the subtype name to give the synthesised kind
      * @param base     the object base whose defaults (kind-flags, elements, tval) are inherited
-     * @author Rowan Crowther
      */
     public ObjectKind(Artifact artifact, String sValName, ObjectBase base) {
         this.flags = new Flag<>(ObjectFlag.class);
@@ -621,7 +523,6 @@ public class ObjectKind {
      *
      * @param name the templated kind name
      * @return the name with the {@code &}/{@code ~} markers removed
-     * @author Rowan Crowther
      */
     private String stripToRawSval(String name) {
         return name.replace("& ", "").replace("~", "");
@@ -629,7 +530,6 @@ public class ObjectKind {
 
     /**
      * @return the resolved numeric sub-type value (sval)
-     * @author Rowan Crowther
      */
     public int getsVal() {
         return sVal;
@@ -639,7 +539,6 @@ public class ObjectKind {
      * Set the resolved numeric sval; called when the kind is registered under its base.
      *
      * @param sVal the sval to assign
-     * @author Rowan Crowther
      */
     public void setsVal(int sVal) {
         this.sVal = sVal;
@@ -647,7 +546,6 @@ public class ObjectKind {
 
     /**
      * @return the kind's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -655,7 +553,6 @@ public class ObjectKind {
 
     /**
      * @return the kind's base type
-     * @author Rowan Crowther
      */
     public ObjectBase getBase() {
         return base;
@@ -663,7 +560,6 @@ public class ObjectKind {
 
     /**
      * @param alloc_prob the allocation probability weight
-     * @author Rowan Crowther
      */
     public void setAlloc_prob(int alloc_prob) {
         this.alloc_prob = alloc_prob;
@@ -671,7 +567,6 @@ public class ObjectKind {
 
     /**
      * @param alloc_min the minimum allocation depth
-     * @author Rowan Crowther
      */
     public void setAlloc_min(int alloc_min) {
         this.alloc_min = alloc_min;
@@ -679,7 +574,6 @@ public class ObjectKind {
 
     /**
      * @param alloc_max the maximum allocation depth
-     * @author Rowan Crowther
      */
     public void setAlloc_max(int alloc_max) {
         this.alloc_max = alloc_max;
@@ -687,7 +581,6 @@ public class ObjectKind {
 
     /**
      * @param cost the base cost/value
-     * @author Rowan Crowther
      */
     public void setCost(int cost) {
         this.cost = cost;
@@ -695,7 +588,6 @@ public class ObjectKind {
 
     /**
      * @param weight the kind's weight (in tenths of a pound)
-     * @author Rowan Crowther
      */
     public void setWeight(int weight) {
         this.weight = weight;
@@ -703,7 +595,6 @@ public class ObjectKind {
 
     /**
      * @return the activations available on this kind
-     * @author Rowan Crowther
      */
     public List<Activation> getActivations() {
         return activations;
@@ -711,7 +602,6 @@ public class ObjectKind {
 
     /**
      * @param time the recharge/effect timing dice to assign
-     * @author Rowan Crowther
      */
     public void setTime(Random time) {
         this.time = time;
@@ -719,7 +609,6 @@ public class ObjectKind {
 
     /**
      * @return the item type value (tval)
-     * @author Rowan Crowther
      */
     public TValue gettValue() {
         return tValue;
@@ -727,7 +616,6 @@ public class ObjectKind {
 
     /**
      * @return the sub-type by name (the flavour-stripped kind name)
-     * @author Rowan Crowther
      */
     public String getsValueName() {
         return sValueName;
@@ -735,7 +623,6 @@ public class ObjectKind {
 
     /**
      * @return the kind-level flags ({@code KF_*}) set on this kind
-     * @author Rowan Crowther
      */
     public Flag<ObjectKindFlag> getKindFlags() {
         return kindFlags;
@@ -743,7 +630,6 @@ public class ObjectKind {
 
     /**
      * @return this kind's stable index in the object-kind table
-     * @author Rowan Crowther
      */
     public int getKindIndex() {
         return kindIndex;
@@ -751,7 +637,6 @@ public class ObjectKind {
 
     /**
      * @param kindIndex this kind's stable index in the object-kind table
-     * @author Rowan Crowther
      */
     public void setKindIndex(int kindIndex) {
         this.kindIndex = kindIndex;
@@ -769,7 +654,6 @@ public class ObjectKind {
      * <p>Function getToH coded on 260815, commented in full on 260815.
      *
      * @return this kind's to-hit dice
-     * @author Rowan Crowther
      */
     public Random getToH() {
         return toH;
@@ -786,7 +670,6 @@ public class ObjectKind {
      * <p>Function getToD commented in full on 260816.
      *
      * @return the to-damage range for this kind
-     * @author Rowan Crowther
      */
     public Random getToD() {
         return toD;
@@ -794,7 +677,6 @@ public class ObjectKind {
 
     /**
      * @return this kind's base armour class — C's {@code kind->ac}
-     * @author Rowan Crowther
      */
     public int getAc() {
         return ac;
@@ -812,7 +694,6 @@ public class ObjectKind {
      * <p>Function getFlavour commented in full on 260816.
      *
      * @return this kind's flavour, or {@code null} if it has none
-     * @author Rowan Crowther
      */
     public Flavour getFlavour() {
         return flavour;
@@ -830,7 +711,6 @@ public class ObjectKind {
      * <p>Function isAware commented in full on 260816.
      *
      * @return {@code true} if the player knows what this kind is
-     * @author Rowan Crowther
      */
     public boolean isAware() {
         return aware;
@@ -847,7 +727,6 @@ public class ObjectKind {
      * <p>Function setAware commented in full on 260816.
      *
      * @param aware whether the player knows what this kind is
-     * @author Rowan Crowther
      */
     public void setAware(boolean aware) {
         this.aware = aware;
@@ -855,7 +734,6 @@ public class ObjectKind {
 
     /**
      * @return what items of this kind do when used — C's {@code kind->effect}
-     * @author Rowan Crowther
      */
     public List<Effect> getEffect() {
         return effect;
@@ -872,7 +750,6 @@ public class ObjectKind {
      * <p>Function isEverseen commented in full on 260816.
      *
      * @return {@code true} if this kind has been seen identified before
-     * @author Rowan Crowther
      */
     public boolean isEverseen() {
         return everseen;
@@ -888,7 +765,6 @@ public class ObjectKind {
      * <p>Function isIgnoredUnaware commented in full on 260816.
      *
      * @return {@code true} if unidentified items of this kind are ignored
-     * @author Rowan Crowther
      */
     public boolean isIgnoredUnaware() {
         return ignore.has(IgnoreFlag.IGNORE_IF_UNAWARE);
@@ -903,7 +779,6 @@ public class ObjectKind {
      * <p>Function setIgnoredUnaware commented in full on 260816.
      *
      * @param ignoredUnaware whether to ignore unidentified items of this kind
-     * @author Rowan Crowther
      */
     public void setIgnoredUnaware(boolean ignoredUnaware) {
         if (ignoredUnaware) ignore.on(IgnoreFlag.IGNORE_IF_UNAWARE);
@@ -917,7 +792,6 @@ public class ObjectKind {
      * <p>Function isIgnoredAware commented in full on 260816.
      *
      * @return {@code true} if identified items of this kind are ignored
-     * @author Rowan Crowther
      */
     public boolean isIgnoredAware() {
         return ignore.has(IgnoreFlag.IGNORE_IF_AWARE);
@@ -935,7 +809,6 @@ public class ObjectKind {
      * <p>Function setIgnoredAware commented in full on 260816.
      *
      * @param ignoredAware whether to ignore identified items of this kind
-     * @author Rowan Crowther
      */
     public void setIgnoredAware(boolean ignoredAware) {
         if (ignoredAware) ignore.on(IgnoreFlag.IGNORE_IF_AWARE);
@@ -953,7 +826,6 @@ public class ObjectKind {
      * <p>Function isSpecialArtifactKind commented in full on 260816.
      *
      * @return {@code true} if this kind is a special artifact
-     * @author Rowan Crowther
      */
     public boolean isSpecialArtifactKind() {
         return isSpecialArtifactKind;
@@ -975,7 +847,6 @@ public class ObjectKind {
      * <p>Function getDamageDice coded on 260816, commented in full on 260816.
      *
      * @return the number of damage dice for this kind
-     * @author Rowan Crowther
      */
     public int getDamageDice() {
         return damageDice;
@@ -988,7 +859,6 @@ public class ObjectKind {
      * <p>Function getDamageSides coded on 260816, commented in full on 260816.
      *
      * @return the sides per damage die for this kind
-     * @author Rowan Crowther
      */
     public int getDamageSides() {
         return damageSides;

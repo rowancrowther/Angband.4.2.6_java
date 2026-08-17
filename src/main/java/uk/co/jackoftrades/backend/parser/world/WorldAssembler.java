@@ -35,7 +35,6 @@ public class WorldAssembler
      *                in this assembler as it doesn't raise any
      *                errors
      * @return result of assembling list of {@link World} objects
-     * @author Rowan Crowther
      */
     @Override
     public List<World> assemble(@NotNull List<WorldParseRecord> records, @NotNull List<String> errors) {

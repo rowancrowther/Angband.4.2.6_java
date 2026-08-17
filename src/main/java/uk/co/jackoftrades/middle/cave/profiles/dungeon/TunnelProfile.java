@@ -63,7 +63,6 @@ public class TunnelProfile {
      * @param con chance of ending the tunnel
      * @param pen chance of a door at a room entrance
      * @param jct chance of a door at a tunnel junction
-     * @author Rowan Crowther
      */
     public TunnelProfile(int rnd, int chg, int con, int pen, int jct) {
         this.chg = chg;

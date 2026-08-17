@@ -40,15 +40,11 @@ import java.util.regex.Pattern;
 public abstract class StringUtils {
     /**
      * Shared logger (reserved for diagnostics in this utility holder).
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
     /**
      * The running program's name, mirroring the C global {@code argv0}; used in
      * messages that need to identify the executable.
-     *
-     * @author Rowan Crowther
      */
     public static String programmeName;
 

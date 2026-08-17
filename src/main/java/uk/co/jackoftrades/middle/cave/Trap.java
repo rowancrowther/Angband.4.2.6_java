@@ -34,47 +34,34 @@ import uk.co.jackoftrades.middle.enums.TrapEnum;
 public class Trap {
     /**
      * This trap's index in the level's trap list.
-     *
-     * @author Rowan Crowther
      */
     private int trapIndex;
     /**
      * The kind/template this trap is an instance of.
-     *
-     * @author Rowan Crowther
      */
     private TrapKind kind;
 
     /**
      * The grid this trap occupies.
-     *
-     * @author Rowan Crowther
      */
     private Loc grid;
 
     /**
      * The trap's current power (affects difficulty/severity).
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * Turns until the trap can trigger again (0 means ready/active).
-     *
-     * @author Rowan Crowther
      */
     private int timeout;
 
     /**
      * Per-instance trap flags.
-     *
-     * @author Rowan Crowther
      */
     private Flag<TrapEnum> flags;
 
     /**
      * @return the {@link TrapKind} template for this trap
-     * @author Rowan Crowther
      */
     public TrapKind getKind() {
         return kind;
@@ -105,7 +92,6 @@ public class Trap {
 
     /**
      * @return this trap's index in the level's trap list
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -115,7 +101,6 @@ public class Trap {
 
     /**
      * @return turns until the trap can trigger again (0 = ready)
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -126,8 +111,6 @@ public class Trap {
     /**
      * Ticks this trap's timeout down by one turn. While the timeout is above zero the trap is
      * dormant; it becomes active again when the countdown reaches zero.
-     *
-     * @author Rowan Crowther
      */
     public void decrementTimeout() {
         timeout--;

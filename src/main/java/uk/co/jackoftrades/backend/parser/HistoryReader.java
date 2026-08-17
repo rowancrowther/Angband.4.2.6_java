@@ -41,8 +41,6 @@ import java.util.List;
 public class HistoryReader implements Reader<PlayerHistoryChart> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -66,7 +64,6 @@ public class HistoryReader implements Reader<PlayerHistoryChart> {
      * @param filename the history data file to load
      * @return the assembled history charts plus any error messages
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<PlayerHistoryChart> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -88,7 +85,6 @@ public class HistoryReader implements Reader<PlayerHistoryChart> {
      * @param errors       the soft-error channel; a record-count mismatch is reported here without
      *                     discarding the records
      * @return the raw history parse records in source order
-     * @author Rowan Crowther
      */
     private static @NotNull List<HistoryParseRecord> extract(
             @NotNull HistoryGrammar parser,

@@ -45,7 +45,6 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * @param records the raw pain records from the grammar
      * @param errors  the soft-error sink, mutated in place with one message per skipped record
      * @return the successfully assembled {@link MonsterPain} sets
-     * @author Rowan Crowther
      */
     @Override
     public List<MonsterPain> assemble(@NotNull List<PainParseRecord> records, @NotNull List<String> errors) {

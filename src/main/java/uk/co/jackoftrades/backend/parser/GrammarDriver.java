@@ -96,8 +96,6 @@ public final class GrammarDriver {
 
     /**
      * Static only - no instances
-     *
-     * @author Rowan Crowther
      */
     private GrammarDriver() {
         // No instances
@@ -185,7 +183,6 @@ public final class GrammarDriver {
      * @param declared the header's declared-count text
      * @param actual   the number of records actually parsed
      * @param errors   the soft-error sink, mutated in place
-     * @author Rowan Crowther
      */
     public static void checkRecordCount(@NotNull String declared,
                                         int actual,

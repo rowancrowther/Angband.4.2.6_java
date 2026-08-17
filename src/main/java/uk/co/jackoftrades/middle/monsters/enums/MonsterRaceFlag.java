@@ -116,14 +116,10 @@ public enum MonsterRaceFlag {
 
     /**
      * The category this flag belongs to (for grouping in lore/display).
-     *
-     * @author Rowan Crowther
      */
     private MonsterRaceCategory category;
     /**
      * Human-readable description of the property (e.g. the resisted element).
-     *
-     * @author Rowan Crowther
      */
     private String description;
 
@@ -132,7 +128,6 @@ public enum MonsterRaceFlag {
      *
      * @param category    the flag category
      * @param description the description
-     * @author Rowan Crowther
      */
     MonsterRaceFlag(MonsterRaceCategory category, String description) {
         this.category = category;
@@ -141,7 +136,6 @@ public enum MonsterRaceFlag {
 
     /**
      * @return the category this flag belongs to
-     * @author Rowan Crowther
      */
     public MonsterRaceCategory getCategory() {
         return category;
@@ -149,7 +143,6 @@ public enum MonsterRaceFlag {
 
     /**
      * @return the human-readable description of this flag
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

@@ -54,8 +54,6 @@ public enum SquareEnum {
 
     /**
      * Human-readable description of what this square flag means.
-     *
-     * @author Rowan Crowther
      */
     private final String description;
 
@@ -63,7 +61,6 @@ public enum SquareEnum {
      * Bind a square flag to its description.
      *
      * @param description the flag's human-readable description
-     * @author Rowan Crowther
      */
     private SquareEnum(String description) {
         this.description = description;
@@ -71,7 +68,6 @@ public enum SquareEnum {
 
     /**
      * @return this flag's human-readable description
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;

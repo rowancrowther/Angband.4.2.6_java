@@ -42,7 +42,6 @@ public class EquipSlot {
      *
      * @param type the slot kind (body position)
      * @param name the slot's display name
-     * @author Rowan Crowther
      */
     public EquipSlot(EquipmentSlotsEnum type, String name) {
         this.type = type;
@@ -51,7 +50,6 @@ public class EquipSlot {
 
     /**
      * @return the item currently worn in this slot, or {@code null} if the slot is empty
-     * @author Rowan Crowther
      */
     public ItemObject getItem() {
         return item;
@@ -59,7 +57,6 @@ public class EquipSlot {
 
     /**
      * @return the kind of slot this is (its body position)
-     * @author Rowan Crowther
      */
     public EquipmentSlotsEnum getType() {
         return type;
@@ -67,7 +64,6 @@ public class EquipSlot {
 
     /**
      * @return the slot's display name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

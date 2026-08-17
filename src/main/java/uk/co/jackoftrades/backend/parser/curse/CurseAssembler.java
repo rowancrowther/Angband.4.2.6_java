@@ -86,7 +86,6 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      * @param records the raw parse records from the grammar
      * @param errors  accumulating list of soft (skip-and-continue) error messages
      * @return the assembled curses, with conflict links resolved
-     * @author Rowan Crowther
      */
     @Override
     public List<Curse> assemble(@NotNull List<CurseParseRecord> records, @NotNull List<String> errors) {

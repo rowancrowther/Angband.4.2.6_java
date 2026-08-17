@@ -34,8 +34,6 @@ public record EventDataBoolean(boolean value) implements GameEventData {
     /**
      * Builds the payload for the negative case, which is common enough to be worth not spelling
      * out at every call site.
-     *
-     * @author Rowan Crowther
      */
     public EventDataBoolean() {
         this(false);

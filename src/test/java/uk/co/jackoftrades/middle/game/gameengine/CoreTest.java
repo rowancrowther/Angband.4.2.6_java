@@ -121,8 +121,6 @@ class CoreTest {
      * before the first receive, so a message sent immediately after this waits on the queue until
      * the core gets to it. That is the buffering the channel exists for, and it is why no test here
      * needs to synchronise on start-up finishing.
-     *
-     * @author Rowan Crowther
      */
     private void startCore() {
         coreThread = new Thread(runner::gameLoop, CORE_THREAD);
@@ -163,7 +161,6 @@ class CoreTest {
      *
      * @param millis how long to wait
      * @return the message, or {@code null} if none arrived in time
-     * @author Rowan Crowther
      */
     private ChannelMessage poll(long millis) throws InterruptedException {
         AtomicReference<ChannelMessage> received = new AtomicReference<>();
@@ -189,7 +186,6 @@ class CoreTest {
      * load puts there first.
      *
      * @return true if {@code STOPPED} arrived within the deadline
-     * @author Rowan Crowther
      */
     private boolean awaitStopped() throws InterruptedException {
         long deadline = System.currentTimeMillis() + LOAD_AND_REPLY_MILLIS;
@@ -247,8 +243,6 @@ class CoreTest {
      *
      * <p>Note what is not asserted: that {@code STOPPED} is the last thing said. The core is free
      * to say more on its way out, and Chapter 8's save will.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void saveAndStopIsAnsweredWithStoppedAndThenTheThreadEnds() throws Exception {
@@ -264,8 +258,6 @@ class CoreTest {
      * {@code START} is not a stop. It is the first message the front end ever sends, so a switch
      * arm that fell through to the shutdown would end the game before it began - and would do it
      * during start-up, where a dead core looks like a slow one.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void startDoesNotEndTheLoop() throws Exception {
@@ -285,8 +277,6 @@ class CoreTest {
      * A raw window event on the core's inbox is ignored: not acted on, and not fatal. It should
      * never get here - the EDT posts those to the UI thread - but the arm exists to keep the
      * switch exhaustive, and this pins that it stays harmless if the wiring ever slips.
-     *
-     * @author Rowan Crowther
      */
     @Test
     void aMisroutedWindowEventIsIgnored() throws Exception {

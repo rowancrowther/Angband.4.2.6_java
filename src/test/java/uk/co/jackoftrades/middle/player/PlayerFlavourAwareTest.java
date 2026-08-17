@@ -69,8 +69,6 @@ class PlayerFlavourAwareTest {
     /**
      * Writes a private field declared on the given class, for state a running game would have
      * filled in and this suite does not run.
-     *
-     * @author Rowan Crowther
      */
     private static void poke(Class<?> owner, Object target, String name, Object value)
             throws Exception {
@@ -82,8 +80,6 @@ class PlayerFlavourAwareTest {
     /**
      * An object of an unaware, flavoured kind with a known counterpart and an effect — the state a
      * potion is in when it is first picked up.
-     *
-     * @author Rowan Crowther
      */
     private static ItemObject unknownPotion() throws Exception {
         ObjectKind kind = new ObjectKind();
@@ -104,8 +100,6 @@ class PlayerFlavourAwareTest {
      * Calls a private {@link Player} method taking one {@link ItemObject}. Both methods under test
      * are private and have no public caller that does not drag {@code knowObject} in with it, so
      * reaching them directly is what keeps these tests about them.
-     *
-     * @author Rowan Crowther
      */
     private Object invoke(String name, ItemObject item) throws Exception {
         Method m = Player.class.getDeclaredMethod(name, ItemObject.class);
@@ -118,9 +112,6 @@ class PlayerFlavourAwareTest {
         }
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @BeforeEach
     void setUp() {
         player = new Player();
@@ -135,9 +126,6 @@ class PlayerFlavourAwareTest {
     @DisplayName("becoming aware")
     class BecomingAware {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("the kind becomes aware, not the object")
         void kindBecomesAware() throws Exception {
@@ -151,8 +139,6 @@ class PlayerFlavourAwareTest {
         /**
          * An identified flavour is an identified effect, so the counterpart picks it up. C sets
          * {@code obj->known->effect = obj->effect} in the same breath as the flag.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the counterpart learns the effect")
@@ -170,8 +156,6 @@ class PlayerFlavourAwareTest {
          * once on an already-aware kind; without that, {@code knowObject} would re-run the floor
          * sweep for every identified piece of jewellery the player owns, every time knowledge
          * changed.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an already-aware kind is left alone")
@@ -188,8 +172,6 @@ class PlayerFlavourAwareTest {
         /**
          * Neither guard is C's — it asserts on the counterpart and dereferences the kind — but both
          * are reachable in the port, and neither should be an exception.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an object with no counterpart or no kind is not an error")
@@ -217,8 +199,6 @@ class PlayerFlavourAwareTest {
          * The transition the two-flag design exists for. A player who chose to ignore unidentified
          * potions has, in effect, chosen to ignore this one; carrying the decision across is what
          * stops the pile they were stepping over reappearing under a name.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("ignored-while-unaware becomes ignored-while-aware")
@@ -234,8 +214,6 @@ class PlayerFlavourAwareTest {
         /**
          * And the other way: a kind the player never chose to ignore does not acquire the choice by
          * being identified.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a kind that was not ignored does not become ignored")
@@ -251,8 +229,6 @@ class PlayerFlavourAwareTest {
          * The request for the ignore pass goes out either way, because the set of objects the rules
          * apply to has changed whatever the player's setting for this kind. Reading it back as
          * "already set" is how a caller-free test sees that it was raised.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the ignore pass is requested")
@@ -275,16 +251,10 @@ class PlayerFlavourAwareTest {
     @DisplayName("isCarried")
     class Carried {
 
-        /**
-         * @author Rowan Crowther
-         */
         private void carrying(ItemObject... items) throws Exception {
             poke(Player.class, player, "gear", new ArrayList<>(List.of(items)));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an object in the gear is carried")
         void gearObjectIsCarried() throws Exception {
@@ -294,9 +264,6 @@ class PlayerFlavourAwareTest {
             assertTrue((Boolean) invoke("isCarried", sword));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an object not in the gear is not carried")
         void otherObjectIsNotCarried() throws Exception {
@@ -308,8 +275,6 @@ class PlayerFlavourAwareTest {
         /**
          * A fresh player carries nothing — {@link Player}'s constructor gives an empty list, not a
          * null, so the empty case answers rather than throws.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an empty pack carries nothing")
@@ -321,8 +286,6 @@ class PlayerFlavourAwareTest {
          * The distinction the method draws. An object on the floor is not carried however close the
          * player is standing to it — that is {@code Square.holdsObject}'s question, and the two
          * together are what pick between the two messages {@code knowObject} can print.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an identical object that is not the carried one is not carried")
@@ -337,8 +300,6 @@ class PlayerFlavourAwareTest {
 
         /**
          * Every object in the gear, not merely the first.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every object in the gear is carried")

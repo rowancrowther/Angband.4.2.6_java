@@ -75,7 +75,6 @@ public class ErrorParsing {
      *                    attributed to that loader rather than to this helper
      * @return {@code true} if any records loaded - including when the parse was
      * clean - and {@code false} only when the file yielded nothing
-     * @author Rowan Crowther
      */
     public static boolean reportAndCheck(@NotNull String filename, @NotNull ParseResult<?> parseResult, @NotNull Logger logger) {
         if (!parseResult.hasErrors())

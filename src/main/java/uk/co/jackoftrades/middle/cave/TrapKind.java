@@ -41,111 +41,77 @@ import java.util.Objects;
 public class TrapKind {
     /**
      * The trap type's internal name.
-     *
-     * @author Rowan Crowther
      */
     private String trapKindName;
     /**
      * The trap's display text/title.
-     *
-     * @author Rowan Crowther
      */
     private String text;
     /**
      * Human-readable description of the trap.
-     *
-     * @author Rowan Crowther
      */
     private String description;
     /**
      * Message shown to the player when the trap triggers (C {@code msg}, from the {@code msg:}
      * directive).
-     *
-     * @author Rowan Crowther
      */
     private String message;
     /**
      * Message shown when the player saves against (avoids) the trap.
-     *
-     * @author Rowan Crowther
      */
     private String messageOnSave;
     /**
      * Message shown when the player fails to avoid the trap.
-     *
-     * @author Rowan Crowther
      */
     private String messageOnFailure;
     /**
      * Message shown when the trap's extra effect fires.
-     *
-     * @author Rowan Crowther
      */
     private String messageOnExtraEffect;
 
     /**
      * This trap type's index in the global trap-kind table.
-     *
-     * @author Rowan Crowther
      */
     private int trapKindIndex;
 
     /**
      * The glyph and colour used to draw this trap.
-     *
-     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter angbandDisplayCharacter;
 
     /**
      * Rarity weighting controlling how often this trap is chosen.
-     *
-     * @author Rowan Crowther
      */
     private int rarity;
     /**
      * Shallowest dungeon level this trap can appear on.
-     *
-     * @author Rowan Crowther
      */
     private int minDepth;
     /**
      * Maximum number of this trap allowed on a single level (C {@code max_num}). Unused by the
      * current game logic — kept for fidelity to the {@code appear:} line.
-     *
-     * @author Rowan Crowther
      */
     private int maxNum;
     /**
      * The trap's power, as a dice/random expression.
-     *
-     * @author Rowan Crowther
      */
     private Random power;
 
     /**
      * Behavioural flags for this trap type.
-     *
-     * @author Rowan Crowther
      */
     private Flag<TrapEnum> flags;
     /**
      * Object flags that grant a saving throw against this trap.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> saveFlags;
 
     /**
      * The primary effect applied when the trap triggers.
-     *
-     * @author Rowan Crowther
      */
     private List<Effect> effect;
     /**
      * An optional secondary ("extra") effect.
-     *
-     * @author Rowan Crowther
      */
     private List<Effect> effectXtra;
 
@@ -172,7 +138,6 @@ public class TrapKind {
      * @param saveFlags               object flags that grant the player a save
      * @param effect                  primary effect(s) run when the trap triggers
      * @param effectXtra              optional secondary effect(s), each with a 50% chance to fire
-     * @author Rowan Crowther
      */
     public TrapKind(String trapKindName, String text, String description, String message,
                     String messageOnSave, String messageOnFailure,
@@ -201,7 +166,6 @@ public class TrapKind {
 
     /**
      * @return this trap type's human-readable description
-     * @author Rowan Crowther
      */
     public String getDescription() {
         return description;
@@ -212,7 +176,6 @@ public class TrapKind {
      *
      * @param description the trap description to match
      * @return the matching trap kind
-     * @author Rowan Crowther
      */
     public static TrapKind lookupTrap(String description) {
         return TerrainRegistry.lookupTrap(description);
@@ -221,7 +184,6 @@ public class TrapKind {
     /**
      * @return this trap type's index in the trap-kind table (its 0-based file position, C
      * {@code tidx})
-     * @author Rowan Crowther
      */
     public int getTrapKindIndex() {
         return trapKindIndex;
@@ -230,7 +192,6 @@ public class TrapKind {
     /**
      * @return an unmodifiable view of this trap's secondary ("extra") effects — each has a 50%
      * chance of also firing when the trap triggers
-     * @author Rowan Crowther
      */
     public List<Effect> getEffectXtra() {
         return Collections.unmodifiableList(effectXtra);
@@ -238,7 +199,6 @@ public class TrapKind {
 
     /**
      * @return an unmodifiable view of this trap's primary effects, run in order when it triggers
-     * @author Rowan Crowther
      */
     public List<Effect> getEffect() {
         return Collections.unmodifiableList(effect);
@@ -246,7 +206,6 @@ public class TrapKind {
 
     /**
      * @return a defensive copy of this trap's behavioural flags; mutating it does not affect the kind
-     * @author Rowan Crowther
      */
     public Flag<TrapEnum> getFlags() {
         Flag<TrapEnum> flag = new Flag<>(TrapEnum.class);
@@ -257,7 +216,6 @@ public class TrapKind {
     /**
      * @return a defensive copy of the object flags that grant the player a saving throw against this
      * trap
-     * @author Rowan Crowther
      */
     public Flag<ObjectFlag> getSaveFlags() {
         Flag<ObjectFlag> flag = new Flag<>(ObjectFlag.class);
@@ -267,7 +225,6 @@ public class TrapKind {
 
     /**
      * @return this trap's flavour description text (C {@code text}, from the {@code desc:} directive)
-     * @author Rowan Crowther
      */
     public String getText() {
         return text;
@@ -279,7 +236,6 @@ public class TrapKind {
      *
      * @param o the object to compare against
      * @return true if {@code o} is an equivalent {@code TrapKind}
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object o) {
@@ -294,7 +250,6 @@ public class TrapKind {
      * Hash code consistent with {@link #equals(Object)}, combining all fields.
      *
      * @return this trap kind's hash code
-     * @author Rowan Crowther
      */
     @Override
     public int hashCode() {

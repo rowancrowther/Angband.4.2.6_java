@@ -64,7 +64,6 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
      * @param records the parsed timed-effect records, in file order
      * @param errors  the soft-error channel; one message is appended per dropped record
      * @return the successfully resolved effects, in order (records that failed are omitted)
-     * @author Rowan Crowther
      */
     @Override
     public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records, @NotNull List<String> errors) {

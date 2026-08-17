@@ -35,38 +35,26 @@ public class MonsterFriends {
     private static final Logger logger = LogManager.getLogger();
     /**
      * The name of the companion race (resolved to {@link #race} after loading).
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The resolved companion race.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRace race;
     /**
      * The group role the companions take.
-     *
-     * @author Rowan Crowther
      */
     private MonsterGroupRole role;
     /**
      * Percentage chance the companions appear.
-     *
-     * @author Rowan Crowther
      */
     private int percentChance;
     /**
      * Number of dice for the companion count.
-     *
-     * @author Rowan Crowther
      */
     private int numberDice;
     /**
      * Sides per die for the companion count.
-     *
-     * @author Rowan Crowther
      */
     private int numberSides;
 
@@ -78,7 +66,6 @@ public class MonsterFriends {
      * @param percentChance appearance chance
      * @param numberDice    dice for the count
      * @param numberSides   sides per die for the count
-     * @author Rowan Crowther
      */
     public MonsterFriends(String name, MonsterGroupRole role, int percentChance, int numberDice,
                           int numberSides) {
@@ -96,7 +83,6 @@ public class MonsterFriends {
      *
      * @param raceName the companion race's name, resolved via {@link MonsterRegistry#lookupMonsterRace}
      * @throws IllegalArgumentException if no race matches the name
-     * @author Rowan Crowther
      */
     public void setRace(@NotNull String raceName) {
         this.race = MonsterRegistry.lookupMonsterRace(raceName);
@@ -112,7 +98,6 @@ public class MonsterFriends {
     /**
      * @return the companion's name as written in {@code monster.txt} (or the owning race's name, if it
      * was originally the {@code "same"} self-reference)
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

@@ -60,7 +60,6 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
      * @param errors       the soft-error channel (e.g. a record-count mismatch)
      * @return the raw parsed chest trap records for the assembler
-     * @author Rowan Crowther
      */
     private static List<ChestTrapParseRecord> extract(
             @NotNull ChestTrapGrammar parser,
@@ -100,7 +99,6 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * @param filename path to the chest trap data file
      * @return the parse result: the chest traps and any errors collected
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public @NotNull ParseResult<ChestTrap> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

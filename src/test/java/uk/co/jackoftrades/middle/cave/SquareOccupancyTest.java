@@ -66,7 +66,6 @@ class SquareOccupancyTest {
      *
      * @param flags the terrain flags the feature carries
      * @return the constructed feature
-     * @author Rowan Crowther
      */
     private static Feature feature(TerrainFeatureFlags... flags) {
         Flag<TerrainFeatureFlags> set = new Flag<>(TerrainFeatureFlags.class);
@@ -82,7 +81,6 @@ class SquareOccupancyTest {
      *
      * @param monsterIndex zero for nobody, positive for a monster, negative for the player
      * @return the constructed square
-     * @author Rowan Crowther
      */
     private static Square floor(int monsterIndex) {
         return new Square(feature(TerrainFeatureFlags.TF_FLOOR), 0, monsterIndex);
@@ -94,7 +92,6 @@ class SquareOccupancyTest {
      *
      * @param monsterIndex zero for nobody, positive for a monster, negative for the player
      * @return the constructed square
-     * @author Rowan Crowther
      */
     private static Square wall(int monsterIndex) {
         return new Square(feature(), 0, monsterIndex);
@@ -113,8 +110,6 @@ class SquareOccupancyTest {
          * C's {@code square_isplayer} is {@code square(c, grid)->mon < 0}. The player is stored as a
          * negative rather than as a flag of its own, which is what lets one field answer all three
          * questions.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a negative index is the player")
@@ -129,8 +124,6 @@ class SquareOccupancyTest {
          * C's {@code square_isoccupied} is {@code mon != 0}, so it takes in the player as well as
          * monsters. The name invites the reading "a monster is here", and the player case is what
          * separates the two.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("occupied covers the player as well as monsters")
@@ -145,8 +138,6 @@ class SquareOccupancyTest {
          * {@link Square#isFree} must be the exact negation of {@link Square#isOccupied} across all
          * three states. Asserting the relationship rather than three separate values is what catches
          * one of the pair being changed without the other.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("free is the negation of occupied")
@@ -172,8 +163,6 @@ class SquareOccupancyTest {
          * C's {@code square_isopen} is {@code square_isfloor(c, grid) && !square(c, grid)->mon} —
          * floor <em>and nobody on it</em>. The negation is the whole content of the method, and
          * dropping it turns "open" into "occupied floor", which is not a state anything wants.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("open means floor with nobody on it")
@@ -187,8 +176,6 @@ class SquareOccupancyTest {
         /**
          * The other half of {@code square_isopen}: a clear square that is not floor is not open. Both
          * conjuncts need a test or an implementation could satisfy one and be judged correct.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a clear non-floor square is not open")
@@ -201,8 +188,6 @@ class SquareOccupancyTest {
          * They read the same field with opposite senses, so an inversion in either makes them equal —
          * and an inversion in {@code isOpen} in particular reads perfectly naturally, since
          * {@code mon != 0} is the correct body for the method next door.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("open and occupied never agree on a floor square")
@@ -219,8 +204,6 @@ class SquareOccupancyTest {
          * with player traps and webs vetoing first. Being built on {@code isOpen}, it inherits any
          * inversion there, so it is worth confirming that an occupied floor is not empty even with
          * nothing lying on it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("empty means open and carrying no objects")
@@ -239,8 +222,6 @@ class SquareOccupancyTest {
          * C's {@code square_isarrivable} rejects on {@code square(c, grid)->mon} directly, so the
          * player's own square is not somewhere that can be arrived at either. Floor qualifies;
          * anything that is neither floor nor stairs does not.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("arrivable needs clear floor or stairs")

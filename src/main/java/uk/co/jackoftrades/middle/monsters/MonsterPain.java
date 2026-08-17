@@ -35,21 +35,15 @@ import java.util.List;
 public class MonsterPain {
     /**
      * Logger used to report malformed pain definitions.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The index linking this pain set to the monster bases that use it.
-     *
-     * @author Rowan Crowther
      */
     private final int painIndex;
     /**
      * The seven ordered pain messages (most to least hurt).
-     *
-     * @author Rowan Crowther
      */
     private final List<String> messages;
 
@@ -88,7 +82,6 @@ public class MonsterPain {
 
     /**
      * @return a debug string listing this pain record's index and its messages
-     * @author Rowan Crowther
      */
     @Override
     @Contract(pure = true)
@@ -108,7 +101,6 @@ public class MonsterPain {
 
     /**
      * @return the index linking this pain set to its monster bases
-     * @author Rowan Crowther
      */
     public int getPainIndex() {
         return painIndex;

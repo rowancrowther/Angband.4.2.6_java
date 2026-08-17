@@ -44,14 +44,10 @@ public class RandomValueUtils {
     /**
      * The single shared PRNG backing every helper here, so all randomness comes
      * from one seedable stream.
-     *
-     * @author Rowan Crowther
      */
     private static final Random random = new Random();
     /**
      * Logger used to report illegal argument ranges before throwing.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 

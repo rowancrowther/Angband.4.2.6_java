@@ -35,32 +35,22 @@ import uk.co.jackoftrades.middle.objects.enums.TValue;
 public class MagicRealm {
     /**
      * The realm's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The stat that governs casting in this realm.
-     *
-     * @author Rowan Crowther
      */
     private Stats stat;
     /**
      * The verb used for casting (e.g. "cast", "pray").
-     *
-     * @author Rowan Crowther
      */
     private String verb;
     /**
      * The noun used for a spell in this realm (e.g. "spell", "prayer").
-     *
-     * @author Rowan Crowther
      */
     private String spellNoun;
     /**
      * The item type (tval) of the books that hold this realm's spells.
-     *
-     * @author Rowan Crowther
      */
     private TValue book;
 
@@ -72,7 +62,6 @@ public class MagicRealm {
      * @param verb      casting verb
      * @param spellNoun spell noun
      * @param book      book item type
-     * @author Rowan Crowther
      */
     public MagicRealm(String name, Stats stat, String verb, String spellNoun, TValue book) {
         this.name = name;
@@ -84,7 +73,6 @@ public class MagicRealm {
 
     /**
      * @return this realm's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;

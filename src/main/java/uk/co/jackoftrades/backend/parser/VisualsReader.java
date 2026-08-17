@@ -56,8 +56,6 @@ import java.util.List;
 public class VisualsReader {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -68,7 +66,6 @@ public class VisualsReader {
      * @param filename the visuals data file to read
      * @return the assembled named-cycle table
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public @NotNull VisualsCycler parseCycler(@NotNull String filename) throws IOException {
         return parseCyclerWithResults(filename).items().getFirst();
@@ -81,7 +78,6 @@ public class VisualsReader {
      * @param filename the visuals data file to read
      * @return the assembled base-attribute flicker table
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public FlickerTable parseFlicker(@NotNull String filename) throws IOException {
         return parseFlickerWithResults(filename).items().getFirst();
@@ -95,7 +91,6 @@ public class VisualsReader {
      * @param filename the visuals data file to read
      * @return the parse result wrapping the cycler and any soft errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<VisualsCycler> parseCyclerWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -113,7 +108,6 @@ public class VisualsReader {
      * @param filename the visuals data file to read
      * @return the parse result wrapping the flicker table and any soft errors
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<FlickerTable> parseFlickerWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -135,7 +129,6 @@ public class VisualsReader {
      *                     assembler, not this extractor)
      * @return the parsed {@code cycle:} records
      * @throws IOException never thrown here, but declared by the {@link GrammarDriver.Extractor} contract
-     * @author Rowan Crowther
      */
     private static List<VisualsCycleParseRecord> extractCycles(
             @NotNull VisualsGrammar parser,
@@ -160,7 +153,6 @@ public class VisualsReader {
      *                     arise in the assembler, not this extractor)
      * @return the parsed {@code flicker:} records
      * @throws IOException never thrown here, but declared by the {@link GrammarDriver.Extractor} contract
-     * @author Rowan Crowther
      */
     private static List<VisualsFlickerParseRecord> extractFlickers(
             @NotNull VisualsGrammar parser,

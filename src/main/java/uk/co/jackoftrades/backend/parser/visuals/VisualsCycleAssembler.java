@@ -62,7 +62,6 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * @param records the parsed {@code cycle:} blocks
      * @param errors  the shared soft-error sink; a malformed colour appends here and drops its record
      * @return a one-element list holding the assembled {@link VisualsCycler}
-     * @author Rowan Crowther
      */
     @Override
     public List<VisualsCycler> assemble(@NotNull List<VisualsCycleParseRecord> records, @NotNull List<String> errors) {

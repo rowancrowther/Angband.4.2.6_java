@@ -30,14 +30,10 @@ import java.util.Objects;
 public class CurseData {
     /**
      * The curse's current power on this object.
-     *
-     * @author Rowan Crowther
      */
     private int power;
     /**
      * Turns until the curse's next effect fires.
-     *
-     * @author Rowan Crowther
      */
     private int timeout;
 
@@ -46,7 +42,6 @@ public class CurseData {
      *
      * @param power   the curse power
      * @param timeout the effect timeout
-     * @author Rowan Crowther
      */
     public CurseData(int power, int timeout) {
         this.power = power;
@@ -69,7 +64,6 @@ public class CurseData {
      * <p>Constructor CurseData(CurseData) coded on 260817, commented in full on 260817.
      *
      * @param other the curse data to copy
-     * @author Rowan Crowther
      */
     public CurseData(CurseData other) {
         this.power = other.getPower();
@@ -78,7 +72,6 @@ public class CurseData {
 
     /**
      * @return the curse's current power
-     * @author Rowan Crowther
      */
     public int getPower() {
         return power;
@@ -86,7 +79,6 @@ public class CurseData {
 
     /**
      * @return turns until the curse's next effect
-     * @author Rowan Crowther
      */
     public int getTimeout() {
         return timeout;
@@ -98,7 +90,6 @@ public class CurseData {
      * clears both power and timeout).
      *
      * @param power the new curse power
-     * @author Rowan Crowther
      */
     public void setPower(int power) {
         this.power = power;
@@ -108,8 +99,6 @@ public class CurseData {
      * Tick the timeout down by one turn. Called once per game turn while the curse
      * is active; when the timeout reaches zero the curse's effect fires and the
      * timeout is re-rolled via {@link #setTimeout(int)}.
-     *
-     * @author Rowan Crowther
      */
     public void decrementTimeout() {
         this.timeout--;
@@ -122,7 +111,6 @@ public class CurseData {
      * {@code timeout = randcalc(c->obj->time, ...)}).
      *
      * @param amount the new timeout, in turns
-     * @author Rowan Crowther
      */
     public void setTimeout(int amount) {
         this.timeout = amount;
@@ -146,7 +134,6 @@ public class CurseData {
      *
      * @param o the object to compare against
      * @return {@code true} if that object is curse data of the same power
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object o) {
@@ -160,7 +147,6 @@ public class CurseData {
      * <p>Method hashCode coded on 260817, commented in full on 260817.
      *
      * @return a hash of this curse's power
-     * @author Rowan Crowther
      */
     @Override
     public int hashCode() {

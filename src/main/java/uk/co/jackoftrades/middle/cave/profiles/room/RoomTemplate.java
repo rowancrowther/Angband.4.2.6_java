@@ -77,7 +77,6 @@ public class RoomTemplate {
      * @param width   number of columns
      * @param doors   number of possible door positions
      * @param tval    the tval objects placed in this room must have
-     * @author Rowan Crowther
      */
     public RoomTemplate(String name, String mapText, List<String> map,
                         Flag<RoomFlags> flags, int type, int rating, int height,

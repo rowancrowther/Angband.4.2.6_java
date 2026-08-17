@@ -39,80 +39,54 @@ import java.util.List;
 public class PitProfile {
     /**
      * The pit profile's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Whether this profile describes a pit, a nest or another room type.
-     *
-     * @author Rowan Crowther
      */
     private PitRoomType roomType;
     /**
      * Average native depth of this pit (used in depth/rarity selection).
-     *
-     * @author Rowan Crowther
      */
     private int ave;
     /**
      * Rarity weighting controlling how often this profile is chosen.
-     *
-     * @author Rowan Crowther
      */
     private int rarity;
     /**
      * Rarity of objects generated within the pit.
-     *
-     * @author Rowan Crowther
      */
     private int objectRarity;
     /**
      * Race flags a monster must have to belong in this pit.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flags;
     /**
      * Race flags that exclude a monster from this pit.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> forbiddenFlags;
     /**
      * Required innate-attack frequency for eligible monsters.
-     *
-     * @author Rowan Crowther
      */
     private int freqInnate;
     /**
      * Spell flags a monster must have to belong in this pit.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterSpell> spellsFlags;
     /**
      * Spell flags that exclude a monster from this pit.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterSpell> forbiddenSpellFlags;
     /**
      * Monster base types allowed in this pit.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterBase> bases;
     /**
      * Theme colours associated with this pit.
-     *
-     * @author Rowan Crowther
      */
     private List<ColourEnum> colours;
     /**
      * Specific monster races explicitly forbidden from this pit.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterRace> forbiddenMonsters;
 
@@ -132,7 +106,6 @@ public class PitProfile {
      * @param bases               allowed monster base types
      * @param colours             theme colours
      * @param forbiddenMonsters   explicitly forbidden races
-     * @author Rowan Crowther
      */
     public PitProfile(String name, PitRoomType roomType, int ave, int rarity, int objectRarity,
                       Flag<MonsterRaceFlag> flags, Flag<MonsterRaceFlag> forbiddenFlags, int freqInnate,

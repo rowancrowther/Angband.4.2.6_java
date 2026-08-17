@@ -49,8 +49,6 @@ import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 public class UIBirth {
     /**
      * Logger for the birth transitions, which is currently all these handlers do.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(UIBirth.class);
 
@@ -66,8 +64,6 @@ public class UIBirth {
      * <p>Typed as {@link Sender} rather than the concrete {@code CoreSender} for the reason
      * {@code InitHandlers} records on its own field: one {@code send} is the whole requirement, and
      * the payload type is what stops anything travelling the wrong way.
-     *
-     * @author Rowan Crowther
      */
     private final Sender<CoreMessage> coreSender;
 
@@ -77,7 +73,6 @@ public class UIBirth {
      * <p>Constructing does not subscribe anything; {@link #uiInitBirthstateHandlers()} does.
      *
      * @param coreSender the core's sending end of the core channel
-     * @author Rowan Crowther
      */
     public UIBirth(Sender<CoreMessage> coreSender) {
         this.coreSender = coreSender;
@@ -95,8 +90,6 @@ public class UIBirth {
      *
      * <p>Registers bound method references, so the bus holds this object and nothing else needs to
      * keep it alive - the same arrangement {@code InitHandlers} relies on.
-     *
-     * @author Rowan Crowther
      */
     public void uiInitBirthstateHandlers() {
         EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
@@ -109,7 +102,6 @@ public class UIBirth {
      *
      * @param eventType the event being handled, always {@code EVENT_ENTER_BIRTH}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void uiEnterBirthscreen(GameEventType eventType, GameEventData data) {
         logger.info("Entering birthscreen");
@@ -121,7 +113,6 @@ public class UIBirth {
      *
      * @param eventType the event being handled, always {@code EVENT_LEAVE_BIRTH}; not read
      * @param data      the payload; not read
-     * @author Rowan Crowther
      */
     private void uiLeaveBirthscreen(GameEventType eventType, GameEventData data) {
         logger.info("Leaving birthscreen");

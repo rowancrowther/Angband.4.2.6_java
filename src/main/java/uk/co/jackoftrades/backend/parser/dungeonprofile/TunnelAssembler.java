@@ -48,7 +48,6 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      * @param records exactly one parsed tunnel record
      * @param errors  the soft-error sink, appended to if the record is unusable
      * @return the assembled tunnel profile, or {@code null} if any field would not convert
-     * @author Rowan Crowther
      */
     @Override
     public TunnelProfile assemble(@NotNull List<DungeonProfileParseRecord.Tunnel> records, @NotNull List<String> errors) {

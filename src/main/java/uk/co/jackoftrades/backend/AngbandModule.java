@@ -28,21 +28,16 @@ package uk.co.jackoftrades.backend;
 public interface AngbandModule {
     /**
      * @return the human-readable name of this module
-     * @author Rowan Crowther
      */
     String getName();
 
     /**
      * Allocate and prepare this module's state, making it ready for use.
-     *
-     * @author Rowan Crowther
      */
     void init();
 
     /**
      * Release this module's resources so it can be safely discarded or re-initialised.
-     *
-     * @author Rowan Crowther
      */
     void cleanup();
 }

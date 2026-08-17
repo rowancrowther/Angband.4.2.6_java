@@ -37,33 +37,23 @@ import java.nio.file.attribute.FileTime;
 public class FileHandler {
     /**
      * Path of the file this handler operates on; may be updated by {@link #fileMove(Path)}.
-     *
-     * @author Rowan Crowther
      */
     private Path filePath;
     /**
      * Active read stream, or {@code null} when the file is not open for reading.
-     *
-     * @author Rowan Crowther
      */
     private FileInputStream inputStream;
     /**
      * Active write stream, or {@code null} when the file is not open for writing.
-     *
-     * @author Rowan Crowther
      */
     private FileOutputStream outputStream;
     /**
      * Default open option retained from construction. Largely vestigial now that
      * the concrete mode is chosen per-{@link #open(FileModeEnum)} call.
-     *
-     * @author Rowan Crowther
      */
     private final StandardOpenOption option;
     /**
      * Logger used to report I/O failures without throwing to callers.
-     *
-     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getRootLogger();
 
@@ -140,7 +130,6 @@ public class FileHandler {
      *
      * @return true if the file now exists (created or already present),
      * false if creation failed with an {@link IOException}
-     * @author Rowan Crowther
      */
     public boolean createFile() {
         if (!Files.exists(filePath)){
@@ -224,8 +213,6 @@ public class FileHandler {
      * direction is ever active at a time, so opening for input closes the
      * output stream to avoid holding both handles to the same file. On failure
      * the input stream is left {@code null} so {@link #isOpen()} stays accurate.
-     *
-     * @author Rowan Crowther
      */
     private void openInputStream() {
         try {
@@ -243,7 +230,6 @@ public class FileHandler {
      *
      * @param append when true the stream appends to existing content; when
      *               false the file is truncated/overwritten
-     * @author Rowan Crowther
      */
     private void openOutputStream(boolean append) {
         try {

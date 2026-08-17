@@ -29,8 +29,6 @@ import java.util.ArrayList;
 public class PointSet {
     /**
      * The locations held in this set, in insertion order.
-     *
-     * @author Rowan Crowther
      */
     private final ArrayList<Loc> points;
 

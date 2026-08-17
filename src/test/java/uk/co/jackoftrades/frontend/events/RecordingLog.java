@@ -86,7 +86,6 @@ final class RecordingLog extends AbstractAppender {
      *
      * @param type the class whose logger to capture
      * @return the recorder, which the caller must {@link #detach()}
-     * @author Rowan Crowther
      */
     static RecordingLog attachedTo(Class<?> type) {
         Logger target = (Logger) LogManager.getLogger(type);
@@ -102,8 +101,6 @@ final class RecordingLog extends AbstractAppender {
      * Stops recording. Left undone, the appender outlives its test and every later test in the
      * same JVM keeps feeding it - so this belongs in an {@code @AfterEach}, not at the end of a
      * test body where a failure would skip it.
-     *
-     * @author Rowan Crowther
      */
     void detach() {
         target.removeAppender(this);
@@ -125,8 +122,6 @@ final class RecordingLog extends AbstractAppender {
     /**
      * Forgets everything recorded so far, for a test that makes several calls and wants to judge
      * each on its own.
-     *
-     * @author Rowan Crowther
      */
     void clear() {
         lines.clear();
@@ -138,7 +133,6 @@ final class RecordingLog extends AbstractAppender {
      * @param expected the exact message to wait for
      * @param millis   how long to wait before giving up
      * @return whether it arrived
-     * @author Rowan Crowther
      */
     boolean await(String expected, long millis) throws InterruptedException {
         long deadline = System.currentTimeMillis() + millis;

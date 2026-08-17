@@ -79,7 +79,6 @@ public record DungeonProfileParseRecord(String profileName,
          * than in component-name form.
          *
          * @return the record as it appears in {@code dungeon_profile.txt}
-         * @author Rowan Crowther
          */
         @Override
         public @NotNull String toString() {

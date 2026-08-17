@@ -33,7 +33,6 @@ public interface TextOutHook {
      *
      * @param attribute the colour to draw the text in
      * @param string    the text to emit
-     * @author Rowan Crowther
      */
     void output(ColourEnum attribute, String string);
 

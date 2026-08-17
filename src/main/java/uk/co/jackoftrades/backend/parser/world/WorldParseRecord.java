@@ -85,7 +85,6 @@ public class WorldParseRecord {
      * @param lineNumber  The line number in the world.txt file
      *                    which contains the input for this
      *                    line
-     * @author Rowan Crowther
      */
     public WorldParseRecord(String levelNumber, String levelName, String up,
                             String down, String lineNumber) {
@@ -101,7 +100,6 @@ public class WorldParseRecord {
      *
      * @return the line number of the line in the World.txt file this
      * world was found on
-     * @author Rowan Crowther
      */
     public String getLineNumber() {
         return lineNumber;
@@ -112,7 +110,6 @@ public class WorldParseRecord {
      *
      * @return the number of this level, from 0 (town) to the maximum
      * number of levels in this dungeon - 1
-     * @author Rowan Crowther
      */
     public String getLevelNumber() {
         return levelNumber;

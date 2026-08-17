@@ -47,17 +47,12 @@ class SquareHoldsObjectTest {
     /**
      * A square with no feature and no light. Nothing here reads either — the pile is created by the
      * constructor regardless, and that is all this method touches.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() {
         square = new Square(null, 0, 0);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("an object on the square is held")
     void objectOnSquareIsHeld() {
@@ -67,9 +62,6 @@ class SquareHoldsObjectTest {
         assertTrue(square.holdsObject(item));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("an object that was never placed is not held")
     void absentObjectIsNotHeld() {
@@ -78,9 +70,6 @@ class SquareHoldsObjectTest {
         assertFalse(square.holdsObject(new ItemObject()));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("an empty square holds nothing")
     void emptySquareHoldsNothing() {
@@ -92,8 +81,6 @@ class SquareHoldsObjectTest {
      * their fields, and a pile of Flasks of Oil on a dungeon floor is exactly that situation. The
      * test would pass on an equality-based implementation only by accident of {@link ItemObject} not
      * overriding {@code equals}; asserting it here is what stops that becoming true silently.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("an identical object that is not this one is not held")
@@ -109,8 +96,6 @@ class SquareHoldsObjectTest {
     /**
      * Every object in a pile is found, not just the head of it. C walks {@code obj->next} from
      * {@code square_object(c, grid)}, so a pile deep enough to have a middle is worth one case.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("every object in a deep pile is held")
@@ -131,8 +116,6 @@ class SquareHoldsObjectTest {
      * An object taken off the floor is no longer on it. This is the transition the method is
      * consulted across — C uses it to decide whether a known object needs detaching from a stale
      * pile — so the "no" side needs to be reachable, not just initially true.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("an excised object is no longer held")

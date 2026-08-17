@@ -116,8 +116,6 @@ class ArtifactReaderTest {
     /**
      * Seeds the registries the artifact assembler resolves against, then loads the real
      * {@code artifact.txt} once for the happy-path test.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -151,8 +149,6 @@ class ArtifactReaderTest {
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
      * the registries do not leak into other test suites.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {

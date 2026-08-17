@@ -65,27 +65,19 @@ import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MI
 public class ItemObject {
     /**
      * Logger used to report stack-merge errors.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The object kind this item is an instance of.
-     *
-     * @author Rowan Crowther
      */
     private ObjectKind kind;
     /**
      * The ego type applied to this item, if any.
-     *
-     * @author Rowan Crowther
      */
     private EgoItem ego;
     /**
      * The artifact this item is, if any.
-     *
-     * @author Rowan Crowther
      */
     private Artifact artifact;
 
@@ -103,67 +95,47 @@ public class ItemObject {
      * <p>Null on an item the player has never seen. It is not the same object as this one and
      * never points back at it; C's {@code obj_k} having a {@code known} of its own is an artefact
      * of the struct reuse this port drops.
-     *
-     * @author Rowan Crowther
      */
     private ItemObject known;
 
     /**
      * The grid this item lies on (when on the floor).
-     *
-     * @author Rowan Crowther
      */
     private Loc location;
 
     /**
      * The item type value (tval).
-     *
-     * @author Rowan Crowther
      */
     private TValue tValue;
     /**
      * The sub-type value (sval).
-     *
-     * @author Rowan Crowther
      */
     private int sValue;
 
     /**
      * The item's extra parameter value (pval).
-     *
-     * @author Rowan Crowther
      */
     private int pValue;
 
     /**
      * The item's weight.
-     *
-     * @author Rowan Crowther
      */
     private int weight;
 
     /**
      * Number of damage dice.
-     *
-     * @author Rowan Crowther
      */
     private int damageDice;
     /**
      * Sides per damage die.
-     *
-     * @author Rowan Crowther
      */
     private int damageSides;
     /**
      * Base damage, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random baseDamage;
     /**
      * Base armour class.
-     *
-     * @author Rowan Crowther
      */
     private int normalAC;
     /**
@@ -177,8 +149,6 @@ public class ItemObject {
      *
      * <p>Field toAC coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815.
-     *
-     * @author Rowan Crowther
      */
     private int toAC;
     /**
@@ -187,8 +157,6 @@ public class ItemObject {
      *
      * <p>Field toDam coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815.
-     *
-     * @author Rowan Crowther
      */
     private int toDam;
     /**
@@ -201,15 +169,11 @@ public class ItemObject {
      *
      * <p>Field toHit coded before 260815, retyped from {@code Random} to {@code int} on 260815.
      * Commented in full on 260815.
-     *
-     * @author Rowan Crowther
      */
     private int toHit;
 
     /**
      * The item's object flags.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectFlag> flags;
     /**
@@ -222,14 +186,10 @@ public class ItemObject {
      *
      * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
      * had previously held.
-     *
-     * @author Rowan Crowther
      */
     private Map<ObjectModifier, Integer> modifiers;
     /**
      * Per-element relation info.
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
@@ -237,16 +197,12 @@ public class ItemObject {
      * state; C indexes an array by registry position and stores a bare boolean.
      *
      * <p>Field brands commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
      * Slays on the item — C's {@code obj->slays}. As {@link #brands}.
      *
      * <p>Field slays commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
@@ -263,98 +219,68 @@ public class ItemObject {
      *
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
      * full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private Map<Curse, CurseData> curses;
 
     /**
      * Effects this item produces when used.
-     *
-     * @author Rowan Crowther
      */
     private List<Effect> effect;
     /**
      * Message shown when the item's effect fires.
-     *
-     * @author Rowan Crowther
      */
     private String effectMessage;
     /**
      * Activations available on this item.
-     *
-     * @author Rowan Crowther
      */
     private List<Activation> activation;
     /**
      * Recharge time, as a dice expression.
-     *
-     * @author Rowan Crowther
      */
     private Random time;
     /**
      * Turns until the item can be used again (0 = ready).
-     *
-     * @author Rowan Crowther
      */
     private int timeout;
 
     /**
      * Quantity in this stack.
-     *
-     * @author Rowan Crowther
      */
     private int number;
     /**
      * The player's notice flags for this item (worn/assessed/ignore/imagined).
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectNotice> notice;
 
     /**
      * Index of the monster holding this item, or 0 if not held.
-     *
-     * @author Rowan Crowther
      */
     private int heldMIndex;
     /**
      * Index of the monster mimicking this item, or 0 if none.
-     *
-     * @author Rowan Crowther
      */
     private int mimickingMIndex;
 
     /**
      * Where this item came from (for the description history line).
-     *
-     * @author Rowan Crowther
      */
     private ObjectOriginEnum origin;
     /**
      * The depth at which the item originated.
-     *
-     * @author Rowan Crowther
      */
     private int originDepth;
     /**
      * The monster race that dropped the item, if applicable.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRace originRace = new MonsterRace();
 
     /**
      * The player's inscription on the item.
-     *
-     * @author Rowan Crowther
      */
     private String note;
 
     /**
      * Build an empty item (used as a blank slot/placeholder).
-     *
-     * @author Rowan Crowther
      */
     public ItemObject() {
     }
@@ -398,7 +324,6 @@ public class ItemObject {
      * @param originDepth     origin depth
      * @param originRace      origin monster race
      * @param note            inscription
-     * @author Rowan Crowther
      */
     public ItemObject(ObjectKind kind, EgoItem ego,
                       Artifact artifact, ItemObject known,
@@ -629,7 +554,6 @@ public class ItemObject {
      * @param itm1 the object whose element info must cover the other's
      * @param itm2 the object whose recorded elements are walked
      * @return {@code true} if every element {@code itm2} records is matched on {@code itm1}
-     * @author Rowan Crowther
      */
     private boolean checkElementStacking(ItemObject itm1, ItemObject itm2) {
         for (ElementEnum e : itm2.getElInfo().keySet()) {
@@ -670,7 +594,6 @@ public class ItemObject {
      * 260815 when a second copy of it was folded back in. Commented in full on 260815.
      *
      * @return true if the player has full knowledge of this object
-     * @author Rowan Crowther
      */
     public boolean isFullyKnown() {
         if (!runesKnown()) return false;
@@ -950,7 +873,6 @@ public class ItemObject {
      * <p>Function getCurses coded before 260817, commented in full on 260817.
      *
      * @return this object's curses and their instance data, as an unmodifiable view
-     * @author Rowan Crowther
      */
     public Map<Curse, CurseData> getCurses() {
         if (curses == null)
@@ -977,7 +899,6 @@ public class ItemObject {
      * @param curse   the curse to apply
      * @param power   the curse's power on this object
      * @param timeout turns until the curse's first effect
-     * @author Rowan Crowther
      */
     public void addCurse(Curse curse, int power, int timeout) {
         CurseData curseData = new CurseData(power, timeout);
@@ -1001,7 +922,6 @@ public class ItemObject {
      *
      * @param curse     the curse to apply
      * @param curseData the instance data to store, taken by reference
-     * @author Rowan Crowther
      */
     public void addCurse(Curse curse, CurseData curseData) {
         if (this.curses == null) {
@@ -1023,7 +943,6 @@ public class ItemObject {
      * <p>Function addCurses coded before 260817, commented in full on 260817.
      *
      * @param curses the curses to add, with their instance data taken by reference
-     * @author Rowan Crowther
      */
     public void addCurses(Map<Curse, CurseData> curses) {
         if (this.curses == null) {
@@ -1044,7 +963,6 @@ public class ItemObject {
      *
      * @param curseEntries the curses this object should carry, with their instance data taken by
      *                     reference
-     * @author Rowan Crowther
      */
     public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
         if (this.curses == null) {
@@ -1067,8 +985,6 @@ public class ItemObject {
      * are indistinguishable from outside, {@link #getCurses()} reporting empty for both.
      *
      * <p>Function clearCurses coded on 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     public void clearCurses() {
         if (curses == null)
@@ -1092,7 +1008,6 @@ public class ItemObject {
      *
      * @param curse the curse to adjust; ignored if {@code null} or not on this object
      * @param power the curse's new power
-     * @author Rowan Crowther
      */
     public void setCursePower(Curse curse, int power) {
         if (this.curses == null) {
@@ -1117,7 +1032,6 @@ public class ItemObject {
      * <p>Function removeCurse coded on 260817, commented in full on 260817.
      *
      * @param curse the curse to remove
-     * @author Rowan Crowther
      */
     public void removeCurse(Curse curse) {
         if (this.curses == null) {
@@ -1130,7 +1044,6 @@ public class ItemObject {
      * @return the random interval between activations of this object's effect — the
      * port of C's {@code obj->time}; for a curse template this is the dice re-rolled
      * into each cursed object's timeout
-     * @author Rowan Crowther
      */
     public Random getTime() {
         return time;
@@ -1230,7 +1143,6 @@ public class ItemObject {
      * C's {@code 0} and callers test it rather than the index.
      *
      * @return the inscription, or {@code null} if the object is uninscribed
-     * @author Rowan Crowther
      */
     public String getNote() {
         return note;
@@ -1245,7 +1157,6 @@ public class ItemObject {
      * {@link KnownObject#brandIsKnown} and is not per-item at all.
      *
      * @return this item's brands, shared with this instance
-     * @author Rowan Crowther
      */
     public Set<Brand> getBrands() {
         if (brands == null)
@@ -1264,7 +1175,6 @@ public class ItemObject {
      * full on 260815.
      *
      * @return this item's rolled to-hit bonus, which may be negative
-     * @author Rowan Crowther
      */
     public int getToHit() {
         return toHit;
@@ -1282,7 +1192,6 @@ public class ItemObject {
      * full on 260815.
      *
      * @return this item's rolled to-damage bonus, which may be negative
-     * @author Rowan Crowther
      */
     public int getToDam() {
         return toDam;
@@ -1296,7 +1205,6 @@ public class ItemObject {
      * full on 260815.
      *
      * @return this item's rolled to-AC bonus, which may be negative
-     * @author Rowan Crowther
      */
     public int getToAC() {
         return toAC;
@@ -1315,7 +1223,6 @@ public class ItemObject {
      * never folded into a condition that decides whether to learn something.
      *
      * @return whether a known counterpart has been attached to this item
-     * @author Rowan Crowther
      */
     public boolean isKnown() {
         return known != null;
@@ -1358,7 +1265,6 @@ public class ItemObject {
      * <p>Function hasStandardToH coded on 260815, commented in full on 260815.
      *
      * @return whether this item's to-hit bonus is the unremarkable one for its kind
-     * @author Rowan Crowther
      */
     public boolean hasStandardToH() {
         if (kind == null) return true;
@@ -1401,7 +1307,6 @@ public class ItemObject {
      *
      * @param flag the flag to test for
      * @return whether this item carries it
-     * @author Rowan Crowther
      */
     public boolean hasFlag(ObjectFlag flag) {
         return flags.has(flag);
@@ -1425,7 +1330,6 @@ public class ItemObject {
      * @param descriptionFlags how much of the name to build, C's {@code mode}
      * @param player           the player whose knowledge decides what may appear in the name
      * @return the item's name; the placeholder tag while stubbed
-     * @author Rowan Crowther
      */
     public String description(Flag<ObjectDescription> descriptionFlags, Player player) {
         // Stub function
@@ -1456,7 +1360,6 @@ public class ItemObject {
      *
      * @param flag the flag that has just shown itself
      * @param name the item's description, as {@link #description} builds it
-     * @author Rowan Crowther
      */
     public void flagMessage(ObjectFlag flag, String name) {
         ObjectPropertyTypeWrapper payload = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag);
@@ -1493,7 +1396,6 @@ public class ItemObject {
      * <p>Function getFlags commented in full on 260816, when it changed from returning the live set.
      *
      * @return a copy of this item's flags
-     * @author Rowan Crowther
      */
     public Flag<ObjectFlag> getFlags() {
         Flag<ObjectFlag> toReturn = new Flag<>(ObjectFlag.class);
@@ -1512,7 +1414,6 @@ public class ItemObject {
      * <p>Function getKnown commented in full on 260816.
      *
      * @return the known counterpart, or {@code null} if this item has none
-     * @author Rowan Crowther
      */
     public ItemObject getKnown() {
         return known;
@@ -1531,7 +1432,6 @@ public class ItemObject {
      * <p>Function getNotice commented in full on 260816.
      *
      * @return a copy of this item's notice flags
-     * @author Rowan Crowther
      */
     public Flag<ObjectNotice> getNotice() {
         Flag<ObjectNotice> flags = new Flag<>(ObjectNotice.class);
@@ -1541,7 +1441,6 @@ public class ItemObject {
 
     /**
      * @return this item's sub-type value — C's {@code obj->sval}
-     * @author Rowan Crowther
      */
     public int getsValue() {
         return sValue;
@@ -1549,7 +1448,6 @@ public class ItemObject {
 
     /**
      * @param sValue the sub-type value to set — C's {@code obj->sval}
-     * @author Rowan Crowther
      */
     public void setsValue(int sValue) {
         this.sValue = sValue;
@@ -1557,7 +1455,6 @@ public class ItemObject {
 
     /**
      * @return this item's weight in tenths of a pound — C's {@code obj->weight}
-     * @author Rowan Crowther
      */
     public int getWeight() {
         return weight;
@@ -1565,7 +1462,6 @@ public class ItemObject {
 
     /**
      * @param weight the weight to set — C's {@code obj->weight}
-     * @author Rowan Crowther
      */
     public void setWeight(int weight) {
         this.weight = weight;
@@ -1578,7 +1474,6 @@ public class ItemObject {
      * definition has one, and {@code knowObject} stops early on exactly that test.
      *
      * @param kind the kind to set
-     * @author Rowan Crowther
      */
     public void setKind(ObjectKind kind) {
         this.kind = kind;
@@ -1586,7 +1481,6 @@ public class ItemObject {
 
     /**
      * @param tValue the item type value to set — C's {@code obj->tval}
-     * @author Rowan Crowther
      */
     public void settValue(TValue tValue) {
         this.tValue = tValue;
@@ -1594,7 +1488,6 @@ public class ItemObject {
 
     /**
      * @param number the stack count to set — C's {@code obj->number}
-     * @author Rowan Crowther
      */
     public void setNumber(int number) {
         this.number = number;
@@ -1602,7 +1495,6 @@ public class ItemObject {
 
     /**
      * @return the number of damage dice this item rolls — C's {@code obj->dd}
-     * @author Rowan Crowther
      */
     public int getDamageDice() {
         return damageDice;
@@ -1613,7 +1505,6 @@ public class ItemObject {
      * counterpart may be given a zero here rather than the truth.
      *
      * @param damageDice the number of damage dice to set
-     * @author Rowan Crowther
      */
     public void setDamageDice(int damageDice) {
         this.damageDice = damageDice;
@@ -1621,7 +1512,6 @@ public class ItemObject {
 
     /**
      * @return the sides per damage die — C's {@code obj->ds}
-     * @author Rowan Crowther
      */
     public int getDamageSides() {
         return damageSides;
@@ -1629,7 +1519,6 @@ public class ItemObject {
 
     /**
      * @param damageSides the sides per damage die to set — C's {@code obj->ds}
-     * @author Rowan Crowther
      */
     public void setDamageSides(int damageSides) {
         this.damageSides = damageSides;
@@ -1637,7 +1526,6 @@ public class ItemObject {
 
     /**
      * @return this item's base armour class — C's {@code obj->ac}
-     * @author Rowan Crowther
      */
     public int getNormalAC() {
         return normalAC;
@@ -1651,7 +1539,6 @@ public class ItemObject {
      * zero is meaningful: it is what the display shows for an unknown quantity.
      *
      * @param normalAC the base armour class to set
-     * @author Rowan Crowther
      */
     public void setNormalAC(int normalAC) {
         this.normalAC = normalAC;
@@ -1662,7 +1549,6 @@ public class ItemObject {
      * value here is not by itself remarkable: body armour carries a to-hit penalty from its kind.
      *
      * @param toHit the to-hit bonus to set
-     * @author Rowan Crowther
      */
     public void setToHit(int toHit) {
         this.toHit = toHit;
@@ -1670,7 +1556,6 @@ public class ItemObject {
 
     /**
      * @return this item's extra parameter value — C's {@code obj->pval}
-     * @author Rowan Crowther
      */
     public int getpValue() {
         return pValue;
@@ -1678,7 +1563,6 @@ public class ItemObject {
 
     /**
      * @param pValue the extra parameter value to set — C's {@code obj->pval}
-     * @author Rowan Crowther
      */
     public void setpValue(int pValue) {
         this.pValue = pValue;
@@ -1686,7 +1570,6 @@ public class ItemObject {
 
     /**
      * @param toAC the to-armour-class bonus to set — C's {@code obj->to_a}
-     * @author Rowan Crowther
      */
     public void setToAC(int toAC) {
         this.toAC = toAC;
@@ -1694,7 +1577,6 @@ public class ItemObject {
 
     /**
      * @param toDam the to-damage bonus to set — C's {@code obj->to_d}
-     * @author Rowan Crowther
      */
     public void setToDam(int toDam) {
         this.toDam = toDam;
@@ -1711,7 +1593,6 @@ public class ItemObject {
      * <p>Function getModifiers commented in full on 260816.
      *
      * @return this item's modifiers, shared with this instance
-     * @author Rowan Crowther
      */
     public Map<ObjectModifier, Integer> getModifiers() {
         if (modifiers == null) {
@@ -1722,7 +1603,6 @@ public class ItemObject {
 
     /**
      * @param modifiers the modifier map to set — C's {@code obj->modifiers}; stored, not copied
-     * @author Rowan Crowther
      */
     public void setModifiers(Map<ObjectModifier, Integer> modifiers) {
         this.modifiers = modifiers;
@@ -1740,7 +1620,6 @@ public class ItemObject {
      * <p>Function getElInfo commented in full on 260816.
      *
      * @return this item's element info by element, shared with this instance
-     * @author Rowan Crowther
      */
     public Map<ElementEnum, ElementInfo> getElInfo() {
         if (elInfo == null) {
@@ -1751,7 +1630,6 @@ public class ItemObject {
 
     /**
      * @param elInfo the element info map to set — C's {@code obj->el_info}; stored, not copied
-     * @author Rowan Crowther
      */
     public void setElInfo(Map<ElementEnum, ElementInfo> elInfo) {
         this.elInfo = elInfo;
@@ -1775,7 +1653,6 @@ public class ItemObject {
      *
      * @param element the element being described
      * @param elInfo  this item's relation to it, taken by reference
-     * @author Rowan Crowther
      */
     public void putElInfo(ElementEnum element, ElementInfo elInfo) {
         if (this.elInfo == null) {
@@ -1794,7 +1671,6 @@ public class ItemObject {
      * <p>Function getEffect commented in full on 260816.
      *
      * @return this item's effects, shared with this instance
-     * @author Rowan Crowther
      */
     public List<Effect> getEffect() {
         return effect;
@@ -1802,7 +1678,6 @@ public class ItemObject {
 
     /**
      * @param effect the effect list to set — C's {@code obj->effect}; stored, not copied
-     * @author Rowan Crowther
      */
     public void setEffect(List<Effect> effect) {
         this.effect = effect;
@@ -1817,7 +1692,6 @@ public class ItemObject {
      * <p>Function getSlays commented in full on 260816.
      *
      * @return this item's slays, shared with this instance
-     * @author Rowan Crowther
      */
     public Set<Slay> getSlays() {
         if (slays == null) {
@@ -1828,7 +1702,6 @@ public class ItemObject {
 
     /**
      * @param slays the slay set to set — C's {@code obj->slays}; stored, not copied
-     * @author Rowan Crowther
      */
     public void setSlays(Set<Slay> slays) {
         this.slays = slays;
@@ -1843,7 +1716,6 @@ public class ItemObject {
      * <p>Function getEgo commented in full on 260816.
      *
      * @return this item's ego, or {@code null} if it has none
-     * @author Rowan Crowther
      */
     public EgoItem getEgo() {
         return ego;
@@ -1851,7 +1723,6 @@ public class ItemObject {
 
     /**
      * @param ego the ego type to set — C's {@code obj->ego}
-     * @author Rowan Crowther
      */
     public void setEgo(EgoItem ego) {
         this.ego = ego;
@@ -1872,7 +1743,6 @@ public class ItemObject {
      *
      * @param mask the flags to switch on; read, never retained
      * @return {@code true} if any flag was not already set
-     * @author Rowan Crowther
      */
     public boolean setFlags(Flag<ObjectFlag> mask) {
         return flags.union(mask);
@@ -1891,7 +1761,6 @@ public class ItemObject {
      *
      * @param flag the flag to switch on
      * @return {@code true} if the flag was not already set
-     * @author Rowan Crowther
      */
     public boolean setFlag(ObjectFlag flag) {
         return flags.set(flag);
@@ -1911,7 +1780,6 @@ public class ItemObject {
      * <p>Function setFlagsTo coded on 260816, commented in full on 260816.
      *
      * @param flags the flags this item should end up with; read, never retained
-     * @author Rowan Crowther
      */
     public void setFlagsTo(Flag<ObjectFlag> flags) {
         this.flags.copyFrom(flags);
@@ -1932,7 +1800,6 @@ public class ItemObject {
      * <p>Function addBrand coded on 260817, commented in full on 260817.
      *
      * @param brand the brand this item carries
-     * @author Rowan Crowther
      */
     public void addBrand(Brand brand) {
         if (brands == null) {
@@ -1953,7 +1820,6 @@ public class ItemObject {
      * <p>Function removeBrand coded on 260817, commented in full on 260817.
      *
      * @param brand the brand to take off
-     * @author Rowan Crowther
      */
     public void removeBrand(Brand brand) {
         if (brands == null) {
@@ -1972,8 +1838,6 @@ public class ItemObject {
      * #getBrands()} reporting empty for both, which is why the null field never needs restoring.
      *
      * <p>Function clearBrands coded on 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     public void clearBrands() {
         if (brands == null) {
@@ -1990,7 +1854,6 @@ public class ItemObject {
      * <p>Function addSlay coded on 260817, commented in full on 260817.
      *
      * @param slay the slay this item carries
-     * @author Rowan Crowther
      */
     public void addSlay(Slay slay) {
         if (slays == null) {
@@ -2006,7 +1869,6 @@ public class ItemObject {
      * <p>Function removeSlay coded on 260817, commented in full on 260817.
      *
      * @param slay the slay to take off
-     * @author Rowan Crowther
      */
     public void removeSlay(Slay slay) {
         if (slays == null) {
@@ -2019,8 +1881,6 @@ public class ItemObject {
      * Takes every slay off this item, the port of C freeing the slay array. See {@link #clearBrands}.
      *
      * <p>Function clearSlays coded on 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     public void clearSlays() {
         if (slays == null) {

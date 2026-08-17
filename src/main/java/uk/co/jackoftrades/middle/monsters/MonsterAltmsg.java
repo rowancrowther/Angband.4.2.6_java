@@ -31,20 +31,14 @@ import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
 public class MonsterAltmsg {
     /**
      * The alternate message text.
-     *
-     * @author Rowan Crowther
      */
     private String message;
     /**
      * Which situation this alternate message applies to.
-     *
-     * @author Rowan Crowther
      */
     private MonsterAltmsgType msgType;
     /**
      * The spell whose default message this overrides.
-     *
-     * @author Rowan Crowther
      */
     MonsterSpell index;
 
@@ -54,7 +48,6 @@ public class MonsterAltmsg {
      * @param message the message text
      * @param msgType the situation it applies to
      * @param index   the spell it overrides
-     * @author Rowan Crowther
      */
     public MonsterAltmsg(String message, MonsterAltmsgType msgType, MonsterSpell index) {
         this.message = message;

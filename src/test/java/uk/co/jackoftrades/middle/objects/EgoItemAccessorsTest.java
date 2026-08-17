@@ -67,8 +67,6 @@ class EgoItemAccessorsTest {
      * Builds an ego from the pieces a test cares about, defaulting the rest. The constructor takes
      * twenty-seven arguments because it is fed straight from the parsed data file; the fixture
      * exists so the tests below do not have to say so twenty-seven times.
-     *
-     * @author Rowan Crowther
      */
     private static EgoItem ego(Flag<ObjectFlag> flags,
                                Map<ObjectModifier, Random> modifiers,
@@ -87,17 +85,12 @@ class EgoItemAccessorsTest {
 
     /**
      * An ego with nothing on it, for the cases that only read one member.
-     *
-     * @author Rowan Crowther
      */
     private static EgoItem bareEgo() {
         return ego(new Flag<>(ObjectFlag.class), new HashMap<>(), new HashMap<>(),
                 new HashSet<>(), new HashSet<>(), new HashMap<>(), false);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("everseen reports what it was built with")
     void everSeenIsCarried() {
@@ -109,8 +102,6 @@ class EgoItemAccessorsTest {
     /**
      * The flag set is the template's own, and its contents are readable — both halves matter, since
      * {@code knowsEgo} tests it for subset against the player's knowledge.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the flag set is shared, not copied")
@@ -124,9 +115,6 @@ class EgoItemAccessorsTest {
         assertTrue(item.getFlags().has(ObjectFlag.OF_FEATHER));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("a modifier the ego grants comes back as its range")
     void grantedModifierIsReturned() {
@@ -143,8 +131,6 @@ class EgoItemAccessorsTest {
      * The divergence from C, stated as a test rather than left to be discovered. C would answer a
      * zeroed {@code random_value} here; the port answers {@code null}, and callers evaluating the
      * range at its extremes have to treat that null as the zero it stands for.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a modifier the ego does not touch comes back null, where C reads a zero")
@@ -152,9 +138,6 @@ class EgoItemAccessorsTest {
         assertNull(bareEgo().getModifier(ObjectModifier.OM_STEALTH));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @Test
     @DisplayName("the element info is shared, not copied")
     void elInfoIsShared() {
@@ -173,8 +156,6 @@ class EgoItemAccessorsTest {
     /**
      * The three remaining collections, all read the same way by {@code knowsEgo} and all sharing
      * rather than copying.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("brands, slays and curses are shared, not copied")
@@ -195,8 +176,6 @@ class EgoItemAccessorsTest {
      * for most of these collections, and {@code knowsEgo} walks all three unconditionally — C guards
      * each with {@code if (ego->brands && …)} because its arrays may genuinely be absent, and the
      * port needs the empty collection so it does not have to.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("an ego granting none of them reads as empty")
@@ -212,8 +191,6 @@ class EgoItemAccessorsTest {
     /**
      * Because the collections are shared, a template loaded and later added to reads back the
      * addition. This is the useful side of sharing, and the reason it is not a defect.
-     *
-     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a later addition to a shared collection is visible through the getter")

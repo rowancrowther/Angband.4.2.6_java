@@ -58,7 +58,6 @@ public class ObjectUtils {
      *
      * @param player     the player whose equipment is checked
      * @param objectFlag the object flag to mark as learned
-     * @author Rowan Crowther
      */
     public static void equipLearnFlag(Player player, ObjectFlag objectFlag) {
         // Stub class TODO: implement
@@ -72,7 +71,6 @@ public class ObjectUtils {
      * <p><b>Stub:</b> not yet implemented — takes no action until the knowledge subsystem is ported.
      *
      * @param player the player whose equipment is checked
-     * @author Rowan Crowther
      */
     public static void equipLearnAfterTime(Player player) {
         // Stub class TODO: implement
@@ -101,7 +99,6 @@ public class ObjectUtils {
      * @param description the {@link ObjectDescription} flags selecting how much detail to include
      * @param player      the player whose knowledge governs what the name reveals
      * @return the object's display name
-     * @author Rowan Crowther
      */
     public static String objectDesc(ItemObject item, Flag<ObjectDescription> description, Player player) {
         // Stub class TODO: implement
@@ -132,7 +129,6 @@ public class ObjectUtils {
      * @param curse the curse whose effect is firing
      * @param item  the worn item the curse is attached to (the effect's source)
      * @return {@code true} if the effect did something the player would notice
-     * @author Rowan Crowther
      */
     public static boolean doCurseEffect(Curse curse, ItemObject item) {
         // Stub class TODO: implement

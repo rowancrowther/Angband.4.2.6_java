@@ -77,8 +77,6 @@ public class UILoop {
     /**
      * Logger for messages that arrive out of order or on the wrong queue - the failures that are
      * otherwise invisible, because an unhandled message is simply dropped.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -90,8 +88,6 @@ public class UILoop {
      * {@code uiChannel.uiReceiver()} are the ones the <em>core</em> sent. Handed in rather than
      * created here, because a channel built at the point of use is a channel with no other end;
      * {@code Channels} is the one place a matched pair comes from.
-     *
-     * @author Rowan Crowther
      */
     private UIChannel uiChannel;
 
@@ -101,8 +97,6 @@ public class UILoop {
      * <p>A concrete class rather than a boundary, which is the one thing here stage 5 is expected to
      * change: with a painting interface in its place, this loop could be tested without a live Swing
      * window, which is why the message-to-paint hop is the one part of stage 2 that has no test.
-     *
-     * @author Rowan Crowther
      */
     private SwingUI swingUI;
 
@@ -115,7 +109,6 @@ public class UILoop {
      *
      * @param uiChannel this half's pair of channel ends
      * @param swingUI   the front end whose active window the messages are painted into
-     * @author Rowan Crowther
      */
     public UILoop(UIChannel uiChannel, SwingUI swingUI) {
         this.uiChannel = uiChannel;
@@ -133,7 +126,6 @@ public class UILoop {
      *
      * @param why what could not be read, used as the first line of the message
      * @throws RuntimeException always; this method does not return
-     * @author Rowan Crowther
      */
     private void initAngbandAux(String why) {
         String message = why + "\n" +
@@ -181,8 +173,6 @@ public class UILoop {
      * is not being used as a signal - and nothing interrupts this thread, so reaching it at all is
      * a bug worth the log line. Note that the windows are not disposed on that path: an interrupt
      * is a failure, not a shutdown, and the two should not be made to look alike.
-     *
-     * @author Rowan Crowther
      */
     public void loop() {
         SplashScreen splashScreen = null;

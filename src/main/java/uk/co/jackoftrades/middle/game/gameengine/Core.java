@@ -79,8 +79,6 @@ public class Core {
      * object is constructed on {@code main}'s thread but every field it touches after that belongs
      * to the game thread, and starting a thread publishes everything written before the start to
      * it.
-     *
-     * @author Rowan Crowther
      */
     private GameEngine gameEngine;
 
@@ -100,8 +98,6 @@ public class Core {
      * <p>Handed in at construction, on {@code main}'s thread, and read on the game
      * thread; safe without {@code volatile} because starting a thread publishes
      * everything written before it.
-     *
-     * @author Rowan Crowther
      */
     private CoreChannel coreChannel;
 
@@ -113,8 +109,6 @@ public class Core {
      * {@code selectSavefile}, {@code startNewCharacter} and {@code useSpecificCharacter} all decide
      * what happens before the first turn, which is Chapter 3's work. {@code requestGraphicsMode}
      * belongs to the other half and is carried here only because both halves get the whole record.
-     *
-     * @author Rowan Crowther
      */
     private StartupOptions startupOptions;
 
@@ -130,8 +124,6 @@ public class Core {
      * is private, so the override has nothing it can write to, and {@link #gameLoop()} would find
      * the field still null. The boundary is nominal until either the field is made visible to
      * subclasses or this hands the engine back instead of storing it.
-     *
-     * @author Rowan Crowther
      */
     public void getGameEngine() {
         gameEngine = GameEngine.getGame();
@@ -146,7 +138,6 @@ public class Core {
      *
      * @param coreChannel    the core's pair of channel ends - its inbox and its way of replying
      * @param startupOptions the parsed command line
-     * @author Rowan Crowther
      */
     public Core(CoreChannel coreChannel, StartupOptions startupOptions) {
         this.coreChannel = coreChannel;
@@ -202,8 +193,6 @@ public class Core {
      * on. Note that it gives up <em>without</em> sending {@code STOPPED} - the UI
      * would then wait forever, which is a real gap and the reason interrupting this
      * thread is not part of any shutdown path.
-     *
-     * @author Rowan Crowther
      */
     public void gameLoop() {
         if (gameEngine == null)

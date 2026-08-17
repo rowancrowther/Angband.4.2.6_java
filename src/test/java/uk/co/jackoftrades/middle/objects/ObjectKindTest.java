@@ -67,7 +67,6 @@ class ObjectKindTest {
      *
      * @param kind the kind to read
      * @return the kind's curse map
-     * @author Rowan Crowther
      */
     @SuppressWarnings("unchecked")
     private static Map<Curse, CurseData> cursesOf(ObjectKind kind) {
@@ -85,7 +84,6 @@ class ObjectKindTest {
      *
      * @param curses the curse map to pass in
      * @return the constructed kind
-     * @author Rowan Crowther
      */
     private static ObjectKind kindWith(Map<Curse, CurseData> curses) {
         return new ObjectKind("& Test Sword~", "", base(), 0, null, null, null, null, 0, null,
@@ -100,7 +98,6 @@ class ObjectKindTest {
      * A kind synthesised to back a special artifact.
      *
      * @return the constructed kind
-     * @author Rowan Crowther
      */
     private static ObjectKind artifactKind() {
         Artifact artifact = new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0",
@@ -113,7 +110,6 @@ class ObjectKindTest {
      * A minimal object base, which the kind constructors read for kind-flags and element info.
      *
      * @return the constructed base
-     * @author Rowan Crowther
      */
     private static ObjectBase base() {
         return new ObjectBase(TValue.TV_SWORD, "sword", ColourEnum.COLOUR_WHITE,
@@ -125,7 +121,6 @@ class ObjectKindTest {
      *
      * @param name the curse's name
      * @return a curse with every other field empty
-     * @author Rowan Crowther
      */
     private static Curse curse(String name) {
         return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
@@ -146,8 +141,6 @@ class ObjectKindTest {
          * mutable and an item's curse ticks its own timeout down, so a shared instance would let one
          * cursed sword count down the template every other sword is made from — and the drift would
          * show up as curses firing early on items that had never been worn.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("curse data is copied, not shared")
@@ -173,8 +166,6 @@ class ObjectKindTest {
          * The map itself is copied too, so a curse added to the argument afterwards does not appear
          * on the kind. Copying the values but keeping the caller's map would leave the kind's curse
          * list open to later change from outside.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the curse map is copied, not adopted")
@@ -208,8 +199,6 @@ class ObjectKindTest {
          * non-jewellery special artifact outright rather than waiting for its runes to be read. A
          * flag left false everywhere would leave that branch unreachable, and nothing else would
          * fail.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("only a kind built for an artifact is a special artifact kind")
@@ -223,8 +212,6 @@ class ObjectKindTest {
         /**
          * The artifact constructor gives its kind a red {@code '*'} and the {@code KF_INSTA_ART}
          * flag, which is what marks the kind as being its own artifact rather than a template.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an artifact kind is marked as an instant artifact")
@@ -246,8 +233,6 @@ class ObjectKindTest {
          * The two settings are independent, and have to be: a player can be ignoring unidentified
          * potions while wanting to see the identified ones, which is the whole reason there are two
          * flags rather than one. Setting either must leave the other alone.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the aware and unaware settings are independent")
@@ -272,8 +257,6 @@ class ObjectKindTest {
          * C's macro only ever switches the bit on; the port takes a boolean and so can clear it,
          * which the player's ignore menu will want. Pinning the clearing path means it stays working
          * until there is something to use it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("both settings can be cleared as well as set")
@@ -296,8 +279,6 @@ class ObjectKindTest {
          * flag set was never created answers the question with a null pointer instead of a boolean —
          * and the caller is {@code Player.flavourAware}, which asks it of whatever kind it is handed
          * rather than of a kind it built.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every constructor leaves the ignore settings answerable")

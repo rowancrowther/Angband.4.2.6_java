@@ -37,14 +37,10 @@ import java.util.Objects;
 public class Rational {
     /**
      * The denominator; kept positive and coprime with the numerator after {@link #simplify()}.
-     *
-     * @author Rowan Crowther
      */
     private int denominator;
     /**
      * The numerator; carries the sign of the fraction after {@link #simplify()}.
-     *
-     * @author Rowan Crowther
      */
     private int numerator;
 

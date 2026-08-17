@@ -148,8 +148,6 @@ public enum MonsterSpell {
 
     /**
      * The set of spell-type categories this spell belongs to.
-     *
-     * @author Rowan Crowther
      */
     private final Flag<MonsterSpellTypeEnum> spellTypes;
 
@@ -158,7 +156,6 @@ public enum MonsterSpell {
      * given array.
      *
      * @param types the spell-type categories this spell belongs to
-     * @author Rowan Crowther
      */
     private MonsterSpell(MonsterSpellTypeEnum[] types) {
         spellTypes = new Flag<>(MonsterSpellTypeEnum.class);
@@ -170,7 +167,6 @@ public enum MonsterSpell {
 
     /**
      * @return the set of spell-type categories this spell belongs to
-     * @author Rowan Crowther
      */
     private Flag<MonsterSpellTypeEnum> getTypes() {
         return spellTypes;

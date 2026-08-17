@@ -70,8 +70,6 @@ public enum ElementEnum {
      * Whether this is a "base" element — the four physical damage types (acid, electricity, fire,
      * cold) that objects can ignore/be affected by as a group. Ports the {@code base} column of C's
      * {@code list-elements.h}; used e.g. when a dungeon spellbook is set to ignore every base element.
-     *
-     * @author Rowan Crowther
      */
     private final boolean isBase;
 
@@ -91,8 +89,6 @@ public enum ElementEnum {
      * code that needs it arrives.
      *
      * <p>Field isHigh coded before 260817, commented in full on 260817.
-     *
-     * @author Rowan Crowther
      */
     private final boolean isHigh;
 
@@ -105,8 +101,6 @@ public enum ElementEnum {
      * <p>Ports C's {@code ELEM_HIGH_MAX} bound, which relies on the {@code ELEM_*} constants being
      * ordered so that everything resistable comes first. Making it a per-constant flag rather than
      * an ordinal comparison keeps this port independent of that ordering.
-     *
-     * @author Rowan Crowther
      */
     private final boolean hasResistRune;
 
@@ -116,7 +110,6 @@ public enum ElementEnum {
      * @param isBase        whether this element is one of the four base (physical) damage types
      * @param isHigh        whether this element is one of the resistable elements above the base four
      * @param hasResistRune whether objects can resist this element
-     * @author Rowan Crowther
      */
     ElementEnum(boolean isBase, boolean isHigh, boolean hasResistRune) {
         this.isBase = isBase;
@@ -126,7 +119,6 @@ public enum ElementEnum {
 
     /**
      * @return {@code true} if this is a base (physical) element
-     * @author Rowan Crowther
      */
     public boolean isBase() {
         return isBase;
@@ -134,7 +126,6 @@ public enum ElementEnum {
 
     /**
      * @return {@code true} if objects can resist this element, and so if it has a resistance rune
-     * @author Rowan Crowther
      */
     public boolean isHasResistRune() {
         return hasResistRune;
@@ -158,7 +149,6 @@ public enum ElementEnum {
      *
      * @return the matching projection, or {@code null} if no constant of that name exists, which
      * means the two enums have drifted apart
-     * @author Rowan Crowther
      */
     public ProjectionEnum getProjectionEnum() {
         try {

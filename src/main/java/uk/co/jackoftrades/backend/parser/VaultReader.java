@@ -48,7 +48,6 @@ public class VaultReader implements Reader <Vault> {
     /**
      * @param filename the data file to parse
      * @return the successfully assembled vaults; soft errors are logged but not surfaced here
-     * @author Rowan Crowther
      */
     @Override
     public @NotNull List<Vault> parse(@NotNull String filename) throws IOException {
@@ -61,7 +60,6 @@ public class VaultReader implements Reader <Vault> {
      *
      * @param filename the data file to parse
      * @return the assembled vaults plus any soft errors gathered along the way
-     * @author Rowan Crowther
      */
     public ParseResult<Vault> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -83,7 +81,6 @@ public class VaultReader implements Reader <Vault> {
      *                     rather than handing back a partially-built list
      * @param errors       soft-error sink for the record-count check
      * @return the raw parse records, in file order
-     * @author Rowan Crowther
      */
     private static List<VaultParseRecord> extract (
             @NotNull VaultGrammar parser,

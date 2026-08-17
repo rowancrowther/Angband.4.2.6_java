@@ -33,8 +33,6 @@ public enum UILifecycleEvent {
     /**
      * Begin. Sent once, when the front end is ready to display what the core produces — the port
      * of the moment C's {@code main()} calls into the game.
-     *
-     * @author Rowan Crowther
      */
     START,
 
@@ -47,8 +45,6 @@ public enum UILifecycleEvent {
      * <p>Asynchronous: this asks, and the core replies with {@link CoreLifecycleEvent#STOPPED}
      * when it is done. The front end must wait for that reply rather than exiting on having sent
      * this.
-     *
-     * @author Rowan Crowther
      */
     SAVE_AND_STOP
 }

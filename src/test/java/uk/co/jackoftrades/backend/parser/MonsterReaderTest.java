@@ -101,8 +101,6 @@ class MonsterReaderTest {
     /**
      * Loads every registry the assembler resolves against (via the full init chain), then loads the
      * real monster.txt once for the happy-path tests.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void bootstrap() throws IOException {
@@ -116,8 +114,6 @@ class MonsterReaderTest {
      * assumes at its start, so this heavy load does not leak into order-sensitive suites — notably
      * {@code EgoItemReaderTest}'s numeric-sval test, which needs {@code kindsByTvalSval} empty for a
      * numeric sval to resolve to no kind.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void cleanup() throws Exception {

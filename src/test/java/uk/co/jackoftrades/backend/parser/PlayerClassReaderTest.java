@@ -99,8 +99,6 @@ class PlayerClassReaderTest {
     /**
      * Seeds the three registries the class assembler resolves against — realms, object bases and
      * player shapes — then loads the real {@code class.txt} once for the happy-path tests.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -114,8 +112,6 @@ class PlayerClassReaderTest {
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
      * the registries do not leak into other test suites.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {

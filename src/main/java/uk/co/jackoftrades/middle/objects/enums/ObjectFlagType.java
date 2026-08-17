@@ -56,8 +56,6 @@ public enum ObjectFlagType {
     /**
      * The {@code subtype:} token this constant is written as in the data file.
      * Empty for the two non-data placeholders ({@link #OFT_NONE}, {@link #OFT_MAX}).
-     *
-     * @author Rowan Crowther
      */
     private final String subtypeText;
 
@@ -65,7 +63,6 @@ public enum ObjectFlagType {
      * Bind a flag grouping to its data-file token.
      *
      * @param subtypeText the {@code subtype:} token
-     * @author Rowan Crowther
      */
     ObjectFlagType(String subtypeText) {
         this.subtypeText = subtypeText;
@@ -73,7 +70,6 @@ public enum ObjectFlagType {
 
     /**
      * @return the {@code subtype:} token for this grouping
-     * @author Rowan Crowther
      */
     public String getSubtypeText() {
         return subtypeText;
@@ -91,7 +87,6 @@ public enum ObjectFlagType {
      *                the record has no {@code subtype:} line)
      * @return the matching grouping, or {@code null} if the token is unrecognised
      * (C returns {@code PARSE_ERROR_INVALID_SUBTYPE})
-     * @author Rowan Crowther
      */
     public static ObjectFlagType getFlagTypeFromSubtype(String subtype) {
         return Arrays.stream(values())

@@ -51,7 +51,6 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
      * @param errors  the soft-error sink; a body with an unresolvable slot type is reported here and
      *                skipped rather than aborting the load
      * @return the assembled {@link PlayerBody}s, each with its slots in declared order
-     * @author Rowan Crowther
      */
     @Override
     public List<PlayerBody> assemble(@NotNull List<BodyParseRecord> records, @NotNull List<String> errors) {

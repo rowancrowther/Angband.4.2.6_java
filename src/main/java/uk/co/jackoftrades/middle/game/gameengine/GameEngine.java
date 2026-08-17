@@ -45,8 +45,6 @@ import uk.co.jackoftrades.middle.player.Player;
 public class GameEngine {
     /**
      * Logger for start-up diagnostics.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
     /**
@@ -64,15 +62,11 @@ public class GameEngine {
      * anything that ran without building an engine. Since callers signal through it unguarded,
      * that surfaced as {@code NullPointerException}s in every test that exercised game logic
      * without first standing up a bus of its own.
-     *
-     * @author Rowan Crowther
      */
     private static EventsHandler eventsBusHandler = new EventsBusHandler();
 
     /**
      * The singleton, built on first {@link #getGame()}. Null until then.
-     *
-     * @author Rowan Crowther
      */
     private static GameEngine instance;
 
@@ -80,8 +74,6 @@ public class GameEngine {
     /**
      * Private constructor - the singleton is reached through {@link #getGame()}, never
      * built directly. All it does is run {@link #initGame()}.
-     *
-     * @author Rowan Crowther
      */
     private GameEngine() {
         initGame();
@@ -110,8 +102,6 @@ public class GameEngine {
      * <p>The gap C leaves between those two calls for registering handlers now exists here too: it
      * is the space between an engine being built and {@code loadGameConstants()} being called, and
      * {@code Core.gameLoop()} is what uses it.
-     *
-     * @author Rowan Crowther
      */
     private void initGame() {
         eventsBusHandler = new EventsBusHandler();
@@ -149,8 +139,6 @@ public class GameEngine {
      *
      * <p>Every call replaces the player, level and command queue held in {@link GameState}, so
      * calling this twice on one engine discards the first set entirely.
-     *
-     * @author Rowan Crowther
      */
     public void loadGameConstants() {
         GameConstants.init();
@@ -199,7 +187,6 @@ public class GameEngine {
      * may signal without checking.
      *
      * @return the current event bus
-     * @author Rowan Crowther
      */
     public static EventsHandler getEventsBusHandler() {
         return eventsBusHandler;
@@ -217,7 +204,6 @@ public class GameEngine {
      * and put it back afterwards, or it will leak into everything that runs later in the same JVM.
      *
      * @param eventsBusHandler the bus to install
-     * @author Rowan Crowther
      */
     public static void setEventsBusHandler(EventsHandler eventsBusHandler) {
         GameEngine.eventsBusHandler = eventsBusHandler;
@@ -233,7 +219,6 @@ public class GameEngine {
      * Safe as long as the call stays confined to the single game thread.
      *
      * @return the singleton game engine
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static GameEngine getGame() {

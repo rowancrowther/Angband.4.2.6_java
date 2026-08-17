@@ -30,20 +30,14 @@ import java.util.ArrayList;
 public class MonsterGroup {
     /**
      * This group's identifier within the level.
-     *
-     * @author Rowan Crowther
      */
     private int index;
     /**
      * The monster index of the group's leader.
-     *
-     * @author Rowan Crowther
      */
     private int leader;
     /**
      * The group's members.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<MonGroupListEntry> memberList;
 }

@@ -127,7 +127,6 @@ class UILoopTest {
      *
      * @param swingUI the front end the loop paints and closes through
      * @return the running thread
-     * @author Rowan Crowther
      */
     private Thread startLoop(SwingUI swingUI) {
         UILoop loop = new UILoop(channels.uiChannel(), swingUI);
@@ -206,8 +205,6 @@ class UILoopTest {
          * A close click becomes a save-and-stop request to the core. This is the whole reason the
          * EDT posts a message rather than acting: the decision is taken here, on a thread that is
          * allowed to wait for an answer.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aCloseRequestBecomesSaveAndStop() throws Exception {
@@ -223,8 +220,6 @@ class UILoopTest {
          * The request goes to the core's inbox, not back onto the loop's own. Sending it to the
          * wrong queue would be a loop that reads its own message, translates it again, and spins -
          * so this is worth pinning even though the previous test would also fail.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theRequestDoesNotComeBackRound() throws Exception {
@@ -242,8 +237,6 @@ class UILoopTest {
         /**
          * Translating is not stopping. The loop must go on serving the core until the core says it
          * has finished - the window stays up and painting while the save runs.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theLoopKeepsRunningAfterTheRequest() throws Exception {
@@ -268,8 +261,6 @@ class UILoopTest {
          * {@code STOPPED} disposes the windows and ends the loop. Both halves matter: a loop that
          * disposed but kept running would leave a non-daemon thread holding the JVM open with
          * nothing on screen, which looks exactly like a hang.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void stoppedDisposesTheWindowsAndEndsTheLoop() throws Exception {
@@ -290,8 +281,6 @@ class UILoopTest {
          * The disposal happens on the event dispatch thread. It is a Swing call made from a thread
          * that is not the EDT, so the {@code invokeLater} is not a nicety - without it this is a
          * race that will mostly work, which is the worst kind.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theDisposalHappensOnTheEdt() throws Exception {
@@ -312,8 +301,6 @@ class UILoopTest {
          *
          * <p>This is the test that would catch the handshake being wired up backwards - each half
          * of it can pass alone while the two do not meet.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void theFullHandshakeFromClickToClosedWindow() throws Exception {
@@ -337,8 +324,6 @@ class UILoopTest {
          * The core may say {@code STOPPED} without having been asked - a fatal error core-side
          * would arrive that way. The loop shuts down all the same rather than waiting for a
          * request it will never see.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void stoppedIsObeyedEvenWithoutACloseRequest() throws Exception {
@@ -365,8 +350,6 @@ class UILoopTest {
          * Game traffic does not end the loop. Obvious, and worth a test only because the switch
          * gained two arms that do: a mis-placed {@code return} would turn the first painted
          * message into a shutdown.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void ordinaryCoreTrafficLeavesTheLoopRunning() throws Exception {
@@ -384,8 +367,6 @@ class UILoopTest {
          * loop says so loudly. Only this half sends {@code UIMessage}s, so one arriving here is a
          * wiring mistake, and nothing else reads this queue - stay quiet and the message is simply
          * gone.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void aMisroutedUiMessageIsRejected() throws Exception {
@@ -405,8 +386,6 @@ class UILoopTest {
          * normal running, so reaching that path means something has gone wrong, and the windows
          * are deliberately left alone rather than being disposed as though the core had finished
          * cleanly.
-         *
-         * @author Rowan Crowther
          */
         @Test
         void anInterruptEndsTheLoopWithoutDisposingAnything() throws Exception {

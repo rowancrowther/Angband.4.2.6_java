@@ -40,33 +40,23 @@ import java.security.InvalidParameterException;
 public class ObjectPropertyTypeWrapper {
     /**
      * Logger used to report mismatched-type construction or access.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
     /**
      * The discriminator: which kind of property payload is stored.
-     *
-     * @author Rowan Crowther
      */
     private ObjPropertyType type;
     /**
      * Payload for a {@code FLAG} property.
-     *
-     * @author Rowan Crowther
      */
     private ObjectFlag flag;
     /**
      * Payload for a {@code STAT}/{@code MOD} property.
-     *
-     * @author Rowan Crowther
      */
     private ObjectModifier modifier;
     /**
      * Payload for an element relation ({@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}).
-     *
-     * @author Rowan Crowther
      */
     private ElementEnum element;
 
@@ -76,7 +66,6 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_MOD} or {@code OBJ_PROPERTY_STAT})
      * @return the stored modifier
      * @throws java.security.InvalidParameterException if {@code typeRequested} is neither MOD nor STAT
-     * @author Rowan Crowther
      */
     public ObjectModifier getModifier(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_MOD &&
@@ -96,7 +85,6 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM})
      * @return the stored element
      * @throws java.security.InvalidParameterException if {@code typeRequested} is not an element-relation type
-     * @author Rowan Crowther
      */
     public ElementEnum getElement(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_IGNORE &&
@@ -118,7 +106,6 @@ public class ObjectPropertyTypeWrapper {
      * @param typeRequested the expected type (must be {@code OBJ_PROPERTY_FLAG})
      * @return the stored flag
      * @throws java.security.InvalidParameterException if {@code typeRequested} is not {@code OBJ_PROPERTY_FLAG}
-     * @author Rowan Crowther
      */
     public ObjectFlag getFlag(ObjPropertyType typeRequested) {
         if (typeRequested != ObjPropertyType.OBJ_PROPERTY_FLAG) {
@@ -135,7 +122,6 @@ public class ObjectPropertyTypeWrapper {
      * @param type     must be {@code OBJ_PROPERTY_STAT} or {@code OBJ_PROPERTY_MOD}
      * @param modifier the modifier payload
      * @throws java.security.InvalidParameterException if {@code type} is not a stat/mod type
-     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectModifier modifier) {
         switch (type) {
@@ -161,7 +147,6 @@ public class ObjectPropertyTypeWrapper {
      * @param type must be {@code OBJ_PROPERTY_FLAG}
      * @param flag the flag payload
      * @throws InvalidParameterException if {@code type} is not {@code OBJ_PROPERTY_FLAG}
-     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ObjectFlag flag) throws InvalidParameterException {
         if (type == ObjPropertyType.OBJ_PROPERTY_FLAG) {
@@ -182,7 +167,6 @@ public class ObjectPropertyTypeWrapper {
      * @param type    must be one of {@code IGNORE}/{@code RESIST}/{@code VULN}/{@code IMM}
      * @param element the element payload
      * @throws InvalidParameterException if {@code type} is not an element-relation type
-     * @author Rowan Crowther
      */
     public ObjectPropertyTypeWrapper(ObjPropertyType type, ElementEnum element) throws InvalidParameterException {
         switch (type) {
@@ -215,7 +199,6 @@ public class ObjectPropertyTypeWrapper {
      *
      * @param obj the object to compare against
      * @return {@code true} if {@code obj} is a wrapper with the same discriminator and payload
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object obj) {

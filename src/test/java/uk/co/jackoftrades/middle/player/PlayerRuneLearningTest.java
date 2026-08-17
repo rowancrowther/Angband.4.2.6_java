@@ -127,8 +127,6 @@ class PlayerRuneLearningTest {
      * two of one slay, one curse, and the runes covering them. The rune list is what the wrappers
      * resolve through, so it has to agree with the brand and slay lists or
      * {@link Rune#runeIndex(Brand)} will find nothing.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -206,9 +204,6 @@ class PlayerRuneLearningTest {
                 new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_IMPAIR_HP, impairProperty)))));
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @AfterAll
     static void restore() throws Exception {
         for (String name : SAVED_FIELDS) {
@@ -239,8 +234,6 @@ class PlayerRuneLearningTest {
      * suite does not run. {@link EquipSlot} has no setter at all — wielding is what puts an item in a
      * slot — and {@link ItemObject}'s no-argument constructor leaves the curse map null, where a
      * parsed item would always have one.
-     *
-     * @author Rowan Crowther
      */
     private static void poke(Object target, String name, Object value) throws Exception {
         Field f = target.getClass().getDeclaredField(name);
@@ -260,7 +253,6 @@ class PlayerRuneLearningTest {
      *
      * @param curse the curse definition
      * @param power the power it has on the object
-     * @author Rowan Crowther
      */
     private static Map.Entry<Curse, CurseData> cursed(Curse curse, int power) {
         return Map.entry(curse, new CurseData(power, 0));
@@ -271,7 +263,6 @@ class PlayerRuneLearningTest {
      * curses can say which was met first.
      *
      * @param entries the curses, as {@link #cursed} pairs
-     * @author Rowan Crowther
      */
     @SafeVarargs
     private static ItemObject itemWith(Map.Entry<Curse, CurseData>... entries) throws Exception {
@@ -290,7 +281,6 @@ class PlayerRuneLearningTest {
      * {@link ItemObject#hasFlag} has no reason to tolerate — a parsed item always has a set.
      *
      * @param itemFlags the flags the item itself carries
-     * @author Rowan Crowther
      */
     private static ItemObject itemFlagged(ObjectFlag... itemFlags) throws Exception {
         ItemObject item = itemWith();
@@ -305,8 +295,6 @@ class PlayerRuneLearningTest {
     /**
      * An item carrying the given curses and an empty flag set, so that the flag learning can walk
      * past its own flags and reach its curses.
-     *
-     * @author Rowan Crowther
      */
     @SafeVarargs
     private static ItemObject itemCursed(Map.Entry<Curse, CurseData>... entries) throws Exception {
@@ -328,7 +316,6 @@ class PlayerRuneLearningTest {
      *
      * @param item the item to give a counterpart to
      * @return the counterpart; read its flags back through {@code item.getKnown().getFlags()}
-     * @author Rowan Crowther
      */
     private static ItemObject giveKnownCounterpart(ItemObject item) throws Exception {
         ItemObject known = new ItemObject();
@@ -352,7 +339,6 @@ class PlayerRuneLearningTest {
      * @param toHit this item's rolled to-hit bonus
      * @param toDam this item's rolled to-damage bonus
      * @param toAC  this item's rolled to-AC bonus
-     * @author Rowan Crowther
      */
     private static ItemObject itemWithCombat(int toHit, int toDam, int toAC) throws Exception {
         ItemObject item = itemWith();
@@ -368,7 +354,6 @@ class PlayerRuneLearningTest {
      * something to find. A sword, so the body-armour branch is not in play.
      *
      * @param toHit this item's rolled to-hit bonus
-     * @author Rowan Crowther
      */
     private static ItemObject weaponWithToHit(int toHit) throws Exception {
         ItemObject item = itemWith();
@@ -381,8 +366,6 @@ class PlayerRuneLearningTest {
     /**
      * A one-slot body holding the given items in order; a null entry is an empty slot, which is what
      * most of a real body's slots are.
-     *
-     * @author Rowan Crowther
      */
     private static PlayerBody bodyWearing(ItemObject... items) throws Exception {
         List<EquipSlot> slots = new ArrayList<>();
@@ -399,8 +382,6 @@ class PlayerRuneLearningTest {
     /**
      * A body of one empty slot. Spelled out rather than written {@code bodyWearing(null)}, which
      * varargs reads as no array at all.
-     *
-     * @author Rowan Crowther
      */
     private static PlayerBody emptyBody() throws Exception {
         return bodyWearing(new ItemObject[]{null});
@@ -408,8 +389,6 @@ class PlayerRuneLearningTest {
 
     /**
      * A shape whose only interesting property is its armour class.
-     *
-     * @author Rowan Crowther
      */
     private static PlayerShape shapeWithToAc(int toAc) {
         return shapeWith(toAc, 0, 0);
@@ -419,8 +398,6 @@ class PlayerRuneLearningTest {
      * A shape with the three combat figures set. Unlike an item's, these are flat parsed
      * {@code int}s on the definition — a bear's claws are simply better than a hand, with no dice
      * and no roll behind it.
-     *
-     * @author Rowan Crowther
      */
     private static PlayerShape shapeWith(int toAc, int toHit, int toDam) {
         return new PlayerShape("bear", toAc, toHit, toDam, Map.of(), null, null, Map.of(), Map.of(),
@@ -434,7 +411,6 @@ class PlayerRuneLearningTest {
      *
      * @param types the slot types, in order
      * @param items the items to place, one per type; a null entry leaves that slot empty
-     * @author Rowan Crowther
      */
     private static PlayerBody bodyOf(List<EquipmentSlotsEnum> types, ItemObject... items)
             throws Exception {
@@ -462,7 +438,6 @@ class PlayerRuneLearningTest {
      * to. The old list comes back as the return value, to be put back afterwards.
      *
      * @return the rune list that was in place before, for restoring
-     * @author Rowan Crowther
      */
     private static List<Rune> withToDRune() {
         List<Rune> previous = ObjectRegistry.getRunes();
@@ -480,8 +455,6 @@ class PlayerRuneLearningTest {
      * Puts the player in a started game, which is what {@code p->upkeep->playing} reports. It is
      * false on a fresh {@link PlayerUpkeep}, and {@link Player#cursesFindFlags} gates its
      * message on it, so a test about messages has to say so.
-     *
-     * @author Rowan Crowther
      */
     private void startPlaying() throws Exception {
         poke(player.getPlayerUpkeep(), "playing", true);
@@ -499,8 +472,6 @@ class PlayerRuneLearningTest {
      * {@code GameState.getPlayer()} and {@code equipLearnFlag}'s {@code isFullyKnown} call met a null
      * without it. That method reads only the item and its counterpart, so it became {@code static} and
      * the indirection went; these tests hold their own player and need nothing global.
-     *
-     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() throws Exception {
@@ -513,9 +484,6 @@ class PlayerRuneLearningTest {
         GameEngine.setEventsBusHandler(bus);
     }
 
-    /**
-     * @author Rowan Crowther
-     */
     @AfterEach
     void tearDown() {
         GameEngine.setEventsBusHandler(realBus);
@@ -561,9 +529,6 @@ class PlayerRuneLearningTest {
     @DisplayName("learnRune dispatch")
     class Dispatch {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a combat rune learns only its own bonus")
         void combat() {
@@ -574,9 +539,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.toAIsKnown());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("each combat rune reaches a different bonus")
         void combatVarietiesAreDistinct() {
@@ -591,8 +553,6 @@ class PlayerRuneLearningTest {
         /**
          * The sentinel is not a rune. C's chain of {@code if}/{@code else if} falls off the end for
          * it with {@code learned} still false, and nothing is learned or said.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the combat sentinel learns nothing and says nothing")
@@ -605,9 +565,6 @@ class PlayerRuneLearningTest {
             assertTrue(bus.messages.isEmpty());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a modifier rune learns a modifier")
         void modifier() {
@@ -618,9 +575,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.modifierIsKnown(ObjectModifier.OM_INT));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a resist rune learns a resistance")
         void resist() {
@@ -630,9 +584,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_COLD));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a flag rune learns a flag")
         void flag() {
@@ -646,8 +597,6 @@ class PlayerRuneLearningTest {
         /**
          * The rune holds one member of the group, and learning it must reveal the whole group —
          * otherwise a player who has read the acid rune still cannot see a strong acid brand.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a brand rune learns the brand's whole group")
@@ -658,9 +607,6 @@ class PlayerRuneLearningTest {
             assertTrue(knowledge.brandIsKnown(strongAcid));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a slay rune learns the slay's whole group")
         void slay() {
@@ -670,9 +616,6 @@ class PlayerRuneLearningTest {
             assertTrue(knowledge.slayIsKnown(evil5));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse rune learns a curse")
         void curse() {
@@ -685,8 +628,6 @@ class PlayerRuneLearningTest {
          * Null stands in for C's {@code assert} on the rune index — a lookup that found nothing.
          * Being a data-driven failure rather than a programming one, it is logged and dropped
          * instead of thrown, so nothing is learned and the turn survives.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a null rune is ignored rather than thrown on")
@@ -708,9 +649,6 @@ class PlayerRuneLearningTest {
     @DisplayName("the discovery message")
     class Announcement {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("names the rune and is tagged MSG_RUNE")
         void namesTheRune() {
@@ -721,9 +659,6 @@ class PlayerRuneLearningTest {
             assertEquals("You have learned the rune of acid brand.", bus.messages.get(0).message());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("uses the variety's own name for each kind of rune")
         void usesTheVarietyName() {
@@ -741,8 +676,6 @@ class PlayerRuneLearningTest {
         /**
          * Learning the same rune again is not a discovery. This is what the {@code if (!learned)
          * return} guard buys, and without it a branded weapon would announce its rune on every blow.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not repeated when the rune is already known")
@@ -755,8 +688,6 @@ class PlayerRuneLearningTest {
 
         /**
          * And not for another member of a group already learned, since the group was marked whole.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not repeated for another member of a known group")
@@ -770,8 +701,6 @@ class PlayerRuneLearningTest {
         /**
          * The flag exists for the paths that learn in bulk — {@code player_learn_innate_runes} and
          * the equipment sweeps — which would otherwise bury the player under one message per rune.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is suppressed when the caller asks for silence")
@@ -793,9 +722,6 @@ class PlayerRuneLearningTest {
     @DisplayName("the learn wrappers")
     class Wrappers {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnBrand learns the brand and announces it")
         void learnBrand() {
@@ -809,8 +735,6 @@ class PlayerRuneLearningTest {
          * The reason the wrapper cannot be skipped. {@link Rune#runeIndex(Brand)} matches by name,
          * so a strong acid brand finds the acid rune even though the rune holds the weak one; a
          * caller that built its own rune from the brand it had would learn only that brand.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnBrand resolves a strength that no rune holds")
@@ -821,9 +745,6 @@ class PlayerRuneLearningTest {
             assertTrue(player.knowsBrand(weakAcid));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnBrand does nothing the second time")
         void learnBrandIsIdempotent() {
@@ -833,9 +754,6 @@ class PlayerRuneLearningTest {
             assertEquals(1, bus.messages.size());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("knowsBrand reports the knowledge, not the item")
         void knowsBrand() {
@@ -846,9 +764,6 @@ class PlayerRuneLearningTest {
             assertTrue(player.knowsBrand(weakAcid));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnCurse learns the curse and announces it")
         void learnCurse() {
@@ -863,8 +778,6 @@ class PlayerRuneLearningTest {
          * C resolves the curse by name rather than by identity, so one rebuilt from a savefile or a
          * parser is still recognised. An identity match would pass every other test here and fail
          * only in the game.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnCurse matches by name, not identity")
@@ -880,8 +793,6 @@ class PlayerRuneLearningTest {
         /**
          * A curse with no rune reaches {@link Player#learnRune} as null, where C's guard is
          * {@code index >= 0}. Nothing is learned and nothing is said.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnCurse survives a curse with no rune")
@@ -894,9 +805,6 @@ class PlayerRuneLearningTest {
             assertTrue(bus.messages.isEmpty());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnSlay learns the slay and announces it")
         void learnSlay() {
@@ -912,8 +820,6 @@ class PlayerRuneLearningTest {
          * {@link Rune#runeIndex(Slay)} cannot match on a name: the rune holds {@code evil3}, so a
          * player who has just been bitten by {@code evil5} finds it only through
          * {@link Slay#sameMonsterSlain}.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnSlay resolves a strength that no rune holds")
@@ -924,9 +830,6 @@ class PlayerRuneLearningTest {
             assertTrue(player.knowsSlay(evil3));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnSlay does nothing the second time")
         void learnSlayIsIdempotent() {
@@ -936,9 +839,6 @@ class PlayerRuneLearningTest {
             assertEquals(1, bus.messages.size());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("knowsSlay reports the knowledge, not the weapon")
         void knowsSlay() {
@@ -949,9 +849,6 @@ class PlayerRuneLearningTest {
             assertTrue(player.knowsSlay(evil3));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("knowsCurse reports the knowledge, not the item")
         void knowsCurse() {
@@ -964,8 +861,6 @@ class PlayerRuneLearningTest {
 
         /**
          * Curses are never grouped, so unlike a brand or a slay there is no second curse to reveal.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("knowsCurse does not answer for a curse never learned")
@@ -978,9 +873,6 @@ class PlayerRuneLearningTest {
             assertFalse(player.knowsCurse(other));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnFlag learns the flag and announces it")
         void learnFlag() {
@@ -996,8 +888,6 @@ class PlayerRuneLearningTest {
          * C's {@code player_learn_flag} is the one wrapper with no already-known guard, relying on
          * {@code of_on} to report whether anything changed. The guard this port adds must not
          * change that answer — a flag learned twice is still announced once, either way.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnFlag does nothing the second time")
@@ -1015,8 +905,6 @@ class PlayerRuneLearningTest {
          * Asking about one of those is expected rather than exceptional, since the learning code
          * walks whole flag sets, so it answers with silence instead of a throw. C hands
          * {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learnFlag survives a flag with no rune")
@@ -1027,9 +915,6 @@ class PlayerRuneLearningTest {
             assertTrue(bus.messages.isEmpty());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("learnFlag touches only the flag it was given")
         void learnFlagIsNarrow() {
@@ -1051,9 +936,6 @@ class PlayerRuneLearningTest {
     @DisplayName("knowsRune")
     class KnowsRune {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a combat rune is unknown until learned")
         void combat() {
@@ -1069,8 +951,6 @@ class PlayerRuneLearningTest {
         /**
          * Each of the three enchantments answers for itself; C compares {@code r->index} against
          * three constants in a chain, which is easy to write with two arms reaching the same field.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the three combat runes answer separately")
@@ -1089,8 +969,6 @@ class PlayerRuneLearningTest {
         /**
          * The sentinel is not a rune and has nothing to know. C's {@code if} chain falls through it
          * to {@code return false}.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the combat sentinel is never known")
@@ -1101,9 +979,6 @@ class PlayerRuneLearningTest {
                     new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX))));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a modifier rune is unknown until learned")
         void modifier() {
@@ -1118,9 +993,6 @@ class PlayerRuneLearningTest {
                     new Rune(new RuneVariety.ModKey(ObjectModifier.OM_INT, strengthProperty))));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a resist rune is unknown until learned")
         void resist() {
@@ -1135,9 +1007,6 @@ class PlayerRuneLearningTest {
                     new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_COLD, null))));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a flag rune is unknown until learned")
         void flag() {
@@ -1150,9 +1019,6 @@ class PlayerRuneLearningTest {
             assertTrue(player.knowsRune(sustain));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse rune is unknown until learned")
         void curse() {
@@ -1168,8 +1034,6 @@ class PlayerRuneLearningTest {
         /**
          * Learning one member of a group makes the group's rune readable whichever member the rune
          * is asked about — which is the whole point of doing the fan-out on the learning side.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a brand rune is known through any member of its group")
@@ -1181,9 +1045,6 @@ class PlayerRuneLearningTest {
                     () -> assertTrue(player.knowsRune(new Rune(new RuneVariety.BrandKey(strongAcid)))));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a slay rune is known through any member of its group")
         void slayGroup() {
@@ -1198,8 +1059,6 @@ class PlayerRuneLearningTest {
          * A rune of one variety must not be answered from another variety's corner of the
          * knowledge. Learning everything but the brand is the arrangement that catches an arm
          * reading the wrong field, because only one answer should still be false.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("each variety answers from its own corner")
@@ -1248,9 +1107,6 @@ class PlayerRuneLearningTest {
             return map;
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an innate resistance is learned")
         void resistance() throws Exception {
@@ -1264,8 +1120,6 @@ class PlayerRuneLearningTest {
         /**
          * C's test is {@code res_level != 0}, so a race that burns easily has learned as much about
          * fire as one that does not.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an innate vulnerability is learned too")
@@ -1277,9 +1131,6 @@ class PlayerRuneLearningTest {
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an innate flag is learned")
         void flag() throws Exception {
@@ -1290,9 +1141,6 @@ class PlayerRuneLearningTest {
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("elements and flags are learned in the same pass")
         void both() throws Exception {
@@ -1309,8 +1157,6 @@ class PlayerRuneLearningTest {
          * This runs at birth, where one message per innate property would bury the character sheet
          * before the player had seen it. C passes {@code false} for the same reason, and it is the
          * only thing the parameter exists for.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learns in silence")
@@ -1326,8 +1172,6 @@ class PlayerRuneLearningTest {
          * Most races resist nothing and carry no innate flags, so this is the ordinary case, not an
          * edge one — and it is the case that walks every element past a map with no entry for any
          * of them.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a race with no innate properties learns nothing and survives the walk")
@@ -1344,8 +1188,6 @@ class PlayerRuneLearningTest {
 
         /**
          * An entry present but zero is "mentioned, no stake in it", and must not be learned.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a resistance level of zero is not learned")
@@ -1361,8 +1203,6 @@ class PlayerRuneLearningTest {
          * Nothing else is swept up on the way past. The walk visits every element and every flag,
          * so an arm that learned what it was iterating over rather than what the race confers would
          * show here and nowhere else.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("only the race's own properties are learned")
@@ -1383,8 +1223,6 @@ class PlayerRuneLearningTest {
          * {@code ELEM_HIGH_MAX} — so a race with a stake in one of the others resolves to nothing.
          * C would index {@code rune_list[-1]} here; this port logs and carries on, which matters
          * because the element loop must still reach the elements after it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an element with no rune is stepped over, not fallen at")
@@ -1420,8 +1258,6 @@ class PlayerRuneLearningTest {
         /**
          * Two runes, not one: that something is altering the armour class, and which curse is doing
          * it. C learns them in that order and so does this.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse that changes armour class teaches its own rune and the to-AC rune")
@@ -1442,8 +1278,6 @@ class PlayerRuneLearningTest {
         /**
          * The sign is not the question. C tests {@code to_a != 0}, and a curse that makes armour
          * worse is as noticeable as one that makes it better.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a positive armour change teaches as readily as a negative one")
@@ -1459,8 +1293,6 @@ class PlayerRuneLearningTest {
         /**
          * A curse with no armour-class contribution is not evidence about armour class, however hard
          * it bites in other ways.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse with no armour change teaches nothing")
@@ -1479,8 +1311,6 @@ class PlayerRuneLearningTest {
          * Zero power is how a curse is removed ({@code CurseData.setPower(0)}), so a zeroed entry can
          * outlive the curse it describes. C reaches the same answer from the other side: its array is
          * dense, and zero power is what "the item does not have curse {@code i}" looks like.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse at zero power is not on the item")
@@ -1499,8 +1329,6 @@ class PlayerRuneLearningTest {
          * walked the registry rather than the item — as C's loop bounds invite — would teach the
          * player a rune for a curse they have never met, from an item that merely happens to be
          * cursed at all.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse the item does not carry teaches nothing")
@@ -1515,9 +1343,6 @@ class PlayerRuneLearningTest {
                     () -> assertFalse(knowledge.curseIsKnown(enveloping)));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItem() throws Exception {
@@ -1538,8 +1363,6 @@ class PlayerRuneLearningTest {
          * qualifying curse it relearns the first curse instead of the to-AC rune. Harmless there only
          * because to-AC is known by then; the port resolves the rune once, before the loop, so the
          * mistake cannot be made.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("two qualifying curses are both learned, and the to-AC rune announced once")
@@ -1582,8 +1405,6 @@ class PlayerRuneLearningTest {
         /**
          * Most of a real body's slots are empty most of the time, and C guards its whole loop body
          * with {@code if (obj)}. Without the equivalent the very first unworn slot ends the turn.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
@@ -1595,9 +1416,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.toAIsKnown());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a cursed item in a slot teaches the to-AC rune")
         void cursedItemTeaches() throws Exception {
@@ -1612,8 +1430,6 @@ class PlayerRuneLearningTest {
         /**
          * A plain item with no bonus and no curse has nothing to say. The blow landed exactly as
          * hard as it should have, which is not evidence of anything.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an uncursed item with no bonus teaches nothing")
@@ -1629,8 +1445,6 @@ class PlayerRuneLearningTest {
          * The item's own bonus arm, which replaced a stub once {@link ItemObject} began carrying the
          * to-AC it rolled rather than the dice it was rolled from. No curse is involved: the armour
          * itself is doing the work.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an uncursed item with a to-AC bonus teaches the rune")
@@ -1645,8 +1459,6 @@ class PlayerRuneLearningTest {
         /**
          * A penalty is as much evidence as a bonus — C tests {@code if (obj->to_a)}, not its sign,
          * and the rune names the enchantment rather than its direction.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a to-AC penalty teaches as readily as a bonus")
@@ -1662,8 +1474,6 @@ class PlayerRuneLearningTest {
          * The leading guard. Nothing is left to learn about the armour class, so no slot is read and
          * the curse riding on the worn item goes unnoticed — which is C's behaviour, and the reason
          * a curse can stay hidden on a character who identified their armour long ago.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("nothing is examined once the to-AC rune is already known")
@@ -1680,8 +1490,6 @@ class PlayerRuneLearningTest {
         /**
          * The guard repeated at the foot of the loop. Once the first slot has taught the rune the
          * walk stops, so the second cursed item is never read and its curse stays unknown.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the walk stops at the first slot that teaches")
@@ -1700,8 +1508,6 @@ class PlayerRuneLearningTest {
         /**
          * A bear's hide is an armour-class bonus like any other. Reached only when nothing worn has
          * already answered the question.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an assumed shape's armour class teaches the rune")
@@ -1714,9 +1520,6 @@ class PlayerRuneLearningTest {
             assertTrue(knowledge.toAIsKnown());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a shape with no armour class teaches nothing")
         void shapeWithoutArmourClass() throws Exception {
@@ -1730,8 +1533,6 @@ class PlayerRuneLearningTest {
 
         /**
          * Being in no shape at all is the normal case, and C's {@code if (p->shape)} says so.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("no shape is not an error")
@@ -1762,9 +1563,6 @@ class PlayerRuneLearningTest {
     @DisplayName("cursesFindToH")
     class CursesFindToH {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse that changes to-hit teaches its own rune and the to-hit rune")
         void teachesBothRunes() throws Exception {
@@ -1785,8 +1583,6 @@ class PlayerRuneLearningTest {
          * The point of having three functions rather than one. {@code vulnerability} is a real curse
          * that really is on the item, and it changes the armour class by -50 — but it does nothing
          * to the player's aim, so a missed blow is no evidence of it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse that changes only armour class teaches nothing here")
@@ -1804,8 +1600,6 @@ class PlayerRuneLearningTest {
         /**
          * A curse at zero power is not on the item at all — {@link CurseData#setPower} with a zero
          * is how a curse is removed, so a zeroed entry can outlive the curse it named.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse at zero power is not on the item")
@@ -1817,9 +1611,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.toHIsKnown());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
@@ -1844,25 +1635,16 @@ class PlayerRuneLearningTest {
 
         private List<Rune> previousRunes;
 
-        /**
-         * @author Rowan Crowther
-         */
         @BeforeEach
         void addRune() {
             previousRunes = withToDRune();
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @AfterEach
         void removeRune() {
             ObjectRegistry.setRunes(previousRunes);
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse that changes to-damage teaches its own rune and the to-damage rune")
         void teachesBothRunes() throws Exception {
@@ -1879,9 +1661,6 @@ class PlayerRuneLearningTest {
                             announced()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse that changes only armour class teaches nothing here")
         void aToAOnlyCurseIsSilent() throws Exception {
@@ -1895,9 +1674,6 @@ class PlayerRuneLearningTest {
                     () -> assertTrue(bus.messages.isEmpty()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("a curse at zero power is not on the item")
         void zeroPowerIsNotACurse() throws Exception {
@@ -1926,9 +1702,6 @@ class PlayerRuneLearningTest {
     @DisplayName("equipLearnOnRangedAttack")
     class EquipLearnOnRangedAttack {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
@@ -1942,8 +1715,6 @@ class PlayerRuneLearningTest {
         /**
          * The first of the two skips. A sword hanging at the belt took no part in the shot, so
          * whatever it is carrying stays unlearned — and the curse riding on it stays hidden with it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the melee weapon is not read")
@@ -1963,8 +1734,6 @@ class PlayerRuneLearningTest {
          * The second skip, and the less obvious one. The launcher is the thing that fired, but its
          * accuracy and the archer's are the same number as far as the shot is concerned, so C
          * declines to attribute the result to it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the launcher is not read either")
@@ -1983,8 +1752,6 @@ class PlayerRuneLearningTest {
         /**
          * Every other slot is read, so a ring that steadies the hand is learned from a bowshot even
          * though it had nothing to do with the bow.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse in any other slot teaches the to-hit rune")
@@ -2003,8 +1770,6 @@ class PlayerRuneLearningTest {
          * The item's own bonus arm, which C reaches through
          * {@code !object_has_standard_to_h(obj)} — the same predicate the melee method uses. An
          * item sitting at exactly what its kind prescribes is evidence of nothing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item at its kind's to-hit teaches nothing")
@@ -2020,8 +1785,6 @@ class PlayerRuneLearningTest {
         /**
          * The other half, and the one that says the arm is live at all: an item whose to-hit has
          * departed from its kind's is exactly what a truer-than-expected shot is evidence of.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item off its kind's to-hit teaches the rune")
@@ -2038,8 +1801,6 @@ class PlayerRuneLearningTest {
          * The leading guard: nothing is examined once the rune is known, so the curse on the worn
          * ring goes unnoticed. C's behaviour, and the reason a curse can stay hidden on a character
          * who worked out their bonuses long ago.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("nothing is examined once the to-hit rune is already known")
@@ -2057,8 +1818,6 @@ class PlayerRuneLearningTest {
         /**
          * The guard repeated at the foot of the loop: the walk stops at the first slot that teaches,
          * so the second cursed item is never read.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the walk stops at the first slot that teaches")
@@ -2079,8 +1838,6 @@ class PlayerRuneLearningTest {
         /**
          * A shape's to-hit is a flat parsed {@code int}, and is reached only when nothing worn has
          * already answered the question.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an assumed shape's to-hit teaches the rune")
@@ -2096,8 +1853,6 @@ class PlayerRuneLearningTest {
         /**
          * The shape's own to-damage is not consulted here, whatever it says. Only accuracy is on
          * offer from a bowshot.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a shape's to-damage is not learned from a shot")
@@ -2115,9 +1870,6 @@ class PlayerRuneLearningTest {
             }
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("no shape is not an error")
         void noShape() throws Exception {
@@ -2154,25 +1906,16 @@ class PlayerRuneLearningTest {
 
         private List<Rune> previousRunes;
 
-        /**
-         * @author Rowan Crowther
-         */
         @BeforeEach
         void addRune() {
             previousRunes = withToDRune();
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @AfterEach
         void removeRune() {
             ObjectRegistry.setRunes(previousRunes);
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
@@ -2188,8 +1931,6 @@ class PlayerRuneLearningTest {
         /**
          * The one slot skipped, and the difference from the ranged method. A bow is no part of a
          * sword-stroke.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the launcher is not read")
@@ -2209,8 +1950,6 @@ class PlayerRuneLearningTest {
         /**
          * The weapon slot is read, unlike in the ranged method — the whole reason the two functions
          * differ.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the melee weapon is read")
@@ -2227,8 +1966,6 @@ class PlayerRuneLearningTest {
          * The to-damage arm on its own, from an item with no to-hit story to tell: the fixture item
          * has no kind, so {@link ItemObject#hasStandardToH} answers true and the to-hit arm stays
          * quiet.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item's to-damage teaches the to-damage rune and not the to-hit one")
@@ -2246,8 +1983,6 @@ class PlayerRuneLearningTest {
         /**
          * A to-damage penalty teaches as readily as a bonus — C tests {@code if (obj->to_d)}, not
          * its sign.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a to-damage penalty teaches as readily as a bonus")
@@ -2263,8 +1998,6 @@ class PlayerRuneLearningTest {
         /**
          * An item with no bonus at all is silent in both arms. The blow landed exactly as it should
          * have, which is not evidence of anything.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item with no bonus teaches nothing")
@@ -2281,8 +2014,6 @@ class PlayerRuneLearningTest {
 
         /**
          * The to-hit arm, from a weapon whose to-hit has departed from what its kind prescribes.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a weapon off its kind's to-hit teaches the to-hit rune")
@@ -2302,8 +2033,6 @@ class PlayerRuneLearningTest {
          * exactly what its kind prescribes is standard, so nothing is learned from it — which is
          * what stops a suit of chain mail teaching to-hit to everyone who swings a sword while
          * wearing one.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item at its kind's to-hit teaches nothing")
@@ -2319,8 +2048,6 @@ class PlayerRuneLearningTest {
         /**
          * The leading guard is a conjunction, so knowing one of the two is not enough to stop the
          * walk. A player who has worked out their weapon's damage still has accuracy to learn.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("knowing to-damage alone does not stop the walk")
@@ -2336,8 +2063,6 @@ class PlayerRuneLearningTest {
 
         /**
          * The other half of the same guard.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("knowing to-hit alone does not stop the walk")
@@ -2354,8 +2079,6 @@ class PlayerRuneLearningTest {
         /**
          * Both known: now there is nothing left to learn, so no slot is read at all and the curse on
          * the worn item stays hidden.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("nothing is examined once both runes are known")
@@ -2375,8 +2098,6 @@ class PlayerRuneLearningTest {
          * The guard at the foot of the loop, which is the same conjunction. The first slot teaches
          * both runes at once — {@code enveloping} carries a to-hit and a to-damage — so the second
          * cursed item is never reached.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the walk stops at the first slot that teaches both")
@@ -2398,8 +2119,6 @@ class PlayerRuneLearningTest {
         /**
          * A curse that changes only one of the two teaches only that one, and the walk goes on to
          * the next slot looking for the other.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a slot that teaches one rune does not end the walk")
@@ -2419,8 +2138,6 @@ class PlayerRuneLearningTest {
         /**
          * The shape's two figures are tested independently rather than as alternatives, so a shape
          * granting both teaches both.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an assumed shape teaches both its figures")
@@ -2438,8 +2155,6 @@ class PlayerRuneLearningTest {
         /**
          * And a shape granting one teaches only that one — the two branches are not an
          * if/else pair.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a shape with only one of the two teaches only that one")
@@ -2454,9 +2169,6 @@ class PlayerRuneLearningTest {
                     () -> assertFalse(knowledge.toHIsKnown()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("no shape is not an error")
         void noShape() throws Exception {
@@ -2491,8 +2203,6 @@ class PlayerRuneLearningTest {
 
         /**
          * A set naming the flags a test is asking about, standing in for C's {@code test_flags}.
-         *
-         * @author Rowan Crowther
          */
         private Flag<ObjectFlag> testing(ObjectFlag... flags) {
             Flag<ObjectFlag> set = new Flag<>(ObjectFlag.class);
@@ -2505,8 +2215,6 @@ class PlayerRuneLearningTest {
         /**
          * Two runes, not one: the flag that has just shown itself, and the curse that was carrying
          * it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse carrying a tested flag teaches the flag and the curse")
@@ -2526,8 +2234,6 @@ class PlayerRuneLearningTest {
          * {@code OF_IMPAIR_HP} as well, but this occasion was not asking about it, so it stays
          * unknown — a curse does not give away everything it holds merely because it gave away one
          * thing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("only the flags asked about are learned")
@@ -2547,8 +2253,6 @@ class PlayerRuneLearningTest {
          * definition parsed once and shared by every item carrying that curse. Intersecting them in
          * place would delete {@code OF_IMPAIR_HP} from the definition for the rest of the session,
          * so the second item — a different item, the same curse — would find nothing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the curse definition survives being intersected against")
@@ -2569,8 +2273,6 @@ class PlayerRuneLearningTest {
          * The caller's set is not mutated either — {@code equip_learn_flag} builds one and hands it
          * to every slot in turn, so a method that consumed it would work on the first item and on
          * no other.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the caller's test set survives the call")
@@ -2586,8 +2288,6 @@ class PlayerRuneLearningTest {
          * The curse's rune is learned inside the flag loop, not beside it. A curse whose flags miss
          * the test set entirely teaches nothing at all — not even that it exists — because the
          * player has had no evidence of it.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse whose flags miss the test set teaches nothing, not even itself")
@@ -2607,8 +2307,6 @@ class PlayerRuneLearningTest {
          * The other half of that placement: when the flag was already known the curse is still
          * learned, because meeting a curse is knowledge even when its effect was already
          * understood. The return value is about the flag, not the curse, so it is false.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an already-known flag still teaches the curse")
@@ -2626,8 +2324,6 @@ class PlayerRuneLearningTest {
         /**
          * A curse at zero power is not on the item — {@link CurseData#setPower} with a zero is how
          * a curse is removed, so a zeroed entry can outlive the curse it names.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse at zero power is not on the item")
@@ -2638,9 +2334,6 @@ class PlayerRuneLearningTest {
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
@@ -2652,8 +2345,6 @@ class PlayerRuneLearningTest {
          * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during
          * character generation and loading without anything being announced into a game that does
          * not yet exist.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the flag message waits for the game to be under way")
@@ -2673,8 +2364,6 @@ class PlayerRuneLearningTest {
          * And once play is under way, the property's own wording is sent, between the two runes —
          * this method learns then announces, where {@link Player#equipLearnFlag} announces then
          * learns. Both match their own C originals, which differ.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("in play the property's own wording is announced")
@@ -2695,8 +2384,6 @@ class PlayerRuneLearningTest {
          * A property with no {@code msg:} is not an error — most flags are learned in silence. The
          * rune is still learned and announced; only the flag's own wording is absent, because there
          * is none.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a flag whose property has no message is learned silently")
@@ -2736,8 +2423,6 @@ class PlayerRuneLearningTest {
          * C's guard is {@code if (!flag) return;} against a flag index of zero. The enum equivalent
          * has to name the sentinel rather than test for null, and rejects the far end-marker on the
          * same grounds.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a null flag or a sentinel is ignored rather than walked")
@@ -2754,9 +2439,6 @@ class PlayerRuneLearningTest {
                     () -> assertTrue(bus.messages.isEmpty()));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("empty slots are stepped over, not fallen at")
         void emptySlotsAreSkipped() throws Exception {
@@ -2771,8 +2453,6 @@ class PlayerRuneLearningTest {
          * The first arm: an item that has the flag announces it and teaches its rune. The message
          * comes before the rune here, which is C's order in this function and the opposite of
          * {@link Player#cursesFindFlags}'s.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item carrying the flag teaches and announces it")
@@ -2793,8 +2473,6 @@ class PlayerRuneLearningTest {
         /**
          * The inner guard. Three items with the same flag is an ordinary loadout, and being told
          * about it three times is not.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("two items carrying the same flag announce it once")
@@ -2815,8 +2493,6 @@ class PlayerRuneLearningTest {
         /**
          * A flag the player already knows says nothing at all — the item has told them nothing they
          * did not have.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an already-known flag is not announced again")
@@ -2846,8 +2522,6 @@ class PlayerRuneLearningTest {
          *
          * <p>Rewritten on 260816 to read through {@code getKnown().getFlags()} after
          * {@code getKnownFlags} was withdrawn.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item without the flag has the flag ruled out on its known counterpart")
@@ -2870,8 +2544,6 @@ class PlayerRuneLearningTest {
          * trying. C is entitled to dereference {@code obj->known} because
          * {@code assert(obj->known)} has just run; the port drops those asserts, so the null has to
          * be handled where it would be dereferenced.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item with no known counterpart is stepped over, not fallen at")
@@ -2885,8 +2557,6 @@ class PlayerRuneLearningTest {
          * The third thing each slot does, and it happens whichever of the first two ran: the flag
          * may be riding on a curse rather than on the item, which is a different question from
          * both.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a curse carrying the flag is found even when the item does not have it")
@@ -2904,8 +2574,6 @@ class PlayerRuneLearningTest {
         /**
          * The one-element set handed to the curses is built from the flag under discussion, so a
          * curse carrying some <em>other</em> flag is not given away by this event.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("only the flag being learned is looked for on the curses")
@@ -2922,8 +2590,6 @@ class PlayerRuneLearningTest {
          * The walk runs to the end of the body. Unlike the {@code equipLearnOn*} methods there is no
          * early return, so a curse in a later slot is still found after an earlier slot has already
          * taught the flag.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the walk does not stop at the slot that teaches")
@@ -2953,8 +2619,6 @@ class PlayerRuneLearningTest {
         /**
          * Every rune in the registry, whatever its variety. The assertions reach into each corner of
          * the knowledge rather than counting, because "all of them" is the claim being made.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learns every rune the registry holds")
@@ -2976,8 +2640,6 @@ class PlayerRuneLearningTest {
         /**
          * A rune the registry does not list is not learned by "all" — the to-damage enchantment has
          * no rune in this fixture, and the walk is over the list rather than over the varieties.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learns the runes that exist, not the ones that could")
@@ -2990,8 +2652,6 @@ class PlayerRuneLearningTest {
         /**
          * Silent, and for a plainer reason than {@link Player#learnInnate}'s: several hundred
          * discoveries announced one at a time is not a message but a wall.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("says nothing at all")
@@ -3001,9 +2661,6 @@ class PlayerRuneLearningTest {
             assertTrue(bus.messages.isEmpty());
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("running it twice changes nothing and still says nothing")
         void isIdempotent() {
@@ -3026,9 +2683,6 @@ class PlayerRuneLearningTest {
     @DisplayName("high-water marks")
     class HighWaterMarks {
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("max level rises to the current level")
         void maxLevelRises() throws Exception {
@@ -3042,8 +2696,6 @@ class PlayerRuneLearningTest {
         /**
          * Draining a level must not cost the player the record of having reached it — that is what
          * makes it a maximum rather than a copy.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("max level does not fall when the level does")
@@ -3057,9 +2709,6 @@ class PlayerRuneLearningTest {
             assertEquals(12, get(player, "maxLevel"));
         }
 
-        /**
-         * @author Rowan Crowther
-         */
         @Test
         @DisplayName("descending moves both the deepest mark and the recall depth")
         void depthMovesRecall() {
@@ -3074,8 +2723,6 @@ class PlayerRuneLearningTest {
         /**
          * Climbing back up leaves both where they were, so recall still returns the player to the
          * deepest point rather than to wherever they happen to be standing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("climbing back up moves neither")
@@ -3093,8 +2740,6 @@ class PlayerRuneLearningTest {
         /**
          * The guard is strictly-greater, so returning to the deepest level already reached is not a
          * new record and changes nothing.
-         *
-         * @author Rowan Crowther
          */
         @Test
         @DisplayName("returning to the same depth changes nothing")

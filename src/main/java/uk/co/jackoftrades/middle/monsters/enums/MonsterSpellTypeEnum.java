@@ -66,8 +66,6 @@ public enum MonsterSpellTypeEnum {
 
     /**
      * Whether spells of this type deal damage.
-     *
-     * @author Rowan Crowther
      */
     private final boolean isDamage;
 
@@ -75,7 +73,6 @@ public enum MonsterSpellTypeEnum {
      * Bind a spell type to whether it is damaging.
      *
      * @param isDamage whether the type deals damage
-     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     private MonsterSpellTypeEnum(boolean isDamage) {
@@ -84,7 +81,6 @@ public enum MonsterSpellTypeEnum {
 
     /**
      * @return whether spells of this type deal damage
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     @CheckReturnValue

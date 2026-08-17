@@ -50,8 +50,6 @@ public class PlayerDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the effects that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>, leaving the registry unset for the first effect that fires.
-     *
-     * @author Rowan Crowther
      */
     public static void loadPlayerTimedProperties() {
         PlayerTimedReader parser = new PlayerTimedReader();
@@ -77,8 +75,6 @@ public class PlayerDataLoader {
      * and <em>swallowed</em>. Note this loader's dependencies are the deepest in the suite - a class
      * resolves spellbooks through the object kinds - so a failure upstream tends to arrive here as a
      * wall of unresolved references rather than as an IO error.
-     *
-     * @author Rowan Crowther
      */
     public static void loadPlayerClasses() {
         PlayerClassReader parser = new PlayerClassReader();
@@ -103,8 +99,6 @@ public class PlayerDataLoader {
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>; the classes that depend on a realm will report it as an unresolved
      * name shortly afterwards.
-     *
-     * @author Rowan Crowther
      */
     public static void loadMagicRealms() {
         RealmReader parser = new RealmReader();
@@ -128,8 +122,6 @@ public class PlayerDataLoader {
      * Soft errors are reported through {@link ErrorParsing#reportAndCheck} and the races that did
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>, leaving character creation with nothing to offer.
-     *
-     * @author Rowan Crowther
      */
     public static void loadPlayerRaces() {
         PlayerRaceReader parser = new PlayerRaceReader();
@@ -155,8 +147,6 @@ public class PlayerDataLoader {
      * and <em>swallowed</em>. Because races resolve a body by <em>index</em> rather than by name, a
      * partial load here shifts every later index - a case worth treating as structural if it ever
      * bites.
-     *
-     * @author Rowan Crowther
      */
     public static void loadBodies() {
         BodyReader reader = new BodyReader();
@@ -181,8 +171,6 @@ public class PlayerDataLoader {
      * assemble are registered regardless, per the partial-results contract. An IO failure is logged
      * and <em>swallowed</em>; the charts are a linked structure, so a partial load can leave an
      * entry pointing at a successor that never loaded.
-     *
-     * @author Rowan Crowther
      */
     public static void loadPlayerHistories() {
         HistoryReader reader = new HistoryReader();
@@ -209,7 +197,6 @@ public class PlayerDataLoader {
      * stops the load.
      *
      * @throws IOException an IO error occurred during parsing
-     * @author Rowan Crowther
      */
     public static void loadPlayerShapes() throws IOException {
         ShapeReader parser = new ShapeReader();

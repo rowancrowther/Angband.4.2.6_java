@@ -41,8 +41,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param records The list of records to create the {@link GameConstantsData} from
      * @param errors  A list of errors which is returned to the builder
      * @return the {@link GameConstantsData} containing the data - note, this can be null
-     *
-     * @author Rowan Crowther
      */
     @Override
     @Nullable
@@ -62,7 +60,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The record from the constants.txt file
      * @param b      The builder to build the records from
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void dispatch(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                           @NotNull List<String> errors) {
@@ -96,7 +93,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void oRangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                       @NotNull List<String> errors) {
@@ -134,7 +130,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void oRangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                  @NotNull List<String> errors) {
@@ -204,7 +199,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void oMeleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                      @NotNull List<String> errors) {
@@ -243,7 +237,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void oMeleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                 @NotNull List<String> errors) {
@@ -302,7 +295,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void rangedCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                      @NotNull List<String> errors) {
@@ -340,7 +332,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void rangedCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                 @NotNull List<String> errors) {
@@ -421,7 +412,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void meleeCriticalLevel(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                     @NotNull List<String> errors) {
@@ -461,7 +451,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void meleeCritical(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                                @NotNull List<String> errors) {
@@ -534,7 +523,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void player(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                         @NotNull List<String> errors) {
@@ -582,7 +570,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void objGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                         @NotNull List<String> errors) {
@@ -640,7 +627,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void store(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                        @NotNull List<String> errors) {
@@ -684,7 +670,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void carryCap(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                           @NotNull List<String> errors) {
@@ -739,7 +724,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void world(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                        @NotNull List<String> errors) {
@@ -817,7 +801,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void dunGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                         @NotNull List<String> errors) {
@@ -879,7 +862,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void monPlay(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                          @NotNull List<String> errors) {
@@ -929,7 +911,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void monGen(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                         @NotNull List<String> errors) {
@@ -995,7 +976,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
-     * @author Rowan Crowther
      */
     private void levelMax(@NotNull GameConstantsParseRecord rec, @NotNull GameConstantsData.GameConstantsBuilder b,
                           @NotNull List<String> errors) {
@@ -1028,7 +1008,6 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * @param errors The list of current errors
      * @return An Integer containing the int value of the incoming raw string, or null if an error
      * occurred
-     * @author Rowan Crowther
      */
     @Nullable
     @CheckReturnValue

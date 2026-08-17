@@ -33,8 +33,6 @@ import org.jetbrains.annotations.NotNull;
 public class Quit implements QuitAux {
     /**
      * Logger used to record the quit message before (eventually) exiting.
-     *
-     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 

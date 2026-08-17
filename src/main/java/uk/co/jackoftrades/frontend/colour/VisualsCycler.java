@@ -38,8 +38,6 @@ public final class VisualsCycler {
     /**
      * Cycles nested group-then-name. The outer key is the {@code cycle:} group; the inner map holds
      * that group's cycles by their block name.
-     *
-     * @author Rowan Crowther
      */
     private final Map<String, Map<String, ColourCycle>> byGroupThenName;
 
@@ -47,7 +45,6 @@ public final class VisualsCycler {
      * Wrap an already-built group-then-name map. Ownership of the map passes to the cycler.
      *
      * @param byGroupThenName the nested cycles, as assembled from the {@code cycle:} blocks
-     * @author Rowan Crowther
      */
     public VisualsCycler(Map<String, Map<String, ColourCycle>> byGroupThenName) {
         this.byGroupThenName = byGroupThenName;
@@ -57,7 +54,6 @@ public final class VisualsCycler {
      * List the groups present in this cycler (the outer keys, e.g. {@code fancy}, {@code flicker}).
      *
      * @return the group names, in no guaranteed order
-     * @author Rowan Crowther
      */
     public List<String> getKeys() {
         return byGroupThenName.keySet().stream().toList();
@@ -68,7 +64,6 @@ public final class VisualsCycler {
      *
      * @param group the group name to look up
      * @return the group's name-to-cycle map, or {@code null} if no such group exists
-     * @author Rowan Crowther
      */
     public Map<String, ColourCycle> getByGroup(String group) {
         return byGroupThenName.get(group);

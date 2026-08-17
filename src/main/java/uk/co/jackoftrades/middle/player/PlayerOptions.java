@@ -54,8 +54,6 @@ public class PlayerOptions {
     /**
      * The set of boolean options currently switched on, standing in for C's
      * {@code bool opt[OPT_MAX]}. Options absent from the set are off.
-     *
-     * @author Rowan Crowther
      */
     private Flag<PlayerOptionEnum> options;
 
@@ -64,24 +62,18 @@ public class PlayerOptions {
      * {@code option.c:163}). The warning fires once current HP falls below
      * {@code maxHP * hitpointWarn / 10} — see C's {@code player-util.c:201} and
      * {@code player.c:329}, which applies the same fraction to spell points.
-     *
-     * @author Rowan Crowther
      */
     private int hitpointWarn;
     /**
      * How long to pause, in centiseconds, before acting on a movement key, so that a second
      * keypress can arrive and be treated as a diagonal or a run. Zero disables the wait. C feeds
      * this straight into {@code inkey_scan} ({@code ui-input.c:1573-1576}).
-     *
-     * @author Rowan Crowther
      */
     private int lazymoveDelay;
     /**
      * The visual delay factor (0 to 9), used as a millisecond pause between the frames of animated
      * effects such as bolts and explosions, so the player can see them travel. C reads it as
      * {@code int msec = player->opts.delay_factor} ({@code ui-display.c:1565}).
-     *
-     * @author Rowan Crowther
      */
     private int delayFactor;
 
@@ -89,8 +81,6 @@ public class PlayerOptions {
      * A numeric suffix disambiguating save files for characters that share a name — purely a
      * bookkeeping value, written and read back by the savefile code ({@code save.c:432},
      * {@code load.c:711}) and never consulted during play.
-     *
-     * @author Rowan Crowther
      */
     private int nameSuffix;
 
@@ -104,7 +94,6 @@ public class PlayerOptions {
      *
      * @param option the option to test
      * @return {@code true} if the option is set
-     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)

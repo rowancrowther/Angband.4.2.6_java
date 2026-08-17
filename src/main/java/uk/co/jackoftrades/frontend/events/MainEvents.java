@@ -54,8 +54,6 @@ import org.apache.logging.log4j.Logger;
 public class MainEvents {
     /**
      * Logger for the phase transitions, which is currently all these methods do.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger(MainEvents.class);
 
@@ -63,8 +61,6 @@ public class MainEvents {
      * Builds the receiver. Nothing to wire: there is no channel end here, because messages arrive
      * by being handed to a method rather than by being read - {@code UILoop} owns the queue and
      * this owns the response to what comes off it.
-     *
-     * @author Rowan Crowther
      */
     public MainEvents() {
     }
@@ -80,8 +76,6 @@ public class MainEvents {
      * {@code InitHandlers}, so the tidy-up belongs there and not in this method. What this method
      * will eventually own is only the painting: dropping the {@code SplashScreen} and putting the
      * game display in its place.
-     *
-     * @author Rowan Crowther
      */
     public void leaveInit() {
         logger.info("Executing EVENT_LEAVE_INIT");
@@ -96,8 +90,6 @@ public class MainEvents {
      * <p>All four are message plumbing rather than layout, so this is the method that will need the
      * message protocol to grow before it can do anything - the core has to be able to say "print
      * this" before the front end can decide where. Chapter 3's work, not this stage's.
-     *
-     * @author Rowan Crowther
      */
     public void enterGame() {
         logger.info("Executing EVENT_ENTER_GAME");
@@ -108,8 +100,6 @@ public class MainEvents {
      * ({@code [C] src/ui-display.c}), which removes exactly the four handlers {@link #enterGame}
      * added. Symmetrical by construction, and worth keeping that way: an asymmetry here is a
      * handler that survives into the next session.
-     *
-     * @author Rowan Crowther
      */
     public void leaveGame() {
         logger.info("Executing EVENT_LEAVE_GAME");
@@ -129,8 +119,6 @@ public class MainEvents {
      * <p>Unlike {@link #enterGame}, this can happen several times in one session - entering a store
      * leaves the world and returning enters it again - so whatever this eventually allocates has to
      * be safe to allocate twice.
-     *
-     * @author Rowan Crowther
      */
     public void enterWorld() {
         logger.info("Executing EVENT_ENTER_WORLD");
@@ -140,8 +128,6 @@ public class MainEvents {
      * The level is being left. The port of {@code ui_leave_world}
      * ({@code [C] src/ui-display.c}), which disallows the big cursor and removes the two handler
      * sets {@link #enterWorld} added.
-     *
-     * @author Rowan Crowther
      */
     public void leaveWorld() {
         logger.info("Executing EVENT_LEAVE_WORLD");

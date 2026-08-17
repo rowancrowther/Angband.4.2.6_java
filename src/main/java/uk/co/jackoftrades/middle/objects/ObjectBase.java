@@ -40,22 +40,16 @@ import java.util.Map;
 public class ObjectBase {
     /**
      * The base type's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
 
     /**
      * The item type value (tval) of this base.
-     *
-     * @author Rowan Crowther
      */
     private TValue tVal;
 
     /**
      * Default display colour for kinds of this base.
-     *
-     * @author Rowan Crowther
      */
     private ColourEnum attr;
 
@@ -65,34 +59,24 @@ public class ObjectBase {
      * {@link ElementInfoEnum#EL_INFO_HATES} flag, and derived kinds may add further per-element flags
      * (e.g. dungeon spellbooks setting {@code EL_INFO_IGNORE}). This mirrors C's move from a bitflag
      * to the richer {@code el_info[]} table.
-     *
-     * @author Rowan Crowther
      */
     private Map<ElementEnum, ElementInfo> elementInfo;
 
     /**
      * Object-kind flags shared by kinds of this base.
-     *
-     * @author Rowan Crowther
      */
     private Flag<ObjectKindFlag> kindFlags;
 
     /**
      * Percentage chance an item of this base breaks when thrown ({@code -1} if unset).
-     *
-     * @author Rowan Crowther
      */
     private int breakPerc;
     /**
      * Maximum stack size for items of this base ({@code -1} if unset).
-     *
-     * @author Rowan Crowther
      */
     private int maxStack;
     /**
      * Number of distinct sub-values (svals) under this base.
-     *
-     * @author Rowan Crowther
      */
     private int numSvals;
 
@@ -108,7 +92,6 @@ public class ObjectBase {
      * @param hatesFlag   the elements items of this base are destroyed by
      * @param breakChance the break-on-throw percentage ({@code -1} if unset)
      * @param maxStack    the maximum stack size ({@code -1} if unset)
-     * @author Rowan Crowther
      */
     public ObjectBase(TValue tVal, String name, ColourEnum colour, Flag<ObjectKindFlag> kFlag,
                       Flag<ElementEnum> hatesFlag, int breakChance, int maxStack) {
@@ -129,7 +112,6 @@ public class ObjectBase {
      * Replace this base's per-element info table wholesale.
      *
      * @param elementInfo the new element-info map
-     * @author Rowan Crowther
      */
     public void setElementInfo(Map<ElementEnum, ElementInfo> elementInfo) {
         this.elementInfo = elementInfo;
@@ -137,7 +119,6 @@ public class ObjectBase {
 
     /**
      * @return the number of distinct svals allocated under this base so far
-     * @author Rowan Crowther
      */
     public int getNumSvals() {
         return numSvals;
@@ -148,7 +129,6 @@ public class ObjectBase {
      * new kind can be handed the next sval (see {@link ObjectRegistry#addObjectKind}).
      *
      * @param numSvals the new sval count
-     * @author Rowan Crowther
      */
     public void setNumSvals(int numSvals) {
         this.numSvals = numSvals;
@@ -156,7 +136,6 @@ public class ObjectBase {
 
     /**
      * @return the base type's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -164,7 +143,6 @@ public class ObjectBase {
 
     /**
      * @return this base's per-element info table (keyed by element)
-     * @author Rowan Crowther
      */
     public Map<ElementEnum, ElementInfo> getElementMap() {
         return elementInfo;
@@ -172,7 +150,6 @@ public class ObjectBase {
 
     /**
      * @return the item type value (tval)
-     * @author Rowan Crowther
      */
     public TValue gettVal() {
         return tVal;
@@ -180,7 +157,6 @@ public class ObjectBase {
 
     /**
      * @return the default display colour
-     * @author Rowan Crowther
      */
     public ColourEnum getAttr() {
         return attr;
@@ -188,7 +164,6 @@ public class ObjectBase {
 
     /**
      * @return the break-on-throw percentage
-     * @author Rowan Crowther
      */
     public int getBreakPerc() {
         return breakPerc;
@@ -196,7 +171,6 @@ public class ObjectBase {
 
     /**
      * @return the maximum stack size
-     * @author Rowan Crowther
      */
     public int getMaxStack() {
         return maxStack;
@@ -204,7 +178,6 @@ public class ObjectBase {
 
     /**
      * @return the object-kind flags shared by kinds of this base
-     * @author Rowan Crowther
      */
     public Flag<ObjectKindFlag> getKindFlags() {
         return kindFlags;
@@ -212,7 +185,6 @@ public class ObjectBase {
 
     /**
      * @return a debug string listing this base's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {

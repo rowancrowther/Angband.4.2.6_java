@@ -36,32 +36,22 @@ import uk.co.jackoftrades.middle.enums.MessageType;
 public class O_CriticalLevel {
     /**
      * The data-file group tag these levels are parsed under.
-     *
-     * @author Rowan Crowther
      */
     private final static String tag = "o-melee-critical-level";
     /**
      * 1/chance this level is selected when no earlier level was.
-     *
-     * @author Rowan Crowther
      */
     private int chance;
     /**
      * Extra damage dice added at this critical level.
-     *
-     * @author Rowan Crowther
      */
     private int addedDice;
     /**
      * The message shown to the player for this critical level.
-     *
-     * @author Rowan Crowther
      */
     private MessageType msgt;
     /**
      * Logger used to report invalid parsed values.
-     *
-     * @author Rowan Crowther
      */
     private final static Logger logger = LogManager.getLogger();
 

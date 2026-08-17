@@ -31,20 +31,14 @@ import java.util.HashMap;
 public class EventDataBirthPoints implements GameEventData {
     /**
      * Points currently allocated to each stat.
-     *
-     * @author Rowan Crowther
      */
     private HashMap<Stats, Integer> points;
     /**
      * Cost to increment each stat by one.
-     *
-     * @author Rowan Crowther
      */
     private HashMap<Stats, Integer> incPoints;
     /**
      * Points still available to spend.
-     *
-     * @author Rowan Crowther
      */
     private int remaining;
 
@@ -54,7 +48,6 @@ public class EventDataBirthPoints implements GameEventData {
      * @param points    points allocated per stat
      * @param incPoints increment cost per stat
      * @param remaining points still available
-     * @author Rowan Crowther
      */
     public EventDataBirthPoints(HashMap<Stats, Integer> points, HashMap<Stats, Integer> incPoints, int remaining) {
         this.points = points;
@@ -64,7 +57,6 @@ public class EventDataBirthPoints implements GameEventData {
 
     /**
      * @return the points allocated per stat
-     * @author Rowan Crowther
      */
     public HashMap<Stats, Integer> getPoints() {
         return points;
@@ -72,7 +64,6 @@ public class EventDataBirthPoints implements GameEventData {
 
     /**
      * @return the increment cost per stat
-     * @author Rowan Crowther
      */
     public HashMap<Stats, Integer> getIncPoints() {
         return incPoints;
@@ -80,7 +71,6 @@ public class EventDataBirthPoints implements GameEventData {
 
     /**
      * @return the points still available
-     * @author Rowan Crowther
      */
     public int getRemaining() {
         return remaining;

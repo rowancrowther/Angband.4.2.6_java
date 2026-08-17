@@ -33,8 +33,6 @@ import org.apache.logging.log4j.Logger;
 public class InvalidTokenFoundDuringParse extends RuntimeException {
     /**
      * Logger used to record the failure as soon as the exception is built.
-     *
-     * @author Rowan Crowther
      */
     private final Logger logger = LogManager.getLogger();
 
@@ -42,7 +40,6 @@ public class InvalidTokenFoundDuringParse extends RuntimeException {
      * Build the exception, logging the supplied message immediately.
      *
      * @param message description of the offending token / parse failure
-     * @author Rowan Crowther
      */
     public InvalidTokenFoundDuringParse(String message) {
         super(message);

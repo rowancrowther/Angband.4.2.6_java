@@ -27,21 +27,15 @@ package uk.co.jackoftrades.middle.monsters;
 public class MonsterShape {
     /**
      * The shape's name (the target race/base name).
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * The specific race to change into, if named directly.
-     *
-     * @author Rowan Crowther
      */
     private MonsterRace race;
     /**
      * The monster base to draw a random shape from, for a generic (whole-family) shapechange.
      * Mutually exclusive with {@link #race}: exactly one is set once the shape is resolved.
-     *
-     * @author Rowan Crowther
      */
     private MonsterBase base;
 
@@ -50,7 +44,6 @@ public class MonsterShape {
      * filled in later by {@link MonsterRace#resolveShapes()}, once every race has loaded.
      *
      * @param name the target base or race name, as written in {@code monster.txt}
-     * @author Rowan Crowther
      */
     public MonsterShape(String name) {
         this.name = name;
@@ -58,7 +51,6 @@ public class MonsterShape {
 
     /**
      * @return the shape's target name, used to resolve it to a base or race
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -66,7 +58,6 @@ public class MonsterShape {
 
     /**
      * @return the specific race this shape becomes, or {@code null} if it is a by-base shape
-     * @author Rowan Crowther
      */
     public MonsterRace getRace() {
         return race;
@@ -74,7 +65,6 @@ public class MonsterShape {
 
     /**
      * @return the base whose family this shape draws from, or {@code null} if it names a specific race
-     * @author Rowan Crowther
      */
     public MonsterBase getBase() {
         return base;
@@ -84,7 +74,6 @@ public class MonsterShape {
      * Resolve this shape to a specific race (clearing any base).
      *
      * @param race the race this shape becomes
-     * @author Rowan Crowther
      */
     public void setRace(MonsterRace race) {
         this.race = race;
@@ -94,7 +83,6 @@ public class MonsterShape {
      * Resolve this shape to a base family (clearing any race).
      *
      * @param base the base this shape draws a random member from
-     * @author Rowan Crowther
      */
     public void setBase(MonsterBase base) {
         this.base = base;

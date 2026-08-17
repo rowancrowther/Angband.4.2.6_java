@@ -40,14 +40,10 @@ import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 public class Loc {
     /**
      * Column (horizontal) coordinate.
-     *
-     * @author Rowan Crowther
      */
     private final int x;
     /**
      * Row (vertical) coordinate.
-     *
-     * @author Rowan Crowther
      */
     private final int y;
 
@@ -123,7 +119,6 @@ public class Loc {
      * @return true if {@code obj} is a {@link Loc} with the same {@code x} and {@code y};
      * false otherwise, including when {@code obj} is null or of an unrelated type
      * @see #hashCode()
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object obj) {
@@ -194,7 +189,6 @@ public class Loc {
      *
      * @param i the row (y-coordinate)
      * @return a {@link RowBuilder} awaiting the column to complete the {@link Loc}
-     * @author Rowan Crowther
      */
     public static RowBuilder row(int i) {
         RowBuilder rowHolder = new RowBuilder();
@@ -232,7 +226,6 @@ public class Loc {
          *
          * @param x the column (x-coordinate)
          * @return the {@link Loc} at the previously-fixed row and this column
-         * @author Rowan Crowther
          */
         public Loc col(int x) {
             return new Loc(x, y);
@@ -259,7 +252,6 @@ public class Loc {
      * 2<sup>32</sup> regardless of sign.
      *
      * @return a hash code consistent with {@link #equals(Object)}
-     * @author Rowan Crowther
      * @see #equals(Object)
      */
     @Override

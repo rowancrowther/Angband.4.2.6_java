@@ -55,7 +55,6 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
      * @param records the parsed profile records, in file order
      * @param errors  the soft-error sink, appended to for each unusable line
      * @return the assembled profiles, in file order, minus any that failed
-     * @author Rowan Crowther
      */
     @Override
     public List<CaveProfile> assemble(@NotNull List<DungeonProfileParseRecord> records, @NotNull List<String> errors) {

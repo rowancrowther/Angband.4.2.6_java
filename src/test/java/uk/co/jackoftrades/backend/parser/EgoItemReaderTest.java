@@ -83,8 +83,6 @@ class EgoItemReaderTest {
      * Seeds every registry the ego-item resolution depends on, in dependency order, so that
      * {@code type:}/{@code item:} lines can be resolved against real object kinds and
      * brand/slay/curse/activation lines against real codes.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -103,8 +101,6 @@ class EgoItemReaderTest {
     /**
      * Restores every registry mutated by {@link #seed()} so the shared static state on
      * the registries do not leak into other test suites.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {

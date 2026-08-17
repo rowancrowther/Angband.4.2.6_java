@@ -41,116 +41,80 @@ import java.util.Objects;
 public class Feature {
     /**
      * The feature's terrain code (its {@link TerrainFlags} identity).
-     *
-     * @author Rowan Crowther
      */
     private TerrainFlags code;
     /**
      * The feature's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Human-readable description of the feature.
-     *
-     * @author Rowan Crowther
      */
     private String description;
     /**
      * Index of this feature in the global feature table.
-     *
-     * @author Rowan Crowther
      */
     private int featureIndex;
 
     /**
      * The terrain this feature mimics/disguises as, or {@code null} if none.
-     *
-     * @author Rowan Crowther
      */
     private TerrainFlags mimic;
     /**
      * Drawing priority when several features could be shown for a grid.
-     *
-     * @author Rowan Crowther
      */
     private int priority;
 
     /**
      * Shop number when this feature is a shop entrance.
-     *
-     * @author Rowan Crowther
      */
     private int shopNum;
     /**
      *
      * Difficulty of digging through this feature.
-     *
-     * @author Rowan Crowther
      */
     private int dig;
 
     /**
      * The feature's behaviour flags (passable, wall, door, stair, …).
-     *
-     * @author Rowan Crowther
      */
     Flag<TerrainFeatureFlags> flags;
 
     /**
      * The glyph and colour used to draw this feature.
-     *
-     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter displayCharacter;
 
     /**
      * Message shown when the player walks onto this feature.
-     *
-     * @author Rowan Crowther
      */
     private String walkMsg;
     /**
      * Message shown when the player runs onto/through this feature.
-     *
-     * @author Rowan Crowther
      */
     private String runMsg;
     /**
      * Message shown when the feature hurts the player.
-     *
-     * @author Rowan Crowther
      */
     private String hurtMsg;
     /**
      * Message shown when the player dies to this feature.
-     *
-     * @author Rowan Crowther
      */
     private String dieMsg;
     /**
      * Message shown when the player is confused on this feature.
-     *
-     * @author Rowan Crowther
      */
     private String confusedMsg;
     /**
      * Prefix used when describing this feature in "look" output.
-     *
-     * @author Rowan Crowther
      */
     private String lookPrefix;
     /**
      * Preposition used when describing being "in" this feature in "look" output.
-     *
-     * @author Rowan Crowther
      */
     private String lookInPreposition;
     /**
      * Monster race flag granting resistance to this feature's effects.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> resistFlag;
 
@@ -173,7 +137,6 @@ public class Feature {
      * @param lookPrefix        look-output prefix
      * @param lookInPreposition look-output "in" preposition
      * @param resistFlag        race flag granting resistance
-     * @author Rowan Crowther
      */
     public Feature(TerrainFlags code,
                    String name,
@@ -211,7 +174,6 @@ public class Feature {
 
     /**
      * @return this feature's terrain code
-     * @author Rowan Crowther
      */
     public TerrainFlags getTerrainFlag() {
         return code;
@@ -580,7 +542,6 @@ public class Feature {
 
     /**
      * @return this feature's terrain code (same as {@link #getTerrainFlag()})
-     * @author Rowan Crowther
      */
     public TerrainFlags getCodeFlags() {
         return code;
@@ -590,7 +551,6 @@ public class Feature {
      * Resolve the feature this one mimics by looking it up in the global table.
      *
      * @return the mimicked {@link Feature}
-     * @author Rowan Crowther
      */
     public Feature getMimic() {
         return TerrainRegistry.lookupFeature(mimic);
@@ -598,7 +558,6 @@ public class Feature {
 
     /**
      * @return a debug string listing this feature's fields
-     * @author Rowan Crowther
      */
     @Override
     public String toString() {
@@ -629,7 +588,6 @@ public class Feature {
      *
      * @param o the object to compare against
      * @return true if {@code o} is an equivalent {@code Feature}
-     * @author Rowan Crowther
      */
     @Override
     public boolean equals(Object o) {
@@ -643,7 +601,6 @@ public class Feature {
      * Hash code consistent with {@link #equals(Object)}, combining all fields.
      *
      * @return this feature's hash code
-     * @author Rowan Crowther
      */
     @Override
     public int hashCode() {

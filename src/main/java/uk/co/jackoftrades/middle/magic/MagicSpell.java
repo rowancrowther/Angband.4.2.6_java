@@ -33,46 +33,32 @@ import java.util.List;
 public class MagicSpell {
     /**
      * The spell's name.
-     *
-     * @author Rowan Crowther
      */
     private String spellName;
     /**
      * Human-readable description of the spell's effect.
-     *
-     * @author Rowan Crowther
      */
     private String spellDescription;
 
     /**
      * The effects produced when the spell is cast.
-     *
-     * @author Rowan Crowther
      */
     private List<Effect> effects;
 
     /**
      * Minimum class level required to learn/cast the spell.
-     *
-     * @author Rowan Crowther
      */
     private int level;
     /**
      * Mana cost to cast the spell.
-     *
-     * @author Rowan Crowther
      */
     private int mana;
     /**
      * Base failure rate (percent) before stat/level adjustment.
-     *
-     * @author Rowan Crowther
      */
     private int fail;
     /**
      * Experience awarded the first time the spell is cast.
-     *
-     * @author Rowan Crowther
      */
     private int exp;
 
@@ -86,7 +72,6 @@ public class MagicSpell {
      * @param exp              first-cast experience
      * @param effects          the effects produced when the spell is cast, in order
      * @param spellDescription the spell's description text
-     * @author Rowan Crowther
      */
     public MagicSpell(String spellName, int level, int fail, int mana, int exp,
                       List<Effect> effects, String spellDescription) {

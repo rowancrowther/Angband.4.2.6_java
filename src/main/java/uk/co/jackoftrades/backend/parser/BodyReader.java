@@ -41,8 +41,6 @@ import java.util.List;
 public class BodyReader implements Reader<PlayerBody> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -65,7 +63,6 @@ public class BodyReader implements Reader<PlayerBody> {
      * @param filename the body data file to load
      * @return the assembled bodies plus any error messages
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public ParseResult<PlayerBody> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -87,7 +84,6 @@ public class BodyReader implements Reader<PlayerBody> {
      * @param errors       the soft-error channel; a record-count mismatch is reported here without
      *                     discarding the records
      * @return the raw body parse records in source order
-     * @author Rowan Crowther
      */
     private static List<BodyParseRecord> extract(
             @NotNull BodyGrammar parser,

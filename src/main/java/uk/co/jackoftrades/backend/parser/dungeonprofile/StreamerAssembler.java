@@ -43,7 +43,6 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      * @param records exactly one parsed streamer record
      * @param errors  the soft-error sink, appended to if the record is unusable
      * @return the assembled streamer profile, or {@code null} if any field would not convert
-     * @author Rowan Crowther
      */
     @Override
     public StreamerProfile assemble(@NotNull List<DungeonProfileParseRecord.Streamer> records, @NotNull List<String> errors) {

@@ -62,7 +62,6 @@ public class DungeonRegistry {
      * <p>Replaces whatever was held before, so calling this twice discards the first set.
      *
      * @param caveProfiles the profiles to install, in file order
-     * @author Rowan Crowther
      */
     public static void setCaveProfiles(List<CaveProfile> caveProfiles) {
         DungeonRegistry.caveProfiles = caveProfiles;
@@ -74,7 +73,6 @@ public class DungeonRegistry {
      * <p>Replaces whatever was held before, so calling this twice discards the first set.
      *
      * @param roomTemplates the templates to install, in file order
-     * @author Rowan Crowther
      */
     public static void setRoomTemplates(List<RoomTemplate> roomTemplates) {
         DungeonRegistry.roomTemplates = roomTemplates;
@@ -86,7 +84,6 @@ public class DungeonRegistry {
      * <p>Replaces whatever was held before, so calling this twice discards the first set.
      *
      * @param items the vaults to install, in file order
-     * @author Rowan Crowther
      */
     public static void setVaultTemplates(List<Vault> items) {
         DungeonRegistry.vaultTemplates = items;

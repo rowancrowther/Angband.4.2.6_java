@@ -49,8 +49,6 @@ public class ActivationReader implements Reader<Activation> {
      *
      * @param filename the name of the file
      * @return an ArrayList of items read from the file
-     *
-     * @author Rowan Crowther
      */
     @Override
     public @NotNull List<Activation> parse(@NotNull String filename) throws IOException {
@@ -65,7 +63,6 @@ public class ActivationReader implements Reader<Activation> {
      * @return a ParseResult record, which pairs the list of items read
      * (activations in this case) with the list of soft error messages
      * @throws IOException when the file could not be found
-     * @author Rowan Crowther
      */
     public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,

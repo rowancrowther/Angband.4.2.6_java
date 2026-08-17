@@ -36,63 +36,43 @@ import java.util.ArrayList;
 public class TermWin {
     /**
      * Cursor "used"/off-screen flag (true when the cursor is parked/disabled).
-     *
-     * @author Rowan Crowther
      */
     private boolean cu;
     /**
      * Cursor visible flag.
-     *
-     * @author Rowan Crowther
      */
     private boolean cv;
     /**
      * Cursor column.
-     *
-     * @author Rowan Crowther
      */
     private int cx;
     /**
      * Cursor row.
-     *
-     * @author Rowan Crowther
      */
     private int cy;
     /**
      * Secondary cursor column (e.g. for a multi-cell/"big" cursor).
-     *
-     * @author Rowan Crowther
      */
     private int cnx;
     /**
      * Secondary cursor row (e.g. for a multi-cell/"big" cursor).
-     *
-     * @author Rowan Crowther
      */
     private int cny;
 
     /**
      * Working copy of the main (character) layer.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> a;
     /**
      * Displayed/"visible" copy of the main layer, diffed against {@link #a}.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> va;
     /**
      * Working copy of the terrain layer.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> ta;
     /**
      * Displayed/"visible" copy of the terrain layer, diffed against {@link #ta}.
-     *
-     * @author Rowan Crowther
      */
     private ArrayList<AngbandDisplayCharacter> vta;
 
@@ -102,7 +82,6 @@ public class TermWin {
      *
      * @param width  the terminal width (currently unused in allocation)
      * @param height the terminal height, controlling how many cells are created
-     * @author Rowan Crowther
      */
     public void init(int width, int height) {
         a = new ArrayList<>();

@@ -72,8 +72,6 @@ public enum ColourTranslation {
     /**
      * The integer index this translation occupies in a {@code ColourEnum}
      * translation table.
-     *
-     * @author Rowan Crowther
      */
     private final int value;
 
@@ -81,7 +79,6 @@ public enum ColourTranslation {
      * Bind the constant to its table index.
      *
      * @param value the translation-table index
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     ColourTranslation(int value) {
@@ -90,7 +87,6 @@ public enum ColourTranslation {
 
     /**
      * @return the translation-table index for this constant
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public int getValue() {

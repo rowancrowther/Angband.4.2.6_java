@@ -41,8 +41,6 @@ import java.util.List;
 public class PitReader implements Reader<PitProfile> {
     /**
      * Logger used to report file-loading failures.
-     *
-     * @author Rowan Crowther
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -66,7 +64,6 @@ public class PitReader implements Reader<PitProfile> {
      * @param filename the data file to parse
      * @return the parsed profiles plus any soft errors (empty items if the parse was cancelled)
      * @throws IOException if the file cannot be read
-     * @author Rowan Crowther
      */
     public @NotNull ParseResult<PitProfile> parseWithResults(@NotNull String filename) throws IOException {
         return GrammarDriver.run(filename,
@@ -90,7 +87,6 @@ public class PitReader implements Reader<PitProfile> {
      * @param errorCatcher the shared error listener, checked here for hard errors
      * @param errors       the soft-error sink (record-count mismatches are appended here)
      * @return the parsed pit records
-     * @author Rowan Crowther
      */
     private static List<PitParseRecord> extract(@NotNull PitGrammar parser,
                                                 @NotNull ParseErrors errorCatcher,

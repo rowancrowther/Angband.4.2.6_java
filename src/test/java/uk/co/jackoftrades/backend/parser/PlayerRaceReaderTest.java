@@ -72,8 +72,6 @@ class PlayerRaceReaderTest {
     /**
      * Seeds the two registries the race assembler resolves against — bodies and history charts — so
      * that every record's {@code lookupPlayerBody(0)} and {@code history:} line can resolve.
-     *
-     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -84,8 +82,6 @@ class PlayerRaceReaderTest {
     /**
      * Restores the registries mutated by {@link #seed()} so the shared static state on
      * the registries do not leak into other test suites.
-     *
-     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {

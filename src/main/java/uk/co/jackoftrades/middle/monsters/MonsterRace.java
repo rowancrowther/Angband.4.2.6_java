@@ -46,8 +46,6 @@ public class MonsterRace {
     /**
      * Log4j logger for this class, used to report data problems encountered while building or
      * resolving monster races.
-     *
-     * @author Rowan Crowther
      */
     public static final Logger logger = LogManager.getLogger();
 
@@ -67,218 +65,152 @@ public class MonsterRace {
 
     /**
      * The monster's name.
-     *
-     * @author Rowan Crowther
      */
     private String name;
     /**
      * Flavour/description text.
-     *
-     * @author Rowan Crowther
      */
     private String text;
     /**
      * The plural form of the name.
-     *
-     * @author Rowan Crowther
      */
     private String plural;
 
     /**
      * The base type this race belongs to.
-     *
-     * @author Rowan Crowther
      */
     private MonsterBase base;
 
     /**
      * Average hit points.
-     *
-     * @author Rowan Crowther
      */
     private int averageHP;
 
     /**
      * Armour class.
-     *
-     * @author Rowan Crowther
      */
     private int ac;
 
     /**
      * Sleepiness/alertness (higher = sleeps more deeply).
-     *
-     * @author Rowan Crowther
      */
     private int sleep;
     /**
      * Hearing acuity (range it detects noise).
-     *
-     * @author Rowan Crowther
      */
     private int hearing;
     /**
      * Sense of smell (range it tracks scent).
-     *
-     * @author Rowan Crowther
      */
     private int smell;
     /**
      * Base movement speed.
-     *
-     * @author Rowan Crowther
      */
     private int speed;
     /**
      * Light radius the monster emits.
-     *
-     * @author Rowan Crowther
      */
     private int light;
 
     /**
      * Experience awarded for killing the monster.
-     *
-     * @author Rowan Crowther
      */
     private int mexp;
 
     /**
      * Frequency of innate (non-spell) attacks.
-     *
-     * @author Rowan Crowther
      */
     private int freqInnate;
     /**
      * Frequency of spell casting.
-     *
-     * @author Rowan Crowther
      */
     private int freqSpell;
     /**
      * The monster's spell power.
-     *
-     * @author Rowan Crowther
      */
     private int spellPower;
 
     /**
      * Race flags this monster has set.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flags;
     /**
      * Race flags explicitly cleared for this monster (overriding its base).
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> flagsOff;
     /**
      * The spells this monster can cast.
-     *
-     * @author Rowan Crowther
      */
     private Flag<MonsterSpell> spells;
 
     /**
      * The monster's melee blows.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterBlow> blow;
 
     /**
      * Native dungeon level.
-     *
-     * @author Rowan Crowther
      */
     private int level;
     /**
      * Rarity weighting for generation.
-     *
-     * @author Rowan Crowther
      */
     private int rarity;
 
     /**
      * The display glyph and colour.
-     *
-     * @author Rowan Crowther
      */
     private AngbandDisplayCharacter adc;
 
     /**
      * Maximum number that may exist at once (1 for uniques).
-     *
-     * @author Rowan Crowther
      */
     private int maxNum;
     /**
      * Current number alive.
-     *
-     * @author Rowan Crowther
      */
     private int curNum;
 
     /**
      * Alternate spell-cast messages for this monster.
-     *
-     * @author Rowan Crowther
      */
     private Map<String, MonsterSpellMessage> spellMessages;
     /**
      * Possible item drops on death.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterDrop> drops;
 
     /**
      * Companion races that may be generated with this monster.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterFriends> friends;
     /**
      * Companion base types that may be generated with this monster.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterFriendsBase> friendsBase;
 
     /**
      * Object kinds this monster can mimic.
-     *
-     * @author Rowan Crowther
      */
     private List<ObjectKind> mimicKinds;
 
     /**
      * Names of the shapes this monster can change into.
-     *
-     * @author Rowan Crowther
      */
     private List<MonsterShape> shapes;
     /**
      * The number of available shapes.
-     *
-     * @author Rowan Crowther
      */
     private int numShapes;
 
     /**
      * The player's accumulated lore about this monster.
-     *
-     * @author Rowan Crowther
      */
     private MonsterLore lore;
 
     /**
      * The colour-cycling animation driving this race's display glyph, resolved by group/cycle name at
      * construction; {@code null} for a race whose glyph does not animate.
-     *
-     * @author Rowan Crowther
      */
     private ColourCycle cycler;
 
@@ -316,7 +248,6 @@ public class MonsterRace {
      * @param numShapes     number of shapes
      * @param cycler        colour-cycling animation for the display glyph, or {@code null} if it does
      *                      not animate
-     * @author Rowan Crowther
      */
     public MonsterRace(String name, String text, String plural, MonsterBase base,
                        int averageHP, int ac, int sleep, int hearing, int smell,
@@ -365,7 +296,6 @@ public class MonsterRace {
      * Set this race's accumulated lore.
      *
      * @param lore the lore to attach
-     * @author Rowan Crowther
      */
     public void setLore(MonsterLore lore) {
         this.lore = lore;
@@ -373,8 +303,6 @@ public class MonsterRace {
 
     /**
      * Test-only constructor producing a bare race with an empty flag set.
-     *
-     * @author Rowan Crowther
      */
     @TestOnly
     public MonsterRace() {
@@ -383,7 +311,6 @@ public class MonsterRace {
 
     /**
      * @return this race's set race flags
-     * @author Rowan Crowther
      */
     private Flag<MonsterRaceFlag> getFlags() {
         return flags;
@@ -394,7 +321,6 @@ public class MonsterRace {
      *
      * @param flag the race flag to test
      * @return true if the flag is set on this race
-     * @author Rowan Crowther
      */
     public boolean hasMonsterRaceFlag(MonsterRaceFlag flag) {
         return flags.has(flag);
@@ -402,7 +328,6 @@ public class MonsterRace {
 
     /**
      * @return this race's name
-     * @author Rowan Crowther
      */
     public String getName() {
         return name;
@@ -414,8 +339,6 @@ public class MonsterRace {
      * assembler, so every entry here is a concrete race name resolved by a global lookup. This must
      * run as a second pass because a friend may name a race defined later in {@code monster.txt} (a
      * forward reference).
-     *
-     * @author Rowan Crowther
      */
     public void resolveFriends() {
         for (MonsterFriends f : friends) {
@@ -428,8 +351,6 @@ public class MonsterRace {
      * first as a monster base (a generic, whole-family shapechange) and, failing that, as a specific
      * race; a name that is neither is a fatal data error. Like {@link #resolveFriends()} this is a
      * second pass, since a shape may name a race defined later in {@code monster.txt}.
-     *
-     * @author Rowan Crowther
      */
     public void resolveShapes() {
         for (MonsterShape s : shapes) {
@@ -452,7 +373,6 @@ public class MonsterRace {
 
     /**
      * @return this race's native dungeon depth/level
-     * @author Rowan Crowther
      */
     public int getLevel() {
         return level;

@@ -150,44 +150,30 @@ public enum EffectEnum {
 
     /**
      * The effect's sub-type, selecting the family of behaviour it belongs to.
-     *
-     * @author Rowan Crowther
      */
     private final EffectSubTypeEnum subType;
     /**
      * Whether the effect must be aimed at a target.
-     *
-     * @author Rowan Crowther
      */
     private final boolean requiresAiming;
     /**
      * Short label naming the effect's primary numeric parameter (e.g. "dam", "dur").
-     *
-     * @author Rowan Crowther
      */
     private final String infoLabel;
     /**
      * How many arguments the effect consumes.
-     *
-     * @author Rowan Crowther
      */
     private final int numberOfArguments; // May need to change this
     /**
      * The formatting category used when building the effect's description.
-     *
-     * @author Rowan Crowther
      */
     private final EffectInfoEnum effectInfoEnum;
     /**
      * Description-string template (with {@code %s}/{@code %d} placeholders).
-     *
-     * @author Rowan Crowther
      */
     private final String description;
     /**
      * Menu-format template used when the effect is shown in a selection menu.
-     *
-     * @author Rowan Crowther
      */
     private final String menuFormat;
 
@@ -201,7 +187,6 @@ public enum EffectEnum {
      * @param effectInfoEnum description formatting category
      * @param text           description template
      * @param menuText       menu-format template
-     * @author Rowan Crowther
      */
     @Contract(mutates = "this")
     EffectEnum(EffectSubTypeEnum subType,
@@ -222,7 +207,6 @@ public enum EffectEnum {
 
     /**
      * @return the effect's sub-type
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public EffectSubTypeEnum getSubType() {
@@ -231,7 +215,6 @@ public enum EffectEnum {
 
     /**
      * @return whether the effect must be aimed
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public boolean getAim() {
@@ -240,7 +223,6 @@ public enum EffectEnum {
 
     /**
      * @return the label for the effect's primary parameter
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getInfoLabel() {
@@ -249,7 +231,6 @@ public enum EffectEnum {
 
     /**
      * @return the number of arguments the effect consumes
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public int getNumberOfArguments() {
@@ -258,7 +239,6 @@ public enum EffectEnum {
 
     /**
      * @return the description formatting category
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public EffectInfoEnum getEffectInfo() {
@@ -267,7 +247,6 @@ public enum EffectEnum {
 
     /**
      * @return the description-string template
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getDescription() {
@@ -276,7 +255,6 @@ public enum EffectEnum {
 
     /**
      * @return the menu-format template
-     * @author Rowan Crowther
      */
     @Contract(pure = true)
     public String getMenuFormat() {

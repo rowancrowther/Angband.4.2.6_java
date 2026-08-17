@@ -185,8 +185,6 @@ public enum MessageType {
 
     /**
      * The short key identifying this message's configured sound.
-     *
-     * @author Rowan Crowther
      */
     private String messageString;
 
@@ -194,7 +192,6 @@ public enum MessageType {
      * Bind a message type to its sound key.
      *
      * @param messageString the sound-lookup key
-     * @author Rowan Crowther
      */
     MessageType(String messageString) {
         this.messageString = messageString;

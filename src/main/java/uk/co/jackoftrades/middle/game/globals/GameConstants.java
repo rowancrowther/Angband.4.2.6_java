@@ -60,7 +60,7 @@ import java.io.IOException;
  * <p>It is a static-only holder (private constructor). The scalar {@code get*} accessors read
  * {@link #data}, so they must not be called before {@link #init()} has loaded {@code constants.txt}.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 public class GameConstants {
     /**
@@ -265,7 +265,7 @@ public class GameConstants {
     /**
      * Private constructor preventing instantiation of this static-only registry.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Contract(pure = true)
     private GameConstants() {
@@ -306,7 +306,7 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code storeMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getStoreMax() {
         return storeMax;
@@ -314,7 +314,7 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code randartActivationsMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getRandartActivationsMax() {
         return ObjectRegistry.getRandartActivationsMax();
@@ -322,7 +322,7 @@ public class GameConstants {
 
     /**
      * @return the configured value of {@code caveProfileMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getCaveProfileMax() {
         return caveProfileMax;

@@ -181,19 +181,32 @@ public class ObjectKind {
     private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
-     * Brands this kind carries (mapped to whether they are intrinsic).
+     * Brands every item of this kind carries — C's {@code kind->brands}. A set, because membership
+     * is the whole of the state; C indexes an array by registry position and stores a bare boolean.
+     *
+     * <p>Field brands commented in full on 260817.
      *
      * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
-     * Slays this kind carries (mapped to whether they are intrinsic).
+     * Slays every item of this kind carries — C's {@code kind->slays}. As {@link #brands}.
+     *
+     * <p>Field slays commented in full on 260817.
      *
      * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
-     * Curses this kind carries (mapped to whether they are intrinsic).
+     * Curses every item of this kind carries, each with the {@link CurseData} the kind prescribes —
+     * a power from {@code object.txt} and a timeout of zero, the timeout being rolled per item
+     * rather than stated by the template.
+     *
+     * <p>Copied on the way in and on the way out to items, never shared: the data is mutable and an
+     * item's curse ticks its own timeout down, so a shared instance would let one cursed sword
+     * count down the template every other sword is made from.
+     *
+     * <p>Field curses commented in full on 260817.
      *
      * @author Rowan Crowther
      */
@@ -325,13 +338,33 @@ public class ObjectKind {
      *
      * @author Rowan Crowther
      */
-    private int ignore;
+    private Flag<IgnoreFlag> ignore;
+    
     /**
      * Whether the player has ever seen this kind.
      *
      * @author Rowan Crowther
      */
     private boolean everseen;
+
+    /**
+     * Whether this kind exists solely to back one special (instanced) artifact.
+     *
+     * <p>C asks the question by position — {@code kidx >= z_info->ordinary_kind_max} — because it
+     * appends the synthesised artifact kinds after the ordinary ones and can then read the answer
+     * off the index. The port records it instead, so that nothing depends on where a kind sits in
+     * the table; the artifact constructor sets it, and the other three clear it.
+     *
+     * <p>What turns on it: a special artifact is its own item rather than a template many items
+     * share, so there is nothing about it left to be unsure of once it is in hand.
+     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} makes the player aware of a
+     * non-jewellery special artifact outright rather than waiting for its runes to be read.
+     *
+     * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    private boolean isSpecialArtifactKind;
 
     /**
      * Build an empty object kind with fresh collections.
@@ -347,6 +380,8 @@ public class ObjectKind {
         brands = new HashSet<>();
         slays = new HashSet<>();
         curses = new HashMap<>();
+        ignore = new Flag<>(IgnoreFlag.class);
+        isSpecialArtifactKind = false;
     }
 
     /**
@@ -398,11 +433,13 @@ public class ObjectKind {
         kindFlags = new Flag<>(ObjectKindFlag.class);
         if (isDungeon) {
             for (ElementEnum ee : ElementEnum.values()) {
-                ElementInfo ei = new ElementInfo();
-                ei.on(ElementInfoEnum.EL_INFO_IGNORE);
-                elInfo.put(ee, ei);
+                if (ee.isBase()) {
+                    ElementInfo ei = new ElementInfo();
+                    ei.on(ElementInfoEnum.EL_INFO_IGNORE);
+                    elInfo.put(ee, ei);
 
-                kindFlags.on(ObjectKindFlag.KF_GOOD);
+                    kindFlags.on(ObjectKindFlag.KF_GOOD);
+                }
             }
         }
 
@@ -413,6 +450,7 @@ public class ObjectKind {
         curses = new HashMap<>();
         activations = new ArrayList<>();
         effect = new ArrayList<>();
+        isSpecialArtifactKind = false;
     }
 
     /**
@@ -485,7 +523,7 @@ public class ObjectKind {
                       Random stackSize, Flavour flavour,
                       String noteAware, String noteUnaware,
                       boolean aware, boolean tried,
-                      int ignore, boolean everseen, TValue tValue) {
+                      Flag<IgnoreFlag> ignore, boolean everseen, TValue tValue) {
         this.name = name;
         this.text = text;
         this.base = base;
@@ -508,9 +546,7 @@ public class ObjectKind {
         this.slays = slays;
         this.curses = new HashMap<>();
         for (Curse curse : curses.keySet()) {
-            CurseData value = curses.get(curse);
-            CurseData cd = new CurseData(value.getPower(), value.getTimeout());
-            this.curses.put(curse, cd);
+            this.curses.put(curse, new CurseData(curses.get(curse)));
         }
         this.character = character;
         this.alloc_prob = alloc_prob;
@@ -534,6 +570,7 @@ public class ObjectKind {
         this.everseen = everseen;
         this.tValue = tValue;
         this.sValueName = stripToRawSval(name);
+        this.isSpecialArtifactKind = false;
     }
 
     /**
@@ -564,7 +601,7 @@ public class ObjectKind {
         this.name = "& " + sValName + "~";
         this.tValue = base.gettVal();
         this.level = artifact.getLevel();
-
+        this.ignore = new Flag<>(IgnoreFlag.class);
         this.kindFlags.on(ObjectKindFlag.KF_INSTA_ART);
         for (ElementEnum ee : base.getElementMap().keySet()) {
             ElementInfo oldEi = base.getElementMap().get(ee);
@@ -575,6 +612,7 @@ public class ObjectKind {
         this.character = new AngbandDisplayCharacter('*', ColourEnum.COLOUR_RED);
 
         this.base = base;
+        this.isSpecialArtifactKind = true;
     }
 
     /**
@@ -735,5 +773,224 @@ public class ObjectKind {
      */
     public Random getToH() {
         return toH;
+    }
+
+    /**
+     * Returns the to-damage range this kind rolls, the port of reading C's {@code kind->to_d}.
+     *
+     * <p>A {@link Random}, because it is the recipe rather than a result: {@code object.txt} states
+     * the range once and every item generated from the kind rolls its own figure into
+     * {@link ItemObject#getToDam}. Not to be mistaken for the kind's damage dice, which are
+     * {@code damageDice} and {@code damageSides} and mean something else entirely.
+     *
+     * <p>Function getToD commented in full on 260816.
+     *
+     * @return the to-damage range for this kind
+     * @author Rowan Crowther
+     */
+    public Random getToD() {
+        return toD;
+    }
+
+    /**
+     * @return this kind's base armour class — C's {@code kind->ac}
+     * @author Rowan Crowther
+     */
+    public int getAc() {
+        return ac;
+    }
+
+    /**
+     * Returns the flavour this kind is disguised behind, the port of reading C's
+     * {@code kind->flavor}.
+     *
+     * <p>Null for a kind that has none, and that null is load-bearing rather than incidental: a
+     * sword is a sword on sight, while a potion is "a pink potion" until identified. The knowledge
+     * code pairs this with {@link #isAware} to decide whether an item's pval and effect can be
+     * shown — flavoured-and-aware and unflavoured-non-wearable are the two cases that qualify.
+     *
+     * <p>Function getFlavour commented in full on 260816.
+     *
+     * @return this kind's flavour, or {@code null} if it has none
+     * @author Rowan Crowther
+     */
+    public Flavour getFlavour() {
+        return flavour;
+    }
+
+    /**
+     * Reports whether the player has identified what this kind is, the port of reading C's
+     * {@code kind->aware}.
+     *
+     * <p>Held on the kind, not on any item, because that is the scope of the discovery: learning
+     * that the pink potion is a Potion of Speed is learning it about every pink potion at once. See
+     * {@link uk.co.jackoftrades.middle.player.Player#flavourAware}, which sets it and then puts the
+     * rest of the world in step.
+     *
+     * <p>Function isAware commented in full on 260816.
+     *
+     * @return {@code true} if the player knows what this kind is
+     * @author Rowan Crowther
+     */
+    public boolean isAware() {
+        return aware;
+    }
+
+    /**
+     * Records that the player has identified what this kind is — C's {@code kind->aware = true}.
+     *
+     * <p>Should generally be reached through
+     * {@link uk.co.jackoftrades.middle.player.Player#flavourAware} rather than called directly:
+     * awareness has consequences — the ignore fixup, the pack refresh, the floor redraw — and
+     * setting the flag here does none of them.
+     *
+     * <p>Function setAware commented in full on 260816.
+     *
+     * @param aware whether the player knows what this kind is
+     * @author Rowan Crowther
+     */
+    public void setAware(boolean aware) {
+        this.aware = aware;
+    }
+
+    /**
+     * @return what items of this kind do when used — C's {@code kind->effect}
+     * @author Rowan Crowther
+     */
+    public List<Effect> getEffect() {
+        return effect;
+    }
+
+    /**
+     * Reports whether an item of this kind has ever been seen identified, the port of reading C's
+     * {@code kind->everseen}.
+     *
+     * <p>Not knowledge but a record of whether the news has been broken, so that recognising a kind
+     * for the first time is worth a message and the tenth is not. {@link EgoItem#isEverSeen} is its
+     * counterpart for ego types.
+     *
+     * <p>Function isEverseen commented in full on 260816.
+     *
+     * @return {@code true} if this kind has been seen identified before
+     * @author Rowan Crowther
+     */
+    public boolean isEverseen() {
+        return everseen;
+    }
+
+    /**
+     * Reports whether the player has chosen to ignore this kind while it is still an unidentified
+     * flavour, the port of C's {@code kind_is_ignored_unaware}.
+     *
+     * <p>See {@link IgnoreFlag} for why this is a different question from
+     * {@link #isIgnoredAware} and why the two must not be collapsed.
+     *
+     * <p>Function isIgnoredUnaware commented in full on 260816.
+     *
+     * @return {@code true} if unidentified items of this kind are ignored
+     * @author Rowan Crowther
+     */
+    public boolean isIgnoredUnaware() {
+        return ignore.has(IgnoreFlag.IGNORE_IF_UNAWARE);
+    }
+
+    /**
+     * Sets whether unidentified items of this kind are ignored — C's {@code IGNORE_IF_UNAWARE}.
+     *
+     * <p>Takes a boolean where C's macro only ever switches the bit on, so this can also clear the
+     * choice; nothing in the port does yet, but the player's ignore menu will want to.
+     *
+     * <p>Function setIgnoredUnaware commented in full on 260816.
+     *
+     * @param ignoredUnaware whether to ignore unidentified items of this kind
+     * @author Rowan Crowther
+     */
+    public void setIgnoredUnaware(boolean ignoredUnaware) {
+        if (ignoredUnaware) ignore.on(IgnoreFlag.IGNORE_IF_UNAWARE);
+        else ignore.off(IgnoreFlag.IGNORE_IF_UNAWARE);
+    }
+
+    /**
+     * Reports whether the player has chosen to ignore this kind once they know what it is, the port
+     * of reading C's {@code IGNORE_IF_AWARE}.
+     *
+     * <p>Function isIgnoredAware commented in full on 260816.
+     *
+     * @return {@code true} if identified items of this kind are ignored
+     * @author Rowan Crowther
+     */
+    public boolean isIgnoredAware() {
+        return ignore.has(IgnoreFlag.IGNORE_IF_AWARE);
+    }
+
+    /**
+     * Sets whether identified items of this kind are ignored, the port of C's
+     * {@code kind_ignore_when_aware}.
+     *
+     * <p>Called by {@link uk.co.jackoftrades.middle.player.Player#flavourAware} to carry a standing
+     * decision across the moment of identification: a player who was ignoring unknown potions is
+     * taken to be ignoring this one, so the pile they were stepping over does not reappear under a
+     * name. See {@link IgnoreFlag}.
+     *
+     * <p>Function setIgnoredAware commented in full on 260816.
+     *
+     * @param ignoredAware whether to ignore identified items of this kind
+     * @author Rowan Crowther
+     */
+    public void setIgnoredAware(boolean ignoredAware) {
+        if (ignoredAware) ignore.on(IgnoreFlag.IGNORE_IF_AWARE);
+        else ignore.off(IgnoreFlag.IGNORE_IF_AWARE);
+    }
+
+    /**
+     * Reports whether this kind sits above {@code z_info->ordinary_kind_max} — the special-artifact
+     * range, the port of C's {@code obj->kind->kidx >= z_info->ordinary_kind_max} test.
+     *
+     * <p>A kind in that range is its own artifact rather than a template many items share, so there
+     * is nothing to be unsure of once it is in hand: {@code knowObject} makes the player aware of a
+     * non-jewellery special artifact outright rather than waiting for its runes to be read.
+     *
+     * <p>Function isSpecialArtifactKind commented in full on 260816.
+     *
+     * @return {@code true} if this kind is a special artifact
+     * @author Rowan Crowther
+     */
+    public boolean isSpecialArtifactKind() {
+        return isSpecialArtifactKind;
+    }
+
+    /**
+     * Returns the number of damage dice items of this kind roll, the port of reading C's
+     * {@code kind->dd}.
+     *
+     * <p>A plain count, not a range — unlike {@link #getToD} next door, which is a {@link Random}
+     * because it is rolled per item. Every Long Sword has the same {@code 2d5}; what differs between
+     * two of them is the bonus on top. That is why {@code object_set_base_known} can copy this onto
+     * a counterpart the moment the kind is recognised: knowing what the item <em>is</em> settles its
+     * dice, while its enchantment still has to be learned.
+     *
+     * <p>Not to be confused with the kind's {@code toD}, whose {@code getDice()} is the dice of the
+     * to-damage <em>range</em> and means something else entirely.
+     *
+     * <p>Function getDamageDice coded on 260816, commented in full on 260816.
+     *
+     * @return the number of damage dice for this kind
+     * @author Rowan Crowther
+     */
+    public int getDamageDice() {
+        return damageDice;
+    }
+
+    /**
+     * Returns the sides per damage die for items of this kind, the port of reading C's
+     * {@code kind->ds}. See {@link #getDamageDice} for why this is a count and not a range.
+     *
+     * <p>Function getDamageSides coded on 260816, commented in full on 260816.
+     *
+     * @return the sides per damage die for this kind
+     * @author Rowan Crowther
+     */
+    public int getDamageSides() {
+        return damageSides;
     }
 }

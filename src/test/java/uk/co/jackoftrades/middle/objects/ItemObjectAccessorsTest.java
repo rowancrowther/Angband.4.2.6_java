@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link ItemObject#getCurses()} wraps its map in an unmodifiable view. That asymmetry is easy to
  * trip over and so is pinned down here rather than left to be discovered.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ItemObjectAccessorsTest {
 
@@ -68,7 +68,7 @@ class ItemObjectAccessorsTest {
      * @param item  the item to modify
      * @param name  the declared field name
      * @param value the value to write
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void set(ItemObject item, String name, Object value) {
         try {
@@ -88,7 +88,7 @@ class ItemObjectAccessorsTest {
      * @param pValue the extra-parameter value, as the constructor takes it: a string
      * @param note   the inscription
      * @return the constructed item
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ItemObject item(TValue tValue, String pValue, String note) {
         return new ItemObject(new ObjectKind(), null, null, null, Loc.zero, tValue, 0, pValue,
@@ -105,7 +105,7 @@ class ItemObjectAccessorsTest {
      * @param item the item to read
      * @param name the declared field name
      * @return the field's value
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static Object read(ItemObject item, String name) throws Exception {
         Field field = ItemObject.class.getDeclaredField(name);
@@ -114,12 +114,28 @@ class ItemObjectAccessorsTest {
     }
 
     /**
+     * A minimal curse definition, distinguishable from another only by its name.
+     *
+     * <p>{@link Curse} declares no {@code equals}, so two of these are never equal and each stands
+     * for a distinct curse when used as a map key — which is what the curse map needs. The name is
+     * given so that a failure message names the curse rather than an object identity.
+     *
+     * @param name the curse's name
+     * @return a curse with every other field empty
+     * @author Rowan Crowther
+     */
+    private static Curse curse(String name) {
+        return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
+                List.of(), List.of(), "", "");
+    }
+
+    /**
      * A minimal artifact definition. {@link ItemObject#isArtifact()} only asks whether the field is
      * null, so nothing here is read — the constructor is pure assignment, and the fixture exists
      * solely to be a non-null {@link Artifact}.
      *
      * @return an artifact with every field empty
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
@@ -131,7 +147,7 @@ class ItemObjectAccessorsTest {
      * A sanity check that the element map the constructor is given is the one the item keeps, since
      * {@code similar} walks it for every element including the sentinels and would throw on a gap.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the element map is kept as given")
@@ -146,7 +162,7 @@ class ItemObjectAccessorsTest {
     }
 
     /**
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the kind is kept as given")
@@ -166,7 +182,7 @@ class ItemObjectAccessorsTest {
      * The stack count is the one numeric field the constructor takes and the recharge code divides
      * by, so it is worth knowing it survives construction unaltered.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Test
     @DisplayName("the stack count is kept as given")
@@ -177,14 +193,14 @@ class ItemObjectAccessorsTest {
     /**
      * The empty constructor, which is C's {@code mem_zalloc}'d blank slot.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("a blank item")
     class Blank {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("has no kind, no location and no inscription")
@@ -200,7 +216,7 @@ class ItemObjectAccessorsTest {
          * An item with no artifact definition is not an artifact — the test C writes as
          * {@code obj->artifact != NULL}.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not an artifact")
@@ -209,7 +225,7 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("carries no charges and no timeout")
@@ -225,7 +241,7 @@ class ItemObjectAccessorsTest {
     /**
      * The long constructor, and specifically the four arguments it does not simply assign.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("the parsing constructor")
@@ -235,7 +251,7 @@ class ItemObjectAccessorsTest {
          * The empty string is how the data files spell "no pval", and it has to become zero rather
          * than reach {@code Integer.parseInt} — which is the guard the constructor opens with.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("reads an empty pValue as zero")
@@ -247,7 +263,7 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("parses a numeric pValue")
@@ -263,7 +279,7 @@ class ItemObjectAccessorsTest {
          * is non-null even when the interval is a flat zero — which is what distinguishes a rod with
          * no wait from a non-rod, where C leaves the field alone entirely.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("turns the recharge string into a dice value")
@@ -274,7 +290,7 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("keeps the inscription it was given")
@@ -288,7 +304,7 @@ class ItemObjectAccessorsTest {
          * C stores the inscription as a {@code quark_t} where {@code 0} means "uninscribed"; the
          * port holds the text, so {@code null} is the equivalent and callers test for it.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an uninscribed item has a null note rather than an empty one")
@@ -300,14 +316,14 @@ class ItemObjectAccessorsTest {
     /**
      * The accessors with observable behaviour beyond returning a field.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("accessors")
     class Accessors {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the grid round-trips, and null means not on the floor")
@@ -322,7 +338,7 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an item with an artifact definition is an artifact")
@@ -337,7 +353,7 @@ class ItemObjectAccessorsTest {
          * {@code orNotice} is C's {@code obj->notice |= flag}, so it accumulates rather than
          * replaces — the name says so, and a setter would look identical from the call site.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("notice flags accumulate rather than replace")
@@ -358,7 +374,7 @@ class ItemObjectAccessorsTest {
          * struct that callers read and write in place. Stated because the opposite choice would look
          * equally reasonable from the signature.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getBrands returns the live set")
@@ -382,23 +398,55 @@ class ItemObjectAccessorsTest {
          * discovered, since a caller reaching for one after using the other will not expect it.
          *
          * <p>It is a view and not a copy, so writes to the backing map are still seen through it.
+         * That is not a detail: the curse tick in {@code GameWorld} decrements a timeout through
+         * the {@link CurseData} it reads out of this map, which only works because the values are
+         * the live instances rather than copies. Both halves are asserted here — the structure is
+         * closed, the values are shared.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getCurses returns an unmodifiable view over the live map")
         void cursesAreAnUnmodifiableView() {
-            Map<Curse.CurseEntry, Boolean> curses = new java.util.HashMap<>();
+            Map<Curse, CurseData> curses = new java.util.HashMap<>();
             ItemObject item = new ItemObject();
             set(item, "curses", curses);
 
-            Map<Curse.CurseEntry, Boolean> view = item.getCurses();
-            assertThrows(UnsupportedOperationException.class, () -> view.put(null, true));
+            Map<Curse, CurseData> view = item.getCurses();
+            assertThrows(UnsupportedOperationException.class,
+                    () -> view.put(curse("itches"), new CurseData(1, 0)));
 
-            Curse.CurseEntry entry = new Curse.CurseEntry(null, null);
-            curses.put(entry, true);
+            Curse siren = curse("siren");
+            CurseData data = new CurseData(4, 9);
+            curses.put(siren, data);
+
             assertEquals(1, view.size());
-            assertTrue(view.get(entry));
+            assertSame(data, view.get(siren));
+
+            view.get(siren).decrementTimeout();
+            assertEquals(8, data.getTimeout());
+        }
+
+        /**
+         * An object built by the empty constructor has no curse map at all, and the accessor
+         * absorbs that rather than handing back a null for every caller to test. C reaches the same
+         * answer from the other end — {@code curses_are_equal} treats two null curse arrays as
+         * equal, so "no map" and "empty map" mean the same thing there too.
+         *
+         * <p>The returned map must still refuse writes, or a caller that happens to meet an
+         * uncursed object would find the contract quietly different.
+         *
+         * @author Rowan Crowther
+         */
+        @Test
+        @DisplayName("getCurses reports an empty unmodifiable map when the field is null")
+        void cursesAreEmptyWhenUnset() throws Exception {
+            ItemObject item = new ItemObject();
+
+            assertNull(read(item, "curses"));
+            assertTrue(item.getCurses().isEmpty());
+            assertThrows(UnsupportedOperationException.class,
+                    () -> item.getCurses().put(curse("itches"), new CurseData(1, 0)));
         }
 
         /**
@@ -406,7 +454,7 @@ class ItemObjectAccessorsTest {
          * reflection. They are worth covering at all because {@code similar} refuses to stack a
          * mimicking item, and that refusal is only as good as the field it reads.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the monster indices round-trip")

@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Class ItemObjectStandardToHTest coded on 260815, commented in full on 260815.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ItemObjectStandardToHTest {
 
@@ -62,7 +62,7 @@ class ItemObjectStandardToHTest {
      * @param target the object to modify
      * @param name   the declared field name
      * @param value  the value to write
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void poke(Object target, String name, Object value) throws Exception {
         Field f = target.getClass().getDeclaredField(name);
@@ -78,7 +78,7 @@ class ItemObjectStandardToHTest {
      *
      * @param toH the kind's fixed to-hit figure
      * @return a kind declaring that to-hit and nothing else
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ObjectKind kindWithFixedToH(int toH) throws Exception {
         ObjectKind kind = new ObjectKind();
@@ -92,7 +92,7 @@ class ItemObjectStandardToHTest {
      * A kind whose to-hit is rolled from dice, so that no single figure is the expected one.
      *
      * @return a kind whose to-hit varies
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ObjectKind kindWithVaryingToH() throws Exception {
         ObjectKind kind = new ObjectKind();
@@ -107,7 +107,7 @@ class ItemObjectStandardToHTest {
      * @param kind   the kind this item is an instance of, or {@code null} for none
      * @param toHit  the figure this particular item rolled
      * @return the item
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static ItemObject item(TValue tValue, ObjectKind kind, int toHit) throws Exception {
         ItemObject item = new ItemObject();
@@ -122,14 +122,14 @@ class ItemObjectStandardToHTest {
      * structures. A curse's contribution is carried on a bare {@code struct object} that was never
      * generated from a template, so there is no normal value to compare against.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("an item with no kind")
     class NoKind {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard, having no template to have departed from")
@@ -142,7 +142,7 @@ class ItemObjectStandardToHTest {
          * carry a to-hit — that is what makes it a curse — and it is still not evidence about an
          * item, because there is no item.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard even when it carries a to-hit")
@@ -154,7 +154,7 @@ class ItemObjectStandardToHTest {
          * The kind is tested before the type is, so a null kind cannot fall over on the body-armour
          * branch. Worth pinning: reordering the two tests would throw here rather than answer.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard without consulting its type")
@@ -171,7 +171,7 @@ class ItemObjectStandardToHTest {
      * The branch the method exists for. Body armour's penalty comes from its kind, so "standard"
      * here means "still what the kind said", not "zero".
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("body armour whose kind fixes its to-hit")
@@ -181,7 +181,7 @@ class ItemObjectStandardToHTest {
          * Chain Mail as {@code object.txt} writes it: a to-hit of -2 that every hauberk has and none
          * of them earned. This is the case a plain non-zero test would get wrong.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard at the penalty its kind declares")
@@ -193,7 +193,7 @@ class ItemObjectStandardToHTest {
          * The same armour improved. An ego or an enchantment scroll has moved it off its kind's
          * figure, and that departure is the thing worth learning.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not standard once something has moved it off that figure")
@@ -205,7 +205,7 @@ class ItemObjectStandardToHTest {
          * The trap the branch is there to avoid, stated directly: zero is the wrong answer for
          * armour whose kind says -2, in both directions.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not standard at zero, when its kind declares a penalty")
@@ -217,7 +217,7 @@ class ItemObjectStandardToHTest {
          * All three body-armour types take the branch, since C's {@code tval_is_body_armor} lists
          * soft, hard and dragon-scale together.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("covers soft, hard and dragon-scale alike")
@@ -232,7 +232,7 @@ class ItemObjectStandardToHTest {
          * against zero either way, and arrives at it through the armour branch rather than the last
          * one.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard at zero when its kind declares no penalty")
@@ -247,14 +247,14 @@ class ItemObjectStandardToHTest {
      * item was expected to have, so comparing against the base would be picking an end of the range
      * arbitrarily; C falls through to the zero test instead.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("body armour whose kind rolls its to-hit")
     class BodyArmourWithVaryingToH {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard at zero, not at the dice's base")
@@ -268,7 +268,7 @@ class ItemObjectStandardToHTest {
          * is standard under the base comparison and not standard under the zero test. C gives the
          * second answer.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not standard away from zero, whatever the dice could have rolled")
@@ -281,14 +281,14 @@ class ItemObjectStandardToHTest {
      * Everything that is not body armour, which is most things. A sword has no built-in accuracy, so
      * any figure at all came from an ego, an artifact or a curse.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("anything that is not body armour")
     class NotBodyArmour {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is standard at zero")
@@ -297,7 +297,7 @@ class ItemObjectStandardToHTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not standard with a bonus")
@@ -309,7 +309,7 @@ class ItemObjectStandardToHTest {
          * A penalty is as much a departure as a bonus. The rune names the enchantment, not its
          * direction, so a cursed blade teaches to-hit exactly as a blessed one does.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("is not standard with a penalty either")
@@ -323,7 +323,7 @@ class ItemObjectStandardToHTest {
          * specifically, not armour in general, and only body armour carries a to-hit penalty in the
          * data.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("ignores its kind's to-hit, however that kind was written")

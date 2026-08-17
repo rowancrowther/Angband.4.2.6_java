@@ -216,7 +216,10 @@ public class EgoItem {
     /**
      * Build an ego-item template from its parsed data-file fields.
      *
+     * <p>Constructor EgoItem coded before 260817, commented in full on 260817.
+     *
      * @param name         ego name
+     * @param desc         flavour text, stored as this ego's {@code text}
      * @param egoIndex     ego-table index
      * @param cost         added cost
      * @param flags        added object flags
@@ -224,9 +227,10 @@ public class EgoItem {
      * @param kindFLags    added kind flags
      * @param modifiers    granted modifiers
      * @param minModifiers minimum modifier values
+     * @param elInfo       per-element resistances and vulnerabilities this ego adds
      * @param brands       added brands
      * @param slays        added slays
-     * @param curses       added curses
+     * @param curses       added curses, each with the power and timeout this ego rolls for it
      * @param rating       rating contribution
      * @param allocProb    allocation probability
      * @param allocMin     minimum allocation depth
@@ -286,5 +290,112 @@ public class EgoItem {
         this.activation = activation;
         this.time = time;
         this.everSeen = everSeen;
+    }
+
+    /**
+     * Reports whether the player has ever seen an ego of this type identified, the port of reading
+     * C's {@code ego->everseen}.
+     *
+     * <p>Not knowledge, but a record of whether the news has been broken. Recognising a Long Sword of
+     * Extra Attacks for the first time is worth a message; the tenth is not, and this flag is how
+     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} tells the two apart.
+     *
+     * <p>Function isEverSeen commented in full on 260816.
+     *
+     * @return {@code true} if an ego of this type has been seen before
+     * @author Rowan Crowther
+     */
+    public boolean isEverSeen() {
+        return everSeen;
+    }
+
+    /**
+     * Returns the object flags this ego confers, the port of reading C's {@code ego->flags}.
+     *
+     * <p>These are the flags an ego of this type <em>always</em> grants, which is what makes them
+     * usable as a recognition test: the player can identify an ego by its properties only if every
+     * flag in this set is one they can read.
+     *
+     * <p>Function getFlags commented in full on 260816.
+     *
+     * @return this ego's flags, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Flag<ObjectFlag> getFlags() {
+        return flags;
+    }
+
+    /**
+     * Returns the range a given modifier takes on this ego, the port of reading C's
+     * {@code ego->modifiers[i]}.
+     *
+     * <p>A {@link Random}, not an {@code int}, because an ego's modifiers are rolled per object: a
+     * Ring of the Mouse gives some amount of stealth, not a fixed amount. That is why recognising an
+     * ego by its modifiers takes the trouble of evaluating the range at both extremes — a range that
+     * spans zero can be present on an object showing nothing.
+     *
+     * <p>Answers {@code null} for a modifier this ego does not touch, where C reads a zeroed
+     * {@code random_value} out of a full-length array. Callers should treat the null as that zero.
+     *
+     * <p>Function getModifier commented in full on 260816.
+     *
+     * @param modifier the modifier to look up
+     * @return the range this ego rolls for that modifier, or {@code null} if it does not affect it
+     * @author Rowan Crowther
+     */
+    public Random getModifier(ObjectModifier modifier) {
+        return modifiers.get(modifier);
+    }
+
+    /**
+     * Returns the elemental resistances and vulnerabilities this ego confers, the port of reading
+     * C's {@code ego->el_info}.
+     *
+     * <p>Function getElInfo commented in full on 260816.
+     *
+     * @return this ego's element info by element, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Map<ElementEnum, ElementInfo> getElInfo() {
+        return elInfo;
+    }
+
+    /**
+     * Returns the brands this ego confers, the port of reading C's {@code ego->brands}.
+     *
+     * <p>Function getBrands commented in full on 260816.
+     *
+     * @return this ego's brands, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Set<Brand> getBrands() {
+        return brands;
+    }
+
+    /**
+     * Returns the slays this ego confers, the port of reading C's {@code ego->slays}.
+     *
+     * <p>Function getSlays commented in full on 260816.
+     *
+     * @return this ego's slays, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Set<Slay> getSlays() {
+        return slays;
+    }
+
+    /**
+     * Returns the curses this ego carries, the port of reading C's {@code ego->curses}.
+     *
+     * <p>Each is mapped to the {@link CurseData} the ego rolls for it — a power and a timeout — not
+     * to whether the player knows of it, which is not a property of the ego at all.
+     *
+     * <p>Function getCurses commented in full on 260816.
+     *
+     * @return this ego's curses and their data, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Map<Curse, CurseData> getCurses() {
+        return curses;
     }
 }

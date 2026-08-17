@@ -38,14 +38,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link ElementInfo#getFlags()}, and getting it backwards would be invisible until two object
  * kinds silently began sharing a flag set.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ElementInfoTest {
 
     /**
      * A fresh instance is C's zeroed struct: no flags, no resistance.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Test
     @DisplayName("a new element info is empty and neutral")
@@ -61,14 +61,14 @@ class ElementInfoTest {
      * Tests of the resistance level, which the port stores and returns without interpretation —
      * the scale is C's, including its negatives.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("resistance level")
     class ResistanceLevel {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("round-trips a positive level")
@@ -84,7 +84,7 @@ class ElementInfoTest {
          * A negative level is a vulnerability rather than a resistance, and is stored as given.
          * C's field is an {@code int16_t}, so nothing clamps it at zero and neither does this.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("stores a negative level unchanged")
@@ -100,7 +100,7 @@ class ElementInfoTest {
     /**
      * Tests of the hates/ignores/random flags.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("flags")
@@ -110,7 +110,7 @@ class ElementInfoTest {
          * {@code on} delegates to {@link Flag#on}, so it answers C's "did this change anything"
          * question: true the first time, false on a repeat.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("on reports only the first set as a change")
@@ -122,7 +122,7 @@ class ElementInfoTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("has sees what on set, and nothing else")
@@ -140,7 +140,7 @@ class ElementInfoTest {
          * The three flags are independent — C packs them into one bitflag, and a port that
          * accidentally made them exclusive would still pass a single-flag test.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("all three flags can be on at once")
@@ -162,7 +162,7 @@ class ElementInfoTest {
          * place. This pins that down, because the opposite choice would look equally reasonable
          * from the signature alone.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getFlags returns the live set, so writes through it are seen")
@@ -181,14 +181,14 @@ class ElementInfoTest {
      * Tests of {@link ElementInfo#copy()}, whose only job is to be the accessor
      * {@link ElementInfo#getFlags()} is not.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("copy")
     class Copy {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("carries both fields across")
@@ -207,7 +207,7 @@ class ElementInfoTest {
          * The copy is deep in the sense that matters: the flag set is a new object, so folding a
          * base's defaults onto a derived kind leaves the derived kind free to diverge.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("gives the copy its own flag set")
@@ -225,7 +225,7 @@ class ElementInfoTest {
          * {@code copyFrom} into a shared set breaks the first, and returning the receiver breaks
          * the second.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("neither copy nor original can change the other")
@@ -249,7 +249,7 @@ class ElementInfoTest {
          * A copy taken from an empty instance must not pick up the source's flags <em>later</em>,
          * which is the failure mode of copying a reference and only filling it in afterwards.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("copying an empty info still detaches it")

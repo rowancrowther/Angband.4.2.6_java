@@ -36,7 +36,6 @@ import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-import uk.co.jackoftrades.middle.objects.Curse.CurseEntry;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
 
@@ -214,11 +213,19 @@ public class ItemObject {
      */
     private Flag<ObjectFlag> flags;
     /**
-     * The item's numeric modifiers (as unparsed dice strings), keyed by modifier.
+     * The item's numeric modifiers, keyed by modifier — the port of C's {@code obj->modifiers}.
+     *
+     * <p>Values already rolled for this particular object, not the dice they came from: an ego's
+     * {@code +1d4} stealth becomes a {@code 3} here when the object is generated. The dice live on
+     * {@link ObjectKind} and {@link EgoItem}, which is what makes recognising an ego by its
+     * modifiers a question about ranges rather than about this number.
+     *
+     * <p>Comment corrected on 260816, when the field's type changed from the unparsed dice text it
+     * had previously held.
      *
      * @author Rowan Crowther
      */
-    private Map<ObjectModifier, String> modifiers;
+    private Map<ObjectModifier, Integer> modifiers;
     /**
      * Per-element relation info.
      *
@@ -226,23 +233,40 @@ public class ItemObject {
      */
     private Map<ElementEnum, ElementInfo> elInfo;
     /**
-     * Brands on the item (mapped to whether intrinsic).
+     * Brands on the item — C's {@code obj->brands}. A set, because membership is the whole of the
+     * state; C indexes an array by registry position and stores a bare boolean.
+     *
+     * <p>Field brands commented in full on 260817.
      *
      * @author Rowan Crowther
      */
     private Set<Brand> brands;
     /**
-     * Slays on the item (mapped to whether intrinsic).
+     * Slays on the item — C's {@code obj->slays}. As {@link #brands}.
+     *
+     * <p>Field slays commented in full on 260817.
      *
      * @author Rowan Crowther
      */
     private Set<Slay> slays;
     /**
-     * Curses on the item (mapped to whether intrinsic).
+     * Curses on the item, each mapped to its per-object {@link CurseData} — the power it has here
+     * and the countdown to its next effect. C's {@code obj->curses}.
+     *
+     * <p>A map holding only the curses the object actually carries, where C keeps an array with a
+     * slot for every curse in the game and reads a power of zero as "not cursed with this". The two
+     * agree because nothing stores a curse at power zero: absence is the port's way of saying the
+     * same thing.
+     *
+     * <p>Null until the first curse is added, which the accessors absorb rather than pass on —
+     * {@link #getCurses()} reports an empty map and the mutators create the map on demand.
+     *
+     * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
+     * full on 260817.
      *
      * @author Rowan Crowther
      */
-    private Map<CurseEntry, Boolean> curses;
+    private Map<Curse, CurseData> curses;
 
     /**
      * Effects this item produces when used.
@@ -383,10 +407,10 @@ public class ItemObject {
                       int damageSides, int normalAC, int toAC,
                       String baseDamage, int toDam, int toHit,
                       Flag<ObjectFlag> flags,
-                      Map<ObjectModifier, String> modifiers,
+                      Map<ObjectModifier, Integer> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
                       Set<Brand> brands, Set<Slay> slays,
-                      Map<CurseEntry, Boolean> curses,
+                      Map<Curse, CurseData> curses,
                       List<Effect> effect, String effectMessage,
                       List<Activation> activation, String time,
                       int timeout, int number,
@@ -527,19 +551,8 @@ public class ItemObject {
         if (!this.flags.isEqual(itm2.flags)) return false;
 
         // Different elements don't stack
-        for (ElementEnum e : ElementEnum.values()) {
-            if (this.elInfo.get(e).getResLevel() != itm2.elInfo.get(e).getResLevel()) return false;
-
-            Flag<ElementInfoEnum> thisELFlags = this.elInfo.get(e).getFlags();
-            Flag<ElementInfoEnum> itm2ELFlags = itm2.elInfo.get(e).getFlags();
-
-            boolean thisHates = thisELFlags.has(ElementInfoEnum.EL_INFO_HATES);
-            boolean thisIgnores = thisELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
-            boolean itm2Hates = itm2ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
-            boolean itm2Ignores = itm2ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
-
-            if (thisHates != itm2Hates || thisIgnores != itm2Ignores) return false;
-        }
+        if (!checkElementStacking(this, itm2)) return false;
+        if (!checkElementStacking(itm2, this)) return false;
 
         if (this.artifact != null || itm2.artifact != null) return false;
 
@@ -566,8 +579,11 @@ public class ItemObject {
             if (this.toAC != itm2.toAC) return false;
 
             // identical modifiers
-            for (ObjectModifier mod : ObjectModifier.values()) {
+            for (ObjectModifier mod : this.modifiers.keySet()) {
                 if (!this.modifiers.get(mod).equals(itm2.modifiers.get(mod))) return false;
+            }
+            for (ObjectModifier mod : itm2.modifiers.keySet()) {
+                if (!itm2.modifiers.get(mod).equals(this.modifiers.get(mod))) return false;
             }
 
             // Same ego item
@@ -583,6 +599,56 @@ public class ItemObject {
         }
 
         // probably similar enough by now
+        return true;
+    }
+
+    /**
+     * Compares two objects' element info one way round, reporting whether everything the second
+     * records is matched by the first. Extracted from {@link #similar} to carry the element half of
+     * C's {@code object_stackable} ({@code obj-util.c}), which rejects a stack when two objects
+     * differ in either their resistance levels or their {@code EL_INFO_HATES}/{@code EL_INFO_IGNORE}
+     * flags.
+     *
+     * <p><b>Why it is one-directional, and called twice.</b> C compares full arrays indexed by
+     * element, so a single loop over {@code 0..ELEM_MAX} sees both objects' entries at once. Here
+     * the info is a map holding only the elements an object actually carries, so a loop over one
+     * object's keys cannot see an element recorded solely on the other. {@link #similar} calls this
+     * with the arguments both ways round, and the pair of passes covers what C's single loop does.
+     *
+     * <p>It is stricter than C in one corner: C treats a missing entry as a resistance level of
+     * zero and would call that equal to an explicit zero, whereas the {@code containsKey} test here
+     * refuses the stack outright. That errs towards keeping two objects apart, which costs the
+     * player a merged pile at worst.
+     *
+     * <p>Reads through {@link #getElInfo()} rather than the field so that an object built by the
+     * no-argument constructor, whose map is still null, compares as carrying no element info rather
+     * than throwing.
+     *
+     * <p>Function checkElementStacking coded on 260817, commented in full on 260817.
+     *
+     * @param itm1 the object whose element info must cover the other's
+     * @param itm2 the object whose recorded elements are walked
+     * @return {@code true} if every element {@code itm2} records is matched on {@code itm1}
+     * @author Rowan Crowther
+     */
+    private boolean checkElementStacking(ItemObject itm1, ItemObject itm2) {
+        for (ElementEnum e : itm2.getElInfo().keySet()) {
+            if (e == ElementEnum.ELEM_NONE || e == ElementEnum.ELEM_MAX) continue;
+
+            if (!itm1.getElInfo().containsKey(e)) return false;
+            if (itm2.getElInfo().get(e).getResLevel() != itm1.getElInfo().get(e).getResLevel()) return false;
+
+            Flag<ElementInfoEnum> itm1ELFlags = itm1.getElInfo().get(e).getFlags();
+            Flag<ElementInfoEnum> itm2ELFlags = itm2.getElInfo().get(e).getFlags();
+
+            boolean itm1Hates = itm1ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
+            boolean itm1Ignores = itm1ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
+            boolean itm2Hates = itm2ELFlags.has(ElementInfoEnum.EL_INFO_HATES);
+            boolean itm2Ignores = itm2ELFlags.has(ElementInfoEnum.EL_INFO_IGNORE);
+
+            if (itm1Hates != itm2Hates || itm1Ignores != itm2Ignores) return false;
+        }
+
         return true;
     }
 
@@ -621,7 +687,7 @@ public class ItemObject {
     @CheckReturnValue
     @Contract(pure = true)
     private boolean cursesAreEqual(@NotNull ItemObject itm2) {
-        return this.curses.equals(itm2.curses);
+        return this.getCurses().equals(itm2.getCurses());
     }
 
     /**
@@ -636,39 +702,7 @@ public class ItemObject {
 
         if (!cursesAreEqual(known)) return false;
 
-        return nonCurseRunesKnown();
-    }
-
-    /**
-     * Check to see the knowledge of this verses this.known
-     *
-     * @return true if this and this.known are known to the player
-     */
-    @CheckReturnValue
-    @Contract(pure = true)
-    private boolean nonCurseRunesKnown() {
-        if (known == null) return false;
-
-        if (known.toAC != toAC) return false;
-        if (known.toDam != toDam) return false;
-        if (known.toHit != toHit) return false;
-
-        for (ObjectModifier mod : ObjectModifier.values()) {
-            if (!known.modifiers.get(mod).equals(modifiers.get(mod))) return false;
-        }
-
-        for (ElementEnum e : ElementEnum.values()) {
-            if (known.elInfo.get(e).getResLevel() == 0
-                    && elInfo.get(e).getResLevel() != 0)
-                return false;
-        }
-
-        if (!known.brands.equals(brands)) return false;
-
-        if (!known.slays.equals(slays)) return false;
-
-        // TODO: Check that this test is the right way round
-        return known.flags.isSubset(flags);
+        return Player.nonCurseRunesKnown(this);
     }
 
     /**
@@ -679,10 +713,11 @@ public class ItemObject {
     @Contract(pure = true)
     @CheckReturnValue
     private boolean effectIsKnown() {
-        for (Effect eff : known.effect) {
-            if (!effect.contains(eff)) return false;
+        if (known == null) return false;
+        List<Effect> knownEffects = known.getEffect();
+        for (Effect eff : this.getEffect()) {
+            if (!knownEffects.contains(eff)) return false;
         }
-
         return true;
     }
 
@@ -737,10 +772,11 @@ public class ItemObject {
      * @param combineChargesTimeouts whether we are merging timeouts and charges
      */
     private void absorbMerge(@NotNull ItemObject item, boolean combineChargesTimeouts) {
-        // In c we check that this and item are not null. We don't need to do that here
-        if (!item.known.effect.isEmpty()) {
-            this.known.effect = this.effect;
-            GameState.getPlayer().knowObject(this);
+        if (item.getKnown() != null && this.getKnown() != null) {
+            if (!item.getKnown().effect.isEmpty()) {
+                this.getKnown().effect = this.effect;
+                GameState.getPlayer().knowObject(this);
+            }
         }
 
         if (item.note != null && !item.note.isEmpty())
@@ -773,13 +809,15 @@ public class ItemObject {
         int largest = Math.max(this.number, item.number);
         int newsz1, newsz2;
 
-        if (!thisMode.has(ObjectStackEnum.OSTACK_STORE) && !itemMode.has(ObjectStackEnum.OSTACK_STORE)) {
+        if (thisMode.has(ObjectStackEnum.OSTACK_STORE) || itemMode.has(ObjectStackEnum.OSTACK_STORE)) {
             logger.error("Either this or the incoming object have a store stacking mode set");
             return;
         }
 
         if (thisMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getCarryCapQuiverSlotSize();
+            int limit = GameConstants.getCarryCapQuiverSlotSize() / (this.tValue.isAmmo()
+                    ? 1
+                    : GameConstants.getCarryCapThrownQuiverMult());
             if (itemMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
                 int difference = limit - largest;
 
@@ -801,7 +839,7 @@ public class ItemObject {
 
             newsz1 = largest + smallest - limit;
             newsz2 = limit;
-            if (newsz1 < this.kind.getBase().getMaxStack()) {
+            if (newsz1 >= this.kind.getBase().getMaxStack()) {
                 logger.error("New size outside acceptable limits after merging");
                 return;
             }
@@ -827,7 +865,7 @@ public class ItemObject {
      * @param destNew whether the destination is a new object, or an existing one
      */
     private void distributeCharges(@NotNull ItemObject item, int amount, boolean destNew) {
-        if (item.tValue.canHaveCharges()) {
+        if (this.tValue.canHaveCharges()) {
             int change = this.pValue * amount / this.number;
 
             if (destNew) {
@@ -840,14 +878,14 @@ public class ItemObject {
             }
         }
 
-        if (item.tValue.canHaveTimeout()) {
+        if (this.tValue.canHaveTimeout()) {
             int chargeTime = this.time.randCalc(0, DamageAspect.AVERAGE);
             int maxTime = chargeTime * amount;
 
             if (destNew) {
                 item.timeout = Math.min(this.timeout, maxTime);
                 if (amount < this.number)
-                    this.number -= item.number;
+                    this.timeout -= item.timeout;
             } else {
                 int change = Math.min(this.timeout, maxTime);
 
@@ -891,12 +929,201 @@ public class ItemObject {
     }
 
     /**
-     * @return this object's curses, each mapped to a boolean marking whether the
-     * player is aware of it (unmodifiable) — the port of C's {@code obj->curses}
+     * Returns the curses on this object, each mapped to its instance data — the port of reading C's
+     * {@code obj->curses}.
+     *
+     * <p>The value is the curse's {@link CurseData}, its power and the countdown to its next
+     * effect. Whether the <em>player</em> knows of a curse is a different question and is not
+     * recorded here; that lives on {@link KnownObject}, which maps a curse to a plain boolean.
+     *
+     * <p>An unmodifiable view, not a copy, and the distinction matters in both directions. Because
+     * it is a view, the {@link CurseData} values are the live ones, so the curse tick in
+     * {@code GameWorld} can decrement a timeout in place through what it reads here, exactly as C's
+     * {@code curse[j].timeout--} does. Because it is unmodifiable, adding or removing a curse has
+     * to go through {@link #addCurse}, {@link #removeCurse} and their neighbours rather than
+     * happening behind this object's back.
+     *
+     * <p>An empty map stands for "no curses", including for an object whose backing map has never
+     * been created — the null is absorbed here rather than pushed onto every caller, which is also
+     * how C's {@code curses_are_equal} treats a null curse array.
+     *
+     * <p>Function getCurses coded before 260817, commented in full on 260817.
+     *
+     * @return this object's curses and their instance data, as an unmodifiable view
      * @author Rowan Crowther
      */
-    public Map<CurseEntry, Boolean> getCurses() {
+    public Map<Curse, CurseData> getCurses() {
+        if (curses == null)
+            return Map.of();
         return Collections.unmodifiableMap(curses);
+    }
+
+    /**
+     * Puts a curse on this object at a given power and timeout, building the instance data from the
+     * two figures.
+     *
+     * <p>The form to reach for when the caller holds numbers rather than an existing
+     * {@link CurseData} — notably the knowledge code, which copies a curse's power onto an object's
+     * known counterpart and leaves the timeout at zero, as C's {@code player_know_object} does with
+     * {@code obj->known->curses[i].power = obj->curses[i].power}. Building fresh data here is what
+     * keeps the counterpart from sharing the real object's countdown.
+     *
+     * <p>Replaces any data already held for that curse, matching the plain assignment C makes into
+     * its curse array. The backing map is created on demand, so this is safe on an object that has
+     * never carried a curse.
+     *
+     * <p>Function addCurse coded before 260817, commented in full on 260817.
+     *
+     * @param curse   the curse to apply
+     * @param power   the curse's power on this object
+     * @param timeout turns until the curse's first effect
+     * @author Rowan Crowther
+     */
+    public void addCurse(Curse curse, int power, int timeout) {
+        CurseData curseData = new CurseData(power, timeout);
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        this.curses.put(curse, curseData);
+    }
+
+    /**
+     * Puts a curse on this object with instance data the caller already holds.
+     *
+     * <p>Stores the {@link CurseData} given, without copying it. That is deliberate — it lets a
+     * caller keep a handle on the data it just installed — but it makes the caller responsible for
+     * not handing over an instance something else is still using. A template's curse data in
+     * particular must be copied first, or the tick that decrements this object's timeout will
+     * decrement the template's; {@link ObjectKind}'s constructor copies on the way in for that
+     * reason.
+     *
+     * <p>Function addCurse coded before 260817, commented in full on 260817.
+     *
+     * @param curse     the curse to apply
+     * @param curseData the instance data to store, taken by reference
+     * @author Rowan Crowther
+     */
+    public void addCurse(Curse curse, CurseData curseData) {
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        this.curses.put(curse, curseData);
+    }
+
+    /**
+     * Adds a whole set of curses at once, the batch form of {@link #addCurse(Curse, CurseData)}.
+     *
+     * <p>Adds; it does not replace. Curses already on this object and not named in the argument
+     * stay, which is what an object picking up an ego's or an artifact's curses on top of its
+     * kind's needs. Use {@link #clearAndPutCurses} for the replacing form.
+     *
+     * <p>Shares the argument's {@link CurseData} instances rather than copying them, with the same
+     * caveat as the single-curse form: a map belonging to a template must be copied by the caller.
+     *
+     * <p>Function addCurses coded before 260817, commented in full on 260817.
+     *
+     * @param curses the curses to add, with their instance data taken by reference
+     * @author Rowan Crowther
+     */
+    public void addCurses(Map<Curse, CurseData> curses) {
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        this.curses.putAll(curses);
+    }
+
+    /**
+     * Replaces this object's curses with the given set, discarding whatever was there.
+     *
+     * <p>The replacing counterpart of {@link #addCurses}: this object ends up carrying exactly the
+     * curses named and no others. That is the operation wanted when an object's curse list is being
+     * rebuilt from a source of truth rather than accumulated.
+     *
+     * <p>Function clearAndPutCurses coded before 260817, renamed from {@code clearAndPut} on 260817,
+     * commented in full on 260817.
+     *
+     * @param curseEntries the curses this object should carry, with their instance data taken by
+     *                     reference
+     * @author Rowan Crowther
+     */
+    public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        this.curses.clear();
+        this.curses.putAll(curseEntries);
+    }
+
+    /**
+     * Removes every curse from this object.
+     *
+     * <p>The port of what C achieves by freeing the curse array and setting the pointer to null —
+     * {@code mem_free(obj->known->curses); obj->known->curses = NULL;} in
+     * {@code player_know_object}, which uses it to wipe a known counterpart's curses when the real
+     * object turns out to have none the player recognises.
+     *
+     * <p>Exists as a method because {@link #getCurses()} hands back an unmodifiable view, so a
+     * caller cannot clear the map through it. Leaves an empty map rather than a null one; the two
+     * are indistinguishable from outside, {@link #getCurses()} reporting empty for both.
+     *
+     * <p>Function clearCurses coded on 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    public void clearCurses() {
+        if (curses == null)
+            curses = new HashMap<>();
+        curses.clear();
+    }
+
+    /**
+     * Changes the power of a curse already on this object, leaving its timeout alone.
+     *
+     * <p>The port of C's bare {@code obj->curses[i].power = ...} assignment, which appears wherever
+     * a curse is weakened or strengthened without being added or taken away.
+     *
+     * <p>Does nothing for a curse this object does not carry. That is the safe reading of the
+     * request: in this port an absent curse and a curse of power zero are the same state, so there
+     * is no meaningful power to set on one that is not there, and creating an entry would invent a
+     * curse rather than adjust one. Setting a curse's power to zero is therefore not the way to
+     * remove it — use {@link #removeCurse} for that.
+     *
+     * <p>Function setCursePower coded on 260817, commented in full on 260817.
+     *
+     * @param curse the curse to adjust; ignored if {@code null} or not on this object
+     * @param power the curse's new power
+     * @author Rowan Crowther
+     */
+    public void setCursePower(Curse curse, int power) {
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        if (curse == null || !this.curses.containsKey(curse)) return;
+        CurseData curseData = this.curses.get(curse);
+        curseData.setPower(power);
+    }
+
+    /**
+     * Takes a curse off this object.
+     *
+     * <p>The port of C's {@code obj->curses[i].power = 0}. C cannot delete an entry from an array
+     * indexed by curse, so it zeroes the power and reads that back as "no curse"; the port holds a
+     * map, where absence says the same thing directly. The two representations agree because
+     * nothing here ever stores a curse at power zero — which is also what lets
+     * {@code cursesAreEqual} compare two maps and reach C's answer.
+     *
+     * <p>Silently does nothing for a curse the object does not carry.
+     *
+     * <p>Function removeCurse coded on 260817, commented in full on 260817.
+     *
+     * @param curse the curse to remove
+     * @author Rowan Crowther
+     */
+    public void removeCurse(Curse curse) {
+        if (this.curses == null) {
+            this.curses = new HashMap<>();
+        }
+        this.curses.remove(curse);
     }
 
     /**
@@ -1021,6 +1248,8 @@ public class ItemObject {
      * @author Rowan Crowther
      */
     public Set<Brand> getBrands() {
+        if (brands == null)
+            return Set.of();
         return brands;
     }
 
@@ -1144,15 +1373,31 @@ public class ItemObject {
      * Reports whether this item carries the given object flag, the port of C's
      * {@code of_has(obj->flags, flag)}.
      *
-     * <p>This asks what the item <em>is</em>, not what the player knows about it. The two are
-     * separate questions throughout the knowledge code and are deliberately kept in separate
-     * places: the flags an item has live here, while the flags the player can read live on
-     * {@link KnownObject} and are reached through {@link #getKnownFlags}. C's
-     * {@code equip_learn_flag} plays the two against each other — an item that has the flag may
-     * teach it, an item that does not gets the flag marked on its known counterpart as having been
-     * ruled out.
+     * <p>This asks what the item <em>is</em>, not what the player knows about it. Those are separate
+     * questions throughout the knowledge code, and there are <em>two</em> stores of knowledge to
+     * keep apart from this one:
      *
-     * <p>Function hasFlag coded on 260815, commented in full on 260815.
+     * <ul>
+     *   <li>the flags <b>this item has</b> — here, and read through this method;</li>
+     *   <li>the flags the player can read <b>on this item</b> — on the item's counterpart, reached
+     *       as {@code getKnown().getFlags()};</li>
+     *   <li>the runes the player can read <b>at all</b>, on any item — {@link KnownObject}, which
+     *       belongs to the player and mentions no item.</li>
+     * </ul>
+     *
+     * <p>The middle one is derived from the other two: {@code player_know_object} sets a
+     * counterpart's flags to the intersection of what the player understands with what the item
+     * actually carries. Conflating the last two is the easy mistake, because both are "what the
+     * player knows" — but one is general and one is per-item, and the whole knowledge subsystem is
+     * the traffic between them.
+     *
+     * <p>C's {@code equip_learn_flag} plays this method against the second store — an item that has
+     * the flag may teach it, an item that does not gets the flag marked on its counterpart as having
+     * been ruled out.
+     *
+     * <p>Function hasFlag coded on 260815, commented in full on 260815. Corrected on 260816: the
+     * previous version placed an item's readable flags on {@link KnownObject}, which is a different
+     * store, and routed them through {@code getKnownFlags}, since withdrawn.
      *
      * @param flag the flag to test for
      * @return whether this item carries it
@@ -1169,7 +1414,8 @@ public class ItemObject {
      * {@link ObjectDescription} flags it is given.
      *
      * <p><b>Stub:</b> returns the literal {@code {DESCRIPTION_TAG}} until the description subsystem
-     * is ported. The placeholder is deliberately conspicuous rather than empty, because the return
+     * is ported, which is deferred to Chapter 7. The placeholder is deliberately conspicuous rather
+     * than empty, because the return
      * value is not inspected by its callers — {@link #flagMessage} substitutes it straight into a
      * message and shows it to the player. An empty string would produce "Your  glows." and read as
      * a spacing bug; the tag reads as a thing not yet built.
@@ -1232,50 +1478,554 @@ public class ItemObject {
     }
 
     /**
-     * Returns the live flag set, not a copy — C hands out {@code obj->flags} as an array on the
-     * struct and callers write to it in place.
+     * Returns this item's object flags, the port of reading C's {@code obj->flags}.
      *
-     * <p>Package-private on purpose. The only caller is {@link #getKnownFlags}, reaching across to
-     * the known counterpart of the same class; outside this class the flags an item has are read
-     * through {@link #hasFlag}, and nothing outside has business writing them.
+     * <p><b>A copy, deliberately.</b> Every write to a flag set goes through {@link #setFlag},
+     * {@link #setFlags} or {@link #setFlagsTo}, so nothing needs a mutable handle on the real set,
+     * and handing one out would leave a fourth, unnamed write path open beside the three named ones.
+     * That path has caused two bugs already — a write discarded because the "live" set was a copy,
+     * and a known object left sharing its item's set so that knowledge could never afterwards differ
+     * from truth.
      *
-     * <p>Function getObjectFlags coded on 260815, commented in full on 260815.
+     * <p>Most readers want one flag rather than the set; {@link #hasFlag} answers that without the
+     * allocation.
      *
-     * @return this item's flags, shared with this instance
+     * <p>Function getFlags commented in full on 260816, when it changed from returning the live set.
+     *
+     * @return a copy of this item's flags
      * @author Rowan Crowther
      */
-    Flag<ObjectFlag> getObjectFlags() {
+    public Flag<ObjectFlag> getFlags() {
+        Flag<ObjectFlag> toReturn = new Flag<>(ObjectFlag.class);
+        toReturn.copyFrom(flags);
+        return toReturn;
+    }
+
+    /**
+     * Returns the player's known view of this item, the port of reading C's {@code obj->known}.
+     *
+     * <p>Itself an {@link ItemObject}, carrying only what has been discovered — which is why the
+     * knowledge code reads a property off this one and writes it to that one. Null on an item the
+     * player has never seen, so callers check; C is entitled to skip the check because
+     * {@code assert(obj->known)} has just run.
+     *
+     * <p>Function getKnown commented in full on 260816.
+     *
+     * @return the known counterpart, or {@code null} if this item has none
+     * @author Rowan Crowther
+     */
+    public ItemObject getKnown() {
+        return known;
+    }
+
+    /**
+     * Returns this item's notice flags, the port of reading C's {@code obj->notice}.
+     *
+     * <p>How far the player has got with this particular item — sensed, assessed, ignored — as
+     * distinct from what they know about its properties. {@code knowObject} reads
+     * {@code OBJ_NOTICE_ASSESSED} here to tell an object examined up close from one merely seen
+     * across a room.
+     *
+     * <p>A copy, for the reason given on {@link #getFlags}.
+     *
+     * <p>Function getNotice commented in full on 260816.
+     *
+     * @return a copy of this item's notice flags
+     * @author Rowan Crowther
+     */
+    public Flag<ObjectNotice> getNotice() {
+        Flag<ObjectNotice> flags = new Flag<>(ObjectNotice.class);
+        flags.copyFrom(notice);
         return flags;
     }
 
     /**
-     * Returns the flag set on this item's known counterpart — the flags the player can currently
-     * read — as C reaches {@code obj->known->flags}. Live, not a copy, because the point of it is to
-     * be written to: {@code equip_learn_flag} switches a flag on here to record that the item has
-     * had its chance to display that property and did not.
-     *
-     * <p>That is a subtle piece of bookkeeping. A flag being on the known set means the player has
-     * settled the question, which includes settling it in the negative — the item was worn through
-     * an event that would have revealed the flag, so its absence is now knowledge rather than
-     * ignorance. It is how an item becomes fully identified by being used rather than by being
-     * examined.
-     *
-     * <p>Answers {@code null} rather than throwing when there is no known counterpart. C is
-     * entitled to dereference {@code obj->known} straight away because {@code assert(obj->known)}
-     * has just run; the port drops those asserts (see
-     * {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnDefend}), so the null has to be
-     * expressible instead. Every live item has a counterpart from the moment it is created, so a
-     * null here means a fixture or a generation path that skipped it — see {@link #isKnown} for why
-     * the presence of that companion is not the same as the item being identified.
-     *
-     * <p>Function getKnownFlags coded on 260815, commented in full on 260815.
-     *
-     * @return the known counterpart's flags, or {@code null} if this item has no counterpart
+     * @return this item's sub-type value — C's {@code obj->sval}
      * @author Rowan Crowther
      */
-    public Flag<ObjectFlag> getKnownFlags() {
-        if (known == null) return null;
+    public int getsValue() {
+        return sValue;
+    }
 
-        return known.getObjectFlags();
+    /**
+     * @param sValue the sub-type value to set — C's {@code obj->sval}
+     * @author Rowan Crowther
+     */
+    public void setsValue(int sValue) {
+        this.sValue = sValue;
+    }
+
+    /**
+     * @return this item's weight in tenths of a pound — C's {@code obj->weight}
+     * @author Rowan Crowther
+     */
+    public int getWeight() {
+        return weight;
+    }
+
+    /**
+     * @param weight the weight to set — C's {@code obj->weight}
+     * @author Rowan Crowther
+     */
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    /**
+     * Sets the kind this item is an instance of — C's {@code obj->kind}.
+     *
+     * <p>A null kind is not a missing value but a marker: the bearer-less item hanging off a curse
+     * definition has one, and {@code knowObject} stops early on exactly that test.
+     *
+     * @param kind the kind to set
+     * @author Rowan Crowther
+     */
+    public void setKind(ObjectKind kind) {
+        this.kind = kind;
+    }
+
+    /**
+     * @param tValue the item type value to set — C's {@code obj->tval}
+     * @author Rowan Crowther
+     */
+    public void settValue(TValue tValue) {
+        this.tValue = tValue;
+    }
+
+    /**
+     * @param number the stack count to set — C's {@code obj->number}
+     * @author Rowan Crowther
+     */
+    public void setNumber(int number) {
+        this.number = number;
+    }
+
+    /**
+     * @return the number of damage dice this item rolls — C's {@code obj->dd}
+     * @author Rowan Crowther
+     */
+    public int getDamageDice() {
+        return damageDice;
+    }
+
+    /**
+     * Sets the number of damage dice — C's {@code obj->dd}. See {@link #setNormalAC} for why a known
+     * counterpart may be given a zero here rather than the truth.
+     *
+     * @param damageDice the number of damage dice to set
+     * @author Rowan Crowther
+     */
+    public void setDamageDice(int damageDice) {
+        this.damageDice = damageDice;
+    }
+
+    /**
+     * @return the sides per damage die — C's {@code obj->ds}
+     * @author Rowan Crowther
+     */
+    public int getDamageSides() {
+        return damageSides;
+    }
+
+    /**
+     * @param damageSides the sides per damage die to set — C's {@code obj->ds}
+     * @author Rowan Crowther
+     */
+    public void setDamageSides(int damageSides) {
+        this.damageSides = damageSides;
+    }
+
+    /**
+     * @return this item's base armour class — C's {@code obj->ac}
+     * @author Rowan Crowther
+     */
+    public int getNormalAC() {
+        return normalAC;
+    }
+
+    /**
+     * Sets the base armour class — C's {@code obj->ac}.
+     *
+     * <p>On a known counterpart this is written as {@code real * knowledgeBit}, so a player who
+     * cannot read armour class is given a zero rather than the truth. That is C's idiom and the
+     * zero is meaningful: it is what the display shows for an unknown quantity.
+     *
+     * @param normalAC the base armour class to set
+     * @author Rowan Crowther
+     */
+    public void setNormalAC(int normalAC) {
+        this.normalAC = normalAC;
+    }
+
+    /**
+     * Sets the to-hit bonus — C's {@code obj->to_h}. See {@link #hasStandardToH} for why a non-zero
+     * value here is not by itself remarkable: body armour carries a to-hit penalty from its kind.
+     *
+     * @param toHit the to-hit bonus to set
+     * @author Rowan Crowther
+     */
+    public void setToHit(int toHit) {
+        this.toHit = toHit;
+    }
+
+    /**
+     * @return this item's extra parameter value — C's {@code obj->pval}
+     * @author Rowan Crowther
+     */
+    public int getpValue() {
+        return pValue;
+    }
+
+    /**
+     * @param pValue the extra parameter value to set — C's {@code obj->pval}
+     * @author Rowan Crowther
+     */
+    public void setpValue(int pValue) {
+        this.pValue = pValue;
+    }
+
+    /**
+     * @param toAC the to-armour-class bonus to set — C's {@code obj->to_a}
+     * @author Rowan Crowther
+     */
+    public void setToAC(int toAC) {
+        this.toAC = toAC;
+    }
+
+    /**
+     * @param toDam the to-damage bonus to set — C's {@code obj->to_d}
+     * @author Rowan Crowther
+     */
+    public void setToDam(int toDam) {
+        this.toDam = toDam;
+    }
+
+    /**
+     * Returns this item's rolled modifier values, the port of reading C's {@code obj->modifiers}.
+     *
+     * <p>Live, not a copy, and written through by the knowledge code — unlike {@link #getFlags},
+     * which was narrowed to a copy once named mutators existed for it. The same case could be made
+     * here; it has not been made yet, and until it is, a caller holding this map holds the item's
+     * own state.
+     *
+     * <p>Function getModifiers commented in full on 260816.
+     *
+     * @return this item's modifiers, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Map<ObjectModifier, Integer> getModifiers() {
+        if (modifiers == null) {
+            return Map.of();
+        }
+        return modifiers;
+    }
+
+    /**
+     * @param modifiers the modifier map to set — C's {@code obj->modifiers}; stored, not copied
+     * @author Rowan Crowther
+     */
+    public void setModifiers(Map<ObjectModifier, Integer> modifiers) {
+        this.modifiers = modifiers;
+    }
+
+    /**
+     * Returns this item's per-element resistances and vulnerabilities, the port of reading C's
+     * {@code obj->el_info}.
+     *
+     * <p>Live, and written through — see {@link #getModifiers} for the same note. The values are
+     * mutable {@link ElementInfo} objects, so sharing goes one level deeper than the map: copying a
+     * value from a real item to its known counterpart wants {@link ElementInfo#copy}, not the
+     * reference, or the two stop being able to differ.
+     *
+     * <p>Function getElInfo commented in full on 260816.
+     *
+     * @return this item's element info by element, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Map<ElementEnum, ElementInfo> getElInfo() {
+        if (elInfo == null) {
+            return Map.of();
+        }
+        return elInfo;
+    }
+
+    /**
+     * @param elInfo the element info map to set — C's {@code obj->el_info}; stored, not copied
+     * @author Rowan Crowther
+     */
+    public void setElInfo(Map<ElementEnum, ElementInfo> elInfo) {
+        this.elInfo = elInfo;
+    }
+
+    /**
+     * Records this item's relation to one element, the port of assigning into C's
+     * {@code obj->el_info[i]}.
+     *
+     * <p>Exists because {@link #getElInfo()} answers {@code Map.of()} for an item whose map has never
+     * been created, and an immutable empty map takes no writes. The knowledge code writes element
+     * info onto counterpart objects built by the no-argument constructor, which are exactly those
+     * items, so the map is created here on demand.
+     *
+     * <p>Stores the {@link ElementInfo} given rather than copying it. That matters more here than for
+     * most values: {@code ElementInfo} is mutable, so handing over a real item's instance would leave
+     * the item and its counterpart unable to differ. Callers copying one object's element info onto
+     * another want {@link ElementInfo#copy} first — {@code knowObject} does.
+     *
+     * <p>Function putElInfo coded on 260817, commented in full on 260817.
+     *
+     * @param element the element being described
+     * @param elInfo  this item's relation to it, taken by reference
+     * @author Rowan Crowther
+     */
+    public void putElInfo(ElementEnum element, ElementInfo elInfo) {
+        if (this.elInfo == null) {
+            this.elInfo = new HashMap<>();
+        }
+        this.elInfo.put(element, elInfo);
+    }
+
+    /**
+     * Returns what this item does when used, the port of reading C's {@code obj->effect}.
+     *
+     * <p>Copied onto the known counterpart only once the player is entitled to it: an aware flavour,
+     * an unflavoured non-wearable, or a wearable whose kind has a standard activation. Comparing
+     * this against the counterpart's is how {@code effectIsKnown} answers.
+     *
+     * <p>Function getEffect commented in full on 260816.
+     *
+     * @return this item's effects, shared with this instance
+     * @author Rowan Crowther
+     */
+    public List<Effect> getEffect() {
+        return effect;
+    }
+
+    /**
+     * @param effect the effect list to set — C's {@code obj->effect}; stored, not copied
+     * @author Rowan Crowther
+     */
+    public void setEffect(List<Effect> effect) {
+        this.effect = effect;
+    }
+
+    /**
+     * Returns the slays this item carries, the port of reading C's {@code obj->slays}.
+     *
+     * <p>The slays the item actually has. Whether the player can read one is a separate question
+     * and not a per-item one — see {@link KnownObject#slayIsKnown}.
+     *
+     * <p>Function getSlays commented in full on 260816.
+     *
+     * @return this item's slays, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Set<Slay> getSlays() {
+        if (slays == null) {
+            return Set.of();
+        }
+        return slays;
+    }
+
+    /**
+     * @param slays the slay set to set — C's {@code obj->slays}; stored, not copied
+     * @author Rowan Crowther
+     */
+    public void setSlays(Set<Slay> slays) {
+        this.slays = slays;
+    }
+
+    /**
+     * Returns this item's ego type, the port of reading C's {@code obj->ego}.
+     *
+     * <p>Shared with the registry rather than owned: two Long Swords of Extra Attacks hold the same
+     * definition, which is why {@code similar} compares egos by reference.
+     *
+     * <p>Function getEgo commented in full on 260816.
+     *
+     * @return this item's ego, or {@code null} if it has none
+     * @author Rowan Crowther
+     */
+    public EgoItem getEgo() {
+        return ego;
+    }
+
+    /**
+     * @param ego the ego type to set — C's {@code obj->ego}
+     * @author Rowan Crowther
+     */
+    public void setEgo(EgoItem ego) {
+        this.ego = ego;
+    }
+
+    /**
+     * Switches on every flag in the given set, leaving the rest alone — the port of C's
+     * {@code of_union(obj->flags, mask)}.
+     *
+     * <p>The batch form of {@link #setFlag}. C uses it to rule out a whole family of properties at
+     * once: an item worn through an event that would have displayed any of the timed flags has had
+     * its chance at all of them, so all of them are settled together.
+     *
+     * <p>Adds; it does not replace. {@link #setFlagsTo} is the one that replaces, and the two are
+     * easy to confuse from their names alone.
+     *
+     * <p>Function setFlags coded on 260816, commented in full on 260816.
+     *
+     * @param mask the flags to switch on; read, never retained
+     * @return {@code true} if any flag was not already set
+     * @author Rowan Crowther
+     */
+    public boolean setFlags(Flag<ObjectFlag> mask) {
+        return flags.union(mask);
+    }
+
+    /**
+     * Switches on a single flag — the port of C's {@code of_on(obj->flags, flag)}.
+     *
+     * <p>On a known counterpart this records that the item has had its chance to display the
+     * property and did not, which is knowledge in the negative: enough such rulings identify an item
+     * by use rather than by examination. It is not rune-learning and does not go near
+     * {@code learnRune}'s guard — what is being recorded is a fact about this item, not something
+     * the player now understands in general.
+     *
+     * <p>Function setFlag coded on 260816, commented in full on 260816.
+     *
+     * @param flag the flag to switch on
+     * @return {@code true} if the flag was not already set
+     * @author Rowan Crowther
+     */
+    public boolean setFlag(ObjectFlag flag) {
+        return flags.set(flag);
+    }
+
+    /**
+     * Replaces this item's flags with the given set — the port of C's {@code of_wipe} followed by
+     * {@code of_copy}.
+     *
+     * <p>Copies in. The argument stays the caller's and the two sets share nothing afterwards, which
+     * is the point: assigning the reference instead would leave a known counterpart holding its
+     * item's own set, after which knowledge and truth are the same object and can never diverge.
+     * {@link Flag#copyFrom} wipes before it unions, so the wipe does not need saying twice.
+     *
+     * <p>Replaces; it does not add. {@link #setFlags} is the one that adds.
+     *
+     * <p>Function setFlagsTo coded on 260816, commented in full on 260816.
+     *
+     * @param flags the flags this item should end up with; read, never retained
+     * @author Rowan Crowther
+     */
+    public void setFlagsTo(Flag<ObjectFlag> flags) {
+        this.flags.copyFrom(flags);
+    }
+
+    /**
+     * Records that this item carries a brand, the port of C's {@code obj->brands[i] = true}.
+     *
+     * <p>The three brand mutators exist because {@link #getBrands()} answers {@code Set.of()} for an
+     * item whose set has never been created, and an immutable empty set takes no writes. The
+     * knowledge code writes brands onto counterpart objects built by the no-argument constructor,
+     * which are exactly those items, so the set is created here on demand — C reaches the same place
+     * with the {@code mem_zalloc} its own brand block performs before its first write.
+     *
+     * <p>Membership is the whole of the state, so adding a brand twice is not distinguishable from
+     * adding it once. C's array of {@code bool} says the same thing.
+     *
+     * <p>Function addBrand coded on 260817, commented in full on 260817.
+     *
+     * @param brand the brand this item carries
+     * @author Rowan Crowther
+     */
+    public void addBrand(Brand brand) {
+        if (brands == null) {
+            brands = new HashSet<>();
+        }
+        brands.add(brand);
+    }
+
+    /**
+     * Records that this item does not carry a brand, the port of C's {@code obj->brands[i] = false}.
+     *
+     * <p>Removal rather than a stored false, absence being how this port says "not branded" where C
+     * has a slot for every brand and writes a boolean into it. The two agree because nothing here
+     * stores a brand it does not mean.
+     *
+     * <p>Removing a brand the item does not carry is not an error; C assigns false over false.
+     *
+     * <p>Function removeBrand coded on 260817, commented in full on 260817.
+     *
+     * @param brand the brand to take off
+     * @author Rowan Crowther
+     */
+    public void removeBrand(Brand brand) {
+        if (brands == null) {
+            brands = new HashSet<>();
+        }
+        brands.remove(brand);
+    }
+
+    /**
+     * Takes every brand off this item, the port of C freeing the brand array and nulling the pointer.
+     *
+     * <p>{@code knowObject} uses it on a counterpart whose item turned out to carry no brand the
+     * player recognises — C's {@code if (!known_brand) { mem_free(...); obj->known->brands = NULL; }}.
+     *
+     * <p>Leaves an empty set rather than a null one. Callers cannot tell the two apart, {@link
+     * #getBrands()} reporting empty for both, which is why the null field never needs restoring.
+     *
+     * <p>Function clearBrands coded on 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    public void clearBrands() {
+        if (brands == null) {
+            brands = new HashSet<>();
+        }
+        brands.clear();
+    }
+
+    /**
+     * Records that this item carries a slay, the port of C's {@code obj->slays[i] = true}. The slay
+     * counterpart of {@link #addBrand}, and there for the same reason: {@link #getSlays()} answers
+     * {@code Set.of()} for an item whose set has never been created.
+     *
+     * <p>Function addSlay coded on 260817, commented in full on 260817.
+     *
+     * @param slay the slay this item carries
+     * @author Rowan Crowther
+     */
+    public void addSlay(Slay slay) {
+        if (slays == null) {
+            slays = new HashSet<>();
+        }
+        slays.add(slay);
+    }
+
+    /**
+     * Records that this item does not carry a slay, the port of C's {@code obj->slays[i] = false}.
+     * See {@link #removeBrand} for why absence stands in for C's stored false.
+     *
+     * <p>Function removeSlay coded on 260817, commented in full on 260817.
+     *
+     * @param slay the slay to take off
+     * @author Rowan Crowther
+     */
+    public void removeSlay(Slay slay) {
+        if (slays == null) {
+            slays = new HashSet<>();
+        }
+        slays.remove(slay);
+    }
+
+    /**
+     * Takes every slay off this item, the port of C freeing the slay array. See {@link #clearBrands}.
+     *
+     * <p>Function clearSlays coded on 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    public void clearSlays() {
+        if (slays == null) {
+            slays = new HashSet<>();
+        }
+        slays.clear();
     }
 }

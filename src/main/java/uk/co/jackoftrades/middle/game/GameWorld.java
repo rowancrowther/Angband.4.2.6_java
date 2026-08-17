@@ -108,6 +108,21 @@ public class GameWorld {
      */
     private boolean characterDungeon;
 
+    /**
+     * How many whole days have passed while the player has been below the town — the port of C's
+     * {@code daycount} global ({@code game-world.c}).
+     *
+     * <p>Counted here and spent elsewhere. The stores restock a day at a time, but doing that while
+     * the player is in the dungeon would let the knowledge menu show tomorrow's stock, so the days
+     * are banked instead and worked off on the return to town: C's {@code store_update}
+     * ({@code store.c:1421}) runs its maintenance loop {@code daycount} times and then zeroes the
+     * counter. Only the dungeon arm of the turn increments it — in town the stores are simply kept
+     * current.
+     *
+     * <p>Field dayCount coded before 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
     private int dayCount;
 
     /**
@@ -1078,17 +1093,16 @@ public class GameWorld {
             CurseData curseData = null;
             if (slot.getItem() == null) continue;
 
-            Map<Curse.CurseEntry, Boolean> curses = slot.getItem().getCurses();
+            Map<Curse, CurseData> curses = slot.getItem().getCurses();
             if (!curses.isEmpty()) {
-                for (Curse.CurseEntry curseEntry : curses.keySet()) {
-                    curseData = curseEntry.curseData();
+                for (Curse curse : curses.keySet()) {
+                    curseData = curses.get(curse);
                     if (curseData.getPower() != 0) {
                         curseData.decrementTimeout();
                         if (curseData.getTimeout() == 0) {
-                            Curse curse = curseEntry.curse();
-                            if (ObjectUtils.doCurseEffect(curseEntry, slot.getItem()))
+                            if (ObjectUtils.doCurseEffect(curse, slot.getItem()))
                                 player.learnCurse(curse);
-                            curseEntry.curseData().setTimeout(curse.getEffect().getTime().randCalc(0, DamageAspect.RANDOMIZE));
+                            curseData.setTimeout(curse.getEffect().getTime().randCalc(0, DamageAspect.RANDOMIZE));
                         }
                     }
                 }

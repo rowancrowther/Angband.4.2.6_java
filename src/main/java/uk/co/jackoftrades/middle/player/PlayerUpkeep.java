@@ -211,12 +211,49 @@ public class PlayerUpkeep {
     /** Pathfinding: the destination grid being walked to ({@code path_dest}). */
     private Loc pathDestination;
 
+    /**
+     * Builds an empty upkeep, the port of the two-part setup C performs in {@code init_player}
+     * ({@code player.c:481-483}).
+     *
+     * <p><b>The two blocks below are not "C's fields" and "Java's fields" — every field here is
+     * C's.</b> The split is between the two things C actually does. {@code p->upkeep} arrives from
+     * {@code mem_zalloc}, so the whole struct is zero before anything else runs; only {@code inven}
+     * and {@code quiver} then get an explicit allocation of their own, because they are arrays of
+     * pointers rather than scalars. The first block is that pair of allocations. The second is C's
+     * zeroing written out by hand, which Java needs no more than C does — the field defaults are
+     * already null and false — but which is kept because it states the starting position of each
+     * field where the reader can see it.
+     *
+     * <p>Two entries are worth reading closely rather than skimming as more zeroing, because they
+     * pull in opposite directions and the difference is deliberate.
+     *
+     * <p>{@code pathDestination} is set to {@link Loc#zero} rather than left null, because C's
+     * zeroed {@code loc} struct <em>is</em> the origin grid — there is no such thing as an absent
+     * {@code loc} in C, and a null here would invent a state the original cannot express.
+     *
+     * <p>{@code steps} is set to null rather than an empty list, because in C the null is
+     * load-bearing. The pathfinder opens every entry point with
+     * {@code assert(!player->upkeep->steps)} ({@code cmd-cave.c:1433}, and again at 1479, 1530 and
+     * 1561) to catch a walk being started while another is still queued. An empty list would satisfy
+     * that test without meaning what it means, silently retiring a check C relies on; a null keeps
+     * "no walk in progress" distinguishable from "a walk with nothing left in it". The port has no
+     * pathfinder yet, so nothing reads this — the point is that the distinction is still available
+     * when one arrives.
+     *
+     * <p>{@code playing} being false is the state {@link uk.co.jackoftrades.middle.player.Player}
+     * starts in before birth completes, and several methods gate their messages on it.
+     *
+     * <p>Constructor PlayerUpkeep commented in full on 260816, {@code steps} changed from an empty
+     * list to null the same day.
+     *
+     * @author Rowan Crowther
+     */
     public PlayerUpkeep() {
-        // C implementation
+        // C allocates these two explicitly; the rest of the struct is covered by mem_zalloc
         inventoryObjects = new ArrayList<>();
         quiverObjects = new ArrayList<>();
 
-        // Java implementation
+        // C's mem_zalloc, written out by hand
         healthWho = null;
         monsterRace = null;
         object = null;
@@ -224,7 +261,7 @@ public class PlayerUpkeep {
         objectPile = null;
         pathDestination = Loc.zero;
         playing = false;
-        steps = new ArrayList<>();
+        steps = null;
     }
 
     /**
@@ -413,6 +450,23 @@ public class PlayerUpkeep {
         updateFlags.on(flag);
     }
 
+    /**
+     * Raises several update ({@code PU_*}) flags at once, the batch form of {@link #updateFlagOn}.
+     *
+     * <p>No single C function to point at: C writes the disjunction inline, as
+     * {@code p->upkeep->update |= (PU_BONUS | PU_HP | PU_SPELLS)}, because a bitfield makes raising
+     * three flags no more work than raising one. The port holds a {@link Flag} instead, so the
+     * convenience has to be a method or every such site becomes three calls.
+     *
+     * <p>Adds; it does not replace. Flags already raised and not named here stay raised, which is
+     * what the {@code |=} guarantees and what callers depend on — several parts of a turn each ask
+     * for their own recalculations before the update pass runs and clears the lot.
+     *
+     * <p>Function updateFlagsOn commented in full on 260816.
+     *
+     * @param flags the {@link PlayerUpkeepEnum} recalculations to request
+     * @author Rowan Crowther
+     */
     public void updateFlagsOn(PlayerUpkeepEnum... flags) {
         updateFlags.set(flags);
     }
@@ -445,8 +499,90 @@ public class PlayerUpkeep {
         this.autosave = autosave;
     }
 
+    /**
+     * Points the health bar at a monster, the port of C's {@code health_track}
+     * ({@code player-calcs.c:2470}).
+     *
+     * <p>Tracking is a display concern rather than a combat one: it decides whose health the sidebar
+     * shows, and nothing else follows from it. The monster the player is fighting is the usual
+     * subject, but so is one they have merely looked at, which is why this is separate from anything
+     * that knows about attacks.
+     *
+     * <p>Both statements are needed and neither implies the other. Setting the tracked monster
+     * changes what <em>should</em> be on screen; raising {@code PR_HEALTH} is what gets it drawn.
+     * C pairs them in the same two lines for the same reason.
+     *
+     * <p>A null monster is not a missing argument but the way tracking is switched off — the bar
+     * clears when there is nothing worth watching. {@code GameWorld} passes null on exactly that
+     * path, and C does the same.
+     *
+     * <p>Function healthTrack commented in full on 260816.
+     *
+     * @param monster the monster to track, or {@code null} to stop tracking
+     * @author Rowan Crowther
+     */
     public void healthTrack(Monster monster) {
         healthWho = monster;
         setRedrawFlagsOn(PlayerRedraw.PR_HEALTH);
+    }
+
+    /**
+     * Switches on one of the notice flags, the port of C's {@code p->upkeep->notice |= PN_…}.
+     *
+     * <p>The notice flags are a request queue rather than a description of state: setting
+     * {@code PN_IGNORE} does not ignore anything, it asks for the ignore pass to be run at the next
+     * convenient point in the turn. That indirection is what lets a discovery deep inside the
+     * knowledge code — {@link uk.co.jackoftrades.middle.player.Player#knowObject} becoming aware of a
+     * flavour — ask for expensive work without doing it there and then.
+     *
+     * <p>The name says {@code or} because C's is a bitwise or, and the return value is the answer to
+     * "was this new?" that {@link uk.co.jackoftrades.channel.utils.Flag#on} gives. C's macro answers
+     * nothing at all; callers that only want the request made can ignore it.
+     *
+     * <p>Function orNoticeFlag coded on 260816, commented in full on 260816.
+     *
+     * @param flag the notice to request
+     * @return {@code false} if the flag was already set, {@code true} if this call set it
+     * @author Rowan Crowther
+     */
+    public boolean orNoticeFlag(PlayerNotice flag) {
+        return noticeFlags.on(flag);
+    }
+
+    /**
+     * Returns the quiver, the port of reading C's {@code p->upkeep->quiver}.
+     *
+     * <p>Live, not a copy — the quiver is rebuilt in place as ammunition is picked up and fired. Slot
+     * order is what the player sees and types: position in this list is the label the object is
+     * chosen by, which is why {@code gearToLabel} walks it by index rather than searching it.
+     *
+     * <p>Function getQuiver coded on 260816, commented in full on 260816.
+     *
+     * @return the quiver slots, shared with this instance
+     * @author Rowan Crowther
+     */
+    public List<ItemObject> getQuiver() {
+        return quiverObjects;
+    }
+
+    /**
+     * Returns the pack, the port of reading C's {@code p->upkeep->inven}.
+     *
+     * <p>Live, not a copy, and ordered — as with {@link #getQuiver}, an object's position here is the
+     * letter the player selects it by.
+     *
+     * <p>This is a view of part of the gear, not a second store of it. C keeps every carried object
+     * on the one {@code p->gear} list and rebuilds {@code inven} as an index into it, so an object
+     * appearing here is also in the gear; see
+     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} for the carried test that relies on
+     * that.
+     *
+     * <p>Function getInventory coded on 260816, commented in full on 260816.
+     *
+     * @return the pack slots, shared with this instance
+     * @author Rowan Crowther
+     */
+    public List<ItemObject> getInventory() {
+        return inventoryObjects;
     }
 }

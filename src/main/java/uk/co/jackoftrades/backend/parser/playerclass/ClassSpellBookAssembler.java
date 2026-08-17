@@ -23,7 +23,6 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.magic.MagicBook;
@@ -32,10 +31,7 @@ import uk.co.jackoftrades.middle.magic.MagicSpell;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.TValue;
+import uk.co.jackoftrades.middle.objects.enums.*;
 
 import java.util.*;
 
@@ -51,9 +47,15 @@ import java.util.*;
  * <p><b>Book-kind synthesis (port of C's {@code write_book_kind}):</b> spellbooks are not listed in
  * {@code object.txt}; the C source manufactures an object kind for each book at class-load time.
  * This assembler does the same — it builds an {@link ObjectKind} from the book's base and
- * properties and adds it to {@link GameConstants} so the book becomes a real, obtainable item.
- * Dungeon books additionally gain the {@code KF_GOOD} flag and {@code EL_INFO_IGNORE} on every base
- * element, matching the C treatment.
+ * properties and registers it with {@link ObjectRegistry} so the book becomes a real, obtainable
+ * item. Dungeon books additionally gain the {@code KF_GOOD} flag and {@code EL_INFO_IGNORE} on
+ * every base element, matching the C treatment.
+ *
+ * <p>The synthesised kind also carries the defaults C hard-codes into {@code write_book_kind}:
+ * damage dice of {@code 1d1}, a weight of 30, and a red {@code '*'} glyph. The glyph and colour are
+ * genuine defaults rather than fixed values — a book declaring its own in {@code class.txt}
+ * overrides them, which is what C's "graphics should be overwritten" comment anticipates — while
+ * the dice and weight are simply what every spellbook is.
  *
  * <p>Every lookup that can miss (unknown tval, realm or base) reports a soft error and skips that
  * book rather than throwing, per the shared contract.
@@ -104,21 +106,27 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
             }
             String glyph = record.glyph();
             String colour = record.colour();
-            AngbandDisplayCharacter adc = null;
-            if (!glyph.isEmpty() && !colour.isEmpty()) {
+            AngbandDisplayCharacter adc;
+            char glyphChar = '*';
+            ColourEnum colourEnum = ColourEnum.COLOUR_RED;
+            if (!glyph.isEmpty()) {
                 if (glyph.length() != 1) {
                     errors.add("Spell book at line: " + line + " has " +
                             " an illegal glyph:" + glyph);
                     continue;
                 }
-                ColourEnum colourType = ColourEnum.fromCode(colour);
-                if (colourType == null) {
+                glyphChar = glyph.charAt(0);
+            }
+            if (!colour.isEmpty()) {
+                colourEnum = ColourEnum.fromCode(colour);
+                if (colourEnum == null) {
                     errors.add("Spell book at line: " + line + " has " +
                             "an unknown colour type: " + colour);
                     continue;
                 }
-                adc = new AngbandDisplayCharacter(glyph.charAt(0), colourType);
             }
+            adc = new AngbandDisplayCharacter(glyphChar, colourEnum);
+            
             int cost = 0;
             if (!record.cost().isEmpty()) {
                 try {
@@ -191,16 +199,18 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                 }
             }
 
+            Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
+            
             ObjectKind kind = new ObjectKind(bookName, bookName,
                     base, 0, null, null, null,
-                    null, 0, null, 0, 0,
-                    0, cost, new Flag<>(ObjectFlag.class),
+                    null, 0, null, 1, 1,
+                    30, cost, new Flag<>(ObjectFlag.class),
                     oFlags, new HashMap<>(), eFlags, new HashSet<>(),
                     new HashSet<>(), new HashMap<>(), adc,
                     commonness, min, max, 0, new ArrayList<>(), new ArrayList<>(),
                     "", "", "", null, 0,
                     null, null, null, null,
-                    false, false, 0, false, tValue);
+                    false, false, ignoreFlags, false, tValue);
 
             ObjectRegistry.addObjectKind(kind);
         }

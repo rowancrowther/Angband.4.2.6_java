@@ -38,33 +38,33 @@ import uk.co.jackoftrades.channel.enums.ProjectionEnum;
  * @author Rowan Crowther
  */
 public enum ElementEnum {
-    ELEM_NONE(false, false),
-    ELEM_ACID(true, true),
-    ELEM_ELEC(true, true),
-    ELEM_FIRE(true, true),
-    ELEM_COLD(true, true),
-    ELEM_POIS(false, true),
-    ELEM_LIGHT(false, true),
-    ELEM_DARK(false, true),
-    ELEM_SOUND(false, true),
-    ELEM_SHARD(false, true),
-    ELEM_NEXUS(false, true),
-    ELEM_NETHER(false, true),
-    ELEM_CHAOS(false, true),
-    ELEM_DISEN(false, true),
-    ELEM_WATER(false, false),
-    ELEM_ICE(false, false),
-    ELEM_GRAVITY(false, false),
-    ELEM_INERTIA(false, false),
-    ELEM_FORCE(false, false),
-    ELEM_TIME(false, false),
-    ELEM_PLASMA(false, false),
-    ELEM_METEOR(false, false),
-    ELEM_MISSILE(false, false),
-    ELEM_MANA(false, false),
-    ELEM_HOLY_ORB(false, false),
-    ELEM_ARROW(false, false),
-    ELEM_MAX(false, false);
+    ELEM_NONE(false, false, false),
+    ELEM_ACID(true, false, true),
+    ELEM_ELEC(true, false, true),
+    ELEM_FIRE(true, false, true),
+    ELEM_COLD(true, false, true),
+    ELEM_POIS(false, true, true),
+    ELEM_LIGHT(false, true, true),
+    ELEM_DARK(false, true, true),
+    ELEM_SOUND(false, true, true),
+    ELEM_SHARD(false, true, true),
+    ELEM_NEXUS(false, true, true),
+    ELEM_NETHER(false, true, true),
+    ELEM_CHAOS(false, true, true),
+    ELEM_DISEN(false, true, true),
+    ELEM_WATER(false, false, false),
+    ELEM_ICE(false, false, false),
+    ELEM_GRAVITY(false, false, false),
+    ELEM_INERTIA(false, false, false),
+    ELEM_FORCE(false, false, false),
+    ELEM_TIME(false, false, false),
+    ELEM_PLASMA(false, false, false),
+    ELEM_METEOR(false, false, false),
+    ELEM_MISSILE(false, false, false),
+    ELEM_MANA(false, false, false),
+    ELEM_HOLY_ORB(false, false, false),
+    ELEM_ARROW(false, false, false),
+    ELEM_MAX(false, false, false);
 
     /**
      * Whether this is a "base" element — the four physical damage types (acid, electricity, fire,
@@ -74,6 +74,27 @@ public enum ElementEnum {
      * @author Rowan Crowther
      */
     private final boolean isBase;
+
+    /**
+     * Whether this is a "high" element — one of the resistable elements beyond the four base
+     * physical types, running from poison to disenchantment. Ports the stretch C delimits with
+     * {@code ELEM_HIGH_MIN} and {@code ELEM_HIGH_MAX} ({@code src/list-elements.h}), which it
+     * expresses as an ordinal range because the constants are ordered to make that work.
+     *
+     * <p>Recorded per constant rather than derived from {@link #ordinal()} for the same reason as
+     * {@link #hasResistRune}: it keeps the port from depending on declaration order. Note that
+     * "high" and "resistable" are not the same question — {@link #hasResistRune} is true for the
+     * base elements as well — which is why both are carried.
+     *
+     * <p>Stored but not yet read: nothing in the port asks the question today, and the constructor
+     * is its only writer. It is here so the data from {@code list-elements.h} is complete when the
+     * code that needs it arrives.
+     *
+     * <p>Field isHigh coded before 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    private final boolean isHigh;
 
     /**
      * Whether objects can resist this element, and so whether it has a resistance rune. True for
@@ -90,12 +111,16 @@ public enum ElementEnum {
     private final boolean hasResistRune;
 
     /**
+     * <p>Constructor ElementEnum coded before 260817, commented in full on 260817.
+     *
      * @param isBase        whether this element is one of the four base (physical) damage types
+     * @param isHigh        whether this element is one of the resistable elements above the base four
      * @param hasResistRune whether objects can resist this element
      * @author Rowan Crowther
      */
-    ElementEnum(boolean isBase, boolean hasResistRune) {
+    ElementEnum(boolean isBase, boolean isHigh, boolean hasResistRune) {
         this.isBase = isBase;
+        this.isHigh = isHigh;
         this.hasResistRune = hasResistRune;
     }
 

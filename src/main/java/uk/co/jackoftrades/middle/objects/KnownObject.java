@@ -590,4 +590,51 @@ public class KnownObject {
     public int getDs() {
         return ds;
     }
+
+    /**
+     * @return 1 if the player can read to-hit bonuses, 0 if not
+     * @author Rowan Crowther
+     * @see #getAc()
+     */
+    public int getToH() {
+        return toH;
+    }
+
+    /**
+     * @return 1 if the player can read to-damage bonuses, 0 if not
+     * @author Rowan Crowther
+     * @see #getAc()
+     */
+    public int getToD() {
+        return toD;
+    }
+
+    /**
+     * Returns which elements the player can read resistances for, the port of reading the
+     * {@code res_level} column of C's {@code p->obj_k->el_info}.
+     *
+     * <p>The map has an entry for every element, so it is the {@link Boolean} value that carries the
+     * answer, not the presence of the key. C stores a whole {@code element_info} per element and
+     * uses its {@code res_level} as the one-or-zero knowledge bit; the port keeps only the bit,
+     * because the flags beside it were never read on the knowledge object.
+     *
+     * <p>Live, not a copy. Callers read it; the write path is {@link #learnResistance}.
+     *
+     * <p>Function getElementResistInfo commented in full on 260816.
+     *
+     * @return the per-element knowledge bits, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Map<ElementEnum, Boolean> getElementResistInfo() {
+        return elementResistInfo;
+    }
+
+    /**
+     * @return 1 if the player can read to-armour bonuses, 0 if not
+     * @author Rowan Crowther
+     * @see #getAc()
+     */
+    public int getToA() {
+        return toA;
+    }
 }

@@ -156,10 +156,21 @@ public class Square {
     }
 
     /**
-     * Check to see if a given object is on this square
+     * Checks whether a given object is in this square's pile, the port of C's
+     * {@code square_holds_object} ({@code cave-square.c}).
+     *
+     * <p>Identity, not equality of kind: the question is whether <em>this</em> object is here, not
+     * whether something like it is. Two Flasks of Oil on the floor are distinct objects and the test
+     * distinguishes them, which is what makes it usable as a location check — C uses it to decide
+     * whether a known object is still attached to the pile it thinks it is on, and
+     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} uses it to tell an object under the
+     * player's feet from one elsewhere on the level.
+     *
+     * <p>Function holdsObject coded on 260816, commented in full on 260816.
      *
      * @param object the object we are looking for
-     * @return true if object is in the ArrayList objects
+     * @return {@code true} if the object is in this square's pile
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Contract(pure = true)
@@ -421,6 +432,8 @@ public class Square {
     private int squareDoorPower() {
         if (!isClosedDoor()) return 0;
 
+        // Confirm there is a trap before actually looking it up in the registry
+        if (!isTrap()) return 0;
         TrapKind lock = TrapKind.lookupTrap("door lock");
 
         if (!trapSpecific(lock)) return 0;
@@ -813,6 +826,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean isWebbed() {
+        if (!isTrap()) return false;
         TrapKind webTrap = TrapKind.lookupTrap("web");
         return trapSpecific(webTrap);
     }
@@ -921,7 +935,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean isOpen() {
-        return isFloor() && monsterIndex != 0;
+        return isFloor() && isFree();
     }
 
     /**
@@ -1146,5 +1160,43 @@ public class Square {
             traps.clear();
             info.clear();
         }
+    }
+
+    /**
+     * Returns the objects lying on this square, the port of reading C's {@code square(c, grid)->obj}.
+     *
+     * <p>Live, not a copy — this is how objects are added to and taken from the floor, so a snapshot
+     * would be useless. C reaches the same pile through {@code square_object}, which hands back the
+     * head of a linked list that callers then walk by {@code obj->next}; the port keeps a
+     * {@link Pile}, which is why iteration here goes through {@link Pile#getIterator} and why
+     * {@link #holdsObject} can be a single containment test rather than a walk.
+     *
+     * <p>Function getObjectPile commented in full on 260816.
+     *
+     * @return this square's object pile, shared with this instance
+     * @author Rowan Crowther
+     */
+    public Pile getObjectPile() {
+        return objectPile;
+    }
+
+    /**
+     * Redraws this square on screen, the port of C's {@code square_light_spot}
+     * ({@code cave-view.c}).
+     *
+     * <p>A display refresh rather than a change of state: nothing about the square is altered, the
+     * player is simply shown it again because something that decides how it is drawn has moved on.
+     * {@code Player.flavourAware} is the current caller — becoming aware of a kind can change the
+     * glyph its items are drawn with, so every floor square holding one is refreshed.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the display side of the rework; takes no action,
+     * so callers currently make their decisions correctly and simply leave the screen stale.
+     *
+     * <p>Function lightSpot coded before 260817, commented in full on 260817.
+     *
+     * @author Rowan Crowther
+     */
+    public void lightSpot() {
+        // STUB function. TODO: Implement
     }
 }

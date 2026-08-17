@@ -230,7 +230,7 @@ public class PlayerRegistry {
      * @param chartId the chart number
      * @return the matching {@link PlayerHistoryChart}, or {@code null} if none matches
      * @throws IllegalStateException if history charts have not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     public static PlayerHistoryChart lookupPlayerHistoryChart(int chartId) {
@@ -301,7 +301,7 @@ public class PlayerRegistry {
      * @param name the shape name
      * @return the matching {@link PlayerShape}, or {@code null} if none matches
      * @throws IllegalStateException if player shapes have not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     public static PlayerShape lookupPlayerShape(@NotNull String name) {
@@ -318,7 +318,7 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code magicSpellMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getMagicSpellMax() {
         return magicSpellMax;
@@ -326,7 +326,7 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code playerEquipmentSlotsMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getPlayerEquipmentSlotsMax() {
         return playerEquipmentSlotsMax;
@@ -334,7 +334,7 @@ public class PlayerRegistry {
 
     /**
      * @return the configured value of {@code playerShapeMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getPlayerShapeMax() {
         return playerShapeMax;

@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * rather than what the accessor reports - the accessors themselves are checked separately, against
  * that same stored list.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class RuneInitTest {
 

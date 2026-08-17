@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * files from the other direction. The registry is seeded through its public setters and put back in
  * {@link #restore()}, since it holds what C keeps in file-scope globals and is process-wide.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class KnownObjectTest {
 
@@ -107,7 +107,7 @@ class KnownObjectTest {
     /**
      * Seeds the three registries {@link KnownObject} reads, keeping the previous contents.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @BeforeAll
     static void seed() throws Exception {
@@ -135,7 +135,7 @@ class KnownObjectTest {
     }
 
     /**
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @AfterAll
     static void restore() throws Exception {
@@ -150,7 +150,7 @@ class KnownObjectTest {
      * @param name the field's declared name
      * @return the field, already made accessible
      * @throws NoSuchFieldException if the registry no longer declares it
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static Field field(String name) throws NoSuchFieldException {
         Field f = ObjectRegistry.class.getDeclaredField(name);
@@ -176,7 +176,7 @@ class KnownObjectTest {
      * A fresh instance per test. Knowledge only ever accumulates, so a shared one would let an
      * earlier test satisfy a later one.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @BeforeEach
     void newKnowledge() {
@@ -190,14 +190,14 @@ class KnownObjectTest {
      * constructor's job, and a constructor that helpfully did it would put a fresh character's
      * knowledge out of step with a loaded one.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("a new knowledge set")
     class Initial {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("knows no combat bonuses")
@@ -211,7 +211,7 @@ class KnownObjectTest {
          * Zero rather than one, so that the multiplier reads an unknown value away. The birth code
          * is what makes these 1 for the whole of play.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("has the dice and armour multipliers at zero, not one")
@@ -222,7 +222,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("knows no properties of any kind")
@@ -240,14 +240,14 @@ class KnownObjectTest {
     /**
      * The three combat bonuses, C's {@code RUNE_VAR_COMBAT} arm.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("combat bonuses")
     class Combat {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning to-hit reports novelty once and then sticks")
@@ -259,7 +259,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning to-damage reports novelty once and then sticks")
@@ -271,7 +271,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning to-armour reports novelty once and then sticks")
@@ -287,7 +287,7 @@ class KnownObjectTest {
          * copy-pasted block, which is exactly the code that passes a test of any one of them while
          * leaking into the other two.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the three do not affect each other")
@@ -304,14 +304,14 @@ class KnownObjectTest {
      * Elemental resistances, C's {@code RUNE_VAR_RESIST} arm reading
      * {@code obj_k->el_info[i].res_level}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("resistances")
     class Resistances {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one reports novelty once")
@@ -322,7 +322,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("elements are learned separately")
@@ -339,7 +339,7 @@ class KnownObjectTest {
          * both ends — {@code ELEM_NONE} is what a caller gets from an unset field, and reporting it
          * known would make every unresisted element look readable.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the sentinels are never known and cannot be learned")
@@ -356,7 +356,7 @@ class KnownObjectTest {
          * rather than by identity could quietly drop a neighbour of theirs, and
          * {@code ELEM_ACID} sits directly after {@code ELEM_NONE}.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every non-sentinel element can be learned")
@@ -374,14 +374,14 @@ class KnownObjectTest {
      * Object flags and modifiers, both backed by a {@link Flag} whose {@code on} already answers the
      * novelty question.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("flags and modifiers")
     class FlagsAndModifiers {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a flag is learned once")
@@ -392,7 +392,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a modifier is learned once")
@@ -406,7 +406,7 @@ class KnownObjectTest {
          * Flags and modifiers are separate sets over separate enums; this pins that they have not
          * been folded into one.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning a flag does not learn a modifier")
@@ -418,7 +418,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getFlags reports what has been learned")
@@ -440,7 +440,7 @@ class KnownObjectTest {
          * dodges the same hazard by copying first — {@code object_flags(p->obj_k, f); of_negate(f);}
          * negates {@code f}, never the player's own flags.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("getFlags returns a copy, so negating it cannot corrupt the knowledge")
@@ -460,14 +460,14 @@ class KnownObjectTest {
      * Brands, and the fan-out that is the whole reason {@link KnownObject#learnBrand} is not a
      * one-line {@code add}.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("brands")
     class Brands {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one reports novelty once")
@@ -482,7 +482,7 @@ class KnownObjectTest {
          * reading the rune off a weak acid brand must reveal the strong one too — C marks every
          * same-named entry in the same loop.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one strength learns every strength of that name")
@@ -497,7 +497,7 @@ class KnownObjectTest {
          * The fan-out runs the other way too — the representative a rune happens to hold may be
          * either member, and neither is privileged.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the group is learned whichever member is passed in")
@@ -511,7 +511,7 @@ class KnownObjectTest {
         /**
          * The other half of the claim: a fan-out that marked everything would pass every test above.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the fan-out stops at the name boundary")
@@ -528,7 +528,7 @@ class KnownObjectTest {
          * would still hold without it — every {@code add} would answer false — which is why it is
          * worth stating rather than assuming.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a second member of a known group is not new knowledge")
@@ -543,7 +543,7 @@ class KnownObjectTest {
          * caller's own instance is recognised through {@link Brand#equals} matching a registry twin.
          * Savefile loading and the parsers both produce brands this way.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a brand from outside the registry still learns its group")
@@ -560,7 +560,7 @@ class KnownObjectTest {
          * A name with no registry entry marks nothing and reports nothing learned, rather than
          * quietly adding an orphan the rest of the game will never ask about.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a brand with no group learns nothing")
@@ -576,14 +576,14 @@ class KnownObjectTest {
      * Slays, whose grouping is by monsters slain rather than by name — the one place the two
      * fan-outs differ.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("slays")
     class Slays {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one reports novelty once")
@@ -594,7 +594,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one strength learns every slay killing the same monsters")
@@ -606,7 +606,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a different race flag is a different group")
@@ -622,7 +622,7 @@ class KnownObjectTest {
          * monsters and belongs to its own group. A fan-out keyed on the name — the brand rule —
          * would wrongly sweep it in.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the same name with a different base is a different group")
@@ -635,7 +635,7 @@ class KnownObjectTest {
         /**
          * And the converse, so that the base is shown to join as well as to separate.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning the based slay leaves the baseless group alone")
@@ -648,7 +648,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a second member of a known group is not new knowledge")
@@ -663,14 +663,14 @@ class KnownObjectTest {
      * Curses, the one property with no equivalence class — each has its own rune, so learning marks
      * exactly what it is given.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("curses")
     class Curses {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("learning one reports novelty once")
@@ -681,7 +681,7 @@ class KnownObjectTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("curses do not group")
@@ -697,7 +697,7 @@ class KnownObjectTest {
          * map, and the honest answer is that a curse the knowledge has never heard of is not one the
          * player recognises.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an unregistered curse is not known")

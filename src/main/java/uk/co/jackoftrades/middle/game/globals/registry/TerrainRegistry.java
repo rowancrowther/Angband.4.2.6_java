@@ -59,7 +59,7 @@ public class TerrainRegistry {
      * @param flag the terrain code
      * @return the matching {@link Feature}, or {@code null} if none matches
      * @throws IllegalStateException if features have not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     public static Feature lookupFeature(@NotNull TerrainFlags flag) {
@@ -80,17 +80,17 @@ public class TerrainRegistry {
      *
      * @param description the trap description
      * @return the matching {@link TrapKind}, or {@code null} if none matches
-     * @throws IllegalStateException if trap info has not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     public static @Nullable TrapKind lookupTrap(@NotNull String description) {
-        if (trapInfo.isEmpty()) {
-            String message = "Invalid attempt to access trapInfo when it hasn't been initialized";
-            IllegalStateException e = new IllegalStateException(message);
-            logger.fatal(message, e);
-            throw e;
-        }
+        if (trapInfo.isEmpty()) return null;
+//        {
+//            String message = "Invalid attempt to access trapInfo when it hasn't been initialized";
+//            IllegalStateException e = new IllegalStateException(message);
+//            logger.fatal(message, e);
+//            throw e;
+//        }
 
         for (TrapKind trap : trapInfo) {
             if (trap.getDescription().equals(description)) {
@@ -112,7 +112,7 @@ public class TerrainRegistry {
 
     /**
      * @return the configured value of {@code trapMax}
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getTrapMax() {
         return trapMax;

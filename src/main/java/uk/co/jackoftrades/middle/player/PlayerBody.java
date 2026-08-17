@@ -68,6 +68,13 @@ public class PlayerBody {
      * of C's {@code object_is_equipped} ({@code obj-gear.c}). Empty slots are skipped; the match is
      * by object identity.
      *
+     * <p>Worn is a different question from carried. An object in an equipment slot is still on the
+     * gear list, so {@link uk.co.jackoftrades.middle.player.Player#isCarried} answers {@code true}
+     * for it too; this narrows that to the objects actually in use, which is what decides whether an
+     * object is labelled by its slot or by its position in the pack.
+     *
+     * <p>Function itemIsEquipped commented in full on 260816.
+     *
      * @param item the item to look for
      * @return {@code true} if the item occupies one of this body's slots
      * @author Rowan Crowther
@@ -115,5 +122,43 @@ public class PlayerBody {
      */
     public EquipSlot getSlot(int index) {
         return slots.get(index);
+    }
+
+    /**
+     * Finds which equipment slot an item is worn in, the port of C's {@code equipped_item_slot}
+     * ({@code obj-gear.c}).
+     *
+     * <p>The return for "not worn" is {@link #getCount()} — one past the last slot — rather than
+     * {@code -1}. That follows C, whose loop simply runs off the end and hands back the index it
+     * stopped at, and callers test for it explicitly: {@code obj-gear.c:1040} guards with
+     * {@code if (slot == player->body.count) return;}. A null item takes the same exit, which is
+     * why the size is returned up front rather than falling through the loop.
+     *
+     * <p>The reason it is an index and not a slot is that the index <em>is</em> the answer the
+     * callers want: {@link uk.co.jackoftrades.middle.player.Player#gearToLabel} uses it to
+     * subscript the equipment label string, so an item's slot position becomes the letter the
+     * player selects it by.
+     *
+     * <p>Matching is by identity, {@link ItemObject} declaring no {@code equals} of its own, which
+     * is what C's pointer comparison means. Two identical swords are two different objects and only
+     * the one actually worn is found.
+     *
+     * <p>Function equippedItemSlot coded before 260817, commented in full on 260817.
+     *
+     * @param item the item to locate, or {@code null}
+     * @return the slot's index, or {@link #getCount()} if the item is not worn
+     * @author Rowan Crowther
+     */
+    public int equippedItemSlot(ItemObject item) {
+        if (item == null) return slots.size();
+
+        int index = 0;
+        for (EquipSlot slot : slots) {
+            if (slot.getItem() != null && slot.getItem().equals(item))
+                return index;
+            index++;
+        }
+
+        return index;
     }
 }

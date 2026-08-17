@@ -250,7 +250,7 @@ class ItemObjectReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         assertEquals(1, result.items().size(), "a zero-power curse is not an error; the kind loads");
-        Map<Curse, Curse.CurseEntry> curses = kindField(result.items().get(0), "curses");
+        Map<Curse, CurseData> curses = kindField(result.items().get(0), "curses");
         assertTrue(curses.isEmpty(), () -> "power 0 must not be recorded, got: " + curses);
     }
 

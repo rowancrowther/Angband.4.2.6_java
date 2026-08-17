@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * - and which have already drifted once during this port. They are cheap and they fail loudly, which
  * is the point.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class RuneVarietyTest {
 

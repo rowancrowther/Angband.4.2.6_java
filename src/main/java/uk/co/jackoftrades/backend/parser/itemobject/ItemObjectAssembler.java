@@ -47,8 +47,10 @@ import java.util.*;
  *       half into a {@code Map<}{@link ObjectModifier}{@code , Random>} and the {@code RES_}-prefixed
  *       half into a {@code Map<}{@link ElementEnum}{@code ,} {@link ElementInfo}{@code >};</li>
  *   <li>flags split between {@link ObjectFlag} ({@code OF_}) and {@link ObjectKindFlag}
- *       ({@code KF_}); brands/slays/curses resolve against their registries, curses becoming
- *       {@link Curse.CurseEntry}s of {@link CurseData} (power, timeout 0 at kind level);</li>
+ *       ({@code KF_}); brands/slays/curses resolve against their registries, curses becoming a
+ *       {@code Map<}{@link Curse}{@code ,} {@link CurseData}{@code >} keyed by curse, with the
+ *       parsed power and a timeout of 0 at kind level; a curse declared at power 0 is dropped
+ *       rather than stored, absence being how this port says "not cursed with this";</li>
  *   <li>base damage dice/sides ({@code dd}/{@code ds}) are derived from the attack {@code hd},
  *       and effects are delegated to {@link EffectAssembler}.</li>
  * </ul>
@@ -109,6 +111,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                 if (colourType == null) {
                     errors.add("Object kind at line: " + line + " has " +
                             "an invalid colour: " + glyphColour);
+                    continue;
                 }
                 adc = new AngbandDisplayCharacter(c, colourType);
             }
@@ -381,6 +384,8 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
             int dd = attBase == null ? 0 : attBase.getDice();
             int ds = attBase == null ? 0 : attBase.getSides();
 
+            Flag<IgnoreFlag> ignoreFlags = new Flag<>(IgnoreFlag.class);
+            
             itemObjects.add(new ObjectKind(name, description, base, 0, pVal,
                     attToh, attTod, acToa, ac, attBase, dd, ds,
                     weight, cost, oFlags, oKindFlags, modifiers, elInfo,
@@ -388,7 +393,7 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
                     level, new ArrayList<>(), effects, record.message(),
                     record.visMessage(), "", charges, pileChance, pileAmount,
                     null, null, null, false, false,
-                    0, false, tValue));
+                    ignoreFlags, false, tValue));
         }
 
         return itemObjects;

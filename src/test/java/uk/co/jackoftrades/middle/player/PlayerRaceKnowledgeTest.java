@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * of thing that breaks on a modded data file, so they are pinned here rather than left to the
  * caller's tests.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class PlayerRaceKnowledgeTest {
 
@@ -62,7 +62,7 @@ class PlayerRaceKnowledgeTest {
      * @param resists the element map, sparse as the assembler builds it
      * @param flags   the innate object flags
      * @return a race with those and nothing else
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static PlayerRace race(Map<ElementEnum, ElementInfo> resists, Flag<ObjectFlag> flags) {
         return new PlayerRace("Half-Troll", 6, 12, 120, 20, 10, 96, 10, 255, 60, 3, null,
@@ -76,7 +76,7 @@ class PlayerRaceKnowledgeTest {
      * @param element the element the race's data mentions
      * @param level   the resistance level given
      * @return a map holding that one entry
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static Map<ElementEnum, ElementInfo> resistMap(ElementEnum element, int level) {
         Map<ElementEnum, ElementInfo> map = new HashMap<>();
@@ -97,7 +97,7 @@ class PlayerRaceKnowledgeTest {
     }
 
     /**
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Test
     @DisplayName("getName returns the race's display name")
@@ -108,14 +108,14 @@ class PlayerRaceKnowledgeTest {
     /**
      * The element side, whose contract is "non-zero", not "positive" and not "mentioned".
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("getResistKnowledge")
     class Resists {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a resisted element is known")
@@ -130,7 +130,7 @@ class PlayerRaceKnowledgeTest {
          * rune names the element, not the sign. A {@code > 0} test would pass every other case here
          * and quietly leave a vulnerable race unable to read a rune it plainly knows.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a vulnerability is known just as a resistance is")
@@ -144,7 +144,7 @@ class PlayerRaceKnowledgeTest {
          * An entry present but zero is C's "mentioned, but no stake in it". Testing for the key
          * rather than the value would get this one wrong.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an entry of zero is not knowledge")
@@ -158,7 +158,7 @@ class PlayerRaceKnowledgeTest {
          * The sparse-map case, and the one C does not have. Absent has to answer the same as zero,
          * because C's array gives every element a value whether the data file mentioned it or not.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an element the data never mentions is not knowledge")
@@ -173,7 +173,7 @@ class PlayerRaceKnowledgeTest {
          * one — and reading straight through a missing entry would throw on the first element
          * {@link Player#learnInnate()} asks about.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a race with no resists at all answers rather than throws")
@@ -189,7 +189,7 @@ class PlayerRaceKnowledgeTest {
          * Every element, for a race that mentions one — the loop
          * {@link Player#learnInnate()} actually runs.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("answers for every element without throwing")
@@ -206,14 +206,14 @@ class PlayerRaceKnowledgeTest {
      * The flag side, which is a plain membership test — the interest is in what it says about the
      * flags a race does not have, since the caller asks about all of them.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("getObjectFlagKnowledge")
     class Flags {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a conferred flag is known")
@@ -224,7 +224,7 @@ class PlayerRaceKnowledgeTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a flag the race lacks is not known")
@@ -235,7 +235,7 @@ class PlayerRaceKnowledgeTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("a race with no innate flags knows none")
@@ -250,7 +250,7 @@ class PlayerRaceKnowledgeTest {
          * {@code FLAG_START} and stops at {@code FLAG_END}; this port's caller walks the whole enum,
          * so they have to answer false rather than be excluded by the loop.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the enum sentinels are not conferred")
@@ -263,7 +263,7 @@ class PlayerRaceKnowledgeTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("several flags are all known")

@@ -53,7 +53,8 @@ public enum ObjectOriginEnum {
     ORIGIN_DROP_UNKNOWN(1, "Dropped by an unknown monster %s"),
     ORIGIN_DROP_POLY(2, "Dropped by %s %s"),
     ORIGIN_DROP_MIMIC(2, "Dropped by %s %s"),
-    ORIGIN_DROP_WIZARD(2, "Dropped by %s %s");
+    ORIGIN_DROP_WIZARD(2, "Dropped by %s %s"),
+    ORIGIN_MAX(-1, "");
 
     /**
      * Number of {@code %s} parameters the {@link #name} template expects

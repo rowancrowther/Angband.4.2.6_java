@@ -1118,7 +1118,7 @@ public class Chunk {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    Square getSquare(@NotNull Loc grid) {
+    public Square getSquare(@NotNull Loc grid) {
         if (!inBounds(grid)) return null;
         return squares[grid.getX()][grid.getY()];
     }
@@ -1701,6 +1701,24 @@ public class Chunk {
         return scent;
     }
 
+    /**
+     * Tells the player how this level feels, the port of C's {@code display_feeling}
+     * ({@code cave.c}).
+     *
+     * <p>Level feeling is Angband's way of hinting at what is on a level before the player has
+     * walked it: one reading for danger and one for the quality of the loot. The two are learned at
+     * different rates — the danger half is available on arrival, while the object half only firms up
+     * once enough of the level has been explored — which is what the flag selects between.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the message and level-feeling subsystems; takes
+     * no action, so the player currently arrives on a level without being told anything about it.
+     *
+     * <p>Function displayFeeling coded before 260817, commented in full on 260817.
+     *
+     * @param objectOnly {@code true} to report only the object half of the feeling, as C does when
+     *                   the threshold for knowing it has just been crossed
+     * @author Rowan Crowther
+     */
     public void displayFeeling(boolean objectOnly) {
         // Stub class TODO: Implement
     }

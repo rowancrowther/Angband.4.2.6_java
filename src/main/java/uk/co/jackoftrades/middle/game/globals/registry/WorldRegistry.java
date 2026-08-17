@@ -124,7 +124,7 @@ public class WorldRegistry {
      * @param lashType the projection code to find
      * @return the matching {@link Projection}, or {@code null} if none matches
      * @throws IllegalStateException if projections have not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nullable
     public static Projection lookupProjectionByLash(ProjectionEnum lashType) {
@@ -194,7 +194,7 @@ public class WorldRegistry {
 
     /**
      * @return the number of loaded quests (C's {@code z_info->quest_max})
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getQuestMax() {
         return quests.size();
@@ -202,7 +202,7 @@ public class WorldRegistry {
 
     /**
      * @return the number of loaded projection types (C's {@code z_info->proj_max})
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     public static int getProjMax() {
         return projections.size();

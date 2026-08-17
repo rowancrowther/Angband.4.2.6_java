@@ -57,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code sValueName} and only a 35-argument constructor that reaches them, so {@link #kind} sets
  * those four reflectively.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class ObjectRegistryTest {
 

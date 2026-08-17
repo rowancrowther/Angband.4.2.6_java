@@ -597,7 +597,7 @@ public class ObjectRegistry {
      * @param ref  the sval reference — either a decimal sval or a sub-type name
      * @return the matching {@link ObjectKind}, or {@code null} if none matches
      * @throws IllegalStateException if object kinds have not been loaded
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @CheckReturnValue
     @Nullable

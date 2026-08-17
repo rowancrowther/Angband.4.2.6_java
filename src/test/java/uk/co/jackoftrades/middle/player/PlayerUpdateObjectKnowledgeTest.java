@@ -45,12 +45,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * port of C's {@code update_player_object_knowledge} ({@code obj-knowledge.c:1214}).
  *
  * <p><b>What is observed, and why it is the walk rather than the outcome.</b> The method's real work
- * is delegated to {@link Player#knowObject}, which is still a stub, so there is no knowledge state to
- * assert against. These tests instead watch <em>which objects were handed to it</em>, through a
- * {@link Player} subclass that records its arguments. That is deliberately the durable half of the
- * behaviour: when `knowObject` is implemented, every one of these tests should still pass unchanged,
- * because what this method is responsible for is visiting the right objects in the right order and
- * signalling afterwards — not what visiting one does.
+ * is delegated to {@link Player#knowObject}. These tests watch <em>which objects were handed to
+ * it</em>, through a {@link Player} subclass that records its arguments, rather than what the
+ * knowledge transfer then did. That is deliberately the durable half of the behaviour: this method
+ * is responsible for visiting the right objects in the right order and signalling afterwards, not
+ * for what visiting one does, so the suite stays valid however {@code knowObject} changes. It was
+ * written on 260815 while {@code knowObject} was still a stub and passed unchanged when it was
+ * implemented on 260816, which is the property it was built for.
  *
  * <p>Two of C's four populations have no test here because they have no code yet: stores wait on
  * Chapter 8, and curse objects wait on {@link uk.co.jackoftrades.middle.objects.Curse} gaining
@@ -59,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>Class PlayerUpdateObjectKnowledgeTest coded on 260815, commented in full on 260815.
  *
- * @author ClaudeCode
+ * @author Rowan Crowther
  */
 class PlayerUpdateObjectKnowledgeTest {
 
@@ -71,7 +72,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * Writes a private field on anything, for the state a running game would have filled in and this
      * suite does not run.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void poke(Object target, String name, Object value) throws Exception {
         Field f = target.getClass().getDeclaredField(name);
@@ -83,7 +84,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * Writes a private field declared on {@link Player} itself, which {@link #poke} cannot reach on a
      * subclass instance — {@code getDeclaredField} does not search superclasses.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static void pokePlayer(Player target, String name, Object value) throws Exception {
         Field f = Player.class.getDeclaredField(name);
@@ -92,7 +93,7 @@ class PlayerUpdateObjectKnowledgeTest {
     }
 
     /**
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @BeforeEach
     void setUp() {
@@ -103,7 +104,7 @@ class PlayerUpdateObjectKnowledgeTest {
     }
 
     /**
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @AfterEach
     void tearDown() {
@@ -114,7 +115,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * A level holding the given objects. The smallest legal chunk is 0×0 — nothing here reads a
      * square, and a real level's dimensions would only slow the fixture down.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private Chunk levelHolding(ItemObject... items) throws Exception {
         Chunk chunk = new Chunk("test", 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, player);
@@ -126,7 +127,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * Puts the given items in the player's pack. C walks {@code p->gear} as a linked list; the port
      * holds an {@link ArrayList}, which is why the method needs a null guard where C needs none.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private void carrying(ItemObject... items) throws Exception {
         pokePlayer(player, "gear", new ArrayList<>(List.of(items)));
@@ -138,7 +139,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * honest about the boundary being checked: this suite is about the walk, and stops where
      * {@code knowObject} begins.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final class CountingPlayer extends Player {
         private final List<ItemObject> visited = new ArrayList<>();
@@ -154,7 +155,7 @@ class PlayerUpdateObjectKnowledgeTest {
      * {@code EVENT_MESSAGE}; this one wants the two redraws instead, so it records the type of every
      * dispatch.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     private static final class CapturingBus implements EventsHandler {
         private final List<GameEventType> signalled = new ArrayList<>();
@@ -180,14 +181,14 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * The objects visited on the level and in the pack, in the order they were handed over.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("the populations it walks")
     class Populations {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every object on the level is visited")
@@ -203,7 +204,7 @@ class PlayerUpdateObjectKnowledgeTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("every object in the pack is visited")
@@ -221,7 +222,7 @@ class PlayerUpdateObjectKnowledgeTest {
          * Both populations in one call, and the level before the pack — C's order. Nothing depends on
          * it today, but a walk that reordered itself would be a divergence worth noticing.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("the level is walked before the pack")
@@ -241,7 +242,7 @@ class PlayerUpdateObjectKnowledgeTest {
          * consult each other — and `player_know_object` is idempotent, so the repeat is wasted work
          * rather than a bug.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an object in both populations is visited from each")
@@ -257,7 +258,7 @@ class PlayerUpdateObjectKnowledgeTest {
         }
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("an empty level and an empty pack visit nothing")
@@ -274,7 +275,7 @@ class PlayerUpdateObjectKnowledgeTest {
     /**
      * The two null guards. They are not the same in origin, which is worth keeping apart.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("the null guards")
@@ -284,7 +285,7 @@ class PlayerUpdateObjectKnowledgeTest {
          * C guards the level walk with {@code if (cave)} for a real reason: knowledge is updated
          * during birth and on loading a save, before any level exists.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("no level is not an error, and the pack is still walked")
@@ -303,7 +304,7 @@ class PlayerUpdateObjectKnowledgeTest {
          * throw, so this guard is the port paying for the container change rather than copying
          * anything.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("no pack is not an error, and the level is still walked")
@@ -320,7 +321,7 @@ class PlayerUpdateObjectKnowledgeTest {
         /**
          * A player with neither — the state a fresh {@link Player} is in before birth fills it.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("neither level nor pack is not an error")
@@ -337,14 +338,14 @@ class PlayerUpdateObjectKnowledgeTest {
      * The two signals at the tail. C sends them unconditionally, outside every guard, which is what
      * these tests are really pinning.
      *
-     * @author ClaudeCode
+     * @author Rowan Crowther
      */
     @Nested
     @DisplayName("the events it signals")
     class Signals {
 
         /**
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("inventory and equipment are both signalled, in that order")
@@ -363,7 +364,7 @@ class PlayerUpdateObjectKnowledgeTest {
          * has to be redrawn on the strength of the rune that was just learned even if no object in
          * play happens to carry it.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("both are signalled even when nothing was visited")
@@ -379,7 +380,7 @@ class PlayerUpdateObjectKnowledgeTest {
         /**
          * Once per call, not once per object — a walk of three items still redraws twice.
          *
-         * @author ClaudeCode
+         * @author Rowan Crowther
          */
         @Test
         @DisplayName("signalled once per call, whatever the population size")

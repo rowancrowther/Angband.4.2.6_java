@@ -109,19 +109,32 @@ public class ObjectUtils {
     }
 
     /**
-     * Fire a curse's effect against the player, as the source item's curse timeout
-     * expires. The port of C's {@code do_curse_effect}; the returned flag drives
+     * Fire a curse's effect against the player, as the source item's curse timeout expires. The
+     * port of C's {@code do_curse_effect} ({@code obj-curse.c:353}); the returned flag drives
      * whether the player then learns the curse's identity.
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the effect runtime; reports
-     * {@code false} (nothing happened, so the curse is not revealed).</p>
+     * <p>Takes the curse and the item, and nothing else. The curse's per-object
+     * {@link CurseData} is not wanted: the effect is a property of the curse itself, read from the
+     * template's own object ({@code curse->obj->effect} and its message), while the timeout that
+     * brought us here has already been dealt with by the caller. C's signature is the same shape,
+     * taking a curse index rather than the instance data.
      *
-     * @param curseEntry the curse and its per-object instance data
-     * @param item       the worn item the curse is attached to (the effect's source)
+     * <p>The return is a discovery, not a success: it reports whether something happened that the
+     * player was not already expecting, which is what makes a previously unknown curse worth
+     * revealing. C computes it as {@code !was_aware && ident}.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the effect runtime; reports {@code false}
+     * (nothing happened, so the curse is not revealed).</p>
+     *
+     * <p>Function doCurseEffect coded before 260817, retyped from taking a {@code CurseEntry} on
+     * 260817, commented in full on 260817.
+     *
+     * @param curse the curse whose effect is firing
+     * @param item  the worn item the curse is attached to (the effect's source)
      * @return {@code true} if the effect did something the player would notice
      * @author Rowan Crowther
      */
-    public static boolean doCurseEffect(Curse.CurseEntry curseEntry, ItemObject item) {
+    public static boolean doCurseEffect(Curse curse, ItemObject item) {
         // Stub class TODO: implement
         return false;
     }

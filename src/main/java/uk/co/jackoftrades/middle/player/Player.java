@@ -25,11 +25,13 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Message;
+import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.event.EventsBusHandler;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
@@ -37,11 +39,11 @@ import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * The player - the port of C's {@code struct player} (player.h), and the central mutable object of a
@@ -520,13 +522,633 @@ public class Player {
     }
 
     /**
-     * Records that the player has come to know an object. <b>Stub:</b> not yet implemented - the port
-     * of C's object-learning path is deferred until the object-knowledge subsystem is ported.
+     * Reports whether every rune on an item except its curses has been learned, the port of C's
+     * {@code object_non_curse_runes_known} ({@code obj-knowledge.c}).
      *
-     * @param item the object being learned
+     * <p>Answered by comparing the item against its own known counterpart: a property the player can
+     * read has been copied across, so anything the item has and the counterpart lacks is something
+     * still unlearned. The combat bonuses must match exactly, while the modifiers, elements, brands,
+     * slays and flags are one-way containments — the counterpart must cover the item, and is allowed
+     * to carry more.
+     *
+     * <p>Curses are excluded because they are compared differently, by power rather than by
+     * presence, and are handled by {@code ItemObject.cursesAreEqual} instead. {@code runesKnown}
+     * calls both in turn, which is how C's {@code object_runes_known} is built.
+     *
+     * <p>Lives on the player rather than on the item, despite reading only the item, because it is
+     * the counterpart to the rest of the knowledge code here and there was previously a second copy
+     * of it on {@link ItemObject} that drifted from this one. {@code ItemObject.runesKnown}
+     * delegates here so there is one implementation to keep right.
+     *
+     * <p>Iterates each map's own keys rather than the full enum, since an item records only the
+     * modifiers and elements it actually carries; C can loop over fixed bounds because its arrays
+     * have a slot for every one.
+     *
+     * <p>Function nonCurseRunesKnown coded before 260817, made public on 260817 when
+     * {@code ItemObject}'s duplicate was folded into it, commented in full on 260817.
+     *
+     * @param item the item to test
+     * @return {@code true} if every non-curse rune on the item has been learned
+     * @author Rowan Crowther
+     */
+    public static boolean nonCurseRunesKnown(ItemObject item) {
+        if (item == null || item.getKnown() == null)
+            return false;
+
+        ItemObject knownItem = item.getKnown();
+
+        // Combat details known
+        if (knownItem.getToAC() != item.getToAC()) return false;
+        if (knownItem.getToDam() != item.getToDam()) return false;
+        if (knownItem.getToHit() != item.getToHit()) return false;
+
+        // Modifiers
+        Map<ObjectModifier, Integer> knownModifiers = knownItem.getModifiers();
+        Map<ObjectModifier, Integer> itemModifiers = item.getModifiers();
+
+        for (ObjectModifier key : itemModifiers.keySet()) {
+            if (key == ObjectModifier.OM_MAX || key == ObjectModifier.OM_NONE) continue;
+            if (!knownModifiers.containsKey(key)) return false;
+            if (!Objects.equals(knownModifiers.get(key), itemModifiers.get(key))) return false;
+        }
+
+        // elements
+        Map<ElementEnum, ElementInfo> knownEInfo = knownItem.getElInfo();
+        Map<ElementEnum, ElementInfo> itemEInfo = item.getElInfo();
+
+        for (ElementEnum key : itemEInfo.keySet()) {
+            if (!knownEInfo.containsKey(key)) return false;
+            if (itemEInfo.get(key).getResLevel() != 0 && knownEInfo.get(key).getResLevel() == 0) return false;
+        }
+
+        // Brands
+        Set<Brand> itemBrands = item.getBrands();
+        Set<Brand> knownBrands = knownItem.getBrands();
+
+        if (!knownBrands.containsAll(itemBrands)) return false;
+
+        // Slays
+        Set<Slay> itemSlays = item.getSlays();
+        Set<Slay> knownSlays = knownItem.getSlays();
+        if (knownSlays == null) return false;
+        if (!knownSlays.containsAll(itemSlays)) return false;
+
+        // Flags
+        Flag<ObjectFlag> knownFlags = knownItem.getFlags();
+        Flag<ObjectFlag> itemFlags = item.getFlags();
+
+        return knownFlags.isSubset(itemFlags);
+    }
+
+    /**
+     * Transfers what the player knows about object properties in general onto one particular object,
+     * the port of C's {@code player_know_object} ({@code obj-knowledge.c:1018}).
+     *
+     * <p><b>The direction of travel is the thing to hold on to.</b> This does not look at the object
+     * and work out what the player has learned; it looks at {@link #itemKnowledge} — the player's
+     * standing knowledge of what each rune, modifier and element <em>means</em> — and rewrites the
+     * object's known counterpart to show only the properties that knowledge entitles the player to
+     * read. Learning happens elsewhere, in the {@code learnRune} family; this is the propagation step
+     * that runs afterwards, over every object in play, so that a rune learned on one sword shows up
+     * on every other object carrying it.
+     *
+     * <p>That is why nearly every assignment here is a multiplication or a gate rather than a copy.
+     * {@link KnownObject}'s numeric fields are one-or-zero knowledge bits, so
+     * {@code item.getDamageDice() * itemKnowledge.getDd()} yields the real dice when the player can
+     * read dice and zero when they cannot — C's idiom, kept rather than rewritten as a conditional
+     * because the zero is meaningful: it is what the display shows for an unknown quantity.
+     *
+     * <p><b>Three early returns, and they are not degrees of the same thing.</b> A null item or a
+     * null counterpart is nothing to do. A kind mismatch between the object and its counterpart means
+     * the player has the wrong idea about what the object even is — only sensed, not assessed — and
+     * imposing property knowledge on that would be asserting detail about the wrong item. A distant
+     * object that has not been {@code OBJ_NOTICE_ASSESSED} gets {@link #setBaseKnown} and no more:
+     * the player can see a sword on the floor across the room and know it is a sword, without being
+     * close enough to have formed a view about its enchantment.
+     *
+     * <p>The fourth return, after the flags, is the odd one. A curse holds its own bearer-less
+     * {@link ItemObject} to carry the properties it confers, and that object has a null kind. It has
+     * flags and modifiers worth knowing, but no ego, no flavour, no effect and nothing to become
+     * aware of, so it stops there while real objects carry on.
+     *
+     * <p><b>Correctness is not yet established.</b> The audit of 260816 found divergences from C in
+     * the combat-detail, modifier, element, flag, brand, curse and fully-known blocks; several of
+     * them need accessors that do not exist yet. See
+     * {@code docs/implementation/260816_functions_implemented.md} for the block-by-block comparison.
+     * The blocks recorded there as matching C are the slays, the ego/jewellery/special-artifact
+     * branch, the effect, and the guards and early returns described above.
+     *
+     * <p>Function knowObject coded before 260815 as a stub, implemented on 260816, commented in full
+     * on 260816.
+     *
+     * @param item the object whose known counterpart should be brought up to date; may be
+     *             {@code null}, matching C's {@code if (!obj) return}
+     * @author Rowan Crowther
      */
     public void knowObject(ItemObject item) {
-        // TODO: Expand this
+        boolean seen = true;
+
+        // unseen or only sensed items don't get any id
+        if (item == null) return;
+        if (item.getKnown() == null) return;
+        ObjectKind itemKind = item.getKind();
+        if (itemKind != item.getKnown().getKind()) return;
+
+        ItemObject known = item.getKnown();
+
+        // Distant objects
+        if (itemKind != null && !(known.getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED))) {
+            setBaseKnown(item);
+            return;
+        }
+
+        // Dice and pval for !chests
+        known.setDamageDice(item.getDamageDice() * itemKnowledge.getDd());
+        known.setDamageSides(item.getDamageSides() * itemKnowledge.getDs());
+        known.setNormalAC(item.getNormalAC() * itemKnowledge.getAc());
+        if (!item.gettValue().isChest())
+            known.setpValue(item.getpValue());
+
+        // combat details
+        known.setToAC(item.getToAC() * itemKnowledge.getToA());
+        if (!item.hasStandardToH())
+            known.setToHit(item.getToHit() * itemKnowledge.getToH());
+        known.setToDam(item.getToDam() * itemKnowledge.getToD());
+
+        // modifiers
+        Map<ObjectModifier, Integer> modifiers = item.getModifiers();
+        Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
+        for (ObjectModifier modifier : ObjectModifier.values()) {
+            newModifiers.put(modifier, 0);
+        }
+        for (ObjectModifier key : modifiers.keySet()) {
+            if (itemKnowledge.modifierIsKnown(key))
+                newModifiers.put(key, modifiers.get(key));
+        }
+        known.setModifiers(newModifiers);
+
+        // Elements
+        Map<ElementEnum, Boolean> knownElements = itemKnowledge.getElementResistInfo();
+        Map<ElementEnum, ElementInfo> itemElInfo = item.getElInfo();
+        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>(known.getElInfo());
+        for (ElementEnum element : ElementEnum.values()) {
+            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
+
+            ElementInfo zero = new ElementInfo();
+            zero.setResLevel(0);
+            newElInfo.put(element, zero);
+        }
+        for (ElementEnum key : knownElements.keySet()) {
+            if (knownElements.get(key))
+                newElInfo.put(key, itemElInfo.get(key).copy());
+        }
+        known.setElInfo(newElInfo);
+
+        // ObjectFlags
+        Flag<ObjectFlag> knownFlags = itemKnowledge.getFlags();
+        Flag<ObjectFlag> itemFlags = item.getFlags();
+        knownFlags.inter(itemFlags);
+        known.setFlagsTo(knownFlags);
+
+        // Curse object structures are finished now
+        if (itemKind == null)
+            return;
+
+        // Brands
+        Set<Brand> brands = item.getBrands();
+        if (brands == null) brands = new HashSet<>();
+        Set<Brand> knownBrands = known.getBrands();
+        if (knownBrands == null) knownBrands = new HashSet<>();
+        Set<Brand> union = new HashSet<>(brands);
+        union.addAll(knownBrands);
+
+        boolean knownBrand = false;
+        for (Brand brand : union) {
+            if (knowsBrand(brand)) {
+                known.addBrand(brand);
+                knownBrand = true;
+            } else {
+                known.removeBrand(brand);
+            }
+        }
+
+        if (!knownBrand && !known.getBrands().isEmpty()) {
+            known.clearBrands();
+        }
+
+
+        // Slays
+        Set<Slay> itemSlays = item.getSlays();
+        if (itemSlays == null) itemSlays = new HashSet<>();
+        Set<Slay> knownSlays = known.getSlays();
+        if (knownSlays == null) knownSlays = new HashSet<>();
+        Set<Slay> unionSlays = new HashSet<>(itemSlays);
+        unionSlays.addAll(knownSlays);
+
+        boolean knowSlay = false;
+
+        for (Slay slay : unionSlays) {
+            if (knowsSlay(slay)) {
+                known.addSlay(slay);
+                knowSlay = true;
+            } else {
+                known.removeSlay(slay);
+            }
+        }
+
+        if (!knowSlay && !known.getSlays().isEmpty()) {
+            known.clearSlays();
+        }
+
+        // Curses - be careful re alignment of knowledge
+        Map<Curse, CurseData> itemCurses = item.getCurses();
+        if (!itemCurses.isEmpty()) {
+            boolean knownCursed = false;
+
+            for (Curse curse : itemCurses.keySet()) {
+                if (itemKnowledge.curseIsKnown(curse) && itemCurses.get(curse).getPower() != 0) {
+                    knownCursed = true;
+                    CurseData oldData = itemCurses.get(curse);
+                    CurseData data = new CurseData(oldData.getPower(), 0);
+                    known.addCurse(curse, data);
+                } else if (known.getCurses().containsKey(curse)) {
+                    known.removeCurse(curse);
+                }
+            }
+
+            if (!knownCursed) {
+                known.clearCurses();
+            }
+        } else if (!known.getCurses().isEmpty()) {
+            known.clearCurses();
+        }
+
+        // ego type & jewellery type
+        if (knowsEgo(item)) {
+            seen = item.getEgo().isEverSeen();
+            known.setEgo(item.getEgo());
+        } else {
+            known.setEgo(null);
+        }
+
+        if (item.gettValue().isJewelry()) {
+            if (nonCurseRunesKnown(item)) {
+                seen = (item.isArtifact() || itemKind.isEverseen());
+                flavourAware(item);
+            }
+        } else if (itemKind.isSpecialArtifactKind()) {
+            seen = true;
+            flavourAware(item);
+        }
+
+        // Effect is known
+        if ((itemKind.isAware() && itemKind.getFlavour() != null) ||
+                (!item.gettValue().isWearable() && itemKind.getFlavour() == null) ||
+                (item.gettValue().isWearable() && itemKind.getEffect() != null && itemKind.isAware())) {
+            known.setEffect(item.getEffect());
+        }
+
+        // New stuff
+        if (!seen) {
+            String objectName;
+            Flag<ObjectDescription> descriptionFlag = new Flag<>(ObjectDescription.class);
+
+            if (isCarried(item)) {
+                descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
+                        ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
+                objectName = item.description(descriptionFlag, this);
+                String msg = String.format("You have %s (%c)", objectName, gearToLabel(item));
+                Message.message(msg);
+            } else if (cave != null && cave.getSquare(grid).holdsObject(item)) {
+                descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
+                        ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
+                objectName = item.description(descriptionFlag, this);
+                String msg = String.format("On the ground: %s.", objectName);
+                Message.message(msg);
+            }
+        }
+
+        // Fully known objects
+        if (item.isFullyKnown()) {
+            for (ElementEnum element : item.getElInfo().keySet()) {
+                if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
+
+                ElementInfo eInfo = itemElInfo.get(element).copy();
+                known.putElInfo(element, eInfo);
+            }
+
+            Flag<ObjectFlag> copy = new Flag<>(ObjectFlag.class);
+            copy.copyFrom(item.getFlags());
+            known.setFlagsTo(copy);
+        }
+    }
+
+    /**
+     * Finds the letter or digit the player selects an item by, the port of C's {@code gear_to_label}
+     * ({@code obj-gear.c}).
+     *
+     * <p>Three places an item can be, and each labels differently. Worn equipment takes its letter
+     * from the slot it occupies, so a sword's label is a fact about the body rather than about the
+     * sword. Quiver ammunition is numbered from {@code '0'}. Everything else in the pack takes its
+     * letter from its position in the inventory list. Each label is therefore positional: moving an
+     * item renames it, which is why the pack and quiver are ordered lists rather than sets.
+     *
+     * <p>The label alphabet skips {@code h}, {@code j}, {@code k} and {@code l}. Those are the
+     * roguelike movement keys, and an item labelled with one could not be selected without the
+     * player walking instead. C keeps the same string for the same reason.
+     *
+     * <p>Answers the null character for an item the player is not carrying, which is C's {@code '\0'}
+     * fall-through rather than an error: asking for the label of something on the floor is a fair
+     * question with no answer.
+     *
+     * <p>Function gearToLabel coded before 260817, commented in full on 260817.
+     *
+     * @param item the item to label
+     * @return the character the item is selected by, or {@code '\0'} if it is not in the gear
+     * @author Rowan Crowther
+     */
+    private char gearToLabel(ItemObject item) {
+        String labels = "abcdefgimnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+        if (body.itemIsEquipped(item)) {
+            return labels.charAt(body.equippedItemSlot(item));
+        }
+
+        int index = 0;
+        for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
+            if (quiverItem.equals(item)) {
+                return (char) ('0' + index);
+            }
+            index++;
+        }
+
+        int invenIndex = 0;
+        for (ItemObject invenItem : getPlayerUpkeep().getInventory()) {
+            if (invenItem.equals(item)) {
+                return labels.charAt(invenIndex);
+            }
+            invenIndex++;
+        }
+
+        return '\0';
+    }
+
+    /**
+     * Tests whether the player is carrying a given object, the port of C's
+     * {@code object_is_carried} ({@code obj-util.c}).
+     *
+     * <p>Carried means anywhere in the gear: pack, quiver or worn. C's {@code p->gear} is one linked
+     * list holding all three, and equipment is reached by following slot pointers into it rather than
+     * by living in a separate collection, so a single containment test answers the question. The port
+     * keeps that arrangement, which is why this is one line and not three.
+     *
+     * <p>The distinction it draws is between an object the player has and an object that is merely
+     * nearby — {@link #knowObject} uses it to pick between "You have a Long Sword (c)." and "On the
+     * ground: a Long Sword." when reporting something newly recognised.
+     *
+     * <p>Function isCarried coded on 260816, commented in full on 260816.
+     *
+     * @param item the object to look for
+     * @return {@code true} if the object is in the player's gear
+     * @author Rowan Crowther
+     */
+    private boolean isCarried(ItemObject item) {
+        return gear.contains(item);
+    }
+
+    /**
+     * Marks an object's flavour as one the player has become aware of, and propagates the
+     * consequences — the port of C's {@code object_flavor_aware} ({@code obj-knowledge.c:2262}).
+     *
+     * <p><b>Awareness is a property of the kind, not of the object.</b> Learning that the pink potion
+     * is a Potion of Speed is learning it about every pink potion in the game at once, which is why
+     * the flag is set on {@link ObjectKind} and why so much of this method is a sweep afterwards
+     * putting the rest of the world in step. The object passed in is only the occasion for the
+     * discovery, not its subject.
+     *
+     * <p>The early return on an already-aware kind is what makes the method safe to call freely —
+     * {@link #knowObject} calls it on every jewellery item whose non-curse runes are all known, which
+     * is most of them once the player is experienced. Without it the floor sweep at the foot would
+     * run on every pass.
+     *
+     * <p><b>The three consequences, in C's order.</b> First the effect becomes readable on this
+     * object's counterpart, since an identified flavour is an identified effect. Then the ignore
+     * settings are reconciled: a kind the player had set to ignore <em>while unaware</em> of it
+     * becomes one to ignore now that they are aware, so the pile of unknown potions they were
+     * stepping over does not suddenly reappear under a name. {@code PN_IGNORE} then asks for the
+     * ignore pass to be re-run. Finally every object the player is carrying has its base knowledge
+     * refreshed, because an aware flavour reveals pval and effect that {@link #setBaseKnown}
+     * withholds while the kind is unknown.
+     *
+     * <p>The floor sweep exists because some kinds change tile on awareness, so any square holding
+     * an object of this kind needs redrawing. It starts at {@code (1,1)} rather than {@code (0,0)}:
+     * the outermost ring of a level is permanent wall and can hold nothing.
+     *
+     * <p><b>Two pieces are knowingly absent.</b> C also refreshes store stock, which waits on
+     * Chapter 8, and {@link uk.co.jackoftrades.middle.cave.Square#lightSpot} is currently an empty
+     * stub deferred to Chapter 4, so the sweep computes the right set of squares and then redraws
+     * none of them. Neither is a divergence in this method's own logic.
+     *
+     * <p>Function flavourAware coded on 260816, commented in full on 260816.
+     *
+     * @param item an object of the kind the player has just become aware of
+     * @author Rowan Crowther
+     */
+    private void flavourAware(ItemObject item) {
+        ItemObject known = item.getKnown();
+        if (known == null) return;
+        ObjectKind kind = item.getKind();
+        if (kind == null) return;
+
+        if (kind.isAware()) return;
+        kind.setAware(true);
+        known.setEffect(item.getEffect());
+
+        // Fix ignore/autoinscribe
+        if (kind.isIgnoredUnaware())
+            kind.setIgnoredAware(true);
+        getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE);
+
+        // Update player objects
+        for (ItemObject obj : gear) {
+            setBaseKnown(obj);
+        }
+
+        // Store objects
+        // STUB - Todo: Implement in chapter 8
+
+        if (cave == null) return;
+
+        for (int y = 1; y < cave.getHeight(); y++) {
+            for (int x = 1; x < cave.getWidth(); x++) {
+                boolean light = false;
+                Loc grid = Loc.row(y).col(x);
+
+                Iterator<ItemObject> iterator = cave.getSquare(grid).getObjectPile().getIterator();
+
+                while (iterator.hasNext()) {
+                    ItemObject floorObj = iterator.next();
+                    if (floorObj.getKind() == kind) {
+                        light = true;
+                        break;
+                    }
+                }
+                if (light) cave.getSquare(grid).lightSpot();
+            }
+        }
+    }
+
+    /**
+     * Reports whether the player could recognise an item's ego type from the properties they can
+     * already read, the port of C's {@code player_knows_ego} ({@code obj-knowledge.c}).
+     *
+     * <p>An ego is not learned directly; it is deduced. Every flag, modifier, resistance, brand,
+     * slay and curse an ego always grants must be a rune the player can read, because an ego is
+     * only identifiable once nothing it confers is still a mystery. So this walks the ego's
+     * properties and asks the player's knowledge about each.
+     *
+     * <p>The modifier test is the subtle one. An ego's modifier is a range rolled per item, so a
+     * range spanning zero can leave an item showing nothing at all — and an item showing nothing
+     * gives the player nothing to have failed to notice. That is why an unreadable modifier only
+     * disqualifies the ego when the range cannot produce zero ({@code modmax * modmin > 0}) or when
+     * this particular item did roll a non-zero value. The ranges are evaluated at both extremes at
+     * maximum depth, following C.
+     *
+     * <p>The item is a parameter rather than the ego alone for exactly that test: C accepts a null
+     * object and skips the concession when it has no specific item to consult.
+     *
+     * <p>Function knowsEgo coded before 260817, commented in full on 260817.
+     *
+     * @param item the item whose ego is being tested
+     * @return {@code true} if the ego is one the player could now identify, {@code false} for an
+     * item with no ego at all
+     * @author Rowan Crowther
+     */
+    private boolean knowsEgo(ItemObject item) {
+        EgoItem ego = item.getEgo();
+
+        if (ego == null) return false;
+
+        Flag<ObjectFlag> knownFlags = itemKnowledge.getFlags();
+        Flag<ObjectFlag> egoFlags = ego.getFlags();
+
+        // All flags known
+        if (!knownFlags.isSubset(egoFlags)) return false;
+
+        // Modifiers all known
+        for (ObjectModifier modifier : ObjectModifier.values()) {
+            if (modifier == ObjectModifier.OM_NONE || modifier == ObjectModifier.OM_MAX) continue;
+
+            Random egoModifier = ego.getModifier(modifier);
+            if (egoModifier == null) continue;
+
+            int modMax = egoModifier.randCalc(GameConstants.getWorldMaxDepth(), DamageAspect.MAXIMIZE);
+            int modMin = egoModifier.randCalc(GameConstants.getWorldMaxDepth(), DamageAspect.MINIMIZE);
+
+            if ((modMax > 0 || modMin < 0) && !itemKnowledge.modifierIsKnown(modifier))
+                if (modMax * modMin > 0 || item.getModifiers().getOrDefault(modifier, 0) != 0)
+                    return false;
+        }
+
+        // all elements known
+        Map<ElementEnum, ElementInfo> egoElInfo = ego.getElInfo();
+        Map<ElementEnum, Boolean> itemElInfo = itemKnowledge.getElementResistInfo();
+
+        for (ElementEnum key : egoElInfo.keySet()) {
+            if (key == ElementEnum.ELEM_MAX || key == ElementEnum.ELEM_NONE) continue;
+            ElementInfo egoInfo = egoElInfo.get(key);
+            if (egoInfo.getResLevel() != 0 && !itemElInfo.get(key))
+                return false;
+        }
+
+        // All brands known
+        Set<Brand> egoBrands = ego.getBrands();
+        for (Brand brand : egoBrands) {
+            if (!knowsBrand(brand)) return false;
+        }
+
+        // All slays known
+        Set<Slay> egoSlays = ego.getSlays();
+        for (Slay slay : egoSlays) {
+            if (!knowsSlay(slay)) return false;
+        }
+
+        // All curses known
+        for (Curse curse : ego.getCurses().keySet()) {
+            if (!knowsCurse(curse)) return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * Copies onto an item's known counterpart everything that follows from simply recognising what
+     * the item is, the port of C's {@code object_set_base_known} ({@code obj-knowledge.c}).
+     *
+     * <p>The division this draws is between what an item <em>is</em> and what has been done to it.
+     * Knowing a weapon is a Long Sword settles its kind, its weight and its damage dice, because
+     * every Long Sword shares them; it settles nothing about the enchantment on this particular one,
+     * which still has to be learned rune by rune. So the kind-level facts are copied here and the
+     * per-object ones are left to {@link #knowObject}.
+     *
+     * <p>The dice, armour class and to-hit are copied only where the counterpart still holds
+     * nothing, so that a figure already learned is never overwritten by the kind's generic one. Each
+     * is multiplied by the corresponding 0/1 flag on {@link KnownObject}, which is how C masks a
+     * property the player cannot yet read: an unknown armour class multiplies to zero rather than
+     * being copied.
+     *
+     * <p>The effect is copied in two cases, and both are about whether using the item would have
+     * taught it. A flavoured kind the player is aware of has been used before; an unflavoured
+     * non-wearable — a scroll, a potion — announces what it does when read or drunk. A wearable's
+     * activation follows the same rule through the kind's awareness.
+     *
+     * <p>Throws rather than returning quietly when there is no counterpart to write to, because a
+     * carried object without one is a broken invariant rather than a case to handle: C asserts on
+     * the same condition.
+     *
+     * <p>Function setBaseKnown coded before 260817, commented in full on 260817.
+     *
+     * @param item the item whose known counterpart is being brought up to date
+     * @throws RuntimeException if the item or its known counterpart is missing
+     * @author Rowan Crowther
+     */
+    private void setBaseKnown(ItemObject item) {
+        if (item == null || item.getKnown() == null) {
+            logger.error("Item or item known nonexistent in Player.setBaseKnown");
+            throw new RuntimeException("Item or item known nonexistent in Player.setBaseKnown");
+        }
+
+        ItemObject known = item.getKnown();
+        known.setKind(item.getKind());
+        known.settValue(item.gettValue());
+        known.setsValue(item.getsValue());
+        known.setWeight(item.getWeight());
+        known.setNumber(item.getNumber());
+
+        ObjectKind itemKind = item.getKind();
+
+        // generic dice and ac/to_h for armour/launcher multipliers
+        if (known.getDamageDice() == 0)
+            known.setDamageDice(itemKind.getDamageDice() * itemKnowledge.getDd());
+        if (known.getDamageSides() == 0)
+            known.setDamageSides(itemKind.getDamageSides() * itemKnowledge.getDs());
+        if (known.getNormalAC() == 0)
+            known.setNormalAC(itemKind.getAc() * itemKnowledge.getAc());
+        if (item.hasStandardToH())
+            known.setToHit(itemKind.getToH().getBase());
+        if (item.gettValue().isLauncher())
+            known.setpValue(item.getpValue());
+
+        // Aware flavours and unflavoured non-wearables
+        if ((itemKind.isAware() && itemKind.getFlavour() != null)
+                || (!item.gettValue().isWearable() && itemKind.getFlavour() == null)) {
+            known.setpValue(item.getpValue());
+            known.setEffect(item.getEffect());
+        }
+
+        // standard activations
+        if (item.gettValue().isWearable() && itemKind.isAware() && itemKind.getEffect() != null)
+            known.setEffect(item.getEffect());
     }
 
     /**
@@ -1376,14 +1998,14 @@ public class Player {
      * That is C's placement and it is right: the display has to redraw on the strength of the rune
      * just learned, whether or not any object currently in play happens to carry it.
      *
-     * <p>The real work is delegated to {@link #knowObject}, <b>which is still a stub</b> — so this
-     * method currently visits the right objects and tells them nothing. What is finished is the
-     * shape: the populations, their order, the guards and the signals. See
-     * {@code PlayerUpdateObjectKnowledgeTest}, which observes the walk rather than its outcome for
-     * exactly that reason, and should keep passing unchanged once {@code knowObject} is written.
+     * <p>The real work is delegated to {@link #knowObject}, which was written on 260816. What this
+     * method is responsible for is the shape around it: the populations, their order, the guards and
+     * the signals. See {@code PlayerUpdateObjectKnowledgeTest}, which observes the walk rather than
+     * its outcome — deliberately, so that it stays valid however {@code knowObject} changes.
      *
      * <p>Function updateObjectKnowledge coded before 260815 as a stub, implemented as far as the
-     * available subsystems allow on 260815, commented in full on 260815.
+     * available subsystems allow on 260815, commented in full on 260815. Stub note on
+     * {@code knowObject} corrected on 260816.
      */
     public void updateObjectKnowledge() {
         // Know the cave objects
@@ -1695,12 +2317,8 @@ public class Player {
      * sentinel rather than test for null — {@link ObjectFlag#OF_MAX} is rejected on the same
      * grounds, being the other end-marker and no more a real flag than the first.
      *
-     * <p>As elsewhere in the family, C's {@code assert(obj->known)} has no counterpart; the null it
-     * asserts against is handled where it would actually be dereferenced, in
-     * {@link ItemObject#getKnownFlags}. See {@link #equipLearnOnDefend} for the reasoning.
-     *
-     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so both this method's
-     * message and the one {@link #cursesFindFlags} sends name the item with a
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, deferred to Chapter 7,
+     * so both this method's message and the one {@link #cursesFindFlags} sends name the item with a
      * placeholder.
      *
      * <p>Function equipLearnFlag coded on 260815, commented in full on 260815, updated on 260815
@@ -1722,10 +2340,8 @@ public class Player {
                     slotObject.flagMessage(flag, objDesc);
                     learnRune(Rune.runeIndex(flag), true);
                 }
-            } else if (!slotObject.isFullyKnown()) {
-                Flag<ObjectFlag> knownFlags = slotObject.getKnownFlags();
-                if (knownFlags != null)
-                    knownFlags.on(flag);
+            } else if (!slotObject.isFullyKnown() && slotObject.getKnown() != null) {
+                slotObject.getKnown().setFlag(flag);
             }
 
             Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
@@ -1759,17 +2375,17 @@ public class Player {
      * parsed once from {@code curse.txt}. What the item holds is the instance data: the power and
      * timeout in {@link CurseData}. C keeps those in two arrays indexed alike, so every one of these
      * functions has to walk {@code 1 .. curse_max} and read {@code obj->curses[i].power} and
-     * {@code curses[i].obj->to_a} at the same subscript. {@link Curse.CurseEntry} pairs them
-     * directly, so the loop visits only the curses the item actually carries and no index arithmetic
-     * survives the port.
+     * {@code curses[i].obj->to_a} at the same subscript. {@link ItemObject#getCurses} pairs them
+     * directly, mapping each curse to its own {@link CurseData}, so the loop visits only the curses
+     * the item actually carries and no index arithmetic survives the port.
      *
      * <p>That also disposes of C's two guards. {@code !obj->curses[i].power} is what stops a dense
      * array from reporting curses the item does not have, and is unnecessary against a map that only
-     * contains the ones it does — but the power test is kept anyway, because
-     * {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed entry can
-     * outlive the curse. {@code !curses[i].obj} is dead code upstream: the parser allocates that
-     * object at the {@code name:} line, so the only null in the array is index 0, the reserved
-     * no-curse slot the loop already skips.
+     * contains the ones it does — the port removes a curse outright rather than zeroing it, so an
+     * entry of power zero should not arise. The test is kept as a cheap restatement of that
+     * invariant. {@code !curses[i].obj} is dead code upstream: the parser allocates that object at
+     * the {@code name:} line, so the only null in the array is index 0, the reserved no-curse slot
+     * the loop already skips.
      *
      * <p>The rune is resolved once, before the loop. C recomputes it into the same {@code index}
      * variable it then overwrites with the curse's rune, so on a second qualifying curse it relearns
@@ -1785,13 +2401,14 @@ public class Player {
     void cursesFindToA(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A);
         if (!item.getCurses().isEmpty()) {
-            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
-                if (curseEntry.curseData().getPower() != 0)
-                    if (curseEntry.curse().getCombatAC() != 0) {
+            for (Curse curse : item.getCurses().keySet()) {
+                CurseData value = item.getCurses().get(curse);
+                if (value.getPower() != 0)
+                    if (curse.getCombatAC() != 0) {
                         // Learn the to AC rune
                         learnRune(rune, true);
                         // Learn the to AC Curse rune
-                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                        learnRune(Rune.runeIndex(curse), true);
                     }
             }
         }
@@ -1820,13 +2437,13 @@ public class Player {
     void cursesFindToD(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D);
         if (!item.getCurses().isEmpty()) {
-            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
-                if (curseEntry.curseData().getPower() != 0)
-                    if (curseEntry.curse().getCombatDam() != 0) {
+            for (Curse curse : item.getCurses().keySet()) {
+                if (item.getCurses().get(curse).getPower() != 0)
+                    if (curse.getCombatDam() != 0) {
                         // Learn the to-damage rune
                         learnRune(rune, true);
                         // Learn the rune of the curse that caused it
-                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                        learnRune(Rune.runeIndex(curse), true);
                     }
             }
         }
@@ -1859,13 +2476,13 @@ public class Player {
     void cursesFindToH(ItemObject item) {
         Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H);
         if (!item.getCurses().isEmpty()) {
-            for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
-                if (curseEntry.curseData().getPower() != 0)
-                    if (curseEntry.curse().getCombatToHit() != 0) {
+            for (Curse curse : item.getCurses().keySet()) {
+                if (item.getCurses().get(curse).getPower() != 0)
+                    if (curse.getCombatToHit() != 0) {
                         // Learn the to-hit rune
                         learnRune(rune, true);
                         // Learn the rune of the curse that caused it
-                        learnRune(Rune.runeIndex(curseEntry.curse()), true);
+                        learnRune(Rune.runeIndex(curse), true);
                     }
             }
         }
@@ -1917,8 +2534,8 @@ public class Player {
      * counterpart: it exists to skip the reserved index 0 of a dense array, and a map holding only
      * the curses this item carries has no such hole.
      *
-     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, so the message names
-     * the item with a placeholder.
+     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, deferred to Chapter 7,
+     * so the message names the item with a placeholder.
      *
      * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, moved here from
      * {@link ItemObject} on 260815 and its arguments turned round to C's order.
@@ -1938,11 +2555,12 @@ public class Player {
         if (item.getCurses().isEmpty()) return false;
 
         // Only loop through the curses on the object, not the entire set of curses
-        for (Curse.CurseEntry curseEntry : item.getCurses().keySet()) {
-            if (curseEntry.curseData().getPower() == 0) continue;
+        for (Curse curse : item.getCurses().keySet()) {
+            CurseData value = item.getCurses().get(curse);
+            if (value.getPower() == 0) continue;
 
             Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
-            toTest.set(curseEntry.curse().getObjectFlags());
+            toTest.set(curse.getObjectFlags());
             toTest.inter(testFlags);
 
             for (ObjectFlag testSubject : toTest) {
@@ -1954,7 +2572,7 @@ public class Player {
                 }
 
                 // Learn the curse
-                Rune rune = Rune.runeIndex(curseEntry.curse());
+                Rune rune = Rune.runeIndex(curse);
                 if (rune != null)
                     learnRune(rune, true);
             }

@@ -40,10 +40,7 @@ import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.*;
 import uk.co.jackoftrades.middle.objects.enums.*;
-import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
-import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
-import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
-import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.player.enums.*;
 
 import java.util.*;
 
@@ -2647,6 +2644,65 @@ public class Player {
                     && effect != TimedEffect.TMD_TRAPSAFE) {
                 flags.on(playerEffect.getoFlagDup());
             }
+        }
+    }
+
+    /**
+     * Fills {@code flags} with the object flags the player has innately, from race, from class, and
+     * from the one class ability that grants a flag on reaching a level. Port of C's
+     * {@code player_flags} ({@code player.c:290}).
+     *
+     * <p>These are the flags a naked player still has. The equipment's contribution is gathered
+     * separately by {@code calc_bonuses}, and the flags duplicated by running statuses by
+     * {@link #flagsTimed}; this is the third source, and the only one that does not depend on
+     * anything the player is carrying or currently under.
+     *
+     * <p><b>Replaces the caller's set rather than adding to it</b>, which is the opposite of its
+     * neighbour {@link #flagsTimed} and easy to misread from the shared shape of the two
+     * signatures. C's first statement is a {@code memcpy} over the whole set, not an
+     * {@code of_union}, so anything already in the caller's set is discarded;
+     * {@link Flag#copyFrom} wipes before unioning and so agrees. Both C call sites pass a set that
+     * is empty at that moment ({@code player-calcs.c:1922}, {@code player-timed.c:752}), so the
+     * difference is invisible there — but it is what the method promises, and a caller that
+     * gathered equipment flags first would lose them.
+     *
+     * <p>Race is copied and class is unioned in, so a flag from either source is enough and a flag
+     * on both is held once. Which of the two is copied and which unioned has no effect on the
+     * result, only on there being no need to wipe first.
+     *
+     * <p>{@link PlayerFlag#PF_BRAVERY_30} is the only conditional, and it is the reason this method
+     * needs a {@link PlayerState} at all. The flag is data — in the shipped
+     * {@code class.txt} only the Warrior carries it ({@code class.txt:158}), described as "You
+     * become immune to fear at level 30" — and the level threshold is the hard-coded half of the
+     * pair. Note that the flag is looked for on the calculated state, C's
+     * {@code player_has} being {@code pf_has(p->state.pflags, flag)} ({@code player.h:440}), and
+     * not on the class's own list: a shape or another later contribution to {@code pflags} counts
+     * too. That in turn means the state must already have its player flags filled in when this is
+     * called, which in C holds because {@code calc_bonuses} fills them three lines earlier
+     * ({@code player-calcs.c:1917}) than it calls this ({@code player-calcs.c:1922}).
+     *
+     * <p><b>Deliberate divergence from the C original.</b> C takes only the player and reads
+     * {@code p->state} directly; this takes the state to consult as a parameter. C can afford the
+     * shortcut because a {@code struct player_state} is a value that callers copy about freely,
+     * whereas the port passes references — {@code calcBonuses} builds a state that is not
+     * necessarily the player's own, so reaching for the field would consult one state while filling
+     * another. The divergence is also a small behaviour change, and in the port's favour: at the
+     * call sites that ask a hypothetical question, such as the "pretend we are wielding this"
+     * calculation behind an object's blow counts ({@code obj-info.c:888}), C answers the bravery
+     * test from the real player while filling a scratch state, and the port answers it from the
+     * state being filled.
+     *
+     * <p>Function flags coded on 260818, commented in full on 260818.
+     *
+     * @param state the calculated state to read {@link PlayerFlag#PF_BRAVERY_30} from, not written to
+     * @param flags the flag set to fill, wiped first and mutated in place
+     */
+    @Contract(mutates = "param2")
+    public void flags(@NotNull PlayerState state, @NotNull Flag<ObjectFlag> flags) {
+        flags.copyFrom(race.getoFlags());
+        flags.union(playerClass.getoFlags());
+        if (state.hasPFlag(PlayerFlag.PF_BRAVERY_30) && level >= 30) {
+            flags.on(ObjectFlag.OF_PROT_FEAR);
         }
     }
 }

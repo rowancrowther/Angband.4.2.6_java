@@ -58,7 +58,7 @@ Every data file in `../lib/gamedata` parses into a registry. C: `parser.c`, `ini
 
 ## Chapter 2 — Object knowledge (the rune system) *(in progress)*
 
-C: `obj-knowledge.c`. The current stretch. Fine detail and the 2026-08-13 audit live in
+C: `obj-knowledge.c`. Finished 260817. Fine detail and the 2026-08-13 audit live in
 `docs/Chapter_2_Roadmap.md`.
 
 - [x] `init_rune` → `Rune.initRunes()` — verified against C; 99 runes, all counts match

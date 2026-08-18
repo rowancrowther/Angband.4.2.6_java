@@ -508,8 +508,8 @@ public class GameWorld {
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_NEW_LEVEL_DISPLAY);
 
         // Update player
-        player.getPlayerUpkeep().updateFlagsOn(PlayerUpkeepEnum.PU_BONUS, PlayerUpkeepEnum.PU_HP,
-                PlayerUpkeepEnum.PU_SPELLS, PlayerUpkeepEnum.PU_INVEN);
+        player.getPlayerUpkeep().updateFlagsOn(PlayerUpdateEnum.PU_BONUS, PlayerUpdateEnum.PU_HP,
+                PlayerUpdateEnum.PU_SPELLS, PlayerUpdateEnum.PU_INVEN);
         player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
         player.noticeStuff();
         player.updateStuff();
@@ -614,7 +614,7 @@ public class GameWorld {
 
             // Paralyzed or knocked out players get no turn
             if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) != 0 ||
-                    player.timedGradeEqual(TimedEffect.TMD_STUN, "Knocked Out")) {
+                    player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out")) {
                 GameState.getCommandQueue().push(CommandCode.CMD_SLEEP);
             }
 
@@ -784,7 +784,7 @@ public class GameWorld {
 
         // Check for light change
         if (player.hasPlayerFlag(PlayerFlag.PF_UNLIGHT))
-            player.getPlayerUpkeep().updateFlagOn(PlayerUpkeepEnum.PU_BONUS);
+            player.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_BONUS);
 
         // Check for creature generation
         if (RandomValueUtils.oneIn(GameConstants.getMonGenChance()))
@@ -803,10 +803,10 @@ public class GameWorld {
         if (player.getTimedEffect(TimedEffect.TMD_CUT) != 0) {
             if (player.hasPlayerFlag(PlayerFlag.PF_ROCK))
                 index = 0;
-            else if (player.timedGradeEqual(TimedEffect.TMD_CUT, "Mortal Wound") ||
-                    player.timedGradeEqual(TimedEffect.TMD_CUT, "Deep Gash"))
+            else if (player.timedGradeEq(TimedEffect.TMD_CUT, "Mortal Wound") ||
+                    player.timedGradeEq(TimedEffect.TMD_CUT, "Deep Gash"))
                 index = 3;
-            else if (player.timedGradeEqual(TimedEffect.TMD_CUT, "Severe Cut"))
+            else if (player.timedGradeEq(TimedEffect.TMD_CUT, "Severe Cut"))
                 index = 2;
             else
                 index = 1;
@@ -857,7 +857,7 @@ public class GameWorld {
         // Check food and regenerate
 
         // Digest
-        if (!player.timedGradeEqual(TimedEffect.TMD_FOOD, "Full")) {
+        if (!player.timedGradeEq(TimedEffect.TMD_FOOD, "Full")) {
             // Digest normally
             if ((turn % 100) == 0) {
                 // basic digestion rate based on speed
@@ -889,11 +889,11 @@ public class GameWorld {
 
         } else { // Digest quicker when gorged
             player.decTimed(TimedEffect.TMD_FOOD, 5000 / GameConstants.getPlayerFoodValue(), false, true);
-            player.getPlayerUpkeep().updateFlagOn(PlayerUpkeepEnum.PU_BONUS);
+            player.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_BONUS);
         }
 
         // Faint or starving
-        if (player.timedGradeEqual(TimedEffect.TMD_FOOD, "Faint")) {
+        if (player.timedGradeEq(TimedEffect.TMD_FOOD, "Faint")) {
             // Faint occasionally
             if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 && RandomValueUtils.oneIn(10)) {
                 Message.message("You faint from the lack of food.");
@@ -903,7 +903,7 @@ public class GameWorld {
                 player.incTimed(TimedEffect.TMD_PARALYZED, 1 + RandomValueUtils.randInt0(5),
                         true, true, false);
             }
-        } else if (player.timedGradeEqual(TimedEffect.TMD_FOOD, "Starving")) {
+        } else if (player.timedGradeEq(TimedEffect.TMD_FOOD, "Starving")) {
             int damage = (Food.PY_FOOD_STARVING.getFoodValue() - player.getTimedEffect(TimedEffect.TMD_FOOD)) / 10;
 
             PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(damage), "starvation");
@@ -1039,7 +1039,7 @@ public class GameWorld {
                 case TMD_FOOD -> decrement = 0; // handle separately
                 case TMD_CUT -> {
                     // Check for truely mortal wounds
-                    if (player.timedGradeEqual(effect, "Mortal Wound"))
+                    if (player.timedGradeEq(effect, "Mortal Wound"))
                         decrement = 0;
                     else
                         decrement = adjust;

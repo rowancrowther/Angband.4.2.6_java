@@ -395,6 +395,113 @@ class FlagTest {
     }
 
     /**
+     * The four mutators whose argument was widened from {@link Flag} to {@link FlagView} on
+     * 260818, exercised through a {@code FlagView}-typed reference.
+     *
+     * <p>{@link SetOperations} already covers what these methods do; this covers what they will
+     * now <em>accept</em>. The distinction matters because every test above passes a {@link Flag},
+     * and a {@code Flag} satisfies both signatures — so those tests would pass whether or not the
+     * widening had happened. Only a reference declared as the interface pins it.
+     *
+     * <p>{@link Flag#inter} additionally gets its own rewrite covered here: it was the one method
+     * that could not simply be re-typed, because its {@code retainAll} needed a
+     * {@link java.util.Collection} and a view is only an {@link Iterable}. Its replacement must
+     * still answer the narrow "was a flag actually cleared" question that its Javadoc promises and
+     * that C's {@code flag_inter} does not.
+     *
+     * <p>Class ReadOnlyArguments coded on 260818, commented in full on 260818.
+     */
+    @Nested
+    class ReadOnlyArguments {
+
+        @Test
+        void unionAcceptsAViewTypedArgument() {
+            FlagView<TestFlag> source = flagsOf(TestFlag.BETA);
+            flags.set(TestFlag.ALPHA);
+
+            assertTrue(flags.union(source));
+            assertTrue(flags.isEqual(flagsOf(TestFlag.ALPHA, TestFlag.BETA)));
+        }
+
+        @Test
+        void interAcceptsAViewTypedArgument() {
+            FlagView<TestFlag> source = flagsOf(TestFlag.BETA, TestFlag.GAMMA);
+            flags.set(TestFlag.ALPHA, TestFlag.BETA);
+
+            assertTrue(flags.inter(source));
+            assertTrue(flags.isEqual(flagsOf(TestFlag.BETA)));
+        }
+
+        @Test
+        void diffAcceptsAViewTypedArgument() {
+            FlagView<TestFlag> source = flagsOf(TestFlag.BETA);
+            flags.set(TestFlag.ALPHA, TestFlag.BETA);
+
+            assertTrue(flags.diff(source));
+            assertTrue(flags.isEqual(flagsOf(TestFlag.ALPHA)));
+        }
+
+        @Test
+        void copyFromAcceptsAViewTypedArgument() {
+            FlagView<TestFlag> source = flagsOf(TestFlag.BETA);
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            flags.copyFrom(source);
+
+            assertTrue(flags.isEqual(flagsOf(TestFlag.BETA)));
+        }
+
+        @Test
+        void noneOfThemWritesToTheArgument() {
+            Flag<TestFlag> source = flagsOf(TestFlag.BETA);
+            FlagView<TestFlag> view = source;
+
+            flags.set(TestFlag.ALPHA, TestFlag.BETA);
+            flags.union(view);
+            flags.inter(view);
+            flags.diff(view);
+            flags.copyFrom(view);
+
+            assertTrue(source.isEqual(flagsOf(TestFlag.BETA)));
+        }
+
+        @Test
+        void interReportsFalseWhenTheIntersectionClearsNothing() {
+            flags.set(TestFlag.ALPHA);
+
+            assertFalse(flags.inter(flagsOf(TestFlag.ALPHA, TestFlag.BETA)));
+            assertTrue(flags.isEqual(flagsOf(TestFlag.ALPHA)));
+        }
+
+        @Test
+        void interWithItselfIsASafeNoOp() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertFalse(flags.inter(flags));
+            assertTrue(flags.isEqual(flagsOf(TestFlag.ALPHA, TestFlag.GAMMA)));
+        }
+
+        @Test
+        void interWithAnEmptyViewEmptiesTheReceiverAndSaysSo() {
+            flags.set(TestFlag.ALPHA);
+
+            assertTrue(flags.inter(new Flag<>(TestFlag.class)));
+            assertTrue(flags.isEmpty());
+        }
+
+        @Test
+        void copyFromReplacesRatherThanMerging() {
+            FlagView<TestFlag> source = flagsOf(TestFlag.BETA);
+            flags.set(TestFlag.ALPHA);
+
+            flags.copyFrom(source);
+
+            assertFalse(flags.has(TestFlag.ALPHA));
+            assertTrue(flags.has(TestFlag.BETA));
+        }
+    }
+
+    /**
      * The comparison predicates.
      */
     @Nested

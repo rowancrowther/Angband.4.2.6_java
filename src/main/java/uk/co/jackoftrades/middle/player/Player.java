@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.MessageType;
@@ -31,6 +32,7 @@ import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
@@ -703,7 +705,7 @@ public class Player {
 
         // ObjectFlags
         Flag<ObjectFlag> knownFlags = itemKnowledge.getFlags();
-        Flag<ObjectFlag> itemFlags = item.getFlags();
+        FlagView<ObjectFlag> itemFlags = item.getFlags();
         knownFlags.inter(itemFlags);
         known.setFlagsTo(knownFlags);
 
@@ -1295,23 +1297,6 @@ public class Player {
      */
     public PlayerState getPlayerState() {
         return state;
-    }
-
-    /**
-     * Tests whether a timed effect is currently at a named grade - the port of C's
-     * {@code player_timed_grade_eq}. Some timed effects (stun, cut, fear) have named severity bands;
-     * this asks whether the player is presently in a specific one, e.g. {@code TMD_STUN} at
-     * "Knocked Out".
-     *
-     * <p><b>Stub:</b> not yet implemented, awaiting the timed-effects runtime; reports {@code false}.
-     *
-     * @param index the timed effect to inspect
-     * @param match the grade name to test against
-     * @return {@code true} if the effect is active and at the named grade
-     */
-    public boolean timedGradeEqual(TimedEffect index, String match) {
-        // Stub class TODO: implement
-        return false;
     }
 
     /**
@@ -2396,7 +2381,8 @@ public class Player {
      * curse that saps damage announces itself when a blow lands softly, not when one is taken.
      *
      * <p>Function cursesFindToD coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
+     * widened to {@link FlagView} on 260818.
      *
      * @param item the item whose curses are being read
      */
@@ -2434,7 +2420,8 @@ public class Player {
      * what a kind of item normally carries, and a curse has no normal to-hit to be measured against.
      *
      * <p>Function cursesFindToH coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
+     * widened to {@link FlagView} on 260818.
      *
      * @param item the item whose curses are being read
      */
@@ -2503,13 +2490,16 @@ public class Player {
      * so the message names the item with a placeholder.
      *
      * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order.
+     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
+     * widened to {@link FlagView} on 260818.
      *
      * @param item      the item whose curses are being read
-     * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}
+     * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}; read
+     *                  only, hence the {@link FlagView} — it is intersected into a working copy
+     *                  rather than modified
      * @return whether any flag was learned that the player did not already know
      */
-    boolean cursesFindFlags(ItemObject item, Flag<ObjectFlag> testFlags) {
+    boolean cursesFindFlags(ItemObject item, FlagView<ObjectFlag> testFlags) {
         boolean curseLearned = false;
 
         Flag<ObjectDescription> baseDesc = new Flag<>(ObjectDescription.class);
@@ -2543,5 +2533,60 @@ public class Player {
         }
 
         return curseLearned;
+    }
+
+    /**
+     * Reports whether an active timed effect is currently at the grade of the given name — the
+     * port of C's {@code player_timed_grade_eq} ({@code player-timed.c:734}).
+     *
+     * <p>A timed effect is a single counter, but the player-facing status is a band of that
+     * counter: stunning runs "Stun" → "Heavy Stun" → "Knocked Out" as the number climbs. This
+     * answers which band the counter is in, by name, so that callers can branch on severity
+     * without knowing the thresholds — {@code GameWorld.decreaseTimeouts} asks whether a wound is
+     * a "Mortal Wound" before deciding it does not bleed down, and the digestion code asks whether
+     * nourishment is "Full" or "Faint".
+     *
+     * <p><b>Exactly one grade is tested.</b> The grades are ordered by ascending {@code max}, and
+     * the effect's band is the first one whose {@code max} the value does not exceed; that grade's
+     * name is compared and the answer returned whether it matched or not. Continuing past it into
+     * the higher grades would be the easy mistake, because their maxima also cover the value — a
+     * lightly stunned player would answer {@code true} to "Knocked Out". C expresses this as a
+     * {@code while} that walks to the band and then a single {@code streq} outside the loop.
+     *
+     * <p>An effect at zero answers {@code false} without consulting its grades, matching C's
+     * opening {@code if (p->timed[idx])}. The check is needed rather than incidental: the map is
+     * populated with a zero for every effect at construction, and the port's grade list has no
+     * entry for the dormant state, so a zero reaching the loop would be tested against the first
+     * real grade.
+     *
+     * <p>The null definition guard has no counterpart in C, which indexes a static table that is
+     * always populated. Here the effects are loaded from {@code player_timed.txt} into
+     * {@link PlayerRegistry}, and {@link PlayerRegistry#lookupPlayerTimedEffect} answers null for
+     * an effect with no loaded definition — {@link TimedEffect#TMD_NONE} being the standing
+     * example, though its zero value means it never reaches this far.
+     *
+     * <p>Function timedGradeEq coded on 260818, commented in full on 260818.
+     *
+     * @param index the timed effect to inspect
+     * @param match the grade name to compare against, as written in {@code player_timed.txt}
+     * @return {@code true} if the effect is running and its current grade has that name
+     */
+    public boolean timedGradeEq(TimedEffect index, String match) {
+        if (timed != null && timed.containsKey(index) && timed.get(index) != 0) {
+            int value = timed.get(index);
+            PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
+            if (effect == null) return false;
+
+            List<TimedGrade> grades = effect.getGrade();
+
+            for (TimedGrade grade : grades) {
+                if (grade.max() < value)
+                    continue;
+
+                return (grade.status() != null && grade.status().equals(match));
+            }
+        }
+
+        return false;
     }
 }

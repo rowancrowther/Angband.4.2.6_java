@@ -35,7 +35,7 @@ import java.util.*;
  * @param <E> the enum type whose constants are the individual flags
  * @author Rowan Crowther
  */
-public class Flag<E extends Enum<E>> implements Iterable<E> {
+public class Flag<E extends Enum<E>> implements FlagView<E> {
     /**
      * The flags currently switched on.
      */
@@ -180,8 +180,8 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    public boolean isInter(@NotNull Flag<E> other) {
-        for (E flag : other.flagSet) {
+    public boolean isInter(@NotNull FlagView<E> other) {
+        for (E flag : other) {
             if (flagSet.contains(flag))
                 return true;
         }
@@ -197,8 +197,8 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    public boolean isSubset(@NotNull Flag<E> other) {
-        for (E flag : other.flagSet)
+    public boolean isSubset(@NotNull FlagView<E> other) {
+        for (E flag : other)
             if (!flagSet.contains(flag))
                 return false;
 
@@ -214,7 +214,7 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      */
     @Contract(pure = true)
     @CheckReturnValue
-    public boolean isEqual(@NotNull Flag<E> other) {
+    public boolean isEqual(@NotNull FlagView<E> other) {
         return other.isSubset(this) && isSubset(other);
     }
 
@@ -304,9 +304,16 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * {@link #inter} once read {@code Flag<E> copy = copyFrom(other)}, where the returned "copy" was
      * the receiver itself, silently wiping the set being intersected.
      *
+     * <p>The source is a {@link FlagView}, so "left unmodified" below is now enforced by the type
+     * rather than merely promised by it. That is the nearest this port gets to C's
+     * {@code const bitflag *src}, which is how {@code flag_copy} says the same thing.
+     *
+     * <p>Function copyFrom commented in full on 260816, parameter widened to {@link FlagView} on
+     * 260818.
+     *
      * @param flag the flag set to copy from, left unmodified
      */
-    public void copyFrom(Flag<E> flag) {
+    public void copyFrom(FlagView<E> flag) {
         wipe();
         union(flag);
     }
@@ -314,14 +321,20 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
     /**
      * Make this set the union of this set and the other set
      *
-     * @param other the set to make this set the union of
+     * <p>Only this set is written to; {@code other} is read, which is why it is typed as a
+     * {@link FlagView}. Iterating the view rather than reaching into its backing set is what
+     * makes that possible, and is the same approach {@link #isSubset} takes.
+     *
+     * <p>Function union commented on 260815, parameter widened to {@link FlagView} on 260818.
+     *
+     * @param other the set to make this set the union of, left unmodified
      * @return true if any changes were made, false otherwise
      */
     @Contract(mutates = "this")
-    public boolean union(@NotNull Flag<E> other) {
+    public boolean union(@NotNull FlagView<E> other) {
         boolean changesMade = false;
 
-        for (E flag : other.flagSet) {
+        for (E flag : other) {
             if (!flagSet.contains(flag)) {
                 flagSet.add(flag);
                 changesMade = true;
@@ -347,25 +360,44 @@ public class Flag<E extends Enum<E>> implements Iterable<E> {
      * the only other consumer is {@code flags_mask}, ported as {@link #mask}, whose own
      * callers discard it in turn.
      *
-     * @param other the set to make this an intersection of
+     * <p>The {@link FlagView} parameter is why the body is a {@code removeIf} rather than the
+     * {@code retainAll} it once was: a view is an {@link Iterable}, not a {@link java.util.Collection},
+     * so there is nothing to hand to {@code retainAll}. The predicate form happens to state the
+     * narrow contract above directly — it reports whether an element was actually removed, which
+     * is the question this method answers and the one {@code retainAll} answered by luck.
+     *
+     * <p>Passing this set as its own argument is safe and is a no-op: every flag present satisfies
+     * {@code other.has}, so nothing is removed and the answer is {@code false}. Worth stating
+     * because it is the one call where the set being read and the set being written are the same
+     * object.
+     *
+     * <p>Function inter commented on 260815, parameter widened to {@link FlagView} and the body
+     * moved from {@code retainAll} to {@code removeIf} on 260818.
+     *
+     * @param other the set to make this an intersection of, left unmodified
      * @return true if any changes were made, false otherwise
      */
     @Contract(mutates = "this")
-    public boolean inter(@NotNull Flag<E> other) {
-        return flagSet.retainAll(other.flagSet);
+    public boolean inter(@NotNull FlagView<E> other) {
+        return this.flagSet.removeIf(f -> !other.has(f));
     }
 
     /**
      * Compute the difference of two flag sets and store it in this. So for all set flags in other, clear them in this.
      *
-     * @param other the other flag set to compare to this
+     * <p>As with {@link #union}, the result lands in this set and {@code other} is only read,
+     * hence the {@link FlagView} parameter.
+     *
+     * <p>Function diff commented on 260815, parameter widened to {@link FlagView} on 260818.
+     *
+     * @param other the other flag set to compare to this, left unmodified
      * @return true if any changes were made, false otherwise
      */
     @Contract(mutates = "this")
-    public boolean diff(@NotNull Flag<E> other) {
+    public boolean diff(@NotNull FlagView<E> other) {
         boolean changesMade = false;
 
-        for (E flag : other.flagSet) {
+        for (E flag : other) {
             if (flagSet.contains(flag)) {
                 if (this.off(flag)) changesMade = true;
             }

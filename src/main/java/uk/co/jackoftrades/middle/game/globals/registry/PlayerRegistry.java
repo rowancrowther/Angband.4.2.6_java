@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.player.*;
+import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.Collections;
 import java.util.List;
@@ -42,6 +43,10 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class PlayerRegistry {
+    /**
+     * Logger for this registry, used to record an access made before the data was loaded before
+     * the matching exception is thrown.
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**
@@ -331,5 +336,40 @@ public class PlayerRegistry {
      */
     public static int getPlayerShapeMax() {
         return playerShapeMax;
+    }
+
+    /**
+     * Look up a timed effect's static definition by its {@link TimedEffect} identity.
+     *
+     * <p>This is the port of C's {@code &timed_effects[idx]}, and the difference in shape is worth
+     * seeing. C's effects live in a fixed array indexed by the {@code TMD_*} constant itself, so
+     * the lookup is an array subscript that cannot fail. The port keys them by enum identity and
+     * searches the loaded list, because the two are only tied together by name when
+     * {@code player_timed.txt} is parsed — an effect the data file never defined has no entry
+     * here at all.
+     *
+     * <p>Hence the null return, which C has no equivalent of. {@link TimedEffect#TMD_NONE} is the
+     * standing example: it is a sentinel the parsers hand back for an unresolvable name, not a
+     * status, so no record is ever loaded for it. Callers are expected to guard — see
+     * {@link uk.co.jackoftrades.middle.player.Player#timedGradeEq}.
+     *
+     * <p>Function lookupPlayerTimedEffect coded on 260818, commented in full on 260818.
+     *
+     * @param timedEffect the effect whose definition is wanted
+     * @return the matching {@link PlayerTimedEffect}, or {@code null} if none was loaded for it
+     * @throws IllegalStateException if the timed effects have not been loaded
+     */
+    @Nullable
+    @CheckReturnValue
+    public static PlayerTimedEffect lookupPlayerTimedEffect(@NotNull TimedEffect timedEffect) {
+        if (playerTimedEffects == null) {
+            String message = "Invalid attempt to access playerTimedEffects when it hasn't been initialised";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerTimedEffects.stream().filter(e -> e.getName() == timedEffect)
+                .findFirst().orElse(null);
     }
 }

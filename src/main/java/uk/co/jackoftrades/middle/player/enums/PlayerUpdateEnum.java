@@ -28,12 +28,13 @@ package uk.co.jackoftrades.middle.player.enums;
  * only those, clearing each as it goes. Recomputing on demand rather than after every
  * mutation keeps per-turn work bounded.
  *
- * <p>Held as an {@link java.util.EnumSet} in the port instead of C's packed bitflags, for the
- * same type-safety reason as the other flag families.
+ * <p>Held as a {@link uk.co.jackoftrades.channel.utils.Flag} over this enum in the port
+ * ({@link uk.co.jackoftrades.middle.player.PlayerUpkeep}), in place of C's packed
+ * {@code uint32_t} bitflags, for the same type-safety reason as the other flag families.
  *
  * @author Rowan Crowther
  */
-public enum PlayerUpkeepEnum {
+public enum PlayerUpdateEnum {
     /**
      * Recalculate all derived bonuses (to-hit, AC, resistances, speed, …).
      */

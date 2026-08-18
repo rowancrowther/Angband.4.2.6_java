@@ -17,12 +17,16 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
+import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.List;
@@ -51,9 +55,9 @@ public class PlayerTimedEffect {
      */
     private TimedEffect name;
     /** Packed redraw ({@code PR_*}) flags to raise when this effect changes (C: {@code flag_redraw}). */
-    private int flagRedraw;
+    private FlagView<PlayerRedraw> flagRedraw;
     /** Packed update ({@code PU_*}) flags to raise when this effect changes (C: {@code flag_update}). */
-    private int flagUpdate;
+    private FlagView<PlayerUpdateEnum> flagUpdate;
 
     /** Human-readable description of the status. */
     private String description;
@@ -146,6 +150,10 @@ public class PlayerTimedEffect {
         this.tempResist = tempResist;
         this.tempBrand = tempBrand;
         this.tempSlay = tempSlay;
+
+        // Add in the Update and redraw data
+        flagUpdate = name.getUpdateFlags();
+        flagRedraw = name.getRedrawFlags();
     }
 
     /**
@@ -156,16 +164,34 @@ public class PlayerTimedEffect {
     }
 
     /**
-     * @return the packed {@code PR_*} redraw flags to raise on a change
+     * Returns the screen regions this effect dirties, as a read-only view.
+     *
+     * <p>Forwarded from the {@link TimedEffect} constant, not stored independently: the
+     * constructor takes the set from {@link TimedEffect#getRedrawFlags} and holds it as a
+     * {@link FlagView} throughout. No copy is made at any point in that chain, so this is
+     * ultimately the enum constant's own set — which is safe only because a view withholds
+     * mutation from everyone who receives it. A single {@link uk.co.jackoftrades.channel.utils.Flag}
+     * anywhere along the chain would put a JVM-lifetime singleton within a caller's reach.
+     *
+     * <p>Function getFlagRedraw return type narrowed to {@link FlagView} on 260818, when the
+     * backing field was narrowed with it.
+     *
+     * @return a read-only view of the {@code PR_*} redraw flags to raise on a change
      */
-    public int getFlagRedraw() {
+    public FlagView<PlayerRedraw> getFlagRedraw() {
         return flagRedraw;
     }
 
     /**
-     * @return the packed {@code PU_*} update flags to raise on a change
+     * Returns the derived quantities this effect invalidates, as a read-only view.
+     *
+     * <p>Read-only for the same reason as {@link #getFlagRedraw}.
+     *
+     * <p>Function getFlagUpdate return type narrowed to {@link FlagView} on 260818.
+     *
+     * @return a read-only view of the {@code PU_*} update flags to raise on a change
      */
-    public int getFlagUpdate() {
+    public FlagView<PlayerUpdateEnum> getFlagUpdate() {
         return flagUpdate;
     }
 

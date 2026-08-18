@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.player;
 
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
@@ -26,7 +27,7 @@ import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
-import uk.co.jackoftrades.middle.player.enums.PlayerUpkeepEnum;
+import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -117,7 +118,7 @@ public class PlayerUpkeep {
     /**
      * Derived quantities (HP, mana, view, …) that have gone stale and must be recomputed ({@code update}).
      */
-    private Flag<PlayerUpkeepEnum> updateFlags = new Flag<>(PlayerUpkeepEnum.class);
+    private Flag<PlayerUpdateEnum> updateFlags = new Flag<>(PlayerUpdateEnum.class);
 
     /**
      * Parts of the screen that have changed and need repainting by the UI ({@code redraw}).
@@ -286,15 +287,62 @@ public class PlayerUpkeep {
     }
 
     /**
-     * Returns a defensive copy of the pending redraw flags, so callers can inspect them without
-     * being able to mutate the live set.
+     * Returns a snapshot of the parts of the screen currently waiting to be repainted — the port
+     * of C's {@code uint32_t redraw = p->upkeep->redraw;} ({@code player-calcs.c:2681}).
      *
-     * @return a copy of the current {@code PR_*} redraw flags
+     * <p><b>The copy is mutable on purpose, and that is not the leak it looks like.</b> It belongs
+     * to the caller: the live set stays private and is unreachable from here, so anything done to
+     * the returned object is done to the caller's own working value. C relies on exactly that —
+     * {@code redraw_stuff} narrows its local copy to {@code PR_SUBWINDOW} when the map is not on
+     * screen ({@code :2691}) while leaving the pending set on the player untouched, so the flags
+     * it skipped are still waiting the next time round. A read-only view could not express that
+     * step, and a live reference would corrupt the pending set while taking it.
+     *
+     * <p>A snapshot rather than a view for the same reason. The set goes on changing while a
+     * repaint runs — anything the redraw itself disturbs raises another flag — and the pass needs
+     * to work from what was pending when it started, not from a total that moves under it.
+     *
+     * <p>Pair with {@link #clearRedrawFlags} once the work is done; between them they are C's
+     * take-narrow-act-clear sequence. Raising a single flag is {@link #setRedrawFlagsOn}, which
+     * needs no copy.
+     *
+     * <p>Function getRedrawFlags commented in full on 260816, return type and rationale revised on
+     * 260818 when the differencing clear arrived.
+     *
+     * @return a snapshot, owned by the caller, of the current {@code PR_*} redraw flags
      */
     public Flag<PlayerRedraw> getRedrawFlags() {
-        Flag<PlayerRedraw> flag = new Flag<>(PlayerRedraw.class);
-        flag.copyFrom(redrawFlags);
-        return flag;
+        Flag<PlayerRedraw> copyFlags = new Flag<>(PlayerRedraw.class);
+        copyFlags.copyFrom(redrawFlags);
+        return copyFlags;
+    }
+
+    /**
+     * Clears the redraw flags that have now been dealt with, leaving the rest pending — the port
+     * of C's {@code p->upkeep->redraw &= ~redraw;} ({@code player-calcs.c:2711}).
+     *
+     * <p><b>A difference, not a wipe, and the distinction earns its keep.</b> Only the flags named
+     * in {@code handled} are cleared. Two kinds of flag therefore survive the call: one raised
+     * <em>during</em> the repaint by the work the repaint itself did, and one the caller
+     * deliberately narrowed out of its snapshot because it could not be serviced yet. Clearing the
+     * whole set instead would silently drop both, and the screen would be left stale with nothing
+     * recording that it was.
+     *
+     * <p>{@code handled} is read and never written, hence the {@link FlagView}. It is normally the
+     * snapshot from {@link #getRedrawFlags} after the caller has narrowed it, but nothing requires
+     * that — any set of flags will do.
+     *
+     * <p>The {@code boolean} has no counterpart in C, whose {@code &=} answers nothing. It falls
+     * out of {@link uk.co.jackoftrades.channel.utils.Flag#diff} and is there for a caller that
+     * wants it; the redraw pass has no use for it.
+     *
+     * <p>Function clearRedrawFlags coded on 260818, commented in full on 260818.
+     *
+     * @param handled the flags whose repaint has been carried out, left unmodified
+     * @return {@code true} if any flag was actually cleared
+     */
+    public boolean clearRedrawFlags(FlagView<PlayerRedraw> handled) {
+        return redrawFlags.diff(handled);
     }
 
     /**
@@ -441,9 +489,9 @@ public class PlayerUpkeep {
      * Raises an update ({@code PU_*}) flag, marking a derived quantity for recalculation on the next
      * update pass.
      *
-     * @param flag the {@link PlayerUpkeepEnum} recalculation to request
+     * @param flag the {@link PlayerUpdateEnum} recalculation to request
      */
-    public void updateFlagOn(PlayerUpkeepEnum flag) {
+    public void updateFlagOn(PlayerUpdateEnum flag) {
         updateFlags.on(flag);
     }
 
@@ -461,9 +509,9 @@ public class PlayerUpkeep {
      *
      * <p>Function updateFlagsOn commented in full on 260816.
      *
-     * @param flags the {@link PlayerUpkeepEnum} recalculations to request
+     * @param flags the {@link PlayerUpdateEnum} recalculations to request
      */
-    public void updateFlagsOn(PlayerUpkeepEnum... flags) {
+    public void updateFlagsOn(PlayerUpdateEnum... flags) {
         updateFlags.set(flags);
     }
 

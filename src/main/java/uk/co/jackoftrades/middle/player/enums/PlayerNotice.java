@@ -21,7 +21,7 @@ package uk.co.jackoftrades.middle.player.enums;
  * "Notice" flags identifying pending housekeeping the engine must carry out before the next
  * command — the {@code PN_*} set from the C original ({@code player-calcs.h}).
  *
- * <p>Third sibling to {@link PlayerUpkeepEnum} ({@code PU_*}) and {@link PlayerRedraw}
+ * <p>Third sibling to {@link PlayerUpdateEnum} ({@code PU_*}) and {@link PlayerRedraw}
  * ({@code PR_*}). Where {@code PU_*} marks parts of the <em>model</em> needing recomputation and
  * {@code PR_*} marks parts of the <em>screen</em> needing a repaint, {@code PN_*} marks discrete
  * <em>actions</em> queued up to run once — reordering or combining the pack, applying ignore

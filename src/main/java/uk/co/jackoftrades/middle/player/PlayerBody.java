@@ -17,8 +17,11 @@
 
 package uk.co.jackoftrades.middle.player;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,11 +43,17 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class PlayerBody {
-
+    /**
+     * Logger for this class, used to report a body built without slots before the constructor
+     * throws. C has no equivalent: its bodies come from a parser that has already rejected a
+     * malformed {@code body.txt}, and a body with no slots is simply an array of length zero.
+     */
+    private final static Logger logger = LogManager.getLogger(PlayerBody.class);
+    
     /**
      * Display name of this body layout, e.g. {@code "Humanoid"} (C: {@code player_body.name}).
      */
-    private final String name;
+    private String name;
 
     /**
      * The equipment slots in declared (body) order; a slot's index is its identity.
@@ -59,7 +68,59 @@ public class PlayerBody {
      */
     public PlayerBody(String name, List<EquipSlot> slots) {
         this.name = name;
-        this.slots = List.copyOf(slots);
+        this.slots = new ArrayList<>();
+        if (slots == null || slots.isEmpty()) {
+            logger.fatal("Invalid slot list. Slot list is null or empty.");
+            throw new IllegalArgumentException("Invalid slot list. Slot list is null or empty.");
+        } else {
+            this.slots.addAll(slots);
+        }
+    }
+
+    /**
+     * Copies this body plan into a new, unworn one — the port of the copying half of C's
+     * {@code player_embody} ({@code player-birth.c:369}).
+     *
+     * <p>C builds the player's body from the race's template in two steps: a {@code memcpy} of the
+     * whole {@code player_body} struct to carry the name and the slot count across, then a freshly
+     * allocated slot array whose entries take their type and name from the template one at a time.
+     * The allocation is {@code mem_zalloc}, so every slot's {@code obj} starts null. This method is
+     * both steps at once, which is why {@code embody} is a single assignment.
+     *
+     * <p><b>The copy is unworn.</b> Each slot is rebuilt through
+     * {@link EquipSlot#EquipSlot(uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum, String)}, which takes a type and a name and
+     * nothing else, so any item held in the source's slots is not carried over. That is the
+     * behaviour {@code player_embody} needs and the one thing a caller cannot read off the
+     * signature: this is "copy the plan", not "copy the body as it stands".
+     *
+     * <p><b>Nothing is shared with the source.</b> The slot list is new and so is every
+     * {@link EquipSlot} in it, which is the point of the exercise — the source is normally a race's
+     * template, held once in {@link uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry}
+     * and shared by every player of that race. A copy that shared its slots would have one
+     * character wearing another's equipment, and would let a player write into the registry's own
+     * data. C gets that for free from {@code memcpy} plus a separate allocation; here it has to be
+     * done deliberately.
+     *
+     * <p>The name needs no copying of its own, {@link String} being immutable, where C calls
+     * {@code string_make} to take a copy it can free with the player.
+     *
+     * <p>Named {@code copy} rather than {@code clone} deliberately. {@link Object#clone} carries a
+     * protocol — {@link Cloneable}, a checked exception, and a field-by-field shallow copy from
+     * {@code super.clone()} — that this class has no use for, since every field here needs handling
+     * of its own. It also matches {@code ElementInfo.copy}, the same decision taken elsewhere in
+     * the port.
+     *
+     * <p>Function copy coded on 260818, commented in full on 260818.
+     *
+     * @return a new body with this one's name and slot layout, and every slot empty
+     */
+    public PlayerBody copy() {
+        String name = this.name;
+        List<EquipSlot> slots = new ArrayList<>();
+        for (EquipSlot slot : this.slots) {
+            slots.add(new EquipSlot(slot.getType(), slot.getName()));
+        }
+        return new PlayerBody(name, slots);
     }
 
     /**
@@ -153,5 +214,59 @@ public class PlayerBody {
         }
 
         return index;
+    }
+
+    /**
+     * Finds the item worn in the slot with the given name — the port of C's
+     * {@code equipped_item_by_slot_name} ({@code obj-gear.c:127}).
+     *
+     * <p>Slot names are the second field of each {@code slot:} line in {@code body.txt}: "weapon",
+     * "shooting", "light", "body", "head" and so on. They are how the rest of the game asks for a
+     * particular piece of equipment without knowing the body's layout — twenty-nine call sites in C
+     * do exactly this, from the light source the fuel code burns down to the weapon a brand is
+     * applied to. This is the reason the name exists at all; the gear system otherwise addresses
+     * slots by index.
+     *
+     * <p>C reaches the answer through two helpers this method folds together:
+     * {@code slot_by_name} walks the slots for a name match and returns its index, and
+     * {@code slot_object} turns that index into the worn object or NULL. Neither is worth a method
+     * of its own here, since nothing else in the port needs an index found by name.
+     *
+     * <p><b>Names are not unique, and the first match wins.</b> A humanoid body has two
+     * {@code RING} slots, distinguished only by their names "right hand" and "left hand"; C's loop
+     * stops at the first match and this stops at the first the stream finds, which is the same slot
+     * because the list is in declared order. Matching is exact and case-sensitive, C using
+     * {@code streq}.
+     *
+     * <p><b>Deliberate divergence from the C original.</b> C asserts that the name was found —
+     * {@code assert(i < p->body.count)} at {@code obj-gear.c:62} — so asking for a slot this body
+     * does not have aborts the game in a debug build and silently reads past the end of the array
+     * in a release one. This returns null instead, on the grounds that a Java null is both safer
+     * than the read and easier to trace than an abort. The cost is that "no such slot" and "that
+     * slot is empty" become the same answer, which is a distinction no C caller makes either: every
+     * one of them tests the returned pointer against NULL and nothing more.
+     *
+     * <p>A null name is likewise answered with null rather than being passed on to the comparison.
+     * C would hand NULL to {@code streq} and crash; the guard is the port's, and it is why the name
+     * is compared as {@code name.equals(slotName)} would be were the argument known good.
+     *
+     * <p>C's other guard, {@code if (p->body.slots)}, has no counterpart: it protects against a
+     * player whose body has not been built yet, where the slot array is still NULL. The constructor
+     * here refuses to build a body without slots, so the list always exists.
+     *
+     * <p>Function equippedItemBySlotName coded on 260818, commented in full on 260818.
+     *
+     * @param name the slot's name from {@code body.txt}, or {@code null}
+     * @return the item worn in that slot, or {@code null} if the slot is empty, the name is unknown,
+     * or the name is {@code null}
+     */
+    public ItemObject equippedItemBySlotName(String name) {
+        if (name == null) return null;
+
+        EquipSlot slot = slots.stream().filter(s -> name.equals(s.getName()))
+                .findFirst().orElse(null);
+        if (slot == null) return null;
+
+        return slot.getItem();
     }
 }

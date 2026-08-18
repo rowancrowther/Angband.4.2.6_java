@@ -2589,4 +2589,64 @@ public class Player {
 
         return false;
     }
+
+    /**
+     * Adds to {@code flags} the object flags that the player's currently running timed effects
+     * duplicate, so that a temporary status confers the same protection as the permanent flag it
+     * imitates. Port of C's {@code player_flags_timed} ({@code player.c:310}).
+     *
+     * <p>Several timed effects are, for their duration, indistinguishable from carrying an object
+     * with a particular flag: {@code TMD_OPP_CONF} is confusion protection, so it duplicates
+     * {@code OF_PROT_CONF}; {@code TMD_BOLD} duplicates {@code OF_PROT_FEAR}, {@code TMD_SINVIS}
+     * duplicates {@code OF_SEE_INVIS}. The pairing is data, not code — it is the
+     * {@code flag-synonym} line in {@code player_timed.txt}, which loads into
+     * {@link PlayerTimedEffect#getoFlagDup()}. Rather than have every consumer ask both "does the
+     * gear grant this?" and "is the matching status running?", the statuses are folded into the
+     * same flag set the gear contributes to and the consumer asks once. That is why the flags are
+     * added to the caller's set rather than returned in a fresh one: {@code calc_bonuses}
+     * ({@code player-calcs.c:2135}) passes {@code state->flags}, which already holds what the
+     * equipment gave, and the character sheet ({@code ui-entry.c:886}) does the same with its
+     * cache.
+     *
+     * <p>Only ever switches flags on, never off. A status cannot take away a flag the equipment
+     * granted, and afterwards nothing can tell which of the two sources put a given flag there.
+     *
+     * <p>{@link TimedEffect#TMD_TRAPSAFE} is excluded even though it names a duplicate flag, and
+     * that indistinguishability is exactly why. Being unable to tell the sources apart is normally
+     * the point, but the trap code needs to: finding {@code OF_TRAP_IMMUNE} in the player's flags
+     * has to mean a worn object granted it, because that is the cue to learn the trap-immunity
+     * rune from the equipment ({@code trap.c:518}, {@code obj-chest.c:626}). Were the timed status
+     * folded in, walking over a trap while merely under a potion of trap-safety would teach a rune
+     * the player has no item for. C labels the exclusion a "Hack" in the comment above
+     * {@code player_flags_timed} and implements it as a bare {@code i != TMD_TRAPSAFE}.
+     *
+     * <p>The dormant-effect test is what makes this correct rather than merely populated: the map
+     * holds a zero for every effect from construction onwards, so without it every duplicable flag
+     * in the game would be added at all times.
+     *
+     * <p>Two guards have no counterpart in C, which walks {@code 0} to {@code TMD_MAX} over a
+     * static table that is always full. Iterating the map's keys covers the same population, since
+     * the constructor seeds it with every {@link TimedEffect}; but a key may have no loaded
+     * definition, so {@link PlayerRegistry#lookupPlayerTimedEffect} can answer null and that effect
+     * is skipped. The extra {@link TimedEffect#TMD_NONE} constant, which C's enum does not have, is
+     * excluded by its zero counter before that guard is reached. The map's iteration order is
+     * unspecified where C's is the enum order, which is not observable here: the body only adds to
+     * a set.
+     *
+     * <p>Function flagsTimed coded on 260818, commented in full on 260818.
+     *
+     * @param flags the flag set to add the duplicated flags to, mutated in place
+     */
+    @Contract(mutates = "param1")
+    public void flagsTimed(@NotNull Flag<ObjectFlag> flags) {
+        for (TimedEffect effect : timed.keySet()) {
+            PlayerTimedEffect playerEffect = PlayerRegistry.lookupPlayerTimedEffect(effect);
+            if (playerEffect == null) continue;
+
+            if (timed.get(effect) != 0 && playerEffect.getoFlagDup() != ObjectFlag.OF_NONE
+                    && effect != TimedEffect.TMD_TRAPSAFE) {
+                flags.on(playerEffect.getoFlagDup());
+            }
+        }
+    }
 }

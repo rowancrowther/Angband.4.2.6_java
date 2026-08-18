@@ -615,4 +615,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
         return inter(mask);
     }
+
+    public boolean onDbg(E flag) {
+        if (flagSet.contains(flag))
+            return false;
+
+        flagSet.add(flag);
+        return true;
+    }
 }

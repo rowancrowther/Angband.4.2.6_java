@@ -250,8 +250,9 @@ boxes span these stages rather than matching them one-to-one.
 
 ### B — Timed, read side *(unblocks C; small)*
 
-- [ ] `player_timed_grade_eq` (`[C] player-timed.c:734`) → the `timedGradeEqual` stub, `Player.java:1312`
-- [ ] `player_flags_timed` (`[C] player.c:310`) and `player_flags` (`[C] player.c:290`) — both called from inside
+- [x] `player_timed_grade_eq` (`[C] player-timed.c:734`) → the `timedGradeEqual` stub, `Player.java:1312`
+- [x] `player_flags_timed` (`[C] player.c:310`) and:
+- [ ] `player_flags` (`[C] player.c:290`) — both called from inside
   `calc_bonuses` (`[C] player-calcs.c:2135, 1921`)
 
 ### C — Derived stats *(needs A, B)*

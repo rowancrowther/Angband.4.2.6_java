@@ -162,12 +162,12 @@ class PlayerTimedReaderTest {
 
         // AFRAID -> flag-synonym:AFRAID:1  => dup flag OF_AFRAID, exact synonym true.
         PlayerTimedEffect afraid = byName(effects, TimedEffect.TMD_AFRAID);
-        assertEquals(ObjectFlag.OF_AFRAID, afraid.getoFlagSyn());
+        assertEquals(ObjectFlag.OF_AFRAID, afraid.getoFlagDup());
         assertTrue(afraid.isoFlagExactlySyn());
 
         // TERROR -> flag-synonym:AFRAID:0 => same dup flag, but NOT an exact synonym.
         PlayerTimedEffect terror = byName(effects, TimedEffect.TMD_TERROR);
-        assertEquals(ObjectFlag.OF_AFRAID, terror.getoFlagSyn());
+        assertEquals(ObjectFlag.OF_AFRAID, terror.getoFlagDup());
         assertFalse(terror.isoFlagExactlySyn());
     }
 

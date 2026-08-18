@@ -17,7 +17,6 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
@@ -84,7 +83,7 @@ public class PlayerTimedEffect {
     /** Minimum value the status can be reduced to while still active. */
     private int lowerBound;
     /** Object flag whose presence duplicates/implies this status (C: object-flag duplicate). */
-    private ObjectFlag oFlagSyn;
+    private ObjectFlag oFlagDup;
     /**
      * Object flag treated as synonymous with this status.
      */
@@ -115,8 +114,8 @@ public class PlayerTimedEffect {
      * @param onEndEffect   effect fired on end
      * @param nonStacking     whether re-application refuses to stack
      * @param lowerBound      minimum value while active
-     * @param oFlagSyn        the object flag this status duplicates (C {@code oflag_dup}); despite the
-     *                        parameter name it populates {@link #oFlagSyn}
+     * @param oFlagDup        the object flag this status duplicates (C {@code oflag_dup}); despite the
+     *                        parameter name it populates {@link #oFlagDup}
      * @param oFlagExactlySyn whether the status is an <em>exact</em> synonym of that flag (C
      *                        {@code oflag_syn}); populates {@link #oFlagExactlySyn}
      * @param tempResist      element temporarily resisted
@@ -129,7 +128,7 @@ public class PlayerTimedEffect {
                              List<TimedFailure> fail, List<TimedGrade> grade,
                              Effect onBeginEffect, Effect onEndEffect,
                              boolean nonStacking, int lowerBound,
-                             ObjectFlag oFlagSyn,
+                             ObjectFlag oFlagDup,
                              boolean oFlagExactlySyn,
                              ElementEnum tempResist, Brand tempBrand,
                              Slay tempSlay) {
@@ -145,7 +144,7 @@ public class PlayerTimedEffect {
         this.onEndEffect = onEndEffect;
         this.nonStacking = nonStacking;
         this.lowerBound = lowerBound;
-        this.oFlagSyn = oFlagSyn;
+        this.oFlagDup = oFlagDup;
         this.oFlagExactlySyn = oFlagExactlySyn;
         this.tempResist = tempResist;
         this.tempBrand = tempBrand;
@@ -275,12 +274,12 @@ public class PlayerTimedEffect {
     /**
      * @return the object flag this status duplicates (C {@code oflag_dup})
      */
-    public ObjectFlag getoFlagSyn() {
-        return oFlagSyn;
+    public ObjectFlag getoFlagDup() {
+        return oFlagDup;
     }
 
     /**
-     * @return whether the status is an exact synonym of {@link #getoFlagSyn()} (C {@code oflag_syn})
+     * @return whether the status is an exact synonym of {@link #getoFlagDup()} (C {@code oflag_syn})
      */
     public boolean isoFlagExactlySyn() {
         return oFlagExactlySyn;

@@ -41,6 +41,10 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 public class PlayerUtils {
     private static Player player;
 
+    private static final int statBigStep = 10;
+    private static final int statNormalMax = 18;
+    private static final int statNormalMin = 3;
+
     static {
         player = GameState.getPlayer();
     }
@@ -215,5 +219,79 @@ public class PlayerUtils {
 
     public static void search() {
         // Stub function TODO: Implement
+    }
+
+    /**
+     * Applies a bonus or penalty to a stat value, in the game's two-speed stat scale — the port of
+     * C's {@code modify_stat_value} ({@code player-util.c:339}).
+     *
+     * <p>A stat is stored as a number that runs 3 to 18 and then jumps: 18/10, 18/20 and so on are
+     * held as 28, 38, and the "percentile" part is the amount above 18. So a point of bonus is
+     * worth one below 18 and ten above it, which is the whole of what this method encodes. It is
+     * called wherever a stat's raw value has to be turned into the value actually in play:
+     * {@code calc_bonuses} runs it twice per stat, once on {@code stat_max} to get
+     * {@code state->stat_top} and once on {@code stat_cur} to get {@code state->stat_use}
+     * ({@code player-calcs.c:2060}), and birth does the same to show the character's starting
+     * numbers ({@code player-birth.c:272}).
+     *
+     * <p>The points are applied one at a time in a loop rather than in one arithmetic step, and
+     * that is not laziness in the original: because the step size changes at 18, a bonus that
+     * crosses the boundary is worth different amounts in its two halves, and only walking it point
+     * by point gets that right. Adding two to a 17 gives 18 then 28, not 19 or 37.
+     *
+     * <p>Gains are unbounded — above 18 every point simply adds another ten, and nothing here caps
+     * the result. The cap is imposed elsewhere, by the stat table the value is later looked up in.
+     *
+     * <p>Losses are bounded twice, and asymmetrically:
+     *
+     * <ul>
+     *     <li>at or above 28, a point removes ten;</li>
+     *     <li>between 19 and 27 — a value the scale should never hold, since the percentile part
+     *     only ever moves in tens — a point snaps the stat back to a clean 18. C comments this
+     *     branch "Prevent weirdness";</li>
+     *     <li>at or below 3, a point does nothing. Three is the floor of the scale, and a drained
+     *     character cannot be pushed below it.</li>
+     * </ul>
+     *
+     * <p>The floor makes losses non-reversible in a way gains are not: eight points of drain on a
+     * stat of 5 leaves 3, and returning the eight points leaves 11. That is the game's behaviour,
+     * not an artefact of the port.
+     *
+     * <p>Neither bound is applied to the value on the way in. A caller passing a stat already below
+     * 3 gets it back untouched when the amount is negative, but the positive branch will happily
+     * walk it up from there.
+     *
+     * <p><b>Minor divergence from the C original.</b> C returns {@code int16_t}, so a large enough
+     * result would wrap; this returns {@code int} and does not. It takes about three thousand points
+     * of bonus to tell the two apart, which no caller can supply, so the difference is a note rather
+     * than a behaviour change.
+     *
+     * <p>Function modifyStatValue coded on 260818, commented in full on 260818.
+     *
+     * @param value  the stat value to modify, in the 3-to-18-then-tens scale
+     * @param amount the bonus (positive) or penalty (negative) in points; zero returns the value
+     *               unchanged
+     * @return the modified stat value
+     */
+    public int modifyStatValue(int value, int amount) {
+        if (amount > 0) {
+            for (int index = 0; index < amount; index++) {
+                if (value < statNormalMax)
+                    value++;
+                else
+                    value += statBigStep;
+            }
+        } else if (amount < 0) {
+            for (int index = 0; index < (-amount); index++) {
+                if (value >= statNormalMax + statBigStep)
+                    value -= statBigStep;
+                else if (value > statNormalMax)
+                    value = statNormalMax;
+                else if (value > statNormalMin)
+                    value--;
+            }
+        }
+
+        return value;
     }
 }

@@ -43,6 +43,12 @@ public class MagicBook {
      */
     private TValue bookType;
 
+    /**
+     * The sval of the object kind this book is realised as — the second half of the
+     * {@code tval}/{@code sval} pair that identifies a carried book. Resolved from the registry
+     * rather than parsed, because the book's data file gives a name and a tval and the concrete kind
+     * is synthesised separately. {@code -1} marks a book whose kind could not be found.
+     */
     private int sVal;
     /**
      * The book's display name.
@@ -125,6 +131,15 @@ public class MagicBook {
         this.spells = spells;
     }
 
+    /**
+     * Resolves and caches {@link #sVal} by looking this book's kind up in the object registry by
+     * tval and name.
+     *
+     * <p>Depends on the object kinds already being loaded, so it cannot run at parse time — the
+     * spellbook kinds are synthesised from the class data and registered before this is called.
+     *
+     * <p>Function setSVal commented in full on 260820.
+     */
     private void setSVal() {
         ObjectKind bookKind = ObjectRegistry.lookupObjectKind(bookType, bookName);
         if (bookKind == null)
@@ -217,5 +232,18 @@ public class MagicBook {
      */
     public int getSval() {
         return sVal;
+    }
+
+    /**
+     * The realm this book's spells belong to — C's {@code book->realm}. Determines the casting stat,
+     * the verb and the noun used for its spells, and through {@code class_magic_realms} which stats
+     * a class's mana is averaged over.
+     *
+     * <p>Function getRealm commented in full on 260820.
+     *
+     * @return this book's magic realm
+     */
+    public MagicRealm getRealm() {
+        return realm;
     }
 }

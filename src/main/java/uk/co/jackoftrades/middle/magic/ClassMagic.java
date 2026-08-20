@@ -30,27 +30,45 @@ import java.util.List;
  */
 public class ClassMagic {
     /**
-     * The character level at which this class can first cast spells.
+     * The character level at which this class can first cast spells — C's {@code spell_first}. Mana
+     * is scaled by the levels gained <em>since</em> this one, so a caster exactly at this level has
+     * the smallest non-zero allowance and one below it has none at all
+     * ({@code player-calcs.c:1489-1497}).
      */
     private int firstSpellLevel;
 
     /**
-     * Weight contributed by each spellbook (affects encumbrance/casting).
+     * The greatest weight of armour the class may wear before its mana starts to suffer — C's
+     * {@code spell_weight}, documented there as "Max armor weight to avoid mana penalties"
+     * ({@code player.h:299}).
+     *
+     * <p>Despite the name this has nothing to do with the weight of spellbooks. It is an allowance:
+     * {@code calc_mana} weighs everything worn except weapon, launcher, rings, amulet and light,
+     * and every ten tenth-pounds by which that total exceeds this allowance costs one point of
+     * maximum mana and sets the encumbrance flag ({@code player-calcs.c:1523-1533}).
      */
     private int spellWeight;
 
     /**
-     * Number of spellbooks this class uses.
+     * Number of spellbooks this class uses — C's {@code num_books}, the declared count from the
+     * {@code magic:} line. Zero for a non-caster, which is what {@link #isCaster()} tests.
      */
     private int numBooks;
 
     /**
-     * The spellbooks available to this class.
+     * The spellbooks available to this class, in the order the data file declares them — C's
+     * {@code books}. The order is load-bearing: the books form one flattened index space that runs
+     * across their boundaries, which {@link #indexOfSpell(MagicSpell)} and
+     * {@link #spellByIndex(int)} walk in this order.
      */
     private List<MagicBook> magicBooks;
 
     /**
-     * Total of all spells across all the books for this magic class
+     * The number of spells in all this class's books together — C's {@code total_spells}, and the
+     * size of the flattened index space. Summed once at construction rather than recounted.
+     *
+     * <p>Also the literacy test: {@code calc_mana} returns a flat zero for a class whose total is
+     * zero, before it looks at levels or armour at all ({@code player-calcs.c:1484-1488}).
      */
     private int totalSpells;
 
@@ -72,7 +90,7 @@ public class ClassMagic {
      * counts into {@link #totalSpells}.
      *
      * @param firstSpellLevel level at which casting becomes possible
-     * @param spellWeight     per-book weight
+     * @param spellWeight     the armour weight allowance before mana is penalised
      * @param numBooks        number of books used
      * @param books           the spellbooks available to the class (defensively copied)
      */
@@ -144,5 +162,36 @@ public class ClassMagic {
         }
 
         return null;
+    }
+
+    /**
+     * @return the number of spells across all this class's books — zero for a non-caster, which is
+     * the condition {@code calcMana} treats as illiteracy
+     */
+    public int getTotalSpells() {
+        return totalSpells;
+    }
+
+    /**
+     * @return the character level at which this class gains its first spell — C's
+     * {@code magic.spell_first}
+     */
+    public int getSpellFirst() {
+        return firstSpellLevel;
+    }
+
+    /**
+     * @return the number of spellbooks this class uses — C's {@code magic.num_books}
+     */
+    public int getNumBooks() {
+        return numBooks;
+    }
+
+    /**
+     * @return the armour weight allowance, in tenth-pounds, before worn weight starts costing
+     * maximum mana — C's {@code magic.spell_weight}
+     */
+    public int getSpellWeight() {
+        return spellWeight;
     }
 }

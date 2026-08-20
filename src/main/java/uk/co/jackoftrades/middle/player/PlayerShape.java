@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
@@ -250,5 +251,31 @@ public class PlayerShape {
      */
     public List<PlayerBlow> getPlayerBlow() {
         return playerBlow;
+    }
+
+    /**
+     * This shape's adjustment to one stat — the port of reading C's {@code shape->modifiers[i]} for
+     * {@code i < STAT_MAX} ({@code player-calcs.c:1821-1823}).
+     *
+     * <p>C can subscript the modifier array with a stat because the two lists start alike:
+     * {@code list-object-modifiers.h} opens with STR, INT, WIS, DEX and CON in the order
+     * {@code list-stats.h} declares them, so a stat index and a modifier index coincide for the
+     * first five. That is a coincidence the data files maintain rather than a rule the code
+     * enforces. The port refuses to rely on it and resolves the name instead, mapping
+     * {@code STAT_STR} to {@code OM_STR}, so a reordering of either list cannot silently move a
+     * shape's constitution bonus onto its stealth.
+     *
+     * <p>Function getModifier commented in full on 260820.
+     *
+     * @param stat the stat to read, which must be one of the five real stats — the
+     *             {@code STAT_NONE} and {@code STAT_MAX} sentinels have no matching modifier
+     * @return the shape's adjustment for that stat, or zero if it names none
+     * @throws IllegalArgumentException if the stat has no correspondingly named modifier
+     */
+    public int getModifier(Stats stat) {
+        ObjectModifier om = ObjectModifier.valueOf("OM_" + stat.name().substring(5));
+        if (!objectValueModifiers.containsKey(om))
+            return 0;
+        return objectValueModifiers.get(om);
     }
 }

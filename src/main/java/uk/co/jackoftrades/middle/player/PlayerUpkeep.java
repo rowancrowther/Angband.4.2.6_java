@@ -622,4 +622,21 @@ public class PlayerUpkeep {
     public List<ItemObject> getInventory() {
         return inventoryObjects;
     }
+
+    /**
+     * The total weight the player is carrying, in tenth-pounds — C's {@code upkeep->total_weight}
+     * ({@code player.h:487}).
+     *
+     * <p>Read by {@code calcBonuses} for the carrying penalty: once the load passes half the
+     * strength-derived limit, every further tenth of that limit costs a point of speed
+     * ({@code player-calcs.c:2222-2227}). This is the whole burden — pack, quiver and worn gear —
+     * not just what is worn.
+     *
+     * <p>Function getTotalWeight commented in full on 260820.
+     *
+     * @return the carried weight in tenth-pounds
+     */
+    public int getTotalWeight() {
+        return totalWeight;
+    }
 }

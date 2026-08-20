@@ -17,6 +17,8 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
@@ -60,6 +62,13 @@ import java.util.Map;
  * @author Rowan Crowther
  */
 public class Curse {
+    /**
+     * Log destination for the conditions C asserts on. C's {@code modify_weight_for_curse} asserts
+     * that a curse's weight is not negative ({@code obj-curse.c:400}); the port logs and throws
+     * instead, so a malformed data file spoils one calculation rather than the process.
+     */
+    private static final Logger logger = LogManager.getLogger(Curse.class);
+    
     /**
      * The curse's name (C: {@code curse->name}).
      */
@@ -354,5 +363,74 @@ public class Curse {
                 ", description='" + description + '\'' +
                 ", message='" + message + '\'' +
                 '}';
+    }
+
+    /**
+     * Applies this curse's weight change to an item's weight — the port of C's
+     * {@code modify_weight_for_curse} ({@code obj-curse.c:382-430}). Called once per curse of
+     * non-zero power when an item's true weight is worked out, so the curses compose by being
+     * applied in turn.
+     *
+     * <p>The curse's own {@code weight} field means one of two different things depending on a
+     * flag, which is why this cannot be a plain addition:
+     *
+     * <ul>
+     *   <li>With {@link ObjectFlag#OF_MULTIPLY_WEIGHT} it is a percentage. The incoming weight is
+     *       multiplied by it and divided by 100, rounding to nearest — the {@code >= 50} test on the
+     *       remainder. A factor above 100 first coerces a weightless item up to 1, so that
+     *       multiplying can have an effect on something that would otherwise stay at zero however
+     *       heavy the curse.</li>
+     *   <li>Without it the field is a flat addend, and may be negative — a curse that makes an item
+     *       lighter. A negative result is clamped to zero rather than wrapping.</li>
+     * </ul>
+     *
+     * <p>Both branches saturate at {@link Short#MAX_VALUE} rather than overflowing, because C stores
+     * an object's weight in an {@code int16_t} and the arithmetic there is done in a wider type
+     * precisely so it can be clamped. The port has no such narrowing, but keeps the ceiling so that
+     * a cursed item weighs the same in both.
+     *
+     * <p>Function modifyWeightForCurse commented in full on 260820.
+     *
+     * @param weight the item's weight before this curse is applied, in tenth-pounds
+     * @return the weight after it, never negative and never above {@link Short#MAX_VALUE}
+     * @throws IllegalArgumentException if this curse multiplies weight but its own weight is
+     *                                  negative, which C asserts against
+     */
+    public int modifyWeightForCurse(int weight) {
+        int result = weight;
+
+        if (objectFlags.contains(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+            if (this.weight < 0) {
+                logger.error("Weight cannot be negative.");
+                throw new IllegalArgumentException("Weight cannot be negative.");
+            }
+
+            int scaled;
+            if (this.weight > 100)
+                scaled = Math.max(weight, 1);
+            else
+                scaled = Math.max(weight, 0);
+
+            scaled *= this.weight;
+
+            int quotient = scaled / 100;
+            if (quotient < Short.MAX_VALUE) {
+                result = quotient;
+                if (scaled % 100 >= 50)
+                    result++;
+            } else
+                result = Short.MAX_VALUE;
+        } else {
+            weight = Math.max(0, weight);
+            if (this.weight < 0) {
+                result = weight + this.weight;
+                if (result < 0) result = 0;
+            } else {
+                result = (weight < Short.MAX_VALUE - this.weight) ?
+                        weight + this.weight : Short.MAX_VALUE;
+            }
+        }
+
+        return result;
     }
 }

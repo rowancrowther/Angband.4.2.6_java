@@ -37,7 +37,7 @@ public class StatTables {
     /**
      * Number of distinct compressed stat rungs — the port of C's {@code STAT_RANGE}.
      */
-    private static final int STAT_RANGE = 38;
+    public static final int STAT_RANGE = 38;
 
     /**
      * CON → base regeneration rate (the port of C's {@code adj_con_fix}). Indexed by
@@ -90,7 +90,7 @@ public class StatTables {
      * INT stat index; added to {@code SKILL_DEVICE} when derived skills are recomputed
      * ({@code player-calcs.c:2242}).
      */
-    static final int[] adjIntDev = {
+    public static final int[] adjIntDev = {
             0    /* 3 */,
             0    /* 4 */,
             0    /* 5 */,
@@ -135,7 +135,7 @@ public class StatTables {
      * WIS → saving throw (the port of C's {@code adj_wis_sav}). Indexed by the WIS
      * stat index; added to {@code SKILL_SAVE} ({@code player-calcs.c:2243}).
      */
-    static final int[] adjWisSav = {
+    public static final int[] adjWisSav = {
             0    /* 3 */,
             0    /* 4 */,
             0    /* 5 */,
@@ -181,7 +181,7 @@ public class StatTables {
      * DEX stat index; added to {@code SKILL_DISARM_PHYS} ({@code player-calcs.c:2240}).
      * The magical half of disarming is {@link #adjIntDis}.
      */
-    static final int adjDexDis[] = {
+    public static final int adjDexDis[] = {
             0    /* 3 */,
             0    /* 4 */,
             0    /* 5 */,
@@ -227,7 +227,7 @@ public class StatTables {
      * INT stat index; added to {@code SKILL_DISARM_MAGIC} ({@code player-calcs.c:2241}).
      * The physical half is {@link #adjDexDis}.
      */
-    static final int[] adjIntDis = {
+    public static final int[] adjIntDis = {
             0    /* 3 */,
             0    /* 4 */,
             0    /* 5 */,
@@ -272,7 +272,7 @@ public class StatTables {
      * DEX → bonus to armour class (the port of C's {@code adj_dex_ta}). Indexed by the
      * DEX stat index; added to the state's {@code to_a} ({@code player-calcs.c:2233}).
      */
-    static final int[] adjDexTa =
+    public static final int[] adjDexTa =
             {
                     -4    /* 3 */,
                     -3    /* 4 */,
@@ -319,7 +319,7 @@ public class StatTables {
      * stat index; added to the state's {@code to_d} ({@code player-calcs.c:2234}), and again
      * to the damage of a shield bash ({@code player-attack.c:939}).
      */
-    static final int[] adjStrTd = {
+    public static final int[] adjStrTd = {
             -2    /* 3 */,
             -2    /* 4 */,
             -1    /* 5 */,
@@ -366,7 +366,7 @@ public class StatTables {
      * again when a shield bash lands ({@code player-attack.c:906, 970}). Paired with
      * {@link #adjStrTh} — both stats contribute to the same to-hit total.
      */
-    static final int[] adjDexTh = {
+    public static final int[] adjDexTh = {
             -3    /* 3 */,
             -2    /* 4 */,
             -2    /* 5 */,
@@ -412,7 +412,7 @@ public class StatTables {
      * index; added to the state's {@code to_h} alongside {@link #adjDexTh}
      * ({@code player-calcs.c:2236}).
      */
-    static final int[] adjStrTh = {
+    public static final int[] adjStrTh = {
             -3    /* 3 */,
             -2    /* 4 */,
             -1    /* 5 */,
@@ -460,7 +460,7 @@ public class StatTables {
      * encumbrance check ({@code :1761}), so the stored value is a tenth of a pound-limit
      * rather than a limit itself.
      */
-    static final int[] adjStrWgt = {
+    public static final int[] adjStrWgt = {
             5    /* 3 */,
             6    /* 4 */,
             7    /* 5 */,
@@ -506,7 +506,7 @@ public class StatTables {
      * {@code adj_str_hold}). Indexed by the STR stat index; a weapon heavier than this costs
      * blows ({@code player-calcs.c:2251}).
      */
-    static final int[] adjStrHold = {
+    public static final int[] adjStrHold = {
             4    /* 3 */,
             5    /* 4 */,
             6    /* 5 */,
@@ -551,7 +551,7 @@ public class StatTables {
      * STR → digging skill (the port of C's {@code adj_str_dig}). Indexed by the STR
      * stat index; added to {@code SKILL_DIGGING} ({@code player-calcs.c:2244}).
      */
-    static final int[] adjStrDig = {
+    public static final int[] adjStrDig = {
             0    /* 3 */,
             0    /* 4 */,
             1    /* 5 */,
@@ -599,7 +599,7 @@ public class StatTables {
      * directly when working out how hard the player can throw ({@code player-attack.c:1366}).
      * Its partner is {@link #adjDexBlow}.
      */
-    static final int[] adjStrBlow = {
+    public static final int[] adjStrBlow = {
             3    /* 3 */,
             4    /* 4 */,
             5    /* 5 */,
@@ -646,7 +646,7 @@ public class StatTables {
      * ({@code player-calcs.c:1725}), because the table it indexes is narrower than this one
      * is long. Its partner is {@link #adjStrBlow}.
      */
-    static final int[] adjDexBlow = {
+    public static final int[] adjDexBlow = {
             0    /* 3 */,
             0    /* 4 */,
             0    /* 5 */,
@@ -693,7 +693,7 @@ public class StatTables {
      * steal ({@code mon-blows.c:789, 854}) and when monster recall reports that the player is
      * now immune to a thief ({@code mon-lore.c:208}).
      */
-    static final int[] adjDexSafe = {
+    public static final int[] adjDexSafe = {
             0    /* 3 */,
             1    /* 4 */,
             2    /* 5 */,
@@ -740,7 +740,7 @@ public class StatTables {
      * hit point calculation divides by 100 after multiplying by the character level
      * ({@code player-calcs.c:1568}).
      */
-    static final int[] adjConMhp = {
+    public static final int[] adjConMhp = {
             -250    /* 3 */,
             -150    /* 4 */,
             -100    /* 5 */,
@@ -788,7 +788,7 @@ public class StatTables {
      * fixed stat, since classes cast off different stats. Alone among these tables it carries
      * no comment in the C original.
      */
-    static final int[] adjMagStudy = {
+    public static final int[] adjMagStudy = {
             0    /* 3 */,
             0    /* 4 */,
             10    /* 5 */,
@@ -835,7 +835,7 @@ public class StatTables {
      * multiplied by the number of spell levels and divided by 100 to give the mana bonus
      * ({@code player-calcs.c:1496}).
      */
-    static final int[] adjMagMana = {
+    public static final int[] adjMagMana = {
             0    /* 3 */,
             10    /* 4 */,
             20    /* 5 */,
@@ -875,4 +875,62 @@ public class StatTables {
             800    /* 18/210-18/219 */,
             800    /* 18/220+ */
     };
+
+    /**
+     * Energy cost of one blow, indexed by a strength-versus-weapon-weight rung and then by a
+     * dexterity rung — the port of C's {@code blows_table} ({@code player-calcs.c}).
+     *
+     * <p>Not a blow count: the number is the energy each blow consumes, so <em>lower</em> is faster.
+     * {@code calcBlows} divides 10000 by it to get blows per turn scaled by 100, then caps that at
+     * the class's maximum attacks ({@code player-calcs.c:1728-1730}).
+     *
+     * <p>Both subscripts are compressed and both saturate at 11. The first is
+     * {@code adjStrBlow[STR] * class attack multiplier / max(weapon weight, class minimum weight)},
+     * which is why a heavy weapon in a weak hand lands on a low rung; the second is
+     * {@code adjDexBlow[DEX]}. The commentary rows at the head of the table give the dexterity value
+     * each column stands for.
+     */
+    public static final int[][] blowsTable =
+            {
+                    /* P */
+                    /* D:   0,   1,   2,   3,   4,   5,   6,   7,   8,   9,   10,  11+ */
+                    /* DEX: 3,   10,  17,  /20, /40, /60, /80, /100,/120,/150,/180,/200 */
+
+                    /* 0  */
+                    {100, 100, 95, 85, 75, 60, 50, 42, 35, 30, 25, 23},
+
+                    /* 1  */
+                    {100, 95, 85, 75, 60, 50, 42, 35, 30, 25, 23, 21},
+
+                    /* 2  */
+                    {95, 85, 75, 60, 50, 42, 35, 30, 26, 23, 21, 20},
+
+                    /* 3  */
+                    {85, 75, 60, 50, 42, 36, 32, 28, 25, 22, 20, 19},
+
+                    /* 4  */
+                    {75, 60, 50, 42, 36, 33, 28, 25, 23, 21, 19, 18},
+
+                    /* 5  */
+                    {60, 50, 42, 36, 33, 30, 27, 24, 22, 21, 19, 17},
+
+                    /* 6  */
+                    {50, 42, 36, 33, 30, 27, 25, 23, 21, 20, 18, 17},
+
+                    /* 7  */
+                    {42, 36, 33, 30, 28, 26, 24, 22, 20, 19, 18, 17},
+
+                    /* 8  */
+                    {36, 33, 30, 28, 26, 24, 22, 21, 20, 19, 17, 16},
+
+                    /* 9  */
+                    {35, 32, 29, 26, 24, 22, 21, 20, 19, 18, 17, 16},
+
+                    /* 10 */
+                    {34, 30, 27, 25, 23, 22, 21, 20, 19, 18, 17, 16},
+
+                    /* 11+ */
+                    {33, 29, 26, 24, 22, 21, 20, 19, 18, 17, 16, 15},
+                    /* DEX: 3,   10,  17,  /20, /40, /60, /80, /100,/120,/150,/180,/200 */
+            };
 }

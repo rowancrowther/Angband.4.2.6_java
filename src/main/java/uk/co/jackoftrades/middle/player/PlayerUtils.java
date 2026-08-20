@@ -39,12 +39,40 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
  * @author Rowan Crowther
  */
 public class PlayerUtils {
+    /**
+     * The size of one point of stat bonus above {@link #statNormalMax} — the {@code 10} in C's
+     * {@code modify_stat_value}, where 18/10 is stored as 28 and 18/20 as 38.
+     */
+    private static final int statBigStep = 10;
+    /**
+     * The value at which the stat scale changes gear: at or below this a point of bonus is worth
+     * one, above it {@link #statBigStep}. C writes the number 18 inline throughout
+     * {@code player-util.c:339-369}.
+     */
+    private static final int statNormalMax = 18;
+    /**
+     * The floor a stat penalty cannot drive a stat below — C's bare {@code 3} in the descending
+     * branch of {@code modify_stat_value}. Three is the lowest a stat can be rolled or reduced to.
+     */
+    private static final int statNormalMin = 3;
+    /**
+     * The player these utilities act on, cached from {@link GameState} — the port of C's
+     * {@code player} global, which its free functions reach for directly.
+     *
+     * <p>Static and resolved once in the initialiser below, so it is fixed for the life of the
+     * class rather than following a later change of character. Methods that take a {@link Player}
+     * parameter should use that instead; this is for the ones ported from C functions that read the
+     * global.
+     */
     private static Player player;
 
-    private static final int statBigStep = 10;
-    private static final int statNormalMax = 18;
-    private static final int statNormalMin = 3;
-
+    /**
+     * Caches the current player at class-initialisation time.
+     *
+     * <p><b>Load-order dependency:</b> this runs the first time anything touches this class, so
+     * {@link GameState} must already hold a player by then. Nothing re-runs it, so a character
+     * created or loaded afterwards is not picked up.
+     */
     static {
         player = GameState.getPlayer();
     }
@@ -99,10 +127,10 @@ public class PlayerUtils {
         // Hack - apply invulnerability
         if (player.getTimedEffect(TimedEffect.TMD_INVULN) != 0 && (damage < 9000)) return 0;
 
-        damage -= player.getPlayerState().getPercDamageReduction();
+        damage -= player.getPlayerState().perDamRed();
 
-        if (damage > 0 && player.getPlayerState().getPercDamageReduction() != 0) {
-            damage -= (damage * player.getPlayerState().getPercDamageReduction() / 100);
+        if (damage > 0 && player.getPlayerState().perDamRed() != 0) {
+            damage -= (damage * player.getPlayerState().perDamRed() / 100);
         }
 
         return Math.max(damage, 0);
@@ -217,6 +245,13 @@ public class PlayerUtils {
         return targetLevel;
     }
 
+    /**
+     * Searches the player's surroundings for hidden things — the port of C's {@code search}.
+     *
+     * <p><b>Stub:</b> not yet implemented. Left in place so the callers that C invokes it from can
+     * be ported without a hole; it will take effect once the trap and door detection it depends on
+     * exists.
+     */
     public static void search() {
         // Stub function TODO: Implement
     }
@@ -273,7 +308,7 @@ public class PlayerUtils {
      *               unchanged
      * @return the modified stat value
      */
-    public int modifyStatValue(int value, int amount) {
+    public static int modifyStatValue(int value, int amount) {
         if (amount > 0) {
             for (int index = 0; index < amount; index++) {
                 if (value < statNormalMax)

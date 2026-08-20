@@ -106,7 +106,7 @@ public class GameWorld {
      * runs only when there is a level to leave. Set elsewhere (character birth / save load) once
      * those subsystems are ported; until then it stays {@code false}.
      */
-    private boolean characterDungeon;
+    private static boolean characterDungeon;
 
     /**
      * How many whole days have passed while the player has been below the town — the port of C's
@@ -563,86 +563,21 @@ public class GameWorld {
     }
 
     /**
-     * Process player commands from the command queue — the port of C's {@code process_player}
-     * ({@code game-world.c}).
+     * Whether a dungeon level currently exists for the character — the port of reading C's
+     * {@code character_dungeon} global ({@code game-world.h:37}).
      *
-     * <p>Finishes when a command actually uses energy (any normal game action), when the queue runs
-     * dry and fresh input is needed, or when the character changes level, dies, or the game stops.
-     * Each pass of the {@code do…while} refreshes the display, handles pack overflow, resets the
-     * assumed-free-turn energy, applies the couple of automatic effects that fire before a command
-     * (dwarven ore detection; a forced {@code CMD_SLEEP} while paralyzed or knocked out), then pulls
-     * and dispatches one command via {@link uk.co.jackoftrades.middle.game.gameengine.CommandQueue#commandPop}.
-     * It loops while no energy was spent and the player is neither dead nor awaiting a new level.
+     * <p>The flag distinguishes "a character is in play on a level" from the moments either side of
+     * it: character creation, save loading, and the gap between levels. Two of {@code calcBonuses}'
+     * final adjustments are conditioned on it — the {@code PF_UNLIGHT} dark resistance and the
+     * {@code PF_EVIL} nether/holy-orb pair ({@code player-calcs.c:2042-2051}) — because both look
+     * at the player's surroundings, and there are none to look at before a level exists.
      *
-     * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
-     * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
-     * {@link EffectUtil#effectSimple} (the ore-detection effect), and
-     * {@link Player#timedGradeEqual(TimedEffect, String)}.
+     * <p>Function hasCharacterDungeon commented in full on 260820.
+     *
+     * @return {@code true} once a level has been generated for the character
      */
-    private void processPlayer() {
-        // check for interrupts
-        PlayerUtils.restingCompleteSpecial();
-        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_CHECK_INTERRUPT);
-
-        // repeat until energy is reduced
-        do {
-            //refresh
-            player.noticeStuff();
-            player.handleStuff();
-            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
-
-            // Pack overflow
-            ObjectUtils.packOverflow(null);
-
-            // Assume free turn
-            player.getPlayerUpkeep().setEnergyUse(0);
-
-            // Detect treasure for dwarves
-            if (player.hasPlayerFlag(PlayerFlag.PF_SEE_ORE)) {
-                // if they are healthy
-                if (player.getTimedEffect(TimedEffect.TMD_IMAGE) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_CONFUSED) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_AMNESIA) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_STUN) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_TERROR) == 0 &&
-                        player.getTimedEffect(TimedEffect.TMD_AFRAID) == 0) {
-                    EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, null, "0",
-                            EffectSubTypeEnum.EST_NONE, 0, 0, 3, 3, null);
-                }
-            }
-
-            // Paralyzed or knocked out players get no turn
-            if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) != 0 ||
-                    player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out")) {
-                GameState.getCommandQueue().push(CommandCode.CMD_SLEEP);
-            }
-
-            // Prepare for the next command
-            if (GameState.getCommandQueue().getNrepeats() > 0)
-                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_COMMAND_REPEAT);
-            else {
-                // Check monster recall
-                if (player.getPlayerUpkeep().getMonsterRace() != null)
-                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_MONSTER);
-
-                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
-            }
-
-            // Get a command from the queue if there is one
-            if (!GameState.getCommandQueue().commandPop(CommandContext.CTX_GAME))
-                break;
-
-            if (!player.getPlayerUpkeep().isPlaying())
-                break;
-
-            processPlayerCleanup();
-        } while (!player.getPlayerUpkeep().energyUse() &&
-                !player.isDead() &&
-                !player.getPlayerUpkeep().generateLevel());
-
-        // If needed, notice stuff
-        player.noticeStuff();
+    public static boolean hasCharacterDungeon() {
+        return characterDungeon;
     }
 
     /**
@@ -1281,5 +1216,88 @@ public class GameWorld {
     public static boolean isDaytime() {
         int turn = GameState.getTurn();
         return ((turn % (10L * GameConstants.getWorldDayLength())) < ((10L * GameConstants.getWorldDayLength()) / 2));
+    }
+
+    /**
+     * Process player commands from the command queue — the port of C's {@code process_player}
+     * ({@code game-world.c}).
+     *
+     * <p>Finishes when a command actually uses energy (any normal game action), when the queue runs
+     * dry and fresh input is needed, or when the character changes level, dies, or the game stops.
+     * Each pass of the {@code do…while} refreshes the display, handles pack overflow, resets the
+     * assumed-free-turn energy, applies the couple of automatic effects that fire before a command
+     * (dwarven ore detection; a forced {@code CMD_SLEEP} while paralyzed or knocked out), then pulls
+     * and dispatches one command via {@link uk.co.jackoftrades.middle.game.gameengine.CommandQueue#commandPop}.
+     * It loops while no energy was spent and the player is neither dead nor awaiting a new level.
+     *
+     * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
+     * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
+     * {@link EffectUtil#effectSimple} (the ore-detection effect), and
+     * {@link Player#timedGradeEq(TimedEffect, String)}.
+     */
+    private void processPlayer() {
+        // check for interrupts
+        PlayerUtils.restingCompleteSpecial();
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_CHECK_INTERRUPT);
+
+        // repeat until energy is reduced
+        do {
+            //refresh
+            player.noticeStuff();
+            player.handleStuff();
+            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+
+            // Pack overflow
+            ObjectUtils.packOverflow(null);
+
+            // Assume free turn
+            player.getPlayerUpkeep().setEnergyUse(0);
+
+            // Detect treasure for dwarves
+            if (player.hasPlayerFlag(PlayerFlag.PF_SEE_ORE)) {
+                // if they are healthy
+                if (player.getTimedEffect(TimedEffect.TMD_IMAGE) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_CONFUSED) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_AMNESIA) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_STUN) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_TERROR) == 0 &&
+                        player.getTimedEffect(TimedEffect.TMD_AFRAID) == 0) {
+                    EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, null, "0",
+                            EffectSubTypeEnum.EST_NONE, 0, 0, 3, 3, null);
+                }
+            }
+
+            // Paralyzed or knocked out players get no turn
+            if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) != 0 ||
+                    player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out")) {
+                GameState.getCommandQueue().push(CommandCode.CMD_SLEEP);
+            }
+
+            // Prepare for the next command
+            if (GameState.getCommandQueue().getNrepeats() > 0)
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_COMMAND_REPEAT);
+            else {
+                // Check monster recall
+                if (player.getPlayerUpkeep().getMonsterRace() != null)
+                    player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_MONSTER);
+
+                GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
+            }
+
+            // Get a command from the queue if there is one
+            if (!GameState.getCommandQueue().commandPop(CommandContext.CTX_GAME))
+                break;
+
+            if (!player.getPlayerUpkeep().isPlaying())
+                break;
+
+            processPlayerCleanup();
+        } while (!player.getPlayerUpkeep().energyUse() &&
+                !player.isDead() &&
+                !player.getPlayerUpkeep().generateLevel());
+
+        // If needed, notice stuff
+        player.noticeStuff();
     }
 }

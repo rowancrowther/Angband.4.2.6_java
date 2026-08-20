@@ -252,12 +252,12 @@ boxes span these stages rather than matching them one-to-one.
 
 - [x] `player_timed_grade_eq` (`[C] player-timed.c:734`) → the `timedGradeEqual` stub, `Player.java:1312`
 - [x] `player_flags_timed` (`[C] player.c:310`) and:
-- [ ] `player_flags` (`[C] player.c:290`) — both called from inside
+- [x] `player_flags` (`[C] player.c:290`) — both called from inside
   `calc_bonuses` (`[C] player-calcs.c:2135, 1921`)
 
 ### C — Derived stats *(needs A, B)*
 
-- [ ] `modify_stat_value` (`[C] player-util.c:339`) — needed by both `calc_bonuses` and birth
+- [x] `modify_stat_value` (`[C] player-util.c:339`) — needed by both `calc_bonuses` and birth
 - [ ] `calc_bonuses` (`[C] player-calcs.c:1877–2335`), whole, per decision 3 — including the equipment loop
   (`:1922–2026`, unexercisable until Chapter 7) and the timed block (`:2094–2214`)
 - [ ] `calc_hitpoints` (`[C] player-calcs.c:1562`)

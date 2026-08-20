@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;

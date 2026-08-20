@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.channel.colour.ColourEnum;
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.channel.utils.Flag;
@@ -624,7 +625,7 @@ public class ObjectKind {
     /**
      * @return the kind-level flags ({@code KF_*}) set on this kind
      */
-    public Flag<ObjectKindFlag> getKindFlags() {
+    public FlagView<ObjectKindFlag> getKindFlags() {
         return kindFlags;
     }
 
@@ -862,5 +863,23 @@ public class ObjectKind {
      */
     public int getDamageSides() {
         return damageSides;
+    }
+
+    /**
+     * The flags every object of this kind carries — C's {@code kind->flags}, the {@code flags:} line
+     * in {@code object.txt}.
+     *
+     * <p>These are the kind's flags, not an object's. An object gets its own copy at
+     * {@code object_prep}, and thereafter the two can differ. The kind's set is consulted again only
+     * for a flavoured object the player has become aware of: {@code object_flags_known} folds it back
+     * in once awareness makes the kind's properties public knowledge
+     * ({@code obj-util.c:371-373}).
+     *
+     * <p>Function getFlags commented in full on 260820.
+     *
+     * @return a read-only view of this kind's flags
+     */
+    public FlagView<ObjectFlag> getFlags() {
+        return flags;
     }
 }

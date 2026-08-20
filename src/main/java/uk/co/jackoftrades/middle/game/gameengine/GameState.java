@@ -63,10 +63,6 @@ public class GameState {
      * True once a character exists — C's {@code character_generated}.
      */
     private static boolean characterGenerated;
-    /**
-     * True once that character has a dungeon around them — C's {@code character_dungeon}.
-     */
-    private static boolean characterDungeon;
 
     /**
      * @return the current game-turn count

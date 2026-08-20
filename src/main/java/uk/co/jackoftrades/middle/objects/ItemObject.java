@@ -24,6 +24,7 @@ import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
@@ -137,7 +138,7 @@ public class ItemObject {
     /**
      * Base armour class.
      */
-    private int normalAC;
+    private int baseAC;
     /**
      * This item's own to-armour-class bonus — the rolled result, not the dice it came from. C's
      * {@code obj->to_a} ({@code object.h}), an {@code int16_t}.
@@ -220,7 +221,7 @@ public class ItemObject {
      * <p>Field curses retyped from {@code Map<Curse.CurseEntry, Boolean>} on 260817, commented in
      * full on 260817.
      */
-    private Map<Curse, CurseData> curses;
+    private LinkedHashMap<Curse, CurseData> curses;
 
     /**
      * Effects this item produces when used.
@@ -335,7 +336,7 @@ public class ItemObject {
                       Map<ObjectModifier, Integer> modifiers,
                       Map<ElementEnum, ElementInfo> elInfo,
                       Set<Brand> brands, Set<Slay> slays,
-                      Map<Curse, CurseData> curses,
+                      LinkedHashMap<Curse, CurseData> curses,
                       List<Effect> effect, String effectMessage,
                       List<Activation> activation, String time,
                       int timeout, int number,
@@ -357,7 +358,7 @@ public class ItemObject {
         this.weight = weight;
         this.damageDice = damageDice;
         this.damageSides = damageSides;
-        this.normalAC = normalAC;
+        this.baseAC = normalAC;
         this.toAC = toAC;
         this.baseDamage = Random.parseStr(baseDamage);
         this.toDam = toDam;
@@ -494,7 +495,7 @@ public class ItemObject {
             boolean itm2Known = itm2.isFullyKnown();
 
             // Identical values
-            if (this.normalAC != itm2.normalAC) return false;
+            if (this.baseAC != itm2.baseAC) return false;
             if (this.damageDice != itm2.damageDice) return false;
             if (this.damageSides != itm2.damageSides) return false;
 
@@ -903,7 +904,7 @@ public class ItemObject {
     public void addCurse(Curse curse, int power, int timeout) {
         CurseData curseData = new CurseData(power, timeout);
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         this.curses.put(curse, curseData);
     }
@@ -925,7 +926,7 @@ public class ItemObject {
      */
     public void addCurse(Curse curse, CurseData curseData) {
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         this.curses.put(curse, curseData);
     }
@@ -946,7 +947,7 @@ public class ItemObject {
      */
     public void addCurses(Map<Curse, CurseData> curses) {
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         this.curses.putAll(curses);
     }
@@ -966,7 +967,7 @@ public class ItemObject {
      */
     public void clearAndPutCurses(Map<Curse, CurseData> curseEntries) {
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         this.curses.clear();
         this.curses.putAll(curseEntries);
@@ -988,7 +989,7 @@ public class ItemObject {
      */
     public void clearCurses() {
         if (curses == null)
-            curses = new HashMap<>();
+            curses = new LinkedHashMap<>();
         curses.clear();
     }
 
@@ -1011,7 +1012,7 @@ public class ItemObject {
      */
     public void setCursePower(Curse curse, int power) {
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         if (curse == null || !this.curses.containsKey(curse)) return;
         CurseData curseData = this.curses.get(curse);
@@ -1035,7 +1036,7 @@ public class ItemObject {
      */
     public void removeCurse(Curse curse) {
         if (this.curses == null) {
-            this.curses = new HashMap<>();
+            this.curses = new LinkedHashMap<>();
         }
         this.curses.remove(curse);
     }
@@ -1501,7 +1502,7 @@ public class ItemObject {
     }
 
     /**
-     * Sets the number of damage dice — C's {@code obj->dd}. See {@link #setNormalAC} for why a known
+     * Sets the number of damage dice — C's {@code obj->dd}. See {@link #setBaseAC} for why a known
      * counterpart may be given a zero here rather than the truth.
      *
      * @param damageDice the number of damage dice to set
@@ -1527,8 +1528,8 @@ public class ItemObject {
     /**
      * @return this item's base armour class — C's {@code obj->ac}
      */
-    public int getNormalAC() {
-        return normalAC;
+    public int getBaseAC() {
+        return baseAC;
     }
 
     /**
@@ -1538,10 +1539,10 @@ public class ItemObject {
      * cannot read armour class is given a zero rather than the truth. That is C's idiom and the
      * zero is meaningful: it is what the display shows for an unknown quantity.
      *
-     * @param normalAC the base armour class to set
+     * @param baseAC the base armour class to set
      */
-    public void setNormalAC(int normalAC) {
-        this.normalAC = normalAC;
+    public void setBaseAC(int baseAC) {
+        this.baseAC = baseAC;
     }
 
     /**
@@ -1887,5 +1888,151 @@ public class ItemObject {
             slays = new HashSet<>();
         }
         slays.clear();
+    }
+
+    /**
+     * Whether the player has learned what this object's flavour is — the port of C's
+     * {@code object_flavor_is_aware} ({@code obj-knowledge.c:2239-2243}).
+     *
+     * <p>Awareness belongs to the <em>kind</em>, not to the object: drinking one unlabelled potion
+     * teaches the player what every potion of that kind is, so the answer is the same for every
+     * object sharing this one's kind. For an unflavoured object the kind is aware from the start.
+     *
+     * <p>C asserts that the kind exists; the port answers {@code false} for a kindless object
+     * instead, which is the safe reading — nothing is known about an object with no kind to know
+     * about.
+     *
+     * <p>Function flavourIsAware commented in full on 260820.
+     *
+     * @return {@code true} if the player knows what objects of this kind are
+     */
+    public boolean flavourIsAware() {
+        if (kind == null) return false;
+        return kind.isAware();
+    }
+
+    /**
+     * Whether this object is of a kind that gives up everything at a glance — the port of C's
+     * {@code easy_know} ({@code obj-knowledge.c:2225-2232}).
+     *
+     * <p>Both halves are required: the kind must be one the player is aware of, and it must carry
+     * {@code KF_EASY_KNOW}. The flag marks kinds with nothing hidden to discover — a scroll's
+     * properties are wholly determined by which scroll it is — so once the player recognises the
+     * kind there is no further identification to do. {@code flagsKnown} uses it to decide whether an
+     * ego's flags may be folded in without the player having learned the individual runes.
+     *
+     * <p>Function easyKnow commented in full on 260820.
+     *
+     * @return {@code true} if recognising this object's kind reveals all of its properties
+     */
+    public boolean easyKnow() {
+        if (kind == null) return false;
+        return kind.isAware() && kind.getKindFlags().has(ObjectKindFlag.KF_EASY_KNOW);
+    }
+
+    /**
+     * This object's flags reduced to what the player has actually learned — the port of C's
+     * {@code object_flags_known} ({@code obj-util.c:362-379}).
+     *
+     * <p>Built in three movements, and the order matters. The object's real flags are copied, then
+     * <em>intersected</em> with the known counterpart's, which is the whole of the restriction: a
+     * flag the player has not learned the rune for drops out here. Awareness then adds back what
+     * recognising the kind reveals, and an easy-know ego adds its own flags and removes the ones it
+     * suppresses — additions after a restriction, because knowing what something <em>is</em> can
+     * tell the player more than they learned by carrying it.
+     *
+     * <p>Returns a fresh set rather than filling a caller's, and an object with no known counterpart
+     * returns an empty one rather than its real flags — nothing is known. C has neither case: it
+     * wipes the caller's buffer first and dereferences {@code obj->known} unguarded.
+     *
+     * <p>Function flagsKnown commented in full on 260820.
+     *
+     * @return a new flag set holding only the flags the player knows this object to have
+     */
+    public Flag<ObjectFlag> flagsKnown() {
+        Flag<ObjectFlag> result = new Flag<>(ObjectFlag.class);
+        Flag<ObjectFlag> empty = new Flag<>(ObjectFlag.class);
+
+        result.copyFrom(getFlags());
+
+        if (known == null) return empty;
+
+        result.inter(known.getFlags());
+
+        if (kind == null) return result;
+
+        if (flavourIsAware())
+            result.union(kind.getFlags());
+
+        if (ego != null && easyKnow()) {
+            result.union(ego.getFlags());
+            result.diff(ego.getOffFlags());
+        }
+
+        return result;
+    }
+
+    /**
+     * The object's modifier for one stat, named rather than indexed.
+     *
+     * <p>Convenience over {@link #getModifierValue(ObjectModifier)}: C subscripts
+     * {@code obj->modifiers} with a stat index because {@code list-object-modifiers.h} happens to
+     * begin with the five stats in {@code list-stats.h} order. The port resolves
+     * {@code STAT_STR} to {@code OM_STR} by name so that correspondence is stated rather than
+     * assumed.
+     *
+     * <p>Function getModifierValue commented in full on 260820.
+     *
+     * @param stat one of the five real stats; the {@code STAT_NONE} and {@code STAT_MAX} sentinels
+     *             have no matching modifier
+     * @return the object's modifier for that stat, or zero if it carries none
+     * @throws IllegalArgumentException if the stat has no correspondingly named modifier
+     */
+    public int getModifierValue(Stats stat) {
+        return getModifierValue(ObjectModifier.valueOf("OM_" + stat.name().substring(5)));
+    }
+
+    /**
+     * The object's value for one modifier — C's {@code obj->modifiers[om]}.
+     *
+     * <p>Raw, and not the whole story where the player's knowledge matters: {@code calcBonuses}
+     * multiplies every modifier it reads by the player's rune knowledge for it
+     * ({@code player-calcs.c:1943-1970}), so a value returned here may still contribute nothing.
+     * A modifier the object does not carry reads as zero, matching C's zeroed array.
+     *
+     * <p>Function getModifierValue commented in full on 260820.
+     *
+     * @param om the modifier to read
+     * @return the object's value for it, or zero
+     */
+    public int getModifierValue(ObjectModifier om) {
+        return modifiers.getOrDefault(om, 0);
+    }
+
+    /**
+     * The weight of a single one of these, after its curses have had their say — the port of C's
+     * {@code object_weight_one} ({@code obj-util.c:274-289}).
+     *
+     * <p>One, not the stack: a pile of twenty arrows answers with the weight of one arrow. Callers
+     * wanting the burden of the stack multiply by the count themselves, as C does.
+     *
+     * <p>Curses can make an item heavier or lighter, and they compose: each curse of non-zero power
+     * is applied in turn to the running result, so two weight curses both take effect rather than
+     * the last one winning. A curse present at zero power is skipped — it is recorded on the object
+     * but not active. The base weight is floored at zero before any curse sees it.
+     *
+     * <p>Function weightOne commented in full on 260820.
+     *
+     * @return this object's individual weight in tenth-pounds, never negative
+     */
+    public int weightOne() {
+        int result = Math.max(weight, 0);
+
+        for (Curse curse : getCurses().keySet()) {
+            if (curses.get(curse).getPower() != 0)
+                result = curse.modifyWeightForCurse(result);
+        }
+
+        return result;
     }
 }

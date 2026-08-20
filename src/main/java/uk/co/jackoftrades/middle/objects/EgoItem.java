@@ -17,6 +17,7 @@
 
 package uk.co.jackoftrades.middle.objects;
 
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
@@ -335,5 +336,21 @@ public class EgoItem {
      */
     public Map<Curse, CurseData> getCurses() {
         return curses;
+    }
+
+    /**
+     * The flags this ego <em>removes</em> from the item it is applied to — C's {@code ego->flags_off}
+     * , the {@code flags-off:} line in {@code ego_item.txt}.
+     *
+     * <p>Subtractive rather than additive, and applied after the additive sets: {@code object_flags_known}
+     * unions in the ego's flags and then differences these out again ({@code obj-util.c:375-378}), so
+     * an ego can cancel a flag its base kind granted.
+     *
+     * <p>Function getOffFlags commented in full on 260820.
+     *
+     * @return a read-only view of the flags this ego suppresses
+     */
+    public FlagView<ObjectFlag> getOffFlags() {
+        return flagsOff;
     }
 }

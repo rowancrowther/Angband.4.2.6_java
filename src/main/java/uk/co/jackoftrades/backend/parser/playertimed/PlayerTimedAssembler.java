@@ -23,6 +23,7 @@ import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.MessageType;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Slay;
@@ -68,6 +69,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
     @Override
     public List<PlayerTimedEffect> assemble(@NotNull List<PlayerTimedParseRecord> records, @NotNull List<String> errors) {
         List<PlayerTimedEffect> effects = new ArrayList<>();
+        TimedEffect previousEffect = TimedEffect.TMD_NONE;
 
         for (PlayerTimedParseRecord record : records) {
             int line = record.line();
@@ -86,6 +88,7 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             List<TimedGrade> grades = new ArrayList<>();
             boolean illegalGrade = false;
             int count = -1;
+            int previousValue = 0;
             for (PlayerTimedParseRecord.PlayerTimedGradeParseRecord g : record.grades()) {
                 count++;
                 String colour = g.colour();
@@ -101,6 +104,21 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
                         illegalGrade = true;
                     } else {
                         max = Integer.parseInt(g.max());
+                        int scale = (timedEffect == TimedEffect.TMD_FOOD) ? GameConstants.getPlayerFoodValue() : 1;
+                        if (max <= 0 || max > Short.MAX_VALUE / scale) {
+                            errors.add("Player Timed record at line: " + line + " has " +
+                                    "an incorrect value. Must be between 1 and " + Short.MAX_VALUE / scale);
+                            illegalGrade = true;
+                        }
+                        if (max <= previousValue && timedEffect == previousEffect) {
+                            errors.add("Player Timed record at line: " + line + " has " +
+                                    "an incorrect value. Values must be strictly " +
+                                    "increasing for effects of the same type.");
+                            illegalGrade = true;
+                        }
+                        previousEffect = timedEffect;
+                        previousValue = max;
+                        max *= scale;
                         grades.add(new TimedGrade(count, colourType, max, status, msgUp, msgDown));
                     }
                 } catch (NumberFormatException e) {

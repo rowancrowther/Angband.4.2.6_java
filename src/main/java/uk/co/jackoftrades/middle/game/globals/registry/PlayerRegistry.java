@@ -271,6 +271,31 @@ public class PlayerRegistry {
     }
 
     /**
+     * The first race in load order — the port of reaching for C's {@code races} list head.
+     *
+     * <p>C builds its parsed lists by prepending, so its "first" race is the data file's last; the
+     * port keeps file order, so this is the first race in {@code p_race.txt}. Callers wanting a
+     * particular race should look it up by name instead — this is for the places that need
+     * <em>some</em> race, such as seeding a default character before the player has chosen.
+     *
+     * <p>Function getFirstPlayerRace commented in full on 260820.
+     *
+     * @return the first loaded race, or {@code null} if the list loaded empty
+     * @throws IllegalStateException if the player races have not been loaded
+     */
+    @Nullable
+    public static PlayerRace getFirstPlayerRace() {
+        if (playerRaces == null) {
+            String message = "Invalid attempt to access playerRaces when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return playerRaces.stream().findFirst().orElse(null);
+    }
+
+    /**
      * Look up a player body layout by its position in load order — the value a race stores as its
      * body reference (C's {@code bodies[race->body]}). Index 0 is the humanoid body, which is the
      * only body every race currently uses.
@@ -289,7 +314,7 @@ public class PlayerRegistry {
         }
 
         try {
-            return playerBodies.get(number);
+            return playerBodies.get(number).copy();
         } catch (IndexOutOfBoundsException e) {
             String message = "Body number: " + number + " is out of bounds.";
             logger.fatal(message, e);

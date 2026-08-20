@@ -46,6 +46,7 @@ public class EquipSlot {
     public EquipSlot(EquipmentSlotsEnum type, String name) {
         this.type = type;
         this.name = name;
+        item = null;
     }
 
     /**

@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -200,5 +201,126 @@ public class PlayerRace {
      */
     public boolean getObjectFlagKnowledge(ObjectFlag objectFlag) {
         return oFlags.has(objectFlag);
+    }
+
+    /**
+     * The object flags every member of this race has innately — C's {@code race->flags}, the
+     * {@code player-flags:} entries of {@code p_race.txt} that name object rather than player flags.
+     *
+     * <p>Gathered by {@code player_flags} into the same set the equipment contributes to, so a
+     * consumer asks once whether the player has a flag rather than asking race, gear and status in
+     * turn ({@code player.c:290-300}).
+     *
+     * <p>Function getoFlags commented in full on 260820.
+     *
+     * @return a read-only view of the race's innate object flags
+     */
+    public FlagView<ObjectFlag> getoFlags() {
+        return oFlags;
+    }
+
+    /**
+     * The race's infravision range, in units of ten feet — C's {@code race->infra}.
+     *
+     * <p>The starting value for the calculated state's infravision, set before equipment is looked
+     * at ({@code player-calcs.c:1903}); worn items and the {@code TMD_SINFRA} status add to it from
+     * there.
+     *
+     * <p>Function getInfravision commented in full on 260820.
+     *
+     * @return the innate infravision range
+     */
+    public int getInfravision() {
+        return infravision;
+    }
+
+    /**
+     * The race's contribution to one skill — C's {@code race->r_skills[skill]}.
+     *
+     * <p>Half of a skill's base: {@code calcBonuses} seeds each skill with the race's value plus the
+     * class's before anything else touches it ({@code player-calcs.c:1904-1906}).
+     *
+     * <p>Function getSkill commented in full on 260820.
+     *
+     * @param skill the skill to read
+     * @return the race's adjustment for that skill
+     * @throws NullPointerException if the race has no entry for the skill, which a fully parsed
+     *                              race always does
+     */
+    public int getSkill(PlayerSkill skill) {
+        return skillsAdj.get(skill);
+    }
+
+    /**
+     * The race's innate resistance to one element — C's {@code race->el_info[element].res_level}.
+     *
+     * <p>Three-way, not a scale of goodness: {@code -1} is a vulnerability, {@code 0} no opinion,
+     * positive values successive grades of resistance. {@code calcBonuses} treats the vulnerability
+     * specially, remembering it and applying it only after every other source has had its say, so
+     * that a resistance from elsewhere is compared against the unpenalised level
+     * ({@code player-calcs.c:1908-1913}).
+     *
+     * <p>An element the race says nothing about reads as {@code 0}, matching C's zeroed array.
+     *
+     * <p>Function getResistanceLevel commented in full on 260820.
+     *
+     * @param element the element to read
+     * @return the race's resistance level for that element
+     */
+    public int getResistanceLevel(ElementEnum element) {
+        ElementInfo info = resists.getOrDefault(element, null);
+
+        if (info != null) return info.getResLevel();
+        return 0;
+    }
+
+    /**
+     * The player flags every member of this race has — C's {@code race->pflags}, the abilities and
+     * quirks named on {@code p_race.txt}'s {@code player-flags:} line.
+     *
+     * <p>Copied into the calculated state before the class's are unioned in, which is why this one
+     * is a copy and that one a union: the state's set is empty at that point, so one of the two has
+     * to establish it ({@code player-calcs.c:1917-1919}).
+     *
+     * <p>Function getpFlags commented in full on 260820.
+     *
+     * @return a read-only view of the race's player flags
+     */
+    public FlagView<PlayerFlag> getpFlags() {
+        return pFlags;
+    }
+
+    /**
+     * The body layout members of this race are built with — the slots they can wear things in.
+     *
+     * <p>C stores an index into the global {@code bodies} array and copies the body onto the player
+     * at birth ({@code player-birth.c}); the port resolves the index at load time and holds the body
+     * itself. Callers wanting a player's own slots must not use this one: it is the shared template,
+     * and a player copies it ({@code Player.embody}) before anything is worn.
+     *
+     * <p>Function getBody commented in full on 260820.
+     *
+     * @return the race's body template, not a copy
+     */
+    public PlayerBody getBody() {
+        return body;
+    }
+
+    /**
+     * The race's adjustment to one stat — C's {@code race->r_adj[stat]}.
+     *
+     * <p>Added to the class's adjustment and to whatever the equipment contributes, and the sum is
+     * applied through {@code modify_stat_value} rather than by plain addition, because a point of
+     * bonus is worth one below 18 and ten above it ({@code player-calcs.c:2058-2061}).
+     *
+     * <p>Function getStatAdjust commented in full on 260820.
+     *
+     * @param stat the stat to read
+     * @return the race's adjustment in points
+     * @throws NullPointerException if the race has no entry for the stat, which a fully parsed race
+     *                              always does
+     */
+    public int getStatAdjust(Stats stat) {
+        return statsAdj.get(stat);
     }
 }

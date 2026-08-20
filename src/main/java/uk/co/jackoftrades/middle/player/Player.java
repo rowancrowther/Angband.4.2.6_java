@@ -3697,6 +3697,169 @@ public class Player {
     }
 
     /**
+     * Recalculates the character's whole derived state and then reports what moved — the port of
+     * C's {@code update_bonuses} ({@code player-calcs.c:2336-2456}), and the only caller of
+     * {@link #calcBonuses}.
+     *
+     * <p>The method is in two halves. The first derives a fresh state from scratch; the second sets
+     * it beside the old one, raises an update or redraw flag for each difference that something
+     * downstream cares about, and finally installs the new state over the old. Nothing here draws
+     * anything or recalculates hit points itself — it only records that those things are now due,
+     * and {@code updateStuff} runs them in its own order afterwards. C guarantees that ordering by
+     * handling {@code PU_BONUS} before {@code PU_HP}, {@code PU_MANA} and {@code PU_SPELLS}
+     * ({@code player-calcs.c:2570-2600}), so a flag raised here is always serviced after this
+     * returns and never during.
+     *
+     * <p><b>The two {@code copy} calls are the load-bearing line of the method.</b> C opens with
+     * {@code struct player_state state = p->state;} — a by-value copy of the entire struct, taken
+     * before anything is recalculated, so that {@code p->state} still holds the old values while
+     * the local holds the new. A Java assignment would bind a second name to the same object
+     * instead: {@code calcBonuses} would write straight through into the field, every comparison
+     * below would compare an object with itself, and the whole second half would silently do
+     * nothing. {@link PlayerState#copy()} exists for this one call site.
+     *
+     * <p>The null guard has no counterpart in C, where {@code p->state} is an inline struct member
+     * and so exists, zeroed, from the moment the player does. The port's fields start as
+     * {@code null}, and this is the first thing to want them, so it is the natural place to give
+     * them a zeroed state. That makes the first call after birth report every stat as changed, which
+     * is correct rather than merely harmless: C's zeroed struct behaves identically, and the flags
+     * it raises are exactly the ones a newly created character needs serviced.
+     *
+     * <p><b>Two of the comparisons read a different pair of states from the rest, and both are
+     * deliberate.</b> Armour compares the new known state against the old <em>known</em> state,
+     * because the armour class on the display is what the character believes it to be, not what it
+     * truly is. The light radius compares the two <em>plain</em> states, because how far the
+     * character can actually see is a fact about the world and not a matter of belief. Everything
+     * else compares plain against plain.
+     *
+     * <p>The stat loop leans on {@link PlayerState#wipe()} having filled every stat map, so
+     * {@link PlayerState#getStatTop} and {@link PlayerState#getStatUse} can read straight out of the
+     * map: a missing stat would be a real defect and is better heard about loudly. Only a change in
+     * the compressed index raises anything beyond a redraw, since that index is what the
+     * {@code adj_*} tables are read with — a stat that moves without changing its rung changes no
+     * derived number, and constitution is singled out because it is the one that feeds hit points.
+     *
+     * <p>The message block is skipped in partial-update mode. C sets {@code only_partial} around the
+     * full-screen rebuild on arriving at a new level ({@code ui-display.c:2522-2557}), where the
+     * state is being recomputed wholesale rather than responding to anything the character did;
+     * announcing "you have trouble wielding such a heavy bow" there would be reporting a change that
+     * never happened.
+     *
+     * <p>Function updateBonuses commented in full on 260820.
+     */
+    public void updateBonuses() {
+        if (this.state == null) this.state = new PlayerState();
+        if (this.knownState == null) this.knownState = new PlayerState();
+
+        PlayerState state = this.state.copy();
+        PlayerState knownState = this.knownState.copy();
+
+        // calculate bonuses
+        calcBonuses(state, false, true);
+        calcBonuses(knownState, true, true);
+
+        // Notice changes
+        // Analyze stats
+        for (Stats stat : Stats.values()) {
+            // Only check non-guard stats
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+
+            // Check for changes
+            if (state.getStatTop(stat) != this.getPlayerState().getStatTop(stat))
+                // Set to redraw stats
+                this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
+
+            // Check for changes
+            if (state.getStatUse(stat) != this.getPlayerState().getStatUse(stat))
+                // Set to redraw stats
+                this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
+
+            // Check for changes
+            if (state.getStatInd(stat) != this.getPlayerState().getStatInd(stat)) {
+                // change in Con can affect Hitpoints
+                if (stat == Stats.STAT_CON)
+                    this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_HP);
+
+                // Change in stats may affect mana and spells
+                this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MANA);
+                this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_SPELLS);
+            }
+        }
+
+        // Telepathy change
+        if (state.hasOFlag(ObjectFlag.OF_TELEPATHY) != this.getPlayerState().hasOFlag(ObjectFlag.OF_TELEPATHY))
+            // Update monster visibility
+            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+
+        // See invis change
+        if (state.hasOFlag(ObjectFlag.OF_SEE_INVIS) != this.getPlayerState().hasOFlag(ObjectFlag.OF_SEE_INVIS))
+            // Update monster visibility
+            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+
+        // Redraw speed if required
+        if (state.getSpeed() != this.getPlayerState().getSpeed())
+            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_SPEED);
+
+        // Redraw armour if required
+        if (knownState.getBaseAc() != this.knownState.getBaseAc()
+                || knownState.getToAc() != this.knownState.getToAc())
+            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ARMOR);
+
+        // Notice changes in the 'light radius'
+        if (state.getCurLight() != this.getPlayerState().getCurLight()) {
+            // Update visuals
+            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
+            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+        }
+
+        // Notice changes to the weight limit
+        if (this.getPlayerState().weightLimit() != state.weightLimit())
+            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_INVEN);
+
+        // Partial modes
+        if (!this.getPlayerUpkeep().isOnlyPartial()) {
+            // Has Heavy Bow changed
+            if (state.isHeavyShoot() != this.getPlayerState().isHeavyShoot()) {
+                if (state.isHeavyShoot())
+                    Message.message("You have trouble wielding such a heavy bow.");
+                else if (this.getPlayerBody().equippedItemBySlotName("shooting") != null)
+                    Message.message("You have no trouble wielding your bow.");
+                else
+                    Message.message("You feel relieved to put down your heavy bow.");
+            }
+
+            // Has heavy weapon changed
+            if (state.isHeavyWield() != this.getPlayerState().isHeavyWield()) {
+                if (state.isHeavyWield())
+                    Message.message("You have trouble wielding such a heavy weapon.");
+                else if (this.getPlayerBody().equippedItemBySlotName("weapon") != null)
+                    Message.message("You have no trouble wielding your weapon.");
+                else
+                    Message.message("You feel relieved to put down your heavy weapon.");
+            }
+
+            // Has illegal weapon changed
+            if (state.isBlessWield() != this.getPlayerState().isBlessWield()) {
+                if (state.isBlessWield())
+                    Message.message("You feel attuned to your weapon.");
+                else if (this.getPlayerBody().equippedItemBySlotName("weapon") != null)
+                    Message.message("You feel less attuned to your weapon.");
+            }
+
+            // Has armour state changed
+            if (state.isCumberArmour() != this.getPlayerState().isCumberArmour()) {
+                if (state.isCumberArmour())
+                    Message.message("The weight of your armor reduces your maximum SP.");
+                else
+                    Message.message("Your maximum SP is no longer reduced by armor weight.");
+            }
+        }
+
+        this.state = state;
+        this.knownState = knownState;
+    }
+
+    /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
      * actions.

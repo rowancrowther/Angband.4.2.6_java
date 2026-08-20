@@ -639,4 +639,8 @@ public class PlayerUpkeep {
     public int getTotalWeight() {
         return totalWeight;
     }
+
+    public boolean isOnlyPartial() {
+        return onlyPartial;
+    }
 }

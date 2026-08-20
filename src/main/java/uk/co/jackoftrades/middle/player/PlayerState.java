@@ -138,17 +138,41 @@ public class PlayerState {
      * ({@code player-calcs.c:1895}).
      *
      * <p>{@code calcBonuses} derives the whole state on every call rather than updating it, so this
-     * is what guarantees no contribution outlives the gear that made it. The element map is not
-     * merely cleared but repopulated with a zeroed entry for every real element, so that the rest of
-     * the calculation can read and compare resistance levels without first testing whether the key
-     * exists — C's fixed array gives that for free.
+     * is what guarantees no contribution outlives the gear that made it.
+     *
+     * <p><b>Two of the maps are not merely cleared but refilled with zeroes</b> — the four stat maps
+     * and the element map, each given an entry for every real value of its enum. C stores both as
+     * fixed arrays, so after its {@code memset} every index is present and reads as zero; a Java
+     * map that had only been cleared would instead have no key at all, and the difference shows up
+     * as a {@link NullPointerException} on unboxing rather than as a wrong number. Refilling here
+     * buys that back once, so that the rest of the calculation — and every reader of the finished
+     * state — can index a stat or an element without first asking whether it is there.
+     *
+     * <p>The skills map is the deliberate exception. It is cleared and left empty, because
+     * {@code calcBonuses} sets a value for every real skill from race and class within a few lines
+     * of calling this ({@code Player.java:1241-1244}), and {@link #getPlayerSkill} defaults a
+     * missing key to zero in any case.
+     *
+     * <p>Both loops skip their enum's {@code NONE} and {@code MAX} guard values. Those exist to
+     * bound iteration and stand in for C's absent-value sentinel; they are not real stats or
+     * elements and nothing ever reads one.
+     *
+     * <p>Function wipe commented in full on 260820.
      */
     public void wipe() {
         statAdd.clear();
         statInd.clear();
         statUse.clear();
         statTop.clear();
-        skills.clear();
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            statAdd.put(stat, 0);
+            statInd.put(stat, 0);
+            statUse.put(stat, 0);
+            statTop.put(stat, 0);
+        }
+
+        skills.clear();        
 
         flags.wipe();
         pflags.wipe();
@@ -647,5 +671,103 @@ public class PlayerState {
      */
     public int getResLevel(ElementEnum element) {
         return elInfo.get(element).getResLevel();
+    }
+
+    public int getStatTop(Stats stat) {
+        return statTop.get(stat);
+    }
+
+    public int getStatUse(Stats stat) {
+        return statUse.get(stat);
+    }
+
+    public int getToAc() {
+        return this.toA;
+    }
+
+    public boolean isBlessWield() {
+        return blessWield;
+    }
+
+    public boolean isCumberArmour() {
+        return cumberArmour;
+    }
+
+    /**
+     * Returns an independent duplicate of this state — the port of C assigning one
+     * {@code struct player_state} to another, as {@code update_bonuses} does at
+     * {@code player-calcs.c:2340-2341}.
+     *
+     * <p>C gets this for nothing: {@code struct player_state state = p->state;} copies every byte,
+     * so the local and the field are thereafter separate values. Java would bind a second name to
+     * the same object, which is not a copy at all, and the caller that most needs one is exactly the
+     * one that would suffer for it — {@link Player#updateBonuses()} recalculates into the duplicate
+     * and then compares it field by field against the original, so an alias would reduce every
+     * comparison to an object against itself. This method exists to make that assignment mean in
+     * Java what it means in C.
+     *
+     * <p><b>Deep where it has to be, shallow where it is safe.</b> The maps and flag sets are
+     * rebuilt rather than shared, and each {@code ElementInfo} is copied in turn, since one of those
+     * is a mutable object and handing over the same instance would let a later calculation reach
+     * back through the duplicate and alter the original's resistances. The primitives are copied by
+     * value, and {@code ammoTVal} is copied by reference only because it is an enum constant and so
+     * has nothing to alter.
+     *
+     * <p>The stat maps are read unguarded, which is safe because {@link #wipe()} guarantees an entry
+     * for every real stat and the constructor calls it. The skills map is guarded on the key being
+     * present, because {@code wipe} leaves that one empty by design and a state that has not yet
+     * been through {@code calcBonuses} genuinely has no skills in it.
+     *
+     * <p>Function copy commented in full on 260820.
+     *
+     * @return a new state holding the same values, sharing no mutable structure with this one
+     */
+    public PlayerState copy() {
+        PlayerState result = new PlayerState();
+
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+
+            result.statAdd.put(stat, this.statAdd.get(stat));
+            result.statInd.put(stat, this.statInd.get(stat));
+            result.statUse.put(stat, this.statUse.get(stat));
+            result.statTop.put(stat, this.statTop.get(stat));
+        }
+
+        for (PlayerSkill skill : PlayerSkill.values()) {
+            if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX) continue;
+
+            if (skills.containsKey(skill))
+                result.setStateSkill(skill, this.skills.get(skill));
+        }
+
+        result.flags.copyFrom(flags);
+        result.pflags.copyFrom(pflags);
+
+        for (ElementEnum element : ElementEnum.values()) {
+            if (this.elInfo.containsKey(element))
+                result.elInfo.put(element, this.elInfo.get(element).copy());
+        }
+
+        result.speed = this.speed;
+        result.numBlows = this.numBlows;
+        result.numShots = this.numShots;
+        result.numMoves = this.numMoves;
+        result.ammoMult = this.ammoMult;
+        result.ammoTVal = this.ammoTVal;
+        result.ac = this.ac;
+        result.damRed = this.damRed;
+        result.perDamRed = this.perDamRed;
+        result.toA = this.toA;
+        result.toH = this.toH;
+        result.toD = this.toD;
+        result.seeInfra = this.seeInfra;
+        result.curLight = this.curLight;
+        result.heavyWield = this.heavyWield;
+        result.heavyShoot = this.heavyShoot;
+        result.blessWield = this.blessWield;
+        result.cumberArmour = this.cumberArmour;
+
+        return result;
     }
 }

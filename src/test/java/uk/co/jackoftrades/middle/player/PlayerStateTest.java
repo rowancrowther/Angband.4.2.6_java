@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -159,6 +160,55 @@ class PlayerStateTest {
         }
 
         /**
+         * The four stat maps are repopulated for the same reason the element map is, and the
+         * failure mode is worse: {@link PlayerState#getStatTop} and {@link PlayerState#getStatUse}
+         * read their map directly, so a missing key is an unboxing {@link NullPointerException}
+         * rather than a wrong number. {@code updateBonuses} compares a freshly built state against
+         * the character's existing one on its first call, which is exactly when the existing one has
+         * never been through {@code calcBonuses}, so this is the reset that keeps that call from
+         * throwing.
+         *
+         * <p>Both getters are asserted for every real stat rather than sampled, since one map left
+         * out of the reset is precisely the defect this guards.
+         */
+        @Test
+        @DisplayName("every real stat is readable again straight after a wipe")
+        void statsRepopulated() {
+            PlayerState state = filled();
+            state.wipe();
+
+            assertAll(() -> {
+                for (Stats stat : Stats.values()) {
+                    if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+                    assertEquals(0, state.getStatTop(stat), stat + " top should read as zero");
+                    assertEquals(0, state.getStatUse(stat), stat + " use should read as zero");
+                    assertEquals(0, state.getStatInd(stat), stat + " index should read as zero");
+                    assertEquals(0, state.getStatAdd(stat), stat + " add should read as zero");
+                }
+            });
+        }
+
+        /**
+         * The skills map is deliberately <em>not</em> refilled: {@code calcBonuses} sets every real
+         * skill from race and class immediately after wiping, and {@link PlayerState#getPlayerSkill}
+         * defaults a missing key to zero. Pinned so that the asymmetry with the stat and element
+         * maps reads as a decision rather than an oversight.
+         */
+        @Test
+        @DisplayName("skills read as zero without being refilled")
+        void skillsReadZeroWhileEmpty() {
+            PlayerState state = filled();
+            state.wipe();
+
+            assertAll(() -> {
+                for (PlayerSkill skill : PlayerSkill.values()) {
+                    if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX) continue;
+                    assertEquals(0, state.getPlayerSkill(skill), skill + " should read as zero");
+                }
+            });
+        }
+
+        /**
          * A fresh state is already wiped — the constructor and the reset have to agree, or a state
          * built but not yet recalculated would answer differently from one that had been.
          */
@@ -170,8 +220,200 @@ class PlayerStateTest {
             assertAll(
                     () -> assertEquals(0, fresh.getSpeed()),
                     () -> assertEquals(0, fresh.getBaseAc()),
+                    () -> assertEquals(0, fresh.getStatTop(Stats.STAT_STR)),
+                    () -> assertEquals(0, fresh.getStatUse(Stats.STAT_STR)),
                     () -> assertNotNull(fresh.getElInfo().get(ElementEnum.ELEM_FIRE)),
                     () -> assertEquals(0, fresh.getResLevel(ElementEnum.ELEM_FIRE)));
+        }
+    }
+
+    /**
+     * Duplication — the port of C assigning one {@code struct player_state} to another.
+     *
+     * <p><b>What makes this worth its own set of tests is that C gets it for free and Java does
+     * not.</b> {@code struct player_state state = p->state;} copies every byte, so the two are
+     * thereafter unrelated values. The Java equivalent would share one object, and the caller that
+     * needs the copy most — {@code updateBonuses}, which recalculates into the duplicate and then
+     * compares it field by field against the original — is the one an alias would silently ruin:
+     * every comparison would test an object against itself, always find no change, and raise none of
+     * the flags the rest of the turn depends on. Nothing would throw and nothing would look wrong.
+     *
+     * <p>So these tests are less about the values arriving than about the two states being genuinely
+     * separate afterwards, in both directions and through the mutable structure as well as the
+     * scalars.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("copy")
+    class Copy {
+
+        /**
+         * Reads a field the state exposes no getter for.
+         *
+         * @param state the state to read
+         * @param name  the field's name
+         * @return the field's value
+         * @throws ReflectiveOperationException if the field cannot be reached
+         */
+        private int read(PlayerState state, String name) throws ReflectiveOperationException {
+            java.lang.reflect.Field field = PlayerState.class.getDeclaredField(name);
+            field.setAccessible(true);
+            return (int) field.get(state);
+        }
+
+        /**
+         * Every value the state carries has to arrive in the duplicate. Listed one by one rather
+         * than sampled, because the failure mode is a single field missed out of a long assignment
+         * block and a sample would not find it.
+         *
+         * @throws ReflectiveOperationException if a field cannot be reached
+         */
+        @Test
+        @DisplayName("carries every value across")
+        void carriesEveryValue() throws ReflectiveOperationException {
+            PlayerState original = filled();
+
+            PlayerState duplicate = original.copy();
+
+            assertAll(
+                    () -> assertEquals(original.getSpeed(), duplicate.getSpeed()),
+                    () -> assertEquals(original.getNumShots(), duplicate.getNumShots()),
+                    () -> assertEquals(original.getAmmoMult(), duplicate.getAmmoMult()),
+                    () -> assertEquals(original.getBaseAc(), duplicate.getBaseAc()),
+                    () -> assertEquals(original.getToAc(), duplicate.getToAc()),
+                    () -> assertEquals(original.getDamRed(), duplicate.getDamRed()),
+                    () -> assertEquals(original.perDamRed(), duplicate.perDamRed()),
+                    () -> assertEquals(original.getCurLight(), duplicate.getCurLight()),
+                    () -> assertEquals(original.isHeavyWield(), duplicate.isHeavyWield()),
+                    () -> assertEquals(original.isHeavyShoot(), duplicate.isHeavyShoot()),
+                    () -> assertEquals(original.isBlessWield(), duplicate.isBlessWield()),
+                    () -> assertEquals(original.isCumberArmour(), duplicate.isCumberArmour()),
+                    () -> assertEquals(read(original, "numBlows"), read(duplicate, "numBlows")),
+                    () -> assertEquals(read(original, "seeInfra"), read(duplicate, "seeInfra")),
+                    () -> assertEquals(read(original, "toH"), read(duplicate, "toH")),
+                    () -> assertEquals(read(original, "toD"), read(duplicate, "toD")),
+                    () -> assertEquals(original.getStatTop(Stats.STAT_STR), duplicate.getStatTop(Stats.STAT_STR)),
+                    () -> assertEquals(original.getStatUse(Stats.STAT_STR), duplicate.getStatUse(Stats.STAT_STR)),
+                    () -> assertEquals(original.getStatAdd(Stats.STAT_STR), duplicate.getStatAdd(Stats.STAT_STR)),
+                    () -> assertEquals(original.getStatInd(Stats.STAT_STR), duplicate.getStatInd(Stats.STAT_STR)),
+                    () -> assertEquals(original.getPlayerSkill(PlayerSkill.SKILL_STEALTH),
+                            duplicate.getPlayerSkill(PlayerSkill.SKILL_STEALTH)),
+                    () -> assertEquals(original.getResLevel(ElementEnum.ELEM_FIRE),
+                            duplicate.getResLevel(ElementEnum.ELEM_FIRE)),
+                    () -> assertTrue(duplicate.hasPFlag(PlayerFlag.PF_UNLIGHT)),
+                    () -> assertTrue(duplicate.hasOFlag(ObjectFlag.OF_FEATHER)));
+        }
+
+        /**
+         * Movement actions and blows are adjacent fields of the same type holding similar small
+         * numbers, which makes them the pair a copy is most likely to confuse — and a duplicate that
+         * took its movement count from its blows would give the character extra moves that no gear
+         * granted, with nothing in play to point at. Set to values that cannot be mistaken for each
+         * other so a swap fails loudly.
+         *
+         * @throws ReflectiveOperationException if a field cannot be reached
+         */
+        @Test
+        @DisplayName("keeps movement actions distinct from blows")
+        void movesAreNotBlows() throws ReflectiveOperationException {
+            PlayerState original = new PlayerState();
+            original.setNumBlows(300);
+            original.setNumMoves(2);
+
+            PlayerState duplicate = original.copy();
+
+            assertAll(
+                    () -> assertEquals(300, read(duplicate, "numBlows")),
+                    () -> assertEquals(2, read(duplicate, "numMoves")));
+        }
+
+        /**
+         * The point of the exercise: writing to the duplicate must leave the original alone. Covers
+         * a scalar, each kind of map and both flag sets, since sharing any one of them would be
+         * enough to defeat the comparison {@code updateBonuses} makes.
+         */
+        @Test
+        @DisplayName("writing to the duplicate leaves the original untouched")
+        void duplicateIsIndependent() {
+            PlayerState original = filled();
+            PlayerState duplicate = original.copy();
+
+            duplicate.setSpeed(999);
+            duplicate.setStatTop(Stats.STAT_STR, 99);
+            duplicate.statAdd(Stats.STAT_STR, 7);
+            duplicate.setStateSkill(PlayerSkill.SKILL_STEALTH, 99);
+            duplicate.setResLevel(ElementEnum.ELEM_FIRE, 99);
+            duplicate.setPlayerFlag(PlayerFlag.PF_COMBAT_REGEN);
+            Flag<ObjectFlag> extra = new Flag<>(ObjectFlag.class);
+            extra.on(ObjectFlag.OF_TELEPATHY);
+            duplicate.unionObjectFlags(extra);
+
+            assertAll(
+                    () -> assertEquals(120, original.getSpeed()),
+                    () -> assertEquals(18, original.getStatTop(Stats.STAT_STR)),
+                    () -> assertEquals(2, original.getStatAdd(Stats.STAT_STR)),
+                    () -> assertEquals(11, original.getPlayerSkill(PlayerSkill.SKILL_STEALTH)),
+                    () -> assertEquals(2, original.getResLevel(ElementEnum.ELEM_FIRE)),
+                    () -> assertFalse(original.hasPFlag(PlayerFlag.PF_COMBAT_REGEN)),
+                    () -> assertFalse(original.hasOFlag(ObjectFlag.OF_TELEPATHY)));
+        }
+
+        /**
+         * Independence has to hold the other way round too. {@code updateBonuses} keeps the original
+         * as the "before" picture while the duplicate is recalculated, but a later turn wipes and
+         * refills whichever of the two it installed — so a shared map would corrupt the survivor
+         * whichever direction the write came from.
+         */
+        @Test
+        @DisplayName("writing to the original leaves the duplicate untouched")
+        void originalIsIndependent() {
+            PlayerState original = filled();
+            PlayerState duplicate = original.copy();
+
+            original.wipe();
+
+            assertAll(
+                    () -> assertEquals(120, duplicate.getSpeed()),
+                    () -> assertEquals(18, duplicate.getStatTop(Stats.STAT_STR)),
+                    () -> assertEquals(11, duplicate.getPlayerSkill(PlayerSkill.SKILL_STEALTH)),
+                    () -> assertEquals(2, duplicate.getResLevel(ElementEnum.ELEM_FIRE)),
+                    () -> assertTrue(duplicate.hasPFlag(PlayerFlag.PF_UNLIGHT)));
+        }
+
+        /**
+         * Each {@link uk.co.jackoftrades.middle.objects.ElementInfo} is a mutable object, so copying
+         * the map alone would hand both states the same entries — the one case where the values all
+         * arrive correctly and the states are still joined together.
+         */
+        @Test
+        @DisplayName("gives the duplicate its own element entries")
+        void elementEntriesAreNotShared() {
+            PlayerState original = filled();
+
+            PlayerState duplicate = original.copy();
+
+            assertNotSame(original.getElInfo().get(ElementEnum.ELEM_FIRE),
+                    duplicate.getElInfo().get(ElementEnum.ELEM_FIRE));
+        }
+
+        /**
+         * A state that has never been through {@code calcBonuses} has an empty skills map, and that
+         * is the state {@code updateBonuses} copies on its very first call — so copying one must
+         * work rather than trip over the keys that are not there.
+         */
+        @Test
+        @DisplayName("copies a state that has never been calculated")
+        void copiesAFreshState() {
+            PlayerState fresh = new PlayerState();
+
+            PlayerState duplicate = fresh.copy();
+
+            assertAll(
+                    () -> assertEquals(0, duplicate.getSpeed()),
+                    () -> assertEquals(0, duplicate.getStatTop(Stats.STAT_STR)),
+                    () -> assertEquals(0, duplicate.getPlayerSkill(PlayerSkill.SKILL_STEALTH)),
+                    () -> assertEquals(0, duplicate.getResLevel(ElementEnum.ELEM_FIRE)));
         }
     }
 

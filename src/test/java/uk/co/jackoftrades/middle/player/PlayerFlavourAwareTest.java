@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
@@ -37,6 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
  * Tests {@link Player}'s {@code flavourAware} and {@code isCarried} — the ports of C's
@@ -62,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerFlavourAwareTest {
 
     private Player player;

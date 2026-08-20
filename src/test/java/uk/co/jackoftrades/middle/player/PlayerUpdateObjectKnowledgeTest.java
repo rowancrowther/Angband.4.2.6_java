@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.messages.data.GameEventData;
 import uk.co.jackoftrades.middle.cave.Chunk;
@@ -38,6 +39,8 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
  * Tests the two populations {@link Player#updateObjectKnowledge()} can currently reach — the objects
@@ -62,6 +65,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerUpdateObjectKnowledgeTest {
 
     private CountingPlayer player;

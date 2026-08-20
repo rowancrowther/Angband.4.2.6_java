@@ -30,6 +30,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.lang.reflect.Field;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,7 +92,7 @@ class ItemObjectAccessorsTest {
     private static ItemObject item(TValue tValue, String pValue, String note) {
         return new ItemObject(new ObjectKind(), null, null, null, Loc.zero, tValue, 0, pValue,
                 0, 0, 0, 0, 0, "0", 0, 0,
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), Map.of(),
+                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new LinkedHashMap<>(),
                 List.of(), null, List.of(), "0", 0, 1,
                 new Flag<>(ObjectNotice.class), 0, 0,
                 ObjectOriginEnum.ORIGIN_NONE, 0, null, note);
@@ -134,7 +135,7 @@ class ItemObjectAccessorsTest {
      */
     private static Artifact artifact() {
         return new Artifact("Test", null, TValue.TV_SWORD, null, 0, 0, 0, 0, "0", 0, 0,
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), Map.of(),
+                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new LinkedHashMap<>(),
                 0, 0, 0, 0, null, null, null);
     }
 
@@ -160,7 +161,7 @@ class ItemObjectAccessorsTest {
         ObjectKind kind = new ObjectKind();
         ItemObject item = new ItemObject(kind, null, null, null, Loc.zero, TValue.TV_SWORD, 0, "0",
                 0, 0, 0, 0, 0, "0", 0, 0,
-                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), Map.of(),
+                new Flag<>(ObjectFlag.class), Map.of(), Map.of(), Set.of(), Set.of(), new LinkedHashMap<>(),
                 List.of(), null, List.of(), "0", 0, 1,
                 new Flag<>(ObjectNotice.class), 0, 0,
                 ObjectOriginEnum.ORIGIN_NONE, 0, null, null);
@@ -364,7 +365,7 @@ class ItemObjectAccessorsTest {
         @Test
         @DisplayName("getCurses returns an unmodifiable view over the live map")
         void cursesAreAnUnmodifiableView() {
-            Map<Curse, CurseData> curses = new java.util.HashMap<>();
+            Map<Curse, CurseData> curses = new java.util.LinkedHashMap<>();
             ItemObject item = new ItemObject();
             set(item, "curses", curses);
 

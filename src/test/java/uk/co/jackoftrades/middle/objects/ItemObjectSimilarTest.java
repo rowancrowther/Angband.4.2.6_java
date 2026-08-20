@@ -34,12 +34,19 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.ObjectStackEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.EquipSlot;
+import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.player.PlayerBody;
+import uk.co.jackoftrades.middle.player.PlayerRace;
+import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -71,6 +78,12 @@ class ItemObjectSimilarTest {
     private static Player savedPlayer;
 
     /**
+     * Whatever the registry held before this suite, put back afterwards.
+     */
+    private static Object savedBodies;
+    private static Object savedRaces;
+
+    /**
      * A kind shared by every item the fixtures build. {@code similar} compares kinds with
      * {@code equals}, and {@link ObjectKind} does not override it, so sharing one instance is what
      * makes two items the same kind.
@@ -88,18 +101,56 @@ class ItemObjectSimilarTest {
     static void installPlayer() throws Exception {
         savedPlayer = GameState.getPlayer();
 
+        // Constructing a Player now reads the registry for its default body and race, so this test
+        // seeds both rather than depending on another suite having loaded them first. Whatever was
+        // there is put back afterwards, the registry being process-wide.
+        savedBodies = registryField("playerBodies").get(null);
+        savedRaces = registryField("playerRaces").get(null);
+        PlayerBody humanoid = new PlayerBody("test",
+                List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")));
+        registryField("playerBodies").set(null, new ArrayList<>(List.of(humanoid)));
+        registryField("playerRaces").set(null, new ArrayList<>(List.of(testRace(humanoid))));
+
         Player player = new Player();
         Field body = Player.class.getDeclaredField("body");
         body.setAccessible(true);
-        body.set(player, new PlayerBody("test", List.of()));
+        // One slot, not none: PlayerBody refuses an empty slot list, and nothing here reads it.
+        body.set(player, new PlayerBody("test",
+                List.of(new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
 
         GameState.setPlayer(player);
         kind = new ObjectKind();
     }
 
     @AfterAll
-    static void restorePlayer() {
+    static void restorePlayer() throws Exception {
         GameState.setPlayer(savedPlayer);
+        registryField("playerBodies").set(null, savedBodies);
+        registryField("playerRaces").set(null, savedRaces);
+    }
+
+    /**
+     * @param fieldName the registry field to reach
+     * @return that private static field, made accessible
+     * @throws Exception if the field cannot be reached
+     */
+    private static Field registryField(String fieldName) throws Exception {
+        Field f = PlayerRegistry.class.getDeclaredField(fieldName);
+        f.setAccessible(true);
+        return f;
+    }
+
+    /**
+     * Builds the one race the seeded registry holds. Only its body matters here; every other field
+     * is empty or zero.
+     *
+     * @param body the body the race presents
+     * @return the race
+     */
+    private static PlayerRace testRace(PlayerBody body) {
+        return new PlayerRace("Test Race", 0, 10, 100, 14, 6, 72, 6, 180, 25, 0, body,
+                Map.of(), Map.of(), new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
+                null, Map.of());
     }
 
     private static void set(ItemObject item, String name, Object value) {
@@ -174,7 +225,7 @@ class ItemObjectSimilarTest {
         set(item, "modifiers", modifiers());
         set(item, "brands", new HashSet<Brand>());
         set(item, "slays", new HashSet<Slay>());
-        set(item, "curses", new HashMap<Curse, CurseData>());
+        set(item, "curses", new LinkedHashMap<Curse, CurseData>());
         set(item, "number", 1);
         set(item, "timeout", 0);
         return item;
@@ -467,7 +518,7 @@ class ItemObjectSimilarTest {
         @Test
         @DisplayName("different armour classes do not stack")
         void differentAc() {
-            set(second, "normalAC", 3);
+            set(second, "baseAC", 3);
 
             assertFalse(first.similar(second, mode()));
         }
@@ -570,7 +621,7 @@ class ItemObjectSimilarTest {
         @Test
         @DisplayName("different curses do not stack")
         void differentCurses() {
-            Map<Curse, CurseData> curses = new HashMap<>();
+            Map<Curse, CurseData> curses = new LinkedHashMap<>();
             curses.put(curse("siren"), new CurseData(1, 0));
             set(second, "curses", curses);
 
@@ -591,11 +642,11 @@ class ItemObjectSimilarTest {
         @DisplayName("the same curse at the same power stacks whatever the timeouts")
         void sameCurseDifferentTimeouts() {
             Curse siren = curse("siren");
-            Map<Curse, CurseData> firstCurses = new HashMap<>();
+            Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 1));
             set(first, "curses", firstCurses);
 
-            Map<Curse, CurseData> secondCurses = new HashMap<>();
+            Map<Curse, CurseData> secondCurses = new LinkedHashMap<>();
             secondCurses.put(siren, new CurseData(3, 40));
             set(second, "curses", secondCurses);
 
@@ -610,11 +661,11 @@ class ItemObjectSimilarTest {
         @DisplayName("the same curse at different powers does not stack")
         void sameCurseDifferentPowers() {
             Curse siren = curse("siren");
-            Map<Curse, CurseData> firstCurses = new HashMap<>();
+            Map<Curse, CurseData> firstCurses = new LinkedHashMap<>();
             firstCurses.put(siren, new CurseData(3, 0));
             set(first, "curses", firstCurses);
 
-            Map<Curse, CurseData> secondCurses = new HashMap<>();
+            Map<Curse, CurseData> secondCurses = new LinkedHashMap<>();
             secondCurses.put(siren, new CurseData(5, 0));
             set(second, "curses", secondCurses);
 

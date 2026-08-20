@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -31,6 +32,8 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
  * Tests {@link Player#flags}, the port of C's {@code player_flags} ({@code player.c:290}).
@@ -64,6 +67,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerFlagsTest {
 
     /**

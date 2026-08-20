@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.messages.data.EventDataMessage;
 import uk.co.jackoftrades.channel.messages.data.GameEventData;
@@ -72,6 +73,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
+
 /**
  * Tests {@link Player}'s object-knowledge path — {@link Player#learnRune}, the wrappers over it,
  * and the two small high-water-mark updaters that sit beside them.
@@ -91,6 +94,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerRuneLearningTest {
 
     /**

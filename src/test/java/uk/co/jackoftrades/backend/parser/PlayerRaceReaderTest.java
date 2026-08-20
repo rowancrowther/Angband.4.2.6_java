@@ -227,13 +227,20 @@ class PlayerRaceReaderTest {
 
     @Test
     void everyRaceGetsTheHumanoidBodyNotNull() throws Exception {
-        // Guards the lookupPlayerBody(0) fix: it must return the real body, not null.
+        // Guards the lookupPlayerBody(0) fix: it must return the real body, not null. Identity is
+        // deliberately not asserted - the registry hands out a copy per call, so that a race (and
+        // in turn a player) cannot write into the loaded template.
         PlayerBody humanoid = PlayerRegistry.lookupPlayerBody(0);
         for (PlayerRace r : new PlayerRaceReader().parse(REAL_FILE)) {
             PlayerBody body = field(r, "body");
             assertNotNull(body, () -> r.getName() + " has a null body");
-            assertSame(humanoid, body);
+            assertNotSame(humanoid, body, () -> r.getName() + " shares the registry's body");
+            assertEquals(humanoid.getName(), body.getName());
             assertEquals(12, body.getCount());
+            for (int index = 0; index < body.getCount(); index++) {
+                assertEquals(humanoid.getSlot(index).getName(), body.getSlot(index).getName());
+                assertEquals(humanoid.getSlot(index).getType(), body.getSlot(index).getType());
+            }
         }
     }
 

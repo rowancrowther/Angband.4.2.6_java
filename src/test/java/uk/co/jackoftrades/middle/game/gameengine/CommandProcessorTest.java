@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.game.gameengine;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.player.Player;
@@ -32,6 +33,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
+
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
  * Tests that {@link CommandProcessor}'s static command table is actually populated, and that a
@@ -52,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class CommandProcessorTest {
 
     /**

@@ -28,6 +28,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -121,13 +122,17 @@ class PlayerBodyEquippedTest {
     }
 
     /**
-     * A body with no slots at all — not a state the game produces, but the loop's degenerate case
-     * and free to check.
+     * A body with no slots at all is refused at construction rather than answering anything.
+     *
+     * <p>It was once the loop's degenerate case, and free to check; the constructor now rejects an
+     * empty slot list outright, which is the stronger guarantee — C's bodies come from a parser
+     * that has already rejected a malformed {@code body.txt}, so a slotless body is not a state the
+     * game can reach.
      */
     @Test
-    @DisplayName("a body with no slots equips nothing")
-    void slotlessBodyEquipsNothing() {
-        assertFalse(bodyOf().itemIsEquipped(new ItemObject()));
+    @DisplayName("a body with no slots cannot be built")
+    void slotlessBodyIsRefused() {
+        assertThrows(IllegalArgumentException.class, PlayerBodyEquippedTest::bodyOf);
     }
 
     /**

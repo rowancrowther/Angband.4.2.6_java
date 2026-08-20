@@ -258,7 +258,7 @@ boxes span these stages rather than matching them one-to-one.
 ### C — Derived stats *(needs A, B)*
 
 - [x] `modify_stat_value` (`[C] player-util.c:339`) — needed by both `calc_bonuses` and birth
-- [ ] `calc_bonuses` (`[C] player-calcs.c:1877–2335`), whole, per decision 3 — including the equipment loop
+- [x] `calc_bonuses` (`[C] player-calcs.c:1877–2335`), whole, per decision 3 — including the equipment loop
   (`:1922–2026`, unexercisable until Chapter 7) and the timed block (`:2094–2214`)
 - [ ] `calc_hitpoints` (`[C] player-calcs.c:1562`)
 - [ ] `update_bonuses` (`[C] player-calcs.c:2336`) — the wrapper that recomputes both `state` and `known_state`

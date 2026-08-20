@@ -3640,6 +3640,63 @@ public class Player {
     }
 
     /**
+     * Recalculates the character's maximum hit points and clamps the current total to it — the port
+     * of C's {@code calc_hitpoints} ({@code player-calcs.c:1562-1588}).
+     *
+     * <p>Two numbers make the maximum. {@code playerHP[level - 1]} is the running total of the hit
+     * dice rolled at each level, fixed at birth and never re-rolled, and {@code adjConMhp} adds a
+     * bonus for constitution expressed in hundredths of a hit point per level — so the table's 250
+     * at 18/40 is two and a half hit points for every level the character has. The bonus is negative
+     * for poor constitution, and the division truncates toward zero in both languages, so a penalty
+     * is rounded the same way a bonus is rather than one point harsher.
+     *
+     * <p>C declares {@code bonus} as {@code long}; an {@code int} carries it here because the widest
+     * product the table can reach is 1250 × 50, nowhere near overflow.
+     *
+     * <p><b>Everything is guarded on the maximum having actually changed.</b> Most calls do not move
+     * it, and the body must not run for those: it would clamp and repaint on every recalculation.
+     * Inside the guard the clamp is {@code >=}, not {@code >}, so a character already sitting exactly
+     * on the new maximum has {@link #chpFrac} cleared as well. That matters because the fraction is
+     * sub-hitpoint regeneration credit — leaving a stale one behind hands out a free hit point at
+     * the next tick.
+     *
+     * <p>{@link PlayerRedraw#PR_HP} is raised rather than the display being touched, in keeping with
+     * the rest of the calculation: this runs in the game half and the UI repaints when it is told.
+     *
+     * <p>The constitution read is {@code state}'s <em>derived</em> stat index, so this must run after
+     * {@code calcBonuses} has filled it. C guarantees that by ordering the flags in
+     * {@code update_stuff}, where {@code PU_BONUS} is handled before {@code PU_HP}
+     * ({@code player-calcs.c:2575-2588}).
+     *
+     * <p>Function calcHitpoints commented in full on 260820.
+     */
+    public void calcHitpoints() {
+        // 1/100th hitpoint bonus per level
+        int bonus = StatTables.adjConMhp[state.getStatInd(Stats.STAT_CON)];
+
+        // Calculate max hp
+        int mhp = playerHP[level - 1] + (bonus * level / 100);
+
+        // Always have 1 hp per level
+        if (mhp < level + 1) mhp = level + 1;
+
+        // New maximum hitpoints
+        if (this.maxHP != mhp) {
+            // save the new limit
+            this.maxHP = mhp;
+
+            // enforce new limit
+            if (this.currentHP >= mhp) {
+                this.currentHP = mhp;
+                this.chpFrac = 0;
+            }
+
+            // Prepare to display the hitpoints
+            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_HP);
+        }
+    }
+
+    /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
      * actions.

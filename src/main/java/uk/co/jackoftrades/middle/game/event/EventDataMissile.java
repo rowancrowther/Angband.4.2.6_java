@@ -25,6 +25,9 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
  * flight — the {@link ItemObject} being thrown, whether the player sees it, and
  * its current grid. Consumed by the display layer to animate the missile.
  *
+ * <p>Needs to have it's ItemObject flattened so it can move into 
+ * channel.messages.data
+ *
  * @author Rowan Crowther
  */
 public class EventDataMissile implements GameEventData {

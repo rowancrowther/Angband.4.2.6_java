@@ -82,4 +82,8 @@ public class MonsterUtils {
 
         return null;
     }
+
+    public static void showMonsterMessages() {
+        // STUB class: TODO: implement
+    }
 }

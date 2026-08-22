@@ -882,4 +882,8 @@ public class ObjectKind {
     public FlagView<ObjectFlag> getFlags() {
         return flags;
     }
+
+    public Random getToA() {
+        return toA;
+    }
 }

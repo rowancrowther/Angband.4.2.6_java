@@ -243,7 +243,7 @@ public class CommandProcessor {
         command.setContext(context);
 
         if (info.function() != null) {
-            if (command.getBackground_command() > 1) {
+            if (command.getBackgroundCommand() > 1) {
                 if (player.getSkipCmdCoercion() != 0 && info.canUseEnergy()) {
                     player.setSkipCmdCoercion(2);
                 }

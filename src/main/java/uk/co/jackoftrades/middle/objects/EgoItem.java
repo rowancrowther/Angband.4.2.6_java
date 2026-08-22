@@ -21,14 +21,9 @@ import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftrades.middle.objects.enums.*;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * An ego item template (as loaded from {@code ego_item.txt}) — a named modifier
@@ -160,6 +155,8 @@ public class EgoItem {
      */
     private boolean everSeen;
 
+    private Map<IgnoreType, Boolean> ignoreTypes;
+
     /**
      * Build an ego-item template from its parsed data-file fields.
      *
@@ -236,6 +233,10 @@ public class EgoItem {
         this.activation = activation;
         this.time = time;
         this.everSeen = everSeen;
+        this.ignoreTypes = new HashMap<>();
+        for (IgnoreType type : IgnoreType.values()) {
+            this.ignoreTypes.put(type, false);
+        }
     }
 
     /**
@@ -352,5 +353,13 @@ public class EgoItem {
      */
     public FlagView<ObjectFlag> getOffFlags() {
         return flagsOff;
+    }
+
+    public boolean getIgnoreType(IgnoreType type) {
+        return ignoreTypes.get(type);
+    }
+
+    public void setIgnoreType(IgnoreType ignoreType) {
+        ignoreTypes.put(ignoreType, true);
     }
 }

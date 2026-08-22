@@ -18,11 +18,11 @@
 package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.channel.utils.Flag;
-import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -84,6 +84,8 @@ public class KnownObject {
      * representation and this one already agree, both being a set of flags.
      */
     private Flag<ObjectFlag> objectFlags;
+
+    private Flag<ObjectNotice> noticeFlags;
     /**
      * Which elemental resistances the player can read, C's {@code obj_k->el_info[].res_level}.
      *
@@ -571,5 +573,9 @@ public class KnownObject {
      */
     public int getToA() {
         return toA;
+    }
+
+    public boolean noticeFlagOn(ObjectNotice notice) {
+        return noticeFlags.on(notice);
     }
 }

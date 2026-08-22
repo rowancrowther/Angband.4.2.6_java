@@ -82,7 +82,7 @@ public class Command {
      * The engine tests {@code background_command > 1} to decide whether to skip the bloodlust
      * (berserk-attack) substitution, which is why this is a small counter rather than a boolean.
      */
-    private int background_command;
+    private int backgroundCommand;
 
     /**
      * This command's arguments, matched by {@link CommandArgument#getName() name} rather than by
@@ -104,14 +104,14 @@ public class Command {
      * @param context            the context the command is issued in
      * @param code               which command to perform
      * @param nrepeats           how many times to attempt to repeat it
-     * @param background_command the tri-state repeat/bloodlust flag (see {@link #background_command})
+     * @param backgroundCommand the tri-state repeat/bloodlust flag (see {@link #backgroundCommand})
      * @param arg                the command's arguments (matched by name)
      */
-    public Command(CommandContext context, CommandCode code, int nrepeats, int background_command, List<CommandArgument> arg) {
+    public Command(CommandContext context, CommandCode code, int nrepeats, int backgroundCommand, List<CommandArgument> arg) {
         this.context = context;
         this.code = code;
         this.nrepeats = nrepeats;
-        this.background_command = background_command;
+        this.backgroundCommand = backgroundCommand;
         this.args = arg;
 
         this.player = GameState.getPlayer();
@@ -133,7 +133,7 @@ public class Command {
      * @return an independent copy of this command
      */
     public Command clone() {
-        return new Command(this.context, this.code, this.nrepeats, this.background_command,
+        return new Command(this.context, this.code, this.nrepeats, this.backgroundCommand,
                 new ArrayList<>(args));
     }
 
@@ -185,10 +185,10 @@ public class Command {
     }
 
     /**
-     * @return the tri-state repeat/bloodlust flag (see {@link #background_command})
+     * @return the tri-state repeat/bloodlust flag (see {@link #backgroundCommand})
      */
-    public int getBackground_command() {
-        return background_command;
+    public int getBackgroundCommand() {
+        return backgroundCommand;
     }
 
     /**
@@ -796,5 +796,9 @@ public class Command {
                 return book;
         }
         return null;
+    }
+
+    public void setBacgroundCommand(int i) {
+        backgroundCommand = i;
     }
 }

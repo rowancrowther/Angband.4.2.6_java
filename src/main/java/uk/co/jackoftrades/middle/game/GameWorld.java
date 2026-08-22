@@ -508,7 +508,7 @@ public class GameWorld {
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_NEW_LEVEL_DISPLAY);
 
         // Update player
-        player.getPlayerUpkeep().updateFlagsOn(PlayerUpdateEnum.PU_BONUS, PlayerUpdateEnum.PU_HP,
+        player.getPlayerUpkeep().setUpdateFlagsOn(PlayerUpdateEnum.PU_BONUS, PlayerUpdateEnum.PU_HP,
                 PlayerUpdateEnum.PU_SPELLS, PlayerUpdateEnum.PU_INVEN);
         player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
         player.noticeStuff();
@@ -719,7 +719,7 @@ public class GameWorld {
 
         // Check for light change
         if (player.hasPlayerFlag(PlayerFlag.PF_UNLIGHT))
-            player.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_BONUS);
+            player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
 
         // Check for creature generation
         if (RandomValueUtils.oneIn(GameConstants.getMonGenChance()))
@@ -824,7 +824,7 @@ public class GameWorld {
 
         } else { // Digest quicker when gorged
             player.decTimed(TimedEffect.TMD_FOOD, 5000 / GameConstants.getPlayerFoodValue(), false, true);
-            player.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_BONUS);
+            player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
         }
 
         // Faint or starving

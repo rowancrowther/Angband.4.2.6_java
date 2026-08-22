@@ -126,7 +126,7 @@ public class CommandQueue {
         if (nextCommand == null) {
             return null;
         }
-        if (nextCommand.getBackground_command() == 0)
+        if (nextCommand.getBackgroundCommand() == 0)
             lastCommand = nextCommand;
         return nextCommand;
     }

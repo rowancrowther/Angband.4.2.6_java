@@ -491,12 +491,12 @@ public class PlayerUpkeep {
      *
      * @param flag the {@link PlayerUpdateEnum} recalculation to request
      */
-    public void updateFlagOn(PlayerUpdateEnum flag) {
+    public void setUpdateFlagOn(PlayerUpdateEnum flag) {
         updateFlags.on(flag);
     }
 
     /**
-     * Raises several update ({@code PU_*}) flags at once, the batch form of {@link #updateFlagOn}.
+     * Raises several update ({@code PU_*}) flags at once, the batch form of {@link #setUpdateFlagOn}.
      *
      * <p>No single C function to point at: C writes the disjunction inline, as
      * {@code p->upkeep->update |= (PU_BONUS | PU_HP | PU_SPELLS)}, because a bitfield makes raising
@@ -511,7 +511,7 @@ public class PlayerUpkeep {
      *
      * @param flags the {@link PlayerUpdateEnum} recalculations to request
      */
-    public void updateFlagsOn(PlayerUpdateEnum... flags) {
+    public void setUpdateFlagsOn(PlayerUpdateEnum... flags) {
         updateFlags.set(flags);
     }
 
@@ -642,5 +642,21 @@ public class PlayerUpkeep {
 
     public boolean isOnlyPartial() {
         return onlyPartial;
+    }
+
+    public boolean isNotice() {
+        return !noticeFlags.isEmpty();
+    }
+
+    public FlagView<PlayerNotice> getNoticeFlags() {
+        return noticeFlags;
+    }
+
+    public void setNoticeFlagOff(PlayerNotice playerNotice) {
+        noticeFlags.off(playerNotice);
+    }
+
+    public void setNoticeFlagOn(PlayerNotice playerNotice) {
+        noticeFlags.on(playerNotice);
     }
 }

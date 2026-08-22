@@ -212,4 +212,8 @@ public abstract class NumberUtils {
 
         return result;
     }
+
+    public static int cmp(int int1, int int2) {
+        return Integer.compare(int1, int2);
+    }
 }

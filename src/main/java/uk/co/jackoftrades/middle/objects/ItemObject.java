@@ -26,6 +26,7 @@ import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
@@ -39,6 +40,7 @@ import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.utils.NumberUtils;
 
 import java.util.*;
 
@@ -2034,5 +2036,265 @@ public class ItemObject {
         }
 
         return result;
+    }
+
+    public int checkForInscription(String s) {
+        if (note == null || s == null || s.isEmpty()) return 0;
+
+        int count = 0;
+        int location = 0;
+
+        // Shift indexOf's answer up by one, so its "not found" (-1) becomes 0 and a match at
+        // the very start becomes 1. That frees 0 to be the loop's stop value and makes result
+        // the position to resume from, both in one number.
+        int result = note.indexOf(s, location) + 1;
+
+        // 0 is "no match left", the shifted form of indexOf returning -1
+        while (result != 0) {
+            count++;
+
+            // Resume one character past the match's first character, not past the whole match,
+            // so overlapping occurrences are each counted - "!!!" holds "!!" twice. This is C's
+            // s++ in check_for_inscrip (obj-util.c:437).
+            location = result;
+            result = note.indexOf(s, location) + 1;
+        }
+
+        return count;
+    }
+
+    public boolean verifyObject(String prompt, Player player) {
+        Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class);
+        descFlags.on(ObjectDescription.ODESC_PREFIX);
+        descFlags.on(ObjectDescription.ODESC_COMBAT);
+        descFlags.on(ObjectDescription.ODESC_EXTRA);
+        String objectName = description(descFlags, player);
+
+        String out = String.format("%s %s? ", prompt, objectName);
+
+        return GameInputHolder.getInstance().getCheck(out);
+    }
+
+    public String setNote(String s) {
+        return note;
+    }
+
+    public IgnoreType getIgnoreTypeOf() {
+        for (ObjectInfo.QualityMapping mapping : ObjectInfo.qualityMapping) {
+            if (mapping.tval() == gettValue()) {
+                // Is there a matching identifier
+                if (!mapping.identifier().isEmpty()) {
+                    if (!getKind().getName().equals(mapping.identifier())) {
+                        continue;
+                    }
+                }
+                return mapping.ignoreType();
+            }
+        }
+
+        return IgnoreType.ITYPE_MAX;
+    }
+
+    public boolean isEgo() {
+        return ego != null;
+    }
+
+    public boolean egoIsIgnored(IgnoreType type) {
+        if (ego == null) return false;
+        return ego.getIgnoreType(type);
+    }
+
+    public QualityValueEnum ignoreLevelOf() {
+        if (!isKnown()) return QualityValueEnum.IGNORE_MAX;
+
+        // Jewellery treated specially
+        if (tValue.isJewelry()) {
+            // One positive modifier means not bad
+            for (ObjectModifier mod : this.modifiers.keySet()) {
+                if (modifiers.get(mod) > 0)
+                    return QualityValueEnum.IGNORE_AVERAGE;
+            }
+
+            // One positive combat value means not bad
+            if (known.toHit > 0 || known.toDam > 0 || known.toAC > 0)
+                return QualityValueEnum.IGNORE_AVERAGE;
+            if (known.toHit < 0 || known.toDam < 0 || known.toAC < 0)
+                return QualityValueEnum.IGNORE_BAD;
+
+            return QualityValueEnum.IGNORE_AVERAGE;
+        }
+
+        // Now just bad, average, good, ego
+        QualityValueEnum value;
+        if (isFullyKnown()) {
+            int isGood = isGood();
+
+            if (isGood > 0)
+                value = QualityValueEnum.IGNORE_GOOD;
+            else if (isGood < 0)
+                value = QualityValueEnum.IGNORE_BAD;
+            else
+                value = QualityValueEnum.IGNORE_AVERAGE;
+
+            if (isEgo())
+                value = QualityValueEnum.IGNORE_ALL;
+            else if (isArtifact())
+                value = QualityValueEnum.IGNORE_MAX;
+        } else {
+            if (known.notice.on(ObjectNotice.OBJ_NOTICE_ASSESSED) && !isArtifact())
+                value = QualityValueEnum.IGNORE_ALL;
+            else
+                value = QualityValueEnum.IGNORE_MAX;
+        }
+
+        return value;
+    }
+
+    private int isGood() {
+        int good = 0;
+
+        good += 4 * compareObjectTrait(toDam, kind.getToD());
+        good += 2 * compareObjectTrait(toHit, kind.getToH());
+        good += compareObjectTrait(toAC, kind.getToA());
+        return good;
+    }
+
+    private int compareObjectTrait(int bonus, Random base) {
+        int amount = base.randCalc(0, DamageAspect.MINIMIZE);
+
+        if (amount > 0) amount = 0;
+        return NumberUtils.cmp(bonus, amount);
+
+    }
+
+    public boolean isInQuiver(Player player) {
+        for (ItemObject item : player.getPlayerUpkeep().getQuiver()) {
+            if (item == this) return true;
+        }
+
+        return false;
+    }
+
+    public boolean mergeable(ItemObject toMerge, Flag<ObjectStackEnum> stackModes) {
+        int total = this.number + toMerge.number;
+
+        if (!stackModes.has(ObjectStackEnum.OSTACK_STORE)) {
+            if (total > toMerge.getKind().getBase().getMaxStack()) return false;
+        }
+
+        // Quiver can impose stricter limits
+        if (stackModes.has(ObjectStackEnum.OSTACK_QUIVER)) {
+            if (toMerge.gettValue().isAmmo()) {
+                if (total > GameConstants.getCarryCapQuiverSize()) return false;
+            } else {
+                if (total > GameConstants.getCarryCapQuiverSize()
+                        / GameConstants.getCarryCapThrownQuiverMult()) return false;
+            }
+        }
+
+        return objectStackable(toMerge, stackModes);
+    }
+
+    public boolean objectStackable(ItemObject toMerge, Flag<ObjectStackEnum> stackModes) {
+        if (similar(toMerge, stackModes)) {
+            return toMerge.getNote() != null || this.getNote() != null || toMerge.getNote().equals(this.getNote());
+        }
+
+        return false;
+    }
+
+    public void objectAbsorb(ItemObject toAbsorb) {
+        ItemObject known = toAbsorb.getKnown();
+        Player player = GameState.getPlayer();
+
+        int total = this.number + toAbsorb.number;
+
+        this.number = Math.min(total, this.getKind().getBase().getMaxStack());
+
+        this.objectAbsorbMerge(toAbsorb, player, true);
+        if (known != null) {
+            if (known.getGrid() != Loc.zero)
+                player.getCave().getSquare(known.getGrid()).pileExcise(known);
+        }
+    }
+
+    private void objectAbsorbMerge(ItemObject toAbsorb, Player player, boolean combineChargesTimeouts) {
+        int total;
+
+        // This object gains extra knowledge from toMerge
+        if (this.getKnown() != null && toAbsorb.getKnown() != null) {
+            if (toAbsorb.getKnown().getEffect() != null)
+                this.effect = new ArrayList<>(toAbsorb.getKnown().getEffect());
+            player.knowObject(this);
+        }
+
+        if (toAbsorb.getNote() != null)
+            this.note = toAbsorb.getNote();
+
+        // Combine tValues information
+        if (combineChargesTimeouts) {
+            // Rods
+            if (this.gettValue().canHaveTimeout())
+                this.timeout += toAbsorb.getTimeout();
+
+            // wands and staves
+            if (this.gettValue().canHaveCharges() || this.gettValue().isMoney()) {
+                total = this.getpValue() + toAbsorb.getpValue();
+                this.pValue = Math.min(total, GameConstants.MAX_PVAL);
+            }
+        }
+
+        // Combine origin as best we can
+        this.originCombine(toAbsorb);
+    }
+
+    public void nullKnown() {
+        this.known = null;
+    }
+
+    public void objectAbsorbPartial(ItemObject item2,
+                                    Flag<ObjectStackEnum> stackMode1,
+                                    Flag<ObjectStackEnum> stackMode2) {
+        int smallest = Math.min(this.getNumber(), item2.getNumber());
+        int largest = Math.max(this.getNumber(), item2.getNumber());
+        int newThisSize;
+        int newItm2Size;
+
+        if (stackMode1.has(ObjectStackEnum.OSTACK_STORE) || stackMode2.has(ObjectStackEnum.OSTACK_STORE)) return;
+
+        // Quivers can have stricter limits
+        if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
+            int limit = GameConstants.getCarryCapQuiverSlotSize() /
+                    (this.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+
+            if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
+                int difference = limit - largest;
+                newThisSize = largest + difference;
+                newItm2Size = smallest - difference;
+            } else {
+                newThisSize = limit;
+                newItm2Size = largest + smallest - limit;
+                if (newItm2Size >= this.getKind().getBase().getMaxStack()) return;
+            }
+        } else if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
+            // Handle possible different limits
+            int limit = GameConstants.getCarryCapQuiverSlotSize()
+                    / (item2.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+
+            newThisSize = largest + smallest - limit;
+            newItm2Size = limit;
+            if (newItm2Size >= this.getKind().getBase().getMaxStack()) return;
+        } else {
+            int difference = this.getKind().getBase().getMaxStack() - largest;
+
+            newThisSize = largest + difference;
+            newItm2Size = largest - difference;
+        }
+
+        item2.distributeCharges(this, item2.getNumber() - newItm2Size, false);
+        this.setNumber(newThisSize);
+        item2.setNumber(newItm2Size);
+
+        objectAbsorbMerge(item2, GameState.getPlayer(), this.gettValue().isMoney());
     }
 }

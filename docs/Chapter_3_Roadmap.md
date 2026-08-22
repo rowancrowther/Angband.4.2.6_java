@@ -191,7 +191,7 @@ question, on three counts, and is withdrawn.
    `PR_SUBWINDOW` when the map is hidden (`:2686`), and throttles all but message and map on 99 turns in 100 while
    resting or running (`:2690`). All three use state the raising code has no business knowing.
 3. **The port already made the call.** `PlayerUpkeep.java:115–125` holds the three sets as `Flag<PlayerNotice>`,
-   `Flag<PlayerUpkeepEnum>`, `Flag<PlayerRedraw>`, with `redrawFlagOn`/`Off` (`:301–317`), `updateFlagOn`/`FlagsOn`
+   `Flag<PlayerUpkeepEnum>`, `Flag<PlayerRedraw>`, with `redrawFlagOn`/`Off` (`:301–317`), `setUpdateFlagOn`/`FlagsOn`
    (`:446–467`) and `noticeFlagOn` (`:475`). The flags stay.
 
 **What is genuinely undecided** is what C never had to decide. `event_signal(EVENT_HP)` carries **no payload** — the UI
@@ -262,13 +262,13 @@ boxes span these stages rather than matching them one-to-one.
   (`:1922–2026`, unexercisable until Chapter 7) and the timed block (`:2094–2214`)
 - [x] `calc_hitpoints` (`[C] player-calcs.c:1562`)
 - [x] `update_bonuses` (`[C] player-calcs.c:2336`) — the wrapper that recomputes both `state` and `known_state`
-- [ ] Stubs, per decision 1: `calc_inventory`, `calc_spells`, `calc_mana`, `calc_light`, `calc_shapechange`,
+- [x] Stubs, per decision 1: `calc_inventory`, `calc_spells`, `calc_mana`, `calc_light`, `calc_shapechange`,
   `calc_blows`, `calc_digging_chances`, `calc_unlocking_chance`, `weight_limit`/`weight_remaining`, `earlier_object`,
   and the five tracking functions (`[C] player-calcs.c:2470–2521`)
 
 ### D — The update cycle + the design set piece *(needs C)*
 
-- [ ] Write the set-piece proposal above; review before building
+- [X] Write the set-piece proposal above; review before building
 - [ ] `notice_stuff` (`[C] player-calcs.c:2536`) → `Player.java:1258`
 - [ ] `update_stuff` (`[C] player-calcs.c:2565`) → `Player.java:1279` — the fixed poll order is the point
 - [ ] `redraw_stuff` (`[C] player-calcs.c:2676`) → `Player.java:1289` — where the proposal lands

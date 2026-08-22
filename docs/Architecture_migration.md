@@ -770,6 +770,9 @@ exactly that once already.)*
 - **Thread lifecycle & shutdown** — non-daemon threads, `join`, why `System.exit` was hiding a race, poison pills (stage
   3–4). ✅ `thread-lifecycle-and-shutdown.md` — also covers `UncaughtExceptionHandler` and the crash path the handshake
   does not reach, found while verifying stage 4.
+- **Request–response over a one-way pair of channels** — why `get_check` is not an `event_signal`, the shared-inbox
+  matching problem, and four ways out (correlation id, dedicated reply channel, rendezvous-in-the-message, re-issued
+  command) (Chapter 3, the `GameInput` boundary). ✅ `request-response.md`
 - **How C's front end is actually layered** — `game-event.c` broadcasting upward vs `ui-term.h`'s hooks drawing
   downward, why `ui-*.c` sits between them, and what that says about which of the two a channel should carry (stage 1,
   and again at stage 5 when the handlers split).

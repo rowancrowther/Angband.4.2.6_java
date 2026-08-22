@@ -29,14 +29,18 @@ import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.GameWorld;
+import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.gameengine.Command;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.Food;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
+import uk.co.jackoftrades.middle.monsters.MonsterUtils;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
@@ -1810,7 +1814,340 @@ public class Player {
      * <p><b>Stub:</b> not yet implemented, awaiting the player-calc subsystem.
      */
     public void noticeStuff() {
-        // Stub class TODO: implement
+        // Is there anythingn to notice
+        if (!getPlayerUpkeep().isNotice()) return;
+
+        // deal with ignore stuff
+        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_IGNORE)) {
+            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_IGNORE);
+            ignoreDrop();
+        }
+
+        // Combine the pack
+        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_COMBINE)) {
+            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_COMBINE);
+            combinePack();
+        }
+
+        // Dump the monster messages
+        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_MON_MESSAGE)) {
+            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_MON_MESSAGE);
+
+            // Make sure that this comes after all the monster messages
+            MonsterUtils.showMonsterMessages();
+        }
+    }
+
+    private void combinePack() {
+        ItemObject item2;
+        boolean displayMessage = false;
+        boolean displayRepeat = false;
+        ObjectStackEnum stackMode2;
+
+        for (ItemObject item1 : gear.reversed()) {
+            if (item1.getKind() == null) continue;
+            if (item1.gettValue().isMoney()) continue;
+
+            // use an indexed for loop to ensure that we stop at item1
+            for (int index = 0; index <= gear.size() && gear.get(index) != item1; index++) {
+                item2 = gear.get(index);
+                stackMode2 = item2.isInQuiver(this) ? ObjectStackEnum.OSTACK_QUIVER
+                        : ObjectStackEnum.OSTACK_PACK;
+
+                if (item2.getKind() == null) continue;
+
+                // Are item1 & item2 mergeable?
+                Flag<ObjectStackEnum> stackModes = new Flag<>(ObjectStackEnum.class);
+                stackModes.on(stackMode2);
+                if (item2.mergeable(item1, stackModes)) {
+                    displayMessage = true;
+                    displayRepeat = true;
+                    item2.getKnown().objectAbsorb(item1.getKnown());
+                    item1.nullKnown();
+                    item2.objectAbsorb(item1);
+
+                    // Ensure numbers align - shouldn't be necessary, but just in case
+                    item2.getKnown().setNumber(item2.getNumber());
+
+                    break;
+                } else {
+                    ObjectStackEnum stackMode1 = item1.isInQuiver(this) ? ObjectStackEnum.OSTACK_QUIVER
+                            : ObjectStackEnum.OSTACK_PACK;
+                    Flag<ObjectStackEnum> modes1 = new Flag<>(ObjectStackEnum.class);
+                    Flag<ObjectStackEnum> modes2 = new Flag<>(ObjectStackEnum.class);
+                    modes1.on(stackMode1);
+                    modes2.on(stackMode2);
+                    if (!invenCanStackPartial(item1, item2, modes1, modes2)) {
+                        // Don't display a message for this caes: shuffling
+                        // items between stacks isn't insteresting to the
+                        // player.
+                        item2.getKnown().objectAbsorbPartial(item1.getKnown(), modes2, modes1);
+                        item2.objectAbsorbPartial(item1, modes2, modes1);
+
+                        // Ensure numbers allign - shouldn't be necessary, but just in case
+                        item2.getKnown().setNumber(item2.getNumber());
+                        item1.getKnown().setNumber(item1.getNumber());
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        calcInventory();
+
+        // Redraw gear
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_INVENTORY);
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_EQUIPMENT);
+
+        // Message
+        if (displayMessage) {
+            Message.message("You combine some items in your pack.");
+
+            // Stop "repeat last command" from working if a stack was completely
+            // combined with another.
+            if (displayRepeat) GameState.getCommandQueue().disableRepeat();
+        }
+    }
+
+    private boolean invenCanStackPartial(ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> stackMode1,
+                                         Flag<ObjectStackEnum> stackMode2) {
+        Flag<ObjectStackEnum> combinedModes = new Flag<>(ObjectStackEnum.class);
+        combinedModes.copyFrom(stackMode1);
+        combinedModes.union(stackMode2);
+
+        // Quick fail
+        if (!item1.objectStackable(item2, combinedModes)) {
+            return false;
+        }
+
+        // Now verifying numbers
+        // Leading stack, item1, has to have its count maximised
+        if (combinedModes.has(ObjectStackEnum.OSTACK_STORE)) {
+            // Quiver has stricter limits
+            if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
+                int quiverLimit = GameConstants.getCarryCapQuiverSize() /
+                        (item1.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+
+                // Are we already at the limit?
+                if (item1.getNumber() == quiverLimit) return false;
+
+                // Checked per-stack limits - if trying to move
+                // items to the quiver, also check the overall
+                // quiver limits to avoid combining and then
+                // splitting in calcInventory()
+                if (!stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
+                    int numFreeSlots = GameConstants.getCarryCapPackSize() -
+                            packSlotsUsed();
+                    int numToQuiver = 0;
+
+                    SplitBetweenPackAndQuiver inSplit = new SplitBetweenPackAndQuiver(numToQuiver, numFreeSlots);
+                    SplitBetweenPackAndQuiver outSplit = quiverAbsorbNum(item2, inSplit);
+                    numToQuiver = outSplit.numToQuiver();
+                    numFreeSlots = outSplit.noToPack();
+
+                    if (numToQuiver <= 0) return false;
+                }
+            } else if (item1.getNumber() == item1.getKind().getBase().getMaxStack()) {
+                // No reason to combine if we are already at the limit
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private SplitBetweenPackAndQuiver quiverAbsorbNum(ItemObject item, SplitBetweenPackAndQuiver splitIn) {
+        int numAddPack = splitIn.noToPack();
+        int numToQuiver = splitIn.numToQuiver();
+        SplitBetweenPackAndQuiver error = new SplitBetweenPackAndQuiver(-1, -1);
+
+        boolean ammo = item.gettValue().isAmmo();
+        int quiverCount = 0;
+        int spaceFree = 0;
+        int numEmpty = 0;
+        int currentSlot = -1;
+
+        if (ammo || item.hasFlag(ObjectFlag.OF_THROWING)) {
+            int desiredSlot = preferredQuiverSlot(item);
+            boolean displaces = false;
+
+            for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
+                currentSlot++;
+
+                if (quiverItem != null) {
+                    int mult = quiverItem.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult();
+
+                    quiverCount += quiverItem.getNumber() * mult;
+                    Flag<ObjectStackEnum> stackFlags = new Flag<>(ObjectStackEnum.class);
+                    stackFlags.on(ObjectStackEnum.OSTACK_PACK);
+                    if (quiverItem.objectStackable(item, stackFlags)) {
+                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSize()) return error;
+                        spaceFree += GameConstants.getCarryCapQuiverSlotSize() - quiverItem.getNumber() * mult;
+                    } else if (desiredSlot == currentSlot && preferredQuiverSlot(quiverItem) != currentSlot) {
+                        // The object to be added prefers to go in this slot,
+                        // but it's occupied by another object that could be
+                        // displaced to a different quiver slot, if one is
+                        // available.
+                        displaces = true;
+                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSize()) return error;
+                        // Avoid double counting in the ammo case since the
+                        // empty slot, if any, for the displaced stack is
+                        // treated as fully available.
+                        if (ammo)
+                            spaceFree += GameConstants.getCarryCapQuiverSlotSize() - quiverItem.getNumber() * mult;
+                        else
+                            spaceFree += GameConstants.getCarryCapQuiverSlotSize();
+                    }
+                } else {
+                    numEmpty++;
+                    // Ammo can fit in any empty slot, non-ammo thrown items
+                    // are restricted to their preferred slots
+                    if (ammo || desiredSlot == currentSlot)
+                        spaceFree += GameConstants.getCarryCapQuiverSlotSize();
+                }
+            }
+
+            // Only possible to add if there is space in the quiver and either
+            // are displacing a pile with an empty quiver slot avaialble for it
+            // or are not displacing a pile at all.
+            if (spaceFree != 0 && ((displaces && numEmpty != 0) || !displaces)) {
+                int mult = ammo ? 1 : GameConstants.getCarryCapThrownQuiverMult();
+
+                // When quiver count % quiver slot size is zero, adding 
+                // anything will require a pack slot
+                int remainder = quiverCount % GameConstants.getCarryCapQuiverSize();
+                int limitFromPack = remainder != 0 ? GameConstants.getCarryCapQuiverSlotSize() - remainder : 0;
+
+                if (numAddPack > 0)
+                    limitFromPack += numAddPack * GameConstants.getCarryCapQuiverSlotSize();
+
+                spaceFree = Math.min(spaceFree, limitFromPack);
+                numToQuiver = Math.min(item.getNumber(), spaceFree / mult);
+                numAddPack -= (numToQuiver * mult + GameConstants.getCarryCapQuiverSlotSize() - 1 - remainder)
+                        / GameConstants.getCarryCapQuiverSlotSize();
+                SplitBetweenPackAndQuiver outgoing = new SplitBetweenPackAndQuiver(numToQuiver, numAddPack);
+                return outgoing;
+            }
+        }
+
+        // Not suitable for the quiver or no space
+        SplitBetweenPackAndQuiver outgoing = new SplitBetweenPackAndQuiver(0, numAddPack);
+        return outgoing;
+    }
+
+    private int preferredQuiverSlot(ItemObject item) {
+        int desiredSlot = -1;
+
+        if (item.getNote() != null && (item.gettValue().isAmmo() || item.hasFlag(ObjectFlag.OF_THROWING))) {
+            String s;
+            char fireKey;
+            char throwKey;
+
+            if (item.getNote().contains("@")) {
+                s = item.getNote().substring(item.getNote().indexOf('@'));
+            } else
+                s = null;
+
+            fireKey = getPlayerOptions().has(PlayerOptionEnum.OP_rogue_like_commands) ? 't' : 'f';
+            throwKey = 'v';
+
+            while (true) {
+                if (s == null || s.isEmpty() || !s.contains("@")) break;
+                if (s.length() < 3) break;
+                if (s.charAt(1) == fireKey || s.charAt(1) == throwKey) {
+                    desiredSlot = s.charAt(2) - '0';
+                    break;
+                }
+                s = s.substring(1);
+                if (s.contains("@")) {
+                    s = s.substring(s.indexOf("@"));
+                }
+            }
+        }
+
+        return desiredSlot;
+    }
+
+    private int packSlotsUsed() {
+        int quiverAmmo = 0;
+        int packSlots = 0;
+
+        for (ItemObject item : gear) {
+            boolean found = false;
+
+            // Equipped items don't count
+            if (body.itemIsEquipped(item)) {
+                // Is it in the quiver
+                if (item.gettValue().isAmmo() || item.hasFlag(ObjectFlag.OF_THROWING)) {
+                    for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
+                        quiverAmmo += quiverItem.getNumber()
+                                * (item.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                    packSlots++;
+            }
+        }
+
+        // Full slots
+        packSlots += quiverAmmo / GameConstants.getCarryCapQuiverSize();
+
+        if (quiverAmmo % GameConstants.getCarryCapQuiverSlotSize() != 0)
+            packSlots++;
+
+        return packSlots;
+    }
+
+    public void ignoreDrop() {
+        for (ItemObject item : gear.reversed()) {
+            // skip non-objects & unignoreable objects
+            if (item.getKind() == null)
+                continue;
+
+            if (!ignoreItemOK(item)) continue;
+
+            // check for !d (no drop) inscriptions
+            if (item.checkForInscription("!d") == 0 && item.checkForInscription("!*") == 0) {
+                // Confirm the drop if the object is equipped
+                if (getPlayerBody().itemIsEquipped(item)) {
+                    if (!item.verifyObject("Really take off and drop", this)) {
+                        // Inscribe the item with !d to prevent repeated confirmations
+                        item.setNote(item.getNote() + "!d");
+                        continue;
+                    }
+                }
+
+                // We are allowed to drop it
+                if (!cave.getSquare(grid).isShop()) {
+                    Command dropCommand;
+
+                    getPlayerUpkeep().setDropping(true);
+                    GameState.getCommandQueue().push(CommandCode.CMD_DROP);
+                    dropCommand = GameState.getCommandQueue().commandQueuePeek();
+                    if (dropCommand == null) return;
+                    dropCommand.setArgItem("item", item);
+                    dropCommand.setArgNumber("quantity", item.getNumber());
+                    /*
+                     * This drop is a side effect:  whatever
+                     * command triggered it will be the target
+                     * for CMD_REPEAT rather than repeating the
+                     * drop, and the drop will not trigger
+                     * bloodlust.
+                     */
+                    dropCommand.setBacgroundCommand(2);
+                }
+            }
+        }
+
+        // update the gear
+        getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_INVEN);
+
+        // Combine/reorder the pack
+        getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_COMBINE);
     }
 
     /**
@@ -3568,8 +3905,8 @@ public class Player {
         // Is it day in the town
         if (depth == 0 && GameWorld.isDaytime() && update) {
             if (this.state != null && this.state.getCurLight() != state.getCurLight()) {
-                getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
-                getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
+                getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+                getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
             }
             return;
         }
@@ -3778,23 +4115,23 @@ public class Player {
             if (state.getStatInd(stat) != this.getPlayerState().getStatInd(stat)) {
                 // change in Con can affect Hitpoints
                 if (stat == Stats.STAT_CON)
-                    this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_HP);
+                    this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_HP);
 
                 // Change in stats may affect mana and spells
-                this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MANA);
-                this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_SPELLS);
+                this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MANA);
+                this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_SPELLS);
             }
         }
 
         // Telepathy change
         if (state.hasOFlag(ObjectFlag.OF_TELEPATHY) != this.getPlayerState().hasOFlag(ObjectFlag.OF_TELEPATHY))
             // Update monster visibility
-            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
 
         // See invis change
         if (state.hasOFlag(ObjectFlag.OF_SEE_INVIS) != this.getPlayerState().hasOFlag(ObjectFlag.OF_SEE_INVIS))
             // Update monster visibility
-            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
 
         // Redraw speed if required
         if (state.getSpeed() != this.getPlayerState().getSpeed())
@@ -3808,8 +4145,8 @@ public class Player {
         // Notice changes in the 'light radius'
         if (state.getCurLight() != this.getPlayerState().getCurLight()) {
             // Update visuals
-            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
-            this.getPlayerUpkeep().updateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
+            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
+            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
         }
 
         // Notice changes to the weight limit
@@ -3859,6 +4196,48 @@ public class Player {
         this.knownState = knownState;
     }
 
+    public void calcInventory() {
+        // Stub class. TODO: Implement
+    }
+
+    public void calcSpells() {
+        // Stub class. TODO: Implement
+    }
+
+    private boolean ignoreItemOK(ItemObject item) {
+        if (unignoring != 0) return false;
+
+        return isIgnored(item);
+    }
+
+    private boolean isIgnored(ItemObject item) {
+        // Can't ignore unknown things
+        if (item.getKind() == null) return false;
+
+        // Are individual items are marked ignore
+        if (itemKnowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IGNORE)) return true;
+
+        // Only ignore artifacts marked to be ignored
+        if (item.isArtifact() || item.checkForInscription("!k") != 0
+                || item.checkForInscription("!*") != 0) return false;
+
+        // Do ignore by kind
+        if (item.flavourIsAware() ? item.getKind().isIgnoredAware()
+                : item.getKind().isIgnoredUnaware()) return true;
+
+        IgnoreType type = item.getIgnoreTypeOf();
+        if (type == IgnoreType.ITYPE_MAX) return false;
+
+        // ignore ego items if known
+        if (item.isEgo() && item.egoIsIgnored(type)) return true;
+
+        // Ignore non-artifact objects
+        if (itemKnowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
+                && ObjectInfo.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
+
+        return item.ignoreLevelOf().ordinal() <= ObjectInfo.ignoreLevel.get(type).ordinal();
+    }
+
     /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
@@ -3876,5 +4255,8 @@ public class Player {
      * @param moves extra movement actions per turn
      */
     private record Extras(int blows, int shots, int might, int moves) {
+    }
+
+    private record SplitBetweenPackAndQuiver(int numToQuiver, int noToPack) {
     }
 }

@@ -20,8 +20,10 @@ package uk.co.jackoftrades.middle.player;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -57,6 +59,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerUpkeepRedrawFlagsTest {
 
     /**

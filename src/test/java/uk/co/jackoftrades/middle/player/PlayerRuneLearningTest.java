@@ -54,6 +54,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.RuneVariety;
 
 import uk.co.jackoftrades.middle.objects.CurseData;
+import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
@@ -465,6 +466,31 @@ class PlayerRuneLearningTest {
     }
 
     /**
+     * Empties {@link uk.co.jackoftrades.middle.Message}'s log, which is static and outlives a test.
+     *
+     * <p>C's {@code message_add} bumps a count in place when the newest entry repeats, and the port
+     * decorates the outgoing text with {@code (x2)} when it does. The log is process-wide, so a test
+     * class that has already announced "You have learned the rune of enchantment to hit." makes the
+     * next class to announce it see the decorated form — a failure that depends on which classes ran
+     * first, and so appears and disappears with the run order rather than with the code.
+     */
+    @SuppressWarnings("unchecked")
+    private static void clearMessageLog() {
+        try {
+            Field field = Message.class.getDeclaredField("messageLog");
+            field.setAccessible(true);
+            ((java.util.Deque<Object>) field.get(null)).clear();
+        } catch (ReflectiveOperationException e) {
+            throw new AssertionError("Message.messageLog is no longer reachable by reflection", e);
+        }
+    }
+
+    @AfterEach
+    void tearDown() {
+        GameEngine.setEventsBusHandler(realBus);
+    }
+
+    /**
      * A player with a fresh knowledge set, and a bus to catch what the learning announces.
      *
      * <p>{@link Player}'s constructor leaves {@code itemKnowledge} null, matching C, where
@@ -486,11 +512,7 @@ class PlayerRuneLearningTest {
         realBus = GameEngine.getEventsBusHandler();
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
-    }
-
-    @AfterEach
-    void tearDown() {
-        GameEngine.setEventsBusHandler(realBus);
+        clearMessageLog();
     }
 
     /**

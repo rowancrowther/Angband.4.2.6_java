@@ -23,7 +23,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
@@ -73,6 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class ItemObjectSimilarTest {
 
     private static Player savedPlayer;

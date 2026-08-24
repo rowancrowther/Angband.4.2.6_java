@@ -449,6 +449,8 @@ public class ItemObject {
      * port of C's {@code object_similar} ({@code obj-util.c}). The comparison covers kind, ego,
      * artifact, known/unknown state, curses, runes, effect knowledge and any mode-specific rules.
      *
+     * <p>Function similar coded before 260822, commented in full on 260824.
+     *
      * @param itm2 the other object to compare against
      * @param mode the {@link ObjectStackEnum} flags selecting which stacking rules apply
      * @return {@code true} if the two objects may occupy the same stack
@@ -2038,6 +2040,22 @@ public class ItemObject {
         return result;
     }
 
+    /**
+     * Counts how many times an inscription fragment occurs in this object's note - the port of C's
+     * {@code check_for_inscrip} ({@code obj-util.c:423}). Callers use it as a yes/no test:
+     * a non-zero answer means the tag is present.
+     *
+     * <p>Occurrences may overlap, because the scan resumes one character past the start of each
+     * match rather than past the whole of it - C's {@code s++}. So {@code "!!!"} holds {@code "!!"}
+     * twice.
+     *
+     * <p>An object with no note, and an empty or null fragment, count as zero rather than failing.
+     *
+     * <p>Function checkForInscription coded before 260822, commented in full on 260824.
+     *
+     * @param s the inscription fragment to look for, e.g. {@code "!d"}
+     * @return the number of occurrences, {@code 0} if none
+     */
     public int checkForInscription(String s) {
         if (note == null || s == null || s.isEmpty()) return 0;
 
@@ -2063,6 +2081,21 @@ public class ItemObject {
         return count;
     }
 
+    /**
+     * Puts a yes/no question to the player about this object - the port of C's
+     * {@code verify_object} ({@code obj-util.c:1072}).
+     *
+     * <p>The object is described with prefix, combat values and extra detail, and appended to the
+     * caller's prompt, so {@code "Really take off and drop"} becomes
+     * {@code "Really take off and drop a Long Sword (+3,+4)? "}. The question goes out through
+     * {@code GameInputHolder}, which is the boundary the middle layer asks the player through.
+     *
+     * <p>Function verifyObject coded before 260822, commented in full on 260824.
+     *
+     * @param prompt the question, without the object name or the question mark
+     * @param player the player whose knowledge shapes the description
+     * @return {@code true} if the player answered yes
+     */
     public boolean verifyObject(String prompt, Player player) {
         Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class);
         descFlags.on(ObjectDescription.ODESC_PREFIX);
@@ -2075,10 +2108,37 @@ public class ItemObject {
         return GameInputHolder.getInstance().getCheck(out);
     }
 
-    public String setNote(String s) {
-        return note;
+    /**
+     * Sets this object's inscription, replacing any existing one.
+     *
+     * <p>{@code null} clears it, and is the normal state - an uninscribed object has no note rather
+     * than an empty one, which is why every reader tests for {@code null} first.
+     *
+     * <p>Field note set here on behalf of C, which writes {@code obj->note} directly as a quark;
+     * the port keeps the string.
+     *
+     * <p>Function setNote coded before 260822, corrected on 260824 to assign its argument,
+     * commented in full on 260824.
+     *
+     * @param note the inscription to store, or {@code null} to clear it
+     */
+    public void setNote(String note) {
+        this.note = note;
     }
 
+    /**
+     * Reports which ignore category this object falls into - the port of C's
+     * {@code ignore_type_of} ({@code obj-ignore.c:382}).
+     *
+     * <p>The quality mapping table is searched for the first entry matching this object's tval. An
+     * entry may narrow that further with an identifier, which has to match the kind's name - that
+     * is how, say, diggers are split out from the other tools sharing their tval.
+     *
+     * <p>Function getIgnoreTypeOf coded on 260822, commented in full on 260824.
+     *
+     * @return the matching {@link IgnoreType}, or {@link IgnoreType#ITYPE_MAX} if the object is not
+     * subject to quality ignoring at all
+     */
     public IgnoreType getIgnoreTypeOf() {
         for (ObjectInfo.QualityMapping mapping : ObjectInfo.qualityMapping) {
             if (mapping.tval() == gettValue()) {
@@ -2104,14 +2164,36 @@ public class ItemObject {
         return ego.getIgnoreType(type);
     }
 
+    /**
+     * Reports the quality band this object would be ignored at - the port of C's
+     * {@code ignore_level_of} ({@code obj-ignore.c:464}). The caller compares the answer against
+     * the player's setting for the object's {@link IgnoreType}.
+     *
+     * <p>An object the player does not know returns {@link QualityValueEnum#IGNORE_MAX}, which no
+     * setting reaches, so it is never ignored on quality.
+     *
+     * <p>Jewellery is judged separately and only ever comes back bad or average, because a ring or
+     * amulet has no base type to be good relative to. One positive modifier or combat bonus makes
+     * it average, one negative combat bonus with no positives makes it bad. Every value read there
+     * comes from the known object: an unlearned modifier must not sway the decision.
+     *
+     * <p>Everything else is graded against its kind's expected bonuses by {@code isGood}, then
+     * overridden - an ego is {@link QualityValueEnum#IGNORE_ALL}, an artifact
+     * {@link QualityValueEnum#IGNORE_MAX}. An object known well enough to have been assessed but
+     * not fully known is treated as {@code IGNORE_ALL} unless it is an artifact.
+     *
+     * <p>Function ignoreLevelOf coded on 260822, commented in full on 260824.
+     *
+     * @return the {@link QualityValueEnum} band this object sits in
+     */
     public QualityValueEnum ignoreLevelOf() {
         if (!isKnown()) return QualityValueEnum.IGNORE_MAX;
 
         // Jewellery treated specially
         if (tValue.isJewelry()) {
             // One positive modifier means not bad
-            for (ObjectModifier mod : this.modifiers.keySet()) {
-                if (modifiers.get(mod) > 0)
+            for (ObjectModifier mod : this.getKnown().getModifiers().keySet()) {
+                if (this.getKnown().getModifierValue(mod) > 0)
                     return QualityValueEnum.IGNORE_AVERAGE;
             }
 
@@ -2141,7 +2223,7 @@ public class ItemObject {
             else if (isArtifact())
                 value = QualityValueEnum.IGNORE_MAX;
         } else {
-            if (known.notice.on(ObjectNotice.OBJ_NOTICE_ASSESSED) && !isArtifact())
+            if (known.notice.has(ObjectNotice.OBJ_NOTICE_ASSESSED) && !isArtifact())
                 value = QualityValueEnum.IGNORE_ALL;
             else
                 value = QualityValueEnum.IGNORE_MAX;
@@ -2175,34 +2257,94 @@ public class ItemObject {
         return false;
     }
 
+    /**
+     * Tests whether {@code toMerge} could be folded into this stack in its entirety - the port of
+     * C's {@code object_mergeable} ({@code obj-pile.c:512}).
+     *
+     * <p>The whole-stack question, as against {@link #objectStackable}, which only asks whether the
+     * two could share a slot at all. The difference is capacity: the combined count has to fit
+     * within this kind's {@code max_stack}, and within {@code carry-cap:quiver-slot-size} as well
+     * when the stack is in the quiver - divided by {@code carry-cap:thrown-quiver-mult} for a
+     * thrown weapon, which takes several slots' worth of room per item.
+     *
+     * <p>The quiver test is nested inside the store test rather than beside it, because a store
+     * stack has no limits at all and the quiver limit must be waived along with the rest.
+     *
+     * <p>The maximum is read from this object's kind. The two kinds will be identical by the time
+     * the answer matters, but only {@link #similar} establishes that, and it runs afterwards.
+     *
+     * <p>Function mergeable coded on 260822, commented in full on 260824.
+     *
+     * @param toMerge    the stack that would be absorbed whole
+     * @param stackModes the {@link ObjectStackEnum} flags in force
+     * @return {@code true} if the two stacks may be merged into one
+     */
     public boolean mergeable(ItemObject toMerge, Flag<ObjectStackEnum> stackModes) {
         int total = this.number + toMerge.number;
 
         if (!stackModes.has(ObjectStackEnum.OSTACK_STORE)) {
-            if (total > toMerge.getKind().getBase().getMaxStack()) return false;
-        }
+            if (total > this.getKind().getBase().getMaxStack()) return false;
 
-        // Quiver can impose stricter limits
-        if (stackModes.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            if (toMerge.gettValue().isAmmo()) {
-                if (total > GameConstants.getCarryCapQuiverSize()) return false;
-            } else {
-                if (total > GameConstants.getCarryCapQuiverSize()
-                        / GameConstants.getCarryCapThrownQuiverMult()) return false;
+
+            // Quiver can impose stricter limits
+            if (stackModes.has(ObjectStackEnum.OSTACK_QUIVER)) {
+                if (toMerge.gettValue().isAmmo()) {
+                    if (total > GameConstants.getCarryCapQuiverSlotSize()) return false;
+                } else {
+                    if (total > GameConstants.getCarryCapQuiverSlotSize()
+                            / GameConstants.getCarryCapThrownQuiverMult()) return false;
+                }
             }
         }
 
         return objectStackable(toMerge, stackModes);
     }
 
+    /**
+     * Tests whether two objects may share a stack, capacity aside - the port of C's
+     * {@code object_stackable} ({@code obj-pile.c:499}).
+     *
+     * <p>{@link #similar} settles everything about the objects themselves; this adds the
+     * inscription rule. Two objects are compatible when either is uninscribed, or when both carry
+     * the same inscription - an uninscribed item takes on whatever the stack it joins is called,
+     * but two differently inscribed stacks stay apart so the player's tags survive.
+     *
+     * <p>Function objectStackable coded on 260822, commented in full on 260824.
+     *
+     * @param toMerge    the other object
+     * @param stackModes the {@link ObjectStackEnum} flags in force
+     * @return {@code true} if the two may occupy one stack
+     */
     public boolean objectStackable(ItemObject toMerge, Flag<ObjectStackEnum> stackModes) {
         if (similar(toMerge, stackModes)) {
-            return toMerge.getNote() != null || this.getNote() != null || toMerge.getNote().equals(this.getNote());
+            return toMerge.getNote() == null || this.getNote() == null || toMerge.getNote().equals(this.getNote());
         }
 
         return false;
     }
 
+    /**
+     * Folds another stack into this one entirely, destroying it - the port of C's
+     * {@code object_absorb} ({@code obj-pile.c:676}).
+     *
+     * <p>The counts are added, capped at the kind's {@code max_stack}, and everything else that has
+     * to travel between the two is handled by {@link #objectAbsorbMerge}. The absorbed object is
+     * then disposed of, along with its known half: excised from whatever pile holds it, delisted
+     * from the cave's object list, and deleted.
+     *
+     * <p>The excise is skipped for a known object at the origin, because a zero grid means it is
+     * not on the floor to be excised from - C's {@code loc_is_zero}, which compares coordinates.
+     * The port must compare coordinates too: {@code Loc.zero} is one particular instance, and an
+     * independently constructed {@code Loc(0, 0)} is a different object with the same value.
+     *
+     * <p>Deleting the absorbed object is what removes it from the player's gear, so this must be
+     * reached; a caller that leaves it out ends up with the emptied stack still in the pack at its
+     * old count.
+     *
+     * <p>Function objectAbsorb coded on 260822, commented in full on 260824.
+     *
+     * @param toAbsorb the stack to fold in; it does not survive the call
+     */
     public void objectAbsorb(ItemObject toAbsorb) {
         ItemObject known = toAbsorb.getKnown();
         Player player = GameState.getPlayer();
@@ -2213,18 +2355,42 @@ public class ItemObject {
 
         this.objectAbsorbMerge(toAbsorb, player, true);
         if (known != null) {
-            if (known.getGrid() != Loc.zero)
+            if (!known.getGrid().isZero())
                 player.getCave().getSquare(known.getGrid()).pileExcise(known);
+            player.getCave().delistObject(known);
+            player.getCave().objectDelete(null, known);
+            known = null;
         }
+        player.getCave().objectDelete(player.getCave(), toAbsorb);
     }
 
+    /**
+     * Carries everything except the counts across from one stack to another - the port of C's
+     * {@code object_absorb_merge} ({@code obj-pile.c:579}). Shared by the whole and partial absorbs.
+     *
+     * <p>Knowledge first: the surviving object's known half is brought up to date with its own real
+     * effect and the player is told about the object again, which is how learning one stack teaches
+     * the other. The direction matters - what is written into the known object is the surviving
+     * object's reality, never the absorbed object's knowledge.
+     *
+     * <p>An inscription on the absorbed stack carries over. Charges and timeouts are pooled only
+     * when the caller asks: rod timeouts add, and wand and staff charges add up to
+     * {@code MAX_PVAL}. A partial absorb passes {@code false} for anything but money, because the
+     * charges have already been shared out by {@code distributeCharges}. Origins are combined last.
+     *
+     * <p>Function objectAbsorbMerge coded on 260822, commented in full on 260824.
+     *
+     * @param toAbsorb               the stack being folded in
+     * @param player                 the player whose knowledge is updated
+     * @param combineChargesTimeouts whether to pool charges and timeouts as well
+     */
     private void objectAbsorbMerge(ItemObject toAbsorb, Player player, boolean combineChargesTimeouts) {
         int total;
 
         // This object gains extra knowledge from toMerge
         if (this.getKnown() != null && toAbsorb.getKnown() != null) {
             if (toAbsorb.getKnown().getEffect() != null)
-                this.effect = new ArrayList<>(toAbsorb.getKnown().getEffect());
+                this.getKnown().setEffect(this.getEffect());
             player.knowObject(this);
         }
 
@@ -2252,6 +2418,42 @@ public class ItemObject {
         this.known = null;
     }
 
+    /**
+     * Moves as much of one stack onto another as the limits allow, leaving both alive - the port of
+     * C's {@code object_absorb_partial} ({@code obj-pile.c:624}).
+     *
+     * <p>Both new sizes are worked out before either is written, and they always conserve the total
+     * count. Which limit applies depends on where the two stacks are:
+     *
+     * <ul>
+     *   <li>both in the quiver - this stack is filled to the per-slot limit and the remainder stays
+     *       with {@code item2};</li>
+     *   <li>this one in the quiver, {@code item2} not - this stack takes exactly the per-slot
+     *       limit, {@code item2} keeps whatever is over;</li>
+     *   <li>{@code item2} in the quiver, this one not - the same the other way round;</li>
+     *   <li>neither in the quiver - this stack is filled to the kind's {@code max_stack}.</li>
+     * </ul>
+     *
+     * <p>The per-slot limit is {@code carry-cap:quiver-slot-size}, divided by
+     * {@code carry-cap:thrown-quiver-mult} for a thrown weapon, and it is taken from whichever of
+     * the two stacks the quiver mode applies to.
+     *
+     * <p>Where C asserts, the port throws. Neither mode may be {@code OSTACK_STORE}, which the
+     * caller is required to guarantee, and in the two mixed-quiver cases the size that ends up in
+     * the pack must fit the kind's {@code max_stack}. These are impossible states rather than
+     * conditions to recover from: returning quietly would leave the caller believing a split had
+     * happened when the counts were never touched.
+     *
+     * <p>Charges are distributed before the counts change, since
+     * {@code distributeCharges} works from the number moving.
+     *
+     * <p>Function objectAbsorbPartial coded on 260822, corrected on 260824, commented in full on
+     * 260824.
+     *
+     * @param item2      the stack being drawn from, which survives with a reduced count
+     * @param stackMode1 the stacking rules in force for this stack
+     * @param stackMode2 the stacking rules in force for {@code item2}
+     */
     public void objectAbsorbPartial(ItemObject item2,
                                     Flag<ObjectStackEnum> stackMode1,
                                     Flag<ObjectStackEnum> stackMode2) {
@@ -2260,7 +2462,11 @@ public class ItemObject {
         int newThisSize;
         int newItm2Size;
 
-        if (stackMode1.has(ObjectStackEnum.OSTACK_STORE) || stackMode2.has(ObjectStackEnum.OSTACK_STORE)) return;
+        if (stackMode1.has(ObjectStackEnum.OSTACK_STORE) || stackMode2.has(ObjectStackEnum.OSTACK_STORE)) {
+            String message = "One or other of the stack modes implies this absorb is happening in a store.";
+            logger.error(message);
+            throw new RuntimeException(message);
+        }
 
         // Quivers can have stricter limits
         if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
@@ -2274,7 +2480,11 @@ public class ItemObject {
             } else {
                 newThisSize = limit;
                 newItm2Size = largest + smallest - limit;
-                if (newItm2Size >= this.getKind().getBase().getMaxStack()) return;
+                if (newItm2Size >= this.getKind().getBase().getMaxStack()) {
+                    String message = "New size is greater than max stack item on item: " + this.getKind().getName();
+                    logger.error(message);
+                    throw new RuntimeException(message);
+                }
             }
         } else if (stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
             // Handle possible different limits
@@ -2283,12 +2493,16 @@ public class ItemObject {
 
             newThisSize = largest + smallest - limit;
             newItm2Size = limit;
-            if (newItm2Size >= this.getKind().getBase().getMaxStack()) return;
+            if (newThisSize >= this.getKind().getBase().getMaxStack()) {
+                String message = "New size is greater than max stack item on item: " + this.getKind().getName();
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
         } else {
             int difference = this.getKind().getBase().getMaxStack() - largest;
 
             newThisSize = largest + difference;
-            newItm2Size = largest - difference;
+            newItm2Size = smallest - difference;
         }
 
         item2.distributeCharges(this, item2.getNumber() - newItm2Size, false);

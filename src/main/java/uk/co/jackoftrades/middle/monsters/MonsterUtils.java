@@ -83,7 +83,19 @@ public class MonsterUtils {
         return null;
     }
 
+    /**
+     * Flushes the queued monster messages to the player - the port of C's
+     * {@code show_monster_messages} ({@code mon-msg.c}). The messages accumulate over a turn so
+     * that several monsters doing the same thing are reported once, in one line, rather than
+     * separately.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting chapter 6.
+     * {@code Player.noticeStuff} clears {@code PN_MON_MESSAGE} before calling this, so with the
+     * body empty the queued messages are discarded rather than held over to the next pass.
+     *
+     * <p>Function showMonsterMessages stubbed on 260822, commented in full on 260824.
+     */
     public static void showMonsterMessages() {
-        // STUB class: TODO: implement
+        // STUB class: TODO: implement as part of chapter 6
     }
 }

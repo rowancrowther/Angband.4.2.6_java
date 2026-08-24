@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.player;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.objects.ItemObject;
@@ -169,7 +170,7 @@ public class PlayerUpkeep {
     /**
      * The objects held in the quiver ({@code quiver}).
      */
-    private List<ItemObject> quiverObjects;
+    private ItemObject[] quiverObjects;
 
     /**
      * The objects held in the pack ({@code inven}).
@@ -250,7 +251,7 @@ public class PlayerUpkeep {
     public PlayerUpkeep() {
         // C allocates these two explicitly; the rest of the struct is covered by mem_zalloc
         inventoryObjects = new ArrayList<>();
-        quiverObjects = new ArrayList<>();
+        quiverObjects = new ItemObject[GameConstants.getCarryCapQuiverSize()];
 
         // C's mem_zalloc, written out by hand
         healthWho = null;
@@ -599,7 +600,7 @@ public class PlayerUpkeep {
      *
      * @return the quiver slots, shared with this instance
      */
-    public List<ItemObject> getQuiver() {
+    public ItemObject[] getQuiver() {
         return quiverObjects;
     }
 

@@ -22,6 +22,9 @@ import org.junit.jupiter.api.extension.BeforeAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
+import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.objects.Curse;
@@ -95,6 +98,16 @@ public class SeededPlayerRegistry implements BeforeAllCallback, AfterAllCallback
      * contributes anything.
      */
     private boolean seededTimedEffects;
+    /**
+     * Whether this extension seeded the game-constants table and so is responsible for clearing it.
+     *
+     * <p>{@code Player}'s constructor builds a {@link uk.co.jackoftrades.middle.player.PlayerUpkeep},
+     * which sizes the quiver as {@code new ItemObject[GameConstants.getCarryCapQuiverSize()]}
+     * ({@code PlayerUpkeep.java:254}) — C's fixed {@code z_info->quiver_size} slots, each holding a
+     * {@code NULL} for an empty one. So the constants table has to be loaded before a player can be
+     * constructed at all, which was not true while the quiver was a list that grew on demand.
+     */
+    private boolean seededConstants;
 
     /**
      * The twelve-slot humanoid layout from {@code body.txt} — the only body the shipped data
@@ -177,6 +190,37 @@ public class SeededPlayerRegistry implements BeforeAllCallback, AfterAllCallback
         return field;
     }
 
+    /**
+     * A constants table holding the real carry-cap figures and nothing else.
+     *
+     * <p>The values are {@code constants.txt}'s own, so a test that reads them gets the numbers the
+     * game runs on rather than a made-up set. Every other section is left null: this exists to let a
+     * {@code Player} be constructed, not to stand in for
+     * {@link uk.co.jackoftrades.middle.game.globals.GameConstants#init()}, and a test needing more
+     * than carry-cap should seed what it needs itself — as
+     * {@code ItemObjectRechargeTest} does for {@code world:max-depth}.
+     *
+     * @return a constants table with only {@code carryCap} filled in
+     */
+    private static GameConstantsData carryCapOnly() {
+        return new GameConstantsData(
+                null, null, null, null, null,
+                new CarryCapData(23, 10, 40, 5, 16),
+                null, null, null, null, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * Reaches {@code GameConstants.data}, the table every {@code getX} accessor reads through.
+     *
+     * @return the accessible field
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static Field constantsField() throws ReflectiveOperationException {
+        Field field = GameConstants.class.getDeclaredField("data");
+        field.setAccessible(true);
+        return field;
+    }
+
     @Override
     public void beforeAll(ExtensionContext context) throws Exception {
         if (registryField("playerBodies").get(null) == null) {
@@ -199,6 +243,10 @@ public class SeededPlayerRegistry implements BeforeAllCallback, AfterAllCallback
             registryField("playerTimedEffects").set(null, new ArrayList<PlayerTimedEffect>());
             seededTimedEffects = true;
         }
+        if (constantsField().get(null) == null) {
+            constantsField().set(null, carryCapOnly());
+            seededConstants = true;
+        }
     }
 
     @Override
@@ -218,6 +266,10 @@ public class SeededPlayerRegistry implements BeforeAllCallback, AfterAllCallback
         if (seededTimedEffects) {
             registryField("playerTimedEffects").set(null, null);
             seededTimedEffects = false;
+        }
+        if (seededConstants) {
+            constantsField().set(null, null);
+            seededConstants = false;
         }
     }
 }

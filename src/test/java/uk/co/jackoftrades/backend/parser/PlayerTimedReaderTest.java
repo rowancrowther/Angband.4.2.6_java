@@ -21,6 +21,9 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
+import uk.co.jackoftrades.middle.game.globals.data.PlayerData;
 import uk.co.jackoftrades.middle.objects.Brand;
 import uk.co.jackoftrades.middle.objects.Slay;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
@@ -61,6 +64,15 @@ class PlayerTimedReaderTest {
 
     private static Object savedBrands;
     private static Object savedSlays;
+    /**
+     * Whatever {@code GameConstants.data} held before this class seeded it, or {@code null} if it
+     * was already loaded and this class left it alone.
+     */
+    private static Object savedConstants;
+    /**
+     * Whether this class seeded the constants table and so is responsible for clearing it.
+     */
+    private static boolean seededConstants;
 
     @TempDir
     Path tempDir;
@@ -71,12 +83,42 @@ class PlayerTimedReaderTest {
         savedBrands = setStatic("brands", brands);
         List<Slay> slays = new SlayReader().parseWithResults(SLAY_FILE).items();
         savedSlays = setStatic("slays", slays);
+
+        // PlayerTimedAssembler converts a grade's food figures through
+        // GameConstants.getPlayerFoodValue (PlayerTimedAssembler.java:107), so the constants table
+        // has to be loaded before any player_timed record can be assembled. Seeding it only when it
+        // is empty leaves the real table in place when a reader test has already loaded it, and
+        // stops this class depending on one having run first.
+        if (constantsField().get(null) == null) {
+            savedConstants = constantsField().get(null);
+            constantsField().set(null, new GameConstantsData(
+                    null, null, null, null, null, null, null, null,
+                    new PlayerData(20, 20, 600, 100),
+                    null, null, null, null, null, null, null, null));
+            seededConstants = true;
+        }
     }
 
     @AfterAll
     static void restore() throws Exception {
         setStatic("brands", savedBrands);
         setStatic("slays", savedSlays);
+        if (seededConstants) {
+            constantsField().set(null, savedConstants);
+            seededConstants = false;
+        }
+    }
+
+    /**
+     * Reaches {@code GameConstants.data}, the table every {@code getX} accessor reads through.
+     *
+     * @return the accessible field
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static Field constantsField() throws ReflectiveOperationException {
+        Field field = GameConstants.class.getDeclaredField("data");
+        field.setAccessible(true);
+        return field;
     }
 
     private static Object setStatic(String field, Object value) throws Exception {

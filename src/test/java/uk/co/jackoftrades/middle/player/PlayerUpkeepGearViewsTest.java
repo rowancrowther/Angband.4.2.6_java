@@ -21,11 +21,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -45,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * @author Rowan Crowther
  */
+@ExtendWith(SeededPlayerRegistry.class)
 class PlayerUpkeepGearViewsTest {
 
     private PlayerUpkeep upkeep;
@@ -115,24 +120,43 @@ class PlayerUpkeepGearViewsTest {
     @DisplayName("the quiver and the pack")
     class GearViews {
 
+        /**
+         * The quiver is a fixed set of slots, all of them empty, rather than a list with nothing in
+         * it. C indexes {@code p->upkeep->quiver[i]} over {@code 0 .. z_info->quiver_size} and reads
+         * a {@code NULL} entry as an empty slot, and {@code quiverAbsorbNum} counts those nulls to
+         * decide whether a stack has anywhere to go. A variable-length list has no empty slots to
+         * count, so the free-space figure comes out as zero and nothing is ever admitted.
+         */
         @Test
-        @DisplayName("both start empty rather than null")
-        void bothStartEmpty() {
-            assertTrue(upkeep.getQuiver().isEmpty());
+        @DisplayName("the quiver starts as quiver-size empty slots")
+        void quiverStartsAsEmptySlots() {
+            assertEquals(GameConstants.getCarryCapQuiverSize(), upkeep.getQuiver().length);
+            for (ItemObject slot : upkeep.getQuiver()) {
+                assertNull(slot);
+            }
+        }
+
+        @Test
+        @DisplayName("the pack starts empty rather than null")
+        void inventoryStartsEmpty() {
             assertTrue(upkeep.getInventory().isEmpty());
         }
 
         /**
          * Live, not copied. If the getter snapshotted, the second read would not see the write.
+         *
+         * <p>Slot 3 rather than slot 0, because a position in this array is a quiver slot number and
+         * not a place in a queue: writing to 3 must leave 0 empty rather than shuffling anything
+         * along. That is what lets an inscription like {@code @f3} ask for a particular slot.
          */
         @Test
         @DisplayName("the quiver is a live view, not a snapshot")
         void quiverIsLive() {
             ItemObject arrows = new ItemObject();
-            upkeep.getQuiver().add(arrows);
+            upkeep.getQuiver()[3] = arrows;
 
-            assertEquals(1, upkeep.getQuiver().size());
-            assertSame(arrows, upkeep.getQuiver().get(0));
+            assertSame(arrows, upkeep.getQuiver()[3]);
+            assertNull(upkeep.getQuiver()[0]);
         }
 
         @Test
@@ -181,7 +205,9 @@ class PlayerUpkeepGearViewsTest {
         void viewsAreDistinct() {
             upkeep.getInventory().add(new ItemObject());
 
-            assertTrue(upkeep.getQuiver().isEmpty());
+            for (ItemObject slot : upkeep.getQuiver()) {
+                assertNull(slot);
+            }
         }
     }
 }

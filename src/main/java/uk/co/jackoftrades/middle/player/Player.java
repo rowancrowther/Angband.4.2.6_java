@@ -1808,10 +1808,24 @@ public class Player {
     }
 
     /**
-     * Carries out any pending one-off notice actions (combine the pack, apply ignore rules, …) -
-     * the port of C's {@code notice_stuff}. Reads and clears the {@code PN_*} notice flags.
+     * Carries out the pending one-off notice actions - the port of C's {@code notice_stuff}
+     * ({@code player-calcs.c:2536}). Returns at once when no {@code PN_*} flag is raised.
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the player-calc subsystem.
+     * <p>Three actions, in C's order: {@code PN_IGNORE} drops items that have become ignorable,
+     * {@code PN_COMBINE} merges stacks in the pack, and {@code PN_MON_MESSAGE} flushes the queued
+     * monster messages. The flush is deliberately last, so that anything the first two actions say
+     * has already been said.
+     *
+     * <p>Each flag is cleared before the work it asks for runs, not after. That is what lets an
+     * action queue another pass: {@link #ignoreDrop} raises {@code PN_COMBINE} again as its last
+     * act, and because {@code PN_IGNORE} was already cleared the raised flag survives to be seen
+     * on the next call rather than being wiped by this one.
+     *
+     * <p><b>Outstanding:</b> {@link MonsterUtils#showMonsterMessages} is a chapter-6 stub, so
+     * {@code PN_MON_MESSAGE} currently clears the flag and discards the messages rather than
+     * showing them.
+     *
+     * <p>Function noticeStuff coded on 260822, commented in full on 260824.
      */
     public void noticeStuff() {
         // Is there anythingn to notice
@@ -1838,19 +1852,48 @@ public class Player {
         }
     }
 
+    /**
+     * Merges every pair of stacks in the gear that can share a slot - the port of C's
+     * {@code combine_pack} ({@code obj-gear.c:1242}). Walks the gear backwards, and for each stack
+     * looks at every earlier stack for one that will take it whole; failing that, for one that will
+     * take part of it.
+     *
+     * <p>A whole merge, through {@link ItemObject#objectAbsorb}, removes the absorbed stack from
+     * both {@code gear} and {@code gearKnown} and is announced to the player. A partial merge,
+     * through {@link ItemObject#objectAbsorbPartial}, only shifts counts between two stacks that
+     * both survive; C leaves that unannounced on the grounds that shuffling items between stacks
+     * is not interesting to read about.
+     *
+     * <p>Both loops are indexed rather than iterators. C walks a linked list and saves
+     * {@code obj1->prev} before merging, because {@code object_absorb} unlinks the absorbed object
+     * from the gear list; the port cannot borrow that trick, and iterating a live view of
+     * {@code gear} while the body removes from it would fail. Running the outer index down from
+     * the end and bounding the inner one by {@code outerIndex} gives the same visit order as C and
+     * keeps the removal at {@code outerIndex} clear of the positions still to come.
+     *
+     * <p>The known objects are absorbed and unlinked before the real ones, so that
+     * {@link ItemObject#objectAbsorb} is never handed a stack whose {@code known} half has already
+     * gone. The two {@code setNumber} calls afterwards realign the counts; C has no equivalent, and
+     * they should never change anything.
+     *
+     * <p>Function combinePack coded on 260822, commented in full on 260824.
+     */
     private void combinePack() {
+        ItemObject item1;
         ItemObject item2;
         boolean displayMessage = false;
         boolean displayRepeat = false;
         ObjectStackEnum stackMode2;
 
-        for (ItemObject item1 : gear.reversed()) {
+        for (int outerIndex = gear.size() - 1; outerIndex >= 0; outerIndex--) {
+            item1 = gear.get(outerIndex);
+
             if (item1.getKind() == null) continue;
             if (item1.gettValue().isMoney()) continue;
 
             // use an indexed for loop to ensure that we stop at item1
-            for (int index = 0; index <= gear.size() && gear.get(index) != item1; index++) {
-                item2 = gear.get(index);
+            for (int innerIndex = 0; innerIndex < outerIndex; innerIndex++) {
+                item2 = gear.get(innerIndex);
                 stackMode2 = item2.isInQuiver(this) ? ObjectStackEnum.OSTACK_QUIVER
                         : ObjectStackEnum.OSTACK_PACK;
 
@@ -1863,6 +1906,13 @@ public class Player {
                     displayMessage = true;
                     displayRepeat = true;
                     item2.getKnown().objectAbsorb(item1.getKnown());
+                    // Ensure we drop the item from gearKnown before we drop it from here
+                    ItemObject knownObject = item1.getKnown();
+                    if (knownObject != null) {
+                        gearKnown.removeIf(known -> known == knownObject);
+                        knownObject.nullKnown();
+                    }
+                    gear.remove(outerIndex);
                     item1.nullKnown();
                     item2.objectAbsorb(item1);
 
@@ -1877,9 +1927,9 @@ public class Player {
                     Flag<ObjectStackEnum> modes2 = new Flag<>(ObjectStackEnum.class);
                     modes1.on(stackMode1);
                     modes2.on(stackMode2);
-                    if (!invenCanStackPartial(item1, item2, modes1, modes2)) {
-                        // Don't display a message for this caes: shuffling
-                        // items between stacks isn't insteresting to the
+                    if (invenCanStackPartial(item2, item1, modes2, modes1)) {
+                        // Don't display a message for this case: shuffling
+                        // items between stacks isn't interesting to the
                         // player.
                         item2.getKnown().objectAbsorbPartial(item1.getKnown(), modes2, modes1);
                         item2.objectAbsorbPartial(item1, modes2, modes1);
@@ -1910,6 +1960,37 @@ public class Player {
         }
     }
 
+    /**
+     * Tests whether at least one item could be moved from {@code item2} onto {@code item1} - the
+     * port of C's {@code inven_can_stack_partial} ({@code obj-gear.c:1183}).
+     *
+     * <p>The two stacks are not interchangeable. {@code item1} is the leading stack, the one whose
+     * count the caller means to maximise, and only {@code stackMode1} opens the quiver branch
+     * below; passing the pair the other way round asks a different question.
+     *
+     * <p>Stackability is settled first by {@link ItemObject#objectStackable}. Then, unless either
+     * mode says {@code OSTACK_STORE} - stores have no capacity limits - the numbers have to allow
+     * it:
+     *
+     * <ul>
+     *   <li>a quiver stack is capped per slot at {@code carry-cap:quiver-slot-size}, divided by
+     *       {@code carry-cap:thrown-quiver-mult} for anything that is not ammunition, and is
+     *       refused outright when it already sits at that cap;</li>
+     *   <li>a quiver stack being fed from outside the quiver is additionally put through
+     *       {@link #quiverAbsorbNum}, to check the quiver as a whole has room. That second check
+     *       exists only to avoid combining a stack that {@link #calcInventory} would then have to
+     *       split apart again;</li>
+     *   <li>a pack stack is capped at its kind's {@code max_stack}.</li>
+     * </ul>
+     *
+     * <p>Function invenCanStackPartial coded on 260822, commented in full on 260824.
+     *
+     * @param item1      the leading stack, the one that is to grow
+     * @param item2      the stack that would be drawn from
+     * @param stackMode1 the stacking rules in force for {@code item1}
+     * @param stackMode2 the stacking rules in force for {@code item2}
+     * @return {@code true} if a partial absorb would move at least one item
+     */
     private boolean invenCanStackPartial(ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> stackMode1,
                                          Flag<ObjectStackEnum> stackMode2) {
         Flag<ObjectStackEnum> combinedModes = new Flag<>(ObjectStackEnum.class);
@@ -1923,10 +2004,10 @@ public class Player {
 
         // Now verifying numbers
         // Leading stack, item1, has to have its count maximised
-        if (combinedModes.has(ObjectStackEnum.OSTACK_STORE)) {
+        if (!combinedModes.has(ObjectStackEnum.OSTACK_STORE)) {
             // Quiver has stricter limits
             if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                int quiverLimit = GameConstants.getCarryCapQuiverSize() /
+                int quiverLimit = GameConstants.getCarryCapQuiverSlotSize() /
                         (item1.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
 
                 // Are we already at the limit?
@@ -1957,10 +2038,45 @@ public class Player {
         return true;
     }
 
+    /**
+     * Works out how many of {@code item} the quiver could take, and how many of the offered pack
+     * slots that would cost - the port of C's {@code quiver_absorb_num} ({@code obj-gear.c:649}).
+     *
+     * <p>Anything that is neither ammunition nor {@code OF_THROWING} cannot go in the quiver at
+     * all, and is answered with nothing to the quiver and the offered pack slots handed back
+     * untouched.
+     *
+     * <p>Otherwise the quiver is walked slot by slot, accumulating two figures: {@code quiverCount},
+     * the total the quiver already holds in slot-size units, and {@code spaceFree}, the room this
+     * particular object could use. A slot that stacks with {@code item} contributes its unused
+     * remainder. An empty slot contributes a whole slot, but only if the object is ammunition or
+     * this is the slot the object's inscription asks for - a thrown weapon may only go where it
+     * prefers. A slot holding something else that could itself move elsewhere counts as displaced,
+     * and its room is available only if some other slot is empty for the displaced pile to move
+     * into, which is what the {@code displaces && numEmpty != 0} test at the foot enforces.
+     *
+     * <p>The room found is then trimmed to what the pack will pay for. Quiver slots are charged to
+     * the pack a slot at a time, so only the part-used slot at the top of the quiver is free; every
+     * further slot has to come out of {@code noToPack}. The multiplier makes a thrown weapon cost
+     * {@code carry-cap:thrown-quiver-mult} times its count.
+     *
+     * <p>C passes {@code n_add_pack} and {@code n_to_quiver} by address and writes back through
+     * them. The port cannot take an address, so the pair travels in and out as a
+     * {@link SplitBetweenPackAndQuiver}.
+     *
+     * <p>C asserts that no slot holds more than a slot's worth; the port throws instead, because a
+     * sentinel return value here would be read by the caller as an ordinary "the quiver is full".
+     *
+     * <p>Function quiverAbsorbNum coded on 260822, commented in full on 260824.
+     *
+     * @param item    the object being offered to the quiver
+     * @param splitIn the maximum number of extra pack slots the quiver may take, in
+     *                {@code noToPack}; {@code numToQuiver} is not read
+     * @return the number that can go to the quiver, and the offered pack slots left unspent
+     */
     private SplitBetweenPackAndQuiver quiverAbsorbNum(ItemObject item, SplitBetweenPackAndQuiver splitIn) {
         int numAddPack = splitIn.noToPack();
         int numToQuiver = splitIn.numToQuiver();
-        SplitBetweenPackAndQuiver error = new SplitBetweenPackAndQuiver(-1, -1);
 
         boolean ammo = item.gettValue().isAmmo();
         int quiverCount = 0;
@@ -1982,7 +2098,12 @@ public class Player {
                     Flag<ObjectStackEnum> stackFlags = new Flag<>(ObjectStackEnum.class);
                     stackFlags.on(ObjectStackEnum.OSTACK_PACK);
                     if (quiverItem.objectStackable(item, stackFlags)) {
-                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSize()) return error;
+                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSlotSize()) {
+                            String message = "Cannot assign that many items (" + quiverItem.getNumber() * mult
+                                    + ") in a quiver slot";
+                            logger.error(message);
+                            throw new RuntimeException(message);
+                        }
                         spaceFree += GameConstants.getCarryCapQuiverSlotSize() - quiverItem.getNumber() * mult;
                     } else if (desiredSlot == currentSlot && preferredQuiverSlot(quiverItem) != currentSlot) {
                         // The object to be added prefers to go in this slot,
@@ -1990,7 +2111,13 @@ public class Player {
                         // displaced to a different quiver slot, if one is
                         // available.
                         displaces = true;
-                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSize()) return error;
+                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSlotSize()) {
+
+                            String message = "Cannot assign that many items (" + quiverItem.getNumber() * mult
+                                    + ") in a quiver slot";
+                            logger.error(message);
+                            throw new RuntimeException(message);
+                        }
                         // Avoid double counting in the ammo case since the
                         // empty slot, if any, for the displaced stack is
                         // treated as fully available.
@@ -2016,7 +2143,7 @@ public class Player {
 
                 // When quiver count % quiver slot size is zero, adding 
                 // anything will require a pack slot
-                int remainder = quiverCount % GameConstants.getCarryCapQuiverSize();
+                int remainder = quiverCount % GameConstants.getCarryCapQuiverSlotSize();
                 int limitFromPack = remainder != 0 ? GameConstants.getCarryCapQuiverSlotSize() - remainder : 0;
 
                 if (numAddPack > 0)
@@ -2036,6 +2163,25 @@ public class Player {
         return outgoing;
     }
 
+    /**
+     * Reads the quiver slot an object's inscription asks for - the port of C's
+     * {@code preferred_quiver_slot} ({@code obj-gear.c:1396}).
+     *
+     * <p>The inscription is scanned for an {@code @} followed by the fire or throw command key and
+     * a digit, so {@code @f1} asks for slot 1. The fire key is {@code f}, or {@code t} under the
+     * roguelike keyset; the throw key is {@code v} either way. Only ammunition and
+     * {@code OF_THROWING} objects are considered.
+     *
+     * <p>The scan restarts from each {@code @} in turn rather than the first, so a later tag still
+     * counts when an earlier one is something else. The digit is taken raw, as
+     * {@code s.charAt(2) - '0'}, exactly as C does - a slot number outside the quiver is the
+     * caller's problem, and no caller acts on one it cannot match.
+     *
+     * <p>Function preferredQuiverSlot coded on 260822, commented in full on 260824.
+     *
+     * @param item the object whose inscription is to be read
+     * @return the slot number asked for, or {@code -1} if the inscription asks for none
+     */
     private int preferredQuiverSlot(ItemObject item) {
         int desiredSlot = -1;
 
@@ -2069,6 +2215,24 @@ public class Player {
         return desiredSlot;
     }
 
+    /**
+     * Counts the pack slots the player's gear occupies - the port of C's {@code pack_slots_used}
+     * ({@code obj-gear.c:257}).
+     *
+     * <p>Equipped items occupy no pack slot and are skipped. Everything else costs one slot, except
+     * what is actually in the quiver: quivered stacks are gathered into {@code quiverAmmo} in
+     * slot-size units, thrown weapons counting {@code carry-cap:thrown-quiver-mult} apiece, and the
+     * whole quiver is then charged as the number of full slots it fills plus one more for any
+     * remainder.
+     *
+     * <p>Being ammunition is not enough to be charged as quiver: the item has to be found in the
+     * quiver itself, which is why the inner loop compares identities rather than acting on the
+     * first entry it sees.
+     *
+     * <p>Function packSlotsUsed coded on 260822, commented in full on 260824.
+     *
+     * @return the number of pack slots in use, quiver included
+     */
     private int packSlotsUsed() {
         int quiverAmmo = 0;
         int packSlots = 0;
@@ -2077,14 +2241,16 @@ public class Player {
             boolean found = false;
 
             // Equipped items don't count
-            if (body.itemIsEquipped(item)) {
+            if (!body.itemIsEquipped(item)) {
                 // Is it in the quiver
                 if (item.gettValue().isAmmo() || item.hasFlag(ObjectFlag.OF_THROWING)) {
                     for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
-                        quiverAmmo += quiverItem.getNumber()
-                                * (item.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
-                        found = true;
-                        break;
+                        if (quiverItem == item) {
+                            quiverAmmo += quiverItem.getNumber()
+                                    * (item.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
+                            found = true;
+                            break;
+                        }
                     }
                 }
 
@@ -2094,7 +2260,7 @@ public class Player {
         }
 
         // Full slots
-        packSlots += quiverAmmo / GameConstants.getCarryCapQuiverSize();
+        packSlots += quiverAmmo / GameConstants.getCarryCapQuiverSlotSize();
 
         if (quiverAmmo % GameConstants.getCarryCapQuiverSlotSize() != 0)
             packSlots++;
@@ -2102,6 +2268,26 @@ public class Player {
         return packSlots;
     }
 
+    /**
+     * Drops everything in the gear that the player's ignore settings now cover - the port of C's
+     * {@code ignore_drop} ({@code obj-ignore.c:651}).
+     *
+     * <p>Walks the gear in reverse and, for each item {@link #ignoreItemOK} accepts, pushes a
+     * {@code CMD_DROP}. An item inscribed {@code !d} or {@code !*} is left alone. An equipped item
+     * asks for confirmation first; a refusal inscribes {@code !d} on it so the same question is not
+     * put again on every later notice pass. Nothing is dropped while standing in a shop.
+     *
+     * <p>The pushed command is marked as a background command, so that {@code CMD_REPEAT} repeats
+     * whatever the player actually did rather than this drop, and so the drop does not count
+     * towards bloodlust.
+     *
+     * <p>The two flags at the foot are raised whatever happened above, because a chain that dropped
+     * earlier items still needs the gear rebuilt and the pack recombined. C asserts that the
+     * command it just pushed is really there; the port throws, for the same reason - an early
+     * return would skip those flags.
+     *
+     * <p>Function ignoreDrop coded on 260822, commented in full on 260824.
+     */
     public void ignoreDrop() {
         for (ItemObject item : gear.reversed()) {
             // skip non-objects & unignoreable objects
@@ -2116,7 +2302,12 @@ public class Player {
                 if (getPlayerBody().itemIsEquipped(item)) {
                     if (!item.verifyObject("Really take off and drop", this)) {
                         // Inscribe the item with !d to prevent repeated confirmations
-                        item.setNote(item.getNote() + "!d");
+                        String newInscription = item.getNote();
+                        if (newInscription == null)
+                            newInscription = "!d";
+                        else
+                            newInscription = newInscription + "!d";
+                        item.setNote(newInscription);
                         continue;
                     }
                 }
@@ -2128,7 +2319,12 @@ public class Player {
                     getPlayerUpkeep().setDropping(true);
                     GameState.getCommandQueue().push(CommandCode.CMD_DROP);
                     dropCommand = GameState.getCommandQueue().commandQueuePeek();
-                    if (dropCommand == null) return;
+                    if (dropCommand == null) {
+                        String message = "Invalid command found on peeking the command queue. Expected a CMD_DROP " +
+                                "found a null.";
+                        logger.error(message);
+                        throw new RuntimeException(message);
+                    }
                     dropCommand.setArgItem("item", item);
                     dropCommand.setArgNumber("quantity", item.getNumber());
                     /*
@@ -4196,6 +4392,17 @@ public class Player {
         this.knownState = knownState;
     }
 
+    /**
+     * Rebuilds the pack and quiver views over the gear - the port of C's {@code calc_inventory}
+     * ({@code player-calcs.c:1023}).
+     *
+     * <p><b>Stub:</b> not yet implemented. {@link #combinePack} calls it as its last act before
+     * signalling the redraws, and {@link #invenCanStackPartial}'s quiver branch exists specifically
+     * to avoid handing it a stack it would have to split again. Until it is written,
+     * {@code upkeep.inven} and {@code upkeep.quiver} are never rebuilt after a combine.
+     *
+     * <p>Function calcInventory stubbed on 260822, commented in full on 260824.
+     */
     public void calcInventory() {
         // Stub class. TODO: Implement
     }
@@ -4204,18 +4411,50 @@ public class Player {
         // Stub class. TODO: Implement
     }
 
+    /**
+     * Tests whether an object may be ignored right now - the port of C's {@code ignore_item_ok}
+     * ({@code obj-ignore.c:622}).
+     *
+     * <p>Nothing is ignorable while the player is unignoring, which is the state the "show ignored
+     * items" toggle puts them in; otherwise the question is passed to {@link #isIgnored}.
+     *
+     * <p>Function ignoreItemOK coded on 260822, commented in full on 260824.
+     *
+     * @param item the object to test
+     * @return {@code true} if the object is eligible to be ignored
+     */
     private boolean ignoreItemOK(ItemObject item) {
         if (unignoring != 0) return false;
 
         return isIgnored(item);
     }
 
+    /**
+     * Tests whether an object falls under the player's ignore settings - the port of C's
+     * {@code object_is_ignored} ({@code obj-ignore.c:576}).
+     *
+     * <p>An object with no known half cannot be ignored at all: the player has nothing to judge it
+     * by. Beyond that the tests run in C's order - the per-object ignore mark, then the escapes
+     * ({@code !k} or {@code !*}, or being an artifact, which is only ever ignored by an explicit
+     * mark), then ignore-by-kind, then by ego, then by quality.
+     *
+     * <p>Every test that asks what the player knows reads {@code item.getKnown()}, the object's own
+     * knowledge, and not {@link #itemKnowledge}, which is the port of C's {@code p->obj_k} and
+     * records which runes the player has learned in general. The distinction matters most at the
+     * ego test: C gates on the <em>known</em> ego but takes the index from the real one, so an ego
+     * the player has not yet learned does not make the object ignorable.
+     *
+     * <p>Function isIgnored coded on 260822, commented in full on 260824.
+     *
+     * @param item the object to test
+     * @return {@code true} if the player's settings cover this object
+     */
     private boolean isIgnored(ItemObject item) {
         // Can't ignore unknown things
-        if (item.getKind() == null) return false;
+        if (item.getKnown() == null) return false;
 
         // Are individual items are marked ignore
-        if (itemKnowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IGNORE)) return true;
+        if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_IGNORE)) return true;
 
         // Only ignore artifacts marked to be ignored
         if (item.isArtifact() || item.checkForInscription("!k") != 0
@@ -4229,10 +4468,10 @@ public class Player {
         if (type == IgnoreType.ITYPE_MAX) return false;
 
         // ignore ego items if known
-        if (item.isEgo() && item.egoIsIgnored(type)) return true;
+        if (item.getKnown().isEgo() && item.egoIsIgnored(type)) return true;
 
         // Ignore non-artifact objects
-        if (itemKnowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
+        if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
                 && ObjectInfo.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
 
         return item.ignoreLevelOf().ordinal() <= ObjectInfo.ignoreLevel.get(type).ordinal();
@@ -4257,6 +4496,24 @@ public class Player {
     private record Extras(int blows, int shots, int might, int moves) {
     }
 
+    /**
+     * The pair of counts {@link #quiverAbsorbNum} takes in and hands back - how many of an object
+     * can go to the quiver, and how many of the offered pack slots are left unspent.
+     *
+     * <p>Exists only because of a difference in how the two languages pass things. C declares two
+     * {@code int}s and passes their addresses ({@code obj-gear.c:649-650}), so
+     * {@code quiver_absorb_num} writes back into the caller's own storage. The port cannot take an
+     * address, so the two travel together as a value in and a value out. Compare {@link Extras},
+     * which solves the same problem for {@code calc_shapechange}.
+     *
+     * <p>On the way in only {@code noToPack} is read, as the maximum number of extra pack slots the
+     * quiver may claim; {@code numToQuiver} is ignored. On the way out both carry answers.
+     *
+     * <p>Record SplitBetweenPackAndQuiver coded on 260822, commented in full on 260824.
+     *
+     * @param numToQuiver the number of items that can be added to the quiver
+     * @param noToPack    the number of pack slots offered, and on return those left unspent
+     */
     private record SplitBetweenPackAndQuiver(int numToQuiver, int noToPack) {
     }
 }

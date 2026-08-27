@@ -140,11 +140,12 @@ public class MagicBook {
      *
      * <p>Function setSVal commented in full on 260820.
      */
-    private void setSVal() {
+    public void setSVal() {
         ObjectKind bookKind = ObjectRegistry.lookupObjectKind(bookType, bookName);
         if (bookKind == null)
             sVal = -1;
-        sVal = bookKind.getsVal();
+        else
+            sVal = bookKind.getsVal();
     }
 
     /**

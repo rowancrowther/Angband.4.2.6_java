@@ -997,9 +997,10 @@ public class ObjectKind {
      * Answers whether the player's class can read this kind as a spell book - the port of C's
      * {@code obj_can_browse} ({@code obj-util.c}).
      *
-     * <p>Walks the class's own list of magic books and matches on the sub-type, so the same book is
-     * browsable by a mage and not by a priest. The tval test rules out everything that is not a book
-     * before the sub-type is compared.
+     * <p>Walks the class's own list of magic books and matches each on both halves of its
+     * {@code (tval, sval)} pair, so the same book is browsable by a mage and not by a priest. Both
+     * halves are needed: each item type numbers its sub-types from one upwards, so every realm has a
+     * book with the same sval and the sub-type alone cannot tell a prayer book from a magic one.
      *
      * <p>Reaches the live player through {@code GameState}, so it answers for whoever is playing
      * rather than taking the player as an argument, unlike its C original.
@@ -1010,7 +1011,7 @@ public class ObjectKind {
      */
     public boolean canBrowse() {
         for (MagicBook mb : GameState.getPlayer().getPlayerClass().getMagic().getMagicBooks()) {
-            if (this.tValue.isBook() && this.sVal == mb.getSval())
+            if (this.gettValue() == mb.getBookTValue() && this.sVal == mb.getSval())
                 return true;
         }
 

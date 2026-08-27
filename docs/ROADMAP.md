@@ -129,6 +129,27 @@ Pick up, wield, use; runes get *learned*. C: `obj-make.c`, `obj-pile.c`, `obj-ge
 - [ ] Object generation & piles
 - [ ] Inventory/equipment
 - [ ] Rune learning end-to-end (closes Chapter 2's deferred half)
+- [ ] Call `MagicBook.setSVal()` where the spellbook kinds are registered — C does the lookup and the synthesis together
+  in `write_book_kind` (`init.c:208`); until then every book's sval reads 0 (deferred here 260827)
+- [ ] Flavour assignment — the port of `flavor_init` (`obj-util.c:154`), deferred here 260827. `flavor.txt` is parsed
+  into `MiscRegistry` and each `fixed:` flavour's sval is already resolved by `FlavourKindAssembler`, but nothing ever
+  writes `ObjectKind.flavour`, so `getFlavour()` answers null for every kind and every potion is nameless.
+  `GameEngineBootstrapTest.flavoursLoadedButNotAttached` asserts the current behaviour and fails the day this lands.
+  Four separable pieces, in the order C runs them:
+  - [ ] `flavor_assign_fixed` (`obj-util.c:58`) — point each kind at the flavour matching its `(tval, sval)`
+  - [ ] `flavor_assign_random` (`obj-util.c:76`) — per tval, draw `randint0(count)` and walk the *remaining* flavours to
+    that choice, decrementing the count. Selection without replacement; matching C's colours means matching this loop,
+    not merely shuffling the list. Covers ring, amulet, staff, wand, rod, mushroom, potion
+  - [ ] Scroll titles — the one piece with a missing dependency: `randname_make` is not ported, though `names.txt` is
+    loaded and sits in `MiscRegistry.getNames()`. Then `flavor_assign_random(TV_SCROLL)`
+  - [ ] The awareness tail — a kind with no flavour that is not a special artifact starts aware. The port already has
+    the right test: `!kind.isSpecialArtifactKind()` is the recorded form of C's `kidx < ordinary_kind_max`
+- [ ] Reach the flavour seed — `GameState.seedFlavour` is declared (`GameState.java:61`) with no getter and no setter,
+  and `RandomValueUtils` has no counterpart to C's `Rand_quick`, the second RNG `flavor_init` switches to and back out
+  of. Both are needed before a savefile can see the same colours twice. Blocks the item above (recorded 260827)
+- [ ] `ObjectKind.copy()` dereferences the flavour unguarded (`ObjectKind.java:982`), where a flavour is optional by
+  design — C's `memcpy` copies a null pointer happily. Wrong today for every kind, and wrong for the unflavoured ones
+  once flavours are attached; the existing copy test passes only because it sets a flavour first (recorded 260827)
 
 ## Chapter 8 — The town and persistence
 

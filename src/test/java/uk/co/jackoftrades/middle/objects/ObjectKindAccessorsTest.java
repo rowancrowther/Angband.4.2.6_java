@@ -29,9 +29,12 @@ import uk.co.jackoftrades.middle.objects.enums.IgnoreFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -331,12 +334,10 @@ class ObjectKindAccessorsTest {
         /**
          * With those fields filled in, the copy carries the scalars across and gives the duplicate
          * its own dice.
-         *
-         * @throws Exception if a field cannot be reached
          */
         @Test
         @DisplayName("a fully built kind copies, with its own dice")
-        void fullyBuiltKindCopies() throws Exception {
+        void fullyBuiltKindCopies() {
             ObjectKind original = new ObjectKind(null, 0, 0, 0, 0, "test", TValue.TV_SWORD,
                     "long sword", null, false);
             fillDice(original);
@@ -357,12 +358,15 @@ class ObjectKindAccessorsTest {
         }
 
         /**
-         * Fills every dice-valued field the copy dereferences.
+         * Fills every dice-valued field the copy dereferences, plus the two flag sets and the
+         * modifier map it copies rather than tests.
+         *
+         * <p>{@link ItemFixture#kindWithDice} covers the four the quality rules read; the rest are
+         * the copy's own, and are spelled out here because this is the test that is about the copy.
          *
          * @param kind the kind to fill
-         * @throws Exception if a field cannot be reached
          */
-        private void fillDice(ObjectKind kind) throws Exception {
+        private void fillDice(ObjectKind kind) {
             set(kind, "pVal", new Random(0, 1, 1, 2, false));
             set(kind, "toH", new Random(0, 1, 1, 4, false));
             set(kind, "toD", new Random(0, 1, 1, 6, false));
@@ -376,18 +380,5 @@ class ObjectKindAccessorsTest {
             set(kind, "modifiers", new HashMap<ObjectModifier, Random>());
         }
 
-        /**
-         * Writes a field that has no setter.
-         *
-         * @param kind  the kind to write to
-         * @param name  the field's name
-         * @param value the value to store
-         * @throws Exception if the field cannot be reached
-         */
-        private void set(ObjectKind kind, String name, Object value) throws Exception {
-            Field field = ObjectKind.class.getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(kind, value);
-        }
     }
 }

@@ -272,29 +272,53 @@ class ItemObjectOrderingTest {
         }
 
         /**
-         * <b>Outstanding.</b> Browsability is decided by sub-type and the mere fact of being a book,
-         * not by the book's own type — so a prayer book sharing a sval with the class's magic book
-         * reads as browsable to a mage.
+         * Browsability matches both halves of the book's {@code (tval, sval)} pair, so a book of
+         * another realm sharing a sub-type is refused.
          *
-         * <p>C compares both halves: {@code kind->tval == book.tval && kind->sval == book.sval}
-         * ({@code obj-util.c:766}). The port's {@code ObjectKind.canBrowse} tests
-         * {@code tValue.isBook()} instead of the book's own type, so the tval half of C's test is
-         * missing.
-         *
-         * <p>Asserted as it behaves, so the test starts failing the day the comparison is
-         * tightened — at which point it becomes a test that the two types are told apart.
+         * <p>C compares both: {@code kind->tval == book.tval && kind->sval == book.sval}
+         * ({@code obj-util.c:766}). The sub-type alone cannot separate the realms, because each item
+         * type numbers its sub-types from one upwards — so a prayer book with the same sval as the
+         * class's magic book exists in any real game, and is the case asserted here.
          *
          * @throws Exception if a fixture field cannot be reached
          */
         @Test
-        @DisplayName("a book of another realm with the same sub-type reads as browsable")
-        void otherRealmWithSameSvalIsBrowsable() throws Exception {
+        @DisplayName("a book of another realm with the same sub-type is not browsable")
+        void otherRealmWithSameSvalIsNotBrowsable() throws Exception {
             ObjectKind magic = kind(TValue.TV_MAGIC_BOOK, READABLE_SVAL);
             ObjectKind prayer = kind(TValue.TV_PRAYER_BOOK, READABLE_SVAL);
 
-            assertTrue(magic.canBrowse(), "the class's own book, as expected");
-            assertTrue(prayer.canBrowse(),
-                    "and a prayer book of the same sub-type, which C would refuse");
+            assertTrue(magic.canBrowse(), "the class's own book");
+            assertFalse(prayer.canBrowse(),
+                    "a prayer book of the same sub-type is another realm's, and not readable");
+        }
+
+        /**
+         * The class's own type with a sub-type it does not hold is refused too, which pins the other
+         * half of the pair — a test that only checked the tval would pass on any magic book at all.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("the right type with the wrong sub-type is not browsable")
+        void rightTvalWrongSvalIsNotBrowsable() throws Exception {
+            ObjectKind other = kind(TValue.TV_MAGIC_BOOK, READABLE_SVAL + 1);
+
+            assertFalse(other.canBrowse());
+        }
+
+        /**
+         * A kind that is not a book at all is refused, and reaches the same answer by the same route
+         * — no book in the class's list carries its type, so nothing matches.
+         *
+         * @throws Exception if a fixture field cannot be reached
+         */
+        @Test
+        @DisplayName("a kind that is not a book is not browsable")
+        void aNonBookIsNotBrowsable() throws Exception {
+            ObjectKind potion = kind(TValue.TV_POTION, READABLE_SVAL);
+
+            assertFalse(potion.canBrowse());
         }
     }
 

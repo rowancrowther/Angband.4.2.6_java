@@ -217,6 +217,38 @@ class ItemObjectAccessorsTest {
             assertEquals(0, item.getNumber());
             assertNull(item.getTime());
         }
+
+        /**
+         * The blank item's origin is the "no origin" value rather than nothing at all.
+         *
+         * <p>C's blank object is {@code mem_zalloc}'d and {@code ORIGIN_NONE} is the zeroth entry of
+         * its origin enum, so a blank object there has an origin from the moment it exists. Java's
+         * reference field would default to {@code null} instead, and the two would then be different
+         * values meaning the same thing.
+         *
+         * <p>Nothing dereferences the field today, so the cost of the difference is not a throw: it
+         * is {@code originCombine} ({@code object_origin_combine}, {@code obj-pile.c:543}), which
+         * compares the two origins for inequality when the origin races match, and would read a null
+         * and an {@code ORIGIN_NONE} as different — marking the merged stack {@code ORIGIN_MIXED}
+         * where C would leave it alone.
+         */
+        @Test
+        @DisplayName("has the \"no origin\" origin, not none at all")
+        void originDefaultsToNone() throws Exception {
+            assertEquals(ObjectOriginEnum.ORIGIN_NONE, read(new ItemObject(), "origin"));
+        }
+
+        /**
+         * The two constructors agree about it, which is the whole point of the previous test: the
+         * mixed-origin bug needs objects arriving at the merge by different routes to hold different
+         * values for the same idea.
+         */
+        @Test
+        @DisplayName("agrees with the parsing constructor's explicit \"no origin\"")
+        void bothConstructorsAgreeOnNoOrigin() throws Exception {
+            assertEquals(read(item(TValue.TV_SWORD, "0", null), "origin"),
+                    read(new ItemObject(), "origin"));
+        }
     }
 
     /**

@@ -29,6 +29,7 @@ import uk.co.jackoftrades.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
@@ -39,7 +40,6 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -304,29 +304,75 @@ class ChunkTrapsAndStubsTest {
     }
 
     /**
-     * Monster compaction, which is implemented but cannot presently be run.
+     * Monster compaction — the port of C's {@code compact_monsters} ({@code mon-make.c}).
+     *
+     * <p>Called with zero, the compaction loop is skipped altogether and only the excise pass at the
+     * foot of the method runs, which is the half that can be tested today: it walks the monster array
+     * backwards, and for every empty slot it moves the highest monster down into the hole and drops
+     * the high-water mark. The move itself is {@code monsterIndexMove}, still a stub, so what is
+     * observable here is the mark and the loop's bounds — which is exactly what was wrong.
+     *
+     * <p>The fixture's level has {@code monMax} of 2, so the array is slots 0 and 1. C's loop runs
+     * {@code for (m_idx = cave_monster_max(c) - 1; m_idx >= 1; m_idx--)}: it starts one below the
+     * mark, and stops at 1 because index 0 is the reserved "no monster" entry and is never compacted.
+     * Both bounds are asserted below — the upper by the absence of a throw, the lower by the mark
+     * coming to rest at 1 rather than 0.
      */
     @Nested
     @DisplayName("compactMonsters")
     class Compaction {
 
         /**
-         * <b>Outstanding.</b> Compacting throws before it does anything, on a level with no monsters
-         * at all and even when asked to compact none.
+         * An empty slot is excised and the high-water mark drops.
          *
-         * <p>The excise loop at the foot of the method starts at {@code monMax} and reads
-         * {@code monsters[monMax]}, but the array is exactly {@code monMax} long — so the first
-         * iteration is off the end. C starts one lower and stops at 1 rather than 0
-         * ({@code mon-make.c:538}): {@code for (m_idx = cave_monster_max(c) - 1; m_idx >= 1;
-         * m_idx--)}. Index 0 is C's "no monster" slot and is deliberately never compacted.
-         *
-         * <p>Asserted as a throw rather than skipped, so that the test starts failing the day the
-         * loop bounds are corrected — at which point this becomes a test of what compaction does.
+         * <p>Both slots are empty, so the single iteration at index 1 fills the hole and decrements.
+         * That the loop reads {@code monsters[monMax - 1]} rather than {@code monsters[monMax]} is
+         * asserted by this not throwing: the array is exactly {@code monMax} long.
          */
         @Test
-        @DisplayName("compacting throws on the excise loop's first index")
-        void compactingThrowsOnTheExciseLoop() {
-            assertThrows(ArrayIndexOutOfBoundsException.class, () -> level.compactMonsters(0));
+        @DisplayName("an empty slot drops the high-water mark")
+        void anEmptySlotDropsTheMark() {
+            assertEquals(2, level.getMonMax());
+
+            level.compactMonsters(0);
+
+            assertEquals(1, level.getMonMax());
+        }
+
+        /**
+         * Slot 0 is never compacted, however many passes are made.
+         *
+         * <p>After the first call the mark is 1, and a second call must find nothing left to do: its
+         * loop would start at index 0, which the {@code >= 1} bound excludes. If the loop ran to zero
+         * the mark would fall to 0 and C's "no monster" slot would have been excised with it.
+         */
+        @Test
+        @DisplayName("the reserved slot 0 is never excised")
+        void slotZeroIsNeverExcised() {
+            level.compactMonsters(0);
+            assertEquals(1, level.getMonMax());
+
+            level.compactMonsters(0);
+
+            assertEquals(1, level.getMonMax());
+        }
+
+        /**
+         * A live monster is skipped rather than moved.
+         *
+         * <p>C skips the real monsters and fills the holes, so with slot 1 occupied there is nothing
+         * to excise and the mark is untouched. The monster is a bare shell — the excise pass only
+         * asks whether the slot is filled, never what is in it.
+         */
+        @Test
+        @DisplayName("a live monster leaves the mark alone")
+        void aLiveMonsterIsSkipped() {
+            level.getMonsters()[1] = new Monster(null, null, null, 0, 0, null, 0, 0, 0, null,
+                    null, null, null, null, null, null, null, 0, 0);
+
+            level.compactMonsters(0);
+
+            assertEquals(2, level.getMonMax());
         }
     }
 }

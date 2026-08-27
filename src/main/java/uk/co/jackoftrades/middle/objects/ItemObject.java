@@ -308,7 +308,7 @@ public class ItemObject {
      */
     public ItemObject() {
         player = GameState.getPlayer();
-        origin = ORIGIN_NONE;
+        origin = ObjectOriginEnum.ORIGIN_NONE;
     }
 
     /**

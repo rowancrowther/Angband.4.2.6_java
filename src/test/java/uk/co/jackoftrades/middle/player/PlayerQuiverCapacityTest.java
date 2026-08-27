@@ -29,32 +29,24 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
-import uk.co.jackoftrades.middle.objects.Brand;
-import uk.co.jackoftrades.middle.objects.Curse;
-import uk.co.jackoftrades.middle.objects.CurseData;
-import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.ItemObject;
-import uk.co.jackoftrades.middle.objects.ObjectBase;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
-import uk.co.jackoftrades.middle.objects.Slay;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
+import static uk.co.jackoftrades.testsupport.ItemFixture.setStatic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -133,10 +125,7 @@ class PlayerQuiverCapacityTest {
 
         savedPlayer = GameState.getPlayer();
 
-        ObjectKind sharedKind = new ObjectKind();
-        set(sharedKind, "base", new ObjectBase(TValue.TV_ARROW, "arrow", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, 99));
-        kind = sharedKind;
+        kind = ItemFixture.kindWithBase(TValue.TV_ARROW, "arrow", 99);
     }
 
     @AfterAll
@@ -196,51 +185,14 @@ class PlayerQuiverCapacityTest {
      * @return the item
      */
     private static ItemObject item(TValue tValue, int number, boolean throwing) {
-        ItemObject item = new ItemObject();
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        ItemFixture fixture = ItemFixture.item(tValue).kind(kind).number(number);
         if (throwing) {
-            flags.on(ObjectFlag.OF_THROWING);
+            fixture.flags(ObjectFlag.OF_THROWING);
         }
-        set(item, "kind", kind);
-        set(item, "tValue", tValue);
-        set(item, "flags", flags);
-        set(item, "number", number);
-        set(item, "timeout", 0);
         // quiverAbsorbNum asks objectStackable, and so similar, about every occupied slot. similar
-        // walks these four in full without null checks, so a partial fixture is a crash rather than
-        // a smaller one.
-        set(item, "elInfo", elements());
-        set(item, "modifiers", modifiers());
-        set(item, "brands", new HashSet<Brand>());
-        set(item, "slays", new HashSet<Slay>());
-        set(item, "curses", new LinkedHashMap<Curse, CurseData>());
-        return item;
-    }
-
-    /**
-     * Every element, each with its own info, because {@code similar} reads the whole enum.
-     *
-     * @return a complete element map
-     */
-    private static Map<ElementEnum, ElementInfo> elements() {
-        Map<ElementEnum, ElementInfo> elInfo = new EnumMap<>(ElementEnum.class);
-        for (ElementEnum element : ElementEnum.values()) {
-            elInfo.put(element, new ElementInfo());
-        }
-        return elInfo;
-    }
-
-    /**
-     * Every modifier at zero, for the same reason.
-     *
-     * @return a complete modifier map
-     */
-    private static Map<ObjectModifier, Integer> modifiers() {
-        Map<ObjectModifier, Integer> mods = new EnumMap<>(ObjectModifier.class);
-        for (ObjectModifier mod : ObjectModifier.values()) {
-            mods.put(mod, 0);
-        }
-        return mods;
+        // walks the element and modifier maps, the brands and the slays in full without null checks,
+        // which is why the fixture fills them rather than leaving them out.
+        return fixture.build();
     }
 
     /**
@@ -264,45 +216,6 @@ class PlayerQuiverCapacityTest {
         Field field = PlayerRegistry.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field;
-    }
-
-    /**
-     * Writes a private instance field.
-     *
-     * @param target the object to write to
-     * @param name   the declared field name
-     * @param value  the value to write
-     */
-    private static void set(Object target, String name, Object value) {
-        try {
-            Field field = target.getClass().getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(target.getClass().getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
-    }
-
-    /**
-     * Writes a private static field, returning its previous value.
-     *
-     * @param owner the declaring class
-     * @param name  the declared field name
-     * @param value the value to write
-     * @return the value the field held beforehand
-     */
-    private static Object setStatic(Class<?> owner, String name, Object value) {
-        try {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            Object previous = field.get(null);
-            field.set(null, value);
-            return previous;
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(owner.getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
     }
 
     /**

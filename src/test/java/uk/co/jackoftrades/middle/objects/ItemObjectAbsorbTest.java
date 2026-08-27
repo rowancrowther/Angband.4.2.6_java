@@ -23,24 +23,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Chunk;
-import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
-import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -103,20 +96,6 @@ class ItemObjectAbsorbTest {
     private ObjectKind kind;
 
     /**
-     * Writes a private field on an item.
-     *
-     * @param target the object to write to
-     * @param name   the field's name
-     * @param value  the value to store
-     * @throws Exception if the field cannot be reached
-     */
-    private static void set(Object target, String name, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
-
-    /**
      * Wires a real level, a remembered one, and a player holding the second.
      *
      * @throws Exception if a field cannot be reached
@@ -139,14 +118,9 @@ class ItemObjectAbsorbTest {
         // player's general rune knowledge, which the constructor leaves unset.
         set(player, "itemKnowledge", new KnownObject());
 
-        kind = new ObjectKind();
-        set(kind, "base", new ObjectBase(TValue.TV_ARROW, "arrow", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, MAX_STACK));
         // knowObject compares the item's bonuses against the ranges its kind rolls, so the kind
-        // needs its dice even though nothing here is testing them.
-        for (String dice : new String[]{"toH", "toD", "toA", "pVal"}) {
-            set(kind, dice, new uk.co.jackoftrades.middle.numerics.Random(0, 1, 1, 1, false));
-        }
+        // needs its dice as well as the base whose max stack the merge reads.
+        kind = ItemFixture.loadedKind(TValue.TV_ARROW, "arrow", MAX_STACK);
     }
 
     /**
@@ -186,27 +160,12 @@ class ItemObjectAbsorbTest {
      * @return the stack
      * @throws Exception if a field cannot be reached
      */
-    private ItemObject bareStack(int number) throws Exception {
-        ItemObject item = new ItemObject();
-        set(item, "kind", kind);
-        set(item, "tValue", TValue.TV_ARROW);
-        set(item, "number", number);
-        set(item, "flags", new Flag<>(ObjectFlag.class));
-        set(item, "notice", new Flag<>(ObjectNotice.class));
-        set(item, "modifiers", new HashMap<ObjectModifier, Integer>());
-        set(item, "elInfo", new HashMap<ElementEnum, ElementInfo>());
-        set(item, "curses", new LinkedHashMap<Curse, CurseData>());
-        set(item, "effect", new ArrayList<uk.co.jackoftrades.middle.effect.Effect>());
-        set(item, "location", Loc.zero);
-        set(item, "origin", ObjectOriginEnum.ORIGIN_FLOOR);
-        set(item, "originDepth", 1);
-        set(item, "pValue", 0);
-        set(item, "timeout", 0);
-        // The split copies the item, and the copy calls copy() on these two rather than testing them
-        // for null, so a stack that has never been through the parser needs them filled in.
-        set(item, "baseDamage", new uk.co.jackoftrades.middle.numerics.Random(0, 1, 1, 1, false));
-        set(item, "time", new uk.co.jackoftrades.middle.numerics.Random(0, 1, 1, 1, false));
-        return item;
+    private ItemObject bareStack(int number) {
+        // The split copies the item, and the copy calls copy() on the base damage and the recharge
+        // time rather than testing them for null. Building through the fixture resolves both from
+        // dice strings the way the parser does, so the copy has something to copy.
+        return ItemFixture.item(TValue.TV_ARROW).kind(kind).number(number)
+                .origin(ObjectOriginEnum.ORIGIN_FLOOR, 1, null).build();
     }
 
     /**

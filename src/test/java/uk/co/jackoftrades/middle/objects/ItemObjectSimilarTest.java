@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
@@ -45,9 +46,7 @@ import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.EnumMap;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -174,11 +173,7 @@ class ItemObjectSimilarTest {
      * @return a complete element map
      */
     private static Map<ElementEnum, ElementInfo> elements() {
-        Map<ElementEnum, ElementInfo> elInfo = new EnumMap<>(ElementEnum.class);
-        for (ElementEnum element : ElementEnum.values()) {
-            elInfo.put(element, new ElementInfo());
-        }
-        return elInfo;
+        return ItemFixture.allElements();
     }
 
     /**
@@ -195,11 +190,7 @@ class ItemObjectSimilarTest {
      * @return a complete modifier map
      */
     private static Map<ObjectModifier, Integer> modifiers() {
-        Map<ObjectModifier, Integer> mods = new EnumMap<>(ObjectModifier.class);
-        for (ObjectModifier mod : ObjectModifier.values()) {
-            mods.put(mod, 0);
-        }
-        return mods;
+        return ItemFixture.allModifiers();
     }
 
     /**
@@ -220,18 +211,7 @@ class ItemObjectSimilarTest {
      * @return the constructed item
      */
     private static ItemObject item(TValue tValue) {
-        ItemObject item = new ItemObject();
-        set(item, "kind", kind);
-        set(item, "tValue", tValue);
-        set(item, "flags", new Flag<>(ObjectFlag.class));
-        set(item, "elInfo", elements());
-        set(item, "modifiers", modifiers());
-        set(item, "brands", new HashSet<Brand>());
-        set(item, "slays", new HashSet<Slay>());
-        set(item, "curses", new LinkedHashMap<Curse, CurseData>());
-        set(item, "number", 1);
-        set(item, "timeout", 0);
-        return item;
+        return ItemFixture.item(tValue).kind(kind).build();
     }
 
     /**

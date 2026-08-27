@@ -23,21 +23,21 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
-import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.objects.enums.QualityValueEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
-import java.util.HashMap;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -110,59 +110,8 @@ class ItemObjectQualityTest {
      * @return the item
      * @throws Exception if a field cannot be reached
      */
-    private static ItemObject knownItem(TValue tValue) throws Exception {
-        ItemObject item = new ItemObject();
-        set(item, "kind", kindWithDice(tValue));
-        set(item, "tValue", tValue);
-        set(item, "flags", new Flag<>(ObjectFlag.class));
-        set(item, "notice", new Flag<>(ObjectNotice.class));
-        set(item, "modifiers", new HashMap<ObjectModifier, Integer>());
-        set(item, "effect", new java.util.ArrayList<uk.co.jackoftrades.middle.effect.Effect>());
-        set(item, "curses", new java.util.LinkedHashMap<Curse, CurseData>());
-
-        ItemObject known = new ItemObject();
-        set(known, "tValue", tValue);
-        set(known, "flags", new Flag<>(ObjectFlag.class));
-        set(known, "notice", new Flag<>(ObjectNotice.class));
-        set(known, "modifiers", new HashMap<ObjectModifier, Integer>());
-        set(known, "effect", new java.util.ArrayList<uk.co.jackoftrades.middle.effect.Effect>());
-        set(known, "curses", new java.util.LinkedHashMap<Curse, CurseData>());
-        set(item, "known", known);
-
-        return item;
-    }
-
-    /**
-     * A kind carrying the three combat dice, which the non-jewellery branch compares an item's own
-     * bonuses against — it asks whether the item is better than the worst its kind could have
-     * rolled, so a kind with no dice at all cannot be judged.
-     *
-     * @param tValue the object type
-     * @return the kind
-     * @throws Exception if a dice field cannot be reached
-     */
-    private static ObjectKind kindWithDice(TValue tValue) throws Exception {
-        ObjectKind kind = new ObjectKind(null, 0, 0, 0, 0, "test", tValue, "test", null, false);
-        for (String name : new String[]{"toH", "toD", "toA"}) {
-            Field field = ObjectKind.class.getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(kind, new uk.co.jackoftrades.middle.numerics.Random(0, 1, 1, 1, false));
-        }
-        return kind;
-    }
-
-    /**
-     * Writes a private field.
-     *
-     * @param item  the item to write to
-     * @param name  the field's name
-     * @param value the value to store
-     * @throws Exception if the field cannot be reached
-     */
-    private static void set(ItemObject item, String name, Object value) throws Exception {
-        Field field = ItemObject.class.getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(item, value);
+    private static ItemObject knownItem(TValue tValue) {
+        return ItemFixture.item(tValue).kind(ItemFixture.kindWithDice(tValue)).fullyKnown().build();
     }
 
     /**
@@ -173,7 +122,7 @@ class ItemObjectQualityTest {
      * @return the item
      * @throws Exception if a field cannot be reached
      */
-    private static ItemObject partlyKnown(TValue tValue) throws Exception {
+    private static ItemObject partlyKnown(TValue tValue) {
         ItemObject item = knownItem(tValue);
         set(item, "toHit", 4);
         set(item.getKnown(), "toHit", 0);

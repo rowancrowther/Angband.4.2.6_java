@@ -29,11 +29,8 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.ObjectStackEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.EquipSlot;
@@ -41,14 +38,15 @@ import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerBody;
 import uk.co.jackoftrades.middle.player.PlayerRace;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.EnumMap;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
+import static uk.co.jackoftrades.testsupport.ItemFixture.setStatic;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -145,10 +143,7 @@ class ItemObjectStackingTest {
         savedPlayer = GameState.getPlayer();
         GameState.setPlayer(new Player());
 
-        ObjectKind sharedKind = new ObjectKind();
-        set(sharedKind, "base", new ObjectBase(TValue.TV_ARROW, "arrow", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, MAX_STACK));
-        kind = sharedKind;
+        kind = ItemFixture.kindWithBase(TValue.TV_ARROW, "arrow", MAX_STACK);
     }
 
     @AfterAll
@@ -177,11 +172,8 @@ class ItemObjectStackingTest {
      * @return the stack
      */
     private static ItemObject thrown(int number) {
-        ItemObject flask = item(TValue.TV_FLASK, number);
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-        flags.on(ObjectFlag.OF_THROWING);
-        set(flask, "flags", flags);
-        return flask;
+        return ItemFixture.item(TValue.TV_FLASK).kind(kind).number(number)
+                .flags(ObjectFlag.OF_THROWING).build();
     }
 
     /**
@@ -193,18 +185,7 @@ class ItemObjectStackingTest {
      * @return the item
      */
     private static ItemObject item(TValue tValue, int number) {
-        ItemObject item = new ItemObject();
-        set(item, "kind", kind);
-        set(item, "tValue", tValue);
-        set(item, "flags", new Flag<>(ObjectFlag.class));
-        set(item, "elInfo", elements());
-        set(item, "modifiers", modifiers());
-        set(item, "brands", new HashSet<Brand>());
-        set(item, "slays", new HashSet<Slay>());
-        set(item, "curses", new LinkedHashMap<Curse, CurseData>());
-        set(item, "number", number);
-        set(item, "timeout", 0);
-        return item;
+        return ItemFixture.item(tValue).kind(kind).number(number).build();
     }
 
     /**
@@ -217,33 +198,6 @@ class ItemObjectStackingTest {
         Flag<ObjectStackEnum> flags = new Flag<>(ObjectStackEnum.class);
         flags.on(stackMode);
         return flags;
-    }
-
-    /**
-     * Every element, each with its own info. {@code similar} walks the whole enum and reads the map
-     * without a null check, so a partial map is a crash rather than a smaller fixture.
-     *
-     * @return a complete element map
-     */
-    private static Map<ElementEnum, ElementInfo> elements() {
-        Map<ElementEnum, ElementInfo> elInfo = new EnumMap<>(ElementEnum.class);
-        for (ElementEnum element : ElementEnum.values()) {
-            elInfo.put(element, new ElementInfo());
-        }
-        return elInfo;
-    }
-
-    /**
-     * Every modifier at zero, for the same reason the element map is complete.
-     *
-     * @return a complete modifier map
-     */
-    private static Map<ObjectModifier, Integer> modifiers() {
-        Map<ObjectModifier, Integer> mods = new EnumMap<>(ObjectModifier.class);
-        for (ObjectModifier mod : ObjectModifier.values()) {
-            mods.put(mod, 0);
-        }
-        return mods;
     }
 
     /**
@@ -267,45 +221,6 @@ class ItemObjectStackingTest {
         Field field = PlayerRegistry.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field;
-    }
-
-    /**
-     * Writes a private instance field.
-     *
-     * @param target the object to write to
-     * @param name   the declared field name
-     * @param value  the value to write
-     */
-    private static void set(Object target, String name, Object value) {
-        try {
-            Field field = target.getClass().getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(target.getClass().getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
-    }
-
-    /**
-     * Writes a private static field, returning its previous value.
-     *
-     * @param owner the declaring class
-     * @param name  the declared field name
-     * @param value the value to write
-     * @return the value the field held beforehand
-     */
-    private static Object setStatic(Class<?> owner, String name, Object value) {
-        try {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            Object previous = field.get(null);
-            field.set(null, value);
-            return previous;
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(owner.getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
     }
 
     @BeforeEach

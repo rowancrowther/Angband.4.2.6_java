@@ -29,10 +29,8 @@ import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.monsters.MonsterRace;
-import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectStackEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
@@ -41,6 +39,7 @@ import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.PlayerBody;
 import uk.co.jackoftrades.middle.player.PlayerRace;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -48,6 +47,8 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
+import static uk.co.jackoftrades.testsupport.ItemFixture.setStatic;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -139,10 +140,7 @@ class ItemObjectAbsorbPartialTest {
         savedPlayer = GameState.getPlayer();
         GameState.setPlayer(new Player());
 
-        ObjectKind sharedKind = new ObjectKind();
-        set(sharedKind, "base", new ObjectBase(TValue.TV_ARROW, "arrow", null,
-                new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, MAX_STACK));
-        kind = sharedKind;
+        kind = ItemFixture.kindWithBase(TValue.TV_ARROW, "arrow", MAX_STACK);
         origin = new MonsterRace();
     }
 
@@ -186,24 +184,15 @@ class ItemObjectAbsorbPartialTest {
      * @return the stack
      */
     private static ItemObject item(TValue tValue, int number, boolean throwing) {
-        ItemObject item = new ItemObject();
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        ItemFixture fixture = ItemFixture.item(tValue).kind(kind).number(number)
+                // originCombine runs at the end of every call and reads both without a null check.
+                // Sharing one race and one origin sends it down its no-change path, which is what
+                // keeps these tests about the arithmetic.
+                .origin(ObjectOriginEnum.ORIGIN_FLOOR, 1, origin);
         if (throwing) {
-            flags.on(ObjectFlag.OF_THROWING);
+            fixture.flags(ObjectFlag.OF_THROWING);
         }
-        set(item, "kind", kind);
-        set(item, "tValue", tValue);
-        set(item, "flags", flags);
-        set(item, "number", number);
-        set(item, "timeout", 0);
-        set(item, "pValue", 0);
-        // originCombine runs at the end of every call and reads both without a null check. Sharing
-        // one race and one origin sends it down its no-change path, which is what keeps these tests
-        // about the arithmetic.
-        set(item, "originRace", origin);
-        set(item, "origin", ObjectOriginEnum.ORIGIN_FLOOR);
-        set(item, "originDepth", 1);
-        return item;
+        return fixture.build();
     }
 
     /**
@@ -258,45 +247,6 @@ class ItemObjectAbsorbPartialTest {
         Field field = PlayerRegistry.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         return field;
-    }
-
-    /**
-     * Writes a private instance field.
-     *
-     * @param target the object to write to
-     * @param name   the declared field name
-     * @param value  the value to write
-     */
-    private static void set(Object target, String name, Object value) {
-        try {
-            Field field = target.getClass().getDeclaredField(name);
-            field.setAccessible(true);
-            field.set(target, value);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(target.getClass().getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
-    }
-
-    /**
-     * Writes a private static field, returning its previous value.
-     *
-     * @param owner the declaring class
-     * @param name  the declared field name
-     * @param value the value to write
-     * @return the value the field held beforehand
-     */
-    private static Object setStatic(Class<?> owner, String name, Object value) {
-        try {
-            Field field = owner.getDeclaredField(name);
-            field.setAccessible(true);
-            Object previous = field.get(null);
-            field.set(null, value);
-            return previous;
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError(owner.getSimpleName() + "." + name
-                    + " is no longer settable by reflection", e);
-        }
     }
 
     /**

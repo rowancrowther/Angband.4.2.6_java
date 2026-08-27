@@ -31,20 +31,21 @@ import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.KnownObject;
-import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
+import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static uk.co.jackoftrades.testsupport.ItemFixture.set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -167,34 +168,13 @@ class PlayerNoticeChainTest {
     }
 
     /**
-     * Writes a private field on any object.
-     *
-     * @param target the object to write to
-     * @param name   the field's name
-     * @param value  the value to store
-     * @throws Exception if the field cannot be reached
-     */
-    private static void set(Object target, String name, Object value) throws Exception {
-        Field field = target.getClass().getDeclaredField(name);
-        field.setAccessible(true);
-        field.set(target, value);
-    }
-
-    /**
      * A plain item, with the collections the gear walkers read.
      *
      * @return the item
      * @throws Exception if a field cannot be reached
      */
-    private static ItemObject item() throws Exception {
-        ItemObject item = new ItemObject();
-        set(item, "kind", new ObjectKind());
-        set(item, "tValue", TValue.TV_POTION);
-        set(item, "number", 1);
-        set(item, "flags", new Flag<>(ObjectFlag.class));
-        set(item, "notice", new Flag<>(ObjectNotice.class));
-        set(item, "modifiers", new HashMap<>());
-        return item;
+    private static ItemObject item() {
+        return ItemFixture.item(TValue.TV_POTION).build();
     }
 
     /**

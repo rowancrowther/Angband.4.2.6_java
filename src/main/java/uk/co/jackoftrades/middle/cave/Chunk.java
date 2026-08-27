@@ -1478,14 +1478,12 @@ public class Chunk {
         }
 
         // Excise dead monsters (backwards)
-        for (monIndex = monMax; monIndex >= 0; monIndex--) {
+        for (monIndex = monMax - 1; monIndex >= 1; monIndex--) {
             Monster monster = monsters[monIndex];
 
-            if (monster == null) continue;
+            if (monster != null) continue;
 
-            if (monster.getMonsterRace() == null) continue;
-
-            monsterIndexMove(monMax, monIndex);
+            monsterIndexMove(monMax - 1, monIndex);
 
             monMax--;
         }

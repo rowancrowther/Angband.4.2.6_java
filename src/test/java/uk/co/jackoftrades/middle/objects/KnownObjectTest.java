@@ -162,8 +162,8 @@ class KnownObjectTest {
     }
 
     private static Curse curse(String name) {
-        return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), List.of(), "does something unpleasant", "The curse fires.");
+        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+                List.of(), new Flag<>(ObjectFlag.class), "does something unpleasant", "The curse fires.");
     }
 
     /**

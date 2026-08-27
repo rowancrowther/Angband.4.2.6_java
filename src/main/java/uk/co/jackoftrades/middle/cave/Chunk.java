@@ -203,7 +203,6 @@ public class Chunk {
     public Chunk(String name, int turn, int depth, int feeling, int objectRating, int monsterRating,
                  boolean goodItem, int height, int width, int feelingSquares, int objMax, int monMax,
                  int monCnt, int monCurrent, int numRepro, Player player) {
-        this.currentLevel = GameState.getCave();
         this.name = name;
         this.turn = turn;
         this.depth = depth;
@@ -237,6 +236,34 @@ public class Chunk {
         this.monsterGroups = new ArrayList<>();
         this.join = new ArrayList<>();
         this.player = player;
+    }
+
+    /**
+     * @return the chunk that is the live current level - C's global {@code cave}. A chunk compares
+     * itself against this to tell whether it is the real level or the player's remembered
+     * copy, since the two share this class
+     */
+    public Chunk getCurrentLevel() {
+        return currentLevel;
+    }
+
+    /**
+     * Records which chunk is the live current level.
+     *
+     * <p>Must be called on every chunk once the real level exists - the real level points at itself,
+     * and the player's remembered copy points at the real one. Several accessors here return early
+     * or answer {@code false} while it is unset, so a chunk that never receives it is quietly inert
+     * rather than obviously broken.
+     *
+     * <p>Exists because the answer cannot be taken at construction: the real level is built before
+     * it has been installed as the current one, so a chunk reading the game state in its constructor
+     * would capture whatever came before it.
+     *
+     * <p>Function setCurrentLevel commented in full on 260827.
+     *
+     * @param currentLevel the chunk that is the live current level
+     */
+    public void setCurrentLevel(Chunk currentLevel) {
         this.currentLevel = currentLevel;
     }
 
@@ -1254,27 +1281,29 @@ public class Chunk {
      */
     @Contract(mutates = "this")
     public void objectDelete(@Nullable Chunk playerCave, @NotNull ItemObject item) {
-        objects.remove(item);
+        Chunk cave = this;
 
         // Remove the object from those tracked by the player upkeep
-        if (player.getPlayerUpkeep() != null) player.getPlayerUpkeep().getPile().excise(item);
+        if (player.getPlayerUpkeep() != null
+                && item == player.getPlayerUpkeep().getObject())
+            player.getPlayerUpkeep().setObject(null);
 
         if (playerCave != null
-                && currentLevel.objects.contains(item)
+                && cave.objects.contains(item)
                 && playerCave.objects.contains(item)) {
             item.setGrid(Loc.zero);
             item.setHeldMIndex(0);
             item.setMimickingMIndex(0);
 
-            item.orNotice(ObjectNotice.OBJ_NOTICE_IMAGINED);
+            if (item.getKnown() != null) item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_IMAGINED);
             return;
         }
 
         if (playerCave != null && playerCave.objects.contains(item))
             playerCave.objects.remove(item);
 
-        if (currentLevel.objects.contains(item))
-            currentLevel.objects.remove(item);
+        if (cave.objects.contains(item))
+            cave.objects.remove(item);
     }
 
     /**
@@ -1286,7 +1315,7 @@ public class Chunk {
     public void delistObject(ItemObject item) {
         if (!objects.contains(item)) return;
 
-        if (this.equals(currentLevel) && player.getCave().objects.contains(item))
+        if (this.equals(currentLevel) && player.getCave() != null && player.getCave().objects.contains(item))
             return;
 
         objects.remove(item);

@@ -204,6 +204,7 @@ public class Player {
 
         // Java initialisation
         body = PlayerRegistry.lookupPlayerBody(0);
+        // TO be changed to a chunk on level creation
         cave = null;
         gear = new ArrayList<>();
         gearKnown = new ArrayList<>();
@@ -430,6 +431,22 @@ public class Player {
     private PlayerUpkeep playerUpkeep;
 
     /**
+     * Sets the player's remembered version of the current level - C's {@code p->cave}.
+     *
+     * <p>C allocates it in {@code prepare_next_level} ({@code generate.c:1241}), sized from the real
+     * chunk, and replaces it on every level change; it is null before the first level is generated
+     * and across the persistent-level swap. The port's level generation has not reached that point,
+     * so nothing calls this yet and the field stays null - code that reads it has to cope with that.
+     *
+     * <p>Function setCave commented in full on 260827.
+     *
+     * @param cave the player's remembered level, or {@code null} between levels
+     */
+    public void setCave(Chunk cave) {
+        this.cave = cave;
+    }
+
+    /**
      * Transfers what the player knows about object properties in general onto one particular object,
      * the port of C's {@code player_know_object} ({@code obj-knowledge.c:1018}).
      *
@@ -619,7 +636,7 @@ public class Player {
             known.setEgo(null);
         }
 
-        if (item.gettValue().isJewelry()) {
+        if (item.gettValue().isJewellery()) {
             if (nonCurseRunesKnown(item)) {
                 seen = (item.isArtifact() || itemKind.isEverseen());
                 flavourAware(item);
@@ -945,26 +962,26 @@ public class Player {
      * @return the character the item is selected by, or {@code '\0'} if it is not in the gear
      */
     private char gearToLabel(ItemObject item) {
+        if (item == null) return '\0';
+        
         String labels = "abcdefgimnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
         if (body.itemIsEquipped(item)) {
             return labels.charAt(body.equippedItemSlot(item));
         }
 
-        int index = 0;
-        for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
-            if (quiverItem.equals(item)) {
-                return (char) ('0' + index);
+        for (int quiverIndex = 0; quiverIndex < GameConstants.getCarryCapQuiverSize(); quiverIndex++) {
+            ItemObject quiverItem = getPlayerUpkeep().getQuiver()[quiverIndex];
+            if (item.equals(quiverItem)) {
+                return (char) ('0' + quiverIndex);
             }
-            index++;
         }
 
-        int invenIndex = 0;
-        for (ItemObject invenItem : getPlayerUpkeep().getInventory()) {
-            if (invenItem.equals(item)) {
+        for (int invenIndex = 0; invenIndex < GameConstants.getCarryCapPackSize(); invenIndex++) {
+            ItemObject invenItem = getPlayerUpkeep().getInventory()[invenIndex];
+            if (item.equals(invenItem)) {
                 return labels.charAt(invenIndex);
             }
-            invenIndex++;
         }
 
         return '\0';
@@ -1816,10 +1833,15 @@ public class Player {
      * monster messages. The flush is deliberately last, so that anything the first two actions say
      * has already been said.
      *
-     * <p>Each flag is cleared before the work it asks for runs, not after. That is what lets an
-     * action queue another pass: {@link #ignoreDrop} raises {@code PN_COMBINE} again as its last
-     * act, and because {@code PN_IGNORE} was already cleared the raised flag survives to be seen
-     * on the next call rather than being wiped by this one.
+     * <p>Each flag is cleared before the work it asks for runs, not after, so an action may raise
+     * its own flag again and have the request survive rather than be wiped by the pass that is
+     * carrying it out.
+     *
+     * <p>The block order does the rest. {@link #ignoreDrop} raises {@code PN_COMBINE} as its last
+     * act, and the combine block sits after the ignore block - so the combine it asks for is carried
+     * out in the same pass, and the method returns with nothing pending. Reversed, the combine would
+     * be consumed before the ignore pass had asked for it, and the pack would stay uncombined until
+     * something else raised the flag.
      *
      * <p><b>Outstanding:</b> {@link MonsterUtils#showMonsterMessages} is a chapter-6 stub, so
      * {@code PN_MON_MESSAGE} currently clears the flag and discards the messages rather than
@@ -2312,8 +2334,8 @@ public class Player {
                     }
                 }
 
-                // We are allowed to drop it
-                if (!cave.getSquare(grid).isShop()) {
+                // We are allowed to drop it. Use the real chunk, not the player's one
+                if (!GameState.getCave().getSquare(grid).isShop()) {
                     Command dropCommand;
 
                     getPlayerUpkeep().setDropping(true);
@@ -3598,7 +3620,7 @@ public class Player {
             if (value.getPower() == 0) continue;
 
             Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
-            toTest.set(curse.getObjectFlags());
+            toTest.union(curse.getObjectFlags());
             toTest.inter(testFlags);
 
             for (ObjectFlag testSubject : toTest) {
@@ -4404,9 +4426,223 @@ public class Player {
      * <p>Function calcInventory stubbed on 260822, commented in full on 260824.
      */
     public void calcInventory() {
-        // Stub class. TODO: Implement
+        int oldInventoryCount = getPlayerUpkeep().getInventoryCount();
+        int numStackSplit = 0;
+        int numPackRemaining = GameConstants.getCarryCapPackSize() - packSlotsUsed();
+        int numMax = 1 + GameConstants.getCarryCapPackSize() + GameConstants.getCarryCapQuiverSize() + body.getCount();
+        ItemObject[] oldQuiver = new ItemObject[GameConstants.getCarryCapQuiverSize()];
+        ItemObject[] oldPack = new ItemObject[GameConstants.getCarryCapPackSize()];
+        List<Boolean> assigned = new ArrayList<>();
+
+        // Start with the equipped items - this step is vital
+        int count = 0;
+        for (ItemObject current : getGear()) {
+            count++;
+            if (count > numMax) {
+                String message = "Number of equipped items greater than total number of items allowed.";
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+            assigned.add(this.body.itemIsEquipped(current));
+        }
+        // Now the rest of the gear slots
+        for (int index = count; index < numMax; index++) {
+            assigned.add(false);
+        }
+
+        // Preparation for filling of the quiver
+        getPlayerUpkeep().setQuiverCount(0);
+
+        // Save the state of the quiver and clear it down
+        int index = 0;
+        for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
+            oldQuiver[index] = quiverItem;
+            getPlayerUpkeep().getQuiver()[index] = null;
+            index++;
+        }
+
+        // Fill the quiver - allocate inscribed items first
+        for (index = 0; index < getGear().size(); index++) {
+            ItemObject quiverCurrent = getGear().get(index);
+            if (assigned.get(index)) continue; // skip already assigned (equipped) items
+
+            int preferredSlot = preferredQuiverSlot(quiverCurrent);
+            if (preferredSlot >= 0 && preferredSlot < GameConstants.getCarryCapQuiverSize()
+                    && getPlayerUpkeep().getQuiver()[preferredSlot] == null) {
+                // Split the stack if required - don't allow splitting if it
+                // will result in overfilling the pack by more than one
+                // slot.
+                int mult = quiverCurrent.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult();
+                ItemObject toQuiver;
+
+                if (quiverCurrent.getNumber() * mult <= GameConstants.getCarryCapQuiverSlotSize()) {
+                    toQuiver = quiverCurrent;
+                } else {
+                    int numSplit = GameConstants.getCarryCapQuiverSlotSize() / mult;
+
+                    if (numSplit >= quiverCurrent.getNumber()) {
+                        String message = "Number of slots in the quiver required for the number of items in the stack " +
+                                "is too many.";
+                        logger.error(message);
+                        throw new RuntimeException(message);
+                    }
+                    if (numSplit > 0 && numStackSplit <= numPackRemaining) {
+                        // Split off the portion that goes into the pack.
+                        toQuiver = quiverCurrent;
+                        gearInsertEnd(quiverCurrent.objectSplit(quiverCurrent.getNumber() - numSplit));
+                        numStackSplit++;
+                    } else {
+                        toQuiver = null;
+                    }
+                }
+
+                if (toQuiver != null) {
+                    getPlayerUpkeep().getQuiver()[preferredSlot] = toQuiver;
+                    getPlayerUpkeep().setQuiverCount(getPlayerUpkeep().getQuiverCount() + toQuiver.getNumber() * mult);
+
+                    // Mark that item done
+                    assigned.set(index, true);
+                }
+            }
+        }
+
+        // Now the rest of the slots in order
+        for (int quiverIndex = 0; quiverIndex < GameConstants.getCarryCapQuiverSize(); quiverIndex++) {
+            ItemObject first = null;
+            int firstIndex = -1;
+
+            // skip over full slots
+            if (getPlayerUpkeep().getQuiver()[quiverIndex] != null) continue;
+
+            // Find the quiver object that should go there.
+            // At this point we are at the first empty quiver slot
+            int gearIndex = -1;
+            ItemObject current;
+
+            while (true) {
+                gearIndex++;
+                if (gearIndex >= getGear().size()) break;
+
+                current = getGear().get(gearIndex);
+
+                // Only try to assign if not already assigned, ammo and, if necessary to split
+                // have room for the split stacks.
+                if (!assigned.get(gearIndex) && current.gettValue().isAmmo()
+                        && (current.getNumber() <= GameConstants.getCarryCapQuiverSlotSize()
+                        || (GameConstants.getCarryCapQuiverSlotSize() > 0
+                        && numStackSplit <= numPackRemaining))) {
+                    // Get the first in order
+                    if (ItemObject.earlierObject(first, current, false)) {
+                        first = current;
+                        firstIndex = gearIndex;
+                    }
+                }
+            }
+
+            // Stop looking if there is nothing left in the gear
+            if (first == null) break;
+
+            // Put the item in the slot, splitting if needed
+            if (first.getNumber() > GameConstants.getCarryCapQuiverSlotSize()) {
+                if (GameConstants.getCarryCapQuiverSlotSize() <= 0 || numStackSplit > numPackRemaining) {
+                    String message = "Invalid numStackSplit: " + numStackSplit
+                            + " & numPackRemaining: " + numPackRemaining + " values.";
+                    logger.error(message);
+                    throw new RuntimeException(message);
+                }
+                gearInsertEnd(first.objectSplit(first.getNumber() - GameConstants.getCarryCapQuiverSlotSize()));
+            }
+            getPlayerUpkeep().getQuiver()[quiverIndex] = first;
+            getPlayerUpkeep().setQuiverCount(getPlayerUpkeep().getQuiverCount() + first.getNumber());
+
+            // Mark that item as assigned
+            assigned.set(firstIndex, true);
+        }
+
+        // Note reordering
+        if (GameWorld.hasCharacterDungeon()) {
+            for (int quiverIndex = 0; quiverIndex < playerUpkeep.getQuiver().length; quiverIndex++) {
+                ItemObject oldQuiverItem = oldQuiver[quiverIndex];
+                ItemObject newQuiverItem = playerUpkeep.getQuiver()[quiverIndex];
+                if (oldQuiverItem != null && oldQuiverItem != newQuiverItem) {
+                    Message.message("You re-arrange your quiver.");
+                    break;
+                }
+            }
+        }
+
+        // (Shallow?) copy the current pack
+        ItemObject[] inventory = getPlayerUpkeep().getInventory();
+        System.arraycopy(inventory, 0, oldPack, 0, GameConstants.getCarryCapPackSize());
+
+        // Prepare to fill the inventory
+        getPlayerUpkeep().setInventoryCount(0);
+
+        for (int equipIndex = 0; equipIndex <= GameConstants.getCarryCapPackSize(); equipIndex++) {
+            ItemObject first = null;
+            int firstIndex = -1;
+
+            // Find the object that should go there
+            for (int gearIndex = 0; gearIndex < getGear().size(); gearIndex++) { // Changes numMax to getGear().size()
+                ItemObject current = getGear().get(gearIndex);
+
+                // Consider if it if hasn't already been handled
+                if (!assigned.get(gearIndex)) {
+                    if (ItemObject.earlierObject(first, current, false)) {
+                        first = current;
+                        firstIndex = gearIndex;
+                    }
+                }
+            }
+
+            // Allocate
+            getPlayerUpkeep().getInventory()[equipIndex] = first;
+            if (first != null) {
+                getPlayerUpkeep().setInventoryCount(getPlayerUpkeep().getInventoryCount() + 1);
+                assigned.set(firstIndex, true);
+            }
+        }
+
+        // Note reordering
+        if (GameWorld.hasCharacterDungeon() && getPlayerUpkeep().getInventoryCount() == oldInventoryCount) {
+            for (int checkIndex = 0; checkIndex < oldInventoryCount; checkIndex++) {
+                if (oldPack[checkIndex] != null
+                        && oldPack[checkIndex] != getPlayerUpkeep().getInventory()[checkIndex]
+                        && !getPlayerBody().itemIsEquipped(oldPack[checkIndex])) {
+                    Message.message("You re-arrange your pack.");
+                    break;
+                }
+            }
+        }
     }
 
+    /**
+     * Appends an object to the end of the gear, and its known half to the parallel known list - the
+     * port of C's {@code gear_insert_end} ({@code obj-gear.c}).
+     *
+     * <p>C walks its linked list to the tail and links the object on; a list append is the same
+     * thing. The two lists are kept in step by every gear operation, which is what lets the pack
+     * rebuild address an object and its knowledge by the same position.
+     *
+     * <p>Function gearInsertEnd commented in full on 260827.
+     *
+     * @param itemObject the object to append; its known half is appended too
+     */
+    private void gearInsertEnd(ItemObject itemObject) {
+        gear.add(itemObject);
+        gearKnown.add(itemObject.getKnown());
+    }
+
+    /**
+     * Recalculates which spells the player may cast and how many they may learn - the port of C's
+     * {@code calc_spells} ({@code player-calcs.c}).
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the magic subsystem. C's version announces newly
+     * learnable spells, forgets spells the player no longer has the levels for, and raises the
+     * spell-related redraws; none of that happens yet.
+     *
+     * <p>Function calcSpells commented in full on 260827.
+     */
     public void calcSpells() {
         // Stub class. TODO: Implement
     }
@@ -4435,7 +4671,7 @@ public class Player {
      *
      * <p>An object with no known half cannot be ignored at all: the player has nothing to judge it
      * by. Beyond that the tests run in C's order - the per-object ignore mark, then the escapes
-     * ({@code !k} or {@code !*}, or being an artifact, which is only ever ignored by an explicit
+     * ({@code !k} or {@code !*}, or being an artefact, which is only ever ignored by an explicit
      * mark), then ignore-by-kind, then by ego, then by quality.
      *
      * <p>Every test that asks what the player knows reads {@code item.getKnown()}, the object's own
@@ -4456,7 +4692,7 @@ public class Player {
         // Are individual items are marked ignore
         if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_IGNORE)) return true;
 
-        // Only ignore artifacts marked to be ignored
+        // Only ignore artefacts marked to be ignored
         if (item.isArtifact() || item.checkForInscription("!k") != 0
                 || item.checkForInscription("!*") != 0) return false;
 
@@ -4470,11 +4706,135 @@ public class Player {
         // ignore ego items if known
         if (item.getKnown().isEgo() && item.egoIsIgnored(type)) return true;
 
-        // Ignore non-artifact objects
+        // Ignore non-artefact objects
         if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
                 && ObjectInfo.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
 
         return item.ignoreLevelOf().ordinal() <= ObjectInfo.ignoreLevel.get(type).ordinal();
+    }
+
+    /**
+     * Finds an equipment slot of a given type, preferring an empty one - the port of C's
+     * {@code slot_by_type} ({@code obj-gear.c:71}).
+     *
+     * <p>Walks the body in order and stops at the first slot of the right type that is in the state
+     * asked for: empty when {@code full} is {@code false}, occupied when it is {@code true}. Failing
+     * that it answers the first slot of the right type in the wrong state - the fallback - and
+     * failing even that, the slot count, one past the last index, which is this code's "not found".
+     *
+     * <p>Two slots of the same type is the case that makes the fallback matter: with both rings on,
+     * asking for an empty ring slot yields the first ring slot rather than nothing, so a caller
+     * wanting to swap has somewhere to put the new one.
+     *
+     * <p><b>Why the counter is shaped the way it is.</b> C's loop variable outlives its loop, so a
+     * completed pass leaves it equal to the slot count and the closing test can distinguish "ran off
+     * the end" from "stopped somewhere". Java's cannot, so {@code outValue} stands in for it: it
+     * starts at {@code -1}, is assigned at the <em>foot</em> of the body so {@code break} skips it,
+     * and is incremented after the loop. A break at index <i>k</i> therefore yields <i>k</i>, a
+     * completed pass yields the slot count, and an empty body yields the fallback - the three cases
+     * C produces.
+     *
+     * <p>Function slotByType commented in full on 260827.
+     *
+     * @param type the slot type wanted
+     * @param full {@code true} to look for an occupied slot, {@code false} for an empty one
+     * @return the index of the best matching slot, or the slot count if the body has none of that
+     * type
+     */
+    public int slotByType(EquipmentSlotsEnum type, boolean full) {
+        int fallback = body.getSlots().size();
+
+        int outValue = -1;
+
+        for (int index = 0; index < body.getSlots().size(); index++) {
+            EquipSlot slot = body.getSlots().get(index);
+            if (slot.getType() == type) {
+                if (full) {
+                    if (slot.getItem() != null) break;
+                } else {
+                    if (slot.getItem() == null) break;
+                }
+
+                if (fallback == body.getSlots().size())
+                    fallback = index;
+            }
+            outValue = index;
+        }
+        outValue++;
+
+        return (outValue != body.getCount()) ? outValue : fallback;
+    }
+
+    /**
+     * Finds the equipment slot with a given name - the port of C's {@code slot_by_name}
+     * ({@code obj-gear.c}).
+     *
+     * <p>Names come from {@code body.txt}: {@code weapon}, {@code shooting}, {@code right hand} and
+     * so on. Every caller in the power and gear code passes a literal, so a miss means a coding
+     * error rather than a runtime condition.
+     *
+     * <p><b>Diverges from C on a miss.</b> C returns {@code body.count} - one past the last slot -
+     * and leaves the caller to notice; the port logs and throws. That is deliberate: no caller here
+     * tests for the one-past value, so a wrong name would otherwise be read as a real slot number.
+     *
+     * <p>Function slotByName commented in full on 260827.
+     *
+     * @param name the slot's name as {@code body.txt} spells it
+     * @return the slot's index
+     * @throws IllegalArgumentException if no slot carries that name
+     */
+    public int slotByName(String name) {
+        for (EquipSlot slot : body.getSlots()) {
+            if (slot.getName().equals(name))
+                return numberFromSlot(slot);
+        }
+
+        String message = "Invalid slot name passed to Player.slotByName()";
+        logger.error(message);
+        throw new IllegalArgumentException(message);
+    }
+
+    /**
+     * Returns the equipment slot at a given index - the port of indexing C's
+     * {@code p->body.slots[number]}.
+     *
+     * <p>Unguarded, as C's array access is: callers pass an index that came from
+     * {@link #slotByName(String)} or {@link #slotByType(EquipmentSlotsEnum, boolean)}, and both of
+     * those can answer one past the last slot, so a caller that has not checked will get an
+     * exception here rather than a wrong slot.
+     *
+     * <p>Function slotByNumber commented in full on 260827.
+     *
+     * @param number the slot index
+     * @return the slot at that index
+     */
+    public EquipSlot slotByNumber(int number) {
+        return body.getSlots().get(number);
+    }
+
+    /**
+     * Finds the index of a given equipment slot - the reverse of
+     * {@link #slotByNumber(int)}.
+     *
+     * <p>Compares by identity rather than equality, because the slots are the player's own instances
+     * and two slots of the same type are still different slots.
+     *
+     * <p>Answers the slot count - one past the last index - for a slot this body does not hold,
+     * which is C's convention for "not found" throughout the gear code.
+     *
+     * <p>Function numberFromSlot commented in full on 260827.
+     *
+     * @param slot the slot to locate
+     * @return its index, or the slot count if this body does not hold it
+     */
+    public int numberFromSlot(EquipSlot slot) {
+        int index = -1;
+        for (EquipSlot testSlot : body.getSlots()) {
+            index++;
+            if (testSlot == slot) return index;
+        }
+
+        return body.getSlots().size();
     }
 
     /**

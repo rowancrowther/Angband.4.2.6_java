@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -741,6 +742,64 @@ class PlayerStateTest {
             assertAll(
                     () -> assertTrue(state.isHeavyWield()),
                     () -> assertFalse(state.isHeavyShoot()));
+        }
+    }
+
+    /**
+     * The ammunition type, which is the one field of the state that is an enum rather than a number.
+     */
+    @Nested
+    @DisplayName("ammunition type")
+    class AmmoType {
+
+        /**
+         * With no launcher wielded there is no ammunition type, so the field is nothing rather than
+         * a zero — {@code TV_NONE} would be a type, and this is the absence of one.
+         */
+        @Test
+        @DisplayName("a fresh state names no ammunition")
+        void freshStateNamesNoAmmo() {
+            assertNull(new PlayerState().getAmmoTval());
+        }
+
+        /**
+         * Set and read back. The launcher decides it, so it changes when the launcher does.
+         */
+        @Test
+        @DisplayName("the ammunition type round-trips")
+        void ammoTypeRoundTrips() {
+            PlayerState state = new PlayerState();
+            state.setAmmoTValue(TValue.TV_ARROW);
+
+            assertEquals(TValue.TV_ARROW, state.getAmmoTval());
+        }
+
+        /**
+         * Wiping clears it back to nothing rather than to {@code TV_NONE}, which matters because the
+         * two mean different things: no launcher at all, versus a launcher that fires nothing.
+         */
+        @Test
+        @DisplayName("a wipe clears the ammunition type to nothing")
+        void wipeClearsAmmoType() {
+            PlayerState state = new PlayerState();
+            state.setAmmoTValue(TValue.TV_BOLT);
+
+            state.wipe();
+
+            assertNull(state.getAmmoTval());
+        }
+
+        /**
+         * A copy carries it. The enum constant is shared rather than duplicated, which is right —
+         * enum constants are singletons and there is nothing to duplicate.
+         */
+        @Test
+        @DisplayName("a copy carries the ammunition type")
+        void copyCarriesAmmoType() {
+            PlayerState state = new PlayerState();
+            state.setAmmoTValue(TValue.TV_SHOT);
+
+            assertEquals(TValue.TV_SHOT, state.copy().getAmmoTval());
         }
     }
 }

@@ -20,6 +20,7 @@ package uk.co.jackoftrades.backend.parser.curse;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.backend.parser.Assembler;
 import uk.co.jackoftrades.backend.parser.grammars.EffectAssembler;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.MonsterRegistry;
@@ -133,7 +134,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
             List<Effect> effects = EffectAssembler.assemble(record.effects(), errors);
             boolean badEffect = (effects == null);
             Map<ElementEnum, ElementInfo> elInfo = new HashMap<>();
-            List<ObjectFlag> objectFlags = new ArrayList<>();
+            Flag<ObjectFlag> objectFlags = new Flag<>(ObjectFlag.class);
             boolean illegalFlag = false;
             // flags: line fans out — HATES_/IGNORE_ set element flags on elInfo,
             // everything else is an object flag.
@@ -154,7 +155,7 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                     ObjectFlag objectFlag;
                     try {
                         objectFlag = ObjectFlag.valueOf("OF_" + flag);
-                        objectFlags.add(objectFlag);
+                        objectFlags.on(objectFlag);
                     } catch (IllegalArgumentException e) {
                         errors.add("Curse starting at line: " + line + " has " +
                                 "an unknown object flag: " + flag);
@@ -233,12 +234,12 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
                 }
             }
             List<String> conflictingCurses = new ArrayList<>(record.conflict());
-            List<ObjectFlag> cFlags = new ArrayList<>();
+            Flag<ObjectFlag> cFlags = new Flag<>(ObjectFlag.class);
             boolean illegalCFlag = false;
             for (String cFlag : record.cFlag()) {
                 try {
                     ObjectFlag objectFlag = ObjectFlag.valueOf("OF_" + cFlag);
-                    cFlags.add(objectFlag);
+                    cFlags.on(objectFlag);
                 } catch (IllegalArgumentException e) {
                     errors.add("Curse starting at line: " + line + " has " +
                             "invalid conflict flag: " + cFlag);

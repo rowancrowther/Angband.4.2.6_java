@@ -147,4 +147,19 @@ public class Brand {
     public int hashCode() {
         return Objects.hash(code, name, verb, resistFlag, vulnerableFlag, multiplier, oMultiplier, power);
     }
+
+    /**
+     * @return this brand's power rating - the figure {@code ItemObject.slayPower} takes the best of
+     * across an object's brands and slays
+     */
+    public int getPower() {
+        return power;
+    }
+
+    /**
+     * @return the damage multiplier in the standard combat system; the O-combat figure is separate
+     */
+    public int getMultiplier() {
+        return multiplier;
+    }
 }

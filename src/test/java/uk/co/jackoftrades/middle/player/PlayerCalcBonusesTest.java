@@ -25,6 +25,7 @@ import uk.co.jackoftrades.middle.objects.Curse;
 import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
@@ -90,9 +91,9 @@ class PlayerCalcBonusesTest {
      * @return the curse
      */
     private static Curse curse(Map<ObjectModifier, Integer> modifiers, int toHit, int toDam, int toAc) {
-        return new Curse("test curse", List.of(), 0, null, List.of(), modifiers,
+        return new Curse("test curse", List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
                 Map.<ElementEnum, ElementInfo>of(), toHit, toDam, toAc,
-                List.of(), List.of(), "", "");
+                List.of(), new Flag<>(ObjectFlag.class), "", "");
     }
 
     /**

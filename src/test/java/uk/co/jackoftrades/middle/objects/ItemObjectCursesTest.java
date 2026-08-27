@@ -21,6 +21,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -70,8 +72,8 @@ class ItemObjectCursesTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
-        return new Curse(name, List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), List.of(), "", "");
+        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(), Map.of(), 0, 0, 0,
+                List.of(), new Flag<>(ObjectFlag.class), "", "");
     }
 
     /**

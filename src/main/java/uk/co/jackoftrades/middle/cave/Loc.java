@@ -210,6 +210,21 @@ public class Loc {
     }
 
     /**
+     * Returns an independent copy of this location.
+     *
+     * <p>{@link Loc} is immutable in practice - nothing mutates its coordinates - so a copy is
+     * rarely needed. It exists for the callers that copy a whole object graph and want no shared
+     * references anywhere in it, rather than because sharing one would be unsafe.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new location with the same coordinates
+     */
+    public Loc copy() {
+        return new Loc(x, y);
+    }
+
+    /**
      * Intermediate builder for the fluent {@code Loc.row(y).col(x)} idiom, holding the row until the
      * column is supplied.
      *

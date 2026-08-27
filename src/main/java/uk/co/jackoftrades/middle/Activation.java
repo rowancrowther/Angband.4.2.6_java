@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle;
 
 import uk.co.jackoftrades.middle.effect.Effect;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -100,5 +101,35 @@ public class Activation {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Returns an independent copy of this activation, effects included.
+     *
+     * <p>The effect list is rebuilt rather than shared: {@link Effect} is mutable, so handing the
+     * same list to two activations would let a change to one show up on the other. Every other field
+     * is a primitive or an immutable {@link String} and is simply passed through the constructor.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new activation equal to this one and sharing no mutable state with it
+     */
+    public Activation copy() {
+        List<Effect> effects = new ArrayList<>();
+
+        for (Effect e : this.effects) {
+            effects.add(e.copy());
+        }
+
+        return new Activation(this.name, this.index, this.aim, this.level,
+                this.power, effects, this.message, this.desc);
+    }
+
+    /**
+     * @return the power this activation adds to an object that carries it - C's
+     * {@code activation->power}, read by {@code ItemObject.effectsPower}
+     */
+    public int getPower() {
+        return power;
     }
 }

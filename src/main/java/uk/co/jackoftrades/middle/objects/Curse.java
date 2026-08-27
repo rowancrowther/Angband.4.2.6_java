@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.objects;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
@@ -97,7 +98,7 @@ public class Curse {
      * non-element entries of the {@code flags:} line; {@code HATES_}/{@code IGNORE_}
      * tokens are routed to {@link #elInfo} instead.
      */
-    private final List<ObjectFlag> objectFlags;
+    private final Flag<ObjectFlag> objectFlags;
 
     /**
      * The additive numeric modifiers this curse applies to its host object
@@ -149,7 +150,7 @@ public class Curse {
      * Object flags that conflict with this curse (C:
      * {@code curse->conflict_flags}).
      */
-    private final List<ObjectFlag> conflictFlags;
+    private final Flag<ObjectFlag> conflictFlags;
 
     /**
      * Human-readable description of the curse (C: {@code curse->desc}).
@@ -189,14 +190,14 @@ public class Curse {
                  List<ObjectBase> objectBases,
                  int weight,
                  Effect effect,
-                 List<ObjectFlag> objectFlags,
+                 Flag<ObjectFlag> objectFlags,
                  Map<ObjectModifier, Integer> modifiers,
                  Map<ElementEnum, ElementInfo> elInfo,
                  int combatToHit,
                  int combatDam,
                  int combatAC,
                  List<String> conflictNames,
-                 List<ObjectFlag> conflictFlags,
+                 Flag<ObjectFlag> conflictFlags,
                  String description,
                  String message) {
         this.name = name;
@@ -246,7 +247,7 @@ public class Curse {
     /**
      * @return the (non-element) object flags this curse grants
      */
-    public List<ObjectFlag> getObjectFlags() {
+    public Flag<ObjectFlag> getObjectFlags() {
         return objectFlags;
     }
 
@@ -298,7 +299,7 @@ public class Curse {
     /**
      * @return the object flags that conflict with this curse
      */
-    public List<ObjectFlag> getConflictFlags() {
+    public Flag<ObjectFlag> getConflictFlags() {
         return conflictFlags;
     }
 
@@ -399,7 +400,7 @@ public class Curse {
     public int modifyWeightForCurse(int weight) {
         int result = weight;
 
-        if (objectFlags.contains(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+        if (objectFlags.has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
             if (this.weight < 0) {
                 logger.error("Weight cannot be negative.");
                 throw new IllegalArgumentException("Weight cannot be negative.");

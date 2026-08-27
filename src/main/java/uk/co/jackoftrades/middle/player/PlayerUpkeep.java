@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -175,7 +176,7 @@ public class PlayerUpkeep {
     /**
      * The objects held in the pack ({@code inven}).
      */
-    private List<ItemObject> inventoryObjects;
+    private ItemObject[] inventoryObjects;
 
     /**
      * Total weight currently carried ({@code total_weight}).
@@ -250,7 +251,7 @@ public class PlayerUpkeep {
      */
     public PlayerUpkeep() {
         // C allocates these two explicitly; the rest of the struct is covered by mem_zalloc
-        inventoryObjects = new ArrayList<>();
+        inventoryObjects = new ItemObject[GameConstants.getCarryCapPackSize() + 1];
         quiverObjects = new ItemObject[GameConstants.getCarryCapQuiverSize()];
 
         // C's mem_zalloc, written out by hand
@@ -620,7 +621,7 @@ public class PlayerUpkeep {
      *
      * @return the pack slots, shared with this instance
      */
-    public List<ItemObject> getInventory() {
+    public ItemObject[] getInventory() {
         return inventoryObjects;
     }
 
@@ -641,23 +642,121 @@ public class PlayerUpkeep {
         return totalWeight;
     }
 
+    /**
+     * @return {@code true} when only a partial update is wanted - C's {@code only_partial}, which
+     * the level-feeling code sets so that a refresh does not redo the whole calculation
+     */
     public boolean isOnlyPartial() {
         return onlyPartial;
     }
 
+    /**
+     * Answers whether any one-off notice action is pending - the port of C's truth test on
+     * {@code p->upkeep->notice}, which is a bit field and so is simply tested against zero.
+     *
+     * <p>{@code Player.noticeStuff} returns immediately when this is {@code false}, which is the
+     * common case: the flags are raised by events and cleared as they are acted on.
+     *
+     * <p>Function isNotice commented in full on 260827.
+     *
+     * @return {@code true} if at least one {@code PN_} flag is raised
+     */
     public boolean isNotice() {
         return !noticeFlags.isEmpty();
     }
 
+    /**
+     * @return a read-only view of the pending notice flags - readers test them, and the two
+     *         mutators below are the only way to change them
+     */
     public FlagView<PlayerNotice> getNoticeFlags() {
         return noticeFlags;
     }
 
+    /**
+     * Clears one pending notice action - the port of C's
+     * {@code p->upkeep->notice &= ~(PN_...)}.
+     *
+     * <p>{@code noticeStuff} clears each flag <em>before</em> doing the work it asks for, so that an
+     * action which raises the same flag again - as the ignore drop does for the pack combine - has
+     * its request survive to the next pass instead of being wiped by this one.
+     *
+     * <p>Function setNoticeFlagOff commented in full on 260827.
+     *
+     * @param playerNotice the flag to clear
+     */
     public void setNoticeFlagOff(PlayerNotice playerNotice) {
         noticeFlags.off(playerNotice);
     }
 
+    /**
+     * Raises one pending notice action - the port of C's
+     * {@code p->upkeep->notice |= (PN_...)}.
+     *
+     * <p>Raised by whatever notices the need - an ignore setting changing, an item entering the
+     * pack - and acted on by {@code noticeStuff} on the next pass rather than at once.
+     *
+     * <p>Function setNoticeFlagOn commented in full on 260827.
+     *
+     * @param playerNotice the flag to raise
+     */
     public void setNoticeFlagOn(PlayerNotice playerNotice) {
         noticeFlags.on(playerNotice);
+    }
+
+    /**
+     * @return how many items the pack currently holds - C's {@code inven_cnt}, rebuilt by
+     * {@code calcInventory} rather than maintained item by item
+     */
+    public int getInventoryCount() {
+        return inventoryCount;
+    }
+
+    /**
+     * Records how many items the pack holds. Written by the inventory rebuild, which counts the
+     * slots as it fills them; nothing else should set it.
+     *
+     * @param i the new pack count
+     */
+    public void setInventoryCount(int i) {
+        this.inventoryCount = i;
+    }
+
+    /**
+     * @return how many items the quiver currently holds - C's {@code quiver_cnt}, rebuilt by
+     * {@code calcInventory}
+     */
+    public int getQuiverCount() {
+        return quiverCount;
+    }
+
+    /**
+     * Records how many items the quiver holds. Written by the inventory rebuild, which counts the
+     * slots as it fills them; nothing else should set it.
+     *
+     * @param quiverCount the new quiver count
+     */
+    public void setQuiverCount(int quiverCount) {
+        this.quiverCount = quiverCount;
+    }
+
+    /**
+     * @return the object the player is currently examining - C's object trackee
+     * {@code p->upkeep->object}, or {@code null} when nothing is being tracked
+     */
+    public ItemObject getObject() {
+        return object;
+    }
+
+    /**
+     * Sets or clears the object the player is currently examining - C's object trackee.
+     *
+     * <p>Cleared with {@code null} when the tracked object is deleted, so that nothing holds a
+     * reference to an object that no longer exists.
+     *
+     * @param object the object now being examined, or {@code null} to stop tracking
+     */
+    public void setObject(ItemObject object) {
+        this.object = object;
     }
 }

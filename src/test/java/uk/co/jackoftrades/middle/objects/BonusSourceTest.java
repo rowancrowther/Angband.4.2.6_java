@@ -110,8 +110,10 @@ class BonusSourceTest {
      */
     private static Curse curse(List<ObjectFlag> flags, Map<ObjectModifier, Integer> modifiers,
                                Map<ElementEnum, ElementInfo> elInfo, int toHit, int toDam, int toAc) {
-        return new Curse("test curse", List.of(), 0, null, flags, modifiers, elInfo,
-                toHit, toDam, toAc, List.of(), List.of(), "", "");
+        Flag<ObjectFlag> flagSet = new Flag<>(ObjectFlag.class);
+        if (!flags.isEmpty()) flagSet.set(flags);
+        return new Curse("test curse", List.of(), 0, null, flagSet, modifiers, elInfo,
+                toHit, toDam, toAc, List.of(), new Flag<>(ObjectFlag.class), "", "");
     }
 
     /**

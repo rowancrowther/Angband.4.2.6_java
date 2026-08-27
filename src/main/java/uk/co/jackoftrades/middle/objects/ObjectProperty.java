@@ -176,7 +176,56 @@ public class ObjectProperty {
         return name;
     }
 
+    /**
+     * @return the message shown when the player notices this property on an object, or {@code null}
+     * where the data file gives none - C's {@code obj_property->msg}
+     */
     public String getNoticeMessage() {
         return message;
+    }
+
+    /**
+     * @return how heavily this property counts towards the combined ability bonus that
+     *         {@code ItemObject.modifierPower} inhibits on - C's {@code obj_property->mult}. Not a
+     *         damage multiplier, and unrelated to {@link #getTypeMult(TValue)}
+     */
+    public int getMultiplier() {
+        return mult;
+    }
+
+    /**
+     * @return this property's base power before the per-type multiplier is applied, or zero for a
+     * property the power calculation does not price - C's {@code obj_property->power}
+     */
+    public int getPower() {
+        return power;
+    }
+
+    /**
+     * Returns how much this property is worth on one kind of object - the port of reading C's
+     * {@code obj_property->type_mult[tval]} ({@code obj-power.c:556}, {@code obj-power.c:602}).
+     *
+     * <p>The same property is worth different amounts on different objects: extra blows are worth
+     * three times as much on a ring as on a weapon, and nothing at all on a bow. The multiplier is
+     * the figure that says so, and the power code multiplies the base power by it.
+     *
+     * <p><b>An unlisted type multiplies by one.</b> C fills every slot of the array with 1 before
+     * parsing any {@code type-mult:} line ({@code obj-init.c:3186-3189}), so a type the data file
+     * does not name is priced normally rather than at nothing. The port stores only the named types
+     * and supplies the same default here - which is why the fallback is 1 and not 0.
+     *
+     * <p>Curses reach this with {@code TV_NONE}, the tval a curse object carries, and get the
+     * default back for the same reason.
+     *
+     * <p>Function getTypeMult commented in full on 260827.
+     *
+     * @param tValue the object type being priced
+     * @return the multiplier for that type, or 1 if the data file names no figure for it
+     */
+    public int getTypeMult(TValue tValue) {
+        if (typeMults.containsKey(tValue))
+            return typeMults.get(tValue);
+
+        return 1;
     }
 }

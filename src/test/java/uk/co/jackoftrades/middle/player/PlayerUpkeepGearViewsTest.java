@@ -136,10 +136,18 @@ class PlayerUpkeepGearViewsTest {
             }
         }
 
+        /**
+         * The pack is the same shape as the quiver: pack-size slots, every one empty. C's
+         * {@code p->upkeep->inven} is an array of that length with {@code NULL} for an empty slot,
+         * and the rebuild in {@code calcInventory} writes into it by index.
+         */
         @Test
-        @DisplayName("the pack starts empty rather than null")
+        @DisplayName("the pack starts as pack-size empty slots")
         void inventoryStartsEmpty() {
-            assertTrue(upkeep.getInventory().isEmpty());
+            assertEquals(GameConstants.getCarryCapPackSize() + 1, upkeep.getInventory().length);
+            for (ItemObject slot : upkeep.getInventory()) {
+                assertNull(slot);
+            }
         }
 
         /**
@@ -159,51 +167,56 @@ class PlayerUpkeepGearViewsTest {
             assertNull(upkeep.getQuiver()[0]);
         }
 
+        /**
+         * Live, not copied, and indexed rather than appended - as with the quiver, a position here is
+         * the letter the player selects the object by, so writing to slot 2 must leave 0 and 1 empty.
+         */
         @Test
         @DisplayName("the pack is a live view, not a snapshot")
         void inventoryIsLive() {
             ItemObject potion = new ItemObject();
-            upkeep.getInventory().add(potion);
+            upkeep.getInventory()[2] = potion;
 
-            assertEquals(1, upkeep.getInventory().size());
-            assertSame(potion, upkeep.getInventory().get(0));
+            assertSame(potion, upkeep.getInventory()[2]);
+            assertNull(upkeep.getInventory()[0]);
         }
 
         /**
-         * Successive reads hand back the one list, which is the strongest form of the same claim and
+         * Successive reads hand back the one array, which is the strongest form of the same claim and
          * the one a defensive copy would fail outright.
          */
         @Test
-        @DisplayName("successive reads return the same list object")
+        @DisplayName("successive reads return the same array object")
         void readsAreStable() {
             assertSame(upkeep.getQuiver(), upkeep.getQuiver());
             assertSame(upkeep.getInventory(), upkeep.getInventory());
         }
 
         /**
-         * Order is preserved, because order is meaning: an object's position in these lists is the
-         * key the player presses to select it.
+         * Order is preserved, because order is meaning: an object's position in these arrays is the
+         * key the player presses to select it, so two objects written to successive slots come back
+         * in that order and not in the order they were created.
          */
         @Test
         @DisplayName("slot order is the order things were put in")
         void orderIsPreserved() {
             ItemObject first = new ItemObject();
             ItemObject second = new ItemObject();
-            upkeep.getInventory().add(first);
-            upkeep.getInventory().add(second);
+            upkeep.getInventory()[0] = first;
+            upkeep.getInventory()[1] = second;
 
-            assertSame(first, upkeep.getInventory().get(0));
-            assertSame(second, upkeep.getInventory().get(1));
+            assertSame(first, upkeep.getInventory()[0]);
+            assertSame(second, upkeep.getInventory()[1]);
         }
 
         /**
-         * The two views are separate lists. Ammunition goes in one and everything else in the other,
-         * and an object added to the pack must not appear in the quiver.
+         * The two views are separate arrays. Ammunition goes in one and everything else in the other,
+         * and an object written to the pack must not appear in the quiver.
          */
         @Test
         @DisplayName("the quiver and the pack are distinct")
         void viewsAreDistinct() {
-            upkeep.getInventory().add(new ItemObject());
+            upkeep.getInventory()[0] = new ItemObject();
 
             for (ItemObject slot : upkeep.getQuiver()) {
                 assertNull(slot);

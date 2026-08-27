@@ -153,4 +153,22 @@ public class Flavour {
     public boolean isFixed() {
         return isFixed;
     }
+
+    /**
+     * Returns an independent copy of this flavour.
+     *
+     * <p>A shallow copy is enough: every field is a primitive or an immutable {@link String}. The
+     * fixed flag is assigned after construction because the constructor does not take it - a fixed
+     * flavour is one the data file pinned to a particular item rather than one shuffled at birth,
+     * and that fact is set separately.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new flavour equal to this one
+     */
+    public Flavour copy() {
+        Flavour copy = new Flavour(this.text, this.sValStr, this.colour, this.index);
+        copy.isFixed = this.isFixed;
+        return copy;
+    }
 }

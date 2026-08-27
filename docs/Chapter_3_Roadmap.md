@@ -221,14 +221,14 @@ boxes span these stages rather than matching them one-to-one.
 
 ### 0 — The map *(before any porting)*
 
-- [ ] **Map: the player subsystem** — you write it; review against the C first. Given the scaffold, it should account
+- [x] **Map: the player subsystem** — you write it; review against the C first. Given the scaffold, it should account
   for: how the update cycle decides *when* recalculation fires; how birth commands travel the channel (the existing
   `UIBirth` / `BirthEvents` plumbing already answers part of it); which stubs this chapter fills versus leaves to
   Chapters 5–7; and whether decisions 1–3 survive contact with the C.
 
 ### A — Stat tables *(no dependencies)*
 
-- [ ] The 17 missing `adj_*` tables into `StatTables` (`[C] player-calcs.c:45–819`):
+- [x] The 17 missing `adj_*` tables into `StatTables` (`[C] player-calcs.c:45–819`):
   - [x] `adj_int_dev`
   - [x] `adj_wis_sav`
   - [x] `adj_dex_dis`
@@ -269,7 +269,7 @@ boxes span these stages rather than matching them one-to-one.
 ### D — The update cycle + the design set piece *(needs C)*
 
 - [X] Write the set-piece proposal above; review before building
-- [ ] `notice_stuff` (`[C] player-calcs.c:2536`) → `Player.java:1258`
+- [X] `notice_stuff` (`[C] player-calcs.c:2536`) → `Player.java:1258`
 - [ ] `update_stuff` (`[C] player-calcs.c:2565`) → `Player.java:1279` — the fixed poll order is the point
 - [ ] `redraw_stuff` (`[C] player-calcs.c:2676`) → `Player.java:1289` — where the proposal lands
 - [ ] `handle_stuff` (`[C] player-calcs.c:2728`) → `Player.java:1269`

@@ -56,6 +56,11 @@ public class EffectSubTypeWrapper {
     private EffectSubTypeEnum subType;
 
 
+    /**
+     * Payload for {@code EST_NONE} - the effect has no sub-type at all. Always {@code null}; it
+     * exists so that the "no payload" case is a field like the others rather than an absence, which
+     * keeps {@link #copy()} and the discriminator switch uniform.
+     */
     private Object nullValue;
 
     /**
@@ -221,6 +226,21 @@ public class EffectSubTypeWrapper {
         return teleportToMonsterMayCast;
     }
 
+    /**
+     * Builds a wrapper carrying no payload, for an effect whose sub-type is
+     * {@code EST_NONE} or unknown.
+     *
+     * <p>The two branches differ in one respect only: a declared {@code EST_NONE} keeps its
+     * discriminator, while any other value is recorded as {@code null}. That distinguishes "this
+     * effect states that it has no sub-type" from "this effect's sub-type did not resolve", which
+     * matters to the accessors below - each throws when asked for a payload the discriminator does
+     * not name.
+     *
+     * <p>Constructor EffectSubTypeWrapper commented in full on 260827.
+     *
+     * @param subType {@code EST_NONE} to record an effect with no sub-type; anything else leaves the
+     *                discriminator unset
+     */
     public EffectSubTypeWrapper(EffectSubTypeEnum subType) {
         if (subType == EffectSubTypeEnum.EST_NONE) {
             this.subType = subType;
@@ -614,5 +634,40 @@ public class EffectSubTypeWrapper {
         }
 
         return glyphType;
+    }
+
+    /**
+     * Returns an independent copy of this wrapper.
+     *
+     * <p>Every field is copied, not just the live one. That is deliberate: which field is live is
+     * decided by {@code subType}, and copying the lot means the copy behaves identically without
+     * this method having to switch on the discriminator - and without it needing changing when a new
+     * sub-type is added.
+     *
+     * <p>The payloads are all enum constants or boxed primitives, so sharing the references is safe;
+     * there is nothing here a copy could mutate behind the original's back.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new wrapper carrying the same discriminator and payloads
+     */
+    public EffectSubTypeWrapper copy() {
+        EffectSubTypeWrapper copy = new EffectSubTypeWrapper();
+        copy.subType = this.subType;
+        copy.nullValue = this.nullValue;
+        copy.projectionWrapper = this.projectionWrapper;
+        copy.timedWrapper = this.timedWrapper;
+        copy.nourishWrapper = this.nourishWrapper;
+        copy.monTimedWrapper = this.monTimedWrapper;
+        copy.summonWrapper = this.summonWrapper;
+        copy.summonTypeWrapper = this.summonTypeWrapper;
+        copy.statsWrapper = this.statsWrapper;
+        copy.enchantWrapper = this.enchantWrapper;
+        copy.shapeWrapper = this.shapeWrapper;
+        copy.quakeWrapper = this.quakeWrapper;
+        copy.glyphType = this.glyphType;
+        copy.teleportMonsterMayCast = this.teleportMonsterMayCast;
+        copy.teleportToMonsterMayCast = this.teleportToMonsterMayCast;
+        return copy;
     }
 }

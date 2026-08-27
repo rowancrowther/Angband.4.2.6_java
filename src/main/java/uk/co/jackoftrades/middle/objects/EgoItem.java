@@ -155,6 +155,14 @@ public class EgoItem {
      */
     private boolean everSeen;
 
+    /**
+     * Which ignore categories the player has told the game to hide this ego under - the port of C's
+     * {@code ego->ignore_types[]}.
+     *
+     * <p>A map where C has a fixed array, but not a sparse one: the constructor fills it with a
+     * {@code false} for every category, so it answers for all of them from the start.
+     * {@link #getIgnoreType(IgnoreType)} unboxes the value directly and relies on that.
+     */
     private Map<IgnoreType, Boolean> ignoreTypes;
 
     /**
@@ -355,11 +363,114 @@ public class EgoItem {
         return flagsOff;
     }
 
+    /**
+     * Answers whether the player has marked this ego as ignorable under one category - the port of
+     * reading C's {@code ego->ignore_types[type]}.
+     *
+     * <p>Read by {@code ItemObject.egoIsIgnored}, and through it by the ignore machinery that
+     * decides what {@code noticeStuff} drops.
+     *
+     * <p>Unboxes the map's value directly, which is safe because the constructor fills the map for
+     * every category; see the note on {@link #ignoreTypes}.
+     *
+     * <p>Function getIgnoreType commented in full on 260827.
+     *
+     * @param type the ignore category to test
+     * @return {@code true} if this ego is marked ignorable under that category
+     */
     public boolean getIgnoreType(IgnoreType type) {
         return ignoreTypes.get(type);
     }
 
+    /**
+     * Marks this ego as ignorable under one category - the port of setting C's
+     * {@code ego->ignore_types[type] = true}.
+     *
+     * <p>One-way: there is no counterpart that clears the mark, matching a data-driven load where
+     * the categories are written once and not revised.
+     *
+     * <p>Function setIgnoreType commented in full on 260827.
+     *
+     * @param ignoreType the ignore category to mark
+     */
     public void setIgnoreType(IgnoreType ignoreType) {
         ignoreTypes.put(ignoreType, true);
+    }
+
+    /**
+     * Returns an independent copy of this ego template.
+     *
+     * <p>Deep-copied because their contents are mutable: the three flag sets, the modifier map (each
+     * {@link uk.co.jackoftrades.middle.numerics.Random} copied in turn), the minimum-modifier map,
+     * the element info (each entry copied), the curse map (each {@code CurseData} rebuilt), the
+     * three combat dice, the activation, the recharge dice and the ignore-category map.
+     *
+     * <p>Shared deliberately: the brand and slay sets are rebuilt but their members are not, because
+     * a {@code Brand} and a {@code Slay} are immutable registry entries every carrier points at; the
+     * possible-items list is likewise rebuilt around shared {@code ObjectKind} templates, as C
+     * shares its {@code kind} pointers.
+     *
+     * <p>The ignore-category map is assigned after construction because the constructor does not
+     * take it.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new ego template that shares no mutable state with this one, bar the noted exception
+     */
+    public EgoItem copy() {
+        String newName = this.name;
+        String newText = this.text;
+        List<ObjectKind> possItems = new ArrayList<>(this.possItems);
+        int egoIndex = this.egoIndex;
+        int cost = this.cost;
+        Flag<ObjectFlag> oFlagOn = new Flag<>(ObjectFlag.class);
+        oFlagOn.copyFrom(flags);
+        Flag<ObjectFlag> oFlagOff = new Flag<>(ObjectFlag.class);
+        oFlagOff.copyFrom(flagsOff);
+        Flag<ObjectKindFlag> kFlag = new Flag<>(ObjectKindFlag.class);
+        kFlag.copyFrom(kindFLags);
+        Map<ObjectModifier, Random> newModifiers = new HashMap<>();
+        for (ObjectModifier om : this.modifiers.keySet()) {
+            newModifiers.put(om, this.modifiers.get(om).copy());
+        }
+        Map<ObjectModifier, Integer> newMinModifiers = new HashMap<>();
+        for (ObjectModifier om : this.minModifiers.keySet()) {
+            newMinModifiers.put(om, this.minModifiers.get(om));
+        }
+        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
+        for (ElementEnum em : this.elInfo.keySet()) {
+            newElInfo.put(em, this.elInfo.get(em).copy());
+        }
+        Set<Brand> newBrands = new HashSet<>(this.brands);
+        Set<Slay> newSlays = new HashSet<>(this.slays);
+        Map<Curse, CurseData> newCurses = new HashMap<>();
+        for (Curse c : this.curses.keySet()) {
+            newCurses.put(c, new CurseData(this.curses.get(c)));
+        }
+        int newRating = this.rating;
+        int newAllocProb = this.allocProb;
+        int newAllocMin = this.allocMin;
+        int newAllocMax = this.allocMax;
+        Random toHit = this.toHit.copy();
+        Random toDam = this.toDam.copy();
+        Random toAC = this.toAC.copy();
+        int newMinToHit = this.minToHit;
+        int newMinToDam = this.minToDam;
+        int newMinToAC = this.minToAC;
+        Activation newActivation = this.activation.copy();
+        Random time = this.time.copy();
+        boolean newEverSeen = this.everSeen;
+        Map<IgnoreType, Boolean> newIgnoreTypes = new HashMap<>();
+        for (IgnoreType type : this.ignoreTypes.keySet()) {
+            newIgnoreTypes.put(type, this.ignoreTypes.get(type));
+        }
+
+        EgoItem copy = new EgoItem(newName, newText, egoIndex, cost, oFlagOn, oFlagOff, kFlag,
+                newModifiers, newMinModifiers, newElInfo, newBrands, newSlays, newCurses,
+                newRating, newAllocProb, newAllocMin, newAllocMax, possItems, toHit,
+                toDam, toAC, newMinToHit, newMinToDam, newMinToAC, newActivation,
+                time, newEverSeen);
+        copy.ignoreTypes = newIgnoreTypes;
+        return copy;
     }
 }

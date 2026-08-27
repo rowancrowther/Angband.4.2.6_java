@@ -23,14 +23,15 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftrades.middle.Message;
+import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
+import uk.co.jackoftrades.middle.numerics.Guards;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
-import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
@@ -45,6 +46,7 @@ import uk.co.jackoftrades.middle.utils.NumberUtils;
 import java.util.*;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
+import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_NONE;
 
 /**
  * A concrete item instance in the game — a specific sword, potion, etc. — as
@@ -70,6 +72,16 @@ public class ItemObject {
      * Logger used to report stack-merge errors.
      */
     private static final Logger logger = LogManager.getLogger();
+
+    /**
+     * The player this object's calculations are asked about - the equipment slots it would be worn
+     * in, the quiver it might sit in, the cave its knowledge lives in.
+     *
+     * <p>Static, and so shared by every item: C reaches the same information through its
+     * {@code player} global, and the port keeps the shape rather than threading a player through
+     * every power and pricing call.
+     */
+    private static Player player;
 
     /**
      * The object kind this item is an instance of.
@@ -273,19 +285,30 @@ public class ItemObject {
      */
     private int originDepth;
     /**
-     * The monster race that dropped the item, if applicable.
+     * The sentinel resistance level meaning "vulnerable and resistant at once", which the curse
+     * merge uses while combining and then flattens to plain zero before the caller sees it - the
+     * port of C's magic {@code -32768} in {@code apply_curse_attributes} ({@code obj-curse.c}).
+     *
+     * <p>Spelled as the minimum {@code short} because that is what the value is in C, where the
+     * field it lives in is an {@code int16_t}.
      */
-    private MonsterRace originRace = new MonsterRace();
+    private final int VULN_AND_RES = Short.MIN_VALUE;
 
     /**
      * The player's inscription on the item.
      */
     private String note;
+    /**
+     * The monster race that dropped the item, if applicable.
+     */
+    private MonsterRace originRace = null;
 
     /**
      * Build an empty item (used as a blank slot/placeholder).
      */
     public ItemObject() {
+        player = GameState.getPlayer();
+        origin = ORIGIN_NONE;
     }
 
     /**
@@ -384,6 +407,94 @@ public class ItemObject {
         this.originDepth = originDepth;
         this.originRace = originRace;
         this.note = note;
+        player = GameState.getPlayer();
+    }
+
+    /**
+     * Decides whether one object should be listed before another - the port of C's
+     * {@code earlier_object} ({@code obj-gear.c}).
+     *
+     * <p>Answers for the pack ordering that {@code calcInventory} builds: given the object currently
+     * holding a slot and a candidate for it, {@code true} means the candidate belongs earlier.
+     *
+     * <p>The two null tests come first and are not symmetrical by accident: a null candidate never
+     * displaces anything, while a null incumbent is always displaced, which is how the first
+     * candidate for an empty slot is accepted.
+     *
+     * <p>The store flag suppresses the preferences that only make sense for a character's own pack -
+     * a shop lists its stock by its own rules.
+     *
+     * <p>The comparisons run in C's order, each returning as soon as it separates the two: readable
+     * books, then usable ammunition, then object type by decreasing tval, then flavour awareness,
+     * then sub-type by increasing sval, then unaware flavoured items, then lights by decreasing
+     * fuel, and finally value - increasing for ammunition, decreasing for everything else. Two
+     * objects that survive all of them are equal in the pack's eyes, and the answer is "no
+     * preference".
+     *
+     * <p>Function earlierObject commented in full on 260827.
+     *
+     * @param origObj the object currently holding the position, or {@code null}
+     * @param newObj  the candidate, or {@code null}
+     * @param store   {@code true} when ordering a shop's stock rather than the player's pack
+     * @return {@code true} if {@code newObj} should come before {@code origObj}
+     */
+    public static boolean earlierObject(ItemObject origObj, ItemObject newObj, boolean store) {
+        // Are both of the objects real
+        if (newObj == null) return false;
+        if (origObj == null) return true;
+
+        if (!store) {
+            // readable books always come first
+            if (origObj.canBrowse() && !newObj.canBrowse()) return false;
+            if (!origObj.canBrowse() && newObj.canBrowse()) return true;
+        }
+
+        // Usable ammo is before other ammo
+        if (origObj.gettValue().isAmmo() && newObj.gettValue().isAmmo()) {
+            // first favour usable ammo
+            if ((player.getPlayerState().getAmmoTval() == origObj.gettValue()) &&
+                    (player.getPlayerState().getAmmoTval() != newObj.gettValue())) return false;
+            if ((player.getPlayerState().getAmmoTval() != origObj.gettValue()) &&
+                    (player.getPlayerState().getAmmoTval() == newObj.gettValue())) return true;
+        }
+
+        // Objects sort by decreasing tvalue ordinals
+        if (origObj.gettValue().ordinal() > newObj.gettValue().ordinal()) return false;
+        if (origObj.gettValue().ordinal() < newObj.gettValue().ordinal()) return true;
+
+        if (!store) {
+            // Non-aware (flavoured) objects always come last
+            if (!newObj.flavourIsAware()) return false;
+            if (!origObj.flavourIsAware()) return true;
+        }
+
+        // Objects sort by increasing sval
+        if (origObj.getsValue() < newObj.getsValue()) return false;
+        if (origObj.getsValue() > newObj.getsValue()) return true;
+
+        if (!store) {
+            // Unaware items always come last
+            if (newObj.getKind().getFlavour() != null && !newObj.objectFlavourIsAware()) return false;
+            if (origObj.getKind().getFlavour() != null && !origObj.objectFlavourIsAware()) return true;
+
+            // Sort lights by decreasing fuel
+            if (origObj.gettValue().isLight()) {
+                if (origObj.getpValue() > newObj.getpValue()) return false;
+                if (origObj.getpValue() < newObj.getpValue()) return true;
+            }
+        }
+
+        // Objects sort by decreasing value apart from ammo
+        if (origObj.gettValue().isAmmo()) {
+            if (origObj.objectValue(1) < newObj.objectValue(1)) return false;
+            if (origObj.objectValue(1) > newObj.objectValue(1)) return true;
+        } else {
+            if (origObj.objectValue(1) > newObj.objectValue(1)) return false;
+            if (origObj.objectValue(1) < newObj.objectValue(1)) return true;
+        }
+
+        // No preference
+        return false;
     }
 
     /**
@@ -457,8 +568,6 @@ public class ItemObject {
      */
     @CheckReturnValue
     public boolean similar(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
-        Player player = GameState.getPlayer();
-
         // Check for equipped items
         if (player.getPlayerBody().itemIsEquipped(this)) return false;
         if (player.getPlayerBody().itemIsEquipped(itm2)) return false;
@@ -494,7 +603,7 @@ public class ItemObject {
             return true;
         } else if (tVal.canHaveCharges() || tVal.isMoney()) {
             return this.pValue + itm2.pValue <= GameConstants.MAX_PVAL;
-        } else if (tVal.isWeapon() || tVal.isArmour() || tVal.isJewelry() || tVal.isLight()) {
+        } else if (tVal.isWeapon() || tVal.isArmour() || tVal.isJewellery() || tVal.isLight()) {
             boolean thisKnown = isFullyKnown();
             boolean itm2Known = itm2.isFullyKnown();
 
@@ -650,29 +759,13 @@ public class ItemObject {
     }
 
     /**
-     * Check if the inscriptions between this object and itm2 are similar enough to allow stacking
-     *
-     * @param itm2 the second object to check against this one
-     * @param mode the mode of stacking we are checking for
-     * @return true if the object itm2 has the same inscriptions as this one
-     */
-    @CheckReturnValue
-    @Contract(pure = true)
-    private boolean stackable(@NotNull ItemObject itm2, @NotNull Flag<ObjectStackEnum> mode) {
-        if (similar(itm2, mode)) {
-            return (note == null || itm2.note == null || note.equals(itm2.note));
-        }
-        return false;
-    }
-
-    /**
      * Combine the origin of another object with this one
      *
      * @param item the item to combine into this one if possible
      */
     private void originCombine(@NotNull ItemObject item) {
-        if (!originRace.equals(item.originRace)) {
-            boolean uniqThis = (this.originRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE));
+        if (originRace != item.originRace) {
+            boolean uniqThis = (this.originRace != null && this.originRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE));
             boolean uniqItem = (item.originRace != null && item.originRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE));
 
             if (uniqThis && !uniqItem) {
@@ -684,105 +777,9 @@ public class ItemObject {
             } else {
                 this.origin = ORIGIN_MIXED;
             }
-        } else if (!this.origin.equals(item.origin) || this.originDepth != item.originDepth) {
+        } else if (this.origin != item.origin || this.originDepth != item.originDepth) {
             this.origin = ORIGIN_MIXED;
         }
-    }
-
-    /**
-     * Allows one item to absorb a similar item.
-     * <br/><br/>
-     * The note merging should work no matter if there is none, one or two null values
-     * <br/><br/>
-     * These assumptions are enforced by the mergeable() code
-     *
-     * @param item                   the object to be absorbed by this one
-     * @param combineChargesTimeouts whether we are merging timeouts and charges
-     */
-    private void absorbMerge(@NotNull ItemObject item, boolean combineChargesTimeouts) {
-        if (item.getKnown() != null && this.getKnown() != null) {
-            if (!item.getKnown().effect.isEmpty()) {
-                this.getKnown().effect = this.effect;
-                GameState.getPlayer().knowObject(this);
-            }
-        }
-
-        if (item.note != null && !item.note.isEmpty())
-            this.note = item.note;
-
-        if (combineChargesTimeouts) {
-            if (this.tValue.canHaveTimeout())
-                this.timeout += item.timeout;
-
-            if (this.tValue.canHaveCharges() || this.tValue.isMoney()) {
-                int total = this.pValue + item.pValue;
-                this.pValue = Math.min(total, GameConstants.MAX_PVAL);
-            }
-        }
-
-        originCombine(item);
-    }
-
-    /**
-     * Merge a smaller stack into a larger one, leaving two uneven stacks
-     *
-     * @param item     the object to merge into this one
-     * @param thisMode the behaviour of the first (this) stack, mostly that it's not OSTACK_STORE, which has no limit
-     *                 for the size of the stack
-     * @param itemMode the behaviour of the second (item) stack, mostly that it's not OSTACK_STORE, which has no limit
-     *                 for the size of the stack
-     */
-    private void absorbPartial(ItemObject item, Flag<ObjectStackEnum> thisMode, Flag<ObjectStackEnum> itemMode) {
-        int smallest = Math.min(this.number, item.number);
-        int largest = Math.max(this.number, item.number);
-        int newsz1, newsz2;
-
-        if (thisMode.has(ObjectStackEnum.OSTACK_STORE) || itemMode.has(ObjectStackEnum.OSTACK_STORE)) {
-            logger.error("Either this or the incoming object have a store stacking mode set");
-            return;
-        }
-
-        if (thisMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getCarryCapQuiverSlotSize() / (this.tValue.isAmmo()
-                    ? 1
-                    : GameConstants.getCarryCapThrownQuiverMult());
-            if (itemMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                int difference = limit - largest;
-
-                newsz1 = largest + difference;
-                newsz2 = smallest - difference;
-            } else {
-                newsz1 = limit;
-                newsz2 = (largest + smallest) - limit;
-
-                if (newsz2 >= this.kind.getBase().getMaxStack()) {
-                    logger.error("New size outside acceptable limits after merging");
-                    return;
-                }
-            }
-        } else if (itemMode.has(ObjectStackEnum.OSTACK_QUIVER)) {
-            int limit = GameConstants.getCarryCapQuiverSlotSize() / (item.tValue.isAmmo()
-                    ? 1
-                    : GameConstants.getCarryCapThrownQuiverMult());
-
-            newsz1 = largest + smallest - limit;
-            newsz2 = limit;
-            if (newsz1 >= this.kind.getBase().getMaxStack()) {
-                logger.error("New size outside acceptable limits after merging");
-                return;
-            }
-        } else {
-            int difference = this.kind.getBase().getMaxStack() - largest;
-
-            newsz1 = largest + difference;
-            newsz2 = smallest - difference;
-        }
-
-        item.distributeCharges(this, item.number - newsz2, false);
-        this.number = newsz1;
-        item.number = newsz2;
-
-        absorbMerge(item, this.tValue.isMoney());
     }
 
     /**
@@ -830,30 +827,6 @@ public class ItemObject {
                 }
             }
         }
-    }
-
-    /**
-     * Merge two stacks into one completely
-     *
-     * @param item the object to merge into this stack
-     */
-    private void absorb(@NotNull ItemObject item) {
-        ItemObject itemKnown = item.known;
-        int total = this.number + item.number;
-
-        this.number = Math.min(total, this.kind.getBase().getMaxStack());
-        Chunk playerCave = GameState.getPlayer().getCave();
-
-        absorbMerge(item, true);
-        if (itemKnown != null) {
-            if (!itemKnown.location.equals(Loc.zero))
-                playerCave.squareExciseObject(itemKnown.location, itemKnown);
-
-            playerCave.delistObject(itemKnown);
-            playerCave.objectDelete(null, itemKnown);
-        }
-
-        GameState.getCave().objectDelete(playerCave, item);
     }
 
     /**
@@ -1667,6 +1640,26 @@ public class ItemObject {
     }
 
     /**
+     * Records this item's value for one modifier - the port of assigning into C's
+     * {@code obj->modifiers[i]}.
+     *
+     * <p>Creates the map on demand, for the same reason {@link #putElInfo} does: an item built by
+     * the no-argument constructor has none, and {@link #getModifiers()} answers an immutable empty
+     * map for that state, which takes no writes.
+     *
+     * <p>Function putModifier commented in full on 260827.
+     *
+     * @param modifier the modifier being set
+     * @param value    its value on this item
+     */
+    public void putModifier(ObjectModifier modifier, int value) {
+        if (this.modifiers == null) {
+            this.modifiers = new HashMap<>();
+        }
+        this.modifiers.put(modifier, value);
+    }
+
+    /**
      * Returns what this item does when used, the port of reading C's {@code obj->effect}.
      *
      * <p>Copied onto the known counterpart only once the player is entitled to it: an aware flavour,
@@ -2033,7 +2026,7 @@ public class ItemObject {
         int result = Math.max(weight, 0);
 
         for (Curse curse : getCurses().keySet()) {
-            if (curses.get(curse).getPower() != 0)
+            if (getCurses().get(curse) != null && getCurses().get(curse).getPower() != 0)
                 result = curse.modifyWeightForCurse(result);
         }
 
@@ -2155,10 +2148,27 @@ public class ItemObject {
         return IgnoreType.ITYPE_MAX;
     }
 
+    /**
+     * @return {@code true} if this item is an ego item - the port of C's truth test on
+     * {@code obj->ego}
+     */
     public boolean isEgo() {
         return ego != null;
     }
 
+    /**
+     * Answers whether this item's ego is marked ignorable under one category - the port of C's
+     * {@code ego_is_ignored(obj->ego->eidx, type)} ({@code obj-ignore.c:606}).
+     *
+     * <p>Reads the item's <em>real</em> ego, while its one caller gates the question on the
+     * <em>known</em> one. That split is C's and is deliberate: an ego the player has not yet learned
+     * must not make the item disappear.
+     *
+     * <p>Function egoIsIgnored commented in full on 260827.
+     *
+     * @param type the ignore category to test
+     * @return {@code true} if this item has an ego and that ego is marked under the category
+     */
     public boolean egoIsIgnored(IgnoreType type) {
         if (ego == null) return false;
         return ego.getIgnoreType(type);
@@ -2190,7 +2200,7 @@ public class ItemObject {
         if (!isKnown()) return QualityValueEnum.IGNORE_MAX;
 
         // Jewellery treated specially
-        if (tValue.isJewelry()) {
+        if (tValue.isJewellery()) {
             // One positive modifier means not bad
             for (ObjectModifier mod : this.getKnown().getModifiers().keySet()) {
                 if (this.getKnown().getModifierValue(mod) > 0)
@@ -2232,6 +2242,19 @@ public class ItemObject {
         return value;
     }
 
+    /**
+     * Scores how far this item's combat bonuses exceed what its kind rolls at worst - the port of
+     * C's {@code is_object_good} ({@code obj-ignore.c:448}).
+     *
+     * <p>Weighted rather than counted: to-damage is worth four, to-hit two and to-armour one, so a
+     * weapon is judged mostly on the bonus that matters for a weapon. A positive answer means good,
+     * negative means bad, zero means average, and {@link #ignoreLevelOf()} turns that into a quality
+     * band.
+     *
+     * <p>Function isGood commented in full on 260827.
+     *
+     * @return a positive, zero or negative score
+     */
     private int isGood() {
         int good = 0;
 
@@ -2241,6 +2264,19 @@ public class ItemObject {
         return good;
     }
 
+    /**
+     * Compares one combat bonus against the worst its kind could roll - the port of C's
+     * {@code cmp_object_trait} ({@code obj-ignore.c:434}).
+     *
+     * <p>The kind's minimum is clamped to zero first, so an item is never judged good merely for
+     * failing to be as negative as it might have been.
+     *
+     * <p>Function compareObjectTrait commented in full on 260827.
+     *
+     * @param bonus this item's bonus
+     * @param base  the kind's dice for that bonus
+     * @return {@code 1}, {@code 0} or {@code -1} as the bonus is above, equal to or below the floor
+     */
     private int compareObjectTrait(int bonus, Random base) {
         int amount = base.randCalc(0, DamageAspect.MINIMIZE);
 
@@ -2249,6 +2285,21 @@ public class ItemObject {
 
     }
 
+    /**
+     * Answers whether this item is currently in the quiver - the port of C's
+     * {@code object_is_in_quiver}.
+     *
+     * <p>Compares by identity, not equality: two identical stacks of arrows are still different
+     * stacks, and the question is about this one.
+     *
+     * <p>The answer decides which stacking limits apply when two stacks are merged, since the quiver
+     * caps a slot more tightly than the pack does.
+     *
+     * <p>Function isInQuiver commented in full on 260827.
+     *
+     * @param player the player whose quiver to search
+     * @return {@code true} if this exact object sits in a quiver slot
+     */
     public boolean isInQuiver(Player player) {
         for (ItemObject item : player.getPlayerUpkeep().getQuiver()) {
             if (item == this) return true;
@@ -2347,7 +2398,6 @@ public class ItemObject {
      */
     public void objectAbsorb(ItemObject toAbsorb) {
         ItemObject known = toAbsorb.getKnown();
-        Player player = GameState.getPlayer();
 
         int total = this.number + toAbsorb.number;
 
@@ -2355,13 +2405,15 @@ public class ItemObject {
 
         this.objectAbsorbMerge(toAbsorb, player, true);
         if (known != null) {
-            if (!known.getGrid().isZero())
-                player.getCave().getSquare(known.getGrid()).pileExcise(known);
-            player.getCave().delistObject(known);
-            player.getCave().objectDelete(null, known);
-            known = null;
+            Chunk cave = player.getCave();
+            if (cave != null && !known.getGrid().isZero())
+                cave.getSquare(known.getGrid()).pileExcise(known);
+            if (cave != null) {
+                cave.delistObject(known);
+                cave.objectDelete(null, known);
+            }
         }
-        player.getCave().objectDelete(player.getCave(), toAbsorb);
+        GameState.getCave().objectDelete(player.getCave(), toAbsorb);
     }
 
     /**
@@ -2389,12 +2441,12 @@ public class ItemObject {
 
         // This object gains extra knowledge from toMerge
         if (this.getKnown() != null && toAbsorb.getKnown() != null) {
-            if (toAbsorb.getKnown().getEffect() != null)
+            if (toAbsorb.getKnown().getEffect() != null && !toAbsorb.getKnown().getEffect().isEmpty())
                 this.getKnown().setEffect(this.getEffect());
             player.knowObject(this);
         }
 
-        if (toAbsorb.getNote() != null)
+        if (toAbsorb.getNote() != null && !toAbsorb.getNote().isEmpty())
             this.note = toAbsorb.getNote();
 
         // Combine tValues information
@@ -2414,6 +2466,16 @@ public class ItemObject {
         this.originCombine(toAbsorb);
     }
 
+    /**
+     * Forgets this item's known half without disturbing the known object itself - the port of C's
+     * {@code obj->known = NULL}.
+     *
+     * <p>Used where an object is about to be absorbed or deleted and its knowledge has already been
+     * dealt with separately; clearing the link first stops the disposal from following it a second
+     * time.
+     *
+     * <p>Function nullKnown commented in full on 260827.
+     */
     public void nullKnown() {
         this.known = null;
     }
@@ -2509,6 +2571,2389 @@ public class ItemObject {
         this.setNumber(newThisSize);
         item2.setNumber(newItm2Size);
 
-        objectAbsorbMerge(item2, GameState.getPlayer(), this.gettValue().isMoney());
+        objectAbsorbMerge(item2, player, this.gettValue().isMoney());
+    }
+
+    /**
+     * Splits a number of items off this stack into a new one - the port of C's {@code object_split}
+     * ({@code obj-pile.c:790}).
+     *
+     * <p>The new stack is a copy of this one, so it carries the same kind, bonuses, flags and
+     * inscription; what it does not carry is a share of the counts and charges, which are handed
+     * over afterwards. Charges are distributed with {@code destNew} set, because the destination is
+     * brand new and should take its share rather than add to one.
+     *
+     * <p>The known halves are split alongside, and their counts written to match, so that knowledge
+     * and truth do not drift apart over the split.
+     *
+     * <p>Refuses to split off the whole stack or more: C asserts on it, and a caller wanting all of
+     * it should move the stack rather than split it.
+     *
+     * <p>Function objectSplit commented in full on 260827.
+     *
+     * @param amount how many items to move to the new stack
+     * @return the new stack, holding {@code amount} items
+     * @throws IllegalArgumentException if {@code amount} is not fewer than this stack holds
+     */
+    public ItemObject objectSplit(int amount) {
+        ItemObject destination;
+
+        // Get a copy of the object, pass in true to ensure the known is copied once
+        destination = this.copy(true);
+
+        // Check legality
+        if (this.getNumber() <= amount) {
+            String message = "Invalid amount passed to objectSplit. Was: " + amount + " should " +
+                    "have been more than " + this.getNumber();
+            logger.error(message);
+            throw new IllegalArgumentException(message);
+        }
+
+        // Distribute charges of wands/staves/rods
+        this.distributeCharges(destination, amount, true);
+        if (this.getKnown() != null) {
+            this.getKnown().distributeCharges(destination.getKnown(), amount, true);
+        }
+
+        // Modify quantity
+        destination.setNumber(amount);
+        this.setNumber(this.getNumber() - amount);
+        if (this.getNote() != null)
+            destination.setNote(this.getNote());
+        if (this.getKnown() != null) {
+            destination.getKnown().setNumber(destination.getNumber());
+            this.getKnown().setNumber(this.getNumber());
+            destination.getKnown().setNote(this.getKnown().getNote());
+        }
+
+        return destination;
+    }
+
+    /**
+     * Returns an independent copy of this item - the port of C's {@code object_copy}
+     * ({@code obj-pile.c}).
+     *
+     * <p>Deep-copied because their contents are mutable: the flag and notice sets, the modifier map,
+     * the element info (each entry copied in turn), the curse map (each {@code CurseData} rebuilt),
+     * the dice, and the brand and slay sets where they exist.
+     *
+     * <p>Shared deliberately: the kind, ego and artifact templates, which C shares as pointers and
+     * which every item built on them points at; the origin race, for the same reason - identity is
+     * what tells two origins apart, so copying it would make two items from the same monster look
+     * like items from different ones.
+     *
+     * <p>Null is preserved rather than normalised for the brand, slay and curse collections, because
+     * elsewhere the class distinguishes "no collection" from "an empty one" - the accessors answer
+     * an immutable empty collection for the former, which takes no writes.
+     *
+     * <p>The known half is copied only when asked for. A caller splitting a stack wants both halves
+     * copied; a caller building a scratch item to price wants the knowledge left alone.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @param includingKnown {@code true} to copy the known half as well
+     * @return a new item that shares no mutable state with this one, bar the noted templates
+     */
+    private ItemObject copy(boolean includingKnown) {
+        ItemObject copy = new ItemObject();
+
+        copy.setKind(this.getKind());
+        copy.setEgo(this.getEgo());
+        copy.artifact = this.artifact;
+        // Don't get into infinite recursion
+        if (includingKnown) {
+            if (this.getKnown() == null)
+                copy.known = null;
+            else
+                copy.known = this.known.copy(false);
+        }
+        if (this.location == null)
+            copy.location = null;
+        else
+            copy.location = this.location.copy();
+        copy.tValue = this.tValue;
+        copy.sValue = this.sValue;
+        copy.pValue = this.pValue;
+        copy.weight = this.weight;
+        copy.damageDice = this.damageDice;
+        copy.damageSides = this.damageSides;
+        copy.baseDamage = this.baseDamage.copy();
+        copy.baseAC = this.baseAC;
+        copy.toAC = this.toAC;
+        copy.toDam = this.toDam;
+        copy.toHit = this.toHit;
+        Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
+        oFlags.copyFrom(this.flags);
+        copy.flags = oFlags;
+        Map<ObjectModifier, Integer> newMods = new HashMap<>();
+        for (ObjectModifier mod : this.getModifiers().keySet()) {
+            newMods.put(mod, this.getModifiers().get(mod));
+        }
+        copy.modifiers = newMods;
+        Map<ElementEnum, ElementInfo> eeMap = new HashMap<>();
+        for (ElementEnum ee : this.getElInfo().keySet()) {
+            eeMap.put(ee, this.getElInfo().get(ee).copy());
+        }
+        copy.elInfo = eeMap;
+        if (this.brands == null)
+            copy.brands = null;
+        else
+            copy.brands = new HashSet<>(this.brands);
+        if (this.slays == null)
+            copy.slays = null;
+        else
+            copy.slays = new HashSet<>(this.slays);
+        if (this.curses == null)
+            copy.curses = null;
+        else {
+            LinkedHashMap<Curse, CurseData> newCurses = new LinkedHashMap<>();
+            for (Curse c : this.curses.keySet()) {
+                newCurses.put(c, new CurseData(this.curses.get(c)));
+            }
+            copy.curses = newCurses;
+        }
+        copy.effect = this.effect;
+        copy.effectMessage = this.effectMessage;
+        copy.activation = this.activation;
+        copy.time = this.time.copy();
+        copy.timeout = this.timeout;
+        copy.number = this.number;
+        Flag<ObjectNotice> nFlags = new Flag<>(ObjectNotice.class);
+        nFlags.copyFrom(this.notice);
+        copy.notice = nFlags;
+        copy.heldMIndex = this.heldMIndex;
+        copy.mimickingMIndex = this.mimickingMIndex;
+        copy.origin = origin;
+        copy.originRace = originRace;
+        copy.originDepth = this.originDepth;
+        copy.note = this.note;
+
+        return copy;
+    }
+
+    /**
+     * Prices a stack as the player would see it - the port of C's {@code object_value}
+     * ({@code obj-power.c}).
+     *
+     * <p>Which of the two pricing routes is taken depends on what the player is entitled to know. An
+     * object whose worth varies with its bonuses is priced from its <em>known</em> half, so an
+     * unidentified sword is not priced as the fine one it may turn out to be. A flavoured object the
+     * player has learned is priced in full. Anything else gets the flat base price for its type,
+     * multiplied by the count.
+     *
+     * <p>Function objectValue commented in full on 260827.
+     *
+     * @param quantity how many items are being priced
+     * @return the price of the stack in gold
+     */
+    private int objectValue(int quantity) {
+        int value;
+
+        // Variable power items are assess by what is known about them
+        if (this.gettValue().hasVariablePower() && this.getKnown() != null) {
+            value = this.getKnown().objectValueReal(quantity);
+        } else if (this.gettValue().canHaveFlavour() && this.flavourIsAware()) {
+            value = objectValueReal(quantity);
+        } else {
+            // Unknown constant-price items just get a base value
+            value = objectValueBase() * quantity;
+        }
+
+        return value;
+    }
+
+    /**
+     * Guesses the worth of an object the player has not identified - the port of C's
+     * {@code object_value_base} ({@code obj-power.c:1058}).
+     *
+     * <p>An object whose flavour is known is worth its kind's listed cost. One that is not is worth
+     * a flat figure for its type, rising from food through potions and scrolls to rods: the player
+     * knows roughly what an unidentified rod is worth without knowing which rod it is. Types not
+     * listed are worth nothing unidentified.
+     *
+     * <p>Function objectValueBase commented in full on 260827.
+     *
+     * @return the price of one such object in gold
+     */
+    private int objectValueBase() {
+        if (objectFlavourIsAware())
+            return getKind().getCost();
+
+        return switch (gettValue()) {
+            case TV_FOOD, TV_MUSHROOM -> 5;
+            case TV_POTION, TV_SCROLL -> 20;
+            case TV_RING, TV_AMULET -> 45;
+            case TV_WAND -> 50;
+            case TV_STAFF -> 70;
+            case TV_ROD -> 90;
+            default -> 0;
+        };
+    }
+
+    /**
+     * Prices a stack from what it can actually do - the port of C's {@code object_value_real}
+     * ({@code obj-power.c:1101}).
+     *
+     * <p>Two routes, chosen by whether the type's worth varies with its properties.
+     *
+     * <p><b>Variable-power objects</b> are priced from {@link #objectPower}, through the quadratic
+     * {@code power * (power * a + b)}. The quadratic is what makes a strong object worth
+     * disproportionately more than a middling one, rather than merely proportionately more. A
+     * negative power - a cursed object - is priced by the mirror of the same curve, and comes out
+     * negative.
+     *
+     * <p>The overflow checks around each multiply are C's, kept rather than replaced by wider
+     * arithmetic so that the saturating behaviour matches: a price too large to represent becomes
+     * the largest representable one, not a wrapped negative. The coefficients are locals here
+     * because C has them as locals too, with the same comment that both must stay non-negative.
+     *
+     * <p>Expendables are then divided down: a burning light or a missile is not worth what its power
+     * suggests, because it is consumed. A price that rounds to nothing is lifted to one, so that a
+     * cheap-but-real object is not worthless - C raises zero only, not negative values.
+     *
+     * <p><b>Fixed-price objects</b> take the kind's listed cost, with a surcharge for the charges a
+     * wand or staff carries, rounded up. The total is floored at zero.
+     *
+     * <p>Function objectValueReal commented in full on 260827.
+     *
+     * @param quantity how many items are being priced
+     * @return the price of the stack in gold, never negative
+     */
+    private int objectValueReal(int quantity) {
+        int a = 1; // Quadratic coefficient for power - must be non-negative
+        int b = 5; // Linear coefficient for power - must be non-negative
+        int value;
+        int totalValue;
+
+        if (this.gettValue().hasVariablePower()) {
+            int power = this.objectPower(false, null);
+
+            if (power > 0) {
+                if (a > 0) {
+                    if (power <= (Integer.MAX_VALUE / power - b) / a) {
+                        value = power * (power * a + b);
+                    } else {
+                        value = Integer.MAX_VALUE;
+                    }
+                } else if (b > 0) {
+                    if (power <= (Integer.MAX_VALUE / b)) {
+                        value = power * b;
+                    } else {
+                        value = Integer.MAX_VALUE;
+                    }
+                } else {
+                    value = 0;
+                }
+            } else if (power < 0) {
+                if (a > 0) {
+                    if (power > Integer.MIN_VALUE && power >= (Integer.MIN_VALUE / (-power) + b) / a) {
+                        value = -power * (power * a - b);
+                    } else {
+                        value = Integer.MIN_VALUE;
+                    }
+                } else if (b > 0) {
+                    if (power >= Integer.MIN_VALUE / b) {
+                        value = power * b;
+                    } else {
+                        value = Integer.MIN_VALUE;
+                    }
+                } else {
+                    value = 0;
+                }
+            } else {
+                value = 0;
+            }
+
+            // Rescale for expendables
+            if ((gettValue().isLight() && this.getFlags().has(ObjectFlag.OF_BURNS_OUT)
+                    && ego == null) || gettValue().isAmmo()) {
+                value = value / ObjectRegistry.AMMO_RESCALER;
+            }
+
+            // Round up to make sure things like cloaks are not worthless
+            if (value == 0) value = 1;
+
+            // get the total value
+            totalValue = Math.max(0, value * quantity);
+        } else {
+            ObjectKind kind = getKind();
+
+            if (kind == null || kind.getCost() == 0) return 0;
+
+            // base costs
+            value = kind.getCost();
+
+            // Analyze the type and quantity
+            if (gettValue().canHaveCharges()) {
+                int charges;
+
+                totalValue = value * quantity;
+
+                // Calculate the number of charges rounded up
+                charges = getpValue() * quantity / getNumber();
+
+                if ((getpValue() * quantity) % getNumber() != 0)
+                    charges++;
+
+                // Pay extra for charges 
+                totalValue += value * charges / 20;
+            } else {
+                totalValue = value * quantity;
+            }
+
+            // No non-negative values
+            totalValue = Math.max(0, totalValue);
+        }
+
+        return totalValue;
+    }
+
+    /**
+     * Prices this object's usefulness as a single number - the port of C's {@code object_power}
+     * ({@code obj-power.c:1005}).
+     *
+     * <p>Power is not the same as gold: it is what {@link #objectValueReal} feeds its curve, what
+     * the artifact generator judges its creations by, and what the {@code INHIBIT_} thresholds
+     * refuse. Roughly, it is what the object does for whoever carries it.
+     *
+     * <p>The order of the steps is C's and matters: the damage terms come first and are multiplied
+     * by blows, shots and might, so a change to any of those scales everything before it. Only then
+     * do the armour, jewellery and property terms add on, and the curse and weight terms adjust the
+     * total.
+     *
+     * <p>Three early returns on {@code INHIBIT_POWER} stop the calculation as soon as the object is
+     * beyond what should exist, matching C - there is no point pricing the rest of it.
+     *
+     * <p>The multiplier returned by the extra-might step is assigned and then unused, as in C, where
+     * it is a by-value argument that goes no further.
+     *
+     * <p>Function objectPower commented in full on 260827.
+     *
+     * @param verbose     {@code true} to log the brand and slay breakdown as well as the running
+     *                    totals
+     * @param logFileName the log file to write the breakdown to, or {@code null}
+     * @return this object's power
+     */
+    private int objectPower(boolean verbose, String logFileName) {
+        // Get all the attack power
+        int power = toDamagePower();
+        int dicePower = damageDicePower();
+        power += dicePower;
+        if (dicePower != 0) logger.info("total is {}", power);
+        power += ammoDamagePower(power);
+        int mult = bowMulitplier();
+        power = launcherAmmoDamagePower(power);
+        power = extraBlowsPower(power);
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        power = extraShotsPower(power);
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        PowerAndMult pm = new PowerAndMult(power, mult);
+        PowerAndMult outgoing = extraMightPower(pm);
+        power = outgoing.power();
+        mult = outgoing.mult();
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        power = slayPower(power, verbose, dicePower);
+        power = rescaleBowPower(power);
+        power = toHitPower(power);
+
+        // Armour class power
+        power = acPower(power);
+        power = toAcPower(power);
+
+        // Bonus for jewellery
+        power = jewelleryPower(power);
+
+        // Other object properties
+        power = modifierPower(power);
+        power = flagsPower(power);
+        power = elementPower(power);
+        power = effectsPower(power);
+        power = cursePower(power, verbose, logFileName);
+        power = nonStandardWeightPower(power);
+
+        logger.info("FINAL POWER IS {}", power);
+
+        return power;
+    }
+
+    /**
+     * Prices a curse's usefulness, mirroring {@link #objectPower(boolean, String)} step for step.
+     *
+     * <p><b>Why there are two of these.</b> In C a curse <em>is</em> an object - {@code curses[i].obj}
+     * is a real {@code struct object} with a tval, flags, modifiers and element info - so
+     * {@code curse_power} simply runs the ordinary calculation over it ({@code obj-power.c:774}).
+     * The port's {@link Curse} is a flattened record instead, so almost every power function has a
+     * second overload taking one, and this method calls them in the same order the object version
+     * calls theirs.
+     *
+     * <p>Many of those overloads return their input unchanged. That is not laziness: running C's
+     * calculation over a curse object reaches the same answer, because a curse object has no base
+     * armour, is not jewellery, is not wielded in the shooting slot, is not ammunition or a bow,
+     * carries no brands or slays in {@code curse.txt}, and has no curses of its own. Each such
+     * overload says which of those facts makes it an identity.
+     *
+     * <p>When the two paths drift, there is no single function to correct - a change on one side
+     * needs the same change considered on the other.
+     *
+     * <p>Function objectPower commented in full on 260827.
+     *
+     * @param curse       the curse to price
+     * @param verbose     {@code true} to log the breakdown
+     * @param logFileName the log file to write to, or {@code null}
+     * @return the curse's power
+     */
+    private int objectPower(Curse curse, boolean verbose, String logFileName) {
+        // Get all the attack power
+        int power = toDamagePower(curse);
+        int dicePower = damageDicePower(curse);
+        power += dicePower;
+        if (dicePower != 0) logger.info("total is {}", power);
+        power += ammoDamagePower(curse, power);
+        int mult = bowMulitplier(curse);
+        power = launcherAmmoDamagePower(curse, power);
+        power = extraBlowsPower(curse, power);
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        power = extraShotsPower(curse, power);
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        PowerAndMult pm = new PowerAndMult(power, mult);
+        PowerAndMult outgoing = extraMightPower(curse, pm);
+        power = outgoing.power();
+        mult = outgoing.mult();
+        if (power > ObjectRegistry.INHIBIT_POWER) return power;
+        power = slayPower(curse, power, verbose, dicePower);
+        power = rescaleBowPower(curse, power);
+        power = toHitPower(curse, power);
+
+        // Armour class power
+        power = acPower(curse, power);
+        power = toAcPower(curse, power);
+
+        // Bonus for jewellery
+        power = jewelleryPower(curse, power);
+
+        // Other object properties
+        power = modifierPower(curse, power);
+        power = flagsPower(curse, power);
+        power = elementPower(curse, power);
+        power = effectsPower(curse, power);
+        power = cursePower(curse, power, verbose, logFileName);
+        power = nonStandardWeightPower(curse, power);
+
+        logger.info("FINAL POWER IS {}", power);
+
+        return power;
+    }
+
+    /**
+     * Adjusts power for an object that is heavier or lighter than its kind - the port of C's
+     * {@code nonstandard_weight_power} ({@code obj-power.c:930}).
+     *
+     * <p>Only curses can produce the difference: the object's own weight is the kind's, and
+     * {@link #weightOne()} is what the curses have made of it.
+     *
+     * <p>Two separate adjustments, and an object can take both. An object with no base armour class
+     * is judged on carrying capacity - lighter is better, because it leaves room for something else.
+     * An object with the {@code THROWING} flag is judged the other way, because a heavier missile
+     * hits harder. Objects that do provide base armour are skipped for the first: {@link #acPower}
+     * has already accounted for their weight, and charging twice would be wrong.
+     *
+     * <p>Flags are merged from the object and its active curses first, because a curse can be what
+     * makes the object throwable in the first place.
+     *
+     * <p>C's comment lists what is deliberately not modelled: blows, heavy-wield status, criticals
+     * and shield bashes all move with weight and none of them are priced here.
+     *
+     * <p>Function nonStandardWeightPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with any weight adjustment applied
+     */
+    private int nonStandardWeightPower(int power) {
+        int standardWeight = Math.max(getWeight(), 0);
+        int nonStandardWeight = weightOne();
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        int adjustment = 0;
+
+        if (nonStandardWeight < 0) {
+            String message = "Negative weight.";
+            logger.error(message);
+            throw new RuntimeException(message);
+        }
+
+        if (standardWeight == nonStandardWeight) {
+            // no change to weight, so no change to power
+            return power;
+        }
+
+        // Merge flags from base object and any curses
+        flags.copyFrom(getFlags());
+        if (getCurses() != null && !getCurses().isEmpty()) {
+            for (Curse c : getCurses().keySet()) {
+                if (getCurses().get(c).getPower() != 0) {
+                    flags.union(c.getObjectFlags());
+                }
+            }
+        }
+
+        /*
+         * ac_power() accounted for the weight when the object provides a base
+         * amount of armour so do not adjust the power for those objects here.
+         * For objects which do not provide a base amount of armour, adjust
+         * the power under the assumption that lighter than normal is beneficial
+         * (more room under the weight cap for other stuff) and heavier than
+         * normal is harmful.
+         */
+        if (getBaseAC() == 0) {
+            int adjustWC = (standardWeight - nonStandardWeight) / ObjectRegistry.WGT_POWER_DEN_NOBASEAC;
+
+            logger.info("Add {} power for non-standard weight of object not  " +
+                    "affecting base armour.", adjustWC);
+            adjustment = Guards.addGuardI(adjustment, adjustWC);
+        }
+
+        // Objects with the "THROWING" flag increase damage with increasing weight
+        if (flags.has(ObjectFlag.OF_THROWING)) {
+            int adjustThrow = nonStandardWeight / ObjectRegistry.WGT_POWER_DEN_THROW
+                    - standardWeight / ObjectRegistry.WGT_POWER_DEN_THROW;
+
+            logger.info("Add {} power for non-standard weight of object good " +
+                    "for throwing", adjustThrow);
+            adjustment = Guards.addGuardI(adjustment, adjustThrow);
+        }
+
+        /*
+         * Weight also affects number of blows (melee weapons only),
+         * heavy wield status (melee weapon or launcher; strength-dependent
+         * and normally only relevant for quite heavy objects), criticals
+         * (for melee, launched missile, or thrown missile but only in non-O
+         * combat calculations; increasing weight can increase the chance of
+         * a critical and the amount of damage from the critical if it occurs),
+         * and shield bashes (more weight is better; only relevant for some
+         * classes).  None of those are accounted for here.
+         */
+        if (adjustment != 0) {
+            power = Guards.addGuardI(power, adjustment);
+            logger.info("Add {} power combined for non-standard weight; total is {}", adjustment, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: a curse never carries a weight adjustment of its own.
+     *
+     * <p>C reaches {@code nonstandard_weight_power(curses[i].obj, p)}, which compares the curse
+     * object's weight against {@code object_weight_one(curse_obj)}. A curse object has no curses of
+     * its own, so {@code object_weight_one} returns the weight unchanged ({@code obj-util.c:276}),
+     * the two figures are equal, and the function's first test returns {@code p} untouched. Always -
+     * including for a {@code MULTIPLY_WEIGHT} curse of weight 100, which means "no change".
+     *
+     * <p>Function nonStandardWeightPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int nonStandardWeightPower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Adjusts power for the curses on this object - the port of C's {@code curse_power}
+     * ({@code obj-power.c:736}).
+     *
+     * <p>Two passes, because curses come in two kinds and the second kind cannot be priced
+     * individually.
+     *
+     * <p>An ordinary curse is priced on its own, by running the whole power calculation over it, and
+     * then discounted by a tenth of its strength - a curse that resists removal is worth less to the
+     * carrier than one that can be shrugged off.
+     *
+     * <p>A weight-affecting curse cannot be priced that way, because weight interacts with
+     * everything else the object does. Those are priced by difference instead: the object is copied,
+     * all its curses applied, and priced; then copied again with one curse held back, and priced
+     * again. The gap between the two is that curse's contribution. Where the gap is negative - the
+     * curse makes the object worse - it is scaled by how hard the curse is to remove, because a
+     * penalty you cannot escape counts for more.
+     *
+     * <p>Splitting them keeps the answers identical to the previous version of the algorithm for the
+     * common case, which is C's stated reason for not treating all curses the way the second pass
+     * treats these.
+     *
+     * <p>Function cursePower commented in full on 260827.
+     *
+     * @param power       the running power total
+     * @param verbose     {@code true} to log the breakdown
+     * @param logFileName the log file to write to, or {@code null}
+     * @return the total with the curse adjustment applied
+     */
+    private int cursePower(int power, boolean verbose, String logFileName) {
+        int q = 0;
+
+        if (!getCurses().isEmpty()) {
+            /*
+             * Treat weight-affecting curses differently since those may
+             * not be modeled well with power(base object)
+             * + power(curse 1) + ....  Could treat all curses the way
+             * weight-affecting curses are, but separating them out keeps
+             * the results the same as the 4.2.5 calculations when the
+             * object does not have weight-affecting curses.
+             */
+            boolean weightAffecting = false;
+
+            for (Curse c : getCurses().keySet()) {
+                int cursePower;
+
+                if (getCurses().get(c).getPower() == 0) continue;
+
+                if (c.getObjectFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+                    if (c.getWeight() != 100) {
+                        weightAffecting = true;
+                        continue;
+                    }
+                } else {
+                    if (c.getWeight() != 0) {
+                        weightAffecting = true;
+                        continue;
+                    }
+                }
+
+                logger.info("Calculating {} curse power...", c.getName());
+                cursePower = objectPower(c, verbose, logFileName);
+                cursePower -= getCurses().get(c).getPower() / 10;
+                logger.info("Adjust for strength of curse, {} for {} curse power", cursePower, c.getName());
+                q += cursePower;
+            }
+
+            if (weightAffecting) {
+                // Get the power for the object with all the curses attributes combined
+                // with those for the base object.
+                ItemObject local = this.copy(true);
+                int powerAllCurses;
+                local.applyCurseAttributes(null);
+
+                // Clear all the curses on local that have been included by applyCurseAttributes
+                local.freeCurses();
+                powerAllCurses = local.objectPower(verbose, logFileName);
+                local.freeBrands();
+                local.freeSlays();
+                logger.info("Power is {} with all curses applied", powerAllCurses);
+
+                /*
+                 * Now get the power for the object which has one of
+                 * the active curses removed.  The difference between
+                 * that power and p_all_curse is the power of the
+                 * curse.  Skip the non-weight-affecting curses handled
+                 * in the first pass.
+                 */
+                for (Curse c : getCurses().keySet()) {
+                    int powerAllButC;
+                    int powerCurse;
+
+                    if (getCurses().get(c).getPower() == 0) continue;
+
+                    if (c.getObjectFlags().has(ObjectFlag.OF_MULTIPLY_WEIGHT)) {
+                        if (c.getWeight() == 100) continue;
+                    } else {
+                        if (c.getWeight() == 0) continue;
+                    }
+
+                    ItemObject localItem = this.copy(true);
+                    localItem.applyCurseAttributes(c);
+
+                    // Clear curses since all of interested included by applyCurseAttributes above
+                    localItem.freeCurses();
+                    powerAllButC = localItem.objectPower(verbose, logFileName);
+                    localItem.freeBrands();
+                    localItem.freeSlays();
+                    logger.info("Power is {} with all but {} curse applied", powerAllButC, c.getName());
+
+                    /*
+                     * The effect of this curse on the total power
+                     * is the difference between p_all_curse and
+                     * p_all_but_i.  If that difference is
+                     * is not negative, use it as is:  at least
+                     * according to the power calculation, it does
+                     * not make sense to remove that curse so the
+                     * curse's resistance to removal does not
+                     * matter.
+                     */
+                    powerCurse = Guards.subGuardI(powerAllCurses, powerAllButC);
+                    if (powerCurse < 0) {
+                        /*
+                         * The curse reduces the object's
+                         * power: scale the contribution to
+                         * power attributed to the curse by
+                         * a factor that increases with the
+                         * curse's resistance to removal.
+                         */
+                        int resistance = Math.clamp(getCurses().get(c).getPower(), 20, 100);
+
+                        powerCurse = (powerCurse >= Integer.MIN_VALUE / resistance)
+                                ? powerCurse * resistance
+                                : Integer.MIN_VALUE;
+
+                        powerCurse /= 100;
+                    }
+                    logger.info("Adjusted power is {} for {} curse", powerCurse, c.getName());
+
+                    q = Guards.addGuardI(q, powerCurse);
+                }
+            }
+        }
+
+        if (q != 0) {
+            power += q;
+            logger.info("Total of {} power added for curses, total is {}", q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Empties this object's slays - the port of C's {@code mem_free(obj_local.slays)}.
+     *
+     * <p>Called on the scratch copies the curse pricing builds, once they have been priced, so that
+     * the copy releases what it borrowed. Assigns a fresh empty set rather than null, which keeps
+     * the accessors' distinction between "no collection" and "an empty one" pointing the right way.
+     *
+     * <p>Function freeSlays commented in full on 260827.
+     */
+    private void freeSlays() {
+        this.slays = new HashSet<>();
+    }
+
+    /**
+     * Empties this object's brands - the counterpart of {@link #freeSlays()}, and used in the same
+     * place for the same reason.
+     *
+     * <p>Function freeBrands commented in full on 260827.
+     */
+    private void freeBrands() {
+        this.brands = new HashSet<>();
+    }
+
+    /**
+     * Empties this object's curses - the port of C clearing {@code obj_local.curses} after
+     * {@code apply_curse_attributes} has folded them in ({@code obj-power.c:795}).
+     *
+     * <p>Necessary rather than tidy: the scratch copy has just had every curse's attributes merged
+     * into its own, so leaving the curses on it as well would price them twice.
+     *
+     * <p>Function freeCurses commented in full on 260827.
+     */
+    private void freeCurses() {
+        this.curses = new LinkedHashMap<>();
+    }
+
+    /**
+     * Folds every active curse's attributes into this object - the port of C's
+     * {@code apply_curse_attributes} ({@code obj-curse.c:450}).
+     *
+     * <p>Called on a scratch copy by the curse pricing, which then prices the merged object as a
+     * whole. One curse may be held back, which is how the pricing takes the difference a single
+     * curse makes; passing {@code null} merges them all.
+     *
+     * <p>Weight, the three combat bonuses, the flags and the modifiers all combine additively, the
+     * combat bonuses through the saturating adds so that a long chain cannot wrap round.
+     *
+     * <p><b>Resistances combine by rule, not by addition.</b> An immunity beats everything; a
+     * resistance meeting a vulnerability - in either order - becomes both at once, held as
+     * {@link #VULN_AND_RES} while the merge runs; and an element the object says nothing about takes
+     * whatever the curse says. The pass at the foot flattens any surviving both-at-once to plain
+     * zero, so the caller never sees the sentinel.
+     *
+     * <p>A curse that mentions an element the object does not is handled by creating the entry: C's
+     * element array has a slot for every element and the port's map does not, so absence has to be
+     * turned into a real entry rather than skipped. A curse silent about an element reads as
+     * resistance level zero, which is C's default and means no change.
+     *
+     * <p>Function applyCurseAttributes commented in full on 260827.
+     *
+     * @param curseToIgnore the one curse to leave out, or {@code null} to merge them all
+     */
+    private void applyCurseAttributes(Curse curseToIgnore) {
+        if (getCurses() == null || getCurses().isEmpty()) {
+            // no curses - nothing to merge
+            return;
+        }
+
+        for (Curse curse : getCurses().keySet()) {
+            if (curse == curseToIgnore || getCurses().get(curse).getPower() == 0) continue;
+
+            // We have a flattened curse data - so don't look at an object, look directly at the curse
+            this.setWeight(curse.modifyWeightForCurse(this.getWeight()));
+
+            // Curses can adjust the ac, hit and dam modifiers
+            this.setToAC(Guards.addGuardI(this.getToAC(), curse.getCombatAC()));
+            this.setToHit(Guards.addGuardI(this.getToHit(), curse.getCombatToHit()));
+            this.setToDam(Guards.addGuardI(this.getToDam(), curse.getCombatDam()));
+
+            // The curse may extend the objects flags - C's of_union(obj->flags, curse_obj->flags).
+            // setFlags is the named mutator for that, and unions into the real set. getFlags() must
+            // NOT be used here: it hands back a copy, so unioning into it would build the merged set
+            // and then throw it away, leaving this object's flags untouched and the curse silently
+            // unapplied - a mistake the compiler cannot catch, which prices the object as though the
+            // curse carried no flags at all.
+            this.setFlags(curse.getObjectFlags());
+
+            // The curses modifiers combine additively with those from this object;
+            for (ObjectModifier om : curse.getModifiers().keySet()) {
+                if (this.getModifiers().containsKey(om)) {
+                    this.getModifiers().put(om, this.getModifiers().getOrDefault(om, 0) + curse.getModifiers().getOrDefault(om, 0));
+                } else {
+                    this.getModifiers().put(om, curse.getModifiers().getOrDefault(om, 0));
+                }
+            }
+
+            // Resistances combine with standard logic for combining them.
+            for (ElementEnum elem : ElementEnum.values()) {
+                if (elem == ElementEnum.ELEM_MAX || elem == ElementEnum.ELEM_NONE) continue;
+                ElementInfo curseElInfo = curse.getElInfo().getOrDefault(elem, null);
+                int curseResLevel = curseElInfo == null ? 0 : curseElInfo.getResLevel();
+                ElementInfo elInfo = getElInfo().getOrDefault(elem, null);
+                int elInfoResLevel = elInfo == null ? 0 : elInfo.getResLevel();
+                if (elInfo != null) {
+                    if (elInfoResLevel >= 3) {
+                        // Already immune
+                        continue;
+                    } else if (elInfoResLevel == 1) {
+                        /*
+                         * Has resistance.  An immunity will override
+                         * that.  A resistance or no resistance on
+                         * the curse will do nothing.  A vulnerability
+                         * will convert the resistance to
+                         * vulnerability + resistance.
+                         */
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        } else if (curseResLevel < 0) {
+                            elInfo.setResLevel(VULN_AND_RES);
+                        }
+                    } else if (elInfoResLevel == VULN_AND_RES) {
+                        // Combined result so far is vulnerability and resistance.
+                        // Only change if there is an immunity
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        }
+                    } else if (elInfoResLevel < 0) {
+                        /*
+                         * Has vulnerability.  An immunity will override
+                         * that.  A vulnerability or no resistance on
+                         * the curse will do nothing.  A resistance will
+                         * convert the vulnerability to vulnerability +
+                         * resistance.
+                         */
+                        if (curseResLevel >= 3) {
+                            elInfo.setResLevel(3);
+                        } else if (curseResLevel == 1) {
+                            elInfo.setResLevel(VULN_AND_RES);
+                        }
+                    } else {
+                        /*
+                         * With no resistance in the base attributes,
+                         * the merged result will be the same as
+                         * whatever is in the curse.
+                         */
+                        if (elInfoResLevel != 0) {
+                            String message = "Invalid Resistance Level. Was " + elInfoResLevel + " expecting 0";
+                            logger.error(message);
+                            throw new RuntimeException(message);
+                        }
+                        elInfo.setResLevel(curseResLevel);
+                    }
+                } else {
+                    if (curseElInfo != null) {
+                        ElementInfo newElInfo = new ElementInfo();
+                        newElInfo.setResLevel(curseResLevel);
+                        putElInfo(elem, newElInfo);
+                    }
+                }
+            }
+        }
+
+        // Fix up any resistances that ended up as VULN_AND_RES so they look like no resistance to the caller
+        for (ElementEnum elem : this.getElInfo().keySet()) {
+            if (this.getElInfo().get(elem).getResLevel() == VULN_AND_RES)
+                this.getElInfo().get(elem).setResLevel(0);
+        }
+    }
+
+    /**
+     * Returns its input: a curse carries no curses of its own.
+     *
+     * <p>C reaches {@code curse_power(curses[i].obj, ...)}, whose whole body sits behind
+     * {@code if (obj->curses)} ({@code obj-power.c:741}), and a curse object's curse list is empty.
+     *
+     * <p>Function cursePower commented in full on 260827.
+     *
+     * @param curse       the curse being priced
+     * @param power       the running power total
+     * @param verbose     unused
+     * @param logFileName unused
+     * @return {@code power}, unchanged
+     */
+    private int cursePower(Curse curse, int power, boolean verbose, String logFileName) {
+        return power;
+    }
+
+    /**
+     * Adds power for what this object does when used - the port of C's {@code effects_power}
+     * ({@code obj-power.c:715}).
+     *
+     * <p>An object's own activation is worth its activation's power; failing that, the kind's power
+     * stands in, which is how an ordinary wand or staff is priced for what it casts.
+     *
+     * <p>The guard asks whether there is an activation <em>at all</em>. C tests a single pointer;
+     * the port holds a list, where the equivalent question is non-null and non-empty - an empty list
+     * is the shape an object with no activation has, and treating it as an activation would both
+     * throw and hide the fallback.
+     *
+     * <p>Function effectsPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with any activation power added
+     */
+    private int effectsPower(int power) {
+        int q = 0;
+
+        if (!activation.isEmpty() && activation.getFirst() != null)
+            q = activation.getFirst().getPower();
+        else if (getKind() != null)
+            q = getKind().getPower();
+
+        if (q != 0) {
+            power += q;
+            logger.info("Add {} power for item activation, total is {}", q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: curses carry no activation.
+     *
+     * <p>C reaches {@code effects_power(curses[i].obj, p)}, whose first branch tests
+     * {@code obj->activation} and whose second tests {@code obj->kind->power}
+     * ({@code obj-power.c:719-722}). A curse object has no activation, and the shared curse object
+     * kind carries no power, so both are zero and {@code p} comes back untouched.
+     *
+     * <p>Function effectsPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int effectsPower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Adds power for this object's elemental protections - the port of C's {@code element_power}
+     * ({@code obj-power.c:637}).
+     *
+     * <p>Two things at once, and the order matters. Walking the elements prices each one on its own -
+     * ignoring, resisting, being immune to or being vulnerable to it - and at the same time counts
+     * how many fall into each of the combination rows. Only when that walk is finished are the
+     * combination bonuses added, because a count read part-way through is not the object's.
+     *
+     * <p>An immunity is priced as immunity plus resistance, because it subsumes the resistance it
+     * replaces.
+     *
+     * <p>An element the object says nothing about is skipped. That matches C, where a zero entry
+     * satisfies neither the ignore test nor any of the three level tests, and cannot reach a
+     * combination row either, because every row demands a level above zero.
+     *
+     * <p>The combination rows are shared mutable state, zeroed here before use; see
+     * {@link ElementSet}.
+     *
+     * <p>Function elementPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the elemental terms added
+     */
+    private int elementPower(int power) {
+        int q;
+
+        // zero the counts
+        for (ElementSet elementSet : ObjectRegistry.elementSets) {
+            elementSet.setCount(0);
+        }
+
+        // Analyse each element for ignore, vulnerability, resistance or immunity
+        for (ElementPowers element : ObjectRegistry.elementPowers) {
+            ElementInfo elInfo = getElInfo().get(element.getElement());
+            if (elInfo != null && elInfo.getFlags() != null) {
+                if (elInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)) {
+                    if (element.getIgnorePower() != 0) {
+                        q = element.getIgnorePower();
+                        power += q;
+                        logger.info("Add {} power for ignoring {}, total is {}", q, element.getName(), power);
+                    }
+                }
+            }
+
+            if (elInfo != null) {
+                if (elInfo.getResLevel() == -1) {
+                    if (element.getVulnPower() != 0) {
+                        q = element.getVulnPower();
+                        power += q;
+                        logger.info("Add {} power for vulnerability to {}, total is {}", q, element.getName(), power);
+                    }
+                } else if (elInfo.getResLevel() == 1) {
+                    if (element.getResPower() != 0) {
+                        q = element.getResPower();
+                        power += q;
+                        logger.info("Add {} power for resistance to {}, total is {}", q, element.getName(), power);
+                    }
+                } else if (elInfo.getResLevel() == 3) {
+                    if (element.getImPower() != 0) {
+                        q = element.getImPower() + element.getResPower();
+                        power += q;
+                        logger.info("Add {} power for immunity to {}, total is {}", q, element.getName(), power);
+                    }
+                }
+            }
+
+            // Track combinations of element properties
+            for (ElementSet set : ObjectRegistry.elementSets) {
+                if ((set.getType() == element.getType())
+                        && (elInfo != null && set.getResLevel() <= elInfo.getResLevel())) {
+                    set.setCount(set.getCount() + 1);
+                }
+            }
+        }
+
+        // Add bonus if item has a full set of these flags
+        for (ElementSet set : ObjectRegistry.elementSets) {
+            if (set.getCount() > 1) {
+                q = set.getFactor() * set.getCount() * set.getCount();
+                power += q;
+                logger.info("Add {} power for multiple {}, total is {}", q, set.getDescription(), power);
+            }
+
+            if (set.getCount() == set.getSize()) {
+                q = set.getBonus();
+                power += q;
+                logger.info("Add {} power for full set of {}, total is {}", q, set.getDescription(), power);
+            }
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's elemental protections, mirroring
+     * {@link #elementPower(int)} against the curse's own element info.
+     *
+     * <p>Not an identity, unlike most of the curse overloads: {@code curse.txt} does grant and
+     * withhold resistances, and C prices them by running the same function over the curse object.
+     *
+     * <p>Function elementPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total with the curse's elemental terms added
+     */
+    private int elementPower(Curse curse, int power) {
+        int q;
+
+        // zero the counts
+        for (ElementSet elementSet : ObjectRegistry.elementSets) {
+            elementSet.setCount(0);
+        }
+
+        // Analyse each element for ignore, vulnerability, resistance or immunity
+        for (ElementPowers element : ObjectRegistry.elementPowers) {
+            ElementInfo elInfo = curse.getElInfo().get(element.getElement());
+            if (elInfo != null && elInfo.getFlags() != null) {
+                if (elInfo.getFlags().has(ElementInfoEnum.EL_INFO_IGNORE)) {
+                    if (element.getIgnorePower() != 0) {
+                        q = element.getIgnorePower();
+                        power += q;
+                        logger.info("Add {} power for ignoring {}, total is {}", q, element.getName(), power);
+                    }
+                }
+            }
+
+            if (elInfo != null) {
+                if (elInfo.getResLevel() == -1) {
+                    if (element.getVulnPower() != 0) {
+                        q = element.getVulnPower();
+                        power += q;
+                        logger.info("Add {} power for vulnerability to {}, total is {}", q, element.getName(), power);
+                    }
+                } else if (elInfo.getResLevel() == 1) {
+                    if (element.getResPower() != 0) {
+                        q = element.getResPower();
+                        power += q;
+                        logger.info("Add {} power for resistance to {}, total is {}", q, element.getName(), power);
+                    }
+                } else if (elInfo.getResLevel() == 3) {
+                    if (element.getImPower() != 0) {
+                        q = element.getImPower() + element.getResPower();
+                        power += q;
+                        logger.info("Add {} power for immunity to {}, total is {}", q, element.getName(), power);
+                    }
+                }
+            }
+
+            // Track combinations of element properties
+            for (ElementSet set : ObjectRegistry.elementSets) {
+                if ((set.getType() == element.getType())
+                        && (elInfo != null && set.getResLevel() <= elInfo.getResLevel())) {
+                    set.setCount(set.getCount() + 1);
+                }
+            }
+        }
+
+        // Add bonus if item has a full set of these flags
+        for (ElementSet set : ObjectRegistry.elementSets) {
+            if (set.getCount() > 1) {
+                q = set.getFactor() * set.getCount() * set.getCount();
+                power += q;
+                logger.info("Add {} power for multiple {}, total is {}", q, set.getDescription(), power);
+            }
+
+            if (set.getCount() == set.getSize()) {
+                q = set.getBonus();
+                power += q;
+                logger.info("Add {} power for full set of {}, total is {}", q, set.getDescription(), power);
+            }
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for this object's flags - the port of C's {@code flags_power}
+     * ({@code obj-power.c:581}).
+     *
+     * <p>Each flag is looked up in the object property table and priced at its base power times the
+     * multiplier for this object's type, because the same flag is worth different amounts on
+     * different things. A flag the table prices at zero is a derived one and adds nothing.
+     *
+     * <p>As with the elements, the walk both prices individual flags and counts them into families,
+     * and the family bonuses are added only once the walk is done.
+     *
+     * <p>A flag the property table does not know is a data error rather than a runtime condition, so
+     * this throws rather than skipping it.
+     *
+     * <p>The family rows are shared mutable state, zeroed here before use; see {@link FlagSet}.
+     *
+     * <p>Function flagsPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the flag terms added
+     */
+    private int flagsPower(int power) {
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        flags.copyFrom(this.getFlags());
+        int q;
+
+        // Zero the flag counts
+        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+            flagSet.setCount(0);
+        }
+
+        for (ObjectFlag flag : flags) {
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag);
+            ObjectProperty property = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_FLAG, wrapper);
+
+            if (property == null) {
+                String message = "Unknown ObjectProperty type in flagsPower.";
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            if (property.getPower() != 0) {
+                q = property.getPower() * property.getTypeMult(gettValue());
+                power += q;
+                logger.info("Add {} for {}, total is {}", q, property.getName(), power);
+            }
+
+            // Track combinations of flag types
+            for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+                if (flagSet.getType() == property.getSubtype())
+                    flagSet.setCount(flagSet.getCount() + 1);
+            }
+        }
+
+        // Add extra power for multiple flags of the same type
+        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+            if (flagSet.getCount() > 1) {
+                q = flagSet.getFactor() * flagSet.getCount() * flagSet.getCount();
+                power += q;
+                logger.info("Add {} power for multiple {}, total {}", q, flagSet.getDescription(), power);
+            }
+
+            // Add bonus if item has a full set of these flags
+            if (flagSet.getCount() == flagSet.getSize()) {
+                q = flagSet.getBonus();
+                power += q;
+                logger.info("Add {} power for full set of {}, total is {}", q, flagSet.getDescription(), power);
+            }
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's flags, mirroring {@link #flagsPower(int)} against the curse's own
+     * flag set.
+     *
+     * <p>The type multiplier is 1 rather than a lookup, and deliberately so: C prices the curse
+     * object, whose tval is never assigned and so is {@code TV_NONE}, and no property in
+     * {@code object_property.txt} names that type - so every one of them falls back on the table's
+     * default of 1.
+     *
+     * <p>Function flagsPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total with the curse's flag terms added
+     */
+    private int flagsPower(Curse curse, int power) {
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        flags.copyFrom(curse.getObjectFlags());
+        int q;
+
+        // Zero the flag counts
+        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+            flagSet.setCount(0);
+        }
+
+        for (ObjectFlag flag : flags) {
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_FLAG, flag);
+            ObjectProperty property = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_FLAG, wrapper);
+
+            if (property == null) {
+                String message = "Unknown ObjectProperty type in flagsPower.";
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            if (property.getPower() != 0) {
+                q = property.getPower();
+                power += q;
+                logger.info("Add {} for {}, total is {}", q, property.getName(), power);
+            }
+
+            // Track combinations of flag types
+            for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+                if (flagSet.getType() == property.getSubtype())
+                    flagSet.setCount(flagSet.getCount() + 1);
+            }
+        }
+
+        // Add extra power for multiple flags of the same type
+        for (FlagSet flagSet : ObjectRegistry.flagSets.values()) {
+            if (flagSet.getCount() > 1) {
+                q = flagSet.getFactor() * flagSet.getCount() * flagSet.getCount();
+                power += q;
+                logger.info("Add {} power for multiple {}, total {}", q, flagSet.getDescription(), power);
+            }
+
+            // Add bonus if item has a full set of these flags
+            if (flagSet.getCount() == flagSet.getSize()) {
+                q = flagSet.getBonus();
+                power += q;
+                logger.info("Add {} power for full set of {}, total is {}", q, flagSet.getDescription(), power);
+            }
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for this object's modifiers - the port of C's {@code modifier_power}
+     * ({@code obj-power.c:544}).
+     *
+     * <p>Each modifier is priced at its value times its base power times the multiplier for this
+     * object's type. A modifier the object does not carry reads as zero, which is what C's fixed
+     * array gives and what the {@code getOrDefault} here stands in for.
+     *
+     * <p>Separately, the modifiers accumulate a weighted total - not all of them count equally - and
+     * a large total buys a further bonus from the ability table, or a refusal if it is large enough.
+     * That is what stops an object with many strong modifiers being priced as merely the sum of
+     * them.
+     *
+     * <p>Function modifierPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the modifier terms and any ability bonus added
+     */
+    private int modifierPower(int power) {
+        int extraStatBonus = 0;
+        int q;
+
+        for (ObjectModifier om : ObjectModifier.values()) {
+            if (om == ObjectModifier.OM_MAX || om == ObjectModifier.OM_NONE) continue;
+
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_MOD, om);
+            ObjectProperty mod = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_MOD, wrapper);
+            if (mod == null) {
+                String message = "Modifier nonexistent for " + om.name();
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            int k;
+            if (getModifiers() == null)
+                k = 0;
+            else
+                k = getModifiers().getOrDefault(om, 0);
+            extraStatBonus += k * mod.getMultiplier();
+
+            if (mod.getPower() != 0) {
+                q = (k * (mod.getPower() * mod.getTypeMult(gettValue())));
+                power += q;
+                if (q != 0)
+                    logger.info("Add {} power for {} {}, total is {}", q, k, mod.getName(), power);
+            }
+        }
+
+        // Add extra power term if there are a lot of ability bonuses
+        if (extraStatBonus > 249) {
+            logger.info("Inhibiting - Total ability bonus of {}} is too high", extraStatBonus);
+            power += ObjectRegistry.INHIBIT_POWER;
+        } else if (extraStatBonus > 0) {
+            q = ObjectRegistry.abilityPower[extraStatBonus / 10];
+            if (q == 0) return power;
+            power += q;
+            logger.info("Add {} power for modifier total of {}. total is {}", q, extraStatBonus, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's modifiers, mirroring {@link #modifierPower(int)} against the curse's
+     * own modifier map.
+     *
+     * <p>Walks the curse's declared modifiers rather than every modifier there is, which reaches the
+     * same answer because an undeclared one contributes nothing.
+     *
+     * <p>No type multiplier, for the reason given on {@link #flagsPower(Curse, int)}: the curse
+     * object's type is one no property names, so the multiplier is always 1.
+     *
+     * <p>Function modifierPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total with the curse's modifier terms added
+     */
+    private int modifierPower(Curse curse, int power) {
+        int extraStatBonus = 0;
+        int q;
+
+        for (ObjectModifier om : curse.getModifiers().keySet()) {
+            if (om == ObjectModifier.OM_MAX || om == ObjectModifier.OM_NONE) continue;
+
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(ObjPropertyType.OBJ_PROPERTY_MOD, om);
+            ObjectProperty mod = ObjectRegistry.lookupObjectProperty(ObjPropertyType.OBJ_PROPERTY_MOD, wrapper);
+            if (mod == null) {
+                String message = "Modifier nonexistent for " + om.name();
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            int k;
+            if (curse.getModifiers() == null)
+                k = 0;
+            else
+                k = curse.getModifiers().getOrDefault(om, 0);
+            extraStatBonus += k * mod.getMultiplier();
+
+            if (mod.getPower() != 0) {
+                q = (k * mod.getPower());
+                power += q;
+                if (q != 0)
+                    logger.info("Add {} power for {} {}, total is {}", q, k, mod.getName(), power);
+            }
+        }
+
+        // Add extra power term if there are a lot of ability bonuses
+        if (extraStatBonus > 249) {
+            logger.info("Inhibiting - Total ability bonus of {}} is too high", extraStatBonus);
+            power += ObjectRegistry.INHIBIT_POWER;
+        } else if (extraStatBonus > 0) {
+            q = ObjectRegistry.abilityPower[extraStatBonus / 10];
+            if (q == 0) return power;
+            power += q;
+            logger.info("Add {} power for modifier total of {}. total is {}", q, extraStatBonus, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds the flat bonus every piece of jewellery carries - the port of C's {@code jewelry_power}
+     * ({@code obj-power.c:531}).
+     *
+     * <p>A ring or amulet is worth something for being one, before anything it does is counted.
+     *
+     * <p>Function jewelleryPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total, with the jewellery bonus added if this object is jewellery
+     */
+    private int jewelleryPower(int power) {
+        if (gettValue().isJewellery()) {
+            power += ObjectRegistry.BASE_JEWELERY_POWER;
+            logger.info("Adding {} power for jewelery, total is {}",
+                    ObjectRegistry.BASE_JEWELERY_POWER, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: a curse object is not jewellery.
+     *
+     * <p>C's {@code jewelry_power} tests {@code tval_is_jewelry(obj)} ({@code obj-power.c:533}), and
+     * a curse object's tval is {@code TV_NONE}.
+     *
+     * <p>Function jewelleryPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int jewelleryPower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Adds power for this object's to-armour bonus - the port of C's {@code to_ac_power}
+     * ({@code obj-power.c:500}).
+     *
+     * <p>Priced in bands rather than linearly: every point is worth the base rate, points above the
+     * high threshold are worth it again, and points above the very high threshold twice again - so
+     * a large bonus is worth disproportionately more than a small one. A bonus at or above the
+     * inhibit threshold is refused outright rather than priced.
+     *
+     * <p>A zero bonus returns early, which keeps the log clean rather than changing the answer.
+     *
+     * <p>Function toAcPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the to-armour terms added
+     */
+    private int toAcPower(int power) {
+        if (getToAC() == 0) return power;
+
+        int q = (getToAC() * ObjectRegistry.TO_AC_POWER) / 2;
+        power += q;
+        logger.info("Add {} for toAC of {}, total is {}", q, getToAC(), power);
+        if (getToAC() > ObjectRegistry.HIGH_TO_AC) {
+            q = ((getToAC() - (ObjectRegistry.HIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER);
+            power += q;
+            logger.info("Add {} power for high toAC, total is {}", q, power);
+        }
+        if (getToAC() > ObjectRegistry.VERYHIGH_TO_AC) {
+            q = (getToAC() - (ObjectRegistry.VERYHIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER * 2;
+            power += q;
+            logger.info("Add {} power for very high toAC, total is {}", q, power);
+        }
+        if (getToAC() >= ObjectRegistry.INHIBIT_AC) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING: AC bonus too high.");
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's to-armour bonus, mirroring {@link #toAcPower(int)} against the
+     * curse's own figure.
+     *
+     * <p>Not an identity: {@code curse.txt} does grant and withhold armour bonuses, and C prices
+     * them by running the same function over the curse object.
+     *
+     * <p>Function toAcPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total with the curse's to-armour terms added
+     */
+    private int toAcPower(Curse curse, int power) {
+        if (curse.getCombatAC() == 0) return power;
+
+        int q = (curse.getCombatAC() * ObjectRegistry.TO_AC_POWER) / 2;
+        power += q;
+        logger.info("Add {} for toAC of {}, total is {}", q, curse.getCombatAC(), power);
+        if (curse.getCombatAC() > ObjectRegistry.HIGH_TO_AC) {
+            q = ((curse.getCombatAC() - (ObjectRegistry.HIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER);
+            power += q;
+            logger.info("Add {} power for high toAC, total is {}", q, power);
+        }
+        if (curse.getCombatAC() > ObjectRegistry.VERYHIGH_TO_AC) {
+            q = (curse.getCombatAC() - (ObjectRegistry.VERYHIGH_TO_AC - 1)) * ObjectRegistry.TO_AC_POWER * 2;
+            power += q;
+            logger.info("Add {} power for very high toAC, total is {}", q, power);
+        }
+        if (curse.getCombatAC() >= ObjectRegistry.INHIBIT_AC) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING: AC bonus too high.");
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for this object's base armour class, adjusted for weight - the port of C's
+     * {@code ac_power} ({@code obj-power.c:465}).
+     *
+     * <p>An object with base armour is worth a flat bonus for being armour at all - it halves acid
+     * damage - plus a figure for the armour itself, scaled by how much armour it gives per unit of
+     * weight. Light armour is therefore worth more than heavy armour of the same class, which is the
+     * point.
+     *
+     * <p>The scaling is capped, explicitly so as not to overprice elven cloaks, which give a good
+     * deal of armour for almost no weight. A weightless object cannot be scaled at all and takes a
+     * fixed multiple instead.
+     *
+     * <p>The weight used is {@link #weightOne()}, so curses that make the object heavier or lighter
+     * are already reflected; that is also why {@link #nonStandardWeightPower(int)} skips objects
+     * with base armour, having been accounted for here.
+     *
+     * <p>Function acPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the base armour terms added
+     */
+    private int acPower(int power) {
+        int weight = weightOne();
+        int q = 0;
+
+        if (getBaseAC() != 0) {
+            power += ObjectRegistry.BASE_ARMOUR_POWER;
+            q += getBaseAC() * ObjectRegistry.BASE_AC_POWER / 2;
+            logger.info("Adding {} power for base AC value", q);
+
+            // Add power for AC per unit weight
+            if (weight > 0) {
+                int i = 750 * (getBaseAC() + getToAC()) / weight;
+
+                // Don't overcharge for elven cloaks
+                i = Math.min(450, i);
+
+                q *= i;
+                q /= 100;
+            } else {
+                // weightless (ethereal) armour items get fixed bonus
+                q *= 5;
+            }
+            power += q;
+            logger.info("Add {} power for AX per unit weight, now {}", q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: a curse has no base armour class.
+     *
+     * <p>C's {@code ac_power} sits entirely behind {@code if (obj->ac)} ({@code obj-power.c:470}),
+     * and {@code curse.txt} has no syntax for giving a curse base armour - {@code obj-curse.c} says
+     * so where it merges the field.
+     *
+     * <p>Function acPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int acPower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Adds power for this object's to-hit bonus - the port of C's {@code to_hit_power}
+     * ({@code obj-power.c:454}).
+     *
+     * <p>Linear, unlike the to-armour term: every point is worth the same. The rate is halved, which
+     * is why the constant is doubled and the expression divides by two.
+     *
+     * <p>Function toHitPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total with the to-hit term added
+     */
+    private int toHitPower(int power) {
+        int q = (toHit * ObjectRegistry.TO_HIT_POWER / 2);
+        power += q;
+        if (power != 0) {
+            logger.info("Add {} power for to hit, total is {}", q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's to-hit bonus, mirroring {@link #toHitPower(int)} against the curse's
+     * own figure.
+     *
+     * <p>Not an identity: curses adjust to-hit, and C prices that by running the same function over
+     * the curse object.
+     *
+     * <p>Function toHitPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total with the curse's to-hit term added
+     */
+    private int toHitPower(Curse curse, int power) {
+        int q = curse.getCombatToHit() * ObjectRegistry.TO_HIT_POWER / 2;
+        power += q;
+        if (power != 0) {
+            logger.info("Add {} power for to hit, total is {}", q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Divides a launcher's power down so it can be compared with a melee weapon's - the port of C's
+     * {@code rescale_bow_power} ({@code obj-power.c:442}).
+     *
+     * <p>The damage terms above assume a melee weapon landing {@code MAX_BLOWS} blows a turn. A
+     * launcher does not, so its total is divided by the same figure; without it every bow would
+     * outprice every sword.
+     *
+     * <p>Applies to whatever is worn in the shooting slot, which is how the test is phrased rather
+     * than by asking whether the object is a bow.
+     *
+     * <p>Function rescaleBowPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total, rescaled if this object is worn in the shooting slot
+     */
+    private int rescaleBowPower(int power) {
+        if (wieldSlot() == player.slotByName("shooting")) {
+            power /= ObjectRegistry.MAX_BLOWS;
+            logger.info("Rescaling bow power, total is {}", power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: a curse is not worn in the shooting slot.
+     *
+     * <p>C's {@code rescale_bow_power} tests {@code wield_slot(obj) == slot_by_name(player,
+     * "shooting")} ({@code obj-power.c:444}); a curse object is not wielded at all.
+     *
+     * <p>Function rescaleBowPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int rescaleBowPower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Adds power for this object's brands and slays - the port of C's {@code slay_power}
+     * ({@code obj-power.c:335}).
+     *
+     * <p>Priced from the <em>best</em> brand or slay rather than the sum of them, because only one
+     * applies to any given blow. That best figure is a percentage-style number where 100 means "no
+     * better than a bare weapon", so subtracting 100 is what turns it into a bonus - and what lets a
+     * weak brand price negatively. The floor of 1 rather than 0 is C's, and gives a deliberate
+     * penalty when every brand and slay present is worthless.
+     *
+     * <p>The result is scaled by the damage dice squared, so the same brand is worth far more on a
+     * heavy weapon than on a light one.
+     *
+     * <p>Carrying several then buys further bonuses - separately for slays, for brands, for having
+     * both, and for kills, which are slays with a multiplier above three and counted apart from
+     * them. Holding a complete set of any of the three buys a flat bonus on top.
+     *
+     * <p>Returns early when there is nothing to price, which is the common case.
+     *
+     * <p>Function slayPower commented in full on 260827.
+     *
+     * @param power     the running power total
+     * @param verbose   {@code true} to log each brand and slay and the best figure
+     * @param dicePower the damage-dice term this object was priced at, which scales the result
+     * @return the total with the brand and slay terms added
+     */
+    private int slayPower(int power, boolean verbose, int dicePower) {
+        int bestPower = 1;
+        int numBrands = this.getBrands().size();
+        int numSlays = 0;
+        int numKills = 0;
+
+        for (Brand b : this.getBrands()) {
+            bestPower = Math.max(b.getPower(), bestPower);
+        }
+
+        for (Slay s : this.getSlays()) {
+            if (s.getMultiplier() <= 3)
+                numSlays++;
+            else
+                numKills++;
+
+            bestPower = Math.max(bestPower, s.getPower());
+        }
+
+        // Return if no slays or brands
+        if (numBrands + numKills + numSlays == 0)
+            return power;
+
+        if (verbose) {
+            logger.info("Slay and brands: ");
+
+            for (Brand b : this.getBrands()) {
+                logger.info("{} x {}", b.getName(), b.getMultiplier());
+            }
+
+            for (Slay s : this.getSlays()) {
+                logger.info("{} x {}", s.getName(), s.getMultiplier());
+            }
+
+            logger.info("Best power is {}", bestPower);
+        }
+
+        int q = (dicePower * dicePower * (bestPower - 100)) / 2500;
+        power += q;
+        logger.info("Add {} for slay power, total is {}", q, power);
+
+        // Bonuses for multiple brands and slays
+        if (numSlays > 1) {
+            q = (numSlays * numSlays * dicePower) / (ObjectRegistry.DAMAGE_POWER * 5);
+            power += q;
+            logger.info("Add {} for multiple slays, total is {}", q, power);
+        }
+        if (numBrands > 1) {
+            q = (2 * numBrands * numBrands * dicePower) / (ObjectRegistry.DAMAGE_POWER * 5);
+            power += q;
+            logger.info("Add {} for multiple brands, total is {}", q, power);
+        }
+        if (numSlays != 0 && numBrands != 0) {
+            q = (numSlays * numBrands * dicePower) / (ObjectRegistry.DAMAGE_POWER * 5);
+            power += q;
+            logger.info("Add {} for slay and brand, total is {}", q, power);
+        }
+        if (numKills > 1) {
+            q = (3 * numKills * numKills * dicePower) / (ObjectRegistry.DAMAGE_POWER * 5);
+            power += q;
+            logger.info("Add {} for multiple kills, total is {}", q, power);
+        }
+        if (numSlays == 8) {
+            power += 10;
+            logger.info("Add 10 power for full set of slays, total is {}", power);
+        }
+        if (numBrands == 5) {
+            power += 20;
+            logger.info("Add 20 power for full set of brands, total is {}", power);
+        }
+        if (numKills == 3) {
+            power += 20;
+            logger.info("Add 20 power for full set of kills, total is {}", power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: no curse in {@code curse.txt} carries a brand or a slay.
+     *
+     * <p>C's {@code slay_power} returns {@code p} as soon as the counts come to zero
+     * ({@code obj-power.c:366}), which is what running it over a curse object does.
+     *
+     * <p>Function slayPower commented in full on 260827.
+     *
+     * @param curse     the curse being priced
+     * @param power     the running power total
+     * @param verbose   unused
+     * @param dicePower unused
+     * @return {@code power}, unchanged
+     */
+    private int slayPower(Curse curse, int power, boolean verbose, int dicePower) {
+        return power;
+    }
+
+    /**
+     * Applies extra shooting might to the running total - the port of C's
+     * {@code extra_might_power} ({@code obj-power.c:302}).
+     *
+     * <p>Might multiplies rather than adds: it raises the launcher's multiplier, and the whole
+     * damage total so far is multiplied by the result. That is why this step comes after the damage
+     * terms and before everything else.
+     *
+     * <p>Might at or above the inhibit threshold refuses the object instead of pricing it, returning
+     * at once with the multiplier untouched.
+     *
+     * <p>Returns both figures because the caller keeps the multiplier as well; C passes it by value
+     * and returns only the power, having no need of it afterwards.
+     *
+     * <p>Function extraMightPower commented in full on 260827.
+     *
+     * @param incoming the running power total and current multiplier
+     * @return the updated total and multiplier
+     */
+    private PowerAndMult extraMightPower(PowerAndMult incoming) {
+        int power = incoming.power();
+        int mult = incoming.mult();
+        int modMight;
+
+        modMight = getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0);
+
+        if (modMight >= ObjectRegistry.INHIBIT_MIGHT) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too much extra might - quitting");
+            return new PowerAndMult(power, mult);
+        } else {
+            mult += modMight;
+        }
+        logger.info("Mult after extra might is {}", mult);
+        power *= mult;
+        logger.info("After multiplying power for might, total is {}", power);
+        return new PowerAndMult(power, mult);
+    }
+
+    /**
+     * Applies a curse's extra shooting might, mirroring {@link #extraMightPower(PowerAndMult)}
+     * against the curse's own modifier.
+     *
+     * <p>Not an identity: curses can carry a might modifier, and C prices it by running the same
+     * function over the curse object.
+     *
+     * <p>Function extraMightPower commented in full on 260827.
+     *
+     * @param curse    the curse being priced
+     * @param incoming the running power total and current multiplier
+     * @return the updated total and multiplier
+     */
+    private PowerAndMult extraMightPower(Curse curse, PowerAndMult incoming) {
+        int power = incoming.power();
+        int mult = incoming.mult();
+        int modMight;
+
+        if (curse.getModifiers() != null)
+            modMight = curse.getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0);
+        else
+            modMight = 0;
+
+        if (modMight >= ObjectRegistry.INHIBIT_MIGHT) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too much extra might - quitting");
+            PowerAndMult outgoing = new PowerAndMult(power, mult);
+            return outgoing;
+        } else {
+            mult += modMight;
+        }
+
+        logger.info("Mult after extra might is {}", mult);
+        power *= mult;
+        logger.info("After multiplying power for might, total is {}", power);
+        return new PowerAndMult(power, mult);
+    }
+
+    /**
+     * Applies extra shots to the running total - the port of C's {@code extra_shots_power}
+     * ({@code obj-power.c:322}).
+     *
+     * <p>Proportional rather than additive: each extra shot raises the total by a tenth, because
+     * shots multiply everything the launcher already does.
+     *
+     * <p>Shots at or above the inhibit threshold refuse the object. Negative shots are not handled,
+     * as C's own comment says.
+     *
+     * <p>Function extraShotsPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total, scaled up for any extra shots
+     */
+    private int extraShotsPower(int power) {
+        if (!getModifiers().containsKey(ObjectModifier.OM_SHOTS)
+                || getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) == 0)
+            return power;
+
+        int modShots = getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0);
+        if (modShots >= ObjectRegistry.INHIBIT_SHOTS) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too many extra shots - quitting");
+            return power;
+        } else if (modShots > 0) {
+            power *= (10 + modShots);
+            power /= 10;
+            logger.info("Adding {}% power for extra shots, total is {}", 10 * modShots, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Applies a curse's extra shots, mirroring {@link #extraShotsPower(int)} against the curse's own
+     * modifier.
+     *
+     * <p>Not an identity: curses can carry a shots modifier.
+     *
+     * <p>Function extraShotsPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total, scaled up for any extra shots the curse grants
+     */
+    private int extraShotsPower(Curse curse, int power) {
+        if (!curse.getModifiers().containsKey(ObjectModifier.OM_SHOTS)
+                || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) == 0) {
+            return power;
+        }
+
+        int modShots = curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0);
+        if (modShots >= ObjectRegistry.INHIBIT_SHOTS) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too many extra shots - quitting");
+            return power;
+        } else if (modShots > 0) {
+            power *= (10 + modShots);
+            power /= 10;
+            logger.info("Adding {}% power for extra shots, total is {}", 10 * modShots, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Applies extra blows to the running total - the port of C's {@code extra_blows_power}
+     * ({@code obj-power.c:268}).
+     *
+     * <p>Two parts. The total is scaled by the blows the object gives relative to the assumed
+     * maximum, and then a flat amount is added for damage the player deals that does not come from
+     * the weapon - rings and the like - which extra blows also multiply.
+     *
+     * <p>Blows at or above the inhibit threshold refuse the object.
+     *
+     * <p>Function extraBlowsPower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total, scaled and boosted for any extra blows
+     */
+    private int extraBlowsPower(int power) {
+        int q = power;
+
+        if (getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) == 0)
+            return power;
+
+        if (getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) >= ObjectRegistry.INHIBIT_BLOWS) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too many extra blows - quitting");
+        } else {
+            power = power * (ObjectRegistry.MAX_BLOWS + getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0))
+                    / ObjectRegistry.MAX_BLOWS;
+            // Add boost for assumed off-weapon damage
+            power += (ObjectRegistry.NONWEAP_DAMAGE * getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0)
+                    * ObjectRegistry.DAMAGE_POWER / 2);
+            logger.info("Add {} power for extra blows, total is {}", power - q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Applies a curse's extra blows, mirroring {@link #extraBlowsPower(int)} against the curse's own
+     * modifier.
+     *
+     * <p>Not an identity: curses can carry a blows modifier.
+     *
+     * <p>Function extraBlowsPower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return the total, scaled and boosted for any extra blows the curse grants
+     */
+    private int extraBlowsPower(Curse curse, int power) {
+        int q = power;
+
+        if (curse.getModifiers() != null && curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) == 0)
+            return power;
+
+        if (curse.getModifiers() != null
+                && curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) >= ObjectRegistry.INHIBIT_BLOWS) {
+            power += ObjectRegistry.INHIBIT_POWER;
+            logger.info("INHIBITING - too many extra blows - quitting");
+            return power;
+        } else {
+            power = power * (ObjectRegistry.MAX_BLOWS + curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0))
+                    / ObjectRegistry.MAX_BLOWS;
+            // Add boost for assumed off-weapon damage
+            power += (ObjectRegistry.NONWEAP_DAMAGE * curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0)
+                    * ObjectRegistry.DAMAGE_POWER / 2);
+            logger.info("Add {} power for extra blows, total is {}", power - q, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Prices ammunition for the launcher that will fire it - the port of C's
+     * {@code launcher_ammo_damage_power} ({@code obj-power.c:255}).
+     *
+     * <p>A missile is worth little on its own and a great deal once launched, so its total is
+     * multiplied by the assumed launcher multiplier for its type and then rescaled to a per-turn
+     * figure. Ego ammunition additionally takes the launcher's assumed to-damage bonus, because an
+     * ego missile is the one worth enchanting.
+     *
+     * <p>The stored multiplier is doubled, which is why the divisor is twice the assumed blows; see
+     * {@link Archery}.
+     *
+     * <p>Function launcherAmmoDamagePower commented in full on 260827.
+     *
+     * @param power the running power total
+     * @return the total, multiplied and rescaled if this object is ammunition
+     */
+    private int launcherAmmoDamagePower(int power) {
+        TValue ammoType;
+
+        if (gettValue().isAmmo()) {
+            ammoType = gettValue();
+            if (ego != null)
+                power += ObjectRegistry.archery.get(ammoType).getLaunchDamage() * ObjectRegistry.DAMAGE_POWER / 2;
+            power = power * ObjectRegistry.archery.get(ammoType).getLaunchMult() / (2 * ObjectRegistry.MAX_BLOWS);
+            logger.info("After multiplying ammo and rescaling, power is {}", power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Returns its input: a curse is not ammunition.
+     *
+     * <p>C's {@code launcher_ammo_damage_power} sits behind {@code tval_is_ammo(obj)}
+     * ({@code obj-power.c:261}), and a curse object's tval is {@code TV_NONE}.
+     *
+     * <p>Function launcherAmmoDamagePower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power the running power total
+     * @return {@code power}, unchanged
+     */
+    private int launcherAmmoDamagePower(Curse curse, int power) {
+        return power;
+    }
+
+    /**
+     * Reports the damage multiplier a launcher gives - the port of C's {@code bow_multiplier}
+     * ({@code obj-power.c:158}).
+     *
+     * <p>Anything that is not a bow multiplies by one, which lets the caller apply the result
+     * unconditionally. For a bow the multiplier is its {@code pval}, where the data file keeps it.
+     *
+     * <p>The method name has its letters transposed, which is worth knowing when searching for
+     * callers.
+     *
+     * <p>Function bowMulitplier commented in full on 260827.
+     *
+     * @return the launcher's multiplier, or 1 for anything that is not one
+     */
+    private int bowMulitplier() {
+        int mult = 1;
+
+        if (gettValue() != TValue.TV_BOW)
+            return mult;
+        else
+            mult = getpValue();
+
+        logger.info("Base mult for this weapon is {}", mult);
+        return mult;
+    }
+
+    /**
+     * Returns 1: a curse is not a bow, so it multiplies nothing.
+     *
+     * <p>C's {@code bow_multiplier} returns its initial {@code mult} of 1 for any object whose tval
+     * is not {@code TV_BOW} ({@code obj-power.c:162}).
+     *
+     * <p>Function bowMulitplier commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @return {@code 1}
+     */
+    private int bowMulitplier(Curse curse) {
+        return 1;
+    }
+
+    /**
+     * Prices a launcher for the ammunition it will fire - the port of C's
+     * {@code ammo_damage_power} ({@code obj-power.c:232}).
+     *
+     * <p>The mirror of {@link #launcherAmmoDamagePower(int)}: a bow does no damage by itself, so it
+     * is priced by what its ammunition is assumed to average. Which ammunition that is comes from
+     * the launcher's kind flags, since a sling, a bow and a crossbow take different things.
+     *
+     * <p>Applies to whatever is worn in the shooting slot. Returns an increment rather than a new
+     * total, which is why the caller adds it on.
+     *
+     * <p>Function ammoDamagePower commented in full on 260827.
+     *
+     * @param power the running power total, used only for the log line
+     * @return the power to add for the ammunition this launcher fires, or zero
+     */
+    private int ammoDamagePower(int power) {
+        int q = 0;
+        TValue shoots = null;
+
+        if (this.getKind() == null) return 0;
+        ObjectKind kind = this.getKind();
+
+        if (wieldSlot() == player.slotByName("shooting")) {
+            if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_SHOTS))
+                shoots = TValue.TV_SHOT;
+            else if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_ARROWS))
+                shoots = TValue.TV_ARROW;
+            else if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_BOLTS))
+                shoots = TValue.TV_BOLT;
+
+            if (shoots != null) {
+                Archery arch = ObjectRegistry.archery.get(shoots);
+                q = (arch.getAmmoDamage() * ObjectRegistry.DAMAGE_POWER / 2);
+                logger.info("Adding {} power from ammo, total is {}", q, power + q);
+            }
+        }
+
+        return q;
+    }
+
+    /**
+     * Returns zero: a curse is not worn in the shooting slot, so there is no ammunition to price.
+     *
+     * <p>C's {@code ammo_damage_power} returns its {@code q} of 0 unless the object is in that slot
+     * ({@code obj-power.c:238}).
+     *
+     * <p>Function ammoDamagePower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @param power unused
+     * @return {@code 0}
+     */
+    private int ammoDamagePower(Curse curse, int power) {
+        return 0;
+    }
+
+    /**
+     * Prices what this object's damage dice are worth - the port of C's
+     * {@code damage_dice_power} ({@code obj-power.c:199}).
+     *
+     * <p>A melee weapon or a missile is priced from its dice: average damage times the rate.
+     *
+     * <p>Anything else that is not a launcher can still be worth a damage term, if it carries
+     * something that makes the player's other attacks better - a brand, a slay, or a blows, shots or
+     * might modifier. Such an object is credited with a flat assumed damage instead, because there
+     * are no dice to price.
+     *
+     * <p>Returns the dice term alone rather than a running total; the caller adds it on and keeps it,
+     * because the brand and slay pricing needs it later.
+     *
+     * <p>Function damageDicePower commented in full on 260827.
+     *
+     * @return the damage-dice term for this object
+     */
+    private int damageDicePower() {
+        int dice = 0;
+
+        // Add damage from dice for any wearable weapon or ammo
+        if (this.gettValue().isMeleeWeapon() || this.gettValue().isAmmo()) {
+            dice = ((this.damageDice * (this.damageSides + 1) * ObjectRegistry.DAMAGE_POWER) / 4);
+            logger.info("Add {} power for damage dice, ", dice);
+        } else if (wieldSlot() != player.slotByName("shooting")) {
+            if (!this.getBrands().isEmpty() || !this.getSlays().isEmpty()
+                    || getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) > 0
+                    || getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) > 0
+                    || getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0) > 0) {
+                dice = (ObjectRegistry.WEAP_DAMAGE * ObjectRegistry.DAMAGE_POWER);
+                logger.info("Add {} power for non-weapon combat bonuses.", dice);
+            }
+        }
+
+        return dice;
+    }
+
+    /**
+     * Prices what a curse's combat modifiers are worth as a damage term, mirroring the second branch
+     * of {@link #damageDicePower()}.
+     *
+     * <p>Only that branch applies: a curse has no dice of its own and is not worn in the shooting
+     * slot, so C reaches the same test - blows, shots or might above zero - and credits the same
+     * flat assumed damage.
+     *
+     * <p>Function damageDicePower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @return the damage-dice term for the curse
+     */
+    private int damageDicePower(Curse curse) {
+        int dice = 0;
+
+        // Add damage from dice for any wearable weapon or ammo
+        if (curse.getModifiers() != null) {
+            if (curse.getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) > 0
+                    || curse.getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) > 0
+                    || curse.getModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0) > 0) {
+                dice = (ObjectRegistry.WEAP_DAMAGE * ObjectRegistry.DAMAGE_POWER);
+                logger.info("Add {} power for non-combat bonuses.", dice);
+            }
+        }
+
+        return dice;
+    }
+
+    /**
+     * Adds power for this object's to-damage bonus - the port of C's {@code to_damage_power}
+     * ({@code obj-power.c:177}).
+     *
+     * <p>Counted twice for an object that is neither a weapon, nor ammunition, nor worn in the
+     * shooting slot. That is deliberate in C: a ring of damage improves every blow the player lands,
+     * where a weapon's bonus improves only its own, so the ring is worth more per point.
+     *
+     * <p>Function toDamagePower commented in full on 260827.
+     *
+     * @return this object's to-damage term
+     */
+    private int toDamagePower() {
+        int power = (this.toDam * ObjectRegistry.DAMAGE_POWER / 2);
+        if (power != 0)
+            logger.info("{} power from to_dam", power);
+
+        // Add second lot of damage power for non weapons
+        if ((this.wieldSlot() != player.slotByName("shooting"))
+                && !this.gettValue().isMeleeWeapon()
+                && !this.gettValue().isAmmo()) {
+            int nonWeaponPower = this.toDam * ObjectRegistry.DAMAGE_POWER;
+            power += nonWeaponPower;
+            if (nonWeaponPower != 0)
+                logger.info("Add {} from non-weapon to_dam, total {}", nonWeaponPower, power);
+        }
+
+        return power;
+    }
+
+    /**
+     * Adds power for a curse's to-damage bonus, mirroring {@link #toDamagePower()} against the
+     * curse's own figure.
+     *
+     * <p>Takes the second lot of damage power unconditionally, and that is right: a curse object is
+     * not a weapon, not ammunition and not worn in the shooting slot, so C always reaches that
+     * branch.
+     *
+     * <p>Function toDamagePower commented in full on 260827.
+     *
+     * @param curse the curse being priced
+     * @return the curse's to-damage term
+     */
+    private int toDamagePower(Curse curse) {
+        int power = curse.getCombatDam() * ObjectRegistry.DAMAGE_POWER / 2;
+        if (power != 0) logger.info("{} power from to_dam", power);
+
+        // add second lot of damage power for non weapons
+        int q = curse.getCombatDam() * ObjectRegistry.DAMAGE_POWER;
+        power += q;
+        if (q != 0) logger.info("Add {} from to_dam, total {}", q, power);
+
+        return power;
+    }
+
+    /**
+     * Reports which equipment slot this object would be worn in - the port of C's
+     * {@code wield_slot} ({@code obj-gear.c}).
+     *
+     * <p>Most types map straight onto a slot. Weapons, rings and lights go through the slot search
+     * instead, because there may be more than one of them and an empty one is preferred; rings in
+     * particular is why the search exists.
+     *
+     * <p>Answers a slot index rather than a slot, which is what the callers compare against
+     * {@code slotByName}. An object that belongs in no slot answers {@code -1}.
+     *
+     * <p>Function wieldSlot commented in full on 260827.
+     *
+     * @return the index of the slot this object would occupy, or {@code -1} if it is not wearable
+     */
+    private int wieldSlot() {
+        switch (this.gettValue()) {
+            case TV_BOW:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_BOW, false);
+            case TV_AMULET:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_AMULET, false);
+            case TV_CLOAK:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_CLOAK, false);
+            case TV_SHIELD:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_SHIELD, false);
+            case TV_GLOVES:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_GLOVES, false);
+            case TV_BOOTS:
+                return player.slotByType(EquipmentSlotsEnum.EQUIP_BOOTS, false);
+        }
+
+        if (this.gettValue().isMeleeWeapon())
+            return player.slotByType(EquipmentSlotsEnum.EQUIP_WEAPON, false);
+        else if (this.gettValue().isRing())
+            return player.slotByType(EquipmentSlotsEnum.EQUIP_RING, false);
+        else if (this.gettValue().isLight())
+            return player.slotByType(EquipmentSlotsEnum.EQUIP_LIGHT, false);
+        else if (this.gettValue().isBodyArmour())
+            return player.slotByType(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, false);
+        else if (this.gettValue().isHeadArmour())
+            return player.slotByType(EquipmentSlotsEnum.EQUIP_HAT, false);
+
+        // No slots available
+        return -1;
+    }
+
+    /**
+     * Answers whether the player has learned what this object's flavour means - the port of C's
+     * {@code object_flavor_is_aware} ({@code obj-desc.c}).
+     *
+     * <p>Awareness lives on the kind, not the object: learning that one blue potion is cure light
+     * wounds teaches the player about every blue potion.
+     *
+     * <p>Throws for an object with no kind, where {@link #flavourIsAware()} answers {@code false}
+     * for the same state. The two differ because this one is called where a kind must exist and a
+     * missing one is a defect rather than a case.
+     *
+     * <p>Function objectFlavourIsAware commented in full on 260827.
+     *
+     * @return {@code true} if the player is aware of this object's flavour
+     */
+    private boolean objectFlavourIsAware() {
+        if (getKind() == null) {
+            String message = "Illegal call on objectFlavourIsAware - no kind exists";
+            logger.error(message);
+            throw new RuntimeException(message);
+        }
+        return getKind().isAware();
+    }
+
+    /**
+     * Answers whether the player's class can read this object as a spell book - the port of C's
+     * {@code obj_can_browse} ({@code obj-util.c}).
+     *
+     * <p>Delegates to the kind, since browsability is a property of the book rather than the copy.
+     * Read by the pack ordering, which lists readable books first.
+     *
+     * <p>Function canBrowse commented in full on 260827.
+     *
+     * @return {@code true} if the current player's class can browse this object
+     */
+    private boolean canBrowse() {
+        return this.getKind().canBrowse();
+    }
+
+    /**
+     * A running power total and the shooting multiplier that goes with it, returned together by the
+     * extra-might step.
+     *
+     * <p>Exists because C's {@code extra_might_power} takes the multiplier as an argument and
+     * returns the power, mutating nothing; the port's version needs to hand back both, and a record
+     * says so more plainly than an out-parameter would.
+     *
+     * @param power the running power total
+     * @param mult  the shooting multiplier after any extra might
+     */
+    private record PowerAndMult(int power, int mult) {
     }
 }

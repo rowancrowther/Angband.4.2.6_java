@@ -229,6 +229,6 @@ public class CurseSource implements BonusSource {
      */
     @Override
     public boolean flagSet(ObjectFlag flag) {
-        return curse.getObjectFlags().contains(flag);
+        return curse.getObjectFlags().has(flag);
     }
 }

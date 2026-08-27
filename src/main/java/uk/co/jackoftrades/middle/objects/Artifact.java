@@ -25,6 +25,8 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -148,6 +150,41 @@ public class Artifact {
      */
     private Random time;
 
+    /**
+     * Build an artifact from its parsed {@code artifact.txt} fields.
+     *
+     * <p>Every collection argument is <b>stored, not copied</b>. The artifacts are loaded once into
+     * the registry and read from there, so each artifact owns the maps and sets the assembler built
+     * for it and nothing else holds a reference; {@link #copy()} is what callers use when they need
+     * an independent one.
+     *
+     * <p>Constructor Artifact commented in full on 260827.
+     *
+     * @param name              display name
+     * @param text              flavour text shown on examination
+     * @param tValue            the object type this artifact is built on
+     * @param sValue            the sub-type within that object type, as the data file spells it
+     * @param toHit             to-hit bonus
+     * @param toDam             to-damage bonus
+     * @param toAC              to-armour bonus
+     * @param ac                base armour class
+     * @param diceString        damage dice, as a dice expression
+     * @param weight            weight in tenth-pounds
+     * @param cost              base cost in gold
+     * @param flags             object flags; stored, not copied
+     * @param modifiers         per-modifier values; stored, not copied
+     * @param elInfo            per-element resistances and ignores; stored, not copied
+     * @param brands            brands carried; stored, not copied
+     * @param slays             slays carried; stored, not copied
+     * @param curses            curses carried, with their instance data; stored, not copied
+     * @param level             native depth
+     * @param allocProb         allocation probability within the depth band
+     * @param allocMin          shallowest depth this artifact may be generated at
+     * @param allocMax          deepest depth this artifact may be generated at
+     * @param activation        the activation this artifact grants, or {@code null}
+     * @param activationMessage message shown when the activation is used
+     * @param time              recharge time for the activation, as a dice expression
+     */
     public Artifact(String name, String text, TValue tValue, String sValue,
                     int toHit, int toDam, int toAC, int ac, String diceString,
                     int weight, int cost, Flag<ObjectFlag> flags,
@@ -348,5 +385,69 @@ public class Artifact {
      */
     public Random getTime() {
         return time;
+    }
+
+    /**
+     * Returns an independent copy of this artifact, deep where it needs to be and shallow where it
+     * does not.
+     *
+     * <p>Deep-copied because their contents are mutable and a shared reference would let one copy's
+     * state show up on the other: the flag set, the modifier map, the element info (each
+     * {@code ElementInfo} copied in turn, not just the map), the curse map (each
+     * {@code CurseData} rebuilt), the activation, and the recharge dice.
+     *
+     * <p>Shallow-copied deliberately: the brand and slay sets are rebuilt as new sets, but their
+     * members are shared, because a {@code Brand} and a {@code Slay} are immutable registry entries
+     * that every object carrying them points at - exactly as C shares its {@code brands[]} and
+     * {@code slays[]} rows. Primitives and {@link String}s are passed straight through.
+     *
+     * <p>The locals exist to make that division legible at the call to the constructor rather than
+     * for any technical reason.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new artifact that shares no mutable state with this one
+     */
+    public Artifact copy() {
+        String newName = name;
+        String newText = text;
+        TValue newtValue = tValue;
+        String newsValue = sValue;
+        int newtoHit = toHit;
+        int newtoDam = toDam;
+        int newtoAC = toAC;
+        int newac = ac;
+        String newdiceString = diceString;
+        int newweight = weight;
+        int newcost = cost;
+        Flag<ObjectFlag> oFlags = new Flag<>(ObjectFlag.class);
+        oFlags.copyFrom(this.flags);
+        Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
+        for (ObjectModifier modifier : modifiers.keySet()) {
+            newModifiers.put(modifier, modifiers.get(modifier));
+        }
+        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
+        for (ElementEnum element : elInfo.keySet()) {
+            newElInfo.put(element, elInfo.get(element).copy());
+        }
+        Set<Brand> newBrands = new HashSet<>(brands);
+        Set<Slay> newSlays = new HashSet<>(slays);
+        Map<Curse, CurseData> newCurses = new HashMap<>();
+        for (Curse curse : curses.keySet()) {
+            newCurses.put(curse, new CurseData(curses.get(curse)));
+        }
+        int newLevel = level;
+        int newAllocProb = allocProb;
+        int newAllocMin = allocMin;
+        int newAllocMax = allocMax;
+        Activation newActivation = activation.copy();
+        String newActivationMessage = activationMessage;
+        Random newTime = time.copy();
+
+        return new Artifact(newName, newText, newtValue, newsValue, newtoHit,
+                newtoDam, newtoAC, newac, newdiceString, newweight, newcost,
+                oFlags, newModifiers, newElInfo, newBrands, newSlays,
+                newCurses, newLevel, newAllocProb, newAllocMin, newAllocMax,
+                newActivation, newActivationMessage, newTime);
     }
 }

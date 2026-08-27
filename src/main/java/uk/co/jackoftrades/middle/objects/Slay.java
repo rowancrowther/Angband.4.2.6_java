@@ -160,4 +160,20 @@ public class Slay {
         if (this.raceFlag != other.raceFlag) return false;
         return this.base == other.base;
     }
+
+    /**
+     * @return the damage multiplier in the standard combat system. Three or less is an ordinary
+     * slay; more than three makes it a kill, which the power code counts separately
+     */
+    public int getMultiplier() {
+        return multiplier;
+    }
+
+    /**
+     * @return this slay's power rating - the figure {@code ItemObject.slayPower} takes the best of
+     * across an object's brands and slays
+     */
+    public int getPower() {
+        return power;
+    }
 }

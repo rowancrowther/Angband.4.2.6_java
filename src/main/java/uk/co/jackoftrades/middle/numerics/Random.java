@@ -46,8 +46,6 @@ public class Random {
      * the base as an expression rather than a resolved integer.
      */
     private String baseStr;
-
-    private boolean isComplex;
     /**
      * The fixed base (minimum) contribution to the rolled value.
      */
@@ -428,5 +426,26 @@ public class Random {
     @Contract(pure = true)
     public boolean hasBonus() {
         return mBonus != 1;
+    }
+
+    /**
+     * Returns an independent copy of this random value.
+     *
+     * <p>Copies the four resolved terms and passes {@code false} for the negate flag, because
+     * negation is applied when the value is built rather than stored as state - the base and bonus
+     * already carry their signs by the time they reach here.
+     *
+     * <p><b>The unresolved string forms are not carried across.</b> {@link #baseStr} and
+     * {@link #sidesStr} hold the expression text for values whose terms were not numbers in the data
+     * file; a copy made through this method holds only what those expressions resolved to. That is
+     * right for the callers that copy a live object's dice, and would be wrong for anything hoping
+     * to re-resolve the expression afterwards.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new random value with the same resolved terms
+     */
+    public Random copy() {
+        return new Random(this.base, this.mBonus, this.dice, this.sides, false);
     }
 }

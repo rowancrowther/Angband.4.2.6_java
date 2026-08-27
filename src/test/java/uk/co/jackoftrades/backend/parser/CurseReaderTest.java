@@ -164,7 +164,7 @@ class CurseReaderTest {
         assertEquals(-10, annoyance.getModifiers().get(ObjectModifier.OM_SPEED));
         assertEquals(-10, annoyance.getModifiers().get(ObjectModifier.OM_STEALTH));
         assertTrue(annoyance.getElInfo().isEmpty());
-        assertTrue(annoyance.getObjectFlags().contains(ObjectFlag.OF_AGGRAVATE));
+        assertTrue(annoyance.getObjectFlags().has(ObjectFlag.OF_AGGRAVATE));
 
         // 'burning up' values:RES_FIRE[-1] | RES_COLD[1] -> both resistances, no modifiers.
         Curse burning = byName(curses, "burning up");
@@ -223,7 +223,7 @@ class CurseReaderTest {
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
         Curse c = result.items().get(0);
-        assertTrue(c.getObjectFlags().contains(ObjectFlag.OF_AGGRAVATE));
+        assertTrue(c.getObjectFlags().has(ObjectFlag.OF_AGGRAVATE));
         assertTrue(c.getElInfo().isEmpty());
     }
 

@@ -69,4 +69,26 @@ public class Expression {
     public void setDiceString(String diceString) {
         this.diceString = diceString;
     }
+
+    /**
+     * Returns an independent copy of this expression - the port of the copying C does when it
+     * duplicates an effect that carries one.
+     *
+     * <p>A shallow copy is enough, and is deliberate: every field is either a primitive or an
+     * immutable {@link String}, so the copy and its source can be scaled, re-diced or discarded
+     * without either reaching the other. That is not true of the mutable value types elsewhere in
+     * the port, which is why this method does not follow the copy-each-member pattern they use.
+     *
+     * <p>The three constructor arguments carry the expression's identity; {@link #diceString} is
+     * assigned afterwards because it is not a constructor parameter.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new expression equal to this one and sharing no mutable state with it
+     */
+    public Expression copy() {
+        Expression copy = new Expression(this.codeLetter, this.baseType, this.operations);
+        copy.diceString = this.diceString;
+        return copy;
+    }
 }

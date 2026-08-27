@@ -219,6 +219,10 @@ public enum TValue {
      */
     TV_GOLD("gold");
 
+    /**
+     * Shared logger for the lookup helpers below, which warn rather than throw when a data file
+     * names a type that does not exist.
+     */
     private static final Logger logger = LogManager.getLogger(TValue.class);
 
     /**
@@ -431,10 +435,24 @@ public enum TValue {
     }
 
     /**
-     * @return whether this tval is jewelry (a ring or amulet)
+     * Resolves a type's data-file name to its numeric tval - the port of C's {@code tval_find_idx}
+     * ({@code obj-util.c}).
+     *
+     * <p>The number is the enum's ordinal, which is why the constants are declared in C's order and
+     * why {@code TV_NONE} sits first: C's tval 0 means "no type", and a port that reordered the
+     * constants would quietly change every number the data files rely on.
+     *
+     * <p>Delegates the name lookup to {@link #fromName(String)}, so an unknown name is handled
+     * there rather than here.
+     *
+     * <p>Function findIndex commented in full on 260827.
+     *
+     * @param tvalName the type's name as the data files spell it
+     * @return the numeric tval for that name
      */
-    public boolean isJewelry() {
-        return this == TV_RING || this == TV_AMULET;
+    public static int findIndex(String tvalName) {
+        TValue tValue = TValue.fromName(tvalName);
+        return tValue.ordinal();
     }
 
     /**
@@ -672,8 +690,10 @@ public enum TValue {
         return list;
     }
 
-    public static int findIndex(String tvalName) {
-        TValue tValue = TValue.fromName(tvalName);
-        return tValue.ordinal();
+    /**
+     * @return whether this tval is jewelry (a ring or amulet)
+     */
+    public boolean isJewellery() {
+        return this == TV_RING || this == TV_AMULET;
     }
 }

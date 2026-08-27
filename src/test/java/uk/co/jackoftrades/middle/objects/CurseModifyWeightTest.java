@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
 import java.util.List;
@@ -60,8 +61,8 @@ class CurseModifyWeightTest {
      */
     private static Curse curse(int weight, boolean multiply) {
         return new Curse("weighty", List.of(), weight, null,
-                multiply ? List.of(ObjectFlag.OF_MULTIPLY_WEIGHT) : List.of(),
-                Map.of(), Map.of(), 0, 0, 0, List.of(), List.of(), "", "");
+                multiply ? objectFlags(ObjectFlag.OF_MULTIPLY_WEIGHT) : objectFlags(),
+                Map.of(), Map.of(), 0, 0, 0, List.of(), objectFlags(), "", "");
     }
 
     /**
@@ -168,4 +169,19 @@ class CurseModifyWeightTest {
                     () -> curse(-50, true).modifyWeightForCurse(10));
         }
     }
+
+    /**
+     * Builds a {@link Flag} set from a handful of object flags. The curse constructor took a
+     * {@link java.util.List} when these tests were written and now takes a flag set; this keeps the
+     * call sites reading the way they did.
+     *
+     * @param flags the flags to switch on
+     * @return a flag set carrying exactly those flags
+     */
+    private static Flag<ObjectFlag> objectFlags(ObjectFlag... flags) {
+        Flag<ObjectFlag> result = new Flag<>(ObjectFlag.class);
+        if (flags.length > 0) result.set(java.util.List.of(flags));
+        return result;
+    }
+
 }

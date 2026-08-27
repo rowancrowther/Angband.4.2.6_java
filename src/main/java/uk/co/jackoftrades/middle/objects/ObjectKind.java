@@ -19,6 +19,8 @@ package uk.co.jackoftrades.middle.objects;
 
 import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.channel.utils.FlagView;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.magic.MagicBook;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftrades.channel.utils.Flag;
@@ -883,7 +885,152 @@ public class ObjectKind {
         return flags;
     }
 
+    /**
+     * @return the to-armour bonus this kind rolls, shared with this instance - C's
+     * {@code kind->to_a}. Compared against an item's own to-armour by the ignore code, which
+     * is how an item is judged good, bad or average for its type
+     */
     public Random getToA() {
         return toA;
+    }
+
+    /**
+     * Returns an independent copy of this object kind.
+     *
+     * <p>Deep-copied because their contents are mutable: every {@link uk.co.jackoftrades.middle.numerics.Random}
+     * term, the two flag sets and the ignore flags, the modifier map (each value copied in turn),
+     * the element info (each entry copied), the curse map (each {@code CurseData} rebuilt), the
+     * display character, the activation and effect lists, the flavour, and the stack-size and charge
+     * dice.
+     *
+     * <p>Shared deliberately: {@link #base} - the comment at that line says why, one immutable base
+     * serves many kinds - and the members of the brand and slay sets, which are immutable registry
+     * entries every carrier points at. C shares the same pointers.
+     *
+     * <p>Built member by member on a fresh instance rather than through a constructor, because the
+     * kind has more fields than any constructor takes. That is also why the collections are cleared
+     * or added into rather than assigned: the no-argument constructor has already given the copy
+     * empty ones.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new object kind that shares no mutable state with this one, bar the base and the
+     *         brand and slay members
+     */
+    public ObjectKind copy() {
+        ObjectKind copy = new ObjectKind();
+        copy.name = this.name;
+        copy.text = this.text;
+        copy.base = this.base; // Bases are immutable, so one base can have many kinds
+        copy.kindIndex = this.kindIndex;
+        copy.tValue = this.tValue;
+        copy.sValueName = this.sValueName;
+        copy.sVal = this.sVal;
+        copy.pVal = this.pVal.copy();
+        copy.toH = this.toH.copy();
+        copy.toD = this.toD.copy();
+        copy.toA = this.toA.copy();
+        copy.ac = this.ac;
+        copy.baseDamage = this.baseDamage.copy();
+        copy.damageDice = this.damageDice;
+        copy.damageSides = this.damageSides;
+        copy.weight = this.weight;
+        copy.cost = this.cost;
+        Flag<ObjectFlag> oFlag = new Flag<>(ObjectFlag.class);
+        oFlag.copyFrom(this.flags);
+        copy.flags = oFlag;
+        Flag<ObjectKindFlag> kFlag = new Flag<>(ObjectKindFlag.class);
+        kFlag.copyFrom(this.kindFlags);
+        copy.kindFlags = kFlag;
+        Map<ObjectModifier, Random> modMap = new HashMap<>();
+        for (ObjectModifier mod : this.modifiers.keySet()) {
+            Random newRandom = this.modifiers.get(mod).copy();
+            modMap.put(mod, newRandom);
+        }
+        copy.modifiers = modMap;
+        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
+        for (ElementEnum ee : this.elInfo.keySet()) {
+            ElementInfo ei = this.elInfo.get(ee).copy();
+            newElInfo.put(ee, ei);
+        }
+        copy.elInfo = newElInfo;
+        copy.brands.addAll(this.brands);
+        copy.slays.addAll(this.slays);
+        for (Curse c : this.curses.keySet()) {
+            CurseData cd = new CurseData(this.curses.get(c));
+            copy.curses.put(c, cd);
+        }
+        copy.character = new AngbandDisplayCharacter(character.getCharacter(), character.getAttributeColour());
+        copy.alloc_prob = this.alloc_prob;
+        copy.alloc_min = this.alloc_min;
+        copy.alloc_max = this.alloc_max;
+        copy.level = this.level;
+        copy.activations.clear();
+        for (Activation a : this.activations) {
+            copy.activations.add(a.copy());
+        }
+        for (Effect e : this.effect) {
+            copy.effect.add(e.copy());
+        }
+        copy.power = this.power;
+        copy.effectMessage = this.effectMessage;
+        copy.visMessage = this.visMessage;
+        copy.time = this.time.copy();
+        copy.charge = this.charge.copy();
+        copy.genMultProb = this.genMultProb;
+        copy.stackSize = this.stackSize.copy();
+        copy.flavour = this.flavour.copy();
+        copy.noteAware = this.noteAware;
+        copy.noteUnaware = this.noteUnaware;
+        copy.aware = this.aware;
+        copy.tried = this.tried;
+        Flag<IgnoreFlag> iFlag = new Flag<>(IgnoreFlag.class);
+        iFlag.copyFrom(this.ignore);
+        copy.ignore = iFlag;
+        copy.everseen = this.everseen;
+        copy.isSpecialArtifactKind = this.isSpecialArtifactKind;
+
+        return copy;
+    }
+
+    /**
+     * Answers whether the player's class can read this kind as a spell book - the port of C's
+     * {@code obj_can_browse} ({@code obj-util.c}).
+     *
+     * <p>Walks the class's own list of magic books and matches on the sub-type, so the same book is
+     * browsable by a mage and not by a priest. The tval test rules out everything that is not a book
+     * before the sub-type is compared.
+     *
+     * <p>Reaches the live player through {@code GameState}, so it answers for whoever is playing
+     * rather than taking the player as an argument, unlike its C original.
+     *
+     * <p>Function canBrowse commented in full on 260827.
+     *
+     * @return {@code true} if the current player's class can browse this kind
+     */
+    public boolean canBrowse() {
+        for (MagicBook mb : GameState.getPlayer().getPlayerClass().getMagic().getMagicBooks()) {
+            if (this.tValue.isBook() && this.sVal == mb.getSval())
+                return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @return the power this kind contributes to an object built on it - C's {@code kind->power},
+     * which {@code ItemObject.effectsPower} falls back on when the object itself carries no
+     * activation
+     */
+    public int getPower() {
+        return power;
+    }
+
+    /**
+     * @return the base cost of this kind in gold, before any bonus or ego is priced - C's
+     * {@code kind->cost}, and the figure the unaware-object valuation returns directly
+     */
+    public int getCost() {
+        return cost;
     }
 }

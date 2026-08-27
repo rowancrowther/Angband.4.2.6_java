@@ -152,4 +152,5 @@ public class CurseData {
     public int hashCode() {
         return Objects.hashCode(power);
     }
+
 }

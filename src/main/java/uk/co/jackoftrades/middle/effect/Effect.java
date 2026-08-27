@@ -22,6 +22,7 @@ import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -207,8 +208,49 @@ public class Effect {
         return index.getDescription();
     }
 
+    /**
+     * @return the recharge or duration dice attached to this effect, shared with this instance -
+     * C's {@code effect->time}
+     */
     public Random getTime() {
         return time;
+    }
+
+    /**
+     * Returns an independent copy of this effect.
+     *
+     * <p>Deep-copied because their contents are mutable: the expression list (each
+     * {@link Expression} copied in turn), the magnitude dice, the sub-type payload and the time
+     * dice. Everything else is a primitive, an immutable {@link String} or an enum constant and goes
+     * through the constructor unchanged.
+     *
+     * <p>Note that {@code index} is shared rather than copied. It identifies which effect this is,
+     * and two copies of the same effect are meant to point at the same one.
+     *
+     * <p><b>Not chained.</b> C's {@code effect} is a linked list and its copy walks {@code ->next};
+     * the port holds effects in a {@link java.util.List} owned by the object, so a copy here is one
+     * effect and the caller copies the list.
+     *
+     * <p>Function copy commented in full on 260827.
+     *
+     * @return a new effect that shares no mutable state with this one
+     */
+    public Effect copy() {
+        List<Expression> expression = new ArrayList<>();
+
+        for (Expression e : this.expression) {
+            expression.add(e.copy());
+        }
+        Random newDice = this.dice.copy();
+
+        EffectSubTypeWrapper newWrapper = this.value.copy();
+
+        Random newTime = this.time.copy();
+        Effect copy = new Effect(this.index, newDice, this.diceString, this.y, this.x,
+                this.subType, newWrapper, this.radius, this.otherParameter, newTime,
+                expression, this.msg);
+
+        return copy;
     }
 
     //    /**

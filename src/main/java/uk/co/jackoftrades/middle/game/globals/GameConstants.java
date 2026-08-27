@@ -33,8 +33,18 @@ import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.loaders.*;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.objects.Archery;
+import uk.co.jackoftrades.middle.objects.ElementPowers;
+import uk.co.jackoftrades.middle.objects.ElementSet;
+import uk.co.jackoftrades.middle.objects.FlagSet;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagType;
+import uk.co.jackoftrades.middle.objects.enums.ResType;
+import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * The global holder for the game's tunable constants and the startup entry point that loads all
@@ -78,30 +88,78 @@ public class GameConstants {
     private record NameValuePair(@NotNull String name, Integer value) {
     }
 
+    /**
+     * The ceiling on an object's {@code pval} - charges on a wand or staff, and gold in a pile.
+     * C's {@code MAX_PVAL}, and the same figure as a signed 16-bit maximum because that is the width
+     * of the field it caps in the original.
+     */
     public static final int MAX_PVAL = 32_767;
+    /**
+     * How many arguments a queued command may carry - the port of the fixed argument array in C's
+     * {@code struct command}.
+     */
     public static final int MAX_COMMAND_ARGUMENTS = 4;
 
+    /**
+     * Full path to the {@code angband.ini} settings file.
+     *
+     * <p>Duplicated by {@link #iniFile} below, which is built from the same two parts; the pair
+     * should be reduced to one.
+     */
     public static final String ANGBAND_INI = AngbandDirs.BASE_DIR + "angband.ini";
 
+    /**
+     * Name of the platform-specific back end, C's {@code ANGBAND_SYS}, which uses it to pick
+     * system-specific data files. The placeholder value stands in until the port has a real one to
+     * name.
+     */
     public static final String ANGBAND_SYS = "xxx";
 
+    /**
+     * Full path to the {@code angband.ini} settings file. Identical to {@link #ANGBAND_INI}; see the
+     * note there.
+     */
     public static final String iniFile = AngbandDirs.BASE_DIR + "angband.ini";
-
+    /**
+     * Number of cave profiles loaded from {@code dungeon_profile.txt} - the bound on the level
+     * builders. See the note above on why these counts may not be needed.
+     */
+    private static int caveProfileMax;
+    /**
+     * The scalar tunables read from {@code constants.txt}, which every {@code get*} accessor below
+     * reads through.
+     *
+     * <p>Left unset when the file fails to parse - that is a soft failure, logged and skipped - so
+     * the accessors have to cope with its absence rather than assuming a load succeeded.
+     */
+    private static GameConstantsData data;
+    /**
+     * True once a character exists and the turn loop is running, rather than the game sitting in its
+     * start-up screens.
+     */
     public boolean gameInProgress = false;
+    /**
+     * True once the data files have been loaded and the registries filled.
+     */
     public boolean initialised = false;
+    /**
+     * True while the game is running itself as a screensaver - a mode C's Windows front end offers.
+     */
     public boolean screensaverActive = false;
-
-    public boolean canUseGraphics = false;
-    public boolean changeTileSize = false;
 
     /*
      * Array bounds from C Not sure that these are still needed as most of the 'things' are stored in ArrayLists. Need to set
      * them on the load function,
      */
     private static int storeMax;
-    private static int caveProfileMax;
-
-    private static GameConstantsData data;
+    /**
+     * True when the front end can display graphical tiles rather than characters.
+     */
+    public boolean canUseGraphics = false;
+    /**
+     * Set when the front end has been asked to change its tile size, and cleared once it has.
+     */
+    public boolean changeTileSize = false;
 
     /**
      * Load the scalar tunables from {@code constants.txt} into {@link #data}, which the {@code get*}
@@ -235,8 +293,72 @@ public class GameConstants {
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
+
+        // Put together the various table constants
+
+        // Archery
+        ObjectRegistry.archery = new HashMap<>();
+        Archery arch = new Archery(TValue.TV_SHOT, 10, 9, 4);
+        ObjectRegistry.archery.put(TValue.TV_SHOT, arch);
+        arch = new Archery(TValue.TV_ARROW, 12, 9, 5);
+        ObjectRegistry.archery.put(TValue.TV_ARROW, arch);
+        arch = new Archery(TValue.TV_BOLT, 14, 9, 7);
+        ObjectRegistry.archery.put(TValue.TV_BOLT, arch);
+
+        ObjectRegistry.flagSets = new HashMap<>();
+        FlagSet flagSet = new FlagSet(ObjectFlagType.OFT_SUST, 1, 10, 5, 0, "sustains");
+        ObjectRegistry.flagSets.put(ObjectFlagType.OFT_SUST, flagSet);
+        flagSet = new FlagSet(ObjectFlagType.OFT_PROT, 3, 15, 4, 0, "protections");
+        ObjectRegistry.flagSets.put(ObjectFlagType.OFT_PROT, flagSet);
+        flagSet = new FlagSet(ObjectFlagType.OFT_MISC, 1, 25, 8, 0, "misc abilities");
+        ObjectRegistry.flagSets.put(ObjectFlagType.OFT_MISC, flagSet);
+
+        ObjectRegistry.elementSets = new ArrayList<>();
+        ElementSet elementSet = new ElementSet(ResType.T_LRES, 3, 6, ObjectRegistry.INHIBIT_POWER, 4, 0, "immunities");
+        ObjectRegistry.elementSets.add(elementSet);
+        elementSet = new ElementSet(ResType.T_LRES, 1, 1, 10, 4, 0, "low resists");
+        ObjectRegistry.elementSets.add(elementSet);
+        elementSet = new ElementSet(ResType.T_HRES, 1, 2, 10, 9, 0, "high resists");
+        ObjectRegistry.elementSets.add(elementSet);
+
+        ObjectRegistry.elementPowers = new ArrayList<>();
+        ElementPowers elementPower = new ElementPowers(ElementEnum.ELEM_ACID, "acid", ResType.T_LRES, 3, -6, 5, 38);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_ELEC, "electricity", ResType.T_LRES, 1, -6, 6, 35);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_FIRE, "fire", ResType.T_LRES, 3, -6, 6, 40);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_COLD, "cold", ResType.T_LRES, 1, -6, 6, 37);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_POIS, "poison", ResType.T_HRES, 0, 0, 28, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_LIGHT, "light", ResType.T_HRES, 0, 0, 6, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_DARK, "dark", ResType.T_HRES, 0, 0, 16, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_SOUND, "sound", ResType.T_HRES, 0, 0, 14, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_SHARD, "shards", ResType.T_HRES, 0, 0, 8, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_NEXUS, "nexus", ResType.T_HRES, 0, 0, 15, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_NETHER, "nether", ResType.T_HRES, 0, 0, 20, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_CHAOS, "chaos", ResType.T_HRES, 0, 0, 20, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
+        elementPower = new ElementPowers(ElementEnum.ELEM_DISEN, "disenchantment", ResType.T_HRES, 0, 0, 20, 0);
+        ObjectRegistry.elementPowers.add(elementPower);
     }
 
+    /**
+     * Loads the level-generation templates, announcing progress as it goes.
+     *
+     * <p>Named for the wider job it will do: at present it loads the dungeon profiles only, which is
+     * one of the {@code run_parser} calls C makes from {@code init_arrays}
+     * ({@code generate.c:644}). The room and vault templates are loaded elsewhere.
+     *
+     * <p>Function runTemplateParser commented in full on 260827.
+     */
     public static void runTemplateParser() {
         // Signal EVENT_ENTER_INIT
         EventsHandler bus = GameEngine.getEventsBusHandler();

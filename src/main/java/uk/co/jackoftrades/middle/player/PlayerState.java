@@ -673,22 +673,59 @@ public class PlayerState {
         return elInfo.get(element).getResLevel();
     }
 
+    /**
+     * Returns one stat's maximal modified value - the port of reading C's
+     * {@code state.stat_top[stat]}, the stat as it would be with nothing draining it.
+     *
+     * <p>Unboxes the map's value directly, so it throws for a stat the state has no entry for - the
+     * same shape as {@link #getResLevel(ElementEnum)} above.
+     *
+     * <p>Function getStatTop commented in full on 260827.
+     *
+     * @param stat the stat to read
+     * @return that stat's maximal modified value
+     * @throws NullPointerException if the state has no entry for that stat
+     */
     public int getStatTop(Stats stat) {
         return statTop.get(stat);
     }
 
+    /**
+     * Returns one stat's current modified value - the port of reading C's
+     * {@code state.stat_use[stat]}, the stat as it stands after any drain.
+     *
+     * <p>Unboxes the map's value directly, so it throws for a stat the state has no entry for.
+     *
+     * <p>Function getStatUse commented in full on 260827.
+     *
+     * @param stat the stat to read
+     * @return that stat's current modified value
+     * @throws NullPointerException if the state has no entry for that stat
+     */
     public int getStatUse(Stats stat) {
         return statUse.get(stat);
     }
 
+    /**
+     * @return the bonus to armour class from equipment and effects - C's {@code state.to_a}, and
+     * separate from {@link #getAc()}, which is the base
+     */
     public int getToAc() {
         return this.toA;
     }
 
+    /**
+     * @return {@code true} when the wielded weapon is blessed, or blunt enough not to offend - C's
+     *         {@code state.bless_wield}, which decides whether a priest suffers for their weapon
+     */
     public boolean isBlessWield() {
         return blessWield;
     }
 
+    /**
+     * @return {@code true} when the armour worn is heavy enough to drain mana - C's
+     *         {@code state.cumber_armor}
+     */
     public boolean isCumberArmour() {
         return cumberArmour;
     }
@@ -769,5 +806,13 @@ public class PlayerState {
         result.cumberArmour = this.cumberArmour;
 
         return result;
+    }
+
+    /**
+     * @return the variety of ammunition the wielded launcher fires, or {@code null} with no launcher
+     *         wielded - C's {@code state.ammo_tval}
+     */
+    public TValue getAmmoTval() {
+        return ammoTVal;
     }
 }

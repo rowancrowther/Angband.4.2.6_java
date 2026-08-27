@@ -20,6 +20,8 @@ package uk.co.jackoftrades.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.channel.utils.Flag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -61,8 +63,8 @@ class CurseDataTest {
      * @return a curse with every other field empty
      */
     private static Curse curse(String name) {
-        return new Curse(name, java.util.List.of(), 0, null, java.util.List.of(), Map.of(),
-                Map.of(), 0, 0, 0, java.util.List.of(), java.util.List.of(), "", "");
+        return new Curse(name, java.util.List.of(), 0, null, new Flag<>(ObjectFlag.class), Map.of(),
+                Map.of(), 0, 0, 0, java.util.List.of(), new Flag<>(ObjectFlag.class), "", "");
     }
 
     /**

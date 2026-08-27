@@ -22,7 +22,9 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.*;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.objects.*;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjPropertyType;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 
 import java.util.*;
@@ -47,7 +49,164 @@ import java.util.*;
  * @author Rowan Crowther
  */
 public class ObjectRegistry {
+    /**
+     * Assumed off-weapon damage, used to boost an object that grants extra blows without being a
+     * weapon itself. C's {@code NONWEAP_DAMAGE}, "fudge to boost extra blows".
+     */
+    public static final int NONWEAP_DAMAGE = 15;
+
+    /*
+     * The object power constants - the port of C's obj-power.h. Four of them (damage, to-hit, base
+     * AC and to-AC) are doubled, so that the halves the algorithm actually wants survive integer
+     * arithmetic; every use divides by two afterwards. C's header says the same in its comments,
+     * which are reproduced on each constant below.
+     */
+    /**
+     * Assumed damage for off-weapon combat flags - what a non-weapon carrying brands, slays or
+     * combat modifiers is treated as hitting for. C's {@code WEAP_DAMAGE}.
+     */
+    public static final int WEAP_DAMAGE = 12;
+    /**
+     * Flat power every piece of jewellery starts from. C's {@code BASE_JEWELRY_POWER} (spelled the
+     * American way there).
+     */
+    public static final int BASE_JEWELERY_POWER = 4;
+    /**
+     * Flat power every armour item starts from, for halving acid damage. C's
+     * {@code BASE_ARMOUR_POWER}.
+     */
+    public static final int BASE_ARMOUR_POWER = 1;
+    /**
+     * Power per point of damage, doubled - the algorithm wants 2.5. C's {@code DAMAGE_POWER}.
+     */
+    public static final int DAMAGE_POWER = 5;
+    /**
+     * Power per point of to-hit, doubled - the algorithm wants 1.5. C's {@code TO_HIT_POWER}.
+     */
+    public static final int TO_HIT_POWER = 3;
+    /**
+     * Power per point of base armour class, doubled - the algorithm wants 1. C's
+     * {@code BASE_AC_POWER}.
+     */
+    public static final int BASE_AC_POWER = 2;
+    /**
+     * Power per point of to-armour, doubled - the algorithm wants 1. C's {@code TO_AC_POWER}.
+     */
+    public static final int TO_AC_POWER = 2;
+    /**
+     * The number of blows a melee weapon is assumed to land per turn. Launchers are rescaled by
+     * this so that the two can be compared. C's {@code MAX_BLOWS}.
+     */
+    public static final int MAX_BLOWS = 5;
+    /**
+     * Numerator of the weight adjustment for an object with no base armour class. One, so the
+     * multiply is a no-op; it exists to mirror C's pairing of a numerator with each denominator.
+     */
+    public static final int WGT_POWER_NUM_NOBASEAC = 1;
+    /**
+     * Denominator of the weight adjustment for an object with no base armour class - five pounds
+     * lighter than standard adds one point of power, and heavier subtracts. Easily confused with
+     * {@link #WGT_POWER_NUM_NOBASEAC} beside it, which is the wrong one to divide by.
+     */
+    public static final int WGT_POWER_DEN_NOBASEAC = 50;
+    /**
+     * Numerator of the weight adjustment for a {@code THROWING} object, where heavier is better.
+     * C explains the figure: the throwing multiplier is {@code 2 + weight / 12} and shooting rates
+     * at 30, so throwing - typically less useful - is priced at half that.
+     */
+    public static final int WGT_POWER_NUM_THROW = 15;
+    /**
+     * Denominator of the weight adjustment for a {@code THROWING} object. C's
+     * {@code WGT_POWER_DEN_THROW}.
+     */
+    public static final int WGT_POWER_DEN_THROW = 12;
+    /**
+     * The refusal value. Added rather than a price: an object that reaches it is not meant to
+     * exist, and the power calculation returns early once it is exceeded.
+     */
+    public static final int INHIBIT_POWER = 20000;
+    /**
+     * Extra blows at or above which an object is refused - so the most it may carry is one less.
+     */
+    public static final int INHIBIT_BLOWS = 3;
+    /**
+     * Extra shooting might at or above which an object is refused.
+     */
+    public static final int INHIBIT_MIGHT = 4;
+    /**
+     * Extra shots at or above which an object is refused.
+     */
+    public static final int INHIBIT_SHOTS = 21;
+    /**
+     * To-armour above which each further point is priced again, on top of the ordinary rate.
+     */
+    public static final int HIGH_TO_AC = 26;
+    /**
+     * To-armour above which each further point is priced twice again.
+     */
+    public static final int VERYHIGH_TO_AC = 36;
+    /**
+     * To-armour at or above which an object is refused.
+     */
+    public static final int INHIBIT_AC = 56;
+    /**
+     * To-hit above which the randart generator treats the bonus as high. Not read by the power
+     * calculation itself.
+     */
+    public static final int HIGH_TO_HIT = 16;
+    /**
+     * To-hit above which the randart generator treats the bonus as very high.
+     */
+    public static final int VERYHIGH_TO_HIT = 26;
+    /**
+     * To-damage above which the randart generator treats the bonus as high.
+     */
+    public static final int HIGH_TO_DAM = 16;
+    /**
+     * To-damage above which the randart generator treats the bonus as very high.
+     */
+    public static final int VERYHIGH_TO_DAM = 26;
+    /**
+     * Divisor that brings a single missile down to a fair share of a weapon's power - a stack of
+     * this many is reckoned equal to a weapon of the same damage output. C notes it is used for
+     * torches too.
+     */
+    public static final int AMMO_RESCALER = 20;
+    /**
+     * Shared logger for the loaders and lookups below, which report a data problem rather than
+     * failing silently.
+     */
     private static final Logger logger = LogManager.getLogger();
+    /**
+     * The launcher-and-ammo pricing assumptions, keyed by ammunition type - the port of C's
+     * {@code archery[]} table ({@code obj-power.c:47}). See {@link Archery} for what the rows mean
+     * and why the port keys them where C indexes.
+     */
+    public static Map<TValue, Archery> archery;
+
+    /**
+     * The flag families that are worth more held together, keyed by family - the port of C's
+     * {@code flag_sets[]} table ({@code obj-power.c:71}).
+     *
+     * <p>Shared mutable state: each row carries a count that the power calculation zeroes and
+     * increments in place, exactly as C does on its static table. Two power calculations must
+     * therefore not interleave.
+     */
+    public static Map<ObjectFlagType, FlagSet> flagSets;
+
+    /**
+     * The elemental protection combinations that are worth more held together - the port of C's
+     * {@code element_sets[]} table ({@code obj-power.c:93}). Counted in place like
+     * {@link #flagSets}, and with the same caution.
+     */
+    public static List<ElementSet> elementSets;
+
+    /**
+     * What each element is worth to an object that ignores, resists, is immune to or is vulnerable
+     * to it - the port of C's {@code el_powers[]} table ({@code obj-power.c:112}). Read only; unlike
+     * the two set tables above, nothing writes to these rows.
+     */
+    public static List<ElementPowers> elementPowers;
 
     /**
      * Number of ordinary object kinds loaded from {@code object.txt} — the artifact-synthesis ceiling.
@@ -164,6 +323,18 @@ public class ObjectRegistry {
      * Sentinel kind representing an unidentified item.
      */
     public static final ObjectKind unknownItemKind = new ObjectKind();
+
+    /**
+     * Boost ratings for combinations of ability bonuses, indexed by the combined bonus divided by
+     * ten - the port of C's {@code ability_power[]} ({@code obj-power.c:132}).
+     *
+     * <p>Rises faster than linearly, so an object with several large modifiers is worth more than
+     * the sum of them; the first seven entries are zero, which is what makes a small total worth no
+     * bonus at all. C's comment notes the table runs to +24 and that anything higher is inhibited.
+     */
+    public static int[] abilityPower = new int[]{0, 0, 0, 0, 0, 0, 0, 2, 4, 6, 8,
+            12, 16, 20, 24, 30, 36, 42, 48, 56, 64,
+            74, 84, 96, 110};
 
     /**
      * Replaces the loaded chest traps with the ones just read; set once by {@code ObjectDataLoader}.

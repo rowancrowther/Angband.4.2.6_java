@@ -50,6 +50,28 @@ public class MonsterRace {
     public static final Logger logger = LogManager.getLogger();
 
     /**
+     * Returns an independent copy of this race.
+     *
+     * <p><b>Stub:</b> not yet implemented, awaiting the monster subsystem in chapter 6; returns
+     * {@code null} for every input.
+     *
+     * <p>Callers should be sure they want a copy at all before this is filled in. C never copies a
+     * race: {@code monster_race} is a shared template that every monster and every dropped object
+     * points at, and identity is what tells two references apart - {@code object_origin_combine}
+     * compares {@code origin_race} pointers directly. Any implementation that returns a new instance
+     * makes two objects from the same monster compare as coming from different ones, so sharing the
+     * reference is usually what a caller wants instead.
+     *
+     * <p>Function copy stubbed before 260827, commented in full on 260827.
+     *
+     * @return {@code null} until implemented
+     */
+    public MonsterRace copy() {
+        // STUB class: TODO Implement in chapter 6
+        return null;
+    }
+
+    /**
      * The three message variants shown when a monster casts a spell, chosen by what the player can
      * perceive: {@code visible} when the caster is seen, {@code invisible} when only the effect is
      * noticed, and {@code miss} when the spell fails to connect. Groups the C original's parallel

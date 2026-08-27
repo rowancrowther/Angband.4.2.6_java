@@ -147,23 +147,23 @@ class PlayerRuneLearningTest {
                 17, 3, 15);
         evil5 = new Slay("EVIL_5", "evil", null, "smites", "smites", MonsterRaceFlag.RF_EVIL,
                 17, 3, 15);
-        siren = new Curse("siren", List.of(), 0, null, List.of(), Map.of(), Map.of(), 0, 0, 0,
-                List.of(), List.of(), "wakes monsters", "The curse fires.");
+        siren = new Curse("siren", List.of(), 0, null, objectFlags(), Map.of(), Map.of(), 0, 0, 0,
+                List.of(), objectFlags(), "wakes monsters", "The curse fires.");
 
         // Two curses that change the armour class, taken from curse.txt, and one (siren) that does
         // not. The signs are opposite on purpose: the rune names the enchantment, not its direction,
         // so a curse that makes armour worse teaches it exactly as one that makes it better does.
-        vulnerability = new Curse("vulnerability", List.of(), 0, null, List.of(), Map.of(), Map.of(),
-                0, 0, -50, List.of(), List.of(), "weakens armour", "The curse fires.");
-        enveloping = new Curse("enveloping", List.of(), 0, null, List.of(), Map.of(), Map.of(),
-                -5, -5, 20, List.of(), List.of(), "restricts movement", "The curse fires.");
+        vulnerability = new Curse("vulnerability", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
+                0, 0, -50, List.of(), objectFlags(), "weakens armour", "The curse fires.");
+        enveloping = new Curse("enveloping", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
+                -5, -5, 20, List.of(), objectFlags(), "restricts movement", "The curse fires.");
 
         // A curse carrying object flags rather than combat figures, for the flag half of the
         // family. Two flags, so a test can name one of them and watch the intersection discard the
         // other.
         cowardice = new Curse("cowardice", List.of(), 0, null,
-                List.of(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP), Map.of(), Map.of(),
-                0, 0, 0, List.of(), List.of(), "unnerves the wearer", "The curse fires.");
+                objectFlags(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP), Map.of(), Map.of(),
+                0, 0, 0, List.of(), objectFlags(), "unnerves the wearer", "The curse fires.");
 
         strengthProperty = new ObjectProperty(null, null, null, null, 0, 0, null,
                 "strength", null, null, null, null, null);
@@ -739,215 +739,17 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * The wrappers, which are the intended way in: each resolves its property to the rune for the
-     * property's <em>group</em> before learning it.
+     * Builds a {@link Flag} set from a handful of object flags. The curse constructor took a
+     * {@link java.util.List} when these tests were written and now takes a flag set; this keeps the
+     * call sites reading the way they did.
      *
-     * @author Rowan Crowther
+     * @param flags the flags to switch on
+     * @return a flag set carrying exactly those flags
      */
-    @Nested
-    @DisplayName("the learn wrappers")
-    class Wrappers {
-
-        @Test
-        @DisplayName("learnBrand learns the brand and announces it")
-        void learnBrand() {
-            player.learnBrand(weakAcid);
-
-            assertTrue(player.knowsBrand(weakAcid));
-            assertEquals(1, bus.messages.size());
-        }
-
-        /**
-         * The reason the wrapper cannot be skipped. {@link Rune#runeIndex(Brand)} matches by name,
-         * so a strong acid brand finds the acid rune even though the rune holds the weak one; a
-         * caller that built its own rune from the brand it had would learn only that brand.
-         */
-        @Test
-        @DisplayName("learnBrand resolves a strength that no rune holds")
-        void learnBrandResolvesTheGroup() {
-            player.learnBrand(strongAcid);
-
-            assertTrue(player.knowsBrand(strongAcid));
-            assertTrue(player.knowsBrand(weakAcid));
-        }
-
-        @Test
-        @DisplayName("learnBrand does nothing the second time")
-        void learnBrandIsIdempotent() {
-            player.learnBrand(weakAcid);
-            player.learnBrand(weakAcid);
-
-            assertEquals(1, bus.messages.size());
-        }
-
-        @Test
-        @DisplayName("knowsBrand reports the knowledge, not the item")
-        void knowsBrand() {
-            assertFalse(player.knowsBrand(weakAcid));
-
-            player.learnBrand(weakAcid);
-
-            assertTrue(player.knowsBrand(weakAcid));
-        }
-
-        @Test
-        @DisplayName("learnCurse learns the curse and announces it")
-        void learnCurse() {
-            player.learnCurse(siren);
-
-            assertTrue(knowledge.curseIsKnown(siren));
-            assertEquals(1, bus.messages.size());
-            assertEquals("You have learned the rune of siren curse.", bus.messages.get(0).message());
-        }
-
-        /**
-         * C resolves the curse by name rather than by identity, so one rebuilt from a savefile or a
-         * parser is still recognised. An identity match would pass every other test here and fail
-         * only in the game.
-         */
-        @Test
-        @DisplayName("learnCurse matches by name, not identity")
-        void learnCurseMatchesByName() {
-            Curse rebuilt = new Curse("siren", List.of(), 0, null, List.of(), Map.of(), Map.of(),
-                    0, 0, 0, List.of(), List.of(), "wakes monsters", "The curse fires.");
-
-            player.learnCurse(rebuilt);
-
-            assertTrue(knowledge.curseIsKnown(siren));
-        }
-
-        /**
-         * A curse with no rune reaches {@link Player#learnRune} as null, where C's guard is
-         * {@code index >= 0}. Nothing is learned and nothing is said.
-         */
-        @Test
-        @DisplayName("learnCurse survives a curse with no rune")
-        void learnCurseWithoutARune() {
-            Curse unknown = new Curse("nowhere", List.of(), 0, null, List.of(), Map.of(), Map.of(),
-                    0, 0, 0, List.of(), List.of(), "does nothing", "Nothing happens.");
-
-            player.learnCurse(unknown);
-
-            assertTrue(bus.messages.isEmpty());
-        }
-
-        @Test
-        @DisplayName("learnSlay learns the slay and announces it")
-        void learnSlay() {
-            player.learnSlay(evil3);
-
-            assertTrue(player.knowsSlay(evil3));
-            assertEquals(1, bus.messages.size());
-            assertEquals("You have learned the rune of slay evil.", bus.messages.get(0).message());
-        }
-
-        /**
-         * The slay counterpart of {@code learnBrandResolvesTheGroup}, and the reason
-         * {@link Rune#runeIndex(Slay)} cannot match on a name: the rune holds {@code evil3}, so a
-         * player who has just been bitten by {@code evil5} finds it only through
-         * {@link Slay#sameMonsterSlain}.
-         */
-        @Test
-        @DisplayName("learnSlay resolves a strength that no rune holds")
-        void learnSlayResolvesTheGroup() {
-            player.learnSlay(evil5);
-
-            assertTrue(player.knowsSlay(evil5));
-            assertTrue(player.knowsSlay(evil3));
-        }
-
-        @Test
-        @DisplayName("learnSlay does nothing the second time")
-        void learnSlayIsIdempotent() {
-            player.learnSlay(evil3);
-            player.learnSlay(evil3);
-
-            assertEquals(1, bus.messages.size());
-        }
-
-        @Test
-        @DisplayName("knowsSlay reports the knowledge, not the weapon")
-        void knowsSlay() {
-            assertFalse(player.knowsSlay(evil3));
-
-            player.learnSlay(evil3);
-
-            assertTrue(player.knowsSlay(evil3));
-        }
-
-        @Test
-        @DisplayName("knowsCurse reports the knowledge, not the item")
-        void knowsCurse() {
-            assertFalse(player.knowsCurse(siren));
-
-            player.learnCurse(siren);
-
-            assertTrue(player.knowsCurse(siren));
-        }
-
-        /**
-         * Curses are never grouped, so unlike a brand or a slay there is no second curse to reveal.
-         */
-        @Test
-        @DisplayName("knowsCurse does not answer for a curse never learned")
-        void knowsCurseIsNotShared() {
-            Curse other = new Curse("teleportation", List.of(), 0, null, List.of(), Map.of(),
-                    Map.of(), 0, 0, 0, List.of(), List.of(), "teleports", "The curse fires.");
-
-            player.learnCurse(siren);
-
-            assertFalse(player.knowsCurse(other));
-        }
-
-        @Test
-        @DisplayName("learnFlag learns the flag and announces it")
-        void learnFlag() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
-
-            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
-            assertEquals(1, bus.messages.size());
-            assertEquals("You have learned the rune of sustain strength.",
-                    bus.messages.get(0).message());
-        }
-
-        /**
-         * C's {@code player_learn_flag} is the one wrapper with no already-known guard, relying on
-         * {@code of_on} to report whether anything changed. The guard this port adds must not
-         * change that answer — a flag learned twice is still announced once, either way.
-         */
-        @Test
-        @DisplayName("learnFlag does nothing the second time")
-        void learnFlagIsIdempotent() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
-
-            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
-            assertEquals(1, bus.messages.size());
-        }
-
-        /**
-         * Not every flag is a learnable property — {@code init_rune} skips the placeholder
-         * subtypes, the ones describing the object rather than the player, and the curse-only ones.
-         * Asking about one of those is expected rather than exceptional, since the learning code
-         * walks whole flag sets, so it answers with silence instead of a throw. C hands
-         * {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
-         */
-        @Test
-        @DisplayName("learnFlag survives a flag with no rune")
-        void learnFlagWithoutARune() {
-            player.learnFlag(ObjectFlag.OF_FEATHER);
-
-            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_FEATHER));
-            assertTrue(bus.messages.isEmpty());
-        }
-
-        @Test
-        @DisplayName("learnFlag touches only the flag it was given")
-        void learnFlagIsNarrow() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
-
-            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_SUST_INT));
-        }
+    private static Flag<ObjectFlag> objectFlags(ObjectFlag... flags) {
+        Flag<ObjectFlag> result = new Flag<>(ObjectFlag.class);
+        if (flags.length > 0) result.set(java.util.List.of(flags));
+        return result;
     }
 
     /**
@@ -2209,222 +2011,214 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link Player#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
-     * family, and the only one that takes a set.
-     *
-     * <p>Its siblings each pursue one fixed property, so the caller has nothing to say. Flags are a
-     * population, and the caller names which of them the occasion could plausibly have revealed;
-     * the method intersects that set with the curse's own flags and works on what survives. Most of
-     * what is worth testing here is about that intersection and about which of the two runes gets
-     * learned when.
-     *
-     * <p>Class CursesFindFlags coded on 260815, commented in full on 260815, call sites turned round
-     * on 260815 when the method moved to Player.
+     * The wrappers, which are the intended way in: each resolves its property to the rune for the
+     * property's <em>group</em> before learning it.
      *
      * @author Rowan Crowther
      */
     @Nested
-    @DisplayName("cursesFindFlags")
-    class CursesFindFlags {
+    @DisplayName("the learn wrappers")
+    class Wrappers {
 
-        /**
-         * A set naming the flags a test is asking about, standing in for C's {@code test_flags}.
-         */
-        private Flag<ObjectFlag> testing(ObjectFlag... flags) {
-            Flag<ObjectFlag> set = new Flag<>(ObjectFlag.class);
-            for (ObjectFlag f : flags) {
-                set.on(f);
-            }
-            return set;
+        @Test
+        @DisplayName("learnBrand learns the brand and announces it")
+        void learnBrand() {
+            player.learnBrand(weakAcid);
+
+            assertTrue(player.knowsBrand(weakAcid));
+            assertEquals(1, bus.messages.size());
         }
 
         /**
-         * Two runes, not one: the flag that has just shown itself, and the curse that was carrying
-         * it.
+         * The reason the wrapper cannot be skipped. {@link Rune#runeIndex(Brand)} matches by name,
+         * so a strong acid brand finds the acid rune even though the rune holds the weak one; a
+         * caller that built its own rune from the brand it had would learn only that brand.
          */
         @Test
-        @DisplayName("a curse carrying a tested flag teaches the flag and the curse")
-        void teachesBothRunes() throws Exception {
-            ItemObject item = itemCursed(cursed(cowardice, 20));
+        @DisplayName("learnBrand resolves a strength that no rune holds")
+        void learnBrandResolvesTheGroup() {
+            player.learnBrand(strongAcid);
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            assertTrue(player.knowsBrand(strongAcid));
+            assertTrue(player.knowsBrand(weakAcid));
+        }
 
-            assertAll(
-                    () -> assertTrue(learned),
-                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
-                    () -> assertTrue(knowledge.curseIsKnown(cowardice)));
+        @Test
+        @DisplayName("learnBrand does nothing the second time")
+        void learnBrandIsIdempotent() {
+            player.learnBrand(weakAcid);
+            player.learnBrand(weakAcid);
+
+            assertEquals(1, bus.messages.size());
+        }
+
+        @Test
+        @DisplayName("knowsBrand reports the knowledge, not the item")
+        void knowsBrand() {
+            assertFalse(player.knowsBrand(weakAcid));
+
+            player.learnBrand(weakAcid);
+
+            assertTrue(player.knowsBrand(weakAcid));
+        }
+
+        @Test
+        @DisplayName("learnCurse learns the curse and announces it")
+        void learnCurse() {
+            player.learnCurse(siren);
+
+            assertTrue(knowledge.curseIsKnown(siren));
+            assertEquals(1, bus.messages.size());
+            assertEquals("You have learned the rune of siren curse.", bus.messages.get(0).message());
         }
 
         /**
-         * The intersection, seen from the discarded side. {@code cowardice} carries
-         * {@code OF_IMPAIR_HP} as well, but this occasion was not asking about it, so it stays
-         * unknown — a curse does not give away everything it holds merely because it gave away one
-         * thing.
+         * C resolves the curse by name rather than by identity, so one rebuilt from a savefile or a
+         * parser is still recognised. An identity match would pass every other test here and fail
+         * only in the game.
          */
         @Test
-        @DisplayName("only the flags asked about are learned")
-        void theIntersectionIsRespected() throws Exception {
-            ItemObject item = itemCursed(cursed(cowardice, 20));
+        @DisplayName("learnCurse matches by name, not identity")
+        void learnCurseMatchesByName() {
+            Curse rebuilt = new Curse("siren", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
+                    0, 0, 0, List.of(), objectFlags(), "wakes monsters", "The curse fires.");
 
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            player.learnCurse(rebuilt);
 
-            assertAll(
-                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
-                    () -> assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)));
+            assertTrue(knowledge.curseIsKnown(siren));
         }
 
         /**
-         * The intersection runs on a copy, and this is the case that proves it. {@link Flag#inter}
-         * is {@code retainAll}, and the flags it is called on belong to the {@link Curse}
-         * definition parsed once and shared by every item carrying that curse. Intersecting them in
-         * place would delete {@code OF_IMPAIR_HP} from the definition for the rest of the session,
-         * so the second item — a different item, the same curse — would find nothing.
+         * A curse with no rune reaches {@link Player#learnRune} as null, where C's guard is
+         * {@code index >= 0}. Nothing is learned and nothing is said.
          */
         @Test
-        @DisplayName("the curse definition survives being intersected against")
-        void theCurseDefinitionIsNotMutated() throws Exception {
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
-                    testing(ObjectFlag.OF_AFRAID));
+        @DisplayName("learnCurse survives a curse with no rune")
+        void learnCurseWithoutARune() {
+            Curse unknown = new Curse("nowhere", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
+                    0, 0, 0, List.of(), objectFlags(), "does nothing", "Nothing happens.");
 
-            assertEquals(List.of(ObjectFlag.OF_AFRAID, ObjectFlag.OF_IMPAIR_HP),
-                    cowardice.getObjectFlags());
+            player.learnCurse(unknown);
 
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
-                    testing(ObjectFlag.OF_IMPAIR_HP));
+            assertTrue(bus.messages.isEmpty());
+        }
 
-            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP));
+        @Test
+        @DisplayName("learnSlay learns the slay and announces it")
+        void learnSlay() {
+            player.learnSlay(evil3);
+
+            assertTrue(player.knowsSlay(evil3));
+            assertEquals(1, bus.messages.size());
+            assertEquals("You have learned the rune of slay evil.", bus.messages.get(0).message());
         }
 
         /**
-         * The caller's set is not mutated either — {@code equip_learn_flag} builds one and hands it
-         * to every slot in turn, so a method that consumed it would work on the first item and on
-         * no other.
+         * The slay counterpart of {@code learnBrandResolvesTheGroup}, and the reason
+         * {@link Rune#runeIndex(Slay)} cannot match on a name: the rune holds {@code evil3}, so a
+         * player who has just been bitten by {@code evil5} finds it only through
+         * {@link Slay#sameMonsterSlain}.
          */
         @Test
-        @DisplayName("the caller's test set survives the call")
-        void theTestSetIsNotMutated() throws Exception {
-            Flag<ObjectFlag> testFlags = testing(ObjectFlag.OF_AFRAID, ObjectFlag.OF_SUST_STR);
+        @DisplayName("learnSlay resolves a strength that no rune holds")
+        void learnSlayResolvesTheGroup() {
+            player.learnSlay(evil5);
 
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)), testFlags);
+            assertTrue(player.knowsSlay(evil5));
+            assertTrue(player.knowsSlay(evil3));
+        }
 
-            assertTrue(testFlags.has(ObjectFlag.OF_SUST_STR));
+        @Test
+        @DisplayName("learnSlay does nothing the second time")
+        void learnSlayIsIdempotent() {
+            player.learnSlay(evil3);
+            player.learnSlay(evil3);
+
+            assertEquals(1, bus.messages.size());
+        }
+
+        @Test
+        @DisplayName("knowsSlay reports the knowledge, not the weapon")
+        void knowsSlay() {
+            assertFalse(player.knowsSlay(evil3));
+
+            player.learnSlay(evil3);
+
+            assertTrue(player.knowsSlay(evil3));
+        }
+
+        @Test
+        @DisplayName("knowsCurse reports the knowledge, not the item")
+        void knowsCurse() {
+            assertFalse(player.knowsCurse(siren));
+
+            player.learnCurse(siren);
+
+            assertTrue(player.knowsCurse(siren));
         }
 
         /**
-         * The curse's rune is learned inside the flag loop, not beside it. A curse whose flags miss
-         * the test set entirely teaches nothing at all — not even that it exists — because the
-         * player has had no evidence of it.
+         * Curses are never grouped, so unlike a brand or a slay there is no second curse to reveal.
          */
         @Test
-        @DisplayName("a curse whose flags miss the test set teaches nothing, not even itself")
-        void aMissTeachesNothingAtAll() throws Exception {
-            ItemObject item = itemCursed(cursed(cowardice, 20));
+        @DisplayName("knowsCurse does not answer for a curse never learned")
+        void knowsCurseIsNotShared() {
+            Curse other = new Curse("teleportation", List.of(), 0, null, objectFlags(), Map.of(),
+                    Map.of(), 0, 0, 0, List.of(), objectFlags(), "teleports", "The curse fires.");
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_SUST_STR));
+            player.learnCurse(siren);
 
-            assertAll(
-                    () -> assertFalse(learned),
-                    () -> assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR)),
-                    () -> assertFalse(knowledge.curseIsKnown(cowardice)),
-                    () -> assertTrue(bus.messages.isEmpty()));
+            assertFalse(player.knowsCurse(other));
+        }
+
+        @Test
+        @DisplayName("learnFlag learns the flag and announces it")
+        void learnFlag() {
+            player.learnFlag(ObjectFlag.OF_SUST_STR);
+
+            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
+            assertEquals(1, bus.messages.size());
+            assertEquals("You have learned the rune of sustain strength.",
+                    bus.messages.get(0).message());
         }
 
         /**
-         * The other half of that placement: when the flag was already known the curse is still
-         * learned, because meeting a curse is knowledge even when its effect was already
-         * understood. The return value is about the flag, not the curse, so it is false.
+         * C's {@code player_learn_flag} is the one wrapper with no already-known guard, relying on
+         * {@code of_on} to report whether anything changed. The guard this port adds must not
+         * change that answer — a flag learned twice is still announced once, either way.
          */
         @Test
-        @DisplayName("an already-known flag still teaches the curse")
-        void aKnownFlagStillTeachesTheCurse() throws Exception {
-            knowledge.learnFlag(ObjectFlag.OF_AFRAID);
-            ItemObject item = itemCursed(cursed(cowardice, 20));
+        @DisplayName("learnFlag does nothing the second time")
+        void learnFlagIsIdempotent() {
+            player.learnFlag(ObjectFlag.OF_SUST_STR);
+            player.learnFlag(ObjectFlag.OF_SUST_STR);
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
-
-            assertAll(
-                    () -> assertFalse(learned),
-                    () -> assertTrue(knowledge.curseIsKnown(cowardice)));
+            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
+            assertEquals(1, bus.messages.size());
         }
 
         /**
-         * A curse at zero power is not on the item — {@link CurseData#setPower} with a zero is how
-         * a curse is removed, so a zeroed entry can outlive the curse it names.
+         * Not every flag is a learnable property — {@code init_rune} skips the placeholder
+         * subtypes, the ones describing the object rather than the player, and the curse-only ones.
+         * Asking about one of those is expected rather than exceptional, since the learning code
+         * walks whole flag sets, so it answers with silence instead of a throw. C hands
+         * {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
          */
         @Test
-        @DisplayName("a curse at zero power is not on the item")
-        void zeroPowerIsNotACurse() throws Exception {
-            ItemObject item = itemCursed(cursed(cowardice, 0));
+        @DisplayName("learnFlag survives a flag with no rune")
+        void learnFlagWithoutARune() {
+            player.learnFlag(ObjectFlag.OF_FEATHER);
 
-            assertFalse(player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID)));
-            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
+            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_FEATHER));
+            assertTrue(bus.messages.isEmpty());
         }
 
         @Test
-        @DisplayName("an uncursed item teaches nothing")
-        void uncursedItemIsSilent() throws Exception {
-            assertFalse(player.cursesFindFlags(itemCursed(), testing(ObjectFlag.OF_AFRAID)));
-        }
+        @DisplayName("learnFlag touches only the flag it was given")
+        void learnFlagIsNarrow() {
+            player.learnFlag(ObjectFlag.OF_SUST_STR);
 
-        /**
-         * The message is gated on the game having started, where the learning is not. C wraps only
-         * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during
-         * character generation and loading without anything being announced into a game that does
-         * not yet exist.
-         */
-        @Test
-        @DisplayName("the flag message waits for the game to be under way")
-        void theMessageIsSuppressedBeforePlay() throws Exception {
-            ItemObject item = itemCursed(cursed(cowardice, 20));
-
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
-
-            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
-            assertEquals(List.of(
-                            "You have learned the rune of fear.",
-                            "You have learned the rune of cowardice curse."),
-                    announced());
-        }
-
-        /**
-         * And once play is under way, the property's own wording is sent, between the two runes —
-         * this method learns then announces, where {@link Player#equipLearnFlag} announces then
-         * learns. Both match their own C originals, which differ.
-         */
-        @Test
-        @DisplayName("in play the property's own wording is announced")
-        void theMessageIsSentDuringPlay() throws Exception {
-            startPlaying();
-            ItemObject item = itemCursed(cursed(cowardice, 20));
-
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
-
-            assertEquals(List.of(
-                            "You have learned the rune of fear.",
-                            "Your {DESCRIPTION_TAG} makes you tremble.",
-                            "You have learned the rune of cowardice curse."),
-                    announced());
-        }
-
-        /**
-         * A property with no {@code msg:} is not an error — most flags are learned in silence. The
-         * rune is still learned and announced; only the flag's own wording is absent, because there
-         * is none.
-         */
-        @Test
-        @DisplayName("a flag whose property has no message is learned silently")
-        void aFlagWithNoMessageIsStillLearned() throws Exception {
-            startPlaying();
-            ItemObject item = itemCursed(cursed(cowardice, 20));
-
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_IMPAIR_HP));
-
-            assertAll(
-                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)),
-                    () -> assertEquals(List.of(
-                                    "You have learned the rune of impaired hitpoint recovery.",
-                                    "You have learned the rune of cowardice curse."),
-                            announced()));
+            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_SUST_INT));
         }
     }
 
@@ -2778,4 +2572,227 @@ class PlayerRuneLearningTest {
             assertEquals(15, player.getRecallDepth());
         }
     }
+
+    /**
+     * {@link Player#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
+     * family, and the only one that takes a set.
+     *
+     * <p>Its siblings each pursue one fixed property, so the caller has nothing to say. Flags are a
+     * population, and the caller names which of them the occasion could plausibly have revealed;
+     * the method intersects that set with the curse's own flags and works on what survives. Most of
+     * what is worth testing here is about that intersection and about which of the two runes gets
+     * learned when.
+     *
+     * <p>Class CursesFindFlags coded on 260815, commented in full on 260815, call sites turned round
+     * on 260815 when the method moved to Player.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("cursesFindFlags")
+    class CursesFindFlags {
+
+        /**
+         * A set naming the flags a test is asking about, standing in for C's {@code test_flags}.
+         */
+        private Flag<ObjectFlag> testing(ObjectFlag... flags) {
+            Flag<ObjectFlag> set = new Flag<>(ObjectFlag.class);
+            for (ObjectFlag f : flags) {
+                set.on(f);
+            }
+            return set;
+        }
+
+        /**
+         * Two runes, not one: the flag that has just shown itself, and the curse that was carrying
+         * it.
+         */
+        @Test
+        @DisplayName("a curse carrying a tested flag teaches the flag and the curse")
+        void teachesBothRunes() throws Exception {
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+
+            assertAll(
+                    () -> assertTrue(learned),
+                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
+                    () -> assertTrue(knowledge.curseIsKnown(cowardice)));
+        }
+
+        /**
+         * The intersection, seen from the discarded side. {@code cowardice} carries
+         * {@code OF_IMPAIR_HP} as well, but this occasion was not asking about it, so it stays
+         * unknown — a curse does not give away everything it holds merely because it gave away one
+         * thing.
+         */
+        @Test
+        @DisplayName("only the flags asked about are learned")
+        void theIntersectionIsRespected() throws Exception {
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+
+            assertAll(
+                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
+                    () -> assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)));
+        }
+
+        /**
+         * The intersection runs on a copy, and this is the case that proves it. {@link Flag#inter}
+         * is {@code retainAll}, and the flags it is called on belong to the {@link Curse}
+         * definition parsed once and shared by every item carrying that curse. Intersecting them in
+         * place would delete {@code OF_IMPAIR_HP} from the definition for the rest of the session,
+         * so the second item — a different item, the same curse — would find nothing.
+         */
+        @Test
+        @DisplayName("the curse definition survives being intersected against")
+        void theCurseDefinitionIsNotMutated() throws Exception {
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+                    testing(ObjectFlag.OF_AFRAID));
+
+            assertTrue(cowardice.getObjectFlags().has(ObjectFlag.OF_AFRAID));
+            assertTrue(cowardice.getObjectFlags().has(ObjectFlag.OF_IMPAIR_HP));
+            assertEquals(2, cowardice.getObjectFlags().count(),
+                    "the intersection took a copy rather than narrowing the definition");
+
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+                    testing(ObjectFlag.OF_IMPAIR_HP));
+
+            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP));
+        }
+
+        /**
+         * The caller's set is not mutated either — {@code equip_learn_flag} builds one and hands it
+         * to every slot in turn, so a method that consumed it would work on the first item and on
+         * no other.
+         */
+        @Test
+        @DisplayName("the caller's test set survives the call")
+        void theTestSetIsNotMutated() throws Exception {
+            Flag<ObjectFlag> testFlags = testing(ObjectFlag.OF_AFRAID, ObjectFlag.OF_SUST_STR);
+
+            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)), testFlags);
+
+            assertTrue(testFlags.has(ObjectFlag.OF_SUST_STR));
+        }
+
+        /**
+         * The curse's rune is learned inside the flag loop, not beside it. A curse whose flags miss
+         * the test set entirely teaches nothing at all — not even that it exists — because the
+         * player has had no evidence of it.
+         */
+        @Test
+        @DisplayName("a curse whose flags miss the test set teaches nothing, not even itself")
+        void aMissTeachesNothingAtAll() throws Exception {
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_SUST_STR));
+
+            assertAll(
+                    () -> assertFalse(learned),
+                    () -> assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR)),
+                    () -> assertFalse(knowledge.curseIsKnown(cowardice)),
+                    () -> assertTrue(bus.messages.isEmpty()));
+        }
+
+        /**
+         * The other half of that placement: when the flag was already known the curse is still
+         * learned, because meeting a curse is knowledge even when its effect was already
+         * understood. The return value is about the flag, not the curse, so it is false.
+         */
+        @Test
+        @DisplayName("an already-known flag still teaches the curse")
+        void aKnownFlagStillTeachesTheCurse() throws Exception {
+            knowledge.learnFlag(ObjectFlag.OF_AFRAID);
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+
+            assertAll(
+                    () -> assertFalse(learned),
+                    () -> assertTrue(knowledge.curseIsKnown(cowardice)));
+        }
+
+        /**
+         * A curse at zero power is not on the item — {@link CurseData#setPower} with a zero is how
+         * a curse is removed, so a zeroed entry can outlive the curse it names.
+         */
+        @Test
+        @DisplayName("a curse at zero power is not on the item")
+        void zeroPowerIsNotACurse() throws Exception {
+            ItemObject item = itemCursed(cursed(cowardice, 0));
+
+            assertFalse(player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID)));
+            assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
+        }
+
+        @Test
+        @DisplayName("an uncursed item teaches nothing")
+        void uncursedItemIsSilent() throws Exception {
+            assertFalse(player.cursesFindFlags(itemCursed(), testing(ObjectFlag.OF_AFRAID)));
+        }
+
+        /**
+         * The message is gated on the game having started, where the learning is not. C wraps only
+         * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during
+         * character generation and loading without anything being announced into a game that does
+         * not yet exist.
+         */
+        @Test
+        @DisplayName("the flag message waits for the game to be under way")
+        void theMessageIsSuppressedBeforePlay() throws Exception {
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+
+            assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
+            assertEquals(List.of(
+                            "You have learned the rune of fear.",
+                            "You have learned the rune of cowardice curse."),
+                    announced());
+        }
+
+        /**
+         * And once play is under way, the property's own wording is sent, between the two runes —
+         * this method learns then announces, where {@link Player#equipLearnFlag} announces then
+         * learns. Both match their own C originals, which differ.
+         */
+        @Test
+        @DisplayName("in play the property's own wording is announced")
+        void theMessageIsSentDuringPlay() throws Exception {
+            startPlaying();
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+
+            assertEquals(List.of(
+                            "You have learned the rune of fear.",
+                            "Your {DESCRIPTION_TAG} makes you tremble.",
+                            "You have learned the rune of cowardice curse."),
+                    announced());
+        }
+
+        /**
+         * A property with no {@code msg:} is not an error — most flags are learned in silence. The
+         * rune is still learned and announced; only the flag's own wording is absent, because there
+         * is none.
+         */
+        @Test
+        @DisplayName("a flag whose property has no message is learned silently")
+        void aFlagWithNoMessageIsStillLearned() throws Exception {
+            startPlaying();
+            ItemObject item = itemCursed(cursed(cowardice, 20));
+
+            player.cursesFindFlags(item, testing(ObjectFlag.OF_IMPAIR_HP));
+
+            assertAll(
+                    () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)),
+                    () -> assertEquals(List.of(
+                                    "You have learned the rune of impaired hitpoint recovery.",
+                                    "You have learned the rune of cowardice curse."),
+                            announced()));
+        }
+    }
+
 }

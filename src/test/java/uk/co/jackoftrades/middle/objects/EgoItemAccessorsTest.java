@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.objects;
 
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.numerics.Random;
@@ -27,6 +28,10 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
 import java.util.ArrayList;
+
+import uk.co.jackoftrades.middle.objects.enums.IgnoreType;
+
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -34,6 +39,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -203,5 +209,86 @@ class EgoItemAccessorsTest {
         slays.add(null);
 
         assertFalse(item.getSlays().isEmpty());
+    }
+
+    /**
+     * The suppressed-flag set and the ignore categories, both of which sit beside their more obvious
+     * twins and would be easy to read the wrong one of.
+     */
+    @Nested
+    @DisplayName("suppressed flags and ignore categories")
+    class SuppressionAndIgnoring {
+
+        /**
+         * An ego has two flag sets: the ones it grants and the ones it takes away. They are adjacent
+         * arguments of the same type in the constructor, so each is checked against its own
+         * accessor with a flag the other does not carry.
+         */
+        @Test
+        @DisplayName("granted and suppressed flags are separate sets")
+        void grantedAndSuppressedAreSeparate() {
+            Flag<ObjectFlag> granted = new Flag<>(ObjectFlag.class);
+            granted.set(List.of(ObjectFlag.OF_FEATHER));
+            Flag<ObjectFlag> suppressed = new Flag<>(ObjectFlag.class);
+            suppressed.set(List.of(ObjectFlag.OF_AGGRAVATE));
+
+            EgoItem item = new EgoItem("of Testing", "a test ego", 1, 0,
+                    granted, suppressed, new Flag<>(ObjectKindFlag.class),
+                    new HashMap<>(), new HashMap<>(), new HashMap<>(),
+                    new HashSet<>(), new HashSet<>(), new HashMap<>(),
+                    0, 0, 0, 0, new ArrayList<ObjectKind>(),
+                    null, null, null, 0, 0, 0,
+                    null, null, false);
+
+            assertTrue(item.getFlags().has(ObjectFlag.OF_FEATHER));
+            assertFalse(item.getFlags().has(ObjectFlag.OF_AGGRAVATE));
+
+            assertTrue(item.getOffFlags().has(ObjectFlag.OF_AGGRAVATE));
+            assertFalse(item.getOffFlags().has(ObjectFlag.OF_FEATHER));
+        }
+
+        /**
+         * Marking an ignore category records it, which is how the player's "hide these" settings
+         * reach the ignore machinery.
+         */
+        @Test
+        @DisplayName("marking an ignore category records it")
+        void markingRecordsTheCategory() {
+            EgoItem item = bareEgo();
+
+            item.setIgnoreType(IgnoreType.ITYPE_SHARP);
+
+            assertTrue(item.getIgnoreType(IgnoreType.ITYPE_SHARP));
+        }
+
+        /**
+         * Every category answers from the start, because the constructor fills the map with a
+         * {@code false} for each one rather than leaving it sparse. That is what makes the
+         * accessor's direct unboxing safe, and it holds for an ego nothing has been marked on.
+         */
+        @Test
+        @DisplayName("every category answers on a freshly built ego")
+        void everyCategoryAnswers() {
+            EgoItem item = bareEgo();
+
+            for (IgnoreType type : IgnoreType.values()) {
+                assertFalse(item.getIgnoreType(type), type + " should start unmarked");
+            }
+        }
+
+        /**
+         * Marking is one-way — there is no counterpart that clears a category — and it touches only
+         * the category named.
+         */
+        @Test
+        @DisplayName("marking one category leaves the others alone")
+        void markingOneLeavesOthers() {
+            EgoItem item = bareEgo();
+
+            item.setIgnoreType(IgnoreType.ITYPE_SHARP);
+
+            assertTrue(item.getIgnoreType(IgnoreType.ITYPE_SHARP));
+            assertFalse(item.getIgnoreType(IgnoreType.ITYPE_GREAT));
+        }
     }
 }

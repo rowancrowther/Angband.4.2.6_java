@@ -19,6 +19,8 @@ package uk.co.jackoftrades.middle.cave.enums;
 
 import uk.co.jackoftrades.middle.cave.Loc;
 
+import java.util.stream.Stream;
+
 /**
  * The movement directions, each tied to its numeric-keypad key and its
  * {@code (x, y)} step offset. This unifies the C original's parallel
@@ -142,5 +144,26 @@ public enum DirectionEnum {
      */
     public boolean isStandard() {
         return standard;
+    }
+
+    /**
+     * The eight one-step neighbour offsets, as C's {@code ddgrid_ddd} table: every direction that
+     * moves you to an adjacent grid, with the two centre entries ({@link #DIR_TARGET},
+     * {@link #DIR_NONE}) and {@link #DIR_UNKNOWN} left out. Callers that want to sweep the ring
+     * around a grid iterate this rather than {@link #values()}, so they need no
+     * {@link #isStandard()} guard of their own.
+     *
+     * <p>A fresh array is built on each call, so a caller may shuffle or otherwise rearrange the
+     * result without disturbing anyone else — C's table is a shared {@code const} and cannot be
+     * treated that way.
+     *
+     * <p>Function surroundingDirections coded before 260828, commented in full on 260828.
+     *
+     * @return a new array of the eight standard neighbour directions
+     */
+    public static DirectionEnum[] surroundingDirections() {
+        return Stream.of(
+                DIR_S, DIR_N, DIR_E, DIR_W,
+                DIR_SE, DIR_SE, DIR_NE, DIR_NW).toArray(DirectionEnum[]::new);
     }
 }

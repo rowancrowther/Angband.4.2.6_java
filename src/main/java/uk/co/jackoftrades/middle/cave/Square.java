@@ -165,13 +165,16 @@ public class Square {
     }
 
     /**
-     * Checks to see the current lighting level of this square
+     * Checks to see the current lighting level of this square, the port of C's
+     * {@code square_islit} ({@code cave-square.c}). This is the light actually falling on the grid
+     * from every source — glow, the player's light, monster light — as recomputed by
+     * {@code calcLighting}, not the {@code SQUARE_GLOW} flag tested by {@link #isGlow()}.
      *
-     * @return the current lighting value of this square
+     * @return true if the square's light level is above zero
      */
     @CheckReturnValue
     @Contract(pure = true)
-    public boolean isCurrentlyLit() {
+    public boolean isLit() {
         return light > 0;
     }
 
@@ -574,13 +577,15 @@ public class Square {
     }
 
     /**
-     * Tests for illumination
+     * Tests for the permanent glow flag, the port of C's {@code square_isglow}
+     * ({@code cave-square.c}). This is the terrain's own illumination — a lit room, a daylit
+     * surface grid — and is independent of the transient light level tested by {@link #isLit()}.
      *
-     * @return true if the square is lit
+     * @return true if the square carries {@code SQUARE_GLOW}
      */
     @Contract(pure = true)
     @CheckReturnValue
-    public boolean isLit() {
+    public boolean isGlow() {
         return info.has(SquareEnum.SQUARE_GLOW);
     }
 
@@ -636,7 +641,7 @@ public class Square {
     @Contract(pure = true)
     @CheckReturnValue
     public boolean wasSeen() {
-        return info.has(SquareEnum.SQUARE_SEEN);
+        return info.has(SquareEnum.SQUARE_WASSEEN);
     }
 
     /**
@@ -990,7 +995,7 @@ public class Square {
     @CheckReturnValue
     @Contract(pure = true)
     public boolean featAllowsLOS() {
-        return feat.isLos();
+        return feat != null && feat.isLos();
     }
 
     /**
@@ -1180,5 +1185,98 @@ public class Square {
      */
     public void lightSpot() {
         // STUB function. TODO: Implement
+    }
+
+    /**
+     * Turns one info flag on for this square, the port of C's {@code sqinfo_on}
+     * ({@code cave.h}).
+     *
+     * <p>The info field is a set of independent flags rather than a value, so this adds the one
+     * named and leaves the rest of the field alone. Setting a flag already set is not an error and
+     * changes nothing — callers such as {@code Chunk.markWasSeen} sweep whole levels and set as
+     * they go rather than testing first, which only works because the operation is idempotent.
+     *
+     * <p>The write goes through this method rather than exposing the field because the info flags
+     * are the square's own state: a caller handed the {@link Flag} itself could keep it and write
+     * to the square long after it stopped looking like a caller.
+     *
+     * <p>The return value distinguishes the two cases the method itself treats alike: {@code true}
+     * means the square changed, {@code false} that the flag was already on and the call did
+     * nothing. It matches C, where {@code sqinfo_on} resolves to {@code flag_on}
+     * ({@code z-bitflag.c}) and reports the same thing. Nothing in C reads it, so a caller here has
+     * no ported precedent to follow — it is available for the redraw question, "did this call
+     * actually change what the player would see", which is otherwise only answerable by testing the
+     * flag first.
+     *
+     * <p>Function sqInfoOn coded before 260827, commented in full on 260827, updated on 260827 when
+     * the return type changed from void to boolean.
+     *
+     * @param flag the info flag to set on this square
+     * @return true if the flag was off and is now on, false if it was already on and nothing
+     * changed
+     */
+    public boolean sqInfoOn(SquareEnum flag) {
+        return info.on(flag);
+    }
+
+    /**
+     * Turns one info flag off for this square, the port of C's {@code sqinfo_off}
+     * ({@code cave.h}).
+     *
+     * <p>The counterpart to {@link #sqInfoOn(SquareEnum)}, and equally narrow: it clears the one
+     * flag named and no other. That matters more here than it does for setting, because the info
+     * field mixes flags with very different lifetimes — {@code SQUARE_VIEW} is rebuilt every time
+     * the player moves, while {@code SQUARE_MARK} records what they have explored and must survive
+     * the whole game. Clearing per flag is what lets the visibility sweep run over every grid on
+     * the level without erasing the map.
+     *
+     * <p>Clearing a flag that is not set is not an error and changes nothing.
+     *
+     * <p>The return value says which of those happened: {@code true} that the flag was on and has
+     * been cleared, {@code false} that it was already off. As with {@link #sqInfoOn(SquareEnum)}
+     * this matches C's {@code flag_off} ({@code z-bitflag.c}). It is worth more here than on the
+     * setting side, because clearing is the operation done in bulk — the visibility sweep clears
+     * three flags from every grid on the level, and the great majority of those calls return
+     * {@code false} because there was nothing there to clear.
+     *
+     * <p>Function sqInfoOff coded before 260827, commented in full on 260827, updated on 260827
+     * when the return type changed from void to boolean.
+     *
+     * @param flag the info flag to clear from this square
+     * @return true if the flag was on and is now off, false if it was already off and nothing
+     * changed
+     */
+    public boolean sqInfoOff(SquareEnum flag) {
+        return info.off(flag);
+    }
+
+    /**
+     * Sets the light falling on this square, the port of writing C's
+     * {@code c->squares[y][x].light} ({@code cave-view.c}).
+     *
+     * <p>C has no setter for this: {@code calc_lighting} and {@code add_light} assign the field
+     * directly, and {@code square_light} ({@code cave-square.c}) is the only accessor of the pair.
+     * The port needs the write to go through a method because the field is private, so this is a
+     * plain assignment with no C counterpart to match beyond the assignments themselves.
+     *
+     * <p>The value is a light <em>intensity</em>, not a flag, and it is not validated or clamped
+     * here. Zero is dark and anything above it is lit, which is all {@link #isLit()} asks; higher
+     * values matter to the display, which draws a brightly lit grid differently from a dimly lit
+     * one. Negative values are legitimate — a monster with negative {@code light} radiates darkness
+     * and {@code addLight} subtracts, so a grid can finish a recalculation below zero. Clamping
+     * here would silently diverge from C, which lets the arithmetic stand.
+     *
+     * <p>The caller is {@code Chunk.calcLighting}, which owns the field's whole lifetime:
+     * it resets every grid on the level to 1 or 0 from permanent glow alone, then accumulates
+     * bright terrain, the player's light and each monster's light on top. Nothing else should write
+     * a light level, because a value set outside that sweep survives only until the next one runs.
+     *
+     * <p>Function setLight coded before 260828, commented in full on 260828.
+     *
+     * @param level the new light intensity for this square: zero for dark, positive for lit, negative
+     *              for a grid the darkness sources have taken below zero
+     */
+    public void setLight(int level) {
+        light = level;
     }
 }

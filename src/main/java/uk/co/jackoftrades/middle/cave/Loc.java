@@ -187,12 +187,12 @@ public class Loc {
      * Entry point for the fluent {@code Loc.row(y).col(x)} construction idiom, fixing the row
      * (y-coordinate) first and returning a builder that then takes the column.
      *
-     * @param i the row (y-coordinate)
+     * @param y the row (y-coordinate)
      * @return a {@link RowBuilder} awaiting the column to complete the {@link Loc}
      */
-    public static RowBuilder row(int i) {
+    public static RowBuilder row(int y) {
         RowBuilder rowHolder = new RowBuilder();
-        rowHolder.y = i;
+        rowHolder.y = y;
         return rowHolder;
     }
 
@@ -222,6 +222,77 @@ public class Loc {
      */
     public Loc copy() {
         return new Loc(x, y);
+    }
+
+    /**
+     * Returns the direction of a single step from this location towards {@code finish}. Ports
+     * {@code motion_dir} ({@code src/cave.c}).
+     *
+     * <p>Only the sign of each coordinate difference matters, never its size, so the result is a
+     * bearing rather than a route: a caller that wants to travel the whole way re-asks from each
+     * new grid. Diagonals are preferred wherever both axes differ, which is what makes the
+     * repeated single steps trace the C original's path rather than an L-shaped one.
+     *
+     * <p>Rows are numbered from the top downwards, as in C, so a {@code finish} with the larger
+     * y is to the <em>south</em>.
+     *
+     * <p>Two locations that are equal yield {@link DirectionEnum#DIR_NONE}, meaning no motion is
+     * needed. Note that C gives {@code DIR_NONE} and {@code DIR_TARGET} the same value 5 and so
+     * cannot tell them apart; the enum here keeps them as distinct constants, and this method
+     * returns only {@code DIR_NONE}.
+     *
+     * <p>Function motionDir coded before 260828, commented in full on 260828.
+     *
+     * @param finish the location being moved towards
+     * @return the direction of the first step towards {@code finish}, or
+     * {@link DirectionEnum#DIR_NONE} if this location is already {@code finish}
+     */
+    public DirectionEnum motionDir(Loc finish) {
+        if (this.equals(finish)) return DirectionEnum.DIR_NONE;
+
+        if (this.getX() == finish.getX()) return this.getY() < finish.getY() ? DirectionEnum.DIR_S
+                : DirectionEnum.DIR_N;
+
+        if (this.getY() == finish.getY()) return this.getX() < finish.getX() ? DirectionEnum.DIR_E
+                : DirectionEnum.DIR_W;
+
+        if (this.getY() < finish.getY()) return this.getX() < finish.getX() ? DirectionEnum.DIR_SE
+                : DirectionEnum.DIR_SW;
+
+        if (this.getY() > finish.getY()) return this.getX() < finish.getX() ? DirectionEnum.DIR_NE
+                : DirectionEnum.DIR_NW;
+
+        return DirectionEnum.DIR_NONE;
+    }
+
+    /**
+     * Returns the approximate distance between this location and {@code grid}. Ports
+     * {@code distance} ({@code src/cave-view.c}).
+     *
+     * <p>The result is a cheap integer approximation to the true Euclidean distance, computed as
+     * {@code max(dy, dx) + min(dy, dx) / 2} on the absolute coordinate differences. It is almost
+     * exact when one component dwarfs the other, and otherwise over-estimates by roughly one grid
+     * in every fifteen. The C original uses it everywhere a distance is compared against a radius
+     * or a range, so reproducing the approximation — rather than improving on it with a real
+     * hypotenuse — is what keeps the ported ranges matching the game.
+     *
+     * <p>Halving is done with an arithmetic right shift, exactly as in C. Both operands are
+     * absolute values and so never negative, which is what makes the shift and integer division
+     * agree; a signed right shift rounds towards negative infinity, not towards zero.
+     *
+     * <p>The relation is symmetric: {@code a.distance(b)} equals {@code b.distance(a)}, because
+     * only the magnitudes of the differences are used. A location's distance from itself is zero.
+     *
+     * <p>Function distance coded on 260828, commented in full on 260828.
+     *
+     * @param grid the other location to measure to
+     * @return the approximate number of grids between the two locations, never negative
+     */
+    public int distance(Loc grid) {
+        int ay = Math.abs(this.y - grid.y);
+        int ax = Math.abs(this.x - grid.x);
+
+        return ay > ax ? ay + (ax >> 1) : ax + (ay >> 1);
     }
 
     /**

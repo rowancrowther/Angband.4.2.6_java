@@ -399,4 +399,24 @@ public class MonsterRace {
     public int getLevel() {
         return level;
     }
+
+    /**
+     * Returns the light intensity this race radiates, C's {@code race->light}. The value is signed
+     * and is read directly wherever C reads the field: a positive value lights the grids around the
+     * monster, zero means it neither lights nor darkens, and a negative value darkens them. C treats
+     * the magnitudes as distinct, so callers should compare rather than test for truth &mdash; the
+     * lore code distinguishes {@code > 1}, {@code == 1}, {@code == -1} and {@code < -1}, while the
+     * attack code counts a monster with {@code light > 0} as visible even when it is not otherwise
+     * seen.
+     *
+     * <p>There is no clamping or scaling on either side: the parser stores the {@code light:} line's
+     * integer as written, and a race whose entry omits the line keeps zero.
+     *
+     * <p>Function getLight coded on 260828, commented in full on 260828.
+     *
+     * @return the light radius this race emits, negative for a race that darkens its surroundings
+     */
+    public int getLight() {
+        return light;
+    }
 }

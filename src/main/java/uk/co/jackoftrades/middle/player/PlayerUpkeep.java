@@ -30,8 +30,6 @@ import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -758,5 +756,76 @@ public class PlayerUpkeep {
      */
     public void setObject(ItemObject object) {
         this.object = object;
+    }
+
+    /**
+     * Reports whether any recalculation at all is pending - the port of C's truth test on the whole
+     * bitfield, {@code if (!p->upkeep->update) return;} at the head of {@code update_stuff}
+     * ({@code player-calcs.c}), and the same test guarding the opportunistic
+     * {@code if (player->upkeep->update) update_stuff(player)} calls in {@code obj-gear.c} and
+     * {@code project.c}.
+     *
+     * <p>C can ask this because {@code update} is a single {@code u32b}: zero means nothing pending.
+     * The port holds a {@link Flag} instead, so the question becomes "is the set empty", and the
+     * inversion has to be written out. The name follows C's field rather than Java's {@code isX}
+     * convention for a boolean, so read it as "is there update work", not as a getter for a flag.
+     *
+     * <p>Function getUpdate commented in full on 260828.
+     *
+     * @return {@code true} when at least one {@code PU_*} flag is raised, {@code false} when the
+     * update set is empty
+     */
+    public boolean getUpdate() {
+        return !updateFlags.isEmpty();
+    }
+
+    /**
+     * Asks whether one particular recalculation is pending - the port of C's
+     * {@code if (p->upkeep->update & (PU_BONUS))} test in {@code update_stuff}
+     * ({@code player-calcs.c}).
+     *
+     * <p>Read-only: unlike {@link #updateOff} it leaves the flag raised, so a caller that acts on a
+     * {@code true} answer must clear the flag itself or the same work will be done again on the next
+     * update pass.
+     *
+     * <p>Function updateHas commented in full on 260828.
+     *
+     * @param flag the {@link PlayerUpdateEnum} recalculation to ask about
+     * @return {@code true} when that flag is raised
+     */
+    public boolean updateHas(PlayerUpdateEnum flag) {
+        return updateFlags.has(flag);
+    }
+
+    /**
+     * Lowers one update flag - the port of C's {@code p->upkeep->update &= ~(PU_BONUS)}, which
+     * {@code update_stuff} ({@code player-calcs.c}) performs immediately before running the
+     * corresponding recalculation, so that work requested again from inside that recalculation is
+     * not lost.
+     *
+     * <p>Clearing before recalculating, not after, is the order C chose and the port keeps it: the
+     * calculation being run may itself raise its own flag again, and clearing afterwards would
+     * discard that request.
+     *
+     * <p>The return value is the port's own addition - C's {@code &=} yields nothing a caller reads.
+     * It reports whether the flag was actually raised, which lets a caller collapse the C pair of a
+     * test then a clear into the single call {@code if (updateOff(PU_BONUS)) { ... }}.
+     *
+     * <p>Function updateOff commented in full on 260828.
+     *
+     * @param flag the {@link PlayerUpdateEnum} recalculation to clear
+     * @return {@code true} when the flag had been raised and is now lowered, {@code false} when it
+     * was already clear and nothing changed
+     */
+    public boolean updateOff(PlayerUpdateEnum flag) {
+        return updateFlags.off(flag);
+    }
+
+    /**
+     * @return the state of an in-progress run - the port of reading C's {@code upkeep->running},
+     * which is the count of steps still to be taken, and zero when the player is not running
+     */
+    public int getRunning() {
+        return runningCounter;
     }
 }

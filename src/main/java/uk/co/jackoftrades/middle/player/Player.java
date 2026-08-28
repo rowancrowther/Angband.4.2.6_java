@@ -39,6 +39,7 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
+import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.monsters.MonsterUtils;
 import uk.co.jackoftrades.middle.numerics.Random;
@@ -2369,34 +2370,292 @@ public class Player {
     }
 
     /**
-     * Recomputes any stale derived state and repaints any changed screen regions - the port of C's
-     * {@code handle_stuff}, which is {@link #updateStuff()} followed by {@link #redrawStuff()}
-     * bundled into one call.
+     * Pays off both halves of the player's pending debt - the port of C's {@code handle_stuff}
+     * ({@code player-calcs.c:2728}).
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the player-calc subsystem.
+     * <p>Code that changes the model never recomputes or repaints anything itself; it raises a
+     * {@code PU_*} flag on {@link PlayerUpkeep} for a stale derived quantity, or a {@code PR_*} flag
+     * for a stale piece of screen, and moves on. This method is the single call that settles both,
+     * and it is what the game loop and every command reach for when the model has to be made
+     * consistent again before anything else looks at it.
+     *
+     * <p>It is only a guarded pair of calls, and both guards are the plain "is anything pending"
+     * test C makes on its two bitmasks: {@link PlayerUpkeep#getUpdate()} for the update set, an
+     * empty check on the snapshot from {@link PlayerUpkeep#getRedrawFlags()} for the redraw set.
+     * Neither call clears anything - each of {@link #updateStuff()} and {@link #redrawStuff()} owns
+     * the clearing of the flags it services.
+     *
+     * <p>The order matters and follows C: recalculation runs first, repaint second. A recalculation
+     * routinely raises redraw flags for the figures it has just changed, and because the redraw
+     * guard is evaluated after {@link #updateStuff()} has returned, those flags are seen and
+     * serviced on this same pass rather than waiting for the next one. The reverse order would
+     * repaint the old values and leave the new ones a turn behind.
+     *
+     * <p>Function handleStuff coded before 260828, commented in full on 260828.
+     *
+     * @see #updateStuff()
+     * @see #redrawStuff()
      */
     public void handleStuff() {
-        // Stub class TODO: implement
+        if (getPlayerUpkeep().getUpdate()) updateStuff();
+        if (!getPlayerUpkeep().getRedrawFlags().isEmpty()) redrawStuff();
     }
 
     /**
-     * Recomputes derived quantities (HP, mana, view, bonuses, …) that have been flagged stale -
-     * the port of C's {@code update_stuff}. Reads and clears the {@code PU_*} update flags.
+     * Recomputes whichever derived player quantities have been flagged stale, clearing each flag as
+     * its recalculation runs - the port of C's {@code update_stuff} ({@code player-calcs.c}).
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the player-calc subsystem.
+     * <p>Code that changes the model does not recompute anything itself; it raises the relevant
+     * {@link PlayerUpdateEnum} ({@code PU_*}) flag on {@link PlayerUpkeep} and moves on. This method
+     * is the single point where that debt is paid off, so a turn that dirties the same quantity a
+     * dozen times still only recalculates it once.
+     *
+     * <p>The order of the clauses is load-bearing and follows C exactly: the inventory is rebuilt
+     * before bonuses, because {@link #updateBonuses()} reads the equipment; bonuses come before the
+     * light radius, hit points and mana, all of which depend on the bonus figures; and spells come
+     * last of the model-side clauses. Each clause clears its own flag <em>before</em> calling the
+     * calculation, so a recalculation that raises the same flag again - legitimately asking for
+     * another pass - is not swallowed.
+     *
+     * <p>Spells are recalculated only for a class with spells to learn
+     * ({@code total_spells > 0}); for a warrior the flag is still cleared, matching C.
+     *
+     * <p>Two early returns then split the model half from the map half. Nothing below them runs
+     * until the character exists ({@link GameWorld#characterGenerated}) and the map is actually on
+     * screen ({@link uk.co.jackoftrades.middle.gameinput.GameInput#mapIsVisible()}); the flags for
+     * those clauses are deliberately left raised, so the work happens on the first pass after the
+     * map appears rather than being lost.
+     *
+     * <p>In the map half, {@code PU_DISTANCE} subsumes {@code PU_MONSTERS}: it clears both flags and
+     * calls {@link #updateMonsters(boolean)} with {@code full} set, so the cheaper monster-only pass
+     * is skipped rather than run twice. The final clause signals
+     * {@link uk.co.jackoftrades.channel.enums.GameEventType#EVENT_PLAYERMOVED}, which is how the
+     * viewport is re-centred across the boundary; C raises the same event for the same reason.
+     *
+     * <p>The leading {@code getUpdate()} guard is a fast exit for the common case of nothing being
+     * stale, not a correctness requirement - with no flags raised every clause would fall through
+     * anyway.
+     *
+     * <p><b>Outstanding:</b> {@link #updateMonsters(boolean)} is still a stub, so the
+     * {@code PU_DISTANCE} and {@code PU_MONSTERS} clauses clear their flags but do no work yet.
+     *
+     * <p>Function updateStuff coded before 260828, commented in full on 260828.
+     *
+     * @see #redrawStuff()
      */
     public void updateStuff() {
-        // Stub class TODO: implement
+        if (!getPlayerUpkeep().getUpdate()) return;
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_INVEN)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_INVEN);
+            calcInventory();
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_BONUS)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_BONUS);
+            updateBonuses();
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_TORCH)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_TORCH);
+            calcLight(getPlayerState(), true);
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_HP)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_HP);
+            calcHitpoints();
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_MANA)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MANA);
+            calcMana(getPlayerState(), true);
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_SPELLS)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_SPELLS);
+            if (getPlayerClass().getMagic().getTotalSpells() > 0)
+                calcSpells();
+        }
+
+        // Character is not ready yet - no map updates
+        if (!GameWorld.characterGenerated) return;
+
+        // Map is not shown, no map updates
+        if (!GameInputHolder.getInstance().mapIsVisible()) return;
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_UPDATE_VIEW)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_UPDATE_VIEW);
+            // Run on actual cave, not player's view
+            GameState.getCave().updateView(this);
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_DISTANCE)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_DISTANCE);
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MONSTERS);
+            updateMonsters(true);
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_MONSTERS)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MONSTERS);
+            updateMonsters(false);
+        }
+
+        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_PANEL)) {
+            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_PANEL);
+            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_PLAYERMOVED);
+        }
     }
 
     /**
-     * Repaints the screen regions that have been flagged as changed - the port of C's
-     * {@code redraw_stuff}. Reads and clears the {@code PR_*} redraw flags.
+     * Refreshes every living monster's view of the player - the port of C's
+     * {@code update_monsters} ({@code mon-util.c:481}).
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the display subsystem.
+     * <p>C walks the current level's monster array from index 1 to
+     * {@code cave_monster_max(cave)} and calls {@code update_mon} on each entry that still has a
+     * race, a dead monster being one whose race has been cleared. All the work is in
+     * {@code update_mon} ({@code mon-util.c:291}), which touches only three things per monster: its
+     * distance from the player, whether the player can currently see it, and the
+     * {@code MFLAG_VIEW} flag that records line of sight.
+     *
+     * <p>The {@code full} flag is passed straight through: set, it also recomputes each monster's
+     * cached distance from the player, which is needed only when the player or the monster has
+     * moved. A visibility-only pass - the player going blind, gaining telepathy or see-invisible, a
+     * grid changing its lighting - leaves the distances alone and passes {@code false}. That is why
+     * {@link #updateStuff()} lets {@code PU_DISTANCE} subsume {@code PU_MONSTERS}: the full pass
+     * does everything the cheap one would.
+     *
+     * <p>C notes that this runs once per monster on every player move, and is one of the main
+     * bottlenecks while running, alongside view recalculation - so the eventual implementation
+     * should stay allocation-free in the loop.
+     *
+     * <p><b>Outstanding:</b> this is a stub and does nothing. It is scheduled for chapter 6 with
+     * the rest of the monster work, and may well not end up on {@link Player} - C keeps it in
+     * {@code mon-util.c}, and the loop is over the level's monsters rather than over anything the
+     * player owns.
+     *
+     * <p>Function updateMonsters coded before 260828, commented in full on 260828.
+     *
+     * @param full {@code true} to recompute each monster's distance from the player as well as its
+     *             visibility; {@code false} for a visibility-only pass.
+     * @see #updateStuff()
+     */
+    public void updateMonsters(boolean full) {
+        // STUB function: TODO: Implement in chapter 6
+        // Also may need moving to a different class
+    }
+
+    /**
+     * Repaints whichever screen regions have been flagged stale, by signalling one UI event per
+     * raised flag and then clearing the flags it dealt with — the port of C's {@code redraw_stuff}
+     * ({@code player-calcs.c:2678}).
+     *
+     * <p>This is the redraw half of the pair {@link #updateStuff()} begins: code that changes the
+     * model raises a {@link PlayerRedraw} ({@code PR_*}) flag on {@link PlayerUpkeep} and moves on,
+     * and this method is the single point where the screen catches up. Nothing is painted here —
+     * every flag becomes an event on the bus, and the display side across the boundary decides what
+     * that means.
+     *
+     * <p>The pass works on a <em>snapshot</em> of the flags ({@link PlayerUpkeep#getRedrawFlags()},
+     * C's {@code uint32_t redraw = p->upkeep->redraw;}), and clears only that snapshot at the end
+     * ({@link PlayerUpkeep#clearRedrawFlags}, C's {@code p->upkeep->redraw &= ~redraw}). That
+     * matters twice over: a handler that dirties something while responding to one of these events
+     * raises its flag on the live set and keeps it, and the narrowing described below drops flags
+     * from the snapshot without ever clearing them from the upkeep.
+     *
+     * <p>Three guards sit in front of the work, in C's order:
+     * <ul>
+     *   <li>an empty snapshot returns at once — the common case;</li>
+     *   <li>no character yet ({@link GameWorld#characterGenerated}) returns, leaving every flag
+     *       raised for the first pass after birth;</li>
+     *   <li>the map not being on screen
+     *       ({@link uk.co.jackoftrades.middle.gameinput.GameInput#mapIsVisible()}) does not return;
+     *       it narrows the snapshot to the subwindow flags ({@code PR_MONSTER}, {@code PR_OBJECT},
+     *       {@code PR_MONLIST}, {@code PR_ITEMLIST} — C's {@code PR_SUBWINDOW} mask), so the
+     *       detachable panes still refresh while the main-term flags stay pending.</li>
+     * </ul>
+     *
+     * <p>Then the speed hack C keeps: while resting or running, the screen is only refreshed on
+     * every hundredth turn of either counter, because a rest that repaints each turn takes visibly
+     * longer to sit through. A pending message or map redraw overrides the hack. Note that the
+     * narrowing above happens first, so with the map hidden neither override can be present and the
+     * hack always returns.
+     *
+     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, then the map
+     * separately, because it is the one event carrying data: {@code EVENT_MAP} with the point
+     * {@code (-1, -1)}, C's sentinel for "the whole map, not one grid". A last
+     * {@code EVENT_END} tells the display the batch is complete and it may now do any plotting it
+     * deferred — and, like the narrowing, it is skipped when only subwindows were refreshed.
+     *
+     * <p><b>Deliberate divergence:</b> C drives the signalling from a fixed table
+     * ({@code redraw_events}, {@code player-calcs.c:2634}) and so emits the events in that table's
+     * order; this iterates the flag set, which is {@link PlayerRedraw} declaration order. The
+     * ordering is not honoured, and does not need to be — the handlers are independent. What is
+     * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
+     * all.
+     *
+     * <p>Function redrawStuff coded on 260828, commented in full on 260828.
+     *
+     * @see #updateStuff()
+     * @see PlayerUpkeep#getRedrawFlags()
+     * @see PlayerUpkeep#clearRedrawFlags(uk.co.jackoftrades.channel.utils.FlagView)
      */
     public void redrawStuff() {
-        // Stub class TODO: implement
+        Flag<PlayerRedraw> redraw = getPlayerUpkeep().getRedrawFlags();
+
+        // Is there stuff to redraw
+        if (redraw.isEmpty()) return;
+
+        // Do we have a character?
+        if (!GameWorld.characterGenerated) return;
+
+        // Map is not shown - subwindow updates only
+        if (!GameInputHolder.getInstance().mapIsVisible()) {
+            redraw.mask(PlayerRedraw.PR_MONSTER, PlayerRedraw.PR_OBJECT,
+                    PlayerRedraw.PR_MONLIST, PlayerRedraw.PR_ITEMLIST);
+        }
+
+        // Hack - rarely update while resting or running, makes it over quicker
+        if (((playerRestingCount() % 100 != 0) || (getPlayerUpkeep().getRunning() % 100 != 0))
+                && ((!redraw.has(PlayerRedraw.PR_MESSAGE)) && !redraw.has(PlayerRedraw.PR_MAP)))
+            return;
+
+        // For each listed flag (apart from PR_MAP) - send the appropriate signal to the UI
+        for (PlayerRedraw playerRedraw : redraw) {
+            if (playerRedraw == PlayerRedraw.PR_MAP) continue;
+            GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
+        }
+
+        // Now for the ones that require parameters to be supplied
+        if (redraw.has(PlayerRedraw.PR_MAP)) {
+            GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, -1, -1);
+        }
+
+        // clear the flags
+        getPlayerUpkeep().clearRedrawFlags(redraw);
+
+        // If map isn't shown do the subwindow updates only.
+        if (!GameInputHolder.getInstance().mapIsVisible()) return;
+
+        // Do any plotting etc, delayed from earlier - this set of updates is over
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_END);
+    }
+
+    /**
+     * Reads the resting counter — the port of C's {@code player_resting_count}.
+     *
+     * <p>A plain read of the upkeep's {@code resting} field, with no interpretation: a positive value
+     * is the number of rest turns still to run, zero means not resting, and a negative value is one of
+     * the "rest until a condition is met" sentinels classified by {@link #restingIsSpecial(int)}. C
+     * stores the field as an {@code int16_t} and this returns a Java {@code int}, which is a widening
+     * of the same value; the sentinels are compared for equality rather than ordered, so the wider type
+     * changes nothing.
+     *
+     * <p>Function playerRestingCount coded on 260828, commented in full on 260828.
+     *
+     * @return the resting counter: turns of rest remaining, or a special "rest until…" sentinel
+     */
+    private int playerRestingCount() {
+        return getPlayerUpkeep().getRestingCounter();
     }
 
     /**
@@ -4418,12 +4677,49 @@ public class Player {
      * Rebuilds the pack and quiver views over the gear - the port of C's {@code calc_inventory}
      * ({@code player-calcs.c:1023}).
      *
-     * <p><b>Stub:</b> not yet implemented. {@link #combinePack} calls it as its last act before
-     * signalling the redraws, and {@link #invenCanStackPartial}'s quiver branch exists specifically
-     * to avoid handing it a stack it would have to split again. Until it is written,
-     * {@code upkeep.inven} and {@code upkeep.quiver} are never rebuilt after a combine.
+     * <p>The gear is the one true list of what the player carries; {@code upkeep.inventory} and
+     * {@code upkeep.quiver} are only views onto it, arrays that give the display and the commands
+     * something to index. Nothing edits those views in place - every change to the gear raises
+     * {@code PU_INVEN} and they are thrown away and rebuilt here.
      *
-     * <p>Function calcInventory stubbed on 260822, commented in full on 260824.
+     * <p>The work is a single pass over the gear per destination slot, and the {@code assigned}
+     * list is what keeps the passes from claiming the same object twice. It is seeded from
+     * {@link PlayerBody#itemIsEquipped}, so equipped items start out already spoken for and are
+     * never offered to either view; the remaining entries are filled false out to {@code numMax},
+     * which is C's {@code n_max}, the largest gear list that can exist - a pack that may be
+     * overfull by one, plus a full quiver, plus every body slot.
+     *
+     * <p>The quiver is filled in two stages, because an inscription outranks the ordering. First
+     * every object carrying an {@code @vN} inscription is offered its named slot, taken from
+     * {@link #preferredQuiverSlot}, and gets it if it is empty. Then the slots still empty are
+     * filled in index order, each taking the earliest remaining ammunition by
+     * {@link ItemObject#earlierObject}. The pack is filled the same way afterwards from whatever is
+     * left, and its loop deliberately runs to {@code pack_size} inclusive: that extra slot is where
+     * an overfull pack shows, and is why {@code upkeep.inventory} is one longer than the pack size.
+     *
+     * <p>A stack too large for one quiver slot is split, with the remainder appended to the gear by
+     * {@link #gearInsertEnd} to be picked up by the pack pass. Thrown weapons count
+     * {@code thrown_quiver_mult} against the slot, so their limit is reached sooner than
+     * ammunition's. Splitting is refused once {@code numStackSplit} would pass
+     * {@code numPackRemaining}, the free pack slots measured before any of this ran: overfilling
+     * the pack by one slot is tolerated, by more is not, and the object simply stays unassigned
+     * rather than forcing the pack past that. {@link #invenCanStackPartial} declines to make
+     * quiver-bound partial stacks for the same reason - a stack combined there would only be split
+     * again here.
+     *
+     * <p>C's asserts on those invariants are thrown as {@link RuntimeException}s: an oversized gear
+     * list, a split that would not shrink the stack, and a split attempted with no room for it.
+     * They are all "cannot happen" guards on the caller's arithmetic, not conditions to recover
+     * from.
+     *
+     * <p>Both views are compared against the copies taken before the rebuild, and a message is
+     * given if anything moved. The pack comparison is skipped unless the count is unchanged, since
+     * a pack that gained or lost an object has re-arranged itself for a reason the player can
+     * already see, and an object that moved out to the equipment does not count as a re-arrangement
+     * either. Neither message is given before the dungeon exists, which is character creation
+     * stocking the pack.
+     *
+     * <p>Function calcInventory stubbed on 260822, coded on 260826, commented in full on 260827.
      */
     public void calcInventory() {
         int oldInventoryCount = getPlayerUpkeep().getInventoryCount();
@@ -4835,6 +5131,20 @@ public class Player {
         }
 
         return body.getSlots().size();
+    }
+
+    /**
+     * Returns the player's current character level - the port of reading C's {@code p->lev}.
+     *
+     * <p>Distinct from {@link #getMaxLevel()}, C's {@code p->max_lev}: experience drain can lower
+     * the current level, but never the highest one attained.
+     *
+     * <p>Function getLevel commented in full on 260828.
+     *
+     * @return the player's current character level
+     */
+    public int getLevel() {
+        return level;
     }
 
     /**

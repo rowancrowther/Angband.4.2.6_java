@@ -116,6 +116,12 @@ public enum PlayerRedraw {
      */
     private boolean subwindow;
 
+    /**
+     * The event this flag announces once its region has been repainted — C's {@code redraw_events}
+     * table entry ({@code player-calcs.c:2645}) carried on the constant itself. See
+     * {@link #getEventType()} for why the pairing lives here and why {@code PR_MAP} is handled
+     * apart from the rest.
+     */
     private GameEventType eventType;
 
     /**
@@ -125,12 +131,13 @@ public enum PlayerRedraw {
      * @param basic     whether the flag is part of C's {@code PR_BASIC}
      * @param extra     whether the flag is part of C's {@code PR_EXTRA}
      * @param subwindow whether the flag is part of C's {@code PR_SUBWINDOW}
+     * @param eventType the type of event that this redraw triggers
      */
     PlayerRedraw(boolean basic, boolean extra, boolean subwindow, GameEventType eventType) {
         this.basic = basic;
         this.extra = extra;
         this.subwindow = subwindow;
-        this.eventType = GameEventType.EVENT_RACE_CLASS;
+        this.eventType = eventType;
     }
 
     /**
@@ -157,6 +164,19 @@ public enum PlayerRedraw {
         return subwindow;
     }
 
+    /**
+     * The event announcing that this region has been repainted. C keeps the pairing in a separate
+     * lookup table ({@code redraw_events}, {@code player-calcs.c:2645}) and walks it in table order;
+     * the port hangs each event off its own constant instead, so the pairing cannot fall out of
+     * step with the flag list.
+     *
+     * <p>{@code PR_MAP} is the one flag whose event is not signalled from here:
+     * {@link uk.co.jackoftrades.middle.player.Player#redrawStuff()} skips it in the loop and emits
+     * {@code EVENT_MAP} separately, because it is the only event of the set that carries data (the
+     * point {@code (-1, -1)}, meaning the whole map). C's table likewise has no {@code PR_MAP} row.
+     *
+     * @return the {@link GameEventType} signalled when this redraw flag is serviced
+     */
     public GameEventType getEventType() {
         return eventType;
     }

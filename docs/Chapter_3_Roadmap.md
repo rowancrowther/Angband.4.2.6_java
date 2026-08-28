@@ -270,9 +270,9 @@ boxes span these stages rather than matching them one-to-one.
 
 - [X] Write the set-piece proposal above; review before building
 - [X] `notice_stuff` (`[C] player-calcs.c:2536`) → `Player.java:1258`
-- [ ] `update_stuff` (`[C] player-calcs.c:2565`) → `Player.java:1279` — the fixed poll order is the point
-- [ ] `redraw_stuff` (`[C] player-calcs.c:2676`) → `Player.java:1289` — where the proposal lands
-- [ ] `handle_stuff` (`[C] player-calcs.c:2728`) → `Player.java:1269`
+- [X] `update_stuff` (`[C] player-calcs.c:2565`) → `Player.java:1279` — the fixed poll order is the point
+- [X] `redraw_stuff` (`[C] player-calcs.c:2676`) → `Player.java:1289` — where the proposal lands
+- [X] `handle_stuff` (`[C] player-calcs.c:2728`) → `Player.java:1269`
 
 ### E — Timed, write side *(needs D, to raise flags)*
 
@@ -298,6 +298,11 @@ boxes span these stages rather than matching them one-to-one.
 - [ ] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
 - [ ] `player_make_simple` (`[C] player-birth.c:522`)
 - [ ] `player_outfit` (`[C] player-birth.c:584`) and `wield_all` (`:462`) — **stubs**, per decision 2
+- [ ] **Remove the `LitPlayer` test double** in `src/test/.../cave/ChunkMarkWasSeenTest.java` once this stage gives a
+  player a real `PlayerState`, and go back to `new Player()`. `Player()` leaves `state` null, but
+  `Chunk.updateView` → `calcLighting` reads `Player.getStateLight()` (`Player.java:762`, `state.getCurLight()`), so
+  every test in that class was dying on an NPE before its first assertion. The double overrides that one accessor to
+  return a light radius of 1. C has no such case — its `p->state` is a struct, zeroed from allocation. Added 260828.
 
 ### H — The birth flow *(needs G; the only stage that needs the UI)*
 

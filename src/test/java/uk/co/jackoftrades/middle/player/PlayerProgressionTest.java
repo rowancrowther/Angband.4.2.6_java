@@ -347,15 +347,20 @@ class PlayerProgressionTest {
         }
 
         /**
-         * The three recalculation entry points do nothing yet, so a caller raising an update flag
-         * and calling them gets no recalculation.
+         * The three turn-loop entry points still awaiting their subsystems do nothing when called.
+         * {@code handleStuff} and {@code redrawStuff} await the display side, and {@code calcSpells}
+         * awaits the spell tables.
+         *
+         * <p>{@code updateStuff} used to be tested here alongside them and no longer is: it is
+         * written, and has its own suite in {@code PlayerUpdateStuffTest}. Calling it here would
+         * pass for the wrong reason — with no update flag raised it returns at its leading guard,
+         * which proves nothing either way.
          */
         @Test
-        @DisplayName("the turn-loop entry points do nothing yet")
-        void turnLoopEntryPointsAreStubbed() {
+        @DisplayName("handleStuff, redrawStuff and calcSpells do nothing yet")
+        void unportedTurnLoopEntryPointsAreStubbed() {
             player.calcSpells();
             player.handleStuff();
-            player.updateStuff();
             player.redrawStuff();
 
             assertNull(player.getPlayerState(), "no state was calculated");

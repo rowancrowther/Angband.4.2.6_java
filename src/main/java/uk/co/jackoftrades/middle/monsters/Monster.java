@@ -287,4 +287,23 @@ public class Monster {
 
         return setTimed(timed, newLevel, flag);
     }
+
+    /**
+     * Report whether the player fails to recognise this monster as a monster. The port of C's
+     * {@code monster_is_camouflaged}, a one-line read of the transient {@code MFLAG_CAMOUFLAGE}
+     * flag.
+     *
+     * <p>Camouflage covers both halves of C's disguise mechanic: a monster mimicking an object
+     * (C's {@code monster_is_mimicking} is this flag plus a non-null {@code mimicked_obj}) and one
+     * mimicking a feature, which carries the flag alone. The flag is transient state on the
+     * individual monster, not a property of its race, so it is cleared the moment the monster is
+     * revealed.
+     *
+     * <p>Function monsterIsCamouflaged coded on 260828, commented in full on 260828.
+     *
+     * @return {@code true} if the monster is camouflaged and so not recognisable as a monster
+     */
+    public boolean monsterIsCamouflaged() {
+        return monsterFlag.has(MonsterFlag.MFLAG_CAMOUFLAGE);
+    }
 }

@@ -276,7 +276,7 @@ boxes span these stages rather than matching them one-to-one.
 
 ### E — Timed, write side *(needs D, to raise flags)*
 
-- [ ] `player_set_timed` (`[C] player-timed.c:787`) → `Player.java:1468`
+- [X] `player_set_timed` (`[C] player-timed.c:787`) → `Player.java:1468`
 - [ ] `player_inc_check` (`[C] player-timed.c:923`)
 - [ ] `player_inc_timed` (`[C] player-timed.c:1050`) → `Player.java:1449`
 - [ ] `player_dec_timed` (`[C] player-timed.c:1093`) → `Player.java:1424`

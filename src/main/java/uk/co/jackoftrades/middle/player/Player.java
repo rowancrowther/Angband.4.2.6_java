@@ -26,11 +26,13 @@ import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.Message;
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.GameWorld;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
+import uk.co.jackoftrades.middle.game.event.projection.Source;
 import uk.co.jackoftrades.middle.game.gameengine.Command;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
@@ -1278,7 +1280,7 @@ public class Player {
         state.unionPlayerFlags(playerClass.getpFlags());
 
         // Extract the player flags
-        flags(state, collectF);
+        playerFlags(state, collectF);
 
         // Analyse equipment
         for (EquipSlot slot : body.getSlots()) {
@@ -2803,22 +2805,252 @@ public class Player {
     }
 
     /**
-     * Set a timed effect to an absolute duration, applying grade thresholds and any
-     * on-change messaging. The port of C's {@code player_set_timed}; the common sink
-     * that {@link #incTimed} and {@link #decTimed} both funnel through.
+     * Sets a timed effect to a given value, announcing and applying the consequences of the change -
+     * the port of C's {@code player_set_timed} ({@code player-timed.c}).
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the timed-effects runtime; reports
-     * {@code false} (no change).</p>
+     * <p>The requested value is coerced into the effect's legal range: first raised to the effect's
+     * lower bound, then, if it still exceeds the top grade's maximum, capped there. Both bounds are
+     * applied around an early exit, so the "no change" test runs against the raw (lower-bounded)
+     * value while the second exit catches the case of asking to exceed the top of the scale when the
+     * player is already pinned to it. Either exit returns {@code false} without touching the effect.
      *
-     * @param timedEffect the effect to set
-     * @param amount      the new duration in turns (may be zero or negative to clear it)
-     * @param notify      whether to announce the change to the player
-     * @param canDisturb  whether the change may interrupt resting/running
-     * @return {@code true} if the effect's value actually changed
+     * <p>Grades are the effect's named bands, held in ascending order with an implicit "off" grade of
+     * maximum {@code 0} at the head. C walks a linked list and compares the {@code grade} numbers;
+     * because the assembler numbers them sequentially from that head, the list index carries the same
+     * ordering and is compared directly here. Both walks stop at the last grade rather than running
+     * off the end, which is what makes the upper-bound test above meaningful.
+     *
+     * <p>Messages follow C's precedence exactly. Moving up a grade always speaks, and forces
+     * {@code notify}; moving down speaks only if the grade being entered carries a down message, and
+     * then also forces {@code notify}. Failing both, a caller-requested {@code notify} produces the
+     * effect's end, decrease or increase message according to the direction of travel, with a missing
+     * message simply printing nothing. Before any of that, {@code notify} is suppressed for a change
+     * the player could not perceive: one that duplicates an element they already know themselves
+     * immune to, or an object flag they already know they carry, since the status would tell them
+     * nothing new.
+     *
+     * <p>C passes a possibly-null object to {@code print_custom_message} and prints "hands" in place
+     * of its name. Java has no null receiver, so the equipped weapon prints the message when there is
+     * one and a placeholder object prints it with the bare-hands switch set when there is not.
+     *
+     * <p>Begin and end effect chains fire on the transitions into and out of zero, before the new
+     * value is stored. C's choice of origin looks inverted and is not: passing {@code sourceNone} when
+     * the change may disturb lets any nested timed-effect handler make its own disturbance decision,
+     * while {@code sourcePlayer} marks the change as self-inflicted and suppresses it.
+     *
+     * <p>Only a notifying change disturbs the player, raises the effect's update and redraw flags
+     * (always including {@code PR_STATUS}) and calls {@link #handleStuff()}; a silent change stores
+     * the value and stops.
+     *
+     * <p><b>Outstanding:</b> {@code Effect.effectDo} and {@link PlayerUtils#disturb()} are still
+     * stubs, so the transition chains and the disturbance are stored-up work rather than observable
+     * behaviour.
+     *
+     * <p>Function setTimed coded on 260829, commented in full on 260829.
+     *
+     * @param timedEffect the effect to set; must be one that the registry knows
+     * @param amount      the requested new value, before the lower and upper bounds are applied
+     * @param notify      whether the caller wants an ordinary change announced; a grade change
+     *                    overrides this upwards, a duplicated known effect overrides it downwards
+     * @param canDisturb  whether a notifying change may interrupt resting or running
+     * @return {@code true} if the player was notified, which is C's return value - not whether the
+     * stored value changed
+     * @throws IllegalArgumentException if the registry holds no effect of that name
      */
     public boolean setTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb) {
-        // Stub function TODO: implement
-        return false;
+        List<PlayerTimedEffect> timedEffects = PlayerRegistry.getPlayerTimedEffects();
+
+        // Get timed_effects[idx] into effect
+        PlayerTimedEffect effect = null;
+        for (PlayerTimedEffect playerTimedEffect : timedEffects) {
+            if (playerTimedEffect.getName() == timedEffect) {
+                effect = playerTimedEffect;
+                break;
+            }
+        }
+        if (effect == null) {
+            logger.error("Passed in timed effect that doesn't exist in PlayerTimedEffects: " + timedEffect.name());
+            throw new IllegalArgumentException("Passed in timed effect that doesn't exist in PlayerTimedEffects: " + timedEffect.name());
+        }
+
+        List<TimedGrade> grade = effect.getGrade();
+        int newGradeIndex = 0;
+        int currentGradeIndex = 0;
+        ItemObject weapon = getPlayerBody().equippedItemBySlotName("weapon");
+
+        // lowerBound
+        amount = Math.max(amount, effect.getLowerBound());
+
+        // no change
+        if (getTimedEffect(timedEffect) == amount) return false;
+
+        // Find the new grade we will be going to, and the current one
+        while (amount > grade.get(newGradeIndex).max()) {
+            newGradeIndex++;
+            if (newGradeIndex >= grade.size() - 1) break;
+        }
+        while (getTimedEffect(timedEffect) > grade.get(currentGradeIndex).max()) {
+            currentGradeIndex++;
+            if (currentGradeIndex >= grade.size() - 1) break;
+        }
+
+
+        // Upper bound
+        if (amount > grade.get(newGradeIndex).max()) {
+            if (getTimedEffect(timedEffect) == grade.get(newGradeIndex).max()) {
+                // No change - tried to exceed maximum position and already there
+                return false;
+            }
+            amount = grade.get(newGradeIndex).max();
+        }
+
+        // Don't mention effects which already match the player known state.
+        if (effect.getTempResist() != ElementEnum.ELEM_NONE
+                && itemKnowledge.getElementResistInfo().get(effect.getTempResist())
+                && playerIsImmune(effect.getTempResist())) {
+            notify = false;
+        }
+        if (effect.isoFlagExactlySyn() && effect.getoFlagDup() != ObjectFlag.OF_NONE
+                && itemKnowledge.flagIsKnown(effect.getoFlagDup())
+                && playerOfHasNotTimed(effect.getoFlagDup())) {
+            notify = false;
+        }
+
+        ItemObject newObj = new ItemObject();
+
+        // Always mention going up a grade
+        if (newGradeIndex > currentGradeIndex) {
+            if (weapon == null)
+                newObj.printCustomMessage(grade.get(newGradeIndex).upMsg(), effect.getMsgT(), this, true);
+            else
+                weapon.printCustomMessage(grade.get(newGradeIndex).upMsg(), effect.getMsgT(), this, false);
+            notify = true;
+        } else if (newGradeIndex < currentGradeIndex
+                && grade.get(newGradeIndex).downMsg() != null) {
+            if (weapon == null)
+                newObj.printCustomMessage(grade.get(newGradeIndex).downMsg(), effect.getMsgT(), this, true);
+            else weapon.printCustomMessage(grade.get(newGradeIndex).downMsg(), effect.getMsgT(), this, false);
+            notify = true;
+        } else if (notify) {
+            if (amount == 0) {
+                if (weapon == null)
+                    newObj.printCustomMessage(effect.getOnEnd(), MessageType.MSG_RECOVER, this, true);
+                else
+                    weapon.printCustomMessage(effect.getOnEnd(), MessageType.MSG_RECOVER, this, false);
+            } else if (getTimedEffect(timedEffect) > amount && effect.getOnDecrease() != null) {
+                if (weapon == null)
+                    newObj.printCustomMessage(effect.getOnDecrease(), effect.getMsgT(), this, true);
+                else
+                    weapon.printCustomMessage(effect.getOnDecrease(), effect.getMsgT(), this, false);
+            } else if (getTimedEffect(timedEffect) < amount && effect.getOnIncrease() != null) {
+                if (weapon == null)
+                    newObj.printCustomMessage(effect.getOnIncrease(), effect.getMsgT(), this, true);
+                else
+                    weapon.printCustomMessage(effect.getOnIncrease(), effect.getMsgT(), this, false);
+            }
+        }
+
+        // Dispatch effects for transitions
+        if (amount > 0 && getTimedEffect(timedEffect) == 0) {
+            // effect starts
+            if (effect.getOnBeginEffect() != null) {
+                boolean identity = false;
+
+                Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
+                effect.getOnBeginEffect().effectDo(source, null, identity, true,
+                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+            }
+        } else if (amount == 0) {
+            if (effect.getOnEndEffect() != null) {
+                boolean identity = false;
+                Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
+                effect.getOnEndEffect().effectDo(source, null, identity, true,
+                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
+            }
+        }
+
+        timed.put(timedEffect, amount);
+
+        if (notify) {
+            if (canDisturb) {
+                PlayerUtils.disturb();
+            }
+
+            for (PlayerUpdateEnum flag : effect.getFlagUpdate())
+                getPlayerUpkeep().setUpdateFlagOn(flag);
+
+            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATUS);
+            for (PlayerRedraw flag : effect.getFlagRedraw())
+                getPlayerUpkeep().setRedrawFlagsOn(flag);
+
+            handleStuff();
+        }
+
+        return notify;
+    }
+
+    /**
+     * Tests whether the player holds the given object flag permanently - the port of C's
+     * {@code player_of_has_not_timed} ({@code player-timed.c:747}).
+     *
+     * <p>The answer is rebuilt from scratch rather than read off the calculated state, and that is
+     * the whole point of the method. Its sibling {@code player_of_has} reads
+     * {@code p->state.flags}, and {@code calcBonuses} finishes by folding the object-flag duplicate
+     * of every running timed effect into that set, so the state answers "yes" for a player who is
+     * merely temporarily heroic. Here the collector is filled from {@link #playerFlags} - race,
+     * class, and the level-30 bravery grant - and then unioned with the flags of every worn item,
+     * so a flag that arrived by a timed effect is not seen.
+     *
+     * <p>{@code setTimed} uses it for exactly that distinction: a message about gaining a
+     * protection is suppressed only when the player already has that protection for keeps.
+     *
+     * <p>Empty slots are skipped; the scratch set handed to {@link ItemObject#objectFlags} is wiped
+     * on entry there, so items accumulate into the collector rather than overwriting one another.
+     *
+     * <p>Function playerOfHasNotTimed coded on 260829, commented in full on 260829.
+     *
+     * @param objectFlag the flag to ask about
+     * @return {@code true} if the race, the class or a worn item grants it, ignoring timed effects
+     */
+    private boolean playerOfHasNotTimed(ObjectFlag objectFlag) {
+        Flag<ObjectFlag> collectFlags = new Flag<>(ObjectFlag.class);
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+
+        this.playerFlags(getPlayerState(), collectFlags);
+
+        for (EquipSlot slot : getPlayerBody().getSlots()) {
+            ItemObject slotObject = slot.getItem();
+
+            if (slotObject == null) continue;
+            slotObject.objectFlags(flags);
+            collectFlags.union(flags);
+        }
+
+        return (collectFlags.has(objectFlag));
+    }
+
+    /**
+     * Tests whether the player is immune to the given element - the port of C's
+     * {@code player_is_immune}.
+     *
+     * <p>Immunity is not a separate flag: it is the top of the resistance scale, so the test is an
+     * exact match on a resistance level of 3 (C's {@code p->state.el_info[element].res_level == 3}).
+     * The literal is deliberate rather than a {@code >=} comparison, exactly as in the original -
+     * nothing raises a player's level above 3, and the equality is what C checks. Vulnerability
+     * ({@code -1}), no resistance ({@code 0}) and ordinary resistance ({@code 1}) all return
+     * {@code false}.
+     *
+     * <p>The reading is taken from the calculated state, not the known state, so it reflects what is
+     * true of the player rather than what they have learned.
+     *
+     * <p>Function playerIsImmune coded on 260829, commented in full on 260829.
+     *
+     * @param element the element to test; must be one of the real elements, since the state's
+     *                per-element map holds no entry for {@code ELEM_NONE} or {@code ELEM_MAX}
+     * @return {@code true} if the player's resistance level for that element is exactly 3
+     */
+    private boolean playerIsImmune(ElementEnum element) {
+        return getPlayerState().getElInfo().get(element).getResLevel() == 3;
     }
 
     /**
@@ -4066,7 +4298,7 @@ public class Player {
      * @param flags the flag set to fill, wiped first and mutated in place
      */
     @Contract(mutates = "param2")
-    public void flags(@NotNull PlayerState state, @NotNull Flag<ObjectFlag> flags) {
+    public void playerFlags(@NotNull PlayerState state, @NotNull Flag<ObjectFlag> flags) {
         flags.copyFrom(race.getoFlags());
         flags.union(playerClass.getoFlags());
         if (state.hasPFlag(PlayerFlag.PF_BRAVERY_30) && level >= 30) {
@@ -5136,7 +5368,7 @@ public class Player {
     /**
      * Returns the player's current character level - the port of reading C's {@code p->lev}.
      *
-     * <p>Distinct from {@link #getMaxLevel()}, C's {@code p->max_lev}: experience drain can lower
+     * <p>Distinct from , C's {@code p->max_lev}: experience drain can lower
      * the current level, but never the highest one attained.
      *
      * <p>Function getLevel commented in full on 260828.

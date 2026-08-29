@@ -22,6 +22,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.channel.colour.ColourEnum;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.data.PlayerData;
@@ -35,6 +36,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -146,6 +148,9 @@ class PlayerTimedAssemblerGradeTest {
          * The shipped {@code FOOD} bands, scaled: 1, 4, 8, 15, 90, 100 in the file become 100, 400,
          * 800, 1500, 9000, 10000 in the registry — the same numbers {@code Food} holds, which is
          * what lets the food block in {@code calcBonuses} compare the two.
+         *
+         * <p>The bands are indexed from one, index zero being the implicit "off" band; see
+         * {@link OffGrade}.
          */
         @Test
         @DisplayName("FOOD grades are multiplied by the food-value constant")
@@ -159,10 +164,12 @@ class PlayerTimedAssemblerGradeTest {
 
             assertAll(
                     () -> assertTrue(errors.isEmpty(), errors.toString()),
-                    () -> assertEquals(1 * FOOD_SCALE, grades.get(0).max()),
-                    () -> assertEquals(15 * FOOD_SCALE, grades.get(3).max()),
-                    () -> assertEquals(90 * FOOD_SCALE, grades.get(4).max()),
-                    () -> assertEquals(100 * FOOD_SCALE, grades.get(5).max()));
+                    () -> assertEquals(1 * FOOD_SCALE, grades.get(1).max()),
+                    () -> assertEquals(15 * FOOD_SCALE, grades.get(4).max()),
+                    () -> assertEquals(90 * FOOD_SCALE, grades.get(5).max()),
+                    () -> assertEquals(100 * FOOD_SCALE, grades.get(6).max()),
+                    () -> assertEquals(0, grades.get(0).max(),
+                            "the off band is never scaled"));
         }
 
         /**
@@ -182,9 +189,130 @@ class PlayerTimedAssemblerGradeTest {
 
             assertAll(
                     () -> assertTrue(errors.isEmpty(), errors.toString()),
-                    () -> assertEquals(50, grades.get(0).max()),
-                    () -> assertEquals(150, grades.get(1).max()),
-                    () -> assertEquals(10000, grades.get(2).max()));
+                    () -> assertEquals(50, grades.get(1).max()),
+                    () -> assertEquals(150, grades.get(2).max()),
+                    () -> assertEquals(10000, grades.get(3).max()));
+        }
+    }
+
+    /**
+     * The implicit "off" band that heads every effect's list.
+     *
+     * <p>C never writes this band in {@code player_timed.txt}: {@code parse_player_timed_grade}
+     * allocates a zeroed node the first time an effect declares a {@code grade:} line
+     * ({@code player-timed.c:270-273}) and numbers the declared bands from one
+     * ({@code player-timed.c:287}). It carries grade 0, maximum 0, and a null name and pair of
+     * messages.
+     *
+     * <p><b>Three separate pieces of behaviour rest on it,</b> which is why it is pinned rather
+     * than treated as a parser artefact. It is the band a counter of zero maps to, so the search
+     * {@code while (v > grade->max) grade = grade->next;} is total over the whole range and needs
+     * no "is the effect off?" special case — both {@code player_set_timed} and
+     * {@code player_timed_grade_eq} rely on that. Its null {@code down_msg} is what makes a lapse
+     * fall past the grade-message arms of {@code player_set_timed} and reach the {@code on_end}
+     * text with {@code MSG_RECOVER}. And because the declared bands start at one, the onset of an
+     * effect reads as {@code new_grade->grade > current_grade->grade} and prints the up-message:
+     * numbering the first declared band zero instead would collide with the head and silently
+     * lose every "You are blind."-style message, while leaving the lapse path working.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("the implicit off band")
+    class OffGrade {
+
+        /**
+         * The head's own fields, against a single-band effect where it is unambiguous.
+         */
+        @Test
+        @DisplayName("a zeroed, unnamed band heads the list")
+        void headIsZeroedAndUnnamed() {
+            List<String> errors = new ArrayList<>();
+            List<PlayerTimedEffect> effects =
+                    assemble(record("BLIND", grade("10000", "Blind")), errors);
+
+            List<TimedGrade> grades = effects.get(0).getGrade();
+
+            assertAll(
+                    () -> assertTrue(errors.isEmpty(), errors.toString()),
+                    () -> assertEquals(2, grades.size(), "one declared band plus the head"),
+                    () -> assertEquals(0, grades.get(0).Grade()),
+                    () -> assertEquals(0, grades.get(0).max()),
+                    () -> assertNull(grades.get(0).status()),
+                    () -> assertNull(grades.get(0).upMsg()),
+                    () -> assertNull(grades.get(0).downMsg()),
+                    () -> assertEquals(ColourEnum.COLOUR_DARK, grades.get(0).colour(),
+                            "C's mem_zalloc leaves the colour at 0, which is COLOUR_DARK"));
+        }
+
+        /**
+         * Declared bands are numbered from one. If they started at zero the first band would share
+         * its number with the head, and the onset comparison in {@code player_set_timed} would
+         * never see a rise out of the off band.
+         */
+        @Test
+        @DisplayName("declared bands are numbered from one")
+        void declaredBandsAreNumberedFromOne() {
+            List<String> errors = new ArrayList<>();
+            List<PlayerTimedEffect> effects = assemble(record("STUN",
+                    grade("50", "Stun"), grade("150", "Heavy Stun"),
+                    grade("10000", "Knocked Out")), errors);
+
+            List<TimedGrade> grades = effects.get(0).getGrade();
+
+            assertAll(
+                    () -> assertTrue(errors.isEmpty(), errors.toString()),
+                    () -> assertEquals(4, grades.size()),
+                    () -> assertEquals(0, grades.get(0).Grade()),
+                    () -> assertEquals(1, grades.get(1).Grade()),
+                    () -> assertEquals(2, grades.get(2).Grade()),
+                    () -> assertEquals(3, grades.get(3).Grade()),
+                    () -> assertEquals("Stun", grades.get(1).status()),
+                    () -> assertEquals("Knocked Out", grades.get(3).status()));
+        }
+
+        /**
+         * One head per effect, not one per load: the list is built inside the per-record loop, so
+         * two effects assembled together must not share or double up on it.
+         */
+        @Test
+        @DisplayName("each effect gets exactly one head")
+        void eachEffectGetsItsOwnHead() {
+            List<String> errors = new ArrayList<>();
+            List<PlayerTimedEffect> effects = new PlayerTimedAssembler().assemble(
+                    List.of(record("BLIND", grade("10000", "Blind")),
+                            record("STUN", grade("50", "Stun"), grade("150", "Heavy Stun"))),
+                    errors);
+
+            assertAll(
+                    () -> assertTrue(errors.isEmpty(), errors.toString()),
+                    () -> assertEquals(2, effects.size()),
+                    () -> assertEquals(2, effects.get(0).getGrade().size()),
+                    () -> assertEquals(3, effects.get(1).getGrade().size()),
+                    () -> assertEquals(0, effects.get(1).getGrade().get(0).max(),
+                            "the second effect is headed too"),
+                    () -> assertEquals(1, effects.get(1).getGrade().get(1).Grade(),
+                            "and its numbering restarts at one"));
+        }
+
+        /**
+         * The head is the only band with a zero maximum — the reason C rejects a declared
+         * {@code max} of zero, which {@link Validation#rejectsNonPositive()} covers from the other
+         * side. A second zero-maximum band would be unreachable, since the search stops at the
+         * first maximum the value does not exceed.
+         */
+        @Test
+        @DisplayName("no declared band can share the head's zero maximum")
+        void headsZeroMaximumIsUnique() {
+            List<String> errors = new ArrayList<>();
+            List<PlayerTimedEffect> effects = assemble(record("STUN",
+                    grade("50", "Stun"), grade("150", "Heavy Stun")), errors);
+
+            List<TimedGrade> grades = effects.get(0).getGrade();
+
+            assertAll(
+                    () -> assertTrue(errors.isEmpty(), errors.toString()),
+                    () -> assertEquals(1, grades.stream().filter(g -> g.max() == 0).count()));
         }
     }
 

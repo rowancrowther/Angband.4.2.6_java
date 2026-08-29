@@ -307,9 +307,9 @@ public enum TimedEffect {
      * @param redrawFlags the {@link PlayerRedraw} regions this effect dirties
      * @param upkeepFlags the {@link PlayerUpdateEnum} recalculations this effect triggers
      */
-    private TimedEffect(PlayerRedraw @NotNull [] redrawFlags, PlayerUpdateEnum @NotNull [] upkeepFlags) {
-        this.redrawFlags = new Flag<PlayerRedraw>(PlayerRedraw.class);
-        this.updateFlags = new Flag<PlayerUpdateEnum>(PlayerUpdateEnum.class);
+    TimedEffect(PlayerRedraw @NotNull [] redrawFlags, PlayerUpdateEnum @NotNull [] upkeepFlags) {
+        this.redrawFlags = new Flag<>(PlayerRedraw.class);
+        this.updateFlags = new Flag<>(PlayerUpdateEnum.class);
 
         for (PlayerRedraw redrawFlag : redrawFlags) {
             this.redrawFlags.on(redrawFlag);

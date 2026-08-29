@@ -60,9 +60,11 @@ import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
  * boundaries concrete, but nothing depends on that file: the rule under test should hold for any
  * ascending set of grades.
  *
- * <p>{@link Player} exposes no way to set a timed counter — {@code setTimed} is still a stub that
- * writes nothing — so {@link #setTimedValue} reaches the private map reflectively. That is the only
- * route into the state this method reads.
+ * <p>{@link #setTimedValue} reaches the private map reflectively rather than going through
+ * {@code setTimed}. That was originally because {@code setTimed} wrote nothing; now that it does, the
+ * reason is a better one — it coerces the value it is given to the effect's bounds, so a test that
+ * wants a counter of exactly 50 to sit on a band boundary would be asking the method under test's
+ * neighbour to agree with it first.
  *
  * <p>{@link PlayerRegistry} is global static state shared with the reader suites, so the loaded
  * effects are saved and put back around every test.

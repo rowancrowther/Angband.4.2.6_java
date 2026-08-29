@@ -32,6 +32,7 @@ import uk.co.jackoftrades.middle.game.GameWorld;
 import uk.co.jackoftrades.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
@@ -108,6 +109,11 @@ class PlayerUpdateStuffTest {
     private boolean realCharacterGenerated;
 
     /**
+     * The level {@link GameState} held before the test, put back afterwards.
+     */
+    private Chunk realCave;
+
+    /**
      * A player with a level, a visible map and a generated character - the ordinary mid-game
      * conditions under which every clause is reachable.
      */
@@ -116,6 +122,12 @@ class PlayerUpdateStuffTest {
         player = new RecordingPlayer();
         level = new RecordingChunk(player);
         player.setCave(level);
+
+        // The view clause rebuilds on the real level rather than the player's view, so it reads the
+        // C `cave` global (GameState) and not the player's own reference — both have to be the
+        // recording level or the rebuild goes to a null.
+        realCave = GameState.getCave();
+        GameState.setCave(level);
 
         bus = new CapturingBus();
         realBus = GameEngine.getEventsBusHandler();
@@ -133,6 +145,7 @@ class PlayerUpdateStuffTest {
     void restoreGlobals() {
         GameEngine.setEventsBusHandler(realBus);
         GameWorld.characterGenerated = realCharacterGenerated;
+        GameState.setCave(realCave);
         GameInputHolder.resetInstance();
     }
 

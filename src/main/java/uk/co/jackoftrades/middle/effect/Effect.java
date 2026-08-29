@@ -18,9 +18,13 @@
 package uk.co.jackoftrades.middle.effect;
 
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftrades.middle.game.event.projection.Source;
+import uk.co.jackoftrades.middle.game.gameengine.Command;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.enums.EffectBaseType;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -81,10 +85,6 @@ public class Effect {
      */
     private int otherParameter;
 
-    // Two effect values not presently used
-    //    private String visMsg;
-    //    private int power;
-
     /**
      * The message displayed when the effect triggers
      */
@@ -137,16 +137,6 @@ public class Effect {
         this.msg = msg;
     }
 
-//    /**
-//     * Set this effect's typed sub-type payload.
-//     *
-//     * @param value the sub-type payload to store
-//     * @author Rowan Crowther
-//     */
-//    public void setWrapperValue(EffectSubTypeWrapper value) {
-//        this.value = value;
-//    }
-
     /**
      * Determines whether this Effect has a valid Effect index
      *
@@ -183,18 +173,6 @@ public class Effect {
 
         return index.getInfoLabel();
     }
-
-//    /**
-//     * Set the effect's target offset.
-//     *
-//     * @param y target row offset
-//     * @param x target column offset
-//     * @author Rowan Crowther
-//     */
-//    public void setYX(int y, int x) {
-//        this.y = y;
-//        this.x = x;
-//    }
 
     /**
      * Get the description label for this effect
@@ -253,13 +231,9 @@ public class Effect {
         return copy;
     }
 
-    //    /**
-//     * Set the unparsed dice string for this effect's magnitude.
-//     *
-//     * @param diceString the dice expression string
-//     * @author Rowan Crowther
-//     */
-//    public void setDice(String diceString) {
-//        this.diceString = diceString;
-//    }
+    public boolean effectDo(Source origin, ItemObject object, boolean identifiable, boolean aware,
+                            DirectionEnum direction, int beamChance, int boost, Command cmd) {
+        // STUB function: TODO: Implement as part of Chapter 6
+        return false;
+    }
 }

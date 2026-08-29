@@ -159,10 +159,42 @@ class PlayerTimedReaderTest {
     void gradesAreCountedAndOrdered() throws IOException {
         List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
 
-        // FAST has a single grade; STUN three; CUT seven — the repeatable grade: line.
-        assertEquals(1, byName(effects, TimedEffect.TMD_FAST).getGrade().size());
-        assertEquals(3, byName(effects, TimedEffect.TMD_STUN).getGrade().size());
-        assertEquals(7, byName(effects, TimedEffect.TMD_CUT).getGrade().size());
+        // FAST has a single grade: line; STUN three; CUT seven — the repeatable grade: line. Each
+        // list carries one more than that: the implicit "off" band the assembler prepends, which C
+        // gets from the mem_zalloc'd head node in parse_player_timed_grade (player-timed.c:270-273).
+        assertEquals(1 + 1, byName(effects, TimedEffect.TMD_FAST).getGrade().size());
+        assertEquals(3 + 1, byName(effects, TimedEffect.TMD_STUN).getGrade().size());
+        assertEquals(7 + 1, byName(effects, TimedEffect.TMD_CUT).getGrade().size());
+    }
+
+    @Test
+    void everyEffectIsHeadedByTheImplicitOffGrade() throws IOException {
+        // C allocates a zeroed head node before the first grade: line of every effect and numbers
+        // the real bands from one (player-timed.c:270-273, 287). The head is what a counter of zero
+        // maps to, so the band walk in player_set_timed and player_timed_grade_eq needs no separate
+        // "is it off?" test; its null messages are also what routes a lapse to the on_end text
+        // rather than to a grade message. All 53 effects in the shipped file carry a grade: line, so
+        // every one of them should be headed.
+        List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
+
+        for (PlayerTimedEffect effect : effects) {
+            List<TimedGrade> grades = effect.getGrade();
+            TimedGrade head = grades.get(0);
+
+            assertEquals(0, head.Grade(), effect.getName() + ": the head is grade zero");
+            assertEquals(0, head.max(), effect.getName() + ": the head's maximum is zero");
+            assertNull(head.status(), effect.getName() + ": the head is unnamed");
+            assertNull(head.upMsg(), effect.getName() + ": the head has no up-message");
+            assertNull(head.downMsg(), effect.getName() + ": the head has no down-message");
+
+            // The real bands follow, numbered from one and strictly above the head's zero maximum.
+            for (int i = 1; i < grades.size(); i++) {
+                assertEquals(i, grades.get(i).Grade(),
+                        effect.getName() + ": band " + i + " should carry grade " + i);
+                assertTrue(grades.get(i).max() > 0,
+                        effect.getName() + ": band " + i + " should have a positive maximum");
+            }
+        }
     }
 
     @Test
@@ -248,7 +280,8 @@ class PlayerTimedReaderTest {
         // BLIND's single grade is grade:o:10000:Blind:You are blind. — the status-line label is a
         // real multi-character string and must be kept (C only nulls a *one-character* dummy label).
         List<PlayerTimedEffect> effects = new PlayerTimedReader().parseWithResults(REAL_FILE).items();
-        assertEquals("Blind", byName(effects, TimedEffect.TMD_BLIND).getGrade().get(0).status());
+        // get(1), not get(0): index zero is the implicit "off" band, whose label is null.
+        assertEquals("Blind", byName(effects, TimedEffect.TMD_BLIND).getGrade().get(1).status());
     }
 
     @Test
@@ -257,14 +290,15 @@ class PlayerTimedReaderTest {
 
         // BLIND: grade:o:10000:Blind:You are blind. — the fourth field is the message shown on
         // rising into the grade (up), and there is no down-message.
-        TimedGrade blind = byName(effects, TimedEffect.TMD_BLIND).getGrade().get(0);
+        TimedGrade blind = byName(effects, TimedEffect.TMD_BLIND).getGrade().get(1);
         assertEquals("You are blind.", blind.upMsg());
         assertNull(blind.downMsg());
 
         // FOOD's second grade carries both:
         //   grade:r:4:Faint:You are still faint.:You are getting faint from hunger!
         // field four (up) = "You are still faint.", field five (down) = "You are getting faint...".
-        TimedGrade faint = byName(effects, TimedEffect.TMD_FOOD).getGrade().get(1);
+        // FOOD's grades start at index 1, so its second band — Faint — is index 2.
+        TimedGrade faint = byName(effects, TimedEffect.TMD_FOOD).getGrade().get(2);
         assertEquals("Faint", faint.status());
         assertEquals("You are still faint.", faint.upMsg());
         assertEquals("You are getting faint from hunger!", faint.downMsg());

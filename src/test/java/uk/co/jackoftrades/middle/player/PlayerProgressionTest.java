@@ -211,36 +211,44 @@ class PlayerProgressionTest {
         }
 
         /**
-         * <b>Outstanding.</b> {@code setTimed} is the sink both {@code incTimed} and
-         * {@code decTimed} funnel through, and it is not yet written — so nothing can change a timed
-         * effect, and every one of the three reports no change.
+         * <b>Outstanding.</b> {@code setTimed} is now written, and {@code decTimed} funnels through
+         * it, so both are covered by suites of their own. The two that remain unwritten are
+         * {@code incTimed} and {@code clearTimed}, and what is worth holding about them is that they
+         * are stubs which report no change and make none.
          *
-         * <p>{@code decTimed} is written and does compute the new duration, but hands it to the
-         * unported sink and returns what that returns. The effect is that it looks like a method
-         * that does not work rather than one waiting on something else.
+         * <p>A stub returning {@code false} reads to a caller as "the effect did not take", which is
+         * the right answer for the wrong reason. Pinning the untouched duration alongside it is what
+         * separates the two: when either is ported, this fails, and that is the point at which it
+         * should be rewritten around the real transitions.
          *
          * @throws Exception if the table cannot be reached
          */
         @Test
-        @DisplayName("nothing can yet change a timed effect")
-        void timedEffectsCannotBeChanged() throws Exception {
+        @DisplayName("incTimed and clearTimed are still stubs that change nothing")
+        void theRemainingTimedStubsChangeNothing() throws Exception {
             Map<TimedEffect, Integer> table = new HashMap<>();
             table.put(TimedEffect.TMD_FAST, 12);
             set("timed", table);
 
-            assertFalse(player.setTimed(TimedEffect.TMD_FAST, 20, false, false));
-            assertFalse(player.incTimed(TimedEffect.TMD_FAST, 5, false, false, false));
-            assertFalse(player.decTimed(TimedEffect.TMD_FAST, 5, false, false));
-            assertFalse(player.clearTimed(TimedEffect.TMD_FAST, false, false));
+            assertFalse(player.incTimed(TimedEffect.TMD_FAST, 5, false, false, false),
+                    "incTimed is still a stub and reports no change");
+            assertFalse(player.clearTimed(TimedEffect.TMD_FAST, false, false),
+                    "clearTimed is still a stub and reports no change");
 
             assertEquals(12, player.getTimedEffect(TimedEffect.TMD_FAST),
-                    "the duration is untouched by any of them");
+                    "the duration is untouched by either of them");
         }
 
         /**
          * The table is not sparse: the constructor fills it with a zero for every effect, so
          * {@code decTimed} can read it directly without a containment test and an effect the player
          * has never been under still has an entry.
+         *
+         * <p>The probe that used to stand here called {@code decTimed} on {@link TimedEffect#TMD_NONE}
+         * to show that unguarded read surviving. It cannot any more: {@code decTimed} hands the
+         * computed duration to {@code setTimed}, which rejects an effect the registry holds no
+         * definition for, and nothing defines {@code TMD_NONE}. The density itself is what this test
+         * is for, and the assertion below reads every entry to establish it.
          */
         @Test
         @DisplayName("every effect has an entry from the start")
@@ -248,8 +256,6 @@ class PlayerProgressionTest {
             for (TimedEffect effect : TimedEffect.values()) {
                 assertEquals(0, player.getTimedEffect(effect), effect + " should start at zero");
             }
-
-            player.decTimed(TimedEffect.TMD_FAST, 5, false, false);
         }
     }
 

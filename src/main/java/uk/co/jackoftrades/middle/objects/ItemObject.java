@@ -22,9 +22,11 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
+import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
@@ -41,8 +43,10 @@ import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.strings.MessageTag;
 import uk.co.jackoftrades.middle.utils.NumberUtils;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
@@ -1382,6 +1386,35 @@ public class ItemObject {
     }
 
     /**
+     * Fills the given set with this item's object flags — the port of C's
+     * {@code object_flags(obj, flags)}.
+     *
+     * <p>The out-parameter form of {@link #getFlags}. C has no way to return an array, so it hands
+     * the function a caller-owned {@code bitflag flags[OF_SIZE]} to fill; the callers that already
+     * hold a working set — {@code object_flags_known} building on it, {@code obj-power.c} reusing
+     * one across an item — are the reason to keep that shape here rather than making every caller
+     * take a fresh allocation.
+     *
+     * <p>The set is wiped before the copy, so whatever the caller had in it is discarded, not
+     * merged. That is C's own {@code of_wipe} then {@code of_copy}, and the wipe is what makes a
+     * reused buffer safe. {@link Flag#copyFrom} wipes for itself as well, so the explicit call is
+     * redundant in Java; it stays because it is the clause C writes, and a reader comparing the two
+     * should find them line for line.
+     *
+     * <p>C guards with {@code if (!obj) return}, leaving the wiped set behind for a null item. An
+     * instance method has no such case to answer — a caller with no item cannot reach this at all —
+     * so a Java caller that could be holding nothing wipes its own set on that path.
+     *
+     * <p>Function objectFlags coded on 260829 / commented in full on 260829.
+     *
+     * @param flag the set to fill; wiped first, then written with this item's flags
+     */
+    public void objectFlags(Flag<ObjectFlag> flag) {
+        flag.wipe();
+        flag.copyFrom(this.flags);
+    }
+
+    /**
      * Returns the player's known view of this item, the port of reading C's {@code obj->known}.
      *
      * <p>Itself an {@link ItemObject}, carrying only what has been discovered — which is why the
@@ -2090,10 +2123,8 @@ public class ItemObject {
      * @return {@code true} if the player answered yes
      */
     public boolean verifyObject(String prompt, Player player) {
-        Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class);
-        descFlags.on(ObjectDescription.ODESC_PREFIX);
-        descFlags.on(ObjectDescription.ODESC_COMBAT);
-        descFlags.on(ObjectDescription.ODESC_EXTRA);
+        Flag<ObjectDescription> descFlags = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_PREFIX,
+                ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
         String objectName = description(descFlags, player);
 
         String out = String.format("%s %s? ", prompt, objectName);
@@ -4941,6 +4972,279 @@ public class ItemObject {
      */
     private boolean canBrowse() {
         return this.getKind().canBrowse();
+    }
+
+    /**
+     * Prints a message with the object's own details substituted into it - the port of C's
+     * {@code print_custom_message} ({@code obj-util.c}).
+     *
+     * <p>Messages in the data files are written with tags in braces, so a single line in
+     * {@code object.txt} serves whatever object triggers it. The tags are replaced here and the
+     * finished text handed to {@link Message#messageType} under the caller's type. Four tags are
+     * understood, looked up by {@link MessageTag#getTag}:
+     *
+     * <ul>
+     * <li>{@code {name}} - the object's full name with its quantity prefix, from
+     *     {@link #description} under {@code ODESC_PREFIX | ODESC_BASE}.</li>
+     * <li>{@code {kind}} - the kind's name alone, from {@link #objectKindName} with
+     *     {@code easyKnow} set: no quantity, no ego or artifact name, no runes.</li>
+     * <li>{@code {s}} - the verb ending, written as {@code glow{s}}. It yields an {@code s} for a
+     *     single object and nothing at all for a pile, so the same sentence reads for both.</li>
+     * <li>{@code {is}} - {@code is} for a single object, {@code are} for a pile.</li>
+     * </ul>
+     *
+     * <p>A tag in braces that is not one of those is dropped whole, braces included, exactly as
+     * C's {@code default} arm does. A brace with no closing brace after it - either running to the
+     * end of the string or stopped by a non-letter - is itself dropped and the text following it
+     * kept verbatim, which is again what C does by resuming from the character after the brace.
+     *
+     * <p>C reads the object from a pointer that may be {@code null}, which is how the unarmed
+     * player is described: with no object, {@code {name}} and {@code {kind}} both become
+     * {@code hands}, {@code {is}} becomes {@code are}, and {@code {s}} prints nothing. This
+     * version is called on the object itself, so {@code noObject} carries that case instead, and
+     * every place C tests {@code obj} this tests the flag.
+     *
+     * <p>Two divergences from the C, neither reachable from the shipped data files. Tag lookup
+     * matches the whole tag where C's {@code msg_tag_lookup} matches only its opening letters, so
+     * a malformed {@code {names}} is dropped here and read as {@code {name}} there. And C builds
+     * the message in a 1024-byte buffer and silently truncates at it, where this builds a string
+     * and cannot.
+     *
+     * <p>Function printCustomMessage coded 260829, commented in full on 260829.
+     *
+     * @param string   the message template, which may be {@code null} - C is called with the
+     *                 message field of a property that need not have one, and answers by printing
+     *                 nothing
+     * @param msgT     the message type to tag the finished text with, for the front-end to colour
+     *                 and sound it by
+     * @param player   the player the name is described to, passed through to {@link #description}
+     * @param noObject whether to describe the player's bare hands rather than this object
+     */
+    public void printCustomMessage(String string, MessageType msgT, Player player, boolean noObject) {
+        if (string == null) return;
+
+        StringBuilder sb = new StringBuilder();
+
+        // Strings have tags in surrounded by {}. extract them and replace with appropriate text
+        int next = string.indexOf('{');
+        while (next >= 0) {
+            sb.append(string.substring(0, next));
+            string = string.substring(next + 1);
+
+            StringBuilder tagSB = new StringBuilder();
+            int index = 0;
+            while (index < string.length() && string.charAt(index) != '}'
+                    && Character.isAlphabetic(string.charAt(index))) {
+                tagSB.append(string.charAt(index));
+                index++;
+            }
+
+            if (index == string.length()) {
+                // No closing brace was found - add the opening brace and
+                // the tag in and jump to the next open brace
+                sb.append(tagSB.toString());
+                string = "";
+                break;
+            }
+
+            String tag = tagSB.append("}").toString();
+
+            if (string.charAt(index) == '}') {
+                MessageTag mtag = MessageTag.getTag(tag);
+                switch (mtag) {
+                    case MSG_TAG_NAME -> {
+                        Flag<ObjectDescription> descs = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_PREFIX,
+                                ObjectDescription.ODESC_BASE);
+                        if (noObject) sb.append("hands");
+                        else sb.append(description(descs, player));
+                        string = string.substring(mtag.getSize());
+                    }
+                    case MSG_TAG_KIND -> {
+                        if (noObject) sb.append("hands");
+                        else sb.append(objectKindName(getKind(), true));
+                        string = string.substring(mtag.getSize());
+                    }
+                    case MSG_TAG_VERB -> {
+                        if (!noObject && getNumber() == 1) {
+                            sb.append("s");
+                        }
+                        string = string.substring(mtag.getSize());
+                    }
+                    case MSG_TAG_VERB_IS -> {
+                        if (noObject || getNumber() > 1) sb.append("are");
+                        else sb.append("is");
+                        string = string.substring(mtag.getSize());
+                    }
+                    default -> string = string.substring(tag.length());
+                }
+
+            }
+
+            next = string.indexOf('{');
+        }
+
+        sb.append(string);
+
+        Message.messageType(msgT, sb.toString());
+    }
+
+    /**
+     * Builds a stripped-down name for a kind - the port of C's {@code object_kind_name}
+     * ({@code obj-desc.c}).
+     *
+     * <p>An unaware flavoured kind answers with the bare flavour text, so an unidentified potion
+     * reads as its colour rather than its effect. Everything else answers with the kind's own
+     * name, run through {@link #objDescNameFormat} with no modifier and in the singular, which
+     * strips the {@code &} article marker and resolves any {@code ~} or {@code |x|y|} in the
+     * template.
+     *
+     * <p>{@code easyKnow} forces the identified name regardless of awareness. C uses it where the
+     * caller already knows what the kind is - the knowledge menus, the wizard-mode object list and
+     * the ignore settings - rather than as a property of the object.
+     *
+     * <p>Note this is the kind's name, not an object's: there is no quantity prefix, no ego or
+     * artifact name, and no runes.
+     *
+     * <p>C writes into a caller-supplied buffer and truncates to its size. This version returns a
+     * string and so cannot truncate, matching the divergence already recorded on
+     * {@link #objDescNameFormat}.
+     *
+     * <p>Function objectKindName commented in full on 260829.
+     *
+     * @param kind     the kind to name
+     * @param easyKnow whether to use the identified name even when the player is unaware
+     * @return the flavour text for an unaware flavoured kind, otherwise the formatted kind name
+     */
+    private String objectKindName(@NotNull ObjectKind kind, boolean easyKnow) {
+        if (!easyKnow && !kind.isAware() && kind.getFlavour() != null)
+            return kind.getFlavour().getText();
+
+        return objDescNameFormat(kind.getName(), null, false);
+    }
+
+    /**
+     * Formats an object-name template into display text - the port of C's
+     * {@code obj_desc_name_format} ({@code obj-desc.c}).
+     *
+     * <p>Templates come from {@code object.txt}, {@code object_base.txt} and the hard-coded
+     * basenames in C's {@code obj_desc_get_basename}, and carry four formatting characters:
+     *
+     * <ul>
+     * <li>{@code &} and the spaces following it are dropped. The article they stand for is chosen
+     *     further out, by the quantity prefix, which looks for the {@code &} in the unformatted
+     *     template.</li>
+     * <li>{@code ~} at the end of a word pluralises it when {@code pluralise} is set, as
+     *     {@code es} after {@code s}, {@code x} or {@code h} and {@code s} otherwise.</li>
+     * <li>{@code |x|y|} yields {@code x} when singular and {@code y} when plural, which is how
+     *     {@code Sta|ff|ves|} becomes either staff or staves.</li>
+     * <li>{@code #} is replaced by {@code modString} - a flavour for flavoured kinds, the book's
+     *     own name for books - formatted first by a recursive call that carries the same
+     *     pluralisation but no further modifier of its own.</li>
+     * </ul>
+     *
+     * <p>C walks the template once, left to right, copying bytes into a bounded buffer. This
+     * version instead rewrites an immutable string in passes: ampersands, then the modifier, then
+     * tildes, then bars. That is a deliberate divergence, and it buys four differences in
+     * behaviour, none of them reachable from the shipped game data:
+     *
+     * <ul>
+     * <li>Because the modifier goes in before the tilde pass, a {@code ~} written directly after a
+     *     {@code #} pluralises against the last character of the substituted modifier, where C
+     *     sees the {@code #} itself and so always adds a bare {@code s}. No basename puts the two
+     *     in that order.</li>
+     * <li>A template whose bar count is not a multiple of three is rejected whole and returned
+     *     unformatted. C has no such check and instead truncates everything from the unmatched bar
+     *     onwards.</li>
+     * <li>A {@code ~} with no character before it is reported, and the text formatted so far is
+     *     returned. C reads the byte before the {@code ~} unconditionally, which at the first
+     *     character of the template is off the front of the allocation.</li>
+     * <li>There is no bound on the output. C truncates to the caller's buffer size.</li>
+     * </ul>
+     *
+     * <p>Both error exits hand back the text with any unconsumed bars and tildes still in it, so a
+     * malformed template shows up in the game rather than being quietly swallowed.
+     *
+     * <p>Function objDescNameFormat commented in full on 260829.
+     *
+     * @param string    the name template to format
+     * @param modString the text to substitute for {@code #}, or {@code null} to leave any
+     *                  {@code #} in place
+     * @param pluralise whether to take the plural form of every {@code ~} and {@code |x|y|}
+     * @return the formatted name
+     */
+    private String objDescNameFormat(@NotNull String string, @Nullable String modString, boolean pluralise) {
+        StringBuilder result = new StringBuilder();
+
+        // Trim '&'
+        while (string.contains("&")) {
+            int amp = string.indexOf('&');
+            String start = string.substring(0, amp);
+            String end = string.substring(amp + 1);
+            while (end.startsWith(" ")) {
+                end = end.substring(1);
+            }
+            string = start + end;
+        }
+
+        // Swap in ModString if we need to
+        if (string.contains("#") && modString != null) {
+            string = string.replace("#", objDescNameFormat(modString, null, pluralise));
+        }
+
+        // Check that the number of | in the string is strictly divisible by 3.
+        int noOfBars = string.contains("|") ? string.split("\\|", -1).length - 1 : 0;
+        if (noOfBars % 3 != 0) {
+            String message = "Error: " + noOfBars + " bars found in string, should be a multiple of 3.";
+            logger.error(message);
+            return string;
+        }
+
+        // Find words we need to pluralise and do so
+        if (pluralise) {
+            while (string.contains("~")) {
+                int plural = string.indexOf('~');
+                if (plural == 0) {
+                    String message = "Error: ~ found at position 1 in string: " + string;
+                    logger.error(message);
+                    return result.toString() + string;
+                }
+                result.append(string, 0, plural);
+                char prev = string.charAt(plural - 1);
+                if (prev == 's' || prev == 'x' || prev == 'h') {
+                    result.append("es");
+                } else {
+                    result.append("s");
+                }
+                string = string.substring(plural + 1);
+            }
+            string = result.toString() + string;
+
+            // Pluralise special plurals
+            // Remove the bits |SINGLE|plural| bits
+            while (string.contains("|")) {
+                int first = string.indexOf('|');
+                int second = string.indexOf('|', first + 1);
+                int third = string.indexOf('|', second + 1);
+                string = string.substring(0, first)
+                        + string.substring(second + 1, third)
+                        + string.substring(third + 1);
+            }
+        } else {
+            // remove ~ characters
+            string = string.replace("~", "");
+
+            // Remove the |single|PLURAL| bits
+            while (string.contains("|")) {
+                int first = string.indexOf('|');
+                int second = string.indexOf('|', first + 1);
+                int third = string.indexOf('|', second + 1);
+                string = string.substring(0, first)
+                        + string.substring(first + 1, second)
+                        + string.substring(third + 1);
+            }
+        }
+
+        return string;
     }
 
     /**

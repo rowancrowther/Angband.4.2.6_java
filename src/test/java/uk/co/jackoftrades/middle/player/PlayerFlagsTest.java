@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
- * Tests {@link Player#flags}, the port of C's {@code player_flags} ({@code player.c:290}).
+ * Tests {@link Player#playerFlags}, the port of C's {@code player_flags} ({@code player.c:290}).
  *
  * <p>The method gathers the object flags a player has innately: those from the race, those from the
  * class, and {@link ObjectFlag#OF_PROT_FEAR} for a class carrying
@@ -191,7 +191,7 @@ class PlayerFlagsTest {
         void aRaceFlagIsGathered() throws Exception {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER), new Flag<>(ObjectFlag.class));
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FEATHER));
             assertEquals(1, flags.count());
@@ -201,7 +201,7 @@ class PlayerFlagsTest {
         void aClassFlagIsGathered() throws Exception {
             giveRaceAndClass(new Flag<>(ObjectFlag.class), setOf(ObjectFlag.OF_FREE_ACT));
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FREE_ACT));
             assertEquals(1, flags.count());
@@ -212,7 +212,7 @@ class PlayerFlagsTest {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER, ObjectFlag.OF_SEE_INVIS),
                     setOf(ObjectFlag.OF_FREE_ACT));
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FEATHER));
             assertTrue(flags.has(ObjectFlag.OF_SEE_INVIS));
@@ -227,7 +227,7 @@ class PlayerFlagsTest {
         void aFlagOnBothSourcesIsHeldOnce() throws Exception {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER), setOf(ObjectFlag.OF_FEATHER));
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FEATHER));
             assertEquals(1, flags.count());
@@ -235,7 +235,7 @@ class PlayerFlagsTest {
 
         @Test
         void aPlayerWithNoInnateFlagsGathersNothing() {
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.isEmpty());
         }
@@ -249,7 +249,7 @@ class PlayerFlagsTest {
             Flag<ObjectFlag> raceFlags = setOf(ObjectFlag.OF_FEATHER);
             giveRaceAndClass(raceFlags, setOf(ObjectFlag.OF_FREE_ACT));
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
             flags.on(ObjectFlag.OF_HOLD_LIFE);
 
             assertFalse(raceFlags.has(ObjectFlag.OF_FREE_ACT));
@@ -269,7 +269,7 @@ class PlayerFlagsTest {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER), new Flag<>(ObjectFlag.class));
             flags.on(ObjectFlag.OF_FREE_ACT);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_FREE_ACT),
                     "C opens with a memcpy over the whole set, not a union");
@@ -282,7 +282,7 @@ class PlayerFlagsTest {
             flags.on(ObjectFlag.OF_FREE_ACT);
             flags.on(ObjectFlag.OF_FEATHER);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.isEmpty());
         }
@@ -291,8 +291,8 @@ class PlayerFlagsTest {
         void callingTwiceLeavesTheSameSet() throws Exception {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER), setOf(ObjectFlag.OF_FREE_ACT));
 
-            player.flags(state, flags);
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FEATHER));
             assertTrue(flags.has(ObjectFlag.OF_FREE_ACT));
@@ -306,10 +306,10 @@ class PlayerFlagsTest {
         @Test
         void aSecondCallDoesNotKeepTheFirstCallsFlags() throws Exception {
             giveRaceAndClass(setOf(ObjectFlag.OF_FEATHER), new Flag<>(ObjectFlag.class));
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             giveRaceAndClass(setOf(ObjectFlag.OF_SEE_INVIS), new Flag<>(ObjectFlag.class));
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_FEATHER));
             assertTrue(flags.has(ObjectFlag.OF_SEE_INVIS));
@@ -328,7 +328,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
             setLevel(30);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -338,7 +338,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
             setLevel(29);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_PROT_FEAR));
             assertTrue(flags.isEmpty());
@@ -348,7 +348,7 @@ class PlayerFlagsTest {
         void theLevelWithoutTheFlagGrantsNothing() throws Exception {
             setLevel(50);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_PROT_FEAR));
             assertTrue(flags.isEmpty());
@@ -362,7 +362,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
             setLevel(50);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -371,7 +371,7 @@ class PlayerFlagsTest {
         void aFreshPlayerAtLevelZeroGetsNoProtection() throws Exception {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -384,7 +384,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_NO_MANA);
             setLevel(50);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -398,7 +398,7 @@ class PlayerFlagsTest {
             giveRaceAndClass(setOf(ObjectFlag.OF_PROT_FEAR), new Flag<>(ObjectFlag.class));
             setLevel(1);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -409,7 +409,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
             setLevel(30);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_FEATHER));
             assertTrue(flags.has(ObjectFlag.OF_FREE_ACT));
@@ -436,7 +436,7 @@ class PlayerFlagsTest {
             PlayerState hypothetical = new PlayerState();
             givePFlag(hypothetical, PlayerFlag.PF_BRAVERY_30);
 
-            player.flags(hypothetical, flags);
+            player.playerFlags(hypothetical, flags);
 
             assertTrue(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -452,7 +452,7 @@ class PlayerFlagsTest {
             setField(player, Player.class, "state", own);
             setLevel(30);
 
-            player.flags(new PlayerState(), flags);
+            player.playerFlags(new PlayerState(), flags);
 
             assertFalse(flags.has(ObjectFlag.OF_PROT_FEAR));
         }
@@ -463,7 +463,7 @@ class PlayerFlagsTest {
             givePFlag(state, PlayerFlag.PF_BRAVERY_30);
             setLevel(30);
 
-            player.flags(state, flags);
+            player.playerFlags(state, flags);
 
             assertFalse(state.hasOFlag(ObjectFlag.OF_FEATHER),
                     "the method fills the set it is given, never the state's own flags");

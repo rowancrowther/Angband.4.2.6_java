@@ -86,8 +86,11 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
             }
             String description = record.description();
             List<TimedGrade> grades = new ArrayList<>();
+            // Put in the C header TimedGrade
+            TimedGrade head = new TimedGrade(0, ColourEnum.COLOUR_DARK, 0, null, null, null);
+            grades.add(head);
             boolean illegalGrade = false;
-            int count = -1;
+            int count = 0;
             int previousValue = 0;
             for (PlayerTimedParseRecord.PlayerTimedGradeParseRecord g : record.grades()) {
                 count++;

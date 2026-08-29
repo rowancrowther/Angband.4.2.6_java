@@ -63,6 +63,18 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
         all = EnumSet.allOf(this.eClass);
     }
 
+    public Flag(@NotNull Class<E> eClass, @NotNull E flag) {
+        this.eClass = eClass;
+        flagSet = EnumSet.of(flag);
+        all = EnumSet.allOf(this.eClass);
+    }
+
+    public Flag(@NotNull Class<E> eClass, @NotNull E... flags) {
+        this.eClass = eClass;
+        flagSet = EnumSet.copyOf(Arrays.asList(flags));
+        all = EnumSet.allOf(this.eClass);
+    }
+
     /**
      * Returns true if the incoming parameter is part of the flag set, and false otherwise
      *

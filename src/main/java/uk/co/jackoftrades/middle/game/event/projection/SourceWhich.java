@@ -18,18 +18,19 @@
 package uk.co.jackoftrades.middle.game.event.projection;
 
 import uk.co.jackoftrades.middle.cave.Trap;
+import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.objects.ChestTrap;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 
-public sealed interface SourceWhich permits SourceWhich.TrapRecord, SourceWhich.IntRecord,
+public sealed interface SourceWhich permits SourceWhich.TrapRecord, SourceWhich.MonsterRecord,
         SourceWhich.ObjectRecord, SourceWhich.ChestTrapRecord {
     record TrapRecord(Trap trap) implements SourceWhich {
     }
 
-    record IntRecord(int monster) implements SourceWhich {
+    record MonsterRecord(Monster monster) implements SourceWhich {
     }
 
-    record ObjectRecord(ItemObject objct) implements SourceWhich {
+    record ObjectRecord(ItemObject object) implements SourceWhich {
     }
 
     record ChestTrapRecord(ChestTrap chestTrap) implements SourceWhich {

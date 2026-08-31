@@ -289,8 +289,8 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `adjust_level` (`[C] player.c:208`) → `Player.java:1399`;
 - [X] `player_exp_gain`
 - [X] `player_exp_lose` (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
-- [ ] `stat_name_to_idx`
-- [ ] `stat_idx_to_name`
+- [X] `stat_name_to_idx`
+- [X] `stat_idx_to_name`
 - [ ] `lookup_realm` (`[C] player.c:111, 122, 130`)
 - [ ] `player_random_name`
 - [ ] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both

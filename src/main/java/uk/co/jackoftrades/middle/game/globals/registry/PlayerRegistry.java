@@ -27,7 +27,9 @@ import uk.co.jackoftrades.middle.player.*;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Runtime holder for all player-domain game data — properties, shapes, history charts, bodies,
@@ -43,6 +45,23 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class PlayerRegistry {
+
+    /**
+     * The ceiling on a player's experience, both current and maximum. The port of C's
+     * {@code PY_MAX_EXP} ({@code player.h}), which carries the same value.
+     *
+     * <p>{@code Player.adjustLevel} clamps both {@code exp} and {@code maxExp} to this before
+     * recomputing the character level, so no amount of experience gain can push either past it.
+     * Experience is also refused outright once a player is already at the cap.</p>
+     *
+     * <p>Field PY_MAX_EXP coded on 260831, commented in full on 260831.</p>
+     */
+    public static final long PY_MAX_EXP = 99999999L;
+    public static final int PY_MAX_LEVEL = 50;
+    public static final int PY_KNOW_LEVEL = 30;
+
+    public static Map<Integer, Long> playerExperience = new HashMap<>();
+    
     /**
      * Logger for this registry, used to record an access made before the data was loaded before
      * the matching exception is thrown.

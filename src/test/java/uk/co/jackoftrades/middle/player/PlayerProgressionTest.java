@@ -25,6 +25,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
+import uk.co.jackoftrades.middle.game.globals.loaders.PlayerDataLoader;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftrades.testsupport.CalcBonusesFixture;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -98,11 +101,44 @@ class PlayerProgressionTest {
     }
 
     /**
+     * Reads one of the player's private long fields. The experience totals are {@code long} because
+     * C's {@code p->exp} is a 32-bit unsigned quantity that will not fit a Java {@code int}, so they
+     * cannot be read through {@link #intField}.
+     *
+     * @param name the field's name
+     * @return its value
+     * @throws Exception if the field cannot be reached
+     */
+    private long longField(String name) throws Exception {
+        Field field = Player.class.getDeclaredField(name);
+        field.setAccessible(true);
+        return field.getLong(player);
+    }
+
+    /**
      * Experience loss, which caps rather than going negative.
      */
     @Nested
     @DisplayName("expLose")
     class ExperienceLoss {
+
+        /**
+         * A character complete enough to survive the level arithmetic {@code expLose} ends in.
+         *
+         * <p>{@code adjustLevel} runs {@code handleStuff} twice, which recalculates bonuses and hit
+         * points, and those read the class, the stat maps and the per-level hit-point table. A bare
+         * {@code new Player()} has none of them, so the fixture's do-nothing character stands in;
+         * {@code expFact} is set to 100 so the experience thresholds are the table's own.
+         *
+         * @throws Exception if a field cannot be reached
+         */
+        @BeforeEach
+        void completeCharacter() throws Exception {
+            player = CalcBonusesFixture.plainCharacter().player();
+            set("playerHP", new int[PlayerRegistry.PY_MAX_LEVEL]);
+            set("expFact", 100);
+            PlayerDataLoader.initialiseExpLevel();
+        }
 
         /**
          * An ordinary loss is subtracted, and leaves the maximum alone when it is not permanent —
@@ -119,7 +155,7 @@ class PlayerProgressionTest {
             player.expLose(300, false);
 
             assertEquals(700, player.getExp());
-            assertEquals(1000, intField("maxExp"), "the maximum is what can be earned back");
+            assertEquals(1000L, longField("maxExp"), "the maximum is what can be earned back");
         }
 
         /**
@@ -136,7 +172,7 @@ class PlayerProgressionTest {
             player.expLose(300, true);
 
             assertEquals(700, player.getExp());
-            assertEquals(700, intField("maxExp"));
+            assertEquals(700L, longField("maxExp"));
         }
 
         /**
@@ -171,7 +207,7 @@ class PlayerProgressionTest {
             player.expLose(9999, true);
 
             assertEquals(0, player.getExp());
-            assertEquals(600, intField("maxExp"),
+            assertEquals(600L, longField("maxExp"),
                     "the maximum lost the 400 actually taken, not the 9999 asked for");
         }
     }

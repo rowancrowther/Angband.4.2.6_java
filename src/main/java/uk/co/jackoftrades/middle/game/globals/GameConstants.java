@@ -288,6 +288,9 @@ public class GameConstants {
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising flavours...");
             MiscDataLoader.loadFlavours();
             // TODO: Add chest traps
+
+            // Load global tables
+            PlayerDataLoader.initialiseExpLevel();
         } catch (Exception e) {
             String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + " error message: " + e.getMessage();
             logger.error(message, e);

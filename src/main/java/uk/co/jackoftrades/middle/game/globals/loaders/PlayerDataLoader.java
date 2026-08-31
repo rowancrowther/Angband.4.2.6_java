@@ -26,6 +26,8 @@ import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.player.*;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Startup loader for the player slice: parses the player-domain gamedata files
@@ -44,6 +46,60 @@ import java.io.IOException;
 public class PlayerDataLoader {
     private static final Logger logger = LogManager.getLogger(PlayerDataLoader.class);
 
+    public static void initialiseExpLevel() {
+        PlayerRegistry.playerExperience.clear();
+        PlayerRegistry.playerExperience.put(0, 10L);
+        PlayerRegistry.playerExperience.put(1, 25L);
+        PlayerRegistry.playerExperience.put(2, 45L);
+        PlayerRegistry.playerExperience.put(3, 70L);
+        PlayerRegistry.playerExperience.put(4, 100L);
+        PlayerRegistry.playerExperience.put(5, 140L);
+        PlayerRegistry.playerExperience.put(6, 200L);
+        PlayerRegistry.playerExperience.put(7, 280L);
+        PlayerRegistry.playerExperience.put(8, 380L);
+        PlayerRegistry.playerExperience.put(9, 500L);
+        PlayerRegistry.playerExperience.put(10, 650L);
+        PlayerRegistry.playerExperience.put(11, 850L);
+        PlayerRegistry.playerExperience.put(12, 1100L);
+        PlayerRegistry.playerExperience.put(13, 1400L);
+        PlayerRegistry.playerExperience.put(14, 1800L);
+        PlayerRegistry.playerExperience.put(15, 2300L);
+        PlayerRegistry.playerExperience.put(16, 2900L);
+        PlayerRegistry.playerExperience.put(17, 3600L);
+        PlayerRegistry.playerExperience.put(18, 4400L);
+        PlayerRegistry.playerExperience.put(19, 5400L);
+        PlayerRegistry.playerExperience.put(20, 6800L);
+        PlayerRegistry.playerExperience.put(21, 8400L);
+        PlayerRegistry.playerExperience.put(22, 10200L);
+        PlayerRegistry.playerExperience.put(23, 12500L);
+        PlayerRegistry.playerExperience.put(24, 17500L);
+        PlayerRegistry.playerExperience.put(25, 25000L);
+        PlayerRegistry.playerExperience.put(26, 35000L);
+        PlayerRegistry.playerExperience.put(27, 50000L);
+        PlayerRegistry.playerExperience.put(28, 75000L);
+        PlayerRegistry.playerExperience.put(29, 100000L);
+        PlayerRegistry.playerExperience.put(30, 150000L);
+        PlayerRegistry.playerExperience.put(31, 200000L);
+        PlayerRegistry.playerExperience.put(32, 275000L);
+        PlayerRegistry.playerExperience.put(33, 350000L);
+        PlayerRegistry.playerExperience.put(34, 450000L);
+        PlayerRegistry.playerExperience.put(35, 550000L);
+        PlayerRegistry.playerExperience.put(36, 700000L);
+        PlayerRegistry.playerExperience.put(37, 850000L);
+        PlayerRegistry.playerExperience.put(38, 1000000L);
+        PlayerRegistry.playerExperience.put(39, 1250000L);
+        PlayerRegistry.playerExperience.put(40, 1500000L);
+        PlayerRegistry.playerExperience.put(41, 1800000L);
+        PlayerRegistry.playerExperience.put(42, 2100000L);
+        PlayerRegistry.playerExperience.put(43, 2400000L);
+        PlayerRegistry.playerExperience.put(44, 2700000L);
+        PlayerRegistry.playerExperience.put(45, 3000000L);
+        PlayerRegistry.playerExperience.put(46, 3500000L);
+        PlayerRegistry.playerExperience.put(47, 4000000L);
+        PlayerRegistry.playerExperience.put(48, 4500000L);
+        PlayerRegistry.playerExperience.put(49, 5000000L);
+    }
+    
     /**
      * Load the timed-effect definitions from {@code player_timed.txt} into {@link PlayerRegistry}.
      * <p>

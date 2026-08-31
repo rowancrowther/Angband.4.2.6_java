@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.effect;
 
 import uk.co.jackoftrades.middle.enums.EffectEnum;
+import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.game.event.projection.Source;
 
 /**
@@ -42,7 +43,7 @@ public class EffectUtil {
      * @param index      which effect to run
      * @param origin     the source of the effect (a {@code null} origin ports C's {@code source_none()})
      * @param diceString the dice expression the effect's magnitude is parsed from
-     * @param subType    the effect subtype, disambiguating effects that share a handler
+     * @param wrapper    the effect subtype, disambiguating effects that share a handler
      * @param radius     the effect radius, for area effects
      * @param other      the spare per-effect parameter (C's {@code other})
      * @param y          the target grid row
@@ -53,7 +54,7 @@ public class EffectUtil {
     public static void effectSimple(EffectEnum index,
                                     Source origin,
                                     String diceString,
-                                    EffectSubTypeEnum subType,
+                                    EffectSubTypeWrapper wrapper,
                                     int radius,
                                     int other,
                                     int y,

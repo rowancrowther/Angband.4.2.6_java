@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.game;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.channel.utils.Flag;
@@ -768,8 +769,9 @@ public class GameWorld {
         if (player.getTimedEffect(TimedEffect.TMD_HEAL) != 0) {
             boolean ident = false;
             Source playerSource = new Source(SourceWhat.SRC_PLAYER, null);
+            EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
             EffectUtil.effectSimple(EffectEnum.EF_HEAL_HP, playerSource, "30",
-                    EffectSubTypeEnum.EST_NONE, 0, 0, 0, 0, ident);
+                    wrapper, 0, 0, 0, 0, ident);
         }
 
         // Black Breath
@@ -786,7 +788,7 @@ public class GameWorld {
 
             if (RandomValueUtils.oneIn(2)) {
                 // Life drain
-                int drain = 100 + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain();
+                int drain = (int) (100 + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain());
                 Message.message("The Black Breath dims your life force.");
                 player.expLose(drain, false);
             }
@@ -873,7 +875,8 @@ public class GameWorld {
         // Handle experience draining
         if (player.hasObjectFlag(ObjectFlag.OF_DRAIN_EXP)) {
             if (player.getExp() > 0 && RandomValueUtils.oneIn(10)) {
-                int damage = RandomValueUtils.damRoll(10, 6) + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain();
+                int damage = (int) (RandomValueUtils.damRoll(10, 6)
+                        + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain());
                 player.expLose(damage / 10, false);
             }
 
@@ -932,8 +935,9 @@ public class GameWorld {
                 } else { // Do something disastrous
                     Message.messageType(MessageType.MSG_TPLEVEL, "You aer thrown back in an explosion");
                     Source sourceNone = new Source(SourceWhat.SRC_NONE, null);
+                    EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
                     EffectUtil.effectSimple(EffectEnum.EF_DESTRUCTION, sourceNone, "0",
-                            EffectSubTypeEnum.EST_NONE, 5, 0, 0, 0, null);
+                            wrapper, 5, 0, 0, 0, null);
                 }
             }
         }
@@ -1266,8 +1270,9 @@ public class GameWorld {
                         player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 &&
                         player.getTimedEffect(TimedEffect.TMD_TERROR) == 0 &&
                         player.getTimedEffect(TimedEffect.TMD_AFRAID) == 0) {
+                    EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(EffectSubTypeEnum.EST_NONE);
                     EffectUtil.effectSimple(EffectEnum.EF_DETECT_ORE, null, "0",
-                            EffectSubTypeEnum.EST_NONE, 0, 0, 3, 3, null);
+                            wrapper, 0, 0, 3, 3, null);
                 }
             }
 

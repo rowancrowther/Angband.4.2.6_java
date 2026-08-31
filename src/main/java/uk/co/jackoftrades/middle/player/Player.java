@@ -27,7 +27,10 @@ import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
+import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
+import uk.co.jackoftrades.middle.effect.EffectUtil;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
+import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.GameWorld;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
@@ -156,11 +159,11 @@ public class Player {
     /**
      * Highest experience total yet held (never drained below) - the port of C's {@code p->max_exp}.
      */
-    private int maxExp;
+    private long maxExp;
     /**
      * Current experience - the port of C's {@code p->exp}.
      */
-    private int exp;
+    private long exp;
     /**
      * Fractional part of the current experience, scaled by 2^16 - the port of C's {@code p->exp_frac}.
      */
@@ -218,7 +221,7 @@ public class Player {
         knownState = null;
         oldGrid = Loc.zero;
         playerClass = null;
-        playerHistory = null;
+        playerHistory = new PlayerHistory();
         quests = new ArrayList<>();
         race = PlayerRegistry.getFirstPlayerRace();
         // Crash if there are no races
@@ -2788,32 +2791,221 @@ public class Player {
      * @param permanent whether the loss also reduces the player's maximum experience
      */
     public void expLose(int amount, boolean permanent) {
-        if (exp < amount) {
-            amount = exp;
+        long amountL = (long) amount;
+
+        if (exp < amountL) {
+            amountL = exp;
         }
-        exp -= amount;
+        exp -= amountL;
         if (permanent) {
-            maxExp -= amount;
+            maxExp -= amountL;
         }
         adjustLevel(true);
     }
 
     /**
-     * Recomputes the player's character level from current experience, applying any level-up or
-     * level-down effects — the port of C's {@code adjust_level} ({@code player.c}).
+     * Re-evaluates the character level from the experience totals, the port of C's
+     * {@code adjust_level} ({@code player.c}). Every route that changes experience - a gain, a
+     * drain, a restore - ends here, so this is the single place the level, the maximum level and
+     * the experience-related redraws are settled.
      *
-     * <p><b>Stub:</b> not yet implemented.
+     * <p>The totals are made sane first: both are floored at zero and capped at
+     * {@link PlayerRegistry#PY_MAX_EXP}, and the maximum is then raised to the current total if the
+     * current one is somehow the higher of the two. {@code PR_EXP} is raised and
+     * {@link #handleStuff()} run before any level arithmetic, so the new experience figure reaches
+     * the display even when the level does not move.
      *
-     * @param verbose whether to announce level changes to the player
+     * <p>Three loops follow, in C's order. The first walks the level <em>down</em> while the
+     * current experience has fallen below the threshold for the level below, the second walks it
+     * <em>up</em> while the experience has reached the threshold for the next level, and the third
+     * walks {@code maxLevel} up against {@code maxExp} alone - which is why a drained character
+     * keeps the highest level they ever reached even after the working level has fallen. Only the
+     * up loop announces anything; the down loop is silent, as in C.
+     *
+     * <p>The thresholds come from {@link PlayerRegistry#playerExperience}, which is keyed exactly
+     * as C's {@code player_exp[]} is indexed - from zero, so entry {@code 0} is the cost of
+     * reaching level 2. That is why the loops read {@code level - 2}, {@code level - 1} and
+     * {@code maxLevel - 1} rather than the level numbers themselves. Each threshold is scaled by
+     * the character's {@code expFact} percentage, and C's integer division is preserved by doing
+     * the arithmetic in {@code long}: the multiplication happens before the division by 100, so the
+     * scaled figure truncates rather than rounds.
+     *
+     * <p>Levelling up restores all five stats unconditionally - the {@code EF_RESTORE_STAT} calls
+     * sit outside the {@code verbose} gate in C, so a silent level gain still undoes any drain.
+     * {@code verbose} governs only the pair of announcements: the history entry and the
+     * {@code MSG_LEVEL} message.
+     *
+     * <p><b>Outstanding.</b> {@link EffectUtil#effectSimple} is a stub
+     * ({@code EffectUtil.java:54}), so the stat restores currently do nothing; the calls are in
+     * place and will start working when the effect subsystem is ported.
+     *
+     * <p>Function adjustLevel coded on 260831, commented in full on 260831.
+     *
+     * @param verbose whether a level gain is announced to the player and written to their history
      */
     private void adjustLevel(boolean verbose) {
-        // Stub function TODO: implement
+        if (exp < 0) exp = 0;
+
+        if (maxExp < 0) maxExp = 0;
+
+        if (exp > PlayerRegistry.PY_MAX_EXP) exp = PlayerRegistry.PY_MAX_EXP;
+
+        if (maxExp > PlayerRegistry.PY_MAX_EXP) maxExp = PlayerRegistry.PY_MAX_EXP;
+
+        if (exp > maxExp) maxExp = exp;
+
+        getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_EXP);
+
+        handleStuff();
+
+        while ((level > 1)
+                && exp < PlayerRegistry.playerExperience.getOrDefault(level - 2, 0L) * expFact / 100L) {
+            level--;
+        }
+
+        while (level < PlayerRegistry.PY_MAX_LEVEL
+                && exp >= PlayerRegistry.playerExperience.getOrDefault(level - 1, 0L) * expFact / 100L) {
+            level++;
+
+            // Save the highest level
+            if (level > maxLevel)
+                maxLevel = level;
+
+            if (verbose) {
+                // Log level updates
+                String buf = "Reached level " + level;
+                historyAdd(buf, PlayerHistoryType.HIST_GAIN_LEVEL);
+
+                // Message
+                Message.messageType(MessageType.MSG_LEVEL, "Welcome to level %d.", level);
+            }
+
+            EffectSubTypeWrapper wrapper = new EffectSubTypeWrapper(Stats.STAT_STR);
+            EffectUtil.effectSimple(EffectEnum.EF_RESTORE_STAT, Source.sourceNone(), "0",
+                    wrapper, 0, 0, 0, 0, null);
+            wrapper = new EffectSubTypeWrapper(Stats.STAT_INT);
+            EffectUtil.effectSimple(EffectEnum.EF_RESTORE_STAT, Source.sourceNone(), "0",
+                    wrapper, 0, 0, 0, 0, null);
+            wrapper = new EffectSubTypeWrapper(Stats.STAT_WIS);
+            EffectUtil.effectSimple(EffectEnum.EF_RESTORE_STAT, Source.sourceNone(), "0",
+                    wrapper, 0, 0, 0, 0, null);
+            wrapper = new EffectSubTypeWrapper(Stats.STAT_DEX);
+            EffectUtil.effectSimple(EffectEnum.EF_RESTORE_STAT, Source.sourceNone(), "0",
+                    wrapper, 0, 0, 0, 0, null);
+            wrapper = new EffectSubTypeWrapper(Stats.STAT_CON);
+            EffectUtil.effectSimple(EffectEnum.EF_RESTORE_STAT, Source.sourceNone(), "0",
+                    wrapper, 0, 0, 0, 0, null);
+        }
+
+        while ((maxLevel < PlayerRegistry.PY_MAX_LEVEL)
+                && (maxExp >= PlayerRegistry.playerExperience.getOrDefault(maxLevel - 1, 0L) * expFact / 100L)) {
+            maxLevel++;
+        }
+
+        getPlayerUpkeep().updateOn(PlayerUpdateEnum.PU_BONUS);
+        getPlayerUpkeep().updateOn(PlayerUpdateEnum.PU_HP);
+        getPlayerUpkeep().updateOn(PlayerUpdateEnum.PU_SPELLS);
+        getPlayerUpkeep().getRedrawFlags().set(PlayerRedraw.PR_LEV, PlayerRedraw.PR_TITLE, PlayerRedraw.PR_EXP,
+                PlayerRedraw.PR_STATS);
+
+        handleStuff();
     }
 
     /**
+     * Adds a history entry of a single type, the port of C's {@code history_add}
+     * ({@code player-history.c}). This is the wrapper the ordinary event loggers use - gaining a
+     * level, slaying a unique, a player's own note - where the entry carries one type and relates
+     * to no artifact.
+     *
+     * <p>C wipes a local bitflag array and switches the one type on; constructing a {@link Flag}
+     * from a single constant does both in one step.</p>
+     *
+     * <p>Function historyAdd coded on 260831, commented in full on 260831.</p>
+     *
+     * @param buf  the text of the entry
+     * @param flag the single history type the entry carries
+     * @return {@code true} always, following C
+     */
+    private boolean historyAdd(String buf, PlayerHistoryType flag) {
+        Flag<PlayerHistoryType> flags = new Flag<>(PlayerHistoryType.class, flag);
+
+        return historyAddWithFlags(buf, flags, null);
+    }
+
+    /**
+     * Adds a history entry stamped with the player's present circumstances, the port of C's
+     * {@code history_add_with_flags} ({@code player-history.c}). The caller supplies the text, the
+     * types and the artifact; the depth, character level and turn are read from the player here.
+     * That is the boundary between this method and {@link #historyAddFull}: callers logging
+     * something as it happens come through here, while callers that already know the circumstances
+     * an entry belongs to - the savefile loader replaying a stored ledger - go straight to
+     * {@code historyAddFull}.
+     *
+     * <p>The turn recorded is the cumulative energy divided by one hundred, C's
+     * {@code p->total_energy / 100}, so a history turn is a player-turn rather than a game turn.</p>
+     *
+     * <p>Function historyAddWithFlags coded on 260831, commented in full on 260831.</p>
+     *
+     * @param buf      the text of the entry
+     * @param flags    the history types the entry carries
+     * @param artifact the artifact the entry relates to, or {@code null} if it relates to none
+     * @return {@code true} always, following C
+     */
+    private boolean historyAddWithFlags(String buf, Flag<PlayerHistoryType> flags, Artifact artifact) {
+        return historyAddFull(flags, artifact, depth, level, totalEnergy / 100, buf);
+    }
+
+    /**
+     * Appends an entry to the player's history ledger, the port of C's {@code history_add_full}
+     * ({@code player-history.c}). Every field of the entry arrives as an argument rather than being
+     * read from the player, which is what lets a caller record an entry against circumstances other
+     * than the present ones.
+     *
+     * <p>The flag set is copied rather than stored by reference, matching C's {@code hist_copy}:
+     * the entry keeps its own record of its types, so a caller that later reuses or clears the flag
+     * set it passed in cannot rewrite history.</p>
+     *
+     * <p>C allocates the ledger on first use and then grows it in blocks of twenty; the backing
+     * list does both, so C's {@code history_init} and {@code history_realloc} have no counterpart
+     * here. C also truncates the entry text to the eighty characters its {@code event} field holds,
+     * but every C caller has already formatted into an eighty-character buffer before arriving, so
+     * the text is stored whole.</p>
+     *
+     * <p>The {@code boolean} return is C's, which reports success unconditionally.</p>
+     *
+     * <p>Function historyAddFull coded on 260831, commented in full on 260831.</p>
+     *
+     * @param flags    the history types the entry carries
+     * @param artifact the artifact the entry relates to, or {@code null} for C's artifact index 0
+     * @param dLev     the dungeon level to record against the entry
+     * @param cLev     the character level to record against the entry
+     * @param turnNo   the turn to record against the entry
+     * @param buf      the text of the entry
+     * @return {@code true} always, following C
+     */
+    private boolean historyAddFull(Flag<PlayerHistoryType> flags, Artifact artifact, int dLev, int cLev,
+                                   int turnNo, String buf) {
+        Flag<PlayerHistoryType> copyFlags = new Flag<>(PlayerHistoryType.class);
+        copyFlags.copyFrom(flags);
+
+        // Add entry
+        HistoryInfo newEntry = new HistoryInfo(copyFlags, dLev, cLev, artifact, turnNo, buf);
+        playerHistory.addEntry(newEntry);
+        return true;
+    }
+
+    /**
+     * Returns the player's current experience total, the port of C's {@code p->exp}. This is the
+     * drainable figure: it is what {@link #expLose} reduces and what {@link #adjustLevel} clamps
+     * to {@link PlayerRegistry#PY_MAX_EXP}, and it may sit below {@code maxExp} after a drain.
+     *
+     * <p>The fractional part held in {@code expFrac} is not included.</p>
+     *
+     * <p>Function getExp coded before 260831, commented in full on 260831.</p>
+     *
      * @return the player's current experience points
      */
-    public int getExp() {
+    public long getExp() {
         return exp;
     }
 

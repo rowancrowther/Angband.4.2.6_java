@@ -5790,6 +5790,111 @@ public class Player {
     }
 
     /**
+     * Cancels a timed effect outright, setting its duration to zero. Ports
+     * {@code player_clear_timed} ({@code player-timed.c:1127}).
+     *
+     * <p>A one-line delegation to {@link #setTimed}, which does everything: the lapse messages, the
+     * grade transitions, the recalculation and redraw flags, and the decision about whether the
+     * player is disturbed. All this method fixes is the destination, zero.
+     *
+     * <p>Note what it does <em>not</em> do. Unlike {@link #playerDecTimed}, which forces
+     * {@code notify} to {@code true} whenever a subtraction takes an effect to its end, this method
+     * passes the caller's {@code notify} through untouched. Clearing an effect silently is
+     * therefore possible and is deliberately used: {@code game-world.c:1078} clears
+     * {@code TMD_COMMAND} with {@code notify} false when a level ends, because the player is not to
+     * be told about bookkeeping. The asymmetry is real and is in the C.
+     *
+     * <p>Zero is not a special value to {@code setTimed}; it is an ordinary target that happens to
+     * be the floor for most effects. So the usual rules apply - an effect already at zero is
+     * unchanged, and the method answers {@code false}. The return value is {@code setTimed}'s and
+     * means what that method's means: whether the player was notified, not whether the duration
+     * moved.
+     *
+     * <p>C asserts the index is in range, since it is about to subscript {@code p->timed}; a
+     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
+     * analogue here.
+     *
+     * <p>Function playerClearTimed coded on 260831, commented in full on 260831.
+     *
+     * @param index      the effect to cancel; must be one the registry knows
+     * @param notify     whether the caller wants the change announced - passed straight through,
+     *                   not forced true as it is in {@link #playerDecTimed}
+     * @param canDisturb whether a notifying change may interrupt resting or running
+     * @return {@code true} if the player was notified, which is C's return value - not whether the
+     * effect was actually running
+     */
+    public boolean playerClearTimed(TimedEffect index, boolean notify, boolean canDisturb) {
+        return setTimed(index, 0, notify, canDisturb);
+    }
+
+    /**
+     * Raises one stat by a single point of gain, the way a potion of strength or a stat-gain effect
+     * does. Ports {@code player_stat_inc} ({@code player.c:145}).
+     *
+     * <p>Stats in Angband are stored on a stretched scale: 3 to 18 are the ordinary values, and
+     * everything above 18 is a "percentile" tail written as 18/01 to 18/100 but held internally as
+     * 19 to 118. So {@code 18 + 100} is the hard ceiling and {@code 18 + 90} is the point where the
+     * tail stops being earned and starts being handed over. The method reads the current value and
+     * picks one of three bands.
+     *
+     * <p>At or above the ceiling there is nothing to give: the method answers {@code false} without
+     * touching the stat and without flagging a recalculation. Below 18 the gain is a flat one point,
+     * the plain part of the scale. In between, the gain is rolled, and the roll shrinks as the stat
+     * climbs - {@code gain} is a quarter of the remaining distance to the ceiling, plus a little,
+     * and the player receives {@code randint1(gain) + gain / 2}. The floor of one keeps the roll
+     * meaningful when the distance has been divided away. Above {@code 18 + 90} the roll is skipped
+     * entirely and the stat is set straight to the ceiling, so the last ten points are a gift rather
+     * than a grind.
+     *
+     * <p>The clamp to {@code 18 + 99} after the roll is defensive rather than load-bearing. With
+     * 4.2.6's constants the rolled band cannot reach it: the largest result anywhere in the band is
+     * 113, at a current value of 107. It is ported because it is a branch in the C, and because it
+     * is what stops the middle band from ever landing on the ceiling if those constants move.
+     *
+     * <p>Two side effects follow every successful gain. The maximum value is dragged up if the
+     * current has passed it, which is what makes gained points survive later drain; and
+     * {@code PU_BONUS} is raised so the next update recomputes everything derived from the stat.
+     *
+     * <p>The return value says only that a band was entered, not that the number moved. A stat at
+     * 117 goes to 118 and answers {@code true}; one already at 118 answers {@code false}. Callers
+     * such as {@code effect-handler-general.c:879} use it exactly that way, to decide whether to
+     * print the gain message.
+     *
+     * <p>Where C subscripts a zeroed array, the port reads a map, so a stat never written at birth
+     * would fail here rather than reading as zero. Every stat is populated during birth, so this is
+     * a difference in failure mode, not in behaviour.
+     *
+     * <p>Function playerStatInc coded on 260831, commented in full on 260831.
+     *
+     * @param stat the stat to raise
+     * @return {@code true} if a gain was applied, {@code false} if the stat was already at the
+     * ceiling of {@code 18 + 100}
+     */
+    public boolean playerStatInc(Stats stat) {
+        int amount = statCur.get(stat);
+
+        if (amount >= 18 + 100)
+            return false;
+        if (amount < 18) {
+            statCur.put(stat, amount + 1);
+        } else if (amount < 18 + 90) {
+            int gain = (((18 + 100) - amount) / 2 + 3) / 2;
+            if (gain < 1) gain = 1;
+            statCur.put(stat, amount + RandomValueUtils.randInt1(gain) + gain / 2);
+            if (statCur.get(stat) > 18 + 99)
+                statCur.put(stat, 18 + 99);
+        } else {
+            statCur.put(stat, 18 + 100);
+        }
+        if (statCur.get(stat) > statMax.get(stat)) {
+            statMax.put(stat, statCur.get(stat));
+        }
+
+        getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
+        return true;
+    }
+
+    /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
      * actions.

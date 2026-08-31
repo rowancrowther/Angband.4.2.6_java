@@ -279,16 +279,21 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `player_set_timed` (`[C] player-timed.c:787`) → `Player.java:1468`
 - [X] `player_inc_check` (`[C] player-timed.c:923`)
 - [X] `player_inc_timed` (`[C] player-timed.c:1050`) → `Player.java:1449`
-- [ ] `player_dec_timed` (`[C] player-timed.c:1093`) → `Player.java:1424`
-- [ ] `player_clear_timed` (`[C] player-timed.c:1123`) → `Player.java:1247`
+- [X] `player_dec_timed` (`[C] player-timed.c:1093`) → `Player.java:1424`
+- [X] `player_clear_timed` (`[C] player-timed.c:1123`) → `Player.java:1247`
 
 ### F — `player.c` odds birth depends on *(needs C)*
 
-- [ ] `player_stat_inc` / `player_stat_dec` (`[C] player.c:145, 171`) → `statDec` stub at `Player.java:1367`
-- [ ] `adjust_level` (`[C] player.c:208`) → `Player.java:1399`; `player_exp_gain` / `player_exp_lose`
-  (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
-- [ ] `stat_name_to_idx` / `stat_idx_to_name` / `lookup_realm` (`[C] player.c:111, 122, 130`)
-- [ ] `player_random_name` / `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
+- [X] `player_stat_inc`
+- [ ] `player_stat_dec` (`[C] player.c:145, 171`) → `statDec` stub at `Player.java:1367`
+- [ ] `adjust_level` (`[C] player.c:208`) → `Player.java:1399`;
+- [ ] `player_exp_gain`
+- [ ] `player_exp_lose` (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
+- [ ] `stat_name_to_idx`
+- [ ] `stat_idx_to_name`
+- [ ] `lookup_realm` (`[C] player.c:111, 122, 130`)
+- [ ] `player_random_name`
+- [ ] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
 
 ### G — `player_generate` and its helpers *(needs C, F)*
 

@@ -2709,18 +2709,74 @@ public class Player {
     }
 
     /**
-     * Reduces a stat, optionally permanently — the port of C's {@code player_stat_dec}
-     * ({@code player.c}).
+     * Drains one stat by a single step, the way a monster's attack or a poison does, and optionally
+     * makes the loss permanent. Ports {@code player_stat_dec} ({@code player.c:171}).
      *
-     * <p><b>Stub:</b> not yet implemented; reports no change.
+     * <p>The scale is the stretched one described on {@link #playerStatInc}: 3 to 18 are the
+     * ordinary values, and 19 to 118 hold the percentile tail. A drain takes ten points off the
+     * tail, drops to 18 from anywhere inside the tail's bottom ten, or takes one point off the plain
+     * part - so the expensive percentile points go quickly and the cheap ones slowly, which is the
+     * reverse of how they were gained. Three is the floor and there is no branch that leaves it.
      *
-     * @param stat      the stat to lower
-     * @param permanant whether the loss also reduces the stat's maximum
-     * @return {@code true} if the stat actually changed
+     * <p>A temporary drain moves the current value and leaves the maximum, which is what lets the
+     * character recover the ground later. A permanent one moves both, by the same rules applied
+     * independently - the two need not fall by the same amount, since they can be sitting in
+     * different bands.
+     *
+     * <p><b>The permanent flag replaces the answer rather than adding to it, and this matters.</b>
+     * C computes {@code res} from the current value, then, when {@code permanent}, overwrites it
+     * with the comparison on the maximum. So a permanent drain of a character whose maximum is
+     * already at the floor of 3 reports no change and writes nothing back - even if the current
+     * value would have moved. That looks like a bug and is not treated as one here: it is the
+     * behaviour the C has, and a character with a maximum of 3 has nothing left to lose anyway,
+     * since the current value cannot exceed it.
+     *
+     * <p>Nothing is written unless the answer is {@code true}. The two values are then stored as a
+     * pair, which is harmless in the temporary case because the maximum was never modified.
+     * {@code PU_BONUS} is raised so everything derived from the stat recomputes, and
+     * {@code PR_STATS} so the stat panel repaints.
+     *
+     * <p>Unlike {@link #playerStatInc}, whose answer means "a gain was attempted", this one means
+     * what it says: the stat actually moved.
+     *
+     * <p>Function statDec coded on 260831, commented in full on 260831.
+     *
+     * @param stat      the stat to drain
+     * @param permanant whether the maximum falls as well as the current value
+     * @return {@code true} if the stat was changed, {@code false} if it was already as low as this
+     * call can take it
      */
     public boolean statDec(Stats stat, boolean permanant) {
-        // Stub function TODO: implement
-        return false;
+        int cur = statCur.get(stat);
+        int max = statMax.get(stat);
+
+        if (cur > 18 + 10)
+            cur -= 10;
+        else if (cur > 18)
+            cur = 18;
+        else if (cur > 3)
+            cur -= 1;
+
+        boolean res = (cur != statCur.get(stat));
+
+        if (permanant) {
+            if (max > 18 + 10)
+                max -= 10;
+            else if (max > 18)
+                max = 18;
+            else if (max > 3)
+                max -= 1;
+            res = (max != statMax.get(stat));
+        }
+        
+        if (res) {
+            statCur.put(stat, cur);
+            statMax.put(stat, max);
+            getPlayerUpkeep().updateOn(PlayerUpdateEnum.PU_BONUS);
+            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
+        }
+
+        return res;
     }
 
     /**

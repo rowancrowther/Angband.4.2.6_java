@@ -22,7 +22,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
@@ -309,20 +308,13 @@ class PlayerProgressionTest {
     /**
      * The methods awaiting their subsystems. Each is called and asserted to be harmless, which
      * records what is outstanding and fails the day one starts doing something untested.
+     *
+     * <p>{@code statDec} used to be tested here and no longer is: it was ported on 260831, and its
+     * behaviour now lives in {@code PlayerStatDecTest}.
      */
     @Nested
     @DisplayName("stubs")
     class Stubs {
-
-        /**
-         * Draining a stat reports no change, so nothing that depends on a successful drain happens.
-         */
-        @Test
-        @DisplayName("statDec reports no change")
-        void statDecIsAStub() {
-            assertFalse(player.statDec(Stats.STAT_STR, false));
-            assertFalse(player.statDec(Stats.STAT_STR, true));
-        }
 
         /**
          * The recall depth is not yet recorded by its own method, so a word of recall would return

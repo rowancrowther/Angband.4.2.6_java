@@ -822,6 +822,37 @@ public class PlayerUpkeep {
     }
 
     /**
+     * Raises one update flag - the port of C's {@code p->upkeep->update |= (PU_BONUS)}, the request
+     * a caller makes when it has changed something a derived quantity was computed from and wants
+     * that quantity recomputed on the next update pass.
+     *
+     * <p>Adds; it does not replace. A flag already raised stays raised and nothing else in the set
+     * is disturbed, which is what C's {@code |=} guarantees and what callers rely on - several
+     * parts of a turn each ask for their own recalculations before {@code update_stuff} runs and
+     * clears the lot.
+     *
+     * <p>Raising a flag is idempotent, so the request carries no count: two calls before an update
+     * pass produce one recalculation, not two. C has no choice about this and the port keeps it.
+     *
+     * <p>The return value is the port's own addition - C's {@code |=} yields nothing a caller reads.
+     * It reports whether the flag had been clear, so a caller can tell a fresh request from a
+     * duplicate. It is the mirror of {@link #updateOff}'s answer, and is ignored at almost every
+     * call site.
+     *
+     * <p>This is the same operation as {@link #setUpdateFlagOn}, which discards the answer instead
+     * of returning it; the two exist side by side because the flag-returning form arrived later.
+     *
+     * <p>Function updateOn commented in full on 260831.
+     *
+     * @param flag the {@link PlayerUpdateEnum} recalculation to request
+     * @return {@code true} when the flag had been clear and is now raised, {@code false} when it
+     * was already raised and nothing changed
+     */
+    public boolean updateOn(PlayerUpdateEnum flag) {
+        return updateFlags.on(flag);
+    }
+
+    /**
      * @return the state of an in-progress run - the port of reading C's {@code upkeep->running},
      * which is the count of steps still to be taken, and zero when the player is not running
      */

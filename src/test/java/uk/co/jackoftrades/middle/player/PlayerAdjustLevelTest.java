@@ -480,7 +480,7 @@ class PlayerAdjustLevelTest {
      * The public route in, which is the only way the rest of the game reaches this arithmetic.
      */
     @Nested
-    @DisplayName("through expLose")
+    @DisplayName("through playerExpLose")
     class ThroughExpLose {
 
         /**
@@ -498,7 +498,7 @@ class PlayerAdjustLevelTest {
             set("maxLevel", 11);
             set("expFact", 100);
 
-            player.expLose(500, true);
+            player.playerExpLose(500, true);
 
             assertEquals(0L, longField("exp"));
             assertEquals(0L, longField("maxExp"));
@@ -521,7 +521,7 @@ class PlayerAdjustLevelTest {
             set("maxLevel", 11);
             set("expFact", 100);
 
-            player.expLose(430, false);
+            player.playerExpLose(430, false);
 
             assertEquals(70L, longField("exp"));
             assertEquals(500L, longField("maxExp"));

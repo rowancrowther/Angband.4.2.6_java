@@ -790,7 +790,7 @@ public class GameWorld {
                 // Life drain
                 int drain = (int) (100 + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain());
                 Message.message("The Black Breath dims your life force.");
-                player.expLose(drain, false);
+                player.playerExpLose(drain, false);
             }
         }
 
@@ -877,7 +877,7 @@ public class GameWorld {
             if (player.getExp() > 0 && RandomValueUtils.oneIn(10)) {
                 int damage = (int) (RandomValueUtils.damRoll(10, 6)
                         + (player.getExp() / 100) * GameConstants.getMonPlayLifeDrain());
-                player.expLose(damage / 10, false);
+                player.playerExpLose(damage / 10, false);
             }
 
             player.equipLearnFlag(ObjectFlag.OF_DRAIN_EXP);

@@ -25,9 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
-import uk.co.jackoftrades.middle.game.globals.loaders.PlayerDataLoader;
-import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
-import uk.co.jackoftrades.testsupport.CalcBonusesFixture;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -42,13 +39,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player}'s experience, options, timed-effect reads and the several methods still
+ * Tests {@link Player}'s options, gear and timed-effect reads, and the several methods still
  * awaiting their subsystems.
  *
- * <p>{@code expLose} is the one with arithmetic, and its cap is the part worth pinning: a loss
- * larger than the player's experience takes all of it rather than driving the total negative, and
- * the same cap applies to the maximum when the loss is permanent — so a drained character ends at
- * zero and not below.
+ * <p>The experience arithmetic used to be tested here and no longer is: {@code playerExpGain} and
+ * {@code playerExpLose} have suites of their own in {@code PlayerExpGainTest} and
+ * {@code PlayerExpLoseTest}, and what is left here is the reads, the accessors and the stubs.
  *
  * <p>The stubs are covered too, and stated as stubs. C's {@code player_set_timed} is the sink both
  * {@code incTimed} and {@code decTimed} funnel through, so while it returns {@code false} without
@@ -98,118 +94,6 @@ class PlayerProgressionTest {
         Field field = Player.class.getDeclaredField(name);
         field.setAccessible(true);
         return field.getInt(player);
-    }
-
-    /**
-     * Reads one of the player's private long fields. The experience totals are {@code long} because
-     * C's {@code p->exp} is a 32-bit unsigned quantity that will not fit a Java {@code int}, so they
-     * cannot be read through {@link #intField}.
-     *
-     * @param name the field's name
-     * @return its value
-     * @throws Exception if the field cannot be reached
-     */
-    private long longField(String name) throws Exception {
-        Field field = Player.class.getDeclaredField(name);
-        field.setAccessible(true);
-        return field.getLong(player);
-    }
-
-    /**
-     * Experience loss, which caps rather than going negative.
-     */
-    @Nested
-    @DisplayName("expLose")
-    class ExperienceLoss {
-
-        /**
-         * A character complete enough to survive the level arithmetic {@code expLose} ends in.
-         *
-         * <p>{@code adjustLevel} runs {@code handleStuff} twice, which recalculates bonuses and hit
-         * points, and those read the class, the stat maps and the per-level hit-point table. A bare
-         * {@code new Player()} has none of them, so the fixture's do-nothing character stands in;
-         * {@code expFact} is set to 100 so the experience thresholds are the table's own.
-         *
-         * @throws Exception if a field cannot be reached
-         */
-        @BeforeEach
-        void completeCharacter() throws Exception {
-            player = CalcBonusesFixture.plainCharacter().player();
-            set("playerHP", new int[PlayerRegistry.PY_MAX_LEVEL]);
-            set("expFact", 100);
-            PlayerDataLoader.initialiseExpLevel();
-        }
-
-        /**
-         * An ordinary loss is subtracted, and leaves the maximum alone when it is not permanent —
-         * which is what lets a drained character earn the same experience back.
-         *
-         * @throws Exception if a field cannot be reached
-         */
-        @Test
-        @DisplayName("a temporary loss leaves the maximum alone")
-        void temporaryLossKeepsTheMaximum() throws Exception {
-            set("exp", 1000);
-            set("maxExp", 1000);
-
-            player.expLose(300, false);
-
-            assertEquals(700, player.getExp());
-            assertEquals(1000L, longField("maxExp"), "the maximum is what can be earned back");
-        }
-
-        /**
-         * A permanent loss takes the maximum down with it, so the experience is gone for good.
-         *
-         * @throws Exception if a field cannot be reached
-         */
-        @Test
-        @DisplayName("a permanent loss takes the maximum too")
-        void permanentLossTakesTheMaximum() throws Exception {
-            set("exp", 1000);
-            set("maxExp", 1000);
-
-            player.expLose(300, true);
-
-            assertEquals(700, player.getExp());
-            assertEquals(700L, longField("maxExp"));
-        }
-
-        /**
-         * A loss larger than the player has takes everything and stops — experience never goes
-         * negative, however hard the drain.
-         *
-         * @throws Exception if a field cannot be reached
-         */
-        @Test
-        @DisplayName("a loss larger than the total takes everything and stops at zero")
-        void oversizedLossStopsAtZero() throws Exception {
-            set("exp", 400);
-            set("maxExp", 1000);
-
-            player.expLose(9999, false);
-
-            assertEquals(0, player.getExp());
-        }
-
-        /**
-         * And the cap applies to the maximum as well: a permanent drain of everything reduces the
-         * maximum by what was actually lost, not by what was asked for.
-         *
-         * @throws Exception if a field cannot be reached
-         */
-        @Test
-        @DisplayName("the cap applies to the maximum on a permanent loss")
-        void capAppliesToTheMaximum() throws Exception {
-            set("exp", 400);
-            set("maxExp", 1000);
-
-            player.expLose(9999, true);
-
-            assertEquals(0, player.getExp());
-            assertEquals(600L, longField("maxExp"),
-                    "the maximum lost the 400 actually taken, not the 9999 asked for");
-        }
     }
 
     /**

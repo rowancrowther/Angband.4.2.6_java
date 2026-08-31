@@ -2783,27 +2783,6 @@ public class Player {
     }
 
     /**
-     * Removes experience points from the player, optionally reducing the maximum too, then
-     * re-evaluates the character level. The port of C's {@code player_exp_lose} ({@code player.c}).
-     * The loss is capped at the current experience so it cannot go negative.
-     *
-     * @param amount    the experience to remove
-     * @param permanent whether the loss also reduces the player's maximum experience
-     */
-    public void expLose(int amount, boolean permanent) {
-        long amountL = (long) amount;
-
-        if (exp < amountL) {
-            amountL = exp;
-        }
-        exp -= amountL;
-        if (permanent) {
-            maxExp -= amountL;
-        }
-        adjustLevel(true);
-    }
-
-    /**
      * Re-evaluates the character level from the experience totals, the port of C's
      * {@code adjust_level} ({@code player.c}). Every route that changes experience - a gain, a
      * drain, a restore - ends here, so this is the single place the level, the maximum level and
@@ -2996,7 +2975,7 @@ public class Player {
 
     /**
      * Returns the player's current experience total, the port of C's {@code p->exp}. This is the
-     * drainable figure: it is what {@link #expLose} reduces and what {@link #adjustLevel} clamps
+     * drainable figure: it is what {@link #playerExpLose} reduces and what {@link #adjustLevel} clamps
      * to {@link PlayerRegistry#PY_MAX_EXP}, and it may sit below {@code maxExp} after a drain.
      *
      * <p>The fractional part held in {@code expFrac} is not included.</p>
@@ -6140,6 +6119,85 @@ public class Player {
 
         getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
         return true;
+    }
+
+    /**
+     * Awards experience to the player and re-evaluates their level, the port of C's
+     * {@code player_exp_gain} ({@code player.c:269}). Everything that pays experience - killing a
+     * monster, disarming a trap, opening a chest, learning a rune, casting a spell for the first
+     * time - arrives here.
+     *
+     * <p>The current total takes the whole award. The maximum takes a tenth of it, and only while
+     * the character is behind: the test is made <em>after</em> the award has landed, so a character
+     * whose current total has caught up with their maximum adds nothing to the maximum here and
+     * lets {@link #adjustLevel(boolean)} drag it up instead. That tenth is what makes drained
+     * experience cost something permanent - earning it back a second time also lifts the ceiling
+     * slightly, but the character is still climbing ground they had already covered.
+     *
+     * <p>The tenth is C's integer division, so any award below ten adds nothing at all to the
+     * maximum while the character is behind. Java's {@code long} division truncates towards zero
+     * exactly as C's does, so a negative award - which {@code cmd-wizard.c:1208} can produce - is
+     * split the same way in both.
+     *
+     * <p>No clamping happens here. Both totals can be driven past
+     * {@link PlayerRegistry#PY_MAX_EXP}, or below zero, and {@link #adjustLevel(boolean)} is what
+     * settles them before the level loops read them. The call is always verbose, so a level gained
+     * from an award is announced and written to the character's history.
+     *
+     * <p>C holds both totals in a signed 32-bit field and the port holds them in {@code long}, so
+     * the intermediate overflow C would suffer on an award close to {@code PY_MAX_EXP} cannot
+     * happen here. With 4.2.6's constants C does not overflow either - twice {@code PY_MAX_EXP} is
+     * still inside 32 bits - so this is headroom, not a behavioural difference.
+     *
+     * <p>Function playerExpGain coded on 260831, commented in full on 260831.
+     *
+     * @param amount the experience to award
+     */
+    public void playerExpGain(long amount) {
+        exp += amount;
+        if (exp < maxExp)
+            maxExp += amount / 10;
+        adjustLevel(true);
+    }
+
+    /**
+     * Drains experience from the player and re-evaluates their level, the port of C's
+     * {@code player_exp_lose} ({@code player.c:278}). Everything that takes experience away arrives
+     * here: the nether and dark breaths and the exp-draining monster blows
+     * ({@code project-player.c}, {@code mon-blows.c:623}), the black-breath upkeep in
+     * {@code game-world.c:659}, and the permanent drain in {@code effect-handler-general.c:3533}.
+     *
+     * <p>The loss is capped at what the character actually has before anything is subtracted, so
+     * the current total can reach zero but never pass it. The cap matters twice over: because
+     * {@code amount} is overwritten by the cap, a permanent drain reduces the maximum by what was
+     * really taken rather than by what was asked for. A character with 400 points asked for 9999
+     * loses 400 from both, not 9999 from the maximum.
+     *
+     * <p>Only the current total is capped, though. The maximum has no floor of its own here, and a
+     * permanent drain can drive it below zero when it was already the lower of the two;
+     * {@link #adjustLevel(boolean)} is what floors it at zero afterwards, along with settling both
+     * levels.
+     *
+     * <p>The call is always verbose, but that changes nothing a player sees on the way down: C's
+     * downward walk in {@code adjust_level} is silent whatever {@code verbose} says, and only a
+     * level <em>gain</em> is announced or written to the character's history. A drain that costs
+     * levels leaves no record. The highest level reached is not taken back either, because
+     * {@code maxLevel} is driven by {@code maxExp} alone - so a temporary drain lowers the working
+     * level and leaves the character's best level standing.
+     *
+     * <p>C takes the amount as {@code int32_t} and the port takes it as {@code long}, matching the
+     * width the two experience totals are held at.
+     *
+     * <p>Function playerExpLose coded on 260831, commented in full on 260831.
+     *
+     * @param amount    the experience to remove, capped at what the character has
+     * @param permanent whether the loss also reduces the maximum, putting it beyond earning back
+     */
+    public void playerExpLose(long amount, boolean permanent) {
+        if (exp < amount) amount = exp;
+        exp -= amount;
+        if (permanent) maxExp -= amount;
+        adjustLevel(true);
     }
 
     /**

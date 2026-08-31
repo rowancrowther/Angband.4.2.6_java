@@ -286,9 +286,9 @@ boxes span these stages rather than matching them one-to-one.
 
 - [X] `player_stat_inc`
 - [X] `player_stat_dec` (`[C] player.c:145, 171`) → `statDec` stub at `Player.java:1367`
-- [x] `adjust_level` (`[C] player.c:208`) → `Player.java:1399`;
-- [ ] `player_exp_gain`
-- [ ] `player_exp_lose` (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
+- [X] `adjust_level` (`[C] player.c:208`) → `Player.java:1399`;
+- [X] `player_exp_gain`
+- [X] `player_exp_lose` (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
 - [ ] `stat_name_to_idx`
 - [ ] `stat_idx_to_name`
 - [ ] `lookup_realm` (`[C] player.c:111, 122, 130`)

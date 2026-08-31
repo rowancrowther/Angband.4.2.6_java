@@ -5736,6 +5736,60 @@ public class Player {
     }
 
     /**
+     * Subtracts {@code amount} from the current duration of a timed effect - the port of C's
+     * {@code player_dec_timed} ({@code player-timed.c:1097}).
+     *
+     * <p>Almost all of the work belongs to {@link #setTimed}: the new duration is worked out here
+     * as an absolute value and handed over, and every decision about messages, grades, transition
+     * effects and upkeep is made there. What this method contributes is one rule, and it is worth
+     * stating plainly - an effect that is finishing always announces itself. If the subtraction
+     * leaves anything behind, the caller's {@code notify} is passed on unaltered; if it leaves
+     * nothing, {@code notify} is overridden to {@code true} so the "you feel yourself again"
+     * message and the accompanying redraw cannot be suppressed. The turn-by-turn decay in
+     * {@code game-world.c:348} relies on exactly this: it decrements every running effect by one
+     * with {@code notify} false, silently, and gets told only about the tick on which an effect
+     * actually lapses.
+     *
+     * <p>Nothing is clamped at this level. A subtraction that overshoots produces a negative value
+     * and that negative value is what {@code setTimed} receives, where {@code Math.max} against the
+     * effect's lower bound turns it into the floor. Passing the result through rather than a
+     * pre-clamped zero matters because {@code setTimed} compares the incoming value against the
+     * stored one to decide whether anything changed at all. C computes {@code p->timed[idx] - v}
+     * and forwards it untouched for the same reason.
+     *
+     * <p>By symmetry with {@link #playerIncTimed} a negative {@code amount} is a legitimate way to
+     * lengthen an effect, and takes the first branch as an ordinary change.
+     *
+     * <p>The return value is {@code setTimed}'s, and so means what that method's means: whether the
+     * player was notified, not whether the stored duration moved. A decrement of an effect that was
+     * already at zero answers {@code false}, since nothing changed.
+     *
+     * <p>C asserts the index is in range, since it is about to subscript {@code p->timed}; a
+     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
+     * analogue here. The {@code getOrDefault} default costs nothing and is never used: the
+     * constructor seeds the map with every {@link TimedEffect} at zero.
+     *
+     * <p>Function playerDecTimed coded on 260831, commented in full on 260831.
+     *
+     * @param index      the effect to shorten; must be one the registry knows
+     * @param amount     how much to take off the current duration; may be negative, which lengthens
+     *                   it
+     * @param notify     whether the caller wants an ordinary change announced; ignored, and treated
+     *                   as {@code true}, when the effect finishes
+     * @param canDisturb whether a notifying change may interrupt resting or running
+     * @return {@code true} if the player was notified, which is C's return value - not whether the
+     * effect actually shrank
+     */
+    public boolean playerDecTimed(TimedEffect index, int amount, boolean notify, boolean canDisturb) {
+        int newValue = timed.getOrDefault(index, 0) - amount;
+
+        if (newValue > 0) {
+            return setTimed(index, newValue, notify, canDisturb);
+        }
+        return setTimed(index, newValue, true, canDisturb);
+    }
+
+    /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
      * actions.

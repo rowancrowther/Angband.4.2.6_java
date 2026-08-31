@@ -50,10 +50,7 @@ public class NamesAssembler implements Assembler<NamesParseRecord, List<Name>> {
                 errors.add("Section " + record.section() + " is an invalid integer");
                 continue;
             }
-            List<String> words = new ArrayList<>();
-            for (String word : record.word()) {
-                words.add(word);
-            }
+            List<String> words = new ArrayList<>(record.word());
 
             names.add(new Name(section, words));
         }

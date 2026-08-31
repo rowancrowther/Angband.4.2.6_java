@@ -292,7 +292,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `stat_name_to_idx`
 - [X] `stat_idx_to_name`
 - [X] `lookup_realm` (`[C] player.c:111, 122, 130`)
-- [ ] `player_random_name`
+- [X] `player_random_name`
 - [ ] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
 
 ### G — `player_generate` and its helpers *(needs C, F)*

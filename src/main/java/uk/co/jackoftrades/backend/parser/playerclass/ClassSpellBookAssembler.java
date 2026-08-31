@@ -97,7 +97,12 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
                     continue;
                 }
             }
-            MagicRealm realm = PlayerRegistry.lookupRealm(record.realm());
+            MagicRealm realm;
+            try {
+                realm = PlayerRegistry.lookupRealm(record.realm());
+            } catch (IllegalArgumentException e) {
+                realm = null;
+            }
             if (realm == null) {
                 errors.add("Spell book at line: " + line + " has " +
                         "an unknown realm: " + record.realm());

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.enums.Stats;
+import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
 import uk.co.jackoftrades.middle.magic.MagicBook;
 import uk.co.jackoftrades.middle.player.PlayerClass;
@@ -362,6 +363,17 @@ class PlayerClassReaderTest {
         assertTrue(hasError(r, "unknown first parameter: notabase"), r.errors()::toString);
     }
 
+    /**
+     * An unknown realm is caught at the assembler and demoted to a collected error, so the book is
+     * dropped and the rest of the file still parses.
+     *
+     * <p>The two halves are worth keeping apart. {@link PlayerRegistry#lookupRealm} matches C's
+     * {@code lookup_realm} ({@code player.c:130-143}), which ends its walk in
+     * {@code quit_fmt("Failed to find %s magic realm", name)} and never returns — so the lookup
+     * throws rather than answering {@code null}. The reader is the port's own addition: it turns
+     * that into a per-book error the way it does for an unknown tval or a malformed spell count,
+     * because a data-file typo should not take the parse down with it.
+     */
     @Test
     void unknownBookRealmIsReportedAndTheBookDropped() throws IOException {
         ParseResult<PlayerClass> r = load("bad-realm.txt", withHeader(1,

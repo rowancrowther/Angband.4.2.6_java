@@ -26,10 +26,7 @@ import uk.co.jackoftrades.middle.magic.MagicRealm;
 import uk.co.jackoftrades.middle.player.*;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Runtime holder for all player-domain game data — properties, shapes, history charts, bodies,
@@ -227,12 +224,28 @@ public class PlayerRegistry {
     }
 
     /**
-     * Searches for a magic realm based on the magic realm name
+     * Look up a magic realm by name, ignoring case.
      *
-     * @param realmName the name of the realm to return
-     * @return the MagicRealm with the relevant name or null
+     * <p>This is the port of C's {@code lookup_realm} in {@code player.c}. C walks the
+     * {@code realms} linked list in load order and compares with {@code my_stricmp}, an
+     * ASCII case-insensitive compare; the port streams the loaded list in the same order and
+     * uses {@link String#equalsIgnoreCase}, which agrees with it for the realm names the data
+     * files carry ({@code arcane}, {@code divine}, {@code nature}, {@code shadow}). The names
+     * are stored as parsed, so the fold has to happen at the comparison — callers such as
+     * {@code ClassSpellBookAssembler} pass whatever spelling {@code class.txt} used.
+     *
+     * <p>A miss is fatal in C: {@code lookup_realm} ends in {@code quit_fmt("Failed to find %s
+     * magic realm", name)}, which tears the game down rather than returning. The port keeps
+     * that severity by throwing {@link IllegalArgumentException} with the same message text,
+     * so an unresolvable realm name still stops loading instead of quietly yielding nothing.
+     *
+     * <p>Function lookupRealm coded on 260831, commented in full on 260831.
+     *
+     * @param realmName the realm's name, in any case
+     * @return the matching {@link MagicRealm}; never {@code null}
+     * @throws IllegalStateException    if the realms have not been loaded
+     * @throws IllegalArgumentException if no loaded realm bears that name
      */
-    @Nullable
     @CheckReturnValue
     public static MagicRealm lookupRealm(String realmName) {
         if (realms == null) {
@@ -242,10 +255,17 @@ public class PlayerRegistry {
             throw e;
         }
 
-        return realms.stream()
-                .filter(r -> realmName.equals(r.getName()))
-                .findFirst()
-                .orElse(null);
+        MagicRealm result = getMagicRealms().stream()
+                .filter(realm -> realm.getName().equalsIgnoreCase(realmName))
+                .findFirst().orElse(null);
+
+        if (result == null) {
+            String msg = "Failed to find " + realmName + " magic realm";
+            logger.error(msg);
+            throw new IllegalArgumentException(msg);
+        }
+
+        return result;
     }
 
     /**

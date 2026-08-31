@@ -291,7 +291,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `player_exp_lose` (`[C] player.c:269, 277`) → `expLose` at `Player.java:1380`
 - [X] `stat_name_to_idx`
 - [X] `stat_idx_to_name`
-- [ ] `lookup_realm` (`[C] player.c:111, 122, 130`)
+- [X] `lookup_realm` (`[C] player.c:111, 122, 130`)
 - [ ] `player_random_name`
 - [ ] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
 

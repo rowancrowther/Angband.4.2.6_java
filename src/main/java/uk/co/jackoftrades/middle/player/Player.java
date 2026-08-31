@@ -5661,6 +5661,81 @@ public class Player {
     }
 
     /**
+     * Adds {@code amount} to the current duration of a timed effect - the port of C's
+     * {@code player_inc_timed} ({@code player-timed.c:1053}).
+     *
+     * <p>Three gates stand between the request and the change. The first is the caller's
+     * {@code check} flag: when it is set, {@link #incCheck} is asked whether anything the player
+     * carries or is already under prevents the effect, and a veto ends the call at once. When it is
+     * clear the question is never asked, so none of the learning {@code incCheck} does on the way
+     * past happens either. The second gate is the effect's own non-stacking property: an effect
+     * marked {@code NONSTACKING} that is already running refuses a further increase outright rather
+     * than extending itself. The third is {@link #setTimed}, which does the real work and decides
+     * everything about announcement, grades and upkeep.
+     *
+     * <p>The new duration is the current value plus {@code amount}, computed here and handed to
+     * {@code setTimed} as an absolute value. Nothing clamps it at this level: a negative
+     * {@code amount} is a legitimate way to shorten an effect, and the lower and upper bounds are
+     * {@code setTimed}'s business. C computes {@code p->timed[idx] + v} in the same place and for
+     * the same reason.
+     *
+     * <p>The return value is {@code setTimed}'s, and so means what that method's means: whether the
+     * player was notified, not whether the stored duration moved. Both refusals - a failed check and
+     * a blocked non-stacking increase - answer {@code false}, which is indistinguishable from a
+     * silent change that did happen. Callers in C that care about resistance test the return anyway
+     * ({@code mon-blows.c:548}), which is C's own looseness rather than something the port tightens.
+     *
+     * <p>C asserts the index is in range, since it is about to subscript {@code timed_effects}; a
+     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
+     * analogue here. C then reads {@code timed_effects[idx].flags} directly, where the port walks
+     * the registry's list for the definition of that name. An effect the registry has no definition
+     * for leaves the local null, and the non-stacking question is simply not asked - the call falls
+     * through to {@code setTimed}, which raises {@code IllegalArgumentException} on the same missing
+     * definition. That is the same class of programming error C's assert catches, reported one call
+     * deeper.
+     *
+     * <p>The {@code timed.containsKey} test costs nothing and finds nothing: the constructor seeds
+     * the map with every {@link TimedEffect} at zero, so the lookup below it is never null.
+     *
+     * <p>Function playerIncTimed coded on 260831, commented in full on 260831.
+     *
+     * @param index      the effect to lengthen; must be one the registry knows
+     * @param amount     how much to add to the current duration; may be negative
+     * @param notify     whether the caller wants an ordinary change announced, passed on to
+     *                   {@link #setTimed} unaltered
+     * @param canDisturb whether a notifying change may interrupt resting or running
+     * @param check      whether the player is allowed to resist the effect, by way of
+     *                   {@link #incCheck}
+     * @return {@code true} if the player was notified, which is C's return value - not whether the
+     * effect actually grew
+     */
+    public boolean playerIncTimed(TimedEffect index, int amount, boolean notify,
+                                  boolean canDisturb, boolean check) {
+        if (!check || incCheck(index, false)) {
+            List<PlayerTimedEffect> timedEffects = PlayerRegistry.getPlayerTimedEffects();
+            PlayerTimedEffect actualEffect = null;
+
+            for (PlayerTimedEffect timedEffect : timedEffects) {
+                if (timedEffect.getName() != index) continue;
+                else {
+                    actualEffect = timedEffect;
+                    break;
+                }
+            }
+
+            if (actualEffect != null && actualEffect.isNonStacking()
+                    && timed.containsKey(index) && timed.get(index) > 0) {
+                // Block the increase if the effect is nonstacking and already active
+                return false;
+            } else {
+                return setTimed(index, timed.get(index) + amount, notify, canDisturb);
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
      * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
      * actions.

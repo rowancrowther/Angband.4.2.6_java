@@ -43,6 +43,7 @@ import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
+import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.MonsterUtils;
 import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
@@ -1716,7 +1717,7 @@ public class Player {
         // Mana
         calcMana(state, update);
         if (maxSP == 0)
-            state.setPlayerFlag(PlayerFlag.PF_NO_MANA);
+            state.playerFlagOn(PlayerFlag.PF_NO_MANA);
 
         state.setNumMoves(extraMoves);
     }
@@ -2802,6 +2803,147 @@ public class Player {
     public boolean incTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb, boolean check) {
         // Stub function TODO: implement
         return false;
+    }
+
+    /**
+     * Decides whether a timed effect is allowed to take hold, by walking the failure conditions
+     * declared for it in {@code player_timed.txt} - the port of C's {@code player_inc_check}
+     * ({@code player-timed.c}).
+     *
+     * <p>Each condition is a veto: the first one that holds answers {@code false} and the walk stops
+     * there. Only an effect that survives every condition answers {@code true}, so an effect with no
+     * declared conditions always passes.
+     *
+     * <p><b>What {@code lore} selects.</b> A lore check asks what the player <em>believes</em> would
+     * stop the effect, and so reads {@link #knownState} and nothing else; it is a query, and leaves
+     * the character untouched. The live check reads the calculated state from
+     * {@link #getPlayerState()} instead, and learning is part of its job: being subjected to an
+     * effect that one's equipment turns aside is how that equipment's property gets identified, so
+     * the non-lore branches call {@link #equipLearnFlag} and {@link #equipLearnElement} before
+     * testing. The two branches are alternatives, never a sequence - a lore check that fell through
+     * to the live test would both answer the wrong question and identify equipment the player never
+     * used.
+     *
+     * <p><b>The monster boundary in the object-flag case.</b> When the effect arrives from a
+     * monster's action the cave names the actor in {@code monCurrent}, and two further things
+     * happen: the monster observes the player's property through {@link Monster#updateSmartLearn},
+     * and a successful resist is announced. Both are conditional on there being an actor - an effect
+     * from a trap or a potion is learned from silently. C passes {@code 0} and {@code -1} for the
+     * player flag and element it is not reporting; the port spells those {@link PlayerFlag#PF_NONE}
+     * and {@link ElementEnum#ELEM_NONE}.
+     *
+     * <p><b>Resistance and vulnerability differ only in sign.</b> A resist vetoes at
+     * {@code resLevel > 0} and a vulnerability at {@code resLevel < 0}; both learn from equipment on
+     * the live path. C carries a note that the pair reading asymmetrically is accepted for now.
+     *
+     * <p><b>Why the timed-effect case ignores {@code lore}.</b> A timed effect that is running shows
+     * on the player's status line, so there is nothing for them to be ignorant of and no second
+     * branch to write. The test is on the counter being non-zero, not on the entry existing:
+     * {@link #timed} is populated with a zero for every effect at construction, so a presence test
+     * would hold always and veto the effect unconditionally.
+     *
+     * <p>C asserts that each condition's index lies in range for its category. The port needs no
+     * equivalent: {@link TimedFailure} keeps a separately-typed payload per category and its
+     * accessors refuse to hand back the wrong one, so a malformed condition fails at the accessor
+     * rather than indexing past an array. The unreachable {@code TYPE_NONE} answers C's
+     * {@code assert(0)} with a logged throw.
+     *
+     * <p>Function incCheck coded on 260831, commented in full on 260831.
+     *
+     * @param index the timed effect whose failure conditions are to be tested
+     * @param lore  {@code true} to test only against what the player already knows, learning
+     *              nothing from equipment; {@code false} for the live check
+     * @return {@code true} if nothing prevents the effect from being increased
+     */
+    public boolean incCheck(TimedEffect index, boolean lore) {
+        PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
+        List<TimedFailure> failures = effect.getFail();
+
+        for (TimedFailure failure : failures) {
+            switch (failure.getCode()) {
+                case TYPE_OBJECT_FLAG -> {
+                    if (lore) {
+                        if (knownState.hasOFlag(failure.getObjFlagCode()))
+                            return false;
+                    } else {
+                        // If the effect is from a monster action, extra stuff happens
+                        Monster mon = getCave().getMonCurrent() > 0 ? getCave().caveMonster(getCave().getMonCurrent())
+                                : null;
+
+                        equipLearnFlag(failure.getObjFlagCode());
+                        if (mon != null) {
+                            mon.updateSmartLearn(this, failure.getObjFlagCode(), PlayerFlag.PF_NONE,
+                                    ElementEnum.ELEM_NONE);
+                        }
+                        if (hasObjectFlag(failure.getObjFlagCode())) {
+                            if (mon != null) {
+                                Message.message("You resist the effect!");
+                            }
+                            return false;
+                        }
+                    }
+                }
+                case TYPE_RESIST -> {
+                    if (lore) {
+                        // Effect is inhibited by a resist
+                        if (knownState.getElInfo().get(failure.getElementCode()).getResLevel() > 0) {
+                            return false;
+                        }
+                    } else {
+                        equipLearnElement(failure.getElementCode());
+                        if (getPlayerState().getElInfo().get(failure.getElementCode()).getResLevel() > 0) {
+                            return false;
+                        }
+                    }
+                }
+                case TYPE_VULN -> {
+                    // Effect is inhibited by a vulnerability
+                    if (lore) {
+                        if (knownState.getElInfo().get(failure.getElementCode()).getResLevel() < 0) {
+                            return false;
+                        }
+                    } else {
+                        equipLearnElement(failure.getElementCode());
+                        if (getPlayerState().getElInfo().get(failure.getElementCode()).getResLevel() < 0) {
+                            return false;
+                        }
+                    }
+                }
+                case TYPE_PLAYER_FLAG -> {
+                    // Effect is inhibited by a player flag
+                    if (lore) {
+                        if (knownState.hasPFlag(failure.getPlayerFlagCode())) {
+                            return false;
+                        }
+                    } else {
+                        if (hasPlayerFlag(failure.getPlayerFlagCode())) {
+                            return false;
+                        }
+                    }
+                }
+                case TYPE_TIMED_EFFECT -> {
+                    /*
+                     * Effect is inhibited by a timed effect.  If timed
+                     * effect is active, it is known to the player, so
+                     * there's no difference between whether this is
+                     * solely a lore check or not.
+                     */
+                    TimedEffect e = failure.getEffectCode();
+                    if (timed != null && timed.containsKey(e) && timed.get(e) != 0) {
+                        return false;
+                    }
+                }
+                case TYPE_NONE -> {
+                    // should never happen
+                    String message = "Error: Failure.code.TYPE_NONE reached in Player.incCheck. " +
+                            "Should not have occured";
+                    logger.error(message);
+                    throw new RuntimeException(message);
+                }
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -5377,6 +5519,145 @@ public class Player {
      */
     public int getLevel() {
         return level;
+    }
+
+    /**
+     * Learns the elemental resistances carried by the player's wielded items — the port of C's
+     * {@code equip_learn_element} ({@code src/obj-knowledge.c:2155}).
+     *
+     * <p>Called whenever something would have shown the player how well they resist an element: a
+     * breath weapon landing, a timed resistance running out, a light or dark attack. Every equipped
+     * item is asked whether it moves the resistance level for that element. One that does announces
+     * itself as glowing and teaches the player the resistance rune; one that does not has the fact
+     * recorded on its known counterpart, so the item is remembered as having had its chance to show
+     * the property and stays silent about it thereafter. Either way the item's curses are searched
+     * too, because a curse carries element figures of its own.
+     *
+     * <p>The two sentinels stand in for C's {@code element < 0 || element >= ELEM_MAX} bounds check.
+     * {@link ElementEnum} declares {@code ELEM_MAX} in the same position C does — after
+     * {@code ELEM_ARROW} — so the pair of comparisons admits exactly the elements C's pair admits,
+     * the unresistable damage types among them.
+     *
+     * <p>C asserts that each equipped item has a known counterpart; the port skips an item without
+     * one instead. The assert is a debug-build check rather than a behavioural clause, and the same
+     * treatment appears elsewhere in this class.
+     *
+     * <p>C reads its element figures out of a fixed {@code el_info[ELEM_MAX]} array, so an element
+     * the object's data line never mentioned still reads back as a zero resistance level and an
+     * empty flag set. The port holds only the elements an item actually names, so both reads are
+     * guarded by presence: an absent element takes the same branch C's zero takes, and the flag copy
+     * is skipped because the known counterpart's flag set is already the empty one C would have
+     * copied. The resistance level is written either way, which is the half that matters.
+     *
+     * <p>Where the element has no resistance rune, {@link Rune#runeIndex(ElementEnum)} answers
+     * {@code null} and {@link #learnRune} declines it, in place of C's {@code -1} index — the same
+     * treatment recorded at {@link #objectCursesFindElement}.
+     *
+     * <p>Function equipLearnElement commented in full on 260831.
+     *
+     * @param elem the element the player has just been given a chance to notice
+     */
+    public void equipLearnElement(ElementEnum elem) {
+        if (elem == ElementEnum.ELEM_NONE || elem == ElementEnum.ELEM_MAX)
+            return;
+
+        if (itemKnowledge.getElementResistInfo().get(elem))
+            return;
+
+        // All wielded items are eligible
+        for (EquipSlot slot : body.getSlots()) {
+            ItemObject item = slot.getItem();
+            if (item == null) continue;
+            if (item.getKnown() == null) continue;
+
+            // Does the object affect the player's resistance to the element?
+            if (item.getElInfo().containsKey(elem) && item.getElInfo().get(elem).getResLevel() != 0) {
+                String name = ObjectUtils.objectDesc(item,
+                        new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE), this);
+
+                // Message
+                Message.message("Your %s glows.", name);
+
+                // Learn the element properties
+                learnRune(Rune.runeIndex(elem), true);
+            } else if (!item.isFullyKnown()) {
+                // Objects not fully known yet get marked as having had a chance to display
+                // the element
+                item.getKnown().setElInfoResLevel(elem, 1);
+                ElementInfo info = item.getKnown().getElInfo().get(elem);
+                info.getFlags().copyFrom(item.getElInfo().getOrDefault(elem, new ElementInfo()).getFlags());
+            }
+            // Element may be on a curse
+            objectCursesFindElement(item, elem);
+        }
+    }
+
+    /**
+     * Learns what a curse on an item teaches about one element — the port of C's
+     * {@code object_curses_find_element} ({@code src/obj-knowledge.c:1748}).
+     *
+     * <p>An item's own element figures are not the only thing that can change how the player resists
+     * an element: a curse merged onto the item carries element figures of its own. This walks the
+     * item's curses and, for every one actually in force — power non-zero — asks whether it moves
+     * the resistance level for {@code elem}. If it does, the player learns the resistance rune
+     * (announced once, on first discovery, as the item glowing) and the curse's own rune, and the
+     * method reports back that the element was found on a curse.
+     *
+     * <p>C skips curse slot 0 and any curse whose definition carries no object; neither has an
+     * analogue here. The port holds an item's curses as a map of the curses it actually has, so
+     * there is no empty slot to step over, and {@link Curse} flattens C's nested
+     * {@code curse-&gt;obj} into fields of its own, so a curse cannot be missing one.
+     *
+     * <p>The null check on the element entry is where the two data shapes part company. C indexes an
+     * array of length {@code ELEM_MAX}, so every element always has a {@code res_level}, defaulting
+     * to zero; {@link Curse#getElInfo()} holds only the elements that curse's data lines name, and
+     * most of the curses in {@code curse.txt} name none at all. A missing entry therefore means what
+     * C's zero means — this curse does not touch that element — and is passed over rather than
+     * treated as a fault.
+     *
+     * <p>C's {@code if (index >= 0)} guard before learning the curse rune is absent for the reason
+     * it is absent elsewhere in this class: {@link Rune#runeIndex(Curse)} answers {@code null} where
+     * C answers {@code -1}, and {@link #learnRune} already declines a null rune. The resistance rune
+     * is learned unguarded in both, which is C's own choice rather than an omission here.
+     *
+     * <p>The description is built once, before the loop, exactly as C builds its {@code o_name}. The
+     * cost is paid whether or not anything is found, but it means the message names the item as it
+     * read on entry rather than as the first rune learned this call left it.
+     *
+     * <p>Function objectCursesFindElement commented in full on 260831.
+     *
+     * @param item the item whose curses to search
+     * @param elem the element being learned about
+     * @return whether the element appeared on any curse this item carries
+     */
+    private boolean objectCursesFindElement(ItemObject item, ElementEnum elem) {
+        boolean newCurse = false;
+
+        Flag<ObjectDescription> flags = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE);
+        String name = item.description(flags, this);
+
+        for (Curse curse : item.getCurses().keySet()) {
+            CurseData curseData = item.getCurses().get(curse);
+
+            if (curseData.getPower() == 0)
+                continue;
+
+            // Does the object affect the player's resistance to the element?
+            if (curse.getElInfo().get(elem) != null && curse.getElInfo().get(elem).getResLevel() != 0) {
+                // Learn the element property if we don't know it already
+                if (!itemKnowledge.getElementResistInfo().get(elem)) {
+                    Message.message("Your %s glows.", name);
+
+                    learnRune(Rune.runeIndex(elem), true);
+                }
+
+                // Learn the curse
+                learnRune(Rune.runeIndex(curse), true);
+                newCurse = true;
+            }
+        }
+
+        return newCurse;
     }
 
     /**

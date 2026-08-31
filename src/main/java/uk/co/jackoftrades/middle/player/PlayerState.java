@@ -499,7 +499,7 @@ public class PlayerState {
      * The player-flag set itself — C's {@code state.pflags}.
      *
      * <p>Live and mutable, not a view. Callers testing a single flag should use
-     * {@link #hasPFlag(PlayerFlag)} and callers setting one {@link #setPlayerFlag(PlayerFlag)};
+     * {@link #hasPFlag(PlayerFlag)} and callers setting one {@link #playerFlagOn(PlayerFlag)};
      * this is for whole-set work.
      *
      * @return the player flags, shared with this state
@@ -509,13 +509,52 @@ public class PlayerState {
     }
 
     /**
-     * Switches one player flag on — C's {@code pf_on}. There is no matching way to switch one off:
-     * the state is rebuilt from nothing on every calculation, so flags are only ever added.
+     * Switches one player flag on in this state — the port of C's {@code pf_on}
+     * ({@code player.h:60}), which is {@code flag_on_dbg} over {@code state.pflags}
+     * ({@code z-bitflag.c:213-229}).
      *
-     * @param playerFlag the flag to set
+     * <p>The return value is C's, and it reports change rather than success: {@code false} when
+     * the flag was already on and nothing was written, {@code true} when this call is what turned
+     * it on. Most callers have no use for it — {@code calcBonuses} raising {@code PF_NO_MANA}
+     * ({@code Player.java:1720}) and the monster-knowledge sweep copying flags across
+     * ({@code Monster.java:353}) both set unconditionally and drop the answer — but a caller that
+     * wants to act only on a genuine transition can test it without reading the flag first.
+     *
+     * <p>C reaches {@code flag_on_dbg} rather than {@code flag_on} so that a flag index past the
+     * end of the bit array aborts with a diagnostic instead of corrupting the neighbouring bytes.
+     * A Java enum cannot be out of range, so the two C variants collapse into one method here.
+     *
+     * <p>Function playerFlagOn coded on 260831, commented in full on 260831.
+     *
+     * @param playerFlag the flag to switch on
+     * @return {@code true} if the flag was off and is now on, {@code false} if it was already on
      */
-    public void setPlayerFlag(PlayerFlag playerFlag) {
-        pflags.on(playerFlag);
+    public boolean playerFlagOn(PlayerFlag playerFlag) {
+        return pflags.on(playerFlag);
+    }
+
+    /**
+     * Switches one player flag off in this state — the port of C's {@code pf_off}
+     * ({@code player.h:61}), which is {@code flag_off} over {@code state.pflags}
+     * ({@code z-bitflag.c:240-252}).
+     *
+     * <p>The mirror of {@link #playerFlagOn(PlayerFlag)}, and its return value reads the same way
+     * round: {@code true} when the flag was on and this call cleared it, {@code false} when it was
+     * already off and nothing changed. C clears the bit with {@code &= ~flag_binary}, so a flag
+     * that is off stays off — switching one off twice is not an error, it is simply a second call
+     * that answers {@code false}.
+     *
+     * <p>{@code pf_off} is the one member of the pair C does not route through a debug wrapper; it
+     * asserts on an out-of-range index instead. That distinction has no port, as an enum constant
+     * is always in range.
+     *
+     * <p>Function playerFlagOff coded on 260831, commented in full on 260831.
+     *
+     * @param playerFlag the flag to switch off
+     * @return {@code true} if the flag was on and is now off, {@code false} if it was already off
+     */
+    public boolean playerFlagOff(PlayerFlag playerFlag) {
+        return pflags.off(playerFlag);
     }
 
     /**
@@ -814,5 +853,44 @@ public class PlayerState {
      */
     public TValue getAmmoTval() {
         return ammoTVal;
+    }
+
+    /**
+     * Sets a single object flag on the player's calculated state — C's {@code of_on(state->flags, f)}.
+     *
+     * <p>Idempotent, and the return value is the report of whether it did anything: {@code false} when
+     * the flag was already held and nothing changed, {@code true} when the set gained it. C's
+     * {@code flag_on} answers the same way, which is what lets the calculation fold the same flag in
+     * from race, class, shape and every piece of gear without the order of the folds mattering.
+     *
+     * <p>Function setOFlag commented in full on 260831.
+     *
+     * @param objFlag the object flag to set
+     * @return {@code true} if the flag was not already set
+     */
+    public boolean oFlagOn(ObjectFlag objFlag) {
+        return flags.on(objFlag);
+    }
+
+    /**
+     * Clears a single object flag from the player's calculated state — C's {@code of_off(state->flags, f)}.
+     *
+     * <p>The mirror of {@link #oFlagOn(ObjectFlag)}, and idempotent in the same way: the return value
+     * reports whether the set actually changed, {@code true} when the flag was held and has now been
+     * removed, {@code false} when it was already absent and nothing happened. C's {@code flag_off}
+     * answers identically, testing the bit before clearing it rather than clearing unconditionally.
+     *
+     * <p>Note this is not part of the state calculation itself, which builds a state from empty and so
+     * only ever needs to switch flags on. Clearing is for the monster's picture of the player: when
+     * {@code update_smart_learn} finds the player lacks a flag it writes that absence into
+     * {@code known_pstate}, correcting a belief the monster may already hold.
+     *
+     * <p>Function oFlagOff commented in full on 260831.
+     *
+     * @param objFlag the object flag to clear
+     * @return {@code true} if the flag was set before this call
+     */
+    public boolean oFlagOff(ObjectFlag objFlag) {
+        return flags.off(objFlag);
     }
 }

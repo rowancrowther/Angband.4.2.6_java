@@ -23,8 +23,10 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
@@ -428,6 +430,132 @@ class ItemObjectMutatorsTest {
             item.orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);
 
             assertTrue(item.getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED));
+        }
+    }
+
+    /**
+     * The per-element resistance mutator, which has no C function behind it: C assigns
+     * {@code obj->el_info[i].res_level} inline, into a {@code struct element_info el_info[ELEM_MAX]}
+     * embedded in the object and zero-filled by {@code object_new}. Every expectation below is that
+     * array's behaviour — a slot always exists, the write always lands, and it touches
+     * {@code res_level} only.
+     */
+    @Nested
+    @DisplayName("element resistance levels")
+    class ElementResistances {
+
+        /**
+         * C's {@code equip_learn_element} writes {@code obj->known->el_info[element].res_level = 1}
+         * ({@code obj-knowledge.c:2153}) onto a counterpart object, which is a blank
+         * {@code object_new} struct. The Java counterpart is the no-argument constructor, whose map
+         * does not exist at all, so the write has to create it rather than be dropped.
+         */
+        @Test
+        @DisplayName("writing to an item with no map at all creates it")
+        void bareItemGetsTheMap() {
+            ItemObject bare = new ItemObject();
+
+            bare.setElInfoResLevel(ElementEnum.ELEM_FIRE, 1);
+
+            assertEquals(1, bare.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+        }
+
+        /**
+         * And an element absent from a map that does exist. C has no such state — the slot is there
+         * at zero — so the value must land, and the entry created for it starts with no flags, which
+         * is what the zero-fill leaves.
+         */
+        @Test
+        @DisplayName("an element with no entry gets one, with empty flags")
+        void absentElementGetsAnEntry() {
+            item.setElInfoResLevel(ElementEnum.ELEM_COLD, 3);
+
+            ElementInfo cold = item.getElInfo().get(ElementEnum.ELEM_COLD);
+            assertEquals(3, cold.getResLevel());
+            assertFalse(cold.has(ElementInfoEnum.EL_INFO_IGNORE), "a fresh entry carries no flags");
+            assertFalse(cold.has(ElementInfoEnum.EL_INFO_HATES));
+        }
+
+        /**
+         * Overwriting is the ordinary path — {@code obj-curse.c:519} raises an existing level of 1 to
+         * 3 — and the C assignment names one field, so the flags alongside it survive.
+         */
+        @Test
+        @DisplayName("an existing level is replaced, and the flags survive")
+        void existingEntryKeepsItsFlags() {
+            ElementInfo acid = new ElementInfo();
+            acid.setResLevel(1);
+            acid.on(ElementInfoEnum.EL_INFO_IGNORE);
+            item.putElInfo(ElementEnum.ELEM_ACID, acid);
+
+            item.setElInfoResLevel(ElementEnum.ELEM_ACID, 3);
+
+            assertEquals(3, item.getElInfo().get(ElementEnum.ELEM_ACID).getResLevel());
+            assertTrue(item.getElInfo().get(ElementEnum.ELEM_ACID).has(ElementInfoEnum.EL_INFO_IGNORE),
+                    "the C assignment names res_level only");
+            assertSame(acid, item.getElInfo().get(ElementEnum.ELEM_ACID), "and writes in place");
+        }
+
+        /**
+         * The scale is C's and nothing here interprets it: {@code obj-curse.c:521} parks
+         * {@code -32768} in the field as a marker while curses merge, and {@code obj-init.c:2058}
+         * lets the data files write a plain vulnerability of -1.
+         */
+        @Test
+        @DisplayName("negative levels and C's -32768 marker pass through unchanged")
+        void negativeLevelsArePassedThrough() {
+            item.setElInfoResLevel(ElementEnum.ELEM_ELEC, -1);
+            assertEquals(-1, item.getElInfo().get(ElementEnum.ELEM_ELEC).getResLevel());
+
+            item.setElInfoResLevel(ElementEnum.ELEM_ELEC, Short.MIN_VALUE);
+            assertEquals(-32768, item.getElInfo().get(ElementEnum.ELEM_ELEC).getResLevel(),
+                    "the vulnerable-and-resistant marker is a value like any other");
+        }
+
+        /**
+         * Zero is neutral, not absent. {@code obj-knowledge.c:1062} writes it deliberately to blank a
+         * counterpart's knowledge, and {@code obj-curse.c:564} to clear the merge marker, so it has
+         * to be storable rather than treated as "no entry".
+         */
+        @Test
+        @DisplayName("zero is stored, not skipped")
+        void zeroIsStored() {
+            item.setElInfoResLevel(ElementEnum.ELEM_FIRE, 3);
+            item.setElInfoResLevel(ElementEnum.ELEM_FIRE, 0);
+
+            assertEquals(0, item.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+        }
+
+        /**
+         * The C write indexes one slot, so the neighbouring elements are untouched — including
+         * staying absent, which the map represents and the array cannot.
+         */
+        @Test
+        @DisplayName("only the named element is touched")
+        void otherElementsAreUntouched() {
+            item.setElInfoResLevel(ElementEnum.ELEM_FIRE, 3);
+            item.setElInfoResLevel(ElementEnum.ELEM_COLD, 1);
+
+            assertEquals(3, item.getElInfo().get(ElementEnum.ELEM_FIRE).getResLevel());
+            assertEquals(1, item.getElInfo().get(ElementEnum.ELEM_COLD).getResLevel());
+            assertNull(item.getElInfo().get(ElementEnum.ELEM_ACID), "acid was never written");
+        }
+
+        /**
+         * The map the mutator creates has to stay writable afterwards, or the next write — through
+         * {@code putElInfo}, which guards on the map being null and so would no longer create one —
+         * would fail on an item this method had already touched.
+         */
+        @Test
+        @DisplayName("the created map still accepts later writes")
+        void createdMapStaysWritable() {
+            ItemObject bare = new ItemObject();
+            bare.setElInfoResLevel(ElementEnum.ELEM_FIRE, 1);
+
+            bare.putElInfo(ElementEnum.ELEM_ACID, new ElementInfo());
+            bare.setElInfoResLevel(ElementEnum.ELEM_COLD, 1);
+
+            assertEquals(3, bare.getElInfo().size());
         }
     }
 }

@@ -1146,7 +1146,7 @@ public class Chunk {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    private Monster caveMonster(int index) {
+    public Monster caveMonster(int index) {
         return monsters[index];
     }
 
@@ -2587,5 +2587,9 @@ public class Chunk {
                 getSquare(grid).sqInfoOff(SquareEnum.SQUARE_CLOSE_PLAYER);
             }
         }
+    }
+
+    public int getMonCurrent() {
+        return monCurrent;
     }
 }

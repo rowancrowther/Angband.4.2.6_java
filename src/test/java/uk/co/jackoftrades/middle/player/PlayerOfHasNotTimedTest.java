@@ -258,7 +258,7 @@ class PlayerOfHasNotTimedTest {
     @Test
     @DisplayName("bravery grants prot-fear at level 30 and not at 29")
     void braveryIsLevelGated() throws Exception {
-        state.setPlayerFlag(PlayerFlag.PF_BRAVERY_30);
+        state.playerFlagOn(PlayerFlag.PF_BRAVERY_30);
 
         setField(player, Player.class, "level", 29);
         assertFalse(has(ObjectFlag.OF_PROT_FEAR), "level 29 is below the grant");

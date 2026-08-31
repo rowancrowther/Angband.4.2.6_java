@@ -96,7 +96,7 @@ class PlayerStateTest {
         state.setStatTop(Stats.STAT_STR, 18);
         state.setStatUse(Stats.STAT_STR, 17);
         state.skillAdd(PlayerSkill.SKILL_STEALTH, 11);
-        state.setPlayerFlag(PlayerFlag.PF_UNLIGHT);
+        state.playerFlagOn(PlayerFlag.PF_UNLIGHT);
         state.setResLevel(ElementEnum.ELEM_FIRE, 2);
         Flag<ObjectFlag> oflags = new Flag<>(ObjectFlag.class);
         oflags.on(ObjectFlag.OF_FEATHER);
@@ -345,7 +345,7 @@ class PlayerStateTest {
             duplicate.statAdd(Stats.STAT_STR, 7);
             duplicate.setStateSkill(PlayerSkill.SKILL_STEALTH, 99);
             duplicate.setResLevel(ElementEnum.ELEM_FIRE, 99);
-            duplicate.setPlayerFlag(PlayerFlag.PF_COMBAT_REGEN);
+            duplicate.playerFlagOn(PlayerFlag.PF_COMBAT_REGEN);
             Flag<ObjectFlag> extra = new Flag<>(ObjectFlag.class);
             extra.on(ObjectFlag.OF_TELEPATHY);
             duplicate.unionObjectFlags(extra);
@@ -583,7 +583,7 @@ class PlayerStateTest {
         @DisplayName("copy replaces the set, union adds to it")
         void copyReplacesUnionAdds() {
             PlayerState state = new PlayerState();
-            state.setPlayerFlag(PlayerFlag.PF_UNLIGHT);
+            state.playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
             Flag<PlayerFlag> race = new Flag<>(PlayerFlag.class);
             race.on(PlayerFlag.PF_EVIL);
@@ -623,6 +623,85 @@ class PlayerStateTest {
         }
 
         /**
+         * A single object flag goes on and stays on — C's {@code of_on}, which {@code player_flags}
+         * uses to grant OF_PROT_FEAR to a level-30 BRAVERY_30 class ({@code player.c:299}) and
+         * {@code player_flags_timed} uses once per running status ({@code player.c:320}).
+         */
+        @Test
+        @DisplayName("setOFlag sets the flag and leaves the others alone")
+        void setOFlagSets() {
+            PlayerState state = new PlayerState();
+            state.oFlagOn(ObjectFlag.OF_PROT_FEAR);
+
+            assertAll(
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_PROT_FEAR)),
+                    () -> assertFalse(state.hasOFlag(ObjectFlag.OF_FEATHER),
+                            "setting one flag should not disturb another"));
+        }
+
+        /**
+         * C's {@code flag_on} returns {@code false} when the bit was already set and only then sets
+         * it ({@code z-bitflag.c:213-228}), so the answer is "did this change anything", not "is the
+         * flag on now". Both timed effects and the gear walk can offer the same flag twice, and the
+         * second offer must report no change.
+         */
+        @Test
+        @DisplayName("setOFlag returns true only when the flag was not already held")
+        void setOFlagReportsChange() {
+            PlayerState state = new PlayerState();
+
+            assertAll(
+                    () -> assertTrue(state.oFlagOn(ObjectFlag.OF_SEE_INVIS),
+                            "the first set changes the set"),
+                    () -> assertFalse(state.oFlagOn(ObjectFlag.OF_SEE_INVIS),
+                            "the second set changes nothing, as C's flag_on reports"),
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_SEE_INVIS),
+                            "and the flag is still on afterwards"));
+        }
+
+        /**
+         * The flag survives a union that does not mention it, and a union that does mention an
+         * already-set flag is equally harmless. Nothing in the calculation ever takes an object flag
+         * off, so the two ways in have to compose.
+         */
+        @Test
+        @DisplayName("setOFlag and unionObjectFlags compose in either order")
+        void setOFlagComposesWithUnion() {
+            PlayerState state = new PlayerState();
+            state.oFlagOn(ObjectFlag.OF_FEATHER);
+
+            Flag<ObjectFlag> gear = new Flag<>(ObjectFlag.class);
+            gear.on(ObjectFlag.OF_FEATHER);
+            gear.on(ObjectFlag.OF_SEE_INVIS);
+            state.unionObjectFlags(gear);
+
+            assertAll(
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_FEATHER)),
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_SEE_INVIS)),
+                    () -> assertFalse(state.oFlagOn(ObjectFlag.OF_SEE_INVIS),
+                            "a flag arriving by union counts as already held"));
+        }
+
+        /**
+         * The wipe is what {@code calcBonuses} relies on to rebuild from nothing, so a flag set
+         * through this route has to be forgotten with the rest — otherwise the level-30 fear
+         * immunity would outlive the class change that granted it.
+         */
+        @Test
+        @DisplayName("wipe clears a flag set through setOFlag")
+        void setOFlagIsWiped() {
+            PlayerState state = new PlayerState();
+            state.oFlagOn(ObjectFlag.OF_PROT_FEAR);
+
+            state.wipe();
+
+            assertAll(
+                    () -> assertFalse(state.hasOFlag(ObjectFlag.OF_PROT_FEAR)),
+                    () -> assertTrue(state.oFlagOn(ObjectFlag.OF_PROT_FEAR),
+                            "after the wipe the first set is a change again"));
+        }
+
+        /**
          * The two flag getters hand out the live sets, not copies — deliberately, because
          * {@code calcBonuses} passes the object set straight to {@code flagsTimed} for it to add the
          * statuses' duplicated flags to ({@code player-calcs.c:2135}). Pinning it as shared stops
@@ -640,6 +719,112 @@ class PlayerStateTest {
                     () -> assertTrue(state.hasOFlag(ObjectFlag.OF_PROT_FEAR)),
                     () -> assertTrue(state.hasPFlag(PlayerFlag.PF_EVIL)),
                     () -> assertSame(state.getObjectFlag(), state.getObjectFlag()));
+        }
+
+        /**
+         * C's {@code flag_off} clears the bit and reports {@code true} only when the bit was there to
+         * clear ({@code z-bitflag.c:240-252}) — the same "did this change anything" answer
+         * {@code flag_on} gives, not "is the flag off now". A caller that read it as the latter would
+         * see the wrong answer on the very first call for an absent flag.
+         */
+        @Test
+        @DisplayName("oFlagOff clears the flag and reports whether it was held")
+        void oFlagOffReportsChange() {
+            PlayerState state = new PlayerState();
+            state.oFlagOn(ObjectFlag.OF_SEE_INVIS);
+
+            assertAll(
+                    () -> assertTrue(state.oFlagOff(ObjectFlag.OF_SEE_INVIS),
+                            "the flag was held, so clearing it is a change"),
+                    () -> assertFalse(state.hasOFlag(ObjectFlag.OF_SEE_INVIS),
+                            "and it is gone afterwards"),
+                    () -> assertFalse(state.oFlagOff(ObjectFlag.OF_SEE_INVIS),
+                            "clearing it again changes nothing, as C's flag_off reports"));
+        }
+
+        /**
+         * Clearing a flag that was never set is a no-op, not an error. C asserts only on the flag
+         * offset lying outside the array, which a typed enum makes unreachable, so every valid flag
+         * is safe to clear from an empty set.
+         */
+        @Test
+        @DisplayName("oFlagOff on an absent flag is a harmless no-op")
+        void oFlagOffOnAbsentFlag() {
+            PlayerState state = new PlayerState();
+
+            assertAll(
+                    () -> assertFalse(state.oFlagOff(ObjectFlag.OF_FEATHER),
+                            "nothing was held, so nothing changed"),
+                    () -> assertFalse(state.hasOFlag(ObjectFlag.OF_FEATHER)),
+                    () -> assertTrue(state.oFlagOn(ObjectFlag.OF_FEATHER),
+                            "and the set is still able to gain the flag"));
+        }
+
+        /**
+         * The clear touches one flag only. {@code update_smart_learn} corrects a monster's belief one
+         * flag at a time ({@code mon-util.c:816-822}), so a clear that disturbed a neighbour would
+         * make the monster forget knowledge it had legitimately earned.
+         */
+        @Test
+        @DisplayName("oFlagOff leaves the other flags alone")
+        void oFlagOffLeavesOthersAlone() {
+            PlayerState state = new PlayerState();
+            state.oFlagOn(ObjectFlag.OF_FEATHER);
+            state.oFlagOn(ObjectFlag.OF_SEE_INVIS);
+            state.oFlagOn(ObjectFlag.OF_PROT_FEAR);
+
+            state.oFlagOff(ObjectFlag.OF_SEE_INVIS);
+
+            assertAll(
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_FEATHER)),
+                    () -> assertFalse(state.hasOFlag(ObjectFlag.OF_SEE_INVIS)),
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_PROT_FEAR)));
+        }
+
+        /**
+         * On and off are exact inverses, so the pair can be driven from a boolean the way
+         * {@code update_smart_learn} drives it: {@code of_on} when the player has the flag,
+         * {@code of_off} when they do not, ending at the player's truth whatever the monster
+         * believed before.
+         */
+        @Test
+        @DisplayName("oFlagOn and oFlagOff round-trip to the same state either way round")
+        void oFlagOnOffRoundTrip() {
+            PlayerState believesHeld = new PlayerState();
+            believesHeld.oFlagOn(ObjectFlag.OF_FEATHER);
+            PlayerState believesAbsent = new PlayerState();
+
+            believesHeld.oFlagOff(ObjectFlag.OF_FEATHER);
+            believesAbsent.oFlagOff(ObjectFlag.OF_FEATHER);
+
+            assertAll(
+                    () -> assertFalse(believesHeld.hasOFlag(ObjectFlag.OF_FEATHER)),
+                    () -> assertFalse(believesAbsent.hasOFlag(ObjectFlag.OF_FEATHER)),
+                    () -> assertTrue(believesHeld.oFlagOn(ObjectFlag.OF_FEATHER)),
+                    () -> assertTrue(believesAbsent.oFlagOn(ObjectFlag.OF_FEATHER)));
+        }
+
+        /**
+         * The clear goes to the same live set the getter hands out, which is what makes it visible to
+         * {@code hasOFlag} and to anything holding the set — the union route and the single-flag
+         * route are two doors onto one set, not two sets.
+         */
+        @Test
+        @DisplayName("oFlagOff clears a flag that arrived by union")
+        void oFlagOffClearsAUnionedFlag() {
+            PlayerState state = new PlayerState();
+            Flag<ObjectFlag> gear = new Flag<>(ObjectFlag.class);
+            gear.on(ObjectFlag.OF_FEATHER);
+            gear.on(ObjectFlag.OF_SEE_INVIS);
+            state.unionObjectFlags(gear);
+
+            assertAll(
+                    () -> assertTrue(state.oFlagOff(ObjectFlag.OF_FEATHER),
+                            "a flag arriving by union counts as held"),
+                    () -> assertFalse(state.getObjectFlag().has(ObjectFlag.OF_FEATHER),
+                            "and the live set the getter exposes has lost it"),
+                    () -> assertTrue(state.hasOFlag(ObjectFlag.OF_SEE_INVIS),
+                            "the rest of the union is untouched"));
         }
     }
 

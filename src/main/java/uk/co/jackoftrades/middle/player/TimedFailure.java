@@ -246,4 +246,8 @@ public class TimedFailure {
 
         return effect;
     }
+
+    public TimedEffectReasonType getCode() {
+        return index;
+    }
 }

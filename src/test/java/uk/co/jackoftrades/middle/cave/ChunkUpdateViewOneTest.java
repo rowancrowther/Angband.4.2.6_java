@@ -543,7 +543,7 @@ class ChunkUpdateViewOneTest {
          * @param curLight the light radius the player currently sheds
          */
         private void unlight(int level, int curLight) {
-            player.getPlayerState().setPlayerFlag(PlayerFlag.PF_UNLIGHT);
+            player.getPlayerState().playerFlagOn(PlayerFlag.PF_UNLIGHT);
             set(Player.class, "level", level);
             player.getPlayerState().setCurLight(curLight);
         }

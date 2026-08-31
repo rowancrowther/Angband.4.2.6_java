@@ -467,7 +467,7 @@ class ChunkUpdateViewTest {
         @Test
         @DisplayName("PF_UNLIGHT makes it seen in the dark")
         void unlightMakesItSeen() {
-            player.getPlayerState().setPlayerFlag(PlayerFlag.PF_UNLIGHT);
+            player.getPlayerState().playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
             level.updateView(player);
 

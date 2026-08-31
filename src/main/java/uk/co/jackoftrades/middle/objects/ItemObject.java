@@ -1647,6 +1647,47 @@ public class ItemObject {
     }
 
     /**
+     * Records this item's resistance level against one element, the port of C's
+     * {@code obj->el_info[i].res_level = level}.
+     *
+     * <p>There is no C function behind this one. {@code res_level} is a plain struct field that C
+     * assigns inline wherever it needs to — the data-file parsers at {@code obj-init.c:2058}, the
+     * curse stacking in {@code obj-curse.c}, the knowledge code at {@code obj-knowledge.c:1059} and
+     * {@code obj-knowledge.c:2153}. The method exists to give those assignments one place to land.
+     *
+     * <p>The boundary between the two representations is what the body is for. C declares
+     * {@code struct element_info el_info[ELEM_MAX]} inside the object struct, so a slot exists for
+     * every element from the moment {@code object_new} zero-fills it and the assignment can never
+     * fail. Here the map is sparse and may not exist at all — the no-argument constructor leaves it
+     * null, and those are exactly the counterpart ("known") items {@code equip_learn_element} writes
+     * to. So both the map and the entry are created on demand, and a fresh {@link ElementInfo}
+     * starts with empty flags and a zero level, which is what C's zero-fill leaves behind.
+     *
+     * <p>Writes the level only, leaving {@link ElementInfo#getFlags flags} untouched, as the C
+     * assignment does. The knowledge sites that copy both halves ({@code obj-knowledge.c:1059-1060},
+     * {@code obj-knowledge.c:2153-2154}) need the flags dealt with separately, or
+     * {@link #putElInfo} with a whole value.
+     *
+     * <p>The level is passed through uninterpreted; the scale is C's, where zero is neutral,
+     * positive resists and negative is a vulnerability.
+     *
+     * <p>Function setElInfoResLevel commented in full on 260830.
+     *
+     * @param element the element being described
+     * @param level   the resistance level to store against it
+     */
+    public void setElInfoResLevel(ElementEnum element, int level) {
+        if (elInfo == null) elInfo = new HashMap<>();
+        if (elInfo.get(element) != null)
+            elInfo.get(element).setResLevel(level);
+        else {
+            ElementInfo ei = new ElementInfo();
+            ei.setResLevel(level);
+            elInfo.put(element, ei);
+        }
+    }
+
+    /**
      * Records this item's relation to one element, the port of assigning into C's
      * {@code obj->el_info[i]}.
      *

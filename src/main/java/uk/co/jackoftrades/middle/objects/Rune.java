@@ -269,7 +269,7 @@ public class Rune {
         List<Rune> runes = ObjectRegistry.getRunes();
 
         for (Rune rune : runes) {
-            if (rune.getVariety() instanceof RuneVariety.CombatKey k && key == k.key())
+            if (rune.getVariety() instanceof RuneVariety.CombatKey(CombatRunes combatKey) && key == combatKey)
                 return rune;
         }
 
@@ -338,7 +338,8 @@ public class Rune {
         List<Rune> runes = ObjectRegistry.getRunes();
 
         for (Rune rune : runes) {
-            if (rune.getVariety() instanceof RuneVariety.BrandKey b && b.key().getName().equals(key.getName()))
+            if (rune.getVariety() instanceof RuneVariety.BrandKey(Brand brandKey)
+                    && brandKey.getName().equals(key.getName()))
                 return rune;
         }
 
@@ -362,7 +363,7 @@ public class Rune {
         List<Rune> runes = ObjectRegistry.getRunes();
 
         for (Rune rune : runes) {
-            if (rune.getVariety() instanceof RuneVariety.SlayKey s && s.key().sameMonsterSlain(slay))
+            if (rune.getVariety() instanceof RuneVariety.SlayKey(Slay slayKey) && slayKey.sameMonsterSlain(slay))
                 return rune;
         }
 
@@ -387,7 +388,9 @@ public class Rune {
         List<Rune> runes = ObjectRegistry.getRunes();
 
         for (Rune rune : runes) {
-            if (rune.getVariety() instanceof RuneVariety.CurseKey c && c.key().getName().equals(curse.getName()))
+            if (rune.getVariety() instanceof RuneVariety.CurseKey(
+                    Curse kecurseKey
+            ) && kecurseKey.getName().equals(curse.getName()))
                 return rune;
         }
 

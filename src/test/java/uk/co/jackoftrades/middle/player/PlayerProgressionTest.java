@@ -22,7 +22,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
@@ -149,9 +148,9 @@ class PlayerProgressionTest {
             table.put(TimedEffect.TMD_FAST, 12);
             set("timed", table);
 
-            assertFalse(player.incTimed(TimedEffect.TMD_FAST, 5, false, false, false),
+            assertFalse(PlayerTimed.incTimed(TimedEffect.TMD_FAST, 5, false, false, false),
                     "incTimed is still a stub and reports no change");
-            assertFalse(player.clearTimed(TimedEffect.TMD_FAST, false, false),
+            assertFalse(PlayerTimed.clearTimed(TimedEffect.TMD_FAST, false, false),
                     "clearTimed is still a stub and reports no change");
 
             assertEquals(12, player.getTimedEffect(TimedEffect.TMD_FAST),
@@ -230,7 +229,10 @@ class PlayerProgressionTest {
      * records what is outstanding and fails the day one starts doing something untested.
      *
      * <p>{@code statDec} used to be tested here and no longer is: it was ported on 260831, and its
-     * behaviour now lives in {@code PlayerStatDecTest}.
+     * behaviour now lives in {@code PlayerStatDecTest}. Nor is {@code ignoreKnownItemOk}, which is
+     * still a stub but no longer a player's: it moved to
+     * {@link uk.co.jackoftrades.middle.objects.ObjectIgnore} on 260901, and is recorded as a stub
+     * in {@code ObjectIgnoreTest}.
      */
     @Nested
     @DisplayName("stubs")
@@ -249,19 +251,9 @@ class PlayerProgressionTest {
         @Test
         @DisplayName("setRecallDepth does nothing yet")
         void setRecallDepthIsAStub() throws Exception {
-            player.setRecallDepth();
+            PlayerUtils.setRecallDepth();
 
             assertEquals(0, intField("recallDepth"));
-        }
-
-        /**
-         * The ignore test for a known item always answers false, so nothing is hidden by that route
-         * yet. Its comment says as much.
-         */
-        @Test
-        @DisplayName("ignoreKnownItemOk always answers false")
-        void ignoreKnownItemIsAStub() {
-            assertFalse(player.ignoreKnownItemOk(new ItemObject()));
         }
 
         /**
@@ -277,9 +269,9 @@ class PlayerProgressionTest {
         @Test
         @DisplayName("handleStuff, redrawStuff and calcSpells do nothing yet")
         void unportedTurnLoopEntryPointsAreStubbed() {
-            player.calcSpells();
-            player.handleStuff();
-            player.redrawStuff();
+            PlayerCalcs.calcSpells();
+            PlayerCalcs.handleStuff(player);
+            PlayerCalcs.redrawStuff(player);
 
             assertNull(player.getPlayerState(), "no state was calculated");
         }
@@ -312,7 +304,7 @@ class PlayerProgressionTest {
             PlayerState scratch = new PlayerState();
             scratch.setCurLight(5);
 
-            player.calcLight(scratch, false);
+            PlayerCalcs.calcLight(player, scratch, false);
 
             assertEquals(0, scratch.getCurLight());
             assertNull(player.getPlayerState(), "the player's own state was not installed");

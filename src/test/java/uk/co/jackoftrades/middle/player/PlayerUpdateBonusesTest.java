@@ -54,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#updateBonuses()}, the port of C's {@code update_bonuses}
+ * Tests {@link PlayerCalcs#updateBonuses()}, the port of C's {@code update_bonuses}
  * ({@code player-calcs.c:2336-2456}) — the method that recalculates the whole derived state and
  * then reports what moved.
  *
@@ -261,7 +261,7 @@ class PlayerUpdateBonusesTest {
         void survivesAnUncalculatedCharacter() throws ReflectiveOperationException {
             uncalculatedCharacter();
 
-            assertDoesNotThrow(() -> player.updateBonuses());
+            assertDoesNotThrow(() -> PlayerCalcs.updateBonuses(player));
 
             assertAll(
                     () -> assertNotNull(state("state")),
@@ -280,7 +280,7 @@ class PlayerUpdateBonusesTest {
         void reportsEveryStatAsChanged() throws ReflectiveOperationException {
             uncalculatedCharacter();
 
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(redrawAsked(PlayerRedraw.PR_STATS), "stats should be redrawn"),
@@ -301,10 +301,10 @@ class PlayerUpdateBonusesTest {
         @DisplayName("installs the states it derived")
         void installsTheDerivedStates() throws ReflectiveOperationException {
             uncalculatedCharacter();
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             PlayerState first = state("state");
 
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertNotSame(first, state("state")),
@@ -334,11 +334,11 @@ class PlayerUpdateBonusesTest {
         @Test
         @DisplayName("a constitution change queues hit points, mana and spells")
         void constitutionChangeQueuesHitPoints() throws ReflectiveOperationException {
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.stat(Stats.STAT_CON, STRONG_CON);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(redrawAsked(PlayerRedraw.PR_STATS), "stats should be redrawn"),
@@ -357,11 +357,11 @@ class PlayerUpdateBonusesTest {
         @Test
         @DisplayName("another stat changing leaves hit points alone")
         void otherStatsLeaveHitPointsAlone() throws ReflectiveOperationException {
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.stat(Stats.STAT_INT, STRONG_CON);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(updateAsked(PlayerUpdateEnum.PU_MANA), "mana should be due"),
@@ -380,10 +380,10 @@ class PlayerUpdateBonusesTest {
         @Test
         @DisplayName("an unchanged recalculation asks for nothing")
         void unchangedRecalculationAsksForNothing() throws ReflectiveOperationException {
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertFalse(redrawAsked(PlayerRedraw.PR_STATS), "no stat redraw"),
@@ -408,11 +408,11 @@ class PlayerUpdateBonusesTest {
             ItemObject ring = CalcBonusesFixture.item(TValue.TV_RING);
             ring.setModifiers(Map.of(ObjectModifier.OM_SPEED, 5));
             fixture.knows(ObjectModifier.OM_SPEED);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.wear("right hand", ring);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(redrawAsked(PlayerRedraw.PR_SPEED), "speed should be redrawn"),
@@ -431,11 +431,11 @@ class PlayerUpdateBonusesTest {
         void telepathyAsksForMonsterUpdate() throws ReflectiveOperationException {
             ItemObject crown = CalcBonusesFixture.item(TValue.TV_CROWN);
             crown.setFlag(ObjectFlag.OF_TELEPATHY);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.wear("head", crown);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertTrue(updateAsked(PlayerUpdateEnum.PU_MONSTERS));
         }
@@ -454,11 +454,11 @@ class PlayerUpdateBonusesTest {
         void lightChangeAsksForViewUpdate() throws ReflectiveOperationException {
             ItemObject lantern = CalcBonusesFixture.item(TValue.TV_LIGHT, 500);
             lantern.setFlag(ObjectFlag.OF_LIGHT_2);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.wear("light", lantern);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(updateAsked(PlayerUpdateEnum.PU_UPDATE_VIEW), "the view should be updated"),
@@ -479,11 +479,11 @@ class PlayerUpdateBonusesTest {
             ItemObject mail = CalcBonusesFixture.identifiedItem(TValue.TV_SOFT_ARMOR);
             mail.setBaseAC(20);
             CalcBonusesFixture.learnCombatValues(mail);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.wear("body", mail);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertTrue(redrawAsked(PlayerRedraw.PR_ARMOR));
         }
@@ -497,11 +497,11 @@ class PlayerUpdateBonusesTest {
         @Test
         @DisplayName("a strength change asks for an inventory redraw")
         void strengthChangeAsksForInventoryRedraw() throws ReflectiveOperationException {
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.stat(Stats.STAT_STR, STRONG_CON);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertTrue(redrawAsked(PlayerRedraw.PR_INVEN));
         }
@@ -528,11 +528,11 @@ class PlayerUpdateBonusesTest {
         void heavyWeaponIsAnnounced() throws ReflectiveOperationException {
             ItemObject sword = CalcBonusesFixture.item(TValue.TV_SWORD);
             sword.setWeight(UNLIFTABLE);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
 
             fixture.wear("weapon", sword);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertTrue(bus.messages.stream().anyMatch(m -> m.contains("heavy weapon")),
                     "expected a heavy weapon message, got " + bus.messages);
@@ -552,13 +552,13 @@ class PlayerUpdateBonusesTest {
         void partialModeSuppressesMessagesOnly() throws ReflectiveOperationException {
             ItemObject sword = CalcBonusesFixture.item(TValue.TV_SWORD);
             sword.setWeight(UNLIFTABLE);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
             clearFlags();
             partialMode();
 
             fixture.wear("weapon", sword);
             fixture.stat(Stats.STAT_CON, STRONG_CON);
-            player.updateBonuses();
+            PlayerCalcs.updateBonuses(player);
 
             assertAll(
                     () -> assertTrue(bus.messages.isEmpty(), "expected silence, got " + bus.messages),

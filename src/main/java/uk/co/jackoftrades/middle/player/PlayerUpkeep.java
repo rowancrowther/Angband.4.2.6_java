@@ -572,7 +572,7 @@ public class PlayerUpkeep {
      * <p>The notice flags are a request queue rather than a description of state: setting
      * {@code PN_IGNORE} does not ignore anything, it asks for the ignore pass to be run at the next
      * convenient point in the turn. That indirection is what lets a discovery deep inside the
-     * knowledge code — {@link uk.co.jackoftrades.middle.player.Player#knowObject} becoming aware of a
+     * knowledge code — {@link PlayerKnowledge#knowObject} becoming aware of a
      * flavour — ask for expensive work without doing it there and then.
      *
      * <p>The name says {@code or} because C's is a bitwise or, and the return value is the answer to
@@ -612,7 +612,7 @@ public class PlayerUpkeep {
      * <p>This is a view of part of the gear, not a second store of it. C keeps every carried object
      * on the one {@code p->gear} list and rebuilds {@code inven} as an index into it, so an object
      * appearing here is also in the gear; see
-     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} for the carried test that relies on
+     * {@link PlayerKnowledge#knowObject} for the carried test that relies on
      * that.
      *
      * <p>Function getInventory coded on 260816, commented in full on 260816.

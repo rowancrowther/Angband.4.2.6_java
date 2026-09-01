@@ -60,7 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@code ego->modifiers[i]} out of a full-length array, so a modifier the ego does not touch comes
  * back as a zeroed {@code random_value}; the port holds a {@link Map} and answers {@code null}
  * instead. That difference is what
- * {@code Player.knowsEgo} has to absorb, and the case is pinned
+ * {@code PlayerKnowledge.knowsEgo} has to absorb, and the case is pinned
  * below so the shape of the answer is not in doubt.
  *
  * <p>Class EgoItemAccessorsTest coded on 260816, commented in full on 260816.

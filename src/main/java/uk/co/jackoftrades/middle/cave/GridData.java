@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.monsters.Monster;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.ObjectIgnore;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
 import uk.co.jackoftrades.middle.player.Player;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -204,7 +205,7 @@ public class GridData {
                 unseenMoney = true;
             } else if (item.getKind().equals(ObjectRegistry.unknownItemKind)) {
                 unseenObjects = true;
-            } else if (player.ignoreKnownItemOk(item)) {
+            } else if (ObjectIgnore.ignoreKnownItemOk(item)) {
                 // Item stays hidden
             } else if (firstKind == null) {
                 firstKind = item.getKind();

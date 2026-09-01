@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.playerClearTimed}, the port of C's {@code player_clear_timed}
+ * Tests {@code PlayerTimed.playerClearTimed}, the port of C's {@code player_clear_timed}
  * ({@code src/player-timed.c:1127}).
  *
  * <p>Every expectation below is read off that C. The function is one line - two assertions and
@@ -81,7 +81,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 @ExtendWith(uk.co.jackoftrades.testsupport.SeededPlayerRegistry.class)
-@DisplayName("Player.playerClearTimed")
+@DisplayName("PlayerTimed.playerClearTimed")
 class PlayerClearTimedTest {
 
     /**
@@ -205,7 +205,7 @@ class PlayerClearTimedTest {
      * @return what the method returned
      */
     private boolean clear(boolean notify, boolean canDisturb) {
-        return player.playerClearTimed(EFFECT, notify, canDisturb);
+        return PlayerTimed.playerClearTimed(player, EFFECT, notify, canDisturb);
     }
 
     /**
@@ -225,7 +225,7 @@ class PlayerClearTimedTest {
         loadPlain();
 
         assertThrows(IllegalArgumentException.class,
-                () -> player.playerClearTimed(TimedEffect.TMD_AFRAID, true, true));
+                () -> PlayerTimed.playerClearTimed(player, TimedEffect.TMD_AFRAID, true, true));
     }
 
     /**

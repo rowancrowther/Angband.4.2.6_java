@@ -22,33 +22,14 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.utils.Flag;
-import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.Message;
-import uk.co.jackoftrades.middle.cave.enums.DirectionEnum;
 import uk.co.jackoftrades.middle.effect.EffectSubTypeWrapper;
 import uk.co.jackoftrades.middle.effect.EffectUtil;
-import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.EffectEnum;
 import uk.co.jackoftrades.middle.enums.MessageType;
-import uk.co.jackoftrades.middle.game.GameWorld;
-import uk.co.jackoftrades.middle.game.enums.CommandCode;
-import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.event.projection.Source;
-import uk.co.jackoftrades.middle.game.gameengine.Command;
-import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
-import uk.co.jackoftrades.middle.game.gameengine.GameState;
-import uk.co.jackoftrades.middle.game.globals.Food;
-import uk.co.jackoftrades.middle.game.globals.GameConstants;
-import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
-import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
-import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
-import uk.co.jackoftrades.middle.magic.MagicRealm;
-import uk.co.jackoftrades.middle.monsters.Monster;
-import uk.co.jackoftrades.middle.monsters.MonsterUtils;
-import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
@@ -415,7 +396,7 @@ public class Player {
      * {@code init_player} rather than with the player struct because the knowledge is sized from
      * the registries.
      */
-    private KnownObject itemKnowledge;
+    KnownObject itemKnowledge;
 
     /**
      * The player's known version of the current level - the port of C's {@code p->cave}.
@@ -454,245 +435,133 @@ public class Player {
     }
 
     /**
-     * Transfers what the player knows about object properties in general onto one particular object,
-     * the port of C's {@code player_know_object} ({@code obj-knowledge.c:1018}).
-     *
-     * <p><b>The direction of travel is the thing to hold on to.</b> This does not look at the object
-     * and work out what the player has learned; it looks at {@link #itemKnowledge} — the player's
-     * standing knowledge of what each rune, modifier and element <em>means</em> — and rewrites the
-     * object's known counterpart to show only the properties that knowledge entitles the player to
-     * read. Learning happens elsewhere, in the {@code learnRune} family; this is the propagation step
-     * that runs afterwards, over every object in play, so that a rune learned on one sword shows up
-     * on every other object carrying it.
-     *
-     * <p>That is why nearly every assignment here is a multiplication or a gate rather than a copy.
-     * {@link KnownObject}'s numeric fields are one-or-zero knowledge bits, so
-     * {@code item.getDamageDice() * itemKnowledge.getDd()} yields the real dice when the player can
-     * read dice and zero when they cannot — C's idiom, kept rather than rewritten as a conditional
-     * because the zero is meaningful: it is what the display shows for an unknown quantity.
-     *
-     * <p><b>Three early returns, and they are not degrees of the same thing.</b> A null item or a
-     * null counterpart is nothing to do. A kind mismatch between the object and its counterpart means
-     * the player has the wrong idea about what the object even is — only sensed, not assessed — and
-     * imposing property knowledge on that would be asserting detail about the wrong item. A distant
-     * object that has not been {@code OBJ_NOTICE_ASSESSED} gets {@link #setBaseKnown} and no more:
-     * the player can see a sword on the floor across the room and know it is a sword, without being
-     * close enough to have formed a view about its enchantment.
-     *
-     * <p>The fourth return, after the flags, is the odd one. A curse holds its own bearer-less
-     * {@link ItemObject} to carry the properties it confers, and that object has a null kind. It has
-     * flags and modifiers worth knowing, but no ego, no flavour, no effect and nothing to become
-     * aware of, so it stops there while real objects carry on.
-     *
-     * <p><b>Correctness is not yet established.</b> The audit of 260816 found divergences from C in
-     * the combat-detail, modifier, element, flag, brand, curse and fully-known blocks; several of
-     * them need accessors that do not exist yet. See
-     * {@code docs/implementation/260816_functions_implemented.md} for the block-by-block comparison.
-     * The blocks recorded there as matching C are the slays, the ego/jewellery/special-artifact
-     * branch, the effect, and the guards and early returns described above.
-     *
-     * <p>Function knowObject coded before 260815 as a stub, implemented on 260816, commented in full
-     * on 260816.
-     *
-     * @param item the object whose known counterpart should be brought up to date; may be
-     *             {@code null}, matching C's {@code if (!obj) return}
+     * @return the player's current spell points - the port of C's {@code p->csp}
      */
-    public void knowObject(ItemObject item) {
-        boolean seen = true;
+    public int getCurSp() {
+        return curSp;
+    }
 
-        // unseen or only sensed items don't get any id
-        if (item == null) return;
-        if (item.getKnown() == null) return;
-        ObjectKind itemKind = item.getKind();
-        if (itemKind != item.getKnown().getKind()) return;
+    /**
+     * Sets the player's current spell points - the port of writing C's {@code p->csp}.
+     *
+     * <p>Nothing here clamps to the maximum. C does not either: the callers that lower the ceiling
+     * are the ones that pull the current value down with it - {@code calc_mana}
+     * ({@code player-calcs.c:1551}) caps it only when the maximum has just changed - so a caller
+     * that writes a value above {@link #getMaxSP} gets exactly what it asked for.
+     *
+     * <p>Function setCurSp commented in full on 260901.
+     *
+     * @param curSp the new current spell points
+     */
+    public void setCurSp(int curSp) {
+        this.curSp = curSp;
+    }
 
-        ItemObject known = item.getKnown();
+    /**
+     * Sets the fractional part of the current spell points - the port of writing C's
+     * {@code p->csp_frac}.
+     *
+     * <p>The fraction is a sixteen-bit remainder carried alongside {@link #getCurSp} so that
+     * regeneration of less than a whole point still accumulates. It is cleared, not carried, whenever
+     * the current value is forced down to a new maximum.
+     *
+     * <p>Function setCspFrac commented in full on 260901.
+     *
+     * @param cspFrac the new fractional spell points, scaled by 2^16
+     */
+    public void setCspFrac(int cspFrac) {
+        this.cspFrac = cspFrac;
+    }
 
-        // Distant objects
-        if (itemKind != null && !(known.getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED))) {
-            setBaseKnown(item);
-            return;
-        }
+    /**
+     * The player's race — the port of C's {@code p->race}.
+     *
+     * <p><b>The race is shared, not owned.</b> What comes back is the registry's own entry, held
+     * once and pointed at by every character of that race, exactly as C's {@code p->race} points
+     * into the {@code races} array. It is read-only in practice: writing through it would change the
+     * race for every player and would outlive the character, so callers take what they need from it
+     * — see {@code PlayerBirth.embody}, which copies the body rather than keeping the reference.
+     *
+     * <p>Can be {@code null}. A character is built in stages and the race is chosen partway through,
+     * so code that runs during creation has to cope with not having one yet; C reaches the same
+     * point with an {@code assert(p->race)} in {@code player_embody} ({@code player-birth.c:369}).
+     *
+     * <p>Function getRace commented in full on 260901.
+     *
+     * @return the player's race, or {@code null} before one has been chosen
+     */
+    public PlayerRace getRace() {
+        return race;
+    }
 
-        // Dice and pval for !chests
-        known.setDamageDice(item.getDamageDice() * itemKnowledge.getDd());
-        known.setDamageSides(item.getDamageSides() * itemKnowledge.getDs());
-        known.setBaseAC(item.getBaseAC() * itemKnowledge.getAc());
-        if (!item.gettValue().isChest())
-            known.setpValue(item.getpValue());
+    /**
+     * The shape the player is currently in — the port of C's {@code p->shape}.
+     *
+     * <p><b>The shape is shared, not owned.</b> What comes back is the registry's own entry, the
+     * one {@link PlayerRegistry#lookupPlayerShape} hands out and every player of that form points
+     * at, exactly as C's {@code p->shape} points into the {@code shapes} list. It describes the
+     * form rather than this character's state, so nothing may be written through it: a shape's
+     * contribution is read out and added to the calculated {@link PlayerState} by
+     * {@link PlayerCalcs#calcShapechange}, never stored back.
+     *
+     * <p><b>"Normal" is a shape, not the absence of one.</b> C gives every character
+     * {@code lookup_player_shape("normal")} in {@code player_init} ({@code player-birth.c:457}) and
+     * returns them to it in {@code player_resume_normal_shape} ({@code player-util.c:1053}), so the
+     * question "is this player shapechanged?" is a name comparison and not a null test — ask
+     * {@link #isShapeChanged}, which does exactly that.
+     *
+     * <p><b>Can be {@code null} in the port, where C's cannot.</b> The constructor leaves the field
+     * null and nothing assigns it yet: the shapechange effect that sets it in C
+     * ({@code effect-handler-general.c:3453}) is not ported, and neither is the birth assignment
+     * above. C only ever sees a null shape while loading a save, and treats that as a corrupt file
+     * ({@code load.c:691}). So callers here have to guard, and the ported readers do — see
+     * {@link PlayerCalcs#calcShapechange}, which returns the totals untouched, and the shape branches of
+     * {@code PlayerKnowledge.equipLearnOnDefend}, {@code equipLearnOnRangedAttack} and
+     * {@code equipLearnOnMeleeAttack}.
+     *
+     * <p>Function getShape commented in full on 260901.
+     *
+     * @return the player's current shape, or {@code null} while none has been set
+     */
+    public PlayerShape getShape() {
+        return shape;
+    }
 
-        // combat details
-        known.setToAC(item.getToAC() * itemKnowledge.getToA());
-        if (!item.hasStandardToH())
-            known.setToHit(item.getToHit() * itemKnowledge.getToH());
-        known.setToDam(item.getToDam() * itemKnowledge.getToD());
+    /**
+     * Sets the player's body — the equipment slots they can wear things in, the port of C's
+     * {@code p->body}.
+     *
+     * <p><b>The body passed in must belong to this player alone.</b> C has no equivalent setter
+     * because {@code p->body} is an embedded struct rather than a pointer, so its assignment in
+     * {@code player_embody} ({@code player-birth.c:369}) copies by construction. In Java the field
+     * is a reference, and that safety has to be supplied by the caller: pass a
+     * {@link PlayerBody#copy} of a race's template, never the template itself, or every character of
+     * the race ends up wearing the same equipment and writing into the registry's data.
+     *
+     * <p>The one caller is {@code PlayerBirth.embody}, which does exactly that. The constructor
+     * fills the field separately, from {@code PlayerRegistry.lookupPlayerBody(0)} — which copies
+     * before handing the body back — so a player has a body of their own before this is ever
+     * called, and this replaces it once the race is known.
+     *
+     * <p>Function setBody commented in full on 260901.
+     *
+     * @param body the player's own body, not a shared template
+     */
+    public void setBody(PlayerBody body) {
+        this.body = body;
+    }
 
-        // modifiers
-        Map<ObjectModifier, Integer> modifiers = item.getModifiers();
-        Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
-        for (ObjectModifier modifier : ObjectModifier.values()) {
-            newModifiers.put(modifier, 0);
-        }
-        for (ObjectModifier key : modifiers.keySet()) {
-            if (itemKnowledge.modifierIsKnown(key))
-                newModifiers.put(key, modifiers.get(key));
-        }
-        known.setModifiers(newModifiers);
-
-        // Elements
-        Map<ElementEnum, Boolean> knownElements = itemKnowledge.getElementResistInfo();
-        Map<ElementEnum, ElementInfo> itemElInfo = item.getElInfo();
-        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>(known.getElInfo());
-        for (ElementEnum element : ElementEnum.values()) {
-            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-
-            ElementInfo zero = new ElementInfo();
-            zero.setResLevel(0);
-            newElInfo.put(element, zero);
-        }
-        for (ElementEnum key : knownElements.keySet()) {
-            if (knownElements.get(key))
-                newElInfo.put(key, itemElInfo.get(key).copy());
-        }
-        known.setElInfo(newElInfo);
-
-        // ObjectFlags
-        Flag<ObjectFlag> knownFlags = itemKnowledge.getFlags();
-        FlagView<ObjectFlag> itemFlags = item.getFlags();
-        knownFlags.inter(itemFlags);
-        known.setFlagsTo(knownFlags);
-
-        // Curse object structures are finished now
-        if (itemKind == null)
-            return;
-
-        // Brands
-        Set<Brand> brands = item.getBrands();
-        if (brands == null) brands = new HashSet<>();
-        Set<Brand> knownBrands = known.getBrands();
-        if (knownBrands == null) knownBrands = new HashSet<>();
-        Set<Brand> union = new HashSet<>(brands);
-        union.addAll(knownBrands);
-
-        boolean knownBrand = false;
-        for (Brand brand : union) {
-            if (knowsBrand(brand)) {
-                known.addBrand(brand);
-                knownBrand = true;
-            } else {
-                known.removeBrand(brand);
-            }
-        }
-
-        if (!knownBrand && !known.getBrands().isEmpty()) {
-            known.clearBrands();
-        }
-
-
-        // Slays
-        Set<Slay> itemSlays = item.getSlays();
-        if (itemSlays == null) itemSlays = new HashSet<>();
-        Set<Slay> knownSlays = known.getSlays();
-        if (knownSlays == null) knownSlays = new HashSet<>();
-        Set<Slay> unionSlays = new HashSet<>(itemSlays);
-        unionSlays.addAll(knownSlays);
-
-        boolean knowSlay = false;
-
-        for (Slay slay : unionSlays) {
-            if (knowsSlay(slay)) {
-                known.addSlay(slay);
-                knowSlay = true;
-            } else {
-                known.removeSlay(slay);
-            }
-        }
-
-        if (!knowSlay && !known.getSlays().isEmpty()) {
-            known.clearSlays();
-        }
-
-        // Curses - be careful re alignment of knowledge
-        Map<Curse, CurseData> itemCurses = item.getCurses();
-        if (!itemCurses.isEmpty()) {
-            boolean knownCursed = false;
-
-            for (Curse curse : itemCurses.keySet()) {
-                if (itemKnowledge.curseIsKnown(curse) && itemCurses.get(curse).getPower() != 0) {
-                    knownCursed = true;
-                    CurseData oldData = itemCurses.get(curse);
-                    CurseData data = new CurseData(oldData.getPower(), 0);
-                    known.addCurse(curse, data);
-                } else if (known.getCurses().containsKey(curse)) {
-                    known.removeCurse(curse);
-                }
-            }
-
-            if (!knownCursed) {
-                known.clearCurses();
-            }
-        } else if (!known.getCurses().isEmpty()) {
-            known.clearCurses();
-        }
-
-        // ego type & jewellery type
-        if (knowsEgo(item)) {
-            seen = item.getEgo().isEverSeen();
-            known.setEgo(item.getEgo());
-        } else {
-            known.setEgo(null);
-        }
-
-        if (item.gettValue().isJewellery()) {
-            if (nonCurseRunesKnown(item)) {
-                seen = (item.isArtifact() || itemKind.isEverseen());
-                flavourAware(item);
-            }
-        } else if (itemKind.isSpecialArtifactKind()) {
-            seen = true;
-            flavourAware(item);
-        }
-
-        // Effect is known
-        if ((itemKind.isAware() && itemKind.getFlavour() != null) ||
-                (!item.gettValue().isWearable() && itemKind.getFlavour() == null) ||
-                (item.gettValue().isWearable() && itemKind.getEffect() != null && itemKind.isAware())) {
-            known.setEffect(item.getEffect());
-        }
-
-        // New stuff
-        if (!seen) {
-            String objectName;
-            Flag<ObjectDescription> descriptionFlag = new Flag<>(ObjectDescription.class);
-
-            if (isCarried(item)) {
-                descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
-                        ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
-                objectName = item.description(descriptionFlag, this);
-                String msg = String.format("You have %s (%c)", objectName, gearToLabel(item));
-                Message.message(msg);
-            } else if (cave != null && cave.getSquare(grid).holdsObject(item)) {
-                descriptionFlag.set(ObjectDescription.ODESC_PREFIX,
-                        ObjectDescription.ODESC_COMBAT, ObjectDescription.ODESC_EXTRA);
-                objectName = item.description(descriptionFlag, this);
-                String msg = String.format("On the ground: %s.", objectName);
-                Message.message(msg);
-            }
-        }
-
-        // Fully known objects
-        if (item.isFullyKnown()) {
-            for (ElementEnum element : item.getElInfo().keySet()) {
-                if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-
-                ElementInfo eInfo = itemElInfo.get(element).copy();
-                known.putElInfo(element, eInfo);
-            }
-
-            Flag<ObjectFlag> copy = new Flag<>(ObjectFlag.class);
-            copy.copyFrom(item.getFlags());
-            known.setFlagsTo(copy);
-        }
+    /**
+     * Returns how many turns remain on a timed effect - the port of reading C's {@code p->timed[idx]}.
+     * An effect the player is not under reads as {@code 0}, matching C's zeroed slot.
+     *
+     * @param timedEffect the timed effect to query
+     * @return the turns remaining on the effect, or {@code 0} if the player is not under it
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public int getTimedEffect(@NotNull TimedEffect timedEffect) {
+        return timed.getOrDefault(timedEffect, 0);
     }
 
     /**
@@ -770,19 +639,75 @@ public class Player {
     }
 
     /**
-     * Returns how many turns remain on a timed effect - the port of reading C's {@code p->timed[idx]}.
-     * An effect the player is not under reads as {@code 0}, matching C's zeroed slot.
+     * Returns how many turns remain on a timed effect, answering with a caller-chosen figure when the
+     * effect has no entry at all - the port of reading C's {@code p->timed[idx]} for a caller that
+     * wants to name the value an absent slot stands for.
      *
-     * @param timedEffect the timed effect to query
-     * @return the turns remaining on the effect, or {@code 0} if the player is not under it
+     * <p>C's {@code timed} is a fixed array with a slot for every effect, so nothing can be missing
+     * there. The port holds a {@link java.util.HashMap}, and the constructor seeds it with a zero for
+     * every {@link TimedEffect}, so in a live character nothing is missing here either and
+     * {@code defaultValue} is never reached. It exists for the half-built character - a test fixture
+     * that populates the map itself - which would otherwise read an absent key. Passing {@code 0}, as
+     * {@link PlayerTimed#playerDecTimed} does, makes this exactly {@link #getTimedEffect}.
+     *
+     * <p>The value is a turn count, and callers compare it against zero rather than test for
+     * presence: an effect that is not running is a zero in its slot, not a missing slot.
+     *
+     * <p>Function getTimedEffectOrDefault coded on 260901, commented in full on 260901.
+     *
+     * @param timedEffect  the timed effect to query
+     * @param defaultValue the figure to answer with when the effect has no entry
+     * @return the turns remaining on the effect, or {@code defaultValue} when it has no entry
      */
-    @CheckReturnValue
-    @Contract(pure = true)
-    public int getTimedEffect(@NotNull TimedEffect timedEffect) {
-        if (timed.containsKey(timedEffect)) {
-            return timed.get(timedEffect);
-        }
-        return 0;
+    public int getTimedEffectOrDefault(@NotNull TimedEffect timedEffect, int defaultValue) {
+        return timed.getOrDefault(timedEffect, defaultValue);
+    }
+
+    /**
+     * Writes a timed effect's turn count directly - the port of C's bare {@code p->timed[idx] = value}
+     * assignment, as at {@code player-calcs.c:2154} and {@code player-calcs.c:2161}, where a stun
+     * cancels fast casting, {@code mon-util.c:1287}, and {@code player-birth.c:1021}.
+     *
+     * <p>This is deliberately not {@link PlayerTimed#setTimed}. The C sites that assign the slot outright are the
+     * ones that must not run the timed-effects machinery: no grade message, no notification, no
+     * disturb, and none of the redraw or update flags the effect declares. {@code calc_bonuses} is the
+     * clearest case - it is already inside an update, so announcing the change or asking for another
+     * recalculation would be wrong. Every ordinary route into an effect goes through
+     * {@link PlayerTimed#setTimed}, {@link PlayerTimed#incTimed} or
+     * {@link PlayerTimed#playerDecTimed(Player, TimedEffect, int, boolean, boolean)}, which do all of that.
+     *
+     * <p>Nothing is validated here, exactly as in C: the count is stored as given, and the caller owns
+     * the decision that it is a sensible one.
+     *
+     * @param timedEffect the timed effect to write
+     * @param value       the turn count to store
+     */
+    public void putTimed(@NotNull TimedEffect timedEffect, int value) {
+        timed.put(timedEffect, value);
+    }
+
+    /**
+     * Returns one of the player's current "natural" stat values - the port of reading C's
+     * {@code p->stat_cur[stat]}. This is the drained value: it starts equal to the maximum and falls
+     * below it while the stat is damaged, so it is the figure everything the character can actually
+     * do is computed from ({@link PlayerCalcs} feeds it through
+     * {@link PlayerUtils#modifyStatValue} to reach the state's {@code statUse}).
+     *
+     * <p>Values use the C encoding: 3 to 18 for the ordinary range, then {@code 18 + percentile} for
+     * the exceptional range, up to {@code 18 + 100} (118, displayed as 18/100). Nothing is scaled or
+     * clamped on the way out.
+     *
+     * <p>Where C subscripts a zeroed array, the port reads a map, so a stat never written at birth
+     * would fail here rather than reading as zero. Every stat is populated during birth, so this is
+     * a difference in failure mode, not in behaviour; the same applies to {@code STAT_NONE} and
+     * {@code STAT_MAX}, which have no slot in C either.
+     *
+     * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
+     *             {@code STAT_MAX}
+     * @return the current natural value of that stat
+     */
+    public int getCurStatValue(Stats stat) {
+        return statCur.get(stat);
     }
 
     /**
@@ -796,945 +721,6 @@ public class Player {
     @Contract(pure = true)
     public boolean opt(@NotNull PlayerOptionEnum type) {
         return options.has(type);
-    }
-
-    /**
-     * Reports whether every rune on an item except its curses has been learned, the port of C's
-     * {@code object_non_curse_runes_known} ({@code obj-knowledge.c}).
-     *
-     * <p>Answered by comparing the item against its own known counterpart: a property the player can
-     * read has been copied across, so anything the item has and the counterpart lacks is something
-     * still unlearned. The combat bonuses must match exactly, while the modifiers, elements, brands,
-     * slays and flags are one-way containments — the counterpart must cover the item, and is allowed
-     * to carry more.
-     *
-     * <p>Curses are excluded because they are compared differently, by power rather than by
-     * presence, and are handled by {@code ItemObject.cursesAreEqual} instead. {@code runesKnown}
-     * calls both in turn, which is how C's {@code object_runes_known} is built.
-     *
-     * <p>Lives on the player rather than on the item, despite reading only the item, because it is
-     * the counterpart to the rest of the knowledge code here and there was previously a second copy
-     * of it on {@link ItemObject} that drifted from this one. {@code ItemObject.runesKnown}
-     * delegates here so there is one implementation to keep right.
-     *
-     * <p>Iterates each map's own keys rather than the full enum, since an item records only the
-     * modifiers and elements it actually carries; C can loop over fixed bounds because its arrays
-     * have a slot for every one.
-     *
-     * <p>Function nonCurseRunesKnown coded before 260817, made public on 260817 when
-     * {@code ItemObject}'s duplicate was folded into it, commented in full on 260817.
-     *
-     * @param item the item to test
-     * @return {@code true} if every non-curse rune on the item has been learned
-     */
-    public static boolean nonCurseRunesKnown(ItemObject item) {
-        if (item == null || item.getKnown() == null)
-            return false;
-
-        ItemObject knownItem = item.getKnown();
-
-        // Combat details known
-        if (knownItem.getToAC() != item.getToAC()) return false;
-        if (knownItem.getToDam() != item.getToDam()) return false;
-        if (knownItem.getToHit() != item.getToHit()) return false;
-
-        // Modifiers
-        Map<ObjectModifier, Integer> knownModifiers = knownItem.getModifiers();
-        Map<ObjectModifier, Integer> itemModifiers = item.getModifiers();
-
-        for (ObjectModifier key : itemModifiers.keySet()) {
-            if (key == ObjectModifier.OM_MAX || key == ObjectModifier.OM_NONE) continue;
-            if (!knownModifiers.containsKey(key)) return false;
-            if (!Objects.equals(knownModifiers.get(key), itemModifiers.get(key))) return false;
-        }
-
-        // elements
-        Map<ElementEnum, ElementInfo> knownEInfo = knownItem.getElInfo();
-        Map<ElementEnum, ElementInfo> itemEInfo = item.getElInfo();
-
-        for (ElementEnum key : itemEInfo.keySet()) {
-            if (!knownEInfo.containsKey(key)) return false;
-            if (itemEInfo.get(key).getResLevel() != 0 && knownEInfo.get(key).getResLevel() == 0) return false;
-        }
-
-        // Brands
-        Set<Brand> itemBrands = item.getBrands();
-        Set<Brand> knownBrands = knownItem.getBrands();
-
-        if (!knownBrands.containsAll(itemBrands)) return false;
-
-        // Slays
-        Set<Slay> itemSlays = item.getSlays();
-        Set<Slay> knownSlays = knownItem.getSlays();
-        if (knownSlays == null) return false;
-        if (!knownSlays.containsAll(itemSlays)) return false;
-
-        // Flags
-        Flag<ObjectFlag> knownFlags = knownItem.getFlags();
-        Flag<ObjectFlag> itemFlags = item.getFlags();
-
-        return knownFlags.isSubset(itemFlags);
-    }
-
-    /**
-     * Copies onto an item's known counterpart everything that follows from simply recognising what
-     * the item is, the port of C's {@code object_set_base_known} ({@code obj-knowledge.c}).
-     *
-     * <p>The division this draws is between what an item <em>is</em> and what has been done to it.
-     * Knowing a weapon is a Long Sword settles its kind, its weight and its damage dice, because
-     * every Long Sword shares them; it settles nothing about the enchantment on this particular one,
-     * which still has to be learned rune by rune. So the kind-level facts are copied here and the
-     * per-object ones are left to {@link #knowObject}.
-     *
-     * <p>The dice, armour class and to-hit are copied only where the counterpart still holds
-     * nothing, so that a figure already learned is never overwritten by the kind's generic one. Each
-     * is multiplied by the corresponding 0/1 flag on {@link KnownObject}, which is how C masks a
-     * property the player cannot yet read: an unknown armour class multiplies to zero rather than
-     * being copied.
-     *
-     * <p>The effect is copied in two cases, and both are about whether using the item would have
-     * taught it. A flavoured kind the player is aware of has been used before; an unflavoured
-     * non-wearable — a scroll, a potion — announces what it does when read or drunk. A wearable's
-     * activation follows the same rule through the kind's awareness.
-     *
-     * <p>Throws rather than returning quietly when there is no counterpart to write to, because a
-     * carried object without one is a broken invariant rather than a case to handle: C asserts on
-     * the same condition.
-     *
-     * <p>Function setBaseKnown coded before 260817, commented in full on 260817.
-     *
-     * @param item the item whose known counterpart is being brought up to date
-     * @throws RuntimeException if the item or its known counterpart is missing
-     */
-    private void setBaseKnown(ItemObject item) {
-        if (item == null || item.getKnown() == null) {
-            logger.error("Item or item known nonexistent in Player.setBaseKnown");
-            throw new RuntimeException("Item or item known nonexistent in Player.setBaseKnown");
-        }
-
-        ItemObject known = item.getKnown();
-        known.setKind(item.getKind());
-        known.settValue(item.gettValue());
-        known.setsValue(item.getsValue());
-        known.setWeight(item.getWeight());
-        known.setNumber(item.getNumber());
-
-        ObjectKind itemKind = item.getKind();
-
-        // generic dice and ac/to_h for armour/launcher multipliers
-        if (known.getDamageDice() == 0)
-            known.setDamageDice(itemKind.getDamageDice() * itemKnowledge.getDd());
-        if (known.getDamageSides() == 0)
-            known.setDamageSides(itemKind.getDamageSides() * itemKnowledge.getDs());
-        if (known.getBaseAC() == 0)
-            known.setBaseAC(itemKind.getAc() * itemKnowledge.getAc());
-        if (item.hasStandardToH())
-            known.setToHit(itemKind.getToH().getBase());
-        if (item.gettValue().isLauncher())
-            known.setpValue(item.getpValue());
-
-        // Aware flavours and unflavoured non-wearables
-        if ((itemKind.isAware() && itemKind.getFlavour() != null)
-                || (!item.gettValue().isWearable() && itemKind.getFlavour() == null)) {
-            known.setpValue(item.getpValue());
-            known.setEffect(item.getEffect());
-        }
-
-        // standard activations
-        if (item.gettValue().isWearable() && itemKind.isAware() && itemKind.getEffect() != null)
-            known.setEffect(item.getEffect());
-    }
-
-    /**
-     * Finds the letter or digit the player selects an item by, the port of C's {@code gear_to_label}
-     * ({@code obj-gear.c}).
-     *
-     * <p>Three places an item can be, and each labels differently. Worn equipment takes its letter
-     * from the slot it occupies, so a sword's label is a fact about the body rather than about the
-     * sword. Quiver ammunition is numbered from {@code '0'}. Everything else in the pack takes its
-     * letter from its position in the inventory list. Each label is therefore positional: moving an
-     * item renames it, which is why the pack and quiver are ordered lists rather than sets.
-     *
-     * <p>The label alphabet skips {@code h}, {@code j}, {@code k} and {@code l}. Those are the
-     * roguelike movement keys, and an item labelled with one could not be selected without the
-     * player walking instead. C keeps the same string for the same reason.
-     *
-     * <p>Answers the null character for an item the player is not carrying, which is C's {@code '\0'}
-     * fall-through rather than an error: asking for the label of something on the floor is a fair
-     * question with no answer.
-     *
-     * <p>Function gearToLabel coded before 260817, commented in full on 260817.
-     *
-     * @param item the item to label
-     * @return the character the item is selected by, or {@code '\0'} if it is not in the gear
-     */
-    private char gearToLabel(ItemObject item) {
-        if (item == null) return '\0';
-        
-        String labels = "abcdefgimnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-        if (body.itemIsEquipped(item)) {
-            return labels.charAt(body.equippedItemSlot(item));
-        }
-
-        for (int quiverIndex = 0; quiverIndex < GameConstants.getCarryCapQuiverSize(); quiverIndex++) {
-            ItemObject quiverItem = getPlayerUpkeep().getQuiver()[quiverIndex];
-            if (item.equals(quiverItem)) {
-                return (char) ('0' + quiverIndex);
-            }
-        }
-
-        for (int invenIndex = 0; invenIndex < GameConstants.getCarryCapPackSize(); invenIndex++) {
-            ItemObject invenItem = getPlayerUpkeep().getInventory()[invenIndex];
-            if (item.equals(invenItem)) {
-                return labels.charAt(invenIndex);
-            }
-        }
-
-        return '\0';
-    }
-
-    /**
-     * Tests whether the player is carrying a given object, the port of C's
-     * {@code object_is_carried} ({@code obj-util.c}).
-     *
-     * <p>Carried means anywhere in the gear: pack, quiver or worn. C's {@code p->gear} is one linked
-     * list holding all three, and equipment is reached by following slot pointers into it rather than
-     * by living in a separate collection, so a single containment test answers the question. The port
-     * keeps that arrangement, which is why this is one line and not three.
-     *
-     * <p>The distinction it draws is between an object the player has and an object that is merely
-     * nearby — {@link #knowObject} uses it to pick between "You have a Long Sword (c)." and "On the
-     * ground: a Long Sword." when reporting something newly recognised.
-     *
-     * <p>Function isCarried coded on 260816, commented in full on 260816.
-     *
-     * @param item the object to look for
-     * @return {@code true} if the object is in the player's gear
-     */
-    private boolean isCarried(ItemObject item) {
-        return gear.contains(item);
-    }
-
-    /**
-     * Marks an object's flavour as one the player has become aware of, and propagates the
-     * consequences — the port of C's {@code object_flavor_aware} ({@code obj-knowledge.c:2262}).
-     *
-     * <p><b>Awareness is a property of the kind, not of the object.</b> Learning that the pink potion
-     * is a Potion of Speed is learning it about every pink potion in the game at once, which is why
-     * the flag is set on {@link ObjectKind} and why so much of this method is a sweep afterwards
-     * putting the rest of the world in step. The object passed in is only the occasion for the
-     * discovery, not its subject.
-     *
-     * <p>The early return on an already-aware kind is what makes the method safe to call freely —
-     * {@link #knowObject} calls it on every jewellery item whose non-curse runes are all known, which
-     * is most of them once the player is experienced. Without it the floor sweep at the foot would
-     * run on every pass.
-     *
-     * <p><b>The three consequences, in C's order.</b> First the effect becomes readable on this
-     * object's counterpart, since an identified flavour is an identified effect. Then the ignore
-     * settings are reconciled: a kind the player had set to ignore <em>while unaware</em> of it
-     * becomes one to ignore now that they are aware, so the pile of unknown potions they were
-     * stepping over does not suddenly reappear under a name. {@code PN_IGNORE} then asks for the
-     * ignore pass to be re-run. Finally every object the player is carrying has its base knowledge
-     * refreshed, because an aware flavour reveals pval and effect that {@link #setBaseKnown}
-     * withholds while the kind is unknown.
-     *
-     * <p>The floor sweep exists because some kinds change tile on awareness, so any square holding
-     * an object of this kind needs redrawing. It starts at {@code (1,1)} rather than {@code (0,0)}:
-     * the outermost ring of a level is permanent wall and can hold nothing.
-     *
-     * <p><b>Two pieces are knowingly absent.</b> C also refreshes store stock, which waits on
-     * Chapter 8, and {@link uk.co.jackoftrades.middle.cave.Square#lightSpot} is currently an empty
-     * stub deferred to Chapter 4, so the sweep computes the right set of squares and then redraws
-     * none of them. Neither is a divergence in this method's own logic.
-     *
-     * <p>Function flavourAware coded on 260816, commented in full on 260816.
-     *
-     * @param item an object of the kind the player has just become aware of
-     */
-    private void flavourAware(ItemObject item) {
-        ItemObject known = item.getKnown();
-        if (known == null) return;
-        ObjectKind kind = item.getKind();
-        if (kind == null) return;
-
-        if (kind.isAware()) return;
-        kind.setAware(true);
-        known.setEffect(item.getEffect());
-
-        // Fix ignore/autoinscribe
-        if (kind.isIgnoredUnaware())
-            kind.setIgnoredAware(true);
-        getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE);
-
-        // Update player objects
-        for (ItemObject obj : gear) {
-            setBaseKnown(obj);
-        }
-
-        // Store objects
-        // STUB - Todo: Implement in chapter 8
-
-        if (cave == null) return;
-
-        for (int y = 1; y < cave.getHeight(); y++) {
-            for (int x = 1; x < cave.getWidth(); x++) {
-                boolean light = false;
-                Loc grid = Loc.row(y).col(x);
-
-                Iterator<ItemObject> iterator = cave.getSquare(grid).getObjectPile().getIterator();
-
-                while (iterator.hasNext()) {
-                    ItemObject floorObj = iterator.next();
-                    if (floorObj.getKind() == kind) {
-                        light = true;
-                        break;
-                    }
-                }
-                if (light) cave.getSquare(grid).lightSpot();
-            }
-        }
-    }
-
-    /**
-     * Reports whether the player could recognise an item's ego type from the properties they can
-     * already read, the port of C's {@code player_knows_ego} ({@code obj-knowledge.c}).
-     *
-     * <p>An ego is not learned directly; it is deduced. Every flag, modifier, resistance, brand,
-     * slay and curse an ego always grants must be a rune the player can read, because an ego is
-     * only identifiable once nothing it confers is still a mystery. So this walks the ego's
-     * properties and asks the player's knowledge about each.
-     *
-     * <p>The modifier test is the subtle one. An ego's modifier is a range rolled per item, so a
-     * range spanning zero can leave an item showing nothing at all — and an item showing nothing
-     * gives the player nothing to have failed to notice. That is why an unreadable modifier only
-     * disqualifies the ego when the range cannot produce zero ({@code modmax * modmin > 0}) or when
-     * this particular item did roll a non-zero value. The ranges are evaluated at both extremes at
-     * maximum depth, following C.
-     *
-     * <p>The item is a parameter rather than the ego alone for exactly that test: C accepts a null
-     * object and skips the concession when it has no specific item to consult.
-     *
-     * <p>Function knowsEgo coded before 260817, commented in full on 260817.
-     *
-     * @param item the item whose ego is being tested
-     * @return {@code true} if the ego is one the player could now identify, {@code false} for an
-     * item with no ego at all
-     */
-    private boolean knowsEgo(ItemObject item) {
-        EgoItem ego = item.getEgo();
-
-        if (ego == null) return false;
-
-        Flag<ObjectFlag> knownFlags = itemKnowledge.getFlags();
-        Flag<ObjectFlag> egoFlags = ego.getFlags();
-
-        // All flags known
-        if (!knownFlags.isSubset(egoFlags)) return false;
-
-        // Modifiers all known
-        for (ObjectModifier modifier : ObjectModifier.values()) {
-            if (modifier == ObjectModifier.OM_NONE || modifier == ObjectModifier.OM_MAX) continue;
-
-            Random egoModifier = ego.getModifier(modifier);
-            if (egoModifier == null) continue;
-
-            int modMax = egoModifier.randCalc(GameConstants.getWorldMaxDepth(), DamageAspect.MAXIMIZE);
-            int modMin = egoModifier.randCalc(GameConstants.getWorldMaxDepth(), DamageAspect.MINIMIZE);
-
-            if ((modMax > 0 || modMin < 0) && !itemKnowledge.modifierIsKnown(modifier))
-                if (modMax * modMin > 0 || item.getModifiers().getOrDefault(modifier, 0) != 0)
-                    return false;
-        }
-
-        // all elements known
-        Map<ElementEnum, ElementInfo> egoElInfo = ego.getElInfo();
-        Map<ElementEnum, Boolean> itemElInfo = itemKnowledge.getElementResistInfo();
-
-        for (ElementEnum key : egoElInfo.keySet()) {
-            if (key == ElementEnum.ELEM_MAX || key == ElementEnum.ELEM_NONE) continue;
-            ElementInfo egoInfo = egoElInfo.get(key);
-            if (egoInfo.getResLevel() != 0 && !itemElInfo.get(key))
-                return false;
-        }
-
-        // All brands known
-        Set<Brand> egoBrands = ego.getBrands();
-        for (Brand brand : egoBrands) {
-            if (!knowsBrand(brand)) return false;
-        }
-
-        // All slays known
-        Set<Slay> egoSlays = ego.getSlays();
-        for (Slay slay : egoSlays) {
-            if (!knowsSlay(slay)) return false;
-        }
-
-        // All curses known
-        for (Curse curse : ego.getCurses().keySet()) {
-            if (!knowsCurse(curse)) return false;
-        }
-
-        return true;
-    }
-
-    /**
-     * Recomputes everything about the character that is derived rather than stored, filling
-     * {@code state} from the player's race, class, level, equipment, shape and running statuses —
-     * the port of C's {@code calc_bonuses} ({@code player-calcs.c:1877-2325}).
-     *
-     * <p>This is the game's central derivation. Nothing here is remembered between calls: the state
-     * is wiped and rebuilt from scratch every time, so there is no incremental update to get wrong
-     * and no way for a stale contribution to survive a change of gear.
-     *
-     * <p><b>Order is the method's substance.</b> The sequence below is not arbitrary and several
-     * steps read what earlier ones wrote:
-     *
-     * <ol>
-     *   <li>Defaults — speed 110, one blow — then race and class: infravision, the skill bases, the
-     *       innate resistances and the player flags.</li>
-     *   <li>Every worn item, and every curse on it, contributing flags, modifiers, resistances and
-     *       combat bonuses.</li>
-     *   <li>The shape, which adds to all of the above.</li>
-     *   <li>Vulnerabilities, held back until now so that a resistance from any source is compared
-     *       against the unpenalised level rather than a lowered one.</li>
-     *   <li>Light, the environment-dependent resistances, and the stats — converted here from raw
-     *       values into the compressed table indices everything downstream subscripts with.</li>
-     *   <li>Hunger, then the timed statuses, then fear.</li>
-     *   <li>Carried weight against the strength limit, giving the speed penalty.</li>
-     *   <li>The stat-derived bonuses to armour, to-hit, to-damage and the skills — <em>after</em>
-     *       step 5, because they are table lookups on the indices it computed.</li>
-     *   <li>Launcher and weapon, which need the finished strength index to decide whether either is
-     *       too heavy to use properly; then mana, which needs the finished stat indices.</li>
-     * </ol>
-     *
-     * <p><b>The two boolean parameters are independent and neither is a debug switch.</b>
-     *
-     * <p>{@code knownOnly} builds the state the player <em>believes</em> they have rather than the
-     * one they have, by admitting a contribution only where the corresponding rune has been learned.
-     * It is what the character sheet displays, so that unidentified gear does not give away its
-     * properties. Note what it does to a curse: a curse's template object has a blank known
-     * counterpart ({@code obj-init.c:188-194}), so under {@code knownOnly} a curse contributes its
-     * modifiers and nothing else — no flags, no resistances, no combat bonuses.
-     *
-     * <p>{@code update} distinguishes a real recalculation from a hypothetical one. When it is
-     * clear, the method must not write anything back to the player: the mana calculation stops short
-     * of storing a new maximum, the stun handler does not cancel fast-casting, and the stat indices
-     * are nudged by the values the incoming state already carried — C's "hack to allow calculating
-     * hypothetical blows", which is how the game answers "what would this weapon give me?" without
-     * disturbing the character.
-     *
-     * <p><b>The equipment walk is the part that looks least like its original.</b> C runs a
-     * {@code while (obj)} loop that binds one pointer first to the slot's item and then, in turn, to
-     * the template object of each curse on it ({@code player-calcs.c:1929-2020}) — one body,
-     * {@code n + 1} passes. The port cannot do that directly because a {@link Curse} has no object
-     * of its own, so the passes are built as a list of {@link BonusSource} and the body reads
-     * whichever is current. The behaviour is the same, including that curse objects' own curses are
-     * never walked and that a curse recorded at zero power contributes nothing.
-     *
-     * <p>Function calcBonuses commented in full on 260820.
-     *
-     * @param state     the state to fill; wiped on entry and wholly rewritten
-     * @param knownOnly {@code true} to count only what the player has learned
-     * @param update    {@code true} for a real recalculation that may write back to the player;
-     *                  {@code false} for a hypothetical one that must not
-     */
-    @Contract(mutates = "param1")
-    public void calcBonuses(@NotNull PlayerState state, boolean knownOnly, boolean update) {
-        int extraBlows = 0;
-        int extraShots = 0;
-        int extraMight = 0;
-        int extraMoves = 0;
-
-        ItemObject launcher = body.equippedItemBySlotName("shooting");
-        ItemObject weapon = body.equippedItemBySlotName("weapon");
-
-        Flag<ObjectFlag> f = new Flag<>(ObjectFlag.class);
-        Flag<ObjectFlag> collectF = new Flag<>(ObjectFlag.class);
-        Map<ElementEnum, Boolean> vulnerabilities = new HashMap<>();
-
-        // Hack to allow calculating hypothetical blows for extra Str, Dex
-        int strInd = state.getStatInd(Stats.STAT_STR);
-        int dexInd = state.getStatInd(Stats.STAT_DEX);
-
-        // reset the player state
-        state.wipe();
-
-        // Various defaults
-        state.setSpeed(110);
-        state.setNumBlows(100);
-
-        // Race class info
-        state.setSeeInfra(race.getInfravision());
-        for (PlayerSkill skill : PlayerSkill.values()) {
-            if (skill == PlayerSkill.SKILL_MAX || skill == PlayerSkill.SKILL_NONE) continue;
-            state.setStateSkill(skill, race.getSkill(skill) + playerClass.getSkill(skill));
-        }
-        for (ElementEnum element : ElementEnum.values()) {
-            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-            if (race.getResistanceLevel(element) == -1)
-                vulnerabilities.put(element, true);
-            else
-                state.setElInfo(element, race.getResistanceLevel(element));
-        }
-
-        // Base pFlags
-        state.copyPlayerFlag(race.getpFlags());
-        state.unionPlayerFlags(playerClass.getpFlags());
-
-        // Extract the player flags
-        playerFlags(state, collectF);
-
-        // Analyse equipment
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject item = slot.getItem();
-            if (item == null) continue;
-
-            List<BonusSource> sources = new ArrayList<>();
-            sources.add(new ItemSource(item));
-            for (Map.Entry<Curse, CurseData> e : item.getCurses().entrySet()) {
-                if (e.getValue().getPower() != 0) sources.add(new CurseSource(e.getKey()));
-            }
-
-            for (BonusSource source : sources) {
-                int dig = 0;
-
-                // Extract the item flags
-                if (knownOnly) {
-                    f = source.flagsKnown();
-                } else {
-                    f.copyFrom(source.flags());
-                }
-                collectF.union(f);
-
-                // Apply modifiers
-                state.statAdd(Stats.STAT_STR, source.modifier(ObjectModifier.OM_STR)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_STR) ? 1 : 0));
-                state.statAdd(Stats.STAT_INT, source.modifier(ObjectModifier.OM_INT)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_INT) ? 1 : 0));
-                state.statAdd(Stats.STAT_WIS, source.modifier(ObjectModifier.OM_WIS)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_WIS) ? 1 : 0));
-                state.statAdd(Stats.STAT_DEX, source.modifier(ObjectModifier.OM_DEX)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_DEX) ? 1 : 0));
-                state.statAdd(Stats.STAT_CON, source.modifier(ObjectModifier.OM_CON)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_CON) ? 1 : 0));
-                state.skillAdd(PlayerSkill.SKILL_STEALTH, source.modifier(ObjectModifier.OM_STEALTH)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_STEALTH) ? 1 : 0));
-                state.skillAdd(PlayerSkill.SKILL_SEARCH, source.modifier(ObjectModifier.OM_SEARCH) * 5
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_SEARCH) ? 1 : 0));
-                state.infraAdd(source.modifier(ObjectModifier.OM_INFRA)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_INFRA) ? 1 : 0));
-
-                if (source.isDigger()) {
-                    if (source.flagSet(ObjectFlag.OF_DIG_1))
-                        dig = 1;
-                    else if (source.flagSet(ObjectFlag.OF_DIG_2))
-                        dig = 2;
-                    else if (source.flagSet(ObjectFlag.OF_DIG_3))
-                        dig = 3;
-                }
-
-                dig += source.modifier(ObjectModifier.OM_TUNNEL)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_TUNNEL) ? 1 : 0);
-                state.skillAdd(PlayerSkill.SKILL_DIGGING, dig * 20);
-                state.setSpeed(state.getSpeed() + source.modifier(ObjectModifier.OM_SPEED)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_SPEED) ? 1 : 0));
-                state.setDamRed(state.getDamRed() + source.modifier(ObjectModifier.OM_DAM_RED)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_DAM_RED) ? 1 : 0));
-                extraBlows += source.modifier(ObjectModifier.OM_BLOWS)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_BLOWS) ? 1 : 0);
-                extraShots += source.modifier(ObjectModifier.OM_SHOTS)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_SHOTS) ? 1 : 0);
-                extraMight += source.modifier(ObjectModifier.OM_MIGHT)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_MIGHT) ? 1 : 0);
-                extraMoves += source.modifier(ObjectModifier.OM_MOVES)
-                        * (itemKnowledge.modifierIsKnown(ObjectModifier.OM_MOVES) ? 1 : 0);
-
-                // Apply element info, noting vulnerabilities for later processing
-                for (ElementEnum element : ElementEnum.values()) {
-                    if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-                    if (!knownOnly || source.knownResLevel(element) != 0) {
-                        if (source.resLevel(element) == -1)
-                            vulnerabilities.put(element, true);
-
-                        // Res level hasn't included vulnerability yet
-                        if (source.resLevel(element) > state.getResLevel(element))
-                            state.setResLevel(element, source.resLevel(element));
-                    }
-                }
-
-                // Apply combat bonuses
-                state.setBaseAc(state.getBaseAc() + source.baseAC());
-                if (!knownOnly || source.knownToAC() != 0)
-                    state.toAcAdd(source.toAC());
-                if (slot.getType() != EquipmentSlotsEnum.EQUIP_WEAPON &&
-                        slot.getType() != EquipmentSlotsEnum.EQUIP_BOW) {
-
-                    if (!knownOnly || source.knownToHit() != 0) {
-                        state.toHitAdd(source.toHit());
-                    }
-                    if (!knownOnly || source.knownToDam() != 0) {
-                        state.toDamAdd(source.toDam());
-                    }
-                }
-            }
-        }
-
-        // apply collected flags
-        state.unionObjectFlags(collectF);
-
-        // Add shapechange info
-        Extras ingoing = new Extras(extraBlows, extraShots, extraMight, extraMoves);
-        Extras outgoing = calcShapechange(state, vulnerabilities, shape, ingoing);
-        extraBlows = outgoing.blows();
-        extraShots = outgoing.shots();
-        extraMight = outgoing.might();
-        extraMoves = outgoing.moves();
-
-        // Vulnerabilities
-        for (ElementEnum element : ElementEnum.values()) {
-            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-            if (vulnerabilities.getOrDefault(element, false) && (state.getResLevel(element) < 3))
-                state.setResLevel(element, state.getResLevel(element) - 1);
-        }
-
-        // Light
-        calcLight(state, update);
-
-        // Unlight - needs change if anything but resist is introduced for dark
-        if (state.hasPFlag(PlayerFlag.PF_UNLIGHT) && GameWorld.hasCharacterDungeon()) {
-            state.setElInfo(ElementEnum.ELEM_DARK, 1);
-        }
-
-        // Evil
-        if (state.hasPFlag(PlayerFlag.PF_EVIL) && GameWorld.hasCharacterDungeon()) {
-            state.setElInfo(ElementEnum.ELEM_NETHER, 1);
-            state.setElInfo(ElementEnum.ELEM_HOLY_ORB, -1);
-        }
-
-        // Various stat values
-        for (Stats stat : Stats.values()) {
-            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
-
-            int add = state.getStatAdd(stat);
-            add += race.getStatAdjust(stat);
-            add += playerClass.getStatsAdj(stat);
-            state.setStatTop(stat, PlayerUtils.modifyStatValue(statMax.get(stat), add));
-            int use = PlayerUtils.modifyStatValue(statCur.get(stat), add);
-
-            state.setStatUse(stat, use);
-
-            int ind;
-            if (use <= 3)
-                ind = 0;
-            else if (use <= 18)
-                ind = use - 3;
-            else if (use <= 18 + 219)
-                ind = (15 + (use - 18) / 10);
-            else
-                ind = 37;
-
-            // Hack for hypothetical blows
-            if (!update) {
-                if (stat == Stats.STAT_STR) {
-                    ind += strInd;
-                    ind = Math.min(ind, 37);
-                    ind = Math.max(ind, 3);
-                } else if (stat == Stats.STAT_DEX) {
-                    ind += dexInd;
-                    ind = Math.min(ind, 37);
-                    ind = Math.max(ind, 3);
-                }
-            }
-
-            // save the new index
-            state.setStatInd(stat, ind);
-        }
-
-        // Effects of food outside the "fed" range
-        if (!timedGradeEq(TimedEffect.TMD_FOOD, "Fed")) {
-            int excess = timed.get(TimedEffect.TMD_FOOD) - Food.PY_FOOD_FULL.getFoodValue();
-            int lack = Food.PY_FOOD_HUNGRY.getFoodValue() - timed.get(TimedEffect.TMD_FOOD);
-            if (excess > 0 && timed.get(TimedEffect.TMD_ATT_VAMP) == 0) {
-                excess = (excess * 10) / (Food.PY_FOOD_MAX.getFoodValue() - Food.PY_FOOD_FULL.getFoodValue());
-                state.setSpeed(state.getSpeed() - excess);
-            } else if (lack > 0) {
-                // Scale to 1/20 of range
-                lack = (lack * 20) / Food.PY_FOOD_HUNGRY.getFoodValue();
-
-                // Apply effects progressively
-                state.toHitAdd(-lack);
-                state.toDamAdd(-lack);
-                if (lack > 10 && lack <= 15) {
-                    int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-                    value = adjustSkillScale(value, -1, 10, 0);
-                    state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-                } else if (lack > 15 && lack <= 18) {
-                    int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-                    value = adjustSkillScale(value, -1, 5, 0);
-                    state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_PHYS, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_PHYS) * 9);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_PHYS, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_PHYS) / 10);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_MAGIC, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_MAGIC) * 9);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_MAGIC, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_MAGIC) / 10);
-                } else if (lack > 18) {
-                    int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-                    value = adjustSkillScale(value, -3, 10, 0);
-                    state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_PHYS, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_PHYS) * 8);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_PHYS, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_PHYS) / 10);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_MAGIC, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_MAGIC) * 8);
-                    state.setStateSkill(PlayerSkill.SKILL_DISARM_MAGIC, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_MAGIC) / 10);
-                    state.setStateSkill(PlayerSkill.SKILL_SAVE, state.getPlayerSkill(PlayerSkill.SKILL_SAVE) * 9);
-                    state.setStateSkill(PlayerSkill.SKILL_SAVE, state.getPlayerSkill(PlayerSkill.SKILL_SAVE) / 10);
-                    state.setStateSkill(PlayerSkill.SKILL_SEARCH, state.getPlayerSkill(PlayerSkill.SKILL_SEARCH) * 9);
-                    state.setStateSkill(PlayerSkill.SKILL_SEARCH, state.getPlayerSkill(PlayerSkill.SKILL_SEARCH) / 10);
-                }
-            }
-        }
-
-        // Other timed effects
-        flagsTimed(state.getObjectFlag());
-
-        if (timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun")) {
-            state.toHitAdd(-20);
-            state.toDamAdd(-20);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 5, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-            if (update)
-                timed.put(TimedEffect.TMD_FASTCAST, 0);
-        } else if (timedGradeEq(TimedEffect.TMD_STUN, "Stun")) {
-            state.toHitAdd(-5);
-            state.toDamAdd(-5);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 10, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-            if (update)
-                timed.put(TimedEffect.TMD_FASTCAST, 0);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_INVULN, 0) != 0)
-            state.toAcAdd(100);
-        if (timed.getOrDefault(TimedEffect.TMD_BLESSED, 0) != 0) {
-            state.toAcAdd(5);
-            state.toHitAdd(10);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, 1, 20, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_SHIELD, 0) != 0)
-            state.toAcAdd(50);
-        if (timed.getOrDefault(TimedEffect.TMD_STONESKIN, 0) != 0) {
-            state.toAcAdd(40);
-            state.setSpeed(state.getSpeed() - 5);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_HERO, 0) != 0) {
-            state.toHitAdd(12);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, 1, 20, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_SHERO, 0) != 0) {
-            state.skillAdd(PlayerSkill.SKILL_TO_HIT_MELEE, 75);
-            state.toAcAdd(-10);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 10, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_FAST, 0) != 0
-                || timed.getOrDefault(TimedEffect.TMD_SPRINT, 0) != 0)
-            state.setSpeed(state.getSpeed() + 10);
-        if (timed.getOrDefault(TimedEffect.TMD_SLOW, 0) != 0)
-            state.setSpeed(state.getSpeed() - 10);
-        if (timed.getOrDefault(TimedEffect.TMD_SINFRA, 0) != 0)
-            state.infraAdd(5);
-        if (timed.getOrDefault(TimedEffect.TMD_TERROR, 0) != 0)
-            state.setSpeed(state.getSpeed() + 10);
-        for (TimedEffect tmd : TimedEffect.values()) {
-            if (tmd == TimedEffect.TMD_NONE) continue;
-            int resLevel;
-            PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(tmd);
-            if (effect != null) {
-                ElementEnum elementEnum = effect.getTempResist();
-                if (elementEnum == null)
-                    resLevel = 0;
-                else {
-                    ElementInfo elementInfo = state.getElInfo().getOrDefault(elementEnum, null);
-                    if (elementInfo == null)
-                        resLevel = 0;
-                    else
-                        resLevel = elementInfo.getResLevel();
-                }
-            } else {
-                resLevel = 0;
-            }
-            if (timed.getOrDefault(tmd, 0) != 0 && effect != null
-                    && effect.getTempResist() != ElementEnum.ELEM_NONE
-                    && state.getElInfo().get(effect.getTempResist()) != null
-                    && resLevel < 2)
-                state.setElInfo(effect.getTempResist(), resLevel + 1);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_CONFUSED, 0) != 0) {
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 4, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_AMNESIA, 0) != 0) {
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 5, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_POISONED, 0) != 0) {
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 20, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_IMAGE, 0) != 0) {
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 5, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_BLOODLUST, 0) != 0) {
-            state.toDamAdd(timed.getOrDefault(TimedEffect.TMD_BLOODLUST, 0) / 2);
-            extraBlows += timed.getOrDefault(TimedEffect.TMD_BLOODLUST, 0) / 20;
-        }
-        if (timed.getOrDefault(TimedEffect.TMD_STEALTH, 0) != 0)
-            state.setStateSkill(PlayerSkill.SKILL_STEALTH, state.getPlayerSkill(PlayerSkill.SKILL_STEALTH) + 10);
-
-        // Analyze flags, check for fear
-        if (state.hasOFlag(ObjectFlag.OF_AFRAID)) {
-            state.toHitAdd(-20);
-            state.toAcAdd(8);
-            int value = state.getPlayerSkill(PlayerSkill.SKILL_DEVICE);
-            value = adjustSkillScale(value, -1, 20, 0);
-            state.setStateSkill(PlayerSkill.SKILL_DEVICE, value);
-        }
-
-        // Analyze weight
-        int totalWeight = getPlayerUpkeep().getTotalWeight();
-        int limit = state.weightLimit();
-        if (totalWeight > limit / 2)
-            state.setSpeed(state.getSpeed() - (totalWeight - (limit / 2)) / (limit / 10));
-        if (state.getSpeed() < 0)
-            state.setSpeed(0);
-        if (state.getSpeed() > 199)
-            state.setSpeed(199);
-
-        // Apply modifier bonuses (un-inflate stat bonuses)
-        state.toAcAdd(StatTables.adjDexTa[state.getStatInd(Stats.STAT_DEX)]);
-        state.toDamAdd(StatTables.adjStrTd[state.getStatInd(Stats.STAT_STR)]);
-        state.toHitAdd(StatTables.adjDexTh[state.getStatInd(Stats.STAT_DEX)]);
-        state.toHitAdd(StatTables.adjStrTh[state.getStatInd(Stats.STAT_STR)]);
-
-        // Modify skills
-        state.setStateSkill(PlayerSkill.SKILL_DISARM_PHYS, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_PHYS)
-                + StatTables.adjDexDis[state.getStatInd(Stats.STAT_DEX)]);
-        state.setStateSkill(PlayerSkill.SKILL_DISARM_MAGIC, state.getPlayerSkill(PlayerSkill.SKILL_DISARM_MAGIC)
-                + StatTables.adjIntDis[state.getStatInd(Stats.STAT_INT)]);
-        state.setStateSkill(PlayerSkill.SKILL_DEVICE, state.getPlayerSkill(PlayerSkill.SKILL_DEVICE)
-                + StatTables.adjIntDev[state.getStatInd(Stats.STAT_INT)]);
-        state.setStateSkill(PlayerSkill.SKILL_SAVE, state.getPlayerSkill(PlayerSkill.SKILL_SAVE)
-                + StatTables.adjWisSav[state.getStatInd(Stats.STAT_WIS)]);
-        state.setStateSkill(PlayerSkill.SKILL_DIGGING, state.getPlayerSkill(PlayerSkill.SKILL_DIGGING)
-                + StatTables.adjStrDig[state.getStatInd(Stats.STAT_STR)]);
-
-        for (PlayerSkill skill : PlayerSkill.values()) {
-            if (skill == PlayerSkill.SKILL_MAX || skill == PlayerSkill.SKILL_NONE) continue;
-
-            state.setStateSkill(skill, state.getPlayerSkill(skill) + getPlayerClass().getXSkill(skill) * level / 10);
-        }
-
-        if (state.getPlayerSkill(PlayerSkill.SKILL_DIGGING) < 1) state.setStateSkill(PlayerSkill.SKILL_DIGGING, 1);
-        if (state.getPlayerSkill(PlayerSkill.SKILL_STEALTH) > 30) state.setStateSkill(PlayerSkill.SKILL_STEALTH, 30);
-        if (state.getPlayerSkill(PlayerSkill.SKILL_STEALTH) < 0) state.setStateSkill(PlayerSkill.SKILL_STEALTH, 0);
-        int hold = StatTables.adjStrHold[state.getStatInd(Stats.STAT_STR)];
-
-        // Analyze launcher
-        state.setHeavyShoot(false);
-        if (launcher != null) {
-            int launcherWeight = launcher.weightOne();
-
-            if (hold < launcherWeight / 10) {
-                state.toHitAdd(2 * (hold - launcherWeight / 10));
-                state.setHeavyShoot(true);
-            }
-
-            state.setNumShots(10);
-
-            // Type of ammo
-            if (launcher.getKind() == null)
-                state.setAmmoTValue(TValue.TV_NONE);
-            else {
-                if (launcher.getKind().getKindFlags().has(ObjectKindFlag.KF_SHOOTS_SHOTS))
-                    state.setAmmoTValue(TValue.TV_SHOT);
-                else if (launcher.getKind().getKindFlags().has(ObjectKindFlag.KF_SHOOTS_ARROWS))
-                    state.setAmmoTValue(TValue.TV_ARROW);
-                else if (launcher.getKind().getKindFlags().has(ObjectKindFlag.KF_SHOOTS_BOLTS))
-                    state.setAmmoTValue(TValue.TV_BOLT);
-            }
-
-            // Multiplier
-            state.setAmmoMult(launcher.getpValue());
-
-            // Special flags
-            if (!state.isHeavyShoot()) {
-                state.setNumShots(state.getNumShots() + extraShots);
-                state.setAmmoMult(state.getAmmoMult() + extraMight);
-                if (state.hasPFlag(PlayerFlag.PF_FAST_SHOT))
-                    state.setNumShots(state.getNumShots() + level / 3);
-            }
-
-            // Need at least 1 shot
-            if (state.getNumShots() < 10) state.setNumShots(10);
-        }
-
-        // Analyse weapon
-        state.setHeavyWield(false);
-        state.setBlessWield(false);
-        if (weapon != null) {
-            int weaponWeight = weapon.weightOne();
-
-            // Can you take the weight (of the weapon)
-            if (hold < weaponWeight / 10) {
-                state.toHitAdd(2 * (hold - weaponWeight / 10));
-                state.setHeavyWield(true);
-            }
-
-            if (!state.isHeavyWield()) {
-                state.setNumBlows(calcBlows(weapon, state, extraBlows));
-                state.setStateSkill(PlayerSkill.SKILL_DIGGING, state.getPlayerSkill(PlayerSkill.SKILL_DIGGING) + weaponWeight / 10);
-            }
-
-            // Divine weapon bonus
-            if (state.hasPFlag(PlayerFlag.PF_BLESS_WEAPON)
-                    && (weapon.gettValue() == TValue.TV_HAFTED || state.hasOFlag(ObjectFlag.OF_BLESSED))) {
-                state.toDamAdd(2);
-                state.setBlessWield(true);
-            }
-        } else {
-            // unarmed
-            state.setNumBlows(calcBlows(null, state, extraBlows));
-        }
-
-        // Mana
-        calcMana(state, update);
-        if (maxSP == 0)
-            state.playerFlagOn(PlayerFlag.PF_NO_MANA);
-
-        state.setNumMoves(extraMoves);
-    }
-
-    /**
-     * Reports whether a known item may be ignored under the player's ignore settings. <b>Stub:</b> not
-     * yet implemented - always answers {@code false} until the ignore subsystem is ported.
-     *
-     * @param item the item to test
-     * @return {@code false} always, for now
-     */
-    public boolean ignoreKnownItemOk(@NotNull ItemObject item) {
-        // TODO: Expand this
-        return false;
     }
 
     /**
@@ -1761,28 +747,46 @@ public class Player {
     }
 
     /**
-     * Makes a bloodlust-driven attack on a random adjacent monster in place of the player's chosen
-     * command - the port of C's {@code player_attack_random_monster}, invoked from
-     * {@link uk.co.jackoftrades.middle.game.gameengine.CommandProcessor#processCommand} when a
-     * bloodlust check fires. <b>Stub:</b> the attack itself is not yet ported, so this currently takes
-     * no action and reports that no attack was made.
+     * Returns one of the player's current "maximal" stat values - the port of reading C's
+     * {@code p->stat_max[stat]}. This is the value before any drain, so it never sits below the
+     * matching current value: {@link #playerStatInc} drags it up whenever a gain takes the current value
+     * past it, and only a permanent drain ({@link #statDec}) lowers it. Restoring a stat means
+     * copying this back over the current value.
      *
-     * @return {@code true} if an attack was made (so the original command should be abandoned);
-     * {@code false} otherwise - always {@code false} while stubbed
+     * <p>Values use the same encoding as {@link #getCurStatValue}: 3 to 18, then
+     * {@code 18 + percentile} up to {@code 18 + 100}, and the same map-versus-array caveat applies
+     * to an unwritten stat.
+     *
+     * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
+     *             {@code STAT_MAX}
+     * @return the maximal value of that stat, before drain
      */
-    public boolean attackRandomMonster() {
-        int index;
-        int direction = RandomValueUtils.randInt0(8);
+    public int getMaxStatValue(Stats stat) {
+        return statMax.get(stat);
+    }
 
-        if (timed.get(TimedEffect.TMD_CONFUSED) != 0) return false;
+    /**
+     * @return the player's maximum spell points - the port of C's {@code p->msp}; zero for a
+     * character with no spell realm, which is how C tests for one ({@code p->msp} guards
+     * {@code player-calcs.c:2335})
+     */
+    public int getMaxSP() {
+        return maxSP;
+    }
 
-        for (index = 0; index < 8; index++, direction++) {
-
-            // DO stuff - this is currently a stub class
-
-        }
-
-        return false;
+    /**
+     * Sets the player's maximum spell points - the port of writing C's {@code p->msp}.
+     *
+     * <p>This is the ceiling only; it does not touch {@link #setCurSp} or {@link #setCspFrac}, which
+     * {@code calc_mana} writes separately when the new ceiling has dropped below what the player is
+     * carrying.
+     *
+     * <p>Function setMaxSP commented in full on 260901.
+     *
+     * @param maxSP the new maximum spell points
+     */
+    public void setMaxSP(int maxSP) {
+        this.maxSP = maxSP;
     }
 
     /**
@@ -1816,852 +820,41 @@ public class Player {
     }
 
     /**
-     * Clears a timed effect, ending it early - the port of C's {@code player_clear_timed}.
+     * Reports whether the timed-effect table holds an entry for an effect at all. This has no
+     * counterpart in C, where {@code p->timed} is an array of {@code TMD_MAX} slots and every effect
+     * therefore always has one; it is the port's guard over a {@link java.util.HashMap} which, in a
+     * character assembled by hand, could be missing a key.
      *
-     * <p><b>Stub:</b> not yet implemented, awaiting the timed-effects runtime; reports that nothing
-     * changed.
+     * <p>Presence is not the same question as "is the effect running". A seeded table contains every
+     * effect with a count of zero, so this answers {@code true} for effects the player is not under.
+     * The call sites in {@link PlayerTimed} pair it with a {@code getTimedEffect(...) != 0} test for
+     * that reason.
      *
-     * @param timedEffect the effect to clear
-     * @param notify      whether to announce the effect ending to the player
-     * @param canDisturb  whether clearing it may interrupt resting/running
-     * @return {@code true} if the effect was active and has now been cleared
+     * <p>Function playerTimedContains coded on 260901, commented in full on 260901.
+     *
+     * @param timedEffect the timed effect to look for
+     * @return {@code true} when the table has an entry for the effect, whatever its count
      */
-    public boolean clearTimed(TimedEffect timedEffect, boolean notify, boolean canDisturb) {
-        // Stub class TODO: implement
-        return false;
+    public boolean playerTimedContains(TimedEffect timedEffect) {
+        return timed.containsKey(timedEffect);
     }
 
     /**
-     * Carries out the pending one-off notice actions - the port of C's {@code notice_stuff}
-     * ({@code player-calcs.c:2536}). Returns at once when no {@code PN_*} flag is raised.
+     * Reports whether the player has a timed-effect table at all. Like {@link #playerTimedContains}
+     * this has no counterpart in C, where {@code p->timed} is an array embedded in the player struct
+     * and cannot be absent; here it is a {@link java.util.HashMap} reference, which a character built
+     * without the constructor's seeding leaves null.
      *
-     * <p>Three actions, in C's order: {@code PN_IGNORE} drops items that have become ignorable,
-     * {@code PN_COMBINE} merges stacks in the pack, and {@code PN_MON_MESSAGE} flushes the queued
-     * monster messages. The flush is deliberately last, so that anything the first two actions say
-     * has already been said.
+     * <p>It is the outermost of the three guards {@link PlayerTimed} stacks - table present, then
+     * entry present, then count non-zero - and answering {@code true} says nothing about whether any
+     * effect is running.
      *
-     * <p>Each flag is cleared before the work it asks for runs, not after, so an action may raise
-     * its own flag again and have the request survive rather than be wiped by the pass that is
-     * carrying it out.
+     * <p>Function playerHasTimed coded on 260901, commented in full on 260901.
      *
-     * <p>The block order does the rest. {@link #ignoreDrop} raises {@code PN_COMBINE} as its last
-     * act, and the combine block sits after the ignore block - so the combine it asks for is carried
-     * out in the same pass, and the method returns with nothing pending. Reversed, the combine would
-     * be consumed before the ignore pass had asked for it, and the pack would stay uncombined until
-     * something else raised the flag.
-     *
-     * <p><b>Outstanding:</b> {@link MonsterUtils#showMonsterMessages} is a chapter-6 stub, so
-     * {@code PN_MON_MESSAGE} currently clears the flag and discards the messages rather than
-     * showing them.
-     *
-     * <p>Function noticeStuff coded on 260822, commented in full on 260824.
+     * @return {@code true} when the timed-effect table has been created
      */
-    public void noticeStuff() {
-        // Is there anythingn to notice
-        if (!getPlayerUpkeep().isNotice()) return;
-
-        // deal with ignore stuff
-        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_IGNORE)) {
-            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_IGNORE);
-            ignoreDrop();
-        }
-
-        // Combine the pack
-        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_COMBINE)) {
-            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_COMBINE);
-            combinePack();
-        }
-
-        // Dump the monster messages
-        if (getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_MON_MESSAGE)) {
-            getPlayerUpkeep().setNoticeFlagOff(PlayerNotice.PN_MON_MESSAGE);
-
-            // Make sure that this comes after all the monster messages
-            MonsterUtils.showMonsterMessages();
-        }
-    }
-
-    /**
-     * Merges every pair of stacks in the gear that can share a slot - the port of C's
-     * {@code combine_pack} ({@code obj-gear.c:1242}). Walks the gear backwards, and for each stack
-     * looks at every earlier stack for one that will take it whole; failing that, for one that will
-     * take part of it.
-     *
-     * <p>A whole merge, through {@link ItemObject#objectAbsorb}, removes the absorbed stack from
-     * both {@code gear} and {@code gearKnown} and is announced to the player. A partial merge,
-     * through {@link ItemObject#objectAbsorbPartial}, only shifts counts between two stacks that
-     * both survive; C leaves that unannounced on the grounds that shuffling items between stacks
-     * is not interesting to read about.
-     *
-     * <p>Both loops are indexed rather than iterators. C walks a linked list and saves
-     * {@code obj1->prev} before merging, because {@code object_absorb} unlinks the absorbed object
-     * from the gear list; the port cannot borrow that trick, and iterating a live view of
-     * {@code gear} while the body removes from it would fail. Running the outer index down from
-     * the end and bounding the inner one by {@code outerIndex} gives the same visit order as C and
-     * keeps the removal at {@code outerIndex} clear of the positions still to come.
-     *
-     * <p>The known objects are absorbed and unlinked before the real ones, so that
-     * {@link ItemObject#objectAbsorb} is never handed a stack whose {@code known} half has already
-     * gone. The two {@code setNumber} calls afterwards realign the counts; C has no equivalent, and
-     * they should never change anything.
-     *
-     * <p>Function combinePack coded on 260822, commented in full on 260824.
-     */
-    private void combinePack() {
-        ItemObject item1;
-        ItemObject item2;
-        boolean displayMessage = false;
-        boolean displayRepeat = false;
-        ObjectStackEnum stackMode2;
-
-        for (int outerIndex = gear.size() - 1; outerIndex >= 0; outerIndex--) {
-            item1 = gear.get(outerIndex);
-
-            if (item1.getKind() == null) continue;
-            if (item1.gettValue().isMoney()) continue;
-
-            // use an indexed for loop to ensure that we stop at item1
-            for (int innerIndex = 0; innerIndex < outerIndex; innerIndex++) {
-                item2 = gear.get(innerIndex);
-                stackMode2 = item2.isInQuiver(this) ? ObjectStackEnum.OSTACK_QUIVER
-                        : ObjectStackEnum.OSTACK_PACK;
-
-                if (item2.getKind() == null) continue;
-
-                // Are item1 & item2 mergeable?
-                Flag<ObjectStackEnum> stackModes = new Flag<>(ObjectStackEnum.class);
-                stackModes.on(stackMode2);
-                if (item2.mergeable(item1, stackModes)) {
-                    displayMessage = true;
-                    displayRepeat = true;
-                    item2.getKnown().objectAbsorb(item1.getKnown());
-                    // Ensure we drop the item from gearKnown before we drop it from here
-                    ItemObject knownObject = item1.getKnown();
-                    if (knownObject != null) {
-                        gearKnown.removeIf(known -> known == knownObject);
-                        knownObject.nullKnown();
-                    }
-                    gear.remove(outerIndex);
-                    item1.nullKnown();
-                    item2.objectAbsorb(item1);
-
-                    // Ensure numbers align - shouldn't be necessary, but just in case
-                    item2.getKnown().setNumber(item2.getNumber());
-
-                    break;
-                } else {
-                    ObjectStackEnum stackMode1 = item1.isInQuiver(this) ? ObjectStackEnum.OSTACK_QUIVER
-                            : ObjectStackEnum.OSTACK_PACK;
-                    Flag<ObjectStackEnum> modes1 = new Flag<>(ObjectStackEnum.class);
-                    Flag<ObjectStackEnum> modes2 = new Flag<>(ObjectStackEnum.class);
-                    modes1.on(stackMode1);
-                    modes2.on(stackMode2);
-                    if (invenCanStackPartial(item2, item1, modes2, modes1)) {
-                        // Don't display a message for this case: shuffling
-                        // items between stacks isn't interesting to the
-                        // player.
-                        item2.getKnown().objectAbsorbPartial(item1.getKnown(), modes2, modes1);
-                        item2.objectAbsorbPartial(item1, modes2, modes1);
-
-                        // Ensure numbers allign - shouldn't be necessary, but just in case
-                        item2.getKnown().setNumber(item2.getNumber());
-                        item1.getKnown().setNumber(item1.getNumber());
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        calcInventory();
-
-        // Redraw gear
-        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_INVENTORY);
-        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_EQUIPMENT);
-
-        // Message
-        if (displayMessage) {
-            Message.message("You combine some items in your pack.");
-
-            // Stop "repeat last command" from working if a stack was completely
-            // combined with another.
-            if (displayRepeat) GameState.getCommandQueue().disableRepeat();
-        }
-    }
-
-    /**
-     * Tests whether at least one item could be moved from {@code item2} onto {@code item1} - the
-     * port of C's {@code inven_can_stack_partial} ({@code obj-gear.c:1183}).
-     *
-     * <p>The two stacks are not interchangeable. {@code item1} is the leading stack, the one whose
-     * count the caller means to maximise, and only {@code stackMode1} opens the quiver branch
-     * below; passing the pair the other way round asks a different question.
-     *
-     * <p>Stackability is settled first by {@link ItemObject#objectStackable}. Then, unless either
-     * mode says {@code OSTACK_STORE} - stores have no capacity limits - the numbers have to allow
-     * it:
-     *
-     * <ul>
-     *   <li>a quiver stack is capped per slot at {@code carry-cap:quiver-slot-size}, divided by
-     *       {@code carry-cap:thrown-quiver-mult} for anything that is not ammunition, and is
-     *       refused outright when it already sits at that cap;</li>
-     *   <li>a quiver stack being fed from outside the quiver is additionally put through
-     *       {@link #quiverAbsorbNum}, to check the quiver as a whole has room. That second check
-     *       exists only to avoid combining a stack that {@link #calcInventory} would then have to
-     *       split apart again;</li>
-     *   <li>a pack stack is capped at its kind's {@code max_stack}.</li>
-     * </ul>
-     *
-     * <p>Function invenCanStackPartial coded on 260822, commented in full on 260824.
-     *
-     * @param item1      the leading stack, the one that is to grow
-     * @param item2      the stack that would be drawn from
-     * @param stackMode1 the stacking rules in force for {@code item1}
-     * @param stackMode2 the stacking rules in force for {@code item2}
-     * @return {@code true} if a partial absorb would move at least one item
-     */
-    private boolean invenCanStackPartial(ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> stackMode1,
-                                         Flag<ObjectStackEnum> stackMode2) {
-        Flag<ObjectStackEnum> combinedModes = new Flag<>(ObjectStackEnum.class);
-        combinedModes.copyFrom(stackMode1);
-        combinedModes.union(stackMode2);
-
-        // Quick fail
-        if (!item1.objectStackable(item2, combinedModes)) {
-            return false;
-        }
-
-        // Now verifying numbers
-        // Leading stack, item1, has to have its count maximised
-        if (!combinedModes.has(ObjectStackEnum.OSTACK_STORE)) {
-            // Quiver has stricter limits
-            if (stackMode1.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                int quiverLimit = GameConstants.getCarryCapQuiverSlotSize() /
-                        (item1.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
-
-                // Are we already at the limit?
-                if (item1.getNumber() == quiverLimit) return false;
-
-                // Checked per-stack limits - if trying to move
-                // items to the quiver, also check the overall
-                // quiver limits to avoid combining and then
-                // splitting in calcInventory()
-                if (!stackMode2.has(ObjectStackEnum.OSTACK_QUIVER)) {
-                    int numFreeSlots = GameConstants.getCarryCapPackSize() -
-                            packSlotsUsed();
-                    int numToQuiver = 0;
-
-                    SplitBetweenPackAndQuiver inSplit = new SplitBetweenPackAndQuiver(numToQuiver, numFreeSlots);
-                    SplitBetweenPackAndQuiver outSplit = quiverAbsorbNum(item2, inSplit);
-                    numToQuiver = outSplit.numToQuiver();
-                    numFreeSlots = outSplit.noToPack();
-
-                    if (numToQuiver <= 0) return false;
-                }
-            } else if (item1.getNumber() == item1.getKind().getBase().getMaxStack()) {
-                // No reason to combine if we are already at the limit
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Works out how many of {@code item} the quiver could take, and how many of the offered pack
-     * slots that would cost - the port of C's {@code quiver_absorb_num} ({@code obj-gear.c:649}).
-     *
-     * <p>Anything that is neither ammunition nor {@code OF_THROWING} cannot go in the quiver at
-     * all, and is answered with nothing to the quiver and the offered pack slots handed back
-     * untouched.
-     *
-     * <p>Otherwise the quiver is walked slot by slot, accumulating two figures: {@code quiverCount},
-     * the total the quiver already holds in slot-size units, and {@code spaceFree}, the room this
-     * particular object could use. A slot that stacks with {@code item} contributes its unused
-     * remainder. An empty slot contributes a whole slot, but only if the object is ammunition or
-     * this is the slot the object's inscription asks for - a thrown weapon may only go where it
-     * prefers. A slot holding something else that could itself move elsewhere counts as displaced,
-     * and its room is available only if some other slot is empty for the displaced pile to move
-     * into, which is what the {@code displaces && numEmpty != 0} test at the foot enforces.
-     *
-     * <p>The room found is then trimmed to what the pack will pay for. Quiver slots are charged to
-     * the pack a slot at a time, so only the part-used slot at the top of the quiver is free; every
-     * further slot has to come out of {@code noToPack}. The multiplier makes a thrown weapon cost
-     * {@code carry-cap:thrown-quiver-mult} times its count.
-     *
-     * <p>C passes {@code n_add_pack} and {@code n_to_quiver} by address and writes back through
-     * them. The port cannot take an address, so the pair travels in and out as a
-     * {@link SplitBetweenPackAndQuiver}.
-     *
-     * <p>C asserts that no slot holds more than a slot's worth; the port throws instead, because a
-     * sentinel return value here would be read by the caller as an ordinary "the quiver is full".
-     *
-     * <p>Function quiverAbsorbNum coded on 260822, commented in full on 260824.
-     *
-     * @param item    the object being offered to the quiver
-     * @param splitIn the maximum number of extra pack slots the quiver may take, in
-     *                {@code noToPack}; {@code numToQuiver} is not read
-     * @return the number that can go to the quiver, and the offered pack slots left unspent
-     */
-    private SplitBetweenPackAndQuiver quiverAbsorbNum(ItemObject item, SplitBetweenPackAndQuiver splitIn) {
-        int numAddPack = splitIn.noToPack();
-        int numToQuiver = splitIn.numToQuiver();
-
-        boolean ammo = item.gettValue().isAmmo();
-        int quiverCount = 0;
-        int spaceFree = 0;
-        int numEmpty = 0;
-        int currentSlot = -1;
-
-        if (ammo || item.hasFlag(ObjectFlag.OF_THROWING)) {
-            int desiredSlot = preferredQuiverSlot(item);
-            boolean displaces = false;
-
-            for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
-                currentSlot++;
-
-                if (quiverItem != null) {
-                    int mult = quiverItem.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult();
-
-                    quiverCount += quiverItem.getNumber() * mult;
-                    Flag<ObjectStackEnum> stackFlags = new Flag<>(ObjectStackEnum.class);
-                    stackFlags.on(ObjectStackEnum.OSTACK_PACK);
-                    if (quiverItem.objectStackable(item, stackFlags)) {
-                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSlotSize()) {
-                            String message = "Cannot assign that many items (" + quiverItem.getNumber() * mult
-                                    + ") in a quiver slot";
-                            logger.error(message);
-                            throw new RuntimeException(message);
-                        }
-                        spaceFree += GameConstants.getCarryCapQuiverSlotSize() - quiverItem.getNumber() * mult;
-                    } else if (desiredSlot == currentSlot && preferredQuiverSlot(quiverItem) != currentSlot) {
-                        // The object to be added prefers to go in this slot,
-                        // but it's occupied by another object that could be
-                        // displaced to a different quiver slot, if one is
-                        // available.
-                        displaces = true;
-                        if (quiverItem.getNumber() * mult > GameConstants.getCarryCapQuiverSlotSize()) {
-
-                            String message = "Cannot assign that many items (" + quiverItem.getNumber() * mult
-                                    + ") in a quiver slot";
-                            logger.error(message);
-                            throw new RuntimeException(message);
-                        }
-                        // Avoid double counting in the ammo case since the
-                        // empty slot, if any, for the displaced stack is
-                        // treated as fully available.
-                        if (ammo)
-                            spaceFree += GameConstants.getCarryCapQuiverSlotSize() - quiverItem.getNumber() * mult;
-                        else
-                            spaceFree += GameConstants.getCarryCapQuiverSlotSize();
-                    }
-                } else {
-                    numEmpty++;
-                    // Ammo can fit in any empty slot, non-ammo thrown items
-                    // are restricted to their preferred slots
-                    if (ammo || desiredSlot == currentSlot)
-                        spaceFree += GameConstants.getCarryCapQuiverSlotSize();
-                }
-            }
-
-            // Only possible to add if there is space in the quiver and either
-            // are displacing a pile with an empty quiver slot avaialble for it
-            // or are not displacing a pile at all.
-            if (spaceFree != 0 && ((displaces && numEmpty != 0) || !displaces)) {
-                int mult = ammo ? 1 : GameConstants.getCarryCapThrownQuiverMult();
-
-                // When quiver count % quiver slot size is zero, adding 
-                // anything will require a pack slot
-                int remainder = quiverCount % GameConstants.getCarryCapQuiverSlotSize();
-                int limitFromPack = remainder != 0 ? GameConstants.getCarryCapQuiverSlotSize() - remainder : 0;
-
-                if (numAddPack > 0)
-                    limitFromPack += numAddPack * GameConstants.getCarryCapQuiverSlotSize();
-
-                spaceFree = Math.min(spaceFree, limitFromPack);
-                numToQuiver = Math.min(item.getNumber(), spaceFree / mult);
-                numAddPack -= (numToQuiver * mult + GameConstants.getCarryCapQuiverSlotSize() - 1 - remainder)
-                        / GameConstants.getCarryCapQuiverSlotSize();
-                SplitBetweenPackAndQuiver outgoing = new SplitBetweenPackAndQuiver(numToQuiver, numAddPack);
-                return outgoing;
-            }
-        }
-
-        // Not suitable for the quiver or no space
-        SplitBetweenPackAndQuiver outgoing = new SplitBetweenPackAndQuiver(0, numAddPack);
-        return outgoing;
-    }
-
-    /**
-     * Reads the quiver slot an object's inscription asks for - the port of C's
-     * {@code preferred_quiver_slot} ({@code obj-gear.c:1396}).
-     *
-     * <p>The inscription is scanned for an {@code @} followed by the fire or throw command key and
-     * a digit, so {@code @f1} asks for slot 1. The fire key is {@code f}, or {@code t} under the
-     * roguelike keyset; the throw key is {@code v} either way. Only ammunition and
-     * {@code OF_THROWING} objects are considered.
-     *
-     * <p>The scan restarts from each {@code @} in turn rather than the first, so a later tag still
-     * counts when an earlier one is something else. The digit is taken raw, as
-     * {@code s.charAt(2) - '0'}, exactly as C does - a slot number outside the quiver is the
-     * caller's problem, and no caller acts on one it cannot match.
-     *
-     * <p>Function preferredQuiverSlot coded on 260822, commented in full on 260824.
-     *
-     * @param item the object whose inscription is to be read
-     * @return the slot number asked for, or {@code -1} if the inscription asks for none
-     */
-    private int preferredQuiverSlot(ItemObject item) {
-        int desiredSlot = -1;
-
-        if (item.getNote() != null && (item.gettValue().isAmmo() || item.hasFlag(ObjectFlag.OF_THROWING))) {
-            String s;
-            char fireKey;
-            char throwKey;
-
-            if (item.getNote().contains("@")) {
-                s = item.getNote().substring(item.getNote().indexOf('@'));
-            } else
-                s = null;
-
-            fireKey = getPlayerOptions().has(PlayerOptionEnum.OP_rogue_like_commands) ? 't' : 'f';
-            throwKey = 'v';
-
-            while (true) {
-                if (s == null || s.isEmpty() || !s.contains("@")) break;
-                if (s.length() < 3) break;
-                if (s.charAt(1) == fireKey || s.charAt(1) == throwKey) {
-                    desiredSlot = s.charAt(2) - '0';
-                    break;
-                }
-                s = s.substring(1);
-                if (s.contains("@")) {
-                    s = s.substring(s.indexOf("@"));
-                }
-            }
-        }
-
-        return desiredSlot;
-    }
-
-    /**
-     * Counts the pack slots the player's gear occupies - the port of C's {@code pack_slots_used}
-     * ({@code obj-gear.c:257}).
-     *
-     * <p>Equipped items occupy no pack slot and are skipped. Everything else costs one slot, except
-     * what is actually in the quiver: quivered stacks are gathered into {@code quiverAmmo} in
-     * slot-size units, thrown weapons counting {@code carry-cap:thrown-quiver-mult} apiece, and the
-     * whole quiver is then charged as the number of full slots it fills plus one more for any
-     * remainder.
-     *
-     * <p>Being ammunition is not enough to be charged as quiver: the item has to be found in the
-     * quiver itself, which is why the inner loop compares identities rather than acting on the
-     * first entry it sees.
-     *
-     * <p>Function packSlotsUsed coded on 260822, commented in full on 260824.
-     *
-     * @return the number of pack slots in use, quiver included
-     */
-    private int packSlotsUsed() {
-        int quiverAmmo = 0;
-        int packSlots = 0;
-
-        for (ItemObject item : gear) {
-            boolean found = false;
-
-            // Equipped items don't count
-            if (!body.itemIsEquipped(item)) {
-                // Is it in the quiver
-                if (item.gettValue().isAmmo() || item.hasFlag(ObjectFlag.OF_THROWING)) {
-                    for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
-                        if (quiverItem == item) {
-                            quiverAmmo += quiverItem.getNumber()
-                                    * (item.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult());
-                            found = true;
-                            break;
-                        }
-                    }
-                }
-
-                if (!found)
-                    packSlots++;
-            }
-        }
-
-        // Full slots
-        packSlots += quiverAmmo / GameConstants.getCarryCapQuiverSlotSize();
-
-        if (quiverAmmo % GameConstants.getCarryCapQuiverSlotSize() != 0)
-            packSlots++;
-
-        return packSlots;
-    }
-
-    /**
-     * Drops everything in the gear that the player's ignore settings now cover - the port of C's
-     * {@code ignore_drop} ({@code obj-ignore.c:651}).
-     *
-     * <p>Walks the gear in reverse and, for each item {@link #ignoreItemOK} accepts, pushes a
-     * {@code CMD_DROP}. An item inscribed {@code !d} or {@code !*} is left alone. An equipped item
-     * asks for confirmation first; a refusal inscribes {@code !d} on it so the same question is not
-     * put again on every later notice pass. Nothing is dropped while standing in a shop.
-     *
-     * <p>The pushed command is marked as a background command, so that {@code CMD_REPEAT} repeats
-     * whatever the player actually did rather than this drop, and so the drop does not count
-     * towards bloodlust.
-     *
-     * <p>The two flags at the foot are raised whatever happened above, because a chain that dropped
-     * earlier items still needs the gear rebuilt and the pack recombined. C asserts that the
-     * command it just pushed is really there; the port throws, for the same reason - an early
-     * return would skip those flags.
-     *
-     * <p>Function ignoreDrop coded on 260822, commented in full on 260824.
-     */
-    public void ignoreDrop() {
-        for (ItemObject item : gear.reversed()) {
-            // skip non-objects & unignoreable objects
-            if (item.getKind() == null)
-                continue;
-
-            if (!ignoreItemOK(item)) continue;
-
-            // check for !d (no drop) inscriptions
-            if (item.checkForInscription("!d") == 0 && item.checkForInscription("!*") == 0) {
-                // Confirm the drop if the object is equipped
-                if (getPlayerBody().itemIsEquipped(item)) {
-                    if (!item.verifyObject("Really take off and drop", this)) {
-                        // Inscribe the item with !d to prevent repeated confirmations
-                        String newInscription = item.getNote();
-                        if (newInscription == null)
-                            newInscription = "!d";
-                        else
-                            newInscription = newInscription + "!d";
-                        item.setNote(newInscription);
-                        continue;
-                    }
-                }
-
-                // We are allowed to drop it. Use the real chunk, not the player's one
-                if (!GameState.getCave().getSquare(grid).isShop()) {
-                    Command dropCommand;
-
-                    getPlayerUpkeep().setDropping(true);
-                    GameState.getCommandQueue().push(CommandCode.CMD_DROP);
-                    dropCommand = GameState.getCommandQueue().commandQueuePeek();
-                    if (dropCommand == null) {
-                        String message = "Invalid command found on peeking the command queue. Expected a CMD_DROP " +
-                                "found a null.";
-                        logger.error(message);
-                        throw new RuntimeException(message);
-                    }
-                    dropCommand.setArgItem("item", item);
-                    dropCommand.setArgNumber("quantity", item.getNumber());
-                    /*
-                     * This drop is a side effect:  whatever
-                     * command triggered it will be the target
-                     * for CMD_REPEAT rather than repeating the
-                     * drop, and the drop will not trigger
-                     * bloodlust.
-                     */
-                    dropCommand.setBacgroundCommand(2);
-                }
-            }
-        }
-
-        // update the gear
-        getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_INVEN);
-
-        // Combine/reorder the pack
-        getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_COMBINE);
-    }
-
-    /**
-     * Pays off both halves of the player's pending debt - the port of C's {@code handle_stuff}
-     * ({@code player-calcs.c:2728}).
-     *
-     * <p>Code that changes the model never recomputes or repaints anything itself; it raises a
-     * {@code PU_*} flag on {@link PlayerUpkeep} for a stale derived quantity, or a {@code PR_*} flag
-     * for a stale piece of screen, and moves on. This method is the single call that settles both,
-     * and it is what the game loop and every command reach for when the model has to be made
-     * consistent again before anything else looks at it.
-     *
-     * <p>It is only a guarded pair of calls, and both guards are the plain "is anything pending"
-     * test C makes on its two bitmasks: {@link PlayerUpkeep#getUpdate()} for the update set, an
-     * empty check on the snapshot from {@link PlayerUpkeep#getRedrawFlags()} for the redraw set.
-     * Neither call clears anything - each of {@link #updateStuff()} and {@link #redrawStuff()} owns
-     * the clearing of the flags it services.
-     *
-     * <p>The order matters and follows C: recalculation runs first, repaint second. A recalculation
-     * routinely raises redraw flags for the figures it has just changed, and because the redraw
-     * guard is evaluated after {@link #updateStuff()} has returned, those flags are seen and
-     * serviced on this same pass rather than waiting for the next one. The reverse order would
-     * repaint the old values and leave the new ones a turn behind.
-     *
-     * <p>Function handleStuff coded before 260828, commented in full on 260828.
-     *
-     * @see #updateStuff()
-     * @see #redrawStuff()
-     */
-    public void handleStuff() {
-        if (getPlayerUpkeep().getUpdate()) updateStuff();
-        if (!getPlayerUpkeep().getRedrawFlags().isEmpty()) redrawStuff();
-    }
-
-    /**
-     * Recomputes whichever derived player quantities have been flagged stale, clearing each flag as
-     * its recalculation runs - the port of C's {@code update_stuff} ({@code player-calcs.c}).
-     *
-     * <p>Code that changes the model does not recompute anything itself; it raises the relevant
-     * {@link PlayerUpdateEnum} ({@code PU_*}) flag on {@link PlayerUpkeep} and moves on. This method
-     * is the single point where that debt is paid off, so a turn that dirties the same quantity a
-     * dozen times still only recalculates it once.
-     *
-     * <p>The order of the clauses is load-bearing and follows C exactly: the inventory is rebuilt
-     * before bonuses, because {@link #updateBonuses()} reads the equipment; bonuses come before the
-     * light radius, hit points and mana, all of which depend on the bonus figures; and spells come
-     * last of the model-side clauses. Each clause clears its own flag <em>before</em> calling the
-     * calculation, so a recalculation that raises the same flag again - legitimately asking for
-     * another pass - is not swallowed.
-     *
-     * <p>Spells are recalculated only for a class with spells to learn
-     * ({@code total_spells > 0}); for a warrior the flag is still cleared, matching C.
-     *
-     * <p>Two early returns then split the model half from the map half. Nothing below them runs
-     * until the character exists ({@link GameWorld#characterGenerated}) and the map is actually on
-     * screen ({@link uk.co.jackoftrades.middle.gameinput.GameInput#mapIsVisible()}); the flags for
-     * those clauses are deliberately left raised, so the work happens on the first pass after the
-     * map appears rather than being lost.
-     *
-     * <p>In the map half, {@code PU_DISTANCE} subsumes {@code PU_MONSTERS}: it clears both flags and
-     * calls {@link #updateMonsters(boolean)} with {@code full} set, so the cheaper monster-only pass
-     * is skipped rather than run twice. The final clause signals
-     * {@link uk.co.jackoftrades.channel.enums.GameEventType#EVENT_PLAYERMOVED}, which is how the
-     * viewport is re-centred across the boundary; C raises the same event for the same reason.
-     *
-     * <p>The leading {@code getUpdate()} guard is a fast exit for the common case of nothing being
-     * stale, not a correctness requirement - with no flags raised every clause would fall through
-     * anyway.
-     *
-     * <p><b>Outstanding:</b> {@link #updateMonsters(boolean)} is still a stub, so the
-     * {@code PU_DISTANCE} and {@code PU_MONSTERS} clauses clear their flags but do no work yet.
-     *
-     * <p>Function updateStuff coded before 260828, commented in full on 260828.
-     *
-     * @see #redrawStuff()
-     */
-    public void updateStuff() {
-        if (!getPlayerUpkeep().getUpdate()) return;
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_INVEN)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_INVEN);
-            calcInventory();
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_BONUS)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_BONUS);
-            updateBonuses();
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_TORCH)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_TORCH);
-            calcLight(getPlayerState(), true);
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_HP)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_HP);
-            calcHitpoints();
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_MANA)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MANA);
-            calcMana(getPlayerState(), true);
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_SPELLS)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_SPELLS);
-            if (getPlayerClass().getMagic().getTotalSpells() > 0)
-                calcSpells();
-        }
-
-        // Character is not ready yet - no map updates
-        if (!GameWorld.characterGenerated) return;
-
-        // Map is not shown, no map updates
-        if (!GameInputHolder.getInstance().mapIsVisible()) return;
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_UPDATE_VIEW)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_UPDATE_VIEW);
-            // Run on actual cave, not player's view
-            GameState.getCave().updateView(this);
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_DISTANCE)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_DISTANCE);
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MONSTERS);
-            updateMonsters(true);
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_MONSTERS)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_MONSTERS);
-            updateMonsters(false);
-        }
-
-        if (getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_PANEL)) {
-            getPlayerUpkeep().updateOff(PlayerUpdateEnum.PU_PANEL);
-            GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_PLAYERMOVED);
-        }
-    }
-
-    /**
-     * Refreshes every living monster's view of the player - the port of C's
-     * {@code update_monsters} ({@code mon-util.c:481}).
-     *
-     * <p>C walks the current level's monster array from index 1 to
-     * {@code cave_monster_max(cave)} and calls {@code update_mon} on each entry that still has a
-     * race, a dead monster being one whose race has been cleared. All the work is in
-     * {@code update_mon} ({@code mon-util.c:291}), which touches only three things per monster: its
-     * distance from the player, whether the player can currently see it, and the
-     * {@code MFLAG_VIEW} flag that records line of sight.
-     *
-     * <p>The {@code full} flag is passed straight through: set, it also recomputes each monster's
-     * cached distance from the player, which is needed only when the player or the monster has
-     * moved. A visibility-only pass - the player going blind, gaining telepathy or see-invisible, a
-     * grid changing its lighting - leaves the distances alone and passes {@code false}. That is why
-     * {@link #updateStuff()} lets {@code PU_DISTANCE} subsume {@code PU_MONSTERS}: the full pass
-     * does everything the cheap one would.
-     *
-     * <p>C notes that this runs once per monster on every player move, and is one of the main
-     * bottlenecks while running, alongside view recalculation - so the eventual implementation
-     * should stay allocation-free in the loop.
-     *
-     * <p><b>Outstanding:</b> this is a stub and does nothing. It is scheduled for chapter 6 with
-     * the rest of the monster work, and may well not end up on {@link Player} - C keeps it in
-     * {@code mon-util.c}, and the loop is over the level's monsters rather than over anything the
-     * player owns.
-     *
-     * <p>Function updateMonsters coded before 260828, commented in full on 260828.
-     *
-     * @param full {@code true} to recompute each monster's distance from the player as well as its
-     *             visibility; {@code false} for a visibility-only pass.
-     * @see #updateStuff()
-     */
-    public void updateMonsters(boolean full) {
-        // STUB function: TODO: Implement in chapter 6
-        // Also may need moving to a different class
-    }
-
-    /**
-     * Repaints whichever screen regions have been flagged stale, by signalling one UI event per
-     * raised flag and then clearing the flags it dealt with — the port of C's {@code redraw_stuff}
-     * ({@code player-calcs.c:2678}).
-     *
-     * <p>This is the redraw half of the pair {@link #updateStuff()} begins: code that changes the
-     * model raises a {@link PlayerRedraw} ({@code PR_*}) flag on {@link PlayerUpkeep} and moves on,
-     * and this method is the single point where the screen catches up. Nothing is painted here —
-     * every flag becomes an event on the bus, and the display side across the boundary decides what
-     * that means.
-     *
-     * <p>The pass works on a <em>snapshot</em> of the flags ({@link PlayerUpkeep#getRedrawFlags()},
-     * C's {@code uint32_t redraw = p->upkeep->redraw;}), and clears only that snapshot at the end
-     * ({@link PlayerUpkeep#clearRedrawFlags}, C's {@code p->upkeep->redraw &= ~redraw}). That
-     * matters twice over: a handler that dirties something while responding to one of these events
-     * raises its flag on the live set and keeps it, and the narrowing described below drops flags
-     * from the snapshot without ever clearing them from the upkeep.
-     *
-     * <p>Three guards sit in front of the work, in C's order:
-     * <ul>
-     *   <li>an empty snapshot returns at once — the common case;</li>
-     *   <li>no character yet ({@link GameWorld#characterGenerated}) returns, leaving every flag
-     *       raised for the first pass after birth;</li>
-     *   <li>the map not being on screen
-     *       ({@link uk.co.jackoftrades.middle.gameinput.GameInput#mapIsVisible()}) does not return;
-     *       it narrows the snapshot to the subwindow flags ({@code PR_MONSTER}, {@code PR_OBJECT},
-     *       {@code PR_MONLIST}, {@code PR_ITEMLIST} — C's {@code PR_SUBWINDOW} mask), so the
-     *       detachable panes still refresh while the main-term flags stay pending.</li>
-     * </ul>
-     *
-     * <p>Then the speed hack C keeps: while resting or running, the screen is only refreshed on
-     * every hundredth turn of either counter, because a rest that repaints each turn takes visibly
-     * longer to sit through. A pending message or map redraw overrides the hack. Note that the
-     * narrowing above happens first, so with the map hidden neither override can be present and the
-     * hack always returns.
-     *
-     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, then the map
-     * separately, because it is the one event carrying data: {@code EVENT_MAP} with the point
-     * {@code (-1, -1)}, C's sentinel for "the whole map, not one grid". A last
-     * {@code EVENT_END} tells the display the batch is complete and it may now do any plotting it
-     * deferred — and, like the narrowing, it is skipped when only subwindows were refreshed.
-     *
-     * <p><b>Deliberate divergence:</b> C drives the signalling from a fixed table
-     * ({@code redraw_events}, {@code player-calcs.c:2634}) and so emits the events in that table's
-     * order; this iterates the flag set, which is {@link PlayerRedraw} declaration order. The
-     * ordering is not honoured, and does not need to be — the handlers are independent. What is
-     * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
-     * all.
-     *
-     * <p>Function redrawStuff coded on 260828, commented in full on 260828.
-     *
-     * @see #updateStuff()
-     * @see PlayerUpkeep#getRedrawFlags()
-     * @see PlayerUpkeep#clearRedrawFlags(uk.co.jackoftrades.channel.utils.FlagView)
-     */
-    public void redrawStuff() {
-        Flag<PlayerRedraw> redraw = getPlayerUpkeep().getRedrawFlags();
-
-        // Is there stuff to redraw
-        if (redraw.isEmpty()) return;
-
-        // Do we have a character?
-        if (!GameWorld.characterGenerated) return;
-
-        // Map is not shown - subwindow updates only
-        if (!GameInputHolder.getInstance().mapIsVisible()) {
-            redraw.mask(PlayerRedraw.PR_MONSTER, PlayerRedraw.PR_OBJECT,
-                    PlayerRedraw.PR_MONLIST, PlayerRedraw.PR_ITEMLIST);
-        }
-
-        // Hack - rarely update while resting or running, makes it over quicker
-        if (((playerRestingCount() % 100 != 0) || (getPlayerUpkeep().getRunning() % 100 != 0))
-                && ((!redraw.has(PlayerRedraw.PR_MESSAGE)) && !redraw.has(PlayerRedraw.PR_MAP)))
-            return;
-
-        // For each listed flag (apart from PR_MAP) - send the appropriate signal to the UI
-        for (PlayerRedraw playerRedraw : redraw) {
-            if (playerRedraw == PlayerRedraw.PR_MAP) continue;
-            GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
-        }
-
-        // Now for the ones that require parameters to be supplied
-        if (redraw.has(PlayerRedraw.PR_MAP)) {
-            GameEngine.getEventsBusHandler().eventSignalPoint(GameEventType.EVENT_MAP, -1, -1);
-        }
-
-        // clear the flags
-        getPlayerUpkeep().clearRedrawFlags(redraw);
-
-        // If map isn't shown do the subwindow updates only.
-        if (!GameInputHolder.getInstance().mapIsVisible()) return;
-
-        // Do any plotting etc, delayed from earlier - this set of updates is over
-        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_END);
-    }
-
-    /**
-     * Reads the resting counter — the port of C's {@code player_resting_count}.
-     *
-     * <p>A plain read of the upkeep's {@code resting} field, with no interpretation: a positive value
-     * is the number of rest turns still to run, zero means not resting, and a negative value is one of
-     * the "rest until a condition is met" sentinels classified by {@link #restingIsSpecial(int)}. C
-     * stores the field as an {@code int16_t} and this returns a Java {@code int}, which is a widening
-     * of the same value; the sentinels are compared for equality rather than ordered, so the wider type
-     * changes nothing.
-     *
-     * <p>Function playerRestingCount coded on 260828, commented in full on 260828.
-     *
-     * @return the resting counter: turns of rest remaining, or a special "rest until…" sentinel
-     */
-    private int playerRestingCount() {
-        return getPlayerUpkeep().getRestingCounter();
+    public boolean playerHasTimed() {
+        return timed != null;
     }
 
     /**
@@ -2791,7 +984,7 @@ public class Player {
      * <p>The totals are made sane first: both are floored at zero and capped at
      * {@link PlayerRegistry#PY_MAX_EXP}, and the maximum is then raised to the current total if the
      * current one is somehow the higher of the two. {@code PR_EXP} is raised and
-     * {@link #handleStuff()} run before any level arithmetic, so the new experience figure reaches
+     * {@link PlayerCalcs#handleStuff(Player)} run before any level arithmetic, so the new experience figure reaches
      * the display even when the level does not move.
      *
      * <p>Three loops follow, in C's order. The first walks the level <em>down</em> while the
@@ -2835,7 +1028,7 @@ public class Player {
 
         getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_EXP);
 
-        handleStuff();
+        PlayerCalcs.handleStuff(this);
 
         while ((level > 1)
                 && exp < PlayerRegistry.playerExperience.getOrDefault(level - 2, 0L) * expFact / 100L) {
@@ -2853,7 +1046,7 @@ public class Player {
             if (verbose) {
                 // Log level updates
                 String buf = "Reached level " + level;
-                historyAdd(buf, PlayerHistoryType.HIST_GAIN_LEVEL);
+                PlayerHistory.historyAdd(this, buf, PlayerHistoryType.HIST_GAIN_LEVEL);
 
                 // Message
                 Message.messageType(MessageType.MSG_LEVEL, "Welcome to level %d.", level);
@@ -2887,90 +1080,7 @@ public class Player {
         getPlayerUpkeep().getRedrawFlags().set(PlayerRedraw.PR_LEV, PlayerRedraw.PR_TITLE, PlayerRedraw.PR_EXP,
                 PlayerRedraw.PR_STATS);
 
-        handleStuff();
-    }
-
-    /**
-     * Adds a history entry of a single type, the port of C's {@code history_add}
-     * ({@code player-history.c}). This is the wrapper the ordinary event loggers use - gaining a
-     * level, slaying a unique, a player's own note - where the entry carries one type and relates
-     * to no artifact.
-     *
-     * <p>C wipes a local bitflag array and switches the one type on; constructing a {@link Flag}
-     * from a single constant does both in one step.</p>
-     *
-     * <p>Function historyAdd coded on 260831, commented in full on 260831.</p>
-     *
-     * @param buf  the text of the entry
-     * @param flag the single history type the entry carries
-     * @return {@code true} always, following C
-     */
-    private boolean historyAdd(String buf, PlayerHistoryType flag) {
-        Flag<PlayerHistoryType> flags = new Flag<>(PlayerHistoryType.class, flag);
-
-        return historyAddWithFlags(buf, flags, null);
-    }
-
-    /**
-     * Adds a history entry stamped with the player's present circumstances, the port of C's
-     * {@code history_add_with_flags} ({@code player-history.c}). The caller supplies the text, the
-     * types and the artifact; the depth, character level and turn are read from the player here.
-     * That is the boundary between this method and {@link #historyAddFull}: callers logging
-     * something as it happens come through here, while callers that already know the circumstances
-     * an entry belongs to - the savefile loader replaying a stored ledger - go straight to
-     * {@code historyAddFull}.
-     *
-     * <p>The turn recorded is the cumulative energy divided by one hundred, C's
-     * {@code p->total_energy / 100}, so a history turn is a player-turn rather than a game turn.</p>
-     *
-     * <p>Function historyAddWithFlags coded on 260831, commented in full on 260831.</p>
-     *
-     * @param buf      the text of the entry
-     * @param flags    the history types the entry carries
-     * @param artifact the artifact the entry relates to, or {@code null} if it relates to none
-     * @return {@code true} always, following C
-     */
-    private boolean historyAddWithFlags(String buf, Flag<PlayerHistoryType> flags, Artifact artifact) {
-        return historyAddFull(flags, artifact, depth, level, totalEnergy / 100, buf);
-    }
-
-    /**
-     * Appends an entry to the player's history ledger, the port of C's {@code history_add_full}
-     * ({@code player-history.c}). Every field of the entry arrives as an argument rather than being
-     * read from the player, which is what lets a caller record an entry against circumstances other
-     * than the present ones.
-     *
-     * <p>The flag set is copied rather than stored by reference, matching C's {@code hist_copy}:
-     * the entry keeps its own record of its types, so a caller that later reuses or clears the flag
-     * set it passed in cannot rewrite history.</p>
-     *
-     * <p>C allocates the ledger on first use and then grows it in blocks of twenty; the backing
-     * list does both, so C's {@code history_init} and {@code history_realloc} have no counterpart
-     * here. C also truncates the entry text to the eighty characters its {@code event} field holds,
-     * but every C caller has already formatted into an eighty-character buffer before arriving, so
-     * the text is stored whole.</p>
-     *
-     * <p>The {@code boolean} return is C's, which reports success unconditionally.</p>
-     *
-     * <p>Function historyAddFull coded on 260831, commented in full on 260831.</p>
-     *
-     * @param flags    the history types the entry carries
-     * @param artifact the artifact the entry relates to, or {@code null} for C's artifact index 0
-     * @param dLev     the dungeon level to record against the entry
-     * @param cLev     the character level to record against the entry
-     * @param turnNo   the turn to record against the entry
-     * @param buf      the text of the entry
-     * @return {@code true} always, following C
-     */
-    private boolean historyAddFull(Flag<PlayerHistoryType> flags, Artifact artifact, int dLev, int cLev,
-                                   int turnNo, String buf) {
-        Flag<PlayerHistoryType> copyFlags = new Flag<>(PlayerHistoryType.class);
-        copyFlags.copyFrom(flags);
-
-        // Add entry
-        HistoryInfo newEntry = new HistoryInfo(copyFlags, dLev, cLev, artifact, turnNo, buf);
-        playerHistory.addEntry(newEntry);
-        return true;
+        PlayerCalcs.handleStuff(this);
     }
 
     /**
@@ -2987,439 +1097,46 @@ public class Player {
     public long getExp() {
         return exp;
     }
-
+    
     /**
-     * Reduce the remaining duration of a timed effect by a given amount, delegating
-     * to {@link #setTimed} with the new total. The port of C's {@code player_dec_timed}.
+     * Returns the player's history ledger, the port of C's {@code p->hist}. This is the running log
+     * of notable events - birth, levels gained, uniques slain, artifacts found or missed, and the
+     * player's own notes - and not the block of background text rolled at birth, which is C's
+     * {@code p->history} and a different thing entirely.
      *
-     * <p>If the reduction would take the effect to zero or below, the change is
-     * always announced (the {@code notify} argument is forced {@code true}) so the
-     * player is told the effect has worn off.</p>
+     * <p>The ledger is built by the constructor and never replaced, so this never answers
+     * {@code null}; C reaches the same state the long way round, {@code history_add_full} calling
+     * {@code history_init} whenever it finds no array. The ledger itself is mutable, and
+     * {@link PlayerHistory#addEntry} is the only thing that writes to it.</p>
      *
-     * @param timedEffect the effect to shorten
-     * @param amount      the number of turns to remove
-     * @param notify      whether to announce a change that leaves the effect still active
-     * @param canDisturb  whether the change may interrupt resting/running
-     * @return {@code true} if the effect's value actually changed
+     * <p>Function getPlayerHistory coded before 260901, commented in full on 260901.</p>
+     *
+     * @return the player's history ledger, never {@code null}
      */
-    public boolean decTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb) {
-        int newValue;
-
-        newValue = timed.get(timedEffect) - amount;
-
-        if (newValue > 0) {
-            return setTimed(timedEffect, newValue, notify, canDisturb);
-        }
-
-        return setTimed(timedEffect, newValue, true, canDisturb);
+    public PlayerHistory getPlayerHistory() {
+        return playerHistory;
     }
 
     /**
-     * Extend (or begin) a timed effect by a given amount, delegating to {@link #setTimed} with the
-     * new total. The port of C's {@code player_inc_timed} ({@code player-timed.c}).
+     * Returns the known counterparts of the player's carried gear, the port of C's
+     * {@code p->gear_k}. Each entry is the known half of an object in {@link #getGear} - the picture
+     * of it the player's rune knowledge entitles them to see - and the two lists are held in step,
+     * so an object and its knowledge are found at the same position.
      *
-     * <p><b>Stub:</b> not yet implemented; reports no change.
+     * <p>The list is built by the constructor and never replaced, so this never answers
+     * {@code null}. It is the live list rather than a copy, and the gear operations in
+     * {@link uk.co.jackoftrades.middle.objects.ObjectUtils} write to it through this accessor:
+     * {@code gearInsertEnd} appends the object's known half beside it, and the absorbing half of
+     * {@code combinePack} removes a merged object's known half before dropping the object. Adding
+     * to it anywhere else would put the two lists out of step, which is what C's
+     * {@code obj->known} pointer makes impossible and this pairing does not.</p>
      *
-     * @param timedEffect the effect to lengthen
-     * @param amount      the number of turns to add
-     * @param notify      whether to announce the change to the player
-     * @param canDisturb  whether the change may interrupt resting/running
-     * @param check       whether to honour the effect's failure conditions before applying it
-     * @return {@code true} if the effect's value actually changed
+     * <p>Function getGearKnown coded before 260901, commented in full on 260901.</p>
+     *
+     * @return the known counterparts of the carried gear, never {@code null}
      */
-    public boolean incTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb, boolean check) {
-        // Stub function TODO: implement
-        return false;
-    }
-
-    /**
-     * Decides whether a timed effect is allowed to take hold, by walking the failure conditions
-     * declared for it in {@code player_timed.txt} - the port of C's {@code player_inc_check}
-     * ({@code player-timed.c}).
-     *
-     * <p>Each condition is a veto: the first one that holds answers {@code false} and the walk stops
-     * there. Only an effect that survives every condition answers {@code true}, so an effect with no
-     * declared conditions always passes.
-     *
-     * <p><b>What {@code lore} selects.</b> A lore check asks what the player <em>believes</em> would
-     * stop the effect, and so reads {@link #knownState} and nothing else; it is a query, and leaves
-     * the character untouched. The live check reads the calculated state from
-     * {@link #getPlayerState()} instead, and learning is part of its job: being subjected to an
-     * effect that one's equipment turns aside is how that equipment's property gets identified, so
-     * the non-lore branches call {@link #equipLearnFlag} and {@link #equipLearnElement} before
-     * testing. The two branches are alternatives, never a sequence - a lore check that fell through
-     * to the live test would both answer the wrong question and identify equipment the player never
-     * used.
-     *
-     * <p><b>The monster boundary in the object-flag case.</b> When the effect arrives from a
-     * monster's action the cave names the actor in {@code monCurrent}, and two further things
-     * happen: the monster observes the player's property through {@link Monster#updateSmartLearn},
-     * and a successful resist is announced. Both are conditional on there being an actor - an effect
-     * from a trap or a potion is learned from silently. C passes {@code 0} and {@code -1} for the
-     * player flag and element it is not reporting; the port spells those {@link PlayerFlag#PF_NONE}
-     * and {@link ElementEnum#ELEM_NONE}.
-     *
-     * <p><b>Resistance and vulnerability differ only in sign.</b> A resist vetoes at
-     * {@code resLevel > 0} and a vulnerability at {@code resLevel < 0}; both learn from equipment on
-     * the live path. C carries a note that the pair reading asymmetrically is accepted for now.
-     *
-     * <p><b>Why the timed-effect case ignores {@code lore}.</b> A timed effect that is running shows
-     * on the player's status line, so there is nothing for them to be ignorant of and no second
-     * branch to write. The test is on the counter being non-zero, not on the entry existing:
-     * {@link #timed} is populated with a zero for every effect at construction, so a presence test
-     * would hold always and veto the effect unconditionally.
-     *
-     * <p>C asserts that each condition's index lies in range for its category. The port needs no
-     * equivalent: {@link TimedFailure} keeps a separately-typed payload per category and its
-     * accessors refuse to hand back the wrong one, so a malformed condition fails at the accessor
-     * rather than indexing past an array. The unreachable {@code TYPE_NONE} answers C's
-     * {@code assert(0)} with a logged throw.
-     *
-     * <p>Function incCheck coded on 260831, commented in full on 260831.
-     *
-     * @param index the timed effect whose failure conditions are to be tested
-     * @param lore  {@code true} to test only against what the player already knows, learning
-     *              nothing from equipment; {@code false} for the live check
-     * @return {@code true} if nothing prevents the effect from being increased
-     */
-    public boolean incCheck(TimedEffect index, boolean lore) {
-        PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
-        List<TimedFailure> failures = effect.getFail();
-
-        for (TimedFailure failure : failures) {
-            switch (failure.getCode()) {
-                case TYPE_OBJECT_FLAG -> {
-                    if (lore) {
-                        if (knownState.hasOFlag(failure.getObjFlagCode()))
-                            return false;
-                    } else {
-                        // If the effect is from a monster action, extra stuff happens
-                        Monster mon = getCave().getMonCurrent() > 0 ? getCave().caveMonster(getCave().getMonCurrent())
-                                : null;
-
-                        equipLearnFlag(failure.getObjFlagCode());
-                        if (mon != null) {
-                            mon.updateSmartLearn(this, failure.getObjFlagCode(), PlayerFlag.PF_NONE,
-                                    ElementEnum.ELEM_NONE);
-                        }
-                        if (hasObjectFlag(failure.getObjFlagCode())) {
-                            if (mon != null) {
-                                Message.message("You resist the effect!");
-                            }
-                            return false;
-                        }
-                    }
-                }
-                case TYPE_RESIST -> {
-                    if (lore) {
-                        // Effect is inhibited by a resist
-                        if (knownState.getElInfo().get(failure.getElementCode()).getResLevel() > 0) {
-                            return false;
-                        }
-                    } else {
-                        equipLearnElement(failure.getElementCode());
-                        if (getPlayerState().getElInfo().get(failure.getElementCode()).getResLevel() > 0) {
-                            return false;
-                        }
-                    }
-                }
-                case TYPE_VULN -> {
-                    // Effect is inhibited by a vulnerability
-                    if (lore) {
-                        if (knownState.getElInfo().get(failure.getElementCode()).getResLevel() < 0) {
-                            return false;
-                        }
-                    } else {
-                        equipLearnElement(failure.getElementCode());
-                        if (getPlayerState().getElInfo().get(failure.getElementCode()).getResLevel() < 0) {
-                            return false;
-                        }
-                    }
-                }
-                case TYPE_PLAYER_FLAG -> {
-                    // Effect is inhibited by a player flag
-                    if (lore) {
-                        if (knownState.hasPFlag(failure.getPlayerFlagCode())) {
-                            return false;
-                        }
-                    } else {
-                        if (hasPlayerFlag(failure.getPlayerFlagCode())) {
-                            return false;
-                        }
-                    }
-                }
-                case TYPE_TIMED_EFFECT -> {
-                    /*
-                     * Effect is inhibited by a timed effect.  If timed
-                     * effect is active, it is known to the player, so
-                     * there's no difference between whether this is
-                     * solely a lore check or not.
-                     */
-                    TimedEffect e = failure.getEffectCode();
-                    if (timed != null && timed.containsKey(e) && timed.get(e) != 0) {
-                        return false;
-                    }
-                }
-                case TYPE_NONE -> {
-                    // should never happen
-                    String message = "Error: Failure.code.TYPE_NONE reached in Player.incCheck. " +
-                            "Should not have occured";
-                    logger.error(message);
-                    throw new RuntimeException(message);
-                }
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Sets a timed effect to a given value, announcing and applying the consequences of the change -
-     * the port of C's {@code player_set_timed} ({@code player-timed.c}).
-     *
-     * <p>The requested value is coerced into the effect's legal range: first raised to the effect's
-     * lower bound, then, if it still exceeds the top grade's maximum, capped there. Both bounds are
-     * applied around an early exit, so the "no change" test runs against the raw (lower-bounded)
-     * value while the second exit catches the case of asking to exceed the top of the scale when the
-     * player is already pinned to it. Either exit returns {@code false} without touching the effect.
-     *
-     * <p>Grades are the effect's named bands, held in ascending order with an implicit "off" grade of
-     * maximum {@code 0} at the head. C walks a linked list and compares the {@code grade} numbers;
-     * because the assembler numbers them sequentially from that head, the list index carries the same
-     * ordering and is compared directly here. Both walks stop at the last grade rather than running
-     * off the end, which is what makes the upper-bound test above meaningful.
-     *
-     * <p>Messages follow C's precedence exactly. Moving up a grade always speaks, and forces
-     * {@code notify}; moving down speaks only if the grade being entered carries a down message, and
-     * then also forces {@code notify}. Failing both, a caller-requested {@code notify} produces the
-     * effect's end, decrease or increase message according to the direction of travel, with a missing
-     * message simply printing nothing. Before any of that, {@code notify} is suppressed for a change
-     * the player could not perceive: one that duplicates an element they already know themselves
-     * immune to, or an object flag they already know they carry, since the status would tell them
-     * nothing new.
-     *
-     * <p>C passes a possibly-null object to {@code print_custom_message} and prints "hands" in place
-     * of its name. Java has no null receiver, so the equipped weapon prints the message when there is
-     * one and a placeholder object prints it with the bare-hands switch set when there is not.
-     *
-     * <p>Begin and end effect chains fire on the transitions into and out of zero, before the new
-     * value is stored. C's choice of origin looks inverted and is not: passing {@code sourceNone} when
-     * the change may disturb lets any nested timed-effect handler make its own disturbance decision,
-     * while {@code sourcePlayer} marks the change as self-inflicted and suppresses it.
-     *
-     * <p>Only a notifying change disturbs the player, raises the effect's update and redraw flags
-     * (always including {@code PR_STATUS}) and calls {@link #handleStuff()}; a silent change stores
-     * the value and stops.
-     *
-     * <p><b>Outstanding:</b> {@code Effect.effectDo} and {@link PlayerUtils#disturb()} are still
-     * stubs, so the transition chains and the disturbance are stored-up work rather than observable
-     * behaviour.
-     *
-     * <p>Function setTimed coded on 260829, commented in full on 260829.
-     *
-     * @param timedEffect the effect to set; must be one that the registry knows
-     * @param amount      the requested new value, before the lower and upper bounds are applied
-     * @param notify      whether the caller wants an ordinary change announced; a grade change
-     *                    overrides this upwards, a duplicated known effect overrides it downwards
-     * @param canDisturb  whether a notifying change may interrupt resting or running
-     * @return {@code true} if the player was notified, which is C's return value - not whether the
-     * stored value changed
-     * @throws IllegalArgumentException if the registry holds no effect of that name
-     */
-    public boolean setTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb) {
-        List<PlayerTimedEffect> timedEffects = PlayerRegistry.getPlayerTimedEffects();
-
-        // Get timed_effects[idx] into effect
-        PlayerTimedEffect effect = null;
-        for (PlayerTimedEffect playerTimedEffect : timedEffects) {
-            if (playerTimedEffect.getName() == timedEffect) {
-                effect = playerTimedEffect;
-                break;
-            }
-        }
-        if (effect == null) {
-            logger.error("Passed in timed effect that doesn't exist in PlayerTimedEffects: " + timedEffect.name());
-            throw new IllegalArgumentException("Passed in timed effect that doesn't exist in PlayerTimedEffects: " + timedEffect.name());
-        }
-
-        List<TimedGrade> grade = effect.getGrade();
-        int newGradeIndex = 0;
-        int currentGradeIndex = 0;
-        ItemObject weapon = getPlayerBody().equippedItemBySlotName("weapon");
-
-        // lowerBound
-        amount = Math.max(amount, effect.getLowerBound());
-
-        // no change
-        if (getTimedEffect(timedEffect) == amount) return false;
-
-        // Find the new grade we will be going to, and the current one
-        while (amount > grade.get(newGradeIndex).max()) {
-            newGradeIndex++;
-            if (newGradeIndex >= grade.size() - 1) break;
-        }
-        while (getTimedEffect(timedEffect) > grade.get(currentGradeIndex).max()) {
-            currentGradeIndex++;
-            if (currentGradeIndex >= grade.size() - 1) break;
-        }
-
-
-        // Upper bound
-        if (amount > grade.get(newGradeIndex).max()) {
-            if (getTimedEffect(timedEffect) == grade.get(newGradeIndex).max()) {
-                // No change - tried to exceed maximum position and already there
-                return false;
-            }
-            amount = grade.get(newGradeIndex).max();
-        }
-
-        // Don't mention effects which already match the player known state.
-        if (effect.getTempResist() != ElementEnum.ELEM_NONE
-                && itemKnowledge.getElementResistInfo().get(effect.getTempResist())
-                && playerIsImmune(effect.getTempResist())) {
-            notify = false;
-        }
-        if (effect.isoFlagExactlySyn() && effect.getoFlagDup() != ObjectFlag.OF_NONE
-                && itemKnowledge.flagIsKnown(effect.getoFlagDup())
-                && playerOfHasNotTimed(effect.getoFlagDup())) {
-            notify = false;
-        }
-
-        ItemObject newObj = new ItemObject();
-
-        // Always mention going up a grade
-        if (newGradeIndex > currentGradeIndex) {
-            if (weapon == null)
-                newObj.printCustomMessage(grade.get(newGradeIndex).upMsg(), effect.getMsgT(), this, true);
-            else
-                weapon.printCustomMessage(grade.get(newGradeIndex).upMsg(), effect.getMsgT(), this, false);
-            notify = true;
-        } else if (newGradeIndex < currentGradeIndex
-                && grade.get(newGradeIndex).downMsg() != null) {
-            if (weapon == null)
-                newObj.printCustomMessage(grade.get(newGradeIndex).downMsg(), effect.getMsgT(), this, true);
-            else weapon.printCustomMessage(grade.get(newGradeIndex).downMsg(), effect.getMsgT(), this, false);
-            notify = true;
-        } else if (notify) {
-            if (amount == 0) {
-                if (weapon == null)
-                    newObj.printCustomMessage(effect.getOnEnd(), MessageType.MSG_RECOVER, this, true);
-                else
-                    weapon.printCustomMessage(effect.getOnEnd(), MessageType.MSG_RECOVER, this, false);
-            } else if (getTimedEffect(timedEffect) > amount && effect.getOnDecrease() != null) {
-                if (weapon == null)
-                    newObj.printCustomMessage(effect.getOnDecrease(), effect.getMsgT(), this, true);
-                else
-                    weapon.printCustomMessage(effect.getOnDecrease(), effect.getMsgT(), this, false);
-            } else if (getTimedEffect(timedEffect) < amount && effect.getOnIncrease() != null) {
-                if (weapon == null)
-                    newObj.printCustomMessage(effect.getOnIncrease(), effect.getMsgT(), this, true);
-                else
-                    weapon.printCustomMessage(effect.getOnIncrease(), effect.getMsgT(), this, false);
-            }
-        }
-
-        // Dispatch effects for transitions
-        if (amount > 0 && getTimedEffect(timedEffect) == 0) {
-            // effect starts
-            if (effect.getOnBeginEffect() != null) {
-                boolean identity = false;
-
-                Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
-                effect.getOnBeginEffect().effectDo(source, null, identity, true,
-                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
-            }
-        } else if (amount == 0) {
-            if (effect.getOnEndEffect() != null) {
-                boolean identity = false;
-                Source source = canDisturb ? Source.sourceNone() : Source.sourcePlayer();
-                effect.getOnEndEffect().effectDo(source, null, identity, true,
-                        DirectionEnum.DIR_UNKNOWN, 0, 0, null);
-            }
-        }
-
-        timed.put(timedEffect, amount);
-
-        if (notify) {
-            if (canDisturb) {
-                PlayerUtils.disturb();
-            }
-
-            for (PlayerUpdateEnum flag : effect.getFlagUpdate())
-                getPlayerUpkeep().setUpdateFlagOn(flag);
-
-            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATUS);
-            for (PlayerRedraw flag : effect.getFlagRedraw())
-                getPlayerUpkeep().setRedrawFlagsOn(flag);
-
-            handleStuff();
-        }
-
-        return notify;
-    }
-
-    /**
-     * Tests whether the player holds the given object flag permanently - the port of C's
-     * {@code player_of_has_not_timed} ({@code player-timed.c:747}).
-     *
-     * <p>The answer is rebuilt from scratch rather than read off the calculated state, and that is
-     * the whole point of the method. Its sibling {@code player_of_has} reads
-     * {@code p->state.flags}, and {@code calcBonuses} finishes by folding the object-flag duplicate
-     * of every running timed effect into that set, so the state answers "yes" for a player who is
-     * merely temporarily heroic. Here the collector is filled from {@link #playerFlags} - race,
-     * class, and the level-30 bravery grant - and then unioned with the flags of every worn item,
-     * so a flag that arrived by a timed effect is not seen.
-     *
-     * <p>{@code setTimed} uses it for exactly that distinction: a message about gaining a
-     * protection is suppressed only when the player already has that protection for keeps.
-     *
-     * <p>Empty slots are skipped; the scratch set handed to {@link ItemObject#objectFlags} is wiped
-     * on entry there, so items accumulate into the collector rather than overwriting one another.
-     *
-     * <p>Function playerOfHasNotTimed coded on 260829, commented in full on 260829.
-     *
-     * @param objectFlag the flag to ask about
-     * @return {@code true} if the race, the class or a worn item grants it, ignoring timed effects
-     */
-    private boolean playerOfHasNotTimed(ObjectFlag objectFlag) {
-        Flag<ObjectFlag> collectFlags = new Flag<>(ObjectFlag.class);
-        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-
-        this.playerFlags(getPlayerState(), collectFlags);
-
-        for (EquipSlot slot : getPlayerBody().getSlots()) {
-            ItemObject slotObject = slot.getItem();
-
-            if (slotObject == null) continue;
-            slotObject.objectFlags(flags);
-            collectFlags.union(flags);
-        }
-
-        return (collectFlags.has(objectFlag));
-    }
-
-    /**
-     * Tests whether the player is immune to the given element - the port of C's
-     * {@code player_is_immune}.
-     *
-     * <p>Immunity is not a separate flag: it is the top of the resistance scale, so the test is an
-     * exact match on a resistance level of 3 (C's {@code p->state.el_info[element].res_level == 3}).
-     * The literal is deliberate rather than a {@code >=} comparison, exactly as in the original -
-     * nothing raises a player's level above 3, and the equality is what C checks. Vulnerability
-     * ({@code -1}), no resistance ({@code 0}) and ordinary resistance ({@code 1}) all return
-     * {@code false}.
-     *
-     * <p>The reading is taken from the calculated state, not the known state, so it reflects what is
-     * true of the player rather than what they have learned.
-     *
-     * <p>Function playerIsImmune coded on 260829, commented in full on 260829.
-     *
-     * @param element the element to test; must be one of the real elements, since the state's
-     *                per-element map holds no entry for {@code ELEM_NONE} or {@code ELEM_MAX}
-     * @return {@code true} if the player's resistance level for that element is exactly 3
-     */
-    private boolean playerIsImmune(ElementEnum element) {
-        return getPlayerState().getElInfo().get(element).getResLevel() == 3;
+    public ArrayList<ItemObject> getGearKnown() {
+        return gearKnown;
     }
 
     /**
@@ -3434,22 +1151,7 @@ public class Player {
      * running or a special stop-condition rest is in progress
      */
     public boolean isResting() {
-        return (playerUpkeep.getRestingCounter() > 0 || restingIsSpecial(playerUpkeep.getRestingCounter()));
-    }
-
-    /**
-     * Tests whether the given resting counter denotes one of the "rest until a condition is met"
-     * sentinel values (as opposed to a fixed turn count) — the port of C's special resting-count
-     * handling.
-     *
-     * <p><b>Stub:</b> not yet implemented.
-     *
-     * @param restingCounter the resting counter to classify
-     * @return {@code true} if the counter is a special "rest until…" value
-     */
-    private boolean restingIsSpecial(int restingCounter) {
-        // Stub function TODO: implement
-        return false;
+        return (playerUpkeep.getRestingCounter() > 0 || PlayerUtils.restingIsSpecial(playerUpkeep.getRestingCounter()));
     }
 
     /**
@@ -3483,16 +1185,6 @@ public class Player {
     }
 
     /**
-     * Recomputes and stores the depth Word of Recall should return the player to — the port of C's
-     * recall-depth handling.
-     *
-     * <p><b>Stub:</b> not yet implemented.
-     */
-    public void setRecallDepth() {
-        // Stub function TODO: implement
-    }
-
-    /**
      * @return the turns remaining until a Deep Descent triggers (0 = inactive)
      */
     public int getDeepDescent() {
@@ -3507,24 +1199,6 @@ public class Player {
     }
 
     /**
-     * Tests whether a given dungeon level hosts one of the player's outstanding quests — the port of
-     * C's {@code is_quest} ({@code player-quest.c}). The town (level 0) never holds a quest.
-     *
-     * @param level the dungeon level to test
-     * @return {@code true} if a quest target lives on that level
-     */
-    public boolean isQuest(int level) {
-        // No quests on town level
-        if (level == 0) return false;
-
-        for (Quest quest : quests) {
-            if (quest.getLevel() == level) return true;
-        }
-
-        return false;
-    }
-
-    /**
      * @return the deepest dungeon level the player has reached
      */
     public int getMaxDepth() {
@@ -3536,29 +1210,6 @@ public class Player {
      */
     public ArrayList<ItemObject> getGear() {
         return gear;
-    }
-
-    /**
-     * Records that the player has learned the identity of a curse, typically because its effect
-     * just fired on a worn item. The port of C's {@code player_learn_curse}
-     * ({@code src/obj-knowledge.c}).
-     *
-     * <p>C resolves the curse to a rune by name — {@code rune_index(RUNE_VAR_CURSE,
-     * lookup_curse(curse->name))} — rather than by identity, which is why
-     * {@link Rune#runeIndex(Curse)} matches on the name too. A curse reconstructed from a savefile
-     * or built by a test is then still recognised.
-     *
-     * <p>A curse with no rune yields null here, where C's guard is {@code index >= 0}; the null is
-     * handled inside {@link #learnRune}, so the two guards sit in different places but reject the
-     * same case. The knowledge update stays outside that guard in both, running even when the
-     * lookup found nothing.
-     *
-     * @param curse the curse whose nature has now been revealed
-     */
-    public void learnCurse(Curse curse) {
-        Rune rune = Rune.runeIndex(curse);
-        learnRune(rune, true);
-        updateObjectKnowledge();
     }
 
     /**
@@ -3587,973 +1238,6 @@ public class Player {
             maxDepth = depth;
             recallDepth = depth;
         }
-    }
-
-    /**
-     * Records that the player has learned to recognise a brand, typically because they just saw it
-     * fire in combat. The port of C's {@code player_learn_brand}.
-     *
-     * <p>One of the wrapper functions that {@link #learnRune} exists to serve, and it shows the
-     * shape they all take: guard on already-knowing, resolve the property to its rune, learn the
-     * rune. The resolution step is the one that cannot be skipped — a brand belongs to a group of
-     * same-named brands sharing a single rune, and {@link Rune#runeIndex(Brand)} returns the rune
-     * for the group rather than for the particular strength passed in. Propagating the new
-     * knowledge is not this method's job; {@link #learnRune} has done it by the time it returns.
-     *
-     * <p>C's {@code player_learn_brand} closes with a second
-     * {@code update_player_object_knowledge}, which this port deliberately drops. It cannot do
-     * anything: the guard above means the rune is unknown whenever the call is reached — knowledge
-     * of a brand and of its rune move together, since {@link KnownObject#learnBrand} marks every
-     * same-named brand at once — so {@link #learnRune} always learns, and always updates. The
-     * duplicate is boilerplate copied from {@code player_learn_flag}, which has no guard and so is
-     * the one wrapper where the trailing call can be the only one that runs. Even there it changes
-     * nothing, because it recomputes identical values.
-     *
-     * @param brand any brand of the wanted kind, at any strength
-     */
-    public void learnBrand(Brand brand) {
-        if (!knowsBrand(brand)) {
-            Rune rune = Rune.runeIndex(brand);
-
-            learnRune(rune, true);
-        }
-    }
-
-    /**
-     * Records that the player has learned to recognise a slay, typically because they just saw it
-     * bite. The port of C's {@code player_learn_slay}, and the sibling of {@link #learnBrand}.
-     *
-     * <p>Same three steps — guard on already-knowing, resolve the property to its rune, learn the
-     * rune — but the equivalence the resolution walks is a different one.
-     * {@link Rune#runeIndex(Slay)} groups by {@link Slay#sameMonsterSlain}, following C's
-     * {@code same_monsters_slain}, and <em>not</em> by name as brands do. The distinction is real:
-     * two slays can share the name "evil" and kill different monsters, because one carries a
-     * monster base and the other does not. Grouping those together would teach the player a rune
-     * they have seen no evidence for.
-     *
-     * <p>As with {@link #learnBrand}, C's trailing {@code update_player_object_knowledge} is
-     * dropped — the guard means {@link #learnRune} always learns, and so always updates.
-     *
-     * @param slay any slay of the wanted kind, at any strength
-     */
-    public void learnSlay(Slay slay) {
-        if (!knowsSlay(slay)) {
-            Rune rune = Rune.runeIndex(slay);
-            learnRune(rune, true);
-        }
-    }
-
-    /**
-     * The port of C's {@code player_knows_brand}. Note that this asks about the exact brand given,
-     * not its group — which is the same thing in practice, because learning any member of a group
-     * marks all of them (see {@link KnownObject#learnBrand}).
-     *
-     * @param brand the brand to ask about
-     * @return true if the player recognises this brand
-     */
-    public boolean knowsBrand(Brand brand) {
-        return itemKnowledge.brandIsKnown(brand);
-    }
-
-    /**
-     * Records that the player has learned to recognise an object flag. The port of C's
-     * {@code player_learn_flag}, whose one caller is the failed uncursing that leaves an item
-     * {@code OF_FRAGILE} ({@code effect-handler-general.c:203}).
-     *
-     * <p>Flags need no group resolution — each has its own rune, so unlike {@link #learnBrand} and
-     * {@link #learnSlay} there is no equivalence class for {@link Rune#runeIndex(ObjectFlag)} to
-     * find. The lookup can still answer {@code null}, because not every flag is a learnable
-     * property: {@code init_rune} skips the placeholder subtypes, the ones describing the object
-     * rather than the player, and the curse-only ones. {@link #learnRune} logs that and returns,
-     * where C hands {@code rune_index}'s {@code -1} straight to {@code rune_list[-1]}.
-     *
-     * <p><b>The already-known guard is this port's, not C's.</b> C's version is unguarded, and
-     * relies on the flag arm of {@code player_learn_rune} using {@code of_on}, which reports
-     * whether it changed anything — so a flag learned twice is silently not announced twice. The
-     * guard here changes no answer (it is the same test one call deeper) and buys consistency with
-     * the other wrappers. It also makes C's trailing {@code update_player_object_knowledge}
-     * unreachable, which matters only in that this was the single wrapper where that call could
-     * have been the one that ran; it recomputed identical values, so nothing is lost.
-     *
-     * @param flag the flag now readable
-     */
-    public void learnFlag(@NotNull ObjectFlag flag) {
-        if (itemKnowledge.flagIsKnown(flag)) return;
-
-        learnRune(Rune.runeIndex(flag), true);
-    }
-
-    /**
-     * Whether the player can read a rune. The port of C's {@code player_knows_rune}
-     * ({@code obj-knowledge.c:257-306}), and the mirror image of {@link #learnRune}: the same seven
-     * varieties, each asking {@link #itemKnowledge} the question the corresponding {@code learn}
-     * arm answers.
-     *
-     * <p>This is the method that decided {@link KnownObject}'s shape. C's version is a seven-armed
-     * switch in which every arm reads one field of {@code p->obj_k}, so between them the arms
-     * enumerate everything a knowledge object has to hold. A port of {@code obj_k} is the right
-     * size exactly when it can serve all seven with nothing left over — which is why the twelve
-     * fields, and not a whole {@code struct object}, are enough.
-     *
-     * <p>Two arms are worth reading against C rather than taken on trust. The curse arm is
-     * {@code p->obj_k->curses[index].power == 1}, where {@code power} is a severity everywhere else
-     * in the game but a 0/1 flag on the knowledge side — {@code save.c:661} writes it as
-     * {@code power ? 1 : 0} — so {@link KnownObject#curseIsKnown} answering from a boolean loses
-     * nothing. The combat arm splits three ways on {@link CombatRunes} where C compares
-     * {@code r->index} against three constants, and its {@code COMBAT_RUNE_MAX} case is the
-     * sentinel, which is a data error rather than an answer; it is logged and reported unknown.
-     *
-     * <p>No {@code default}: the switch is over the sealed {@link RuneVariety}, so the compiler
-     * proves the seven are covered. An eighth variety would be a compile error here, which is the
-     * point — a {@code default} would answer {@code false} for it and say nothing.
-     *
-     * @param rune the rune to ask about
-     * @return true if the player can read this rune
-     */
-    @Contract(pure = true)
-    @CheckReturnValue
-    public boolean knowsRune(@NotNull Rune rune) {
-        boolean known = false;
-
-        switch (rune.getVariety()) {
-            case RuneVariety.CombatKey(CombatRunes key) -> known = switch (key) {
-                case COMBAT_RUNE_TO_A -> itemKnowledge.toAIsKnown();
-                case COMBAT_RUNE_TO_D -> itemKnowledge.toDIsKnown();
-                case COMBAT_RUNE_TO_H -> itemKnowledge.toHIsKnown();
-                case COMBAT_RUNE_MAX -> {
-                    logger.warn("Combat Rune MAX encountered.");
-                    yield false;
-                }
-            };
-
-            case RuneVariety.BrandKey(Brand key) -> known = itemKnowledge.brandIsKnown(key);
-            case RuneVariety.FlagKey(ObjectFlag key, var property) -> known = itemKnowledge.flagIsKnown(key);
-            case RuneVariety.CurseKey(Curse key) -> known = itemKnowledge.curseIsKnown(key);
-            case RuneVariety.ModKey(ObjectModifier key, var property) -> known = itemKnowledge.modifierIsKnown(key);
-            case RuneVariety.ResistKey(ElementEnum key, var projection) -> known = itemKnowledge.resistanceIsKnown(key);
-            case RuneVariety.SlayKey(Slay key) -> known = itemKnowledge.slayIsKnown(key);
-        }
-
-        return known;
-    }
-
-    /**
-     * The port of C's {@code player_knows_slay}, a bare array lookup. As with
-     * {@link #knowsBrand}, it asks about the exact slay given rather than its group, and gets the
-     * same answer either way: {@link KnownObject#learnSlay} marks every slay that kills the same
-     * monsters, so the cost of grouping is paid once on the learning side and this stays cheap.
-     *
-     * @param slay the slay to ask about
-     * @return true if the player recognises this slay
-     */
-    public boolean knowsSlay(@NotNull Slay slay) {
-        return itemKnowledge.slayIsKnown(slay);
-    }
-
-    /**
-     * The port of C's {@code player_knows_curse}, which reads
-     * {@code p->obj_k->curses[index].power == 1}.
-     *
-     * <p>That {@code power} is not a severity. On a real object it is one — 1 to 99 from
-     * {@code apply_curse}, deciding how strong a removal spell must be, with 100 and above meaning
-     * permanent — but on the knowledge side it only ever holds 0 or 1, because C types
-     * {@code p->obj_k} as a whole {@code struct object} and inherits {@code struct curse_data}
-     * whether it wants two integers or not. {@code player_learn_rune} writes a literal 1 and
-     * {@code save.c:661} normalises with {@code power ? 1 : 0}. So the port keeps a boolean, and
-     * the {@code == 1} has nothing to test.
-     *
-     * <p>The two meanings meet in {@code player_know_object} ({@code obj-knowledge.c:1131}), where
-     * this answer <em>gates</em> the real severity: a recognised curse shows its true power on the
-     * known copy of an object, an unrecognised one reads as zero. That is why the curse-removal
-     * menu can offer only what the player has learned.
-     *
-     * <p>Curses are never grouped, so unlike brands and slays there is no fan-out behind this.
-     *
-     * @param curse the curse to ask about
-     * @return true if the player recognises this curse
-     */
-    public boolean knowsCurse(@NotNull Curse curse) {
-        return itemKnowledge.curseIsKnown(curse);
-    }
-    
-    /**
-     * Learns a single rune: marks the property it names as readable, announces it if anything was
-     * genuinely new, and updates everything the player can now see. The port of C's
-     * {@code player_learn_rune} ({@code src/obj-knowledge.c}), and the one place object knowledge
-     * is added.
-     *
-     * <p><b>This is an internal choke point, not an entry point.</b> C keeps it file-{@code static}
-     * and routes every caller through a wrapper — {@code player_learn_flag},
-     * {@code player_learn_slay}, {@code player_learn_brand}, {@code player_learn_curse}, the
-     * {@code equip_learn_*} family. The wrappers are not decoration. Each resolves its property to
-     * a rune through the matching {@link Rune#runeIndex} overload, and for brands, slays and
-     * curses that lookup returns the rune for an <em>equivalence class</em> rather than for the
-     * exact object handed in. Code that reaches past a wrapper and builds its own {@link Rune}
-     * skips that resolution, and learns one member of a group where the game means all of them.
-     * Prefer {@link #learnBrand} and its siblings; add new learning paths as further wrappers.
-     *
-     * <p><b>Package-private, and that is the whole of the enforcement.</b> C's {@code static} means
-     * nothing outside {@code obj-knowledge.c} can call it; the package is this port's equivalent, so
-     * every wrapper and every {@code object_curses_find_*} helper belongs in
-     * {@code middle.player} beside it. The rule has been broken once already — the curse-finding
-     * family briefly lived on {@link ItemObject}, which forced this method public for as long as it
-     * did. If a future learning path seems to want an object-side home
-     * ({@code item.learnOnWield(player)} rather than {@code player.learnOnWield(item)}), that is the
-     * same mistake wearing different clothes. Knowledge is player state, the item is only the thing
-     * being read, and C's argument order says so.
-     *
-     * <p>Package-private rather than {@code private} because {@code PlayerRuneLearningTest} shares
-     * the package and drives this directly, to exercise each of the seven variety arms in isolation.
-     *
-     * <p><b>A wrapper does not need to call {@link #updateObjectKnowledge()}.</b> This method
-     * leaves object knowledge propagated on every path that learned anything, and that is the
-     * invariant the rest of the system is written against: most of C's callers — the
-     * {@code equip_learn_*} family, {@code object_learn_on_wield},
-     * {@code object_learn_unknown_rune}, {@code missile_learn_on_ranged_attack}, the
-     * {@code object_curses_find_*} family, {@code player_learn_all_runes} — have no update call of
-     * their own and rely entirely on this one. Only four of C's wrappers add a second, and it is
-     * redundant in each (see {@link #learnBrand}); this port omits it rather than copy it.
-     *
-     * <p>The switch is over a sealed interface, so the seven varieties are matched as record
-     * patterns and the compiler proves the set is covered — no {@code default} arm, and no cast to
-     * get at each variety's key. C reaches the same seven cases through a {@code switch} on
-     * {@code r->variety} followed by an {@code int} index whose meaning changes per case, and
-     * closes with a {@code default: learned = false} it cannot show to be unreachable.
-     *
-     * <p>Only the combat arm can fall through without learning, on the {@code COMBAT_RUNE_MAX}
-     * sentinel; C's chain of {@code if}/{@code else if} does the same silently, and the warning
-     * here is a Java-side addition for a case that should not arise.
-     *
-     * <p>The tail order matters and is C's: nothing learned means no message and no update, so a
-     * property learned twice is announced once.
-     *
-     * @param rune         the rune to learn; null is logged and ignored, standing in for C's
-     *                     {@code assert} on the rune index
-     * <p>Function learnRune coded before 260815, commented in full before 260815, narrowed to
-     * package-private on 260815, briefly public while the curse-finding family lived on
-     * {@link ItemObject}, and narrowed again on 260815 when that family moved here.
-     *
-     * @param printMessage whether to announce the discovery, false for the paths that learn in
-     *                     bulk and would otherwise bury the player in messages
-     */
-    void learnRune(Rune rune, boolean printMessage) {
-        if (rune == null) {
-            logger.warn("Rune is null on entering learnRune");
-            return;
-        }
-
-        boolean learned = false;
-
-        switch (rune.getVariety()) {
-            case RuneVariety.CombatKey(CombatRunes key) -> {
-                switch (key) {
-                    case COMBAT_RUNE_TO_A -> learned = itemKnowledge.learnToA();
-
-                    case COMBAT_RUNE_TO_H -> learned = itemKnowledge.learnToH();
-
-                    case COMBAT_RUNE_TO_D -> learned = itemKnowledge.learnToD();
-
-                    case COMBAT_RUNE_MAX -> logger.warn("Combat Rune MAX encountered.");
-                }
-            }
-            case RuneVariety.ModKey(ObjectModifier key, var property) -> learned = itemKnowledge.learnModifier(key);
-
-            case RuneVariety.ResistKey(ElementEnum key, var projection) -> learned = itemKnowledge.learnResistance(key);
-
-            case RuneVariety.BrandKey(Brand key) -> learned = itemKnowledge.learnBrand(key);
-
-            case RuneVariety.SlayKey(Slay key) -> learned = itemKnowledge.learnSlay(key);
-
-            case RuneVariety.CurseKey(Curse key) -> learned = itemKnowledge.learnCurse(key);
-
-            case RuneVariety.FlagKey(ObjectFlag key, var property) -> learned = itemKnowledge.learnFlag(key);
-        }
-
-        if (!learned) return;
-
-        if (printMessage)
-            Message.messageType(MessageType.MSG_RUNE, "You have learned the rune of "
-                    + rune.getVariety().runeName() + ".");
-
-        updateObjectKnowledge();
-    }
-
-    /**
-     * Re-derives the known copy of every object the player could be looking at, now that a rune
-     * has been learned. The port of C's {@code update_player_object_knowledge}, which runs
-     * {@code player_know_object} over four populations — the objects on the level, the player's
-     * gear, every store's stock, and the objects hanging off the curse definitions — then
-     * autoinscribes the ground and the pack and signals the inventory and equipment events.
-     *
-     * <p>Stores and curse objects are in that list for a reason worth keeping: knowledge is a
-     * property of the player rather than of the item, so learning a rune changes how a sword in a
-     * shop reads without the player ever having touched it.
-     *
-     * <p>The work is a recomputation rather than a step, so calling this twice in a row is
-     * harmless — which is why C's habit of calling it again in the learning wrappers went
-     * unnoticed. It is not free, though: each call sweeps four populations and signals two events,
-     * so the port calls it once, from {@link #learnRune}.
-     *
-     * <p><b>Two of the four populations are live.</b> The level and the pack are walked; stores and
-     * curse objects are not, and neither is a matter of writing the loop:
-     *
-     * <ul>
-     *   <li><b>Stores</b> wait on the shop subsystem, Chapter 8.</li>
-     *   <li><b>Curse objects</b> wait on somewhere to put the answer. C sweeps
-     *       {@code curses[i].obj}, which is the curse's properties held as a template object with a
-     *       known counterpart of its own; the port flattens those properties onto {@link Curse}
-     *       itself, which is the more accurate shape but leaves no field holding what the player has
-     *       learned about them.</li>
-     *   <li><b>Autoinscribe</b> of ground and pack waits on Chapter 4.</li>
-     * </ul>
-     *
-     * <p><b>The guards are not symmetrical, and only one of them is C's.</b> {@code if (cave)} is
-     * real and load-bearing — knowledge is updated during birth and on loading a save, before any
-     * level exists. The null test on the gear has no counterpart: C walks {@code p->gear} as a linked
-     * list, where a null head is simply an empty loop, while a null {@link java.util.ArrayList} would
-     * throw. That guard is the port paying for the container change, not copying anything.
-     *
-     * <p><b>The two signals sit outside every guard</b>, so they fire even when nothing was walked.
-     * That is C's placement and it is right: the display has to redraw on the strength of the rune
-     * just learned, whether or not any object currently in play happens to carry it.
-     *
-     * <p>The real work is delegated to {@link #knowObject}, which was written on 260816. What this
-     * method is responsible for is the shape around it: the populations, their order, the guards and
-     * the signals. See {@code PlayerUpdateObjectKnowledgeTest}, which observes the walk rather than
-     * its outcome — deliberately, so that it stays valid however {@code knowObject} changes.
-     *
-     * <p>Function updateObjectKnowledge coded before 260815 as a stub, implemented as far as the
-     * available subsystems allow on 260815, commented in full on 260815. Stub note on
-     * {@code knowObject} corrected on 260816.
-     */
-    public void updateObjectKnowledge() {
-        // Know the cave objects
-        if (cave != null) {
-            for (ItemObject itemObject : cave.getObjects()) {
-                knowObject(itemObject);
-            }
-        }
-
-        // Know the player objects
-        if (gear != null) {
-            for (ItemObject itemObject : gear) {
-                knowObject(itemObject);
-            }
-        }
-
-        // Store objects
-        // TODO: Implement this branch in chapter 8
-
-        // Curse objects
-        // TODO: Implement this branch once known object on curse is understood
-
-        // Inscription
-        // TODO: Implement this branch in chapter 4
-        //if (cave != null) 
-        //    autoinscribeGround();
-        //autoinscribePack();
-
-        EventsHandler eventsBusHandler = GameEngine.getEventsBusHandler();
-        eventsBusHandler.eventSignal(GameEventType.EVENT_INVENTORY);
-        eventsBusHandler.eventSignal(GameEventType.EVENT_EQUIPMENT);
-    }
-
-    /**
-     * Learns every rune the player's race knows from birth — the elements it resists or is
-     * vulnerable to, and the object flags it carries innately. The port of C's
-     * {@code player_learn_innate}.
-     *
-     * <p>A character does not have to find a ring of free action to know what free action feels
-     * like when it is part of their body; the point of this pass is that a race's own properties
-     * are legible to it from the start, and so are the runes naming them.
-     *
-     * <p><b>Both loops learn silently.</b> {@link #learnRune} is called with {@code printMessage}
-     * false, because this runs at birth and a dwarf does not want a message telling them they have
-     * noticed they are a dwarf. That is C's choice too, and the reason {@link #learnRune} takes the
-     * flag at all.
-     *
-     * <p>The element loop skips {@link ElementEnum#ELEM_NONE} and {@link ElementEnum#ELEM_MAX},
-     * which are sentinels rather than elements; C has no equivalent of the former and excludes the
-     * latter by bounding at {@code ELEM_MAX}. Elements above the highest one carrying a resistance
-     * rune answer {@code null} from {@link Rune#runeIndex(ElementEnum)}, which {@link #learnRune}
-     * logs and ignores — C would index {@code rune_list[-1]}, so this is a place the port is
-     * deliberately safer rather than merely different.
-     *
-     * <p>The flag loop walks all of {@link ObjectFlag} and asks the race about each, where C walks
-     * only the bits actually set, with {@code of_next}. Same set reached, more iterations.
-     *
-     * <p>C closes with {@code update_player_object_knowledge}, dropped here as in the other
-     * wrappers. The reasoning differs slightly: there is no guard to make it unreachable, but each
-     * {@link #learnRune} that learned anything has already updated, and if the race knows nothing
-     * innately then C's call recomputes a knowledge state that never changed.
-     */
-    public void learnInnate() {
-        for (ElementEnum element : ElementEnum.values()) {
-            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
-                continue;
-
-            if (race.getResistKnowledge(element)) {
-                Rune resistRune = Rune.runeIndex(element);
-                learnRune(resistRune, false);
-            }
-        }
-
-        for (ObjectFlag flag : ObjectFlag.values()) {
-            if (race.getObjectFlagKnowledge(flag)) {
-                Rune rune = Rune.runeIndex(flag);
-                learnRune(rune, false);
-            }
-        }
-    }
-
-    /**
-     * Learns every rune in the game at once. The port of C's {@code player_learn_all_runes}, which
-     * is not part of normal play — it is what the debug command and the cheat option call, and what
-     * a winner's character gets so the final dump shows everything.
-     *
-     * <p>C counts to {@code rune_max}; the loop here is over the rune list itself
-     * ({@link ObjectRegistry#getRunes}), which is the same set in the same order, that count being
-     * only the list's length.
-     *
-     * <p><b>Silent.</b> {@link #learnRune} is called with {@code printMessage} false for the obvious
-     * reason: announcing several hundred discoveries one at a time is not a message, it is a wall.
-     * Same reasoning as {@link #learnInnate}, and the second reason the flag exists.
-     *
-     * <p>Learning is left to run per rune rather than short-circuited, so anything already known
-     * falls out at {@link #learnRune}'s own guard and the trailing
-     * {@link #updateObjectKnowledge} fires once per rune actually learned.
-     */
-    public void learnAllRunes() {
-        for (Rune rune : ObjectRegistry.getRunes()) {
-            learnRune(rune, false);
-        }
-    }
-
-    /**
-     * Learns the to-AC rune from whatever the player is wearing, on the occasion of being
-     * attacked. The port of C's {@code equip_learn_on_defend} ({@code obj-knowledge.c:1970}), the
-     * first of the {@code equip_learn_*} family and the model for the rest.
-     *
-     * <p>The premise is that a property announces itself when it does its job. A blow that lands
-     * less heavily than it should have is evidence that something is adding to the armour class,
-     * and a blow is the only thing that can produce that evidence — which is why armour is learned
-     * by being hit rather than by being examined.
-     *
-     * <p><b>Three sources are checked, and the first success ends the method.</b> The leading guard
-     * and the one at the foot of the loop are the same test: once
-     * {@link KnownObject#toAIsKnown} answers true there is nothing further to learn, so the walk
-     * stops rather than announcing the same rune from every remaining slot. That early return is
-     * also what makes the shape at the end reachable only for an unhelmeted, unarmoured player.
-     *
-     * <ol>
-     *   <li>each equipped item's own bonus, via {@link ItemObject#getToAC} tested against zero —
-     *       the faithful port of C's plain {@code if (obj->to_a)}, which is available because the
-     *       item carries the figure it rolled rather than the dice it rolled from;</li>
-     *   <li>each equipped item's curses, via {@link #cursesFindToA}, which learns the
-     *       curse's rune as well as the to-AC one;</li>
-     *   <li>the player's assumed shape, whose {@link PlayerShape#getToAc} is a flat parsed
-     *       {@code int} — a bear's hide is a to-AC bonus like any other.</li>
-     * </ol>
-     *
-     * <p>An empty slot is skipped, standing in for C's {@code if (obj)} around the whole body:
-     * {@code slot_object} answers NULL for a slot with nothing in it, which is most of them for most
-     * characters. C's {@code assert(obj->known)} has no counterpart here — it is a debug-build check
-     * that the known counterpart was attached, never a condition on learning, and folding it into
-     * the test above would quietly skip items instead of failing loudly. See
-     * {@link ItemObject#isKnown} for why that reading of the name is a trap.
-     *
-     * <p>The shape branch drops C's {@code lookup_player_shape(p->shape->name)}, which re-fetches by
-     * name the definition {@code p->shape} already points at.
-     *
-     * <p>Function equipLearnOnDefend coded before 260815, commented in full before 260815, updated on
-     * 260815 when the item's own bonus arm stopped being a stub.
-     */
-    public void equipLearnOnDefend() {
-        if (itemKnowledge.toAIsKnown()) return;
-
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject slotObject = slot.getItem();
-            if (slotObject == null) continue;
-            if (slotObject.getToAC() != 0) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
-            }
-            cursesFindToA(slotObject);
-            if (itemKnowledge.toAIsKnown()) return;
-        }
-        if (shape != null) {
-            if (shape.getToAc() != 0) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A), true);
-            }
-        }
-    }
-
-    /**
-     * Learns the to-hit rune from whatever the player is wearing, on the occasion of loosing a
-     * missile. The port of C's {@code equip_learn_on_ranged_attack} ({@code obj-knowledge.c:2003}).
-     *
-     * <p>Same premise as {@link #equipLearnOnDefend}, applied to accuracy: a shot that flies truer
-     * than the archer had any right to expect is evidence that something is helping, and only
-     * shooting can produce that evidence. Only to-hit is learned here — a missile's damage is the
-     * launcher's and the ammunition's business, so a ranged attack says nothing about to-damage.
-     *
-     * <p><b>Two slots are skipped, and this is the reason the method exists separately from
-     * {@link #equipLearnOnMeleeAttack}.</b> C skips {@code slot_by_name(p, "weapon")} and
-     * {@code slot_by_name(p, "shooting")}; {@code body.txt} pairs those names one-to-one with the
-     * slot types ({@code slot:WEAPON:weapon}, {@code slot:BOW:shooting}), so the port compares
-     * {@link EquipSlot#getType} and needs no lookup by name. The melee weapon is skipped because a
-     * sword hanging at the belt cannot have helped the shot; the launcher is skipped because its
-     * contribution cannot be told apart from the archer's own skill.
-     *
-     * <p>Otherwise the shape is {@link #equipLearnOnDefend}'s: an empty slot is skipped, each
-     * surviving item is asked about its own bonus and then about its curses via
-     * {@link #cursesFindToH}, the walk stops at the first success because
-     * {@link KnownObject#toHIsKnown} has nothing left to gain, and the shape branch at the end is
-     * therefore reachable only by a player carrying nothing that could teach it.
-     *
-     * <p>The item's own bonus goes through {@link ItemObject#hasStandardToH} rather than a non-zero
-     * test on the figure, exactly as {@link #equipLearnOnMeleeAttack} does — C calls the same
-     * predicate from both. Body armour carries a to-hit penalty as standard equipment, so a plain
-     * {@code getToHit() != 0} would have every archer in a hauberk learning the rune from their
-     * armour.
-     *
-     * <p>Function equipLearnOnRangedAttack coded on 260815, commented in full on 260815,
-     * updated on 260815 to test the predicate the right way round.
-     */
-    public void equipLearnOnRangedAttack() {
-        if (itemKnowledge.toHIsKnown()) return;
-
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject slotObject = slot.getItem();
-            if (slotObject == null || slot.getType() == EquipmentSlotsEnum.EQUIP_WEAPON
-                    || slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
-            if (!slotObject.hasStandardToH()) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
-            }
-            cursesFindToH(slotObject);
-            if (itemKnowledge.toHIsKnown()) return;
-        }
-        if (shape != null) {
-            if (shape.getToHit() != 0) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
-            }
-        }
-    }
-
-    /**
-     * Learns the to-hit and to-damage runes from whatever the player is wearing, on the occasion
-     * of striking a blow. The port of C's {@code equip_learn_on_melee_attack}
-     * ({@code obj-knowledge.c:2039}), the largest of the {@code equip_learn_*} family because it is
-     * the only one that pursues two runes at once.
-     *
-     * <p>That pairing is what makes the method's guards different in kind from its siblings'. Both
-     * the leading test and the one at the foot of the loop are conjunctions: there is nothing left
-     * to learn only when {@link KnownObject#toHIsKnown} <em>and</em>
-     * {@link KnownObject#toDIsKnown} are both satisfied, so a player who has already worked out
-     * their weapon's damage keeps walking the remaining slots in the hope of learning accuracy from
-     * their gloves. Getting either guard down to a single term would end the walk early and quietly
-     * lose the other rune.
-     *
-     * <p><b>One slot is skipped.</b> C skips {@code slot_by_name(p, "shooting")} and nothing else —
-     * a bow is no part of a sword-stroke, but the weapon very much is, which is precisely the slot
-     * {@link #equipLearnOnRangedAttack} has to leave alone. As there, the port compares
-     * {@link EquipSlot#getType} rather than looking the slot up by name.
-     *
-     * <p><b>The two tests are not symmetrical.</b> To-damage is a plain non-zero check on
-     * {@link ItemObject#getToDam}, matching C's {@code if (obj->to_d)}; to-hit goes through
-     * {@link ItemObject#hasStandardToH}, because body armour carries a to-hit penalty as standard
-     * equipment and testing it against zero would teach the rune to anyone who wore a hauberk. The
-     * curse pair {@link #cursesFindToH} and {@link #cursesFindToD} is then asked
-     * for both, and each learns the offending curse's own rune alongside the combat one.
-     *
-     * <p>The shape branch tests {@link PlayerShape#getToHit} and {@link PlayerShape#getToDam}
-     * independently rather than as alternatives, since a shape may well grant both.
-     *
-     * <p>Function equipLearnOnMeleeAttack coded on 260815, commented in full on 260815.
-     */
-    public void equipLearnOnMeleeAttack() {
-        if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
-
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject slotObject = slot.getItem();
-            if (slotObject == null || slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
-            if (!slotObject.hasStandardToH())
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
-            if (slotObject.getToDam() != 0)
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
-
-            cursesFindToD(slotObject);
-            cursesFindToH(slotObject);
-            if (itemKnowledge.toDIsKnown() && itemKnowledge.toHIsKnown()) return;
-        }
-        if (shape != null) {
-            if (shape.getToDam() != 0) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D), true);
-            }
-            if (shape.getToHit() != 0) {
-                learnRune(Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H), true);
-            }
-        }
-    }
-
-    /**
-     * Learns one named object flag from whatever the player is wearing, on the occasion of that
-     * flag having just done something. The port of C's {@code equip_learn_flag}
-     * ({@code obj-knowledge.c:2084}), and the busiest member of the family — upstream calls it from
-     * some thirty places, each naming the flag its own event could have revealed: {@code OF_AFRAID}
-     * on failing to attack, {@code OF_FEATHER} on a fall, {@code OF_HOLD_LIFE} on a drain,
-     * {@code OF_TRAP_IMMUNE} on a trap that did not fire.
-     *
-     * <p><b>Unlike its siblings, this one does not stop early.</b> The {@code equip_learn_on_*}
-     * methods return the moment their rune is known, because a second slot cannot teach the same
-     * thing twice. Here the walk always runs to the end of the body, and the reason is the
-     * {@code else} branch: every slot has bookkeeping to do whether or not anything was learned, so
-     * there is nothing to be saved by leaving early.
-     *
-     * <p><b>Three things happen per slot, and the first two are alternatives.</b>
-     *
-     * <ol>
-     *   <li><b>The item has the flag.</b> If the player cannot yet read it, the flag announces
-     *       itself — {@link ItemObject#description} names the item, {@link ItemObject#flagMessage}
-     *       delivers the property's own wording, and the rune is learned. The inner
-     *       {@link KnownObject#flagIsKnown} guard is what keeps a player wearing three items with
-     *       the same flag from being told about it three times.</li>
-     *   <li><b>The item does not have the flag.</b> Then its absence is itself worth recording, but
-     *       only while there is anything left to learn about the item: an item that is not yet
-     *       {@link ItemObject#isFullyKnown} gets the flag switched on in its known set, marking that
-     *       it has had its chance to display the property and did not. This is how an item is
-     *       identified by being used rather than examined — enough events rule out enough
-     *       properties, and what remains is the item.</li>
-     *   <li><b>Either way, the curses are asked.</b> The flag may be riding on a curse rather than
-     *       on the item, which is a different question from both of the above, so
-     *       {@link #cursesFindFlags} runs unconditionally. It takes a set rather than a
-     *       single flag because its other callers pass real masks; the one-element set built here is
-     *       C's {@code f}, assembled at the top of {@code equip_learn_flag} for exactly this
-     *       purpose.</li>
-     * </ol>
-     *
-     * <p>The leading guard is C's {@code if (!flag) return;}. C's flag is an index into the flag
-     * table and its zero is {@link ObjectFlag#OF_NONE}, so the enum equivalent has to name that
-     * sentinel rather than test for null — {@link ObjectFlag#OF_MAX} is rejected on the same
-     * grounds, being the other end-marker and no more a real flag than the first.
-     *
-     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, deferred to Chapter 7,
-     * so both this method's message and the one {@link #cursesFindFlags} sends name the item with a
-     * placeholder.
-     *
-     * <p>Function equipLearnFlag coded on 260815, commented in full on 260815, updated on 260815
-     * once the curse arm stopped being a stub.
-     *
-     * @param flag the flag whose moment this is; ignored if null or a sentinel
-     */
-    public void equipLearnFlag(ObjectFlag flag) {
-        if (flag == null || flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) return;
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject slotObject = slot.getItem();
-            if (slotObject == null) continue;
-            if (slotObject.hasFlag(flag)) {
-                if (!itemKnowledge.flagIsKnown(flag)) {
-                    Flag<ObjectDescription> descriptionMode = new Flag<>(ObjectDescription.class);
-                    descriptionMode.on(ObjectDescription.ODESC_BASE);
-
-                    String objDesc = slotObject.description(descriptionMode, this);
-                    slotObject.flagMessage(flag, objDesc);
-                    learnRune(Rune.runeIndex(flag), true);
-                }
-            } else if (!slotObject.isFullyKnown() && slotObject.getKnown() != null) {
-                slotObject.getKnown().setFlag(flag);
-            }
-
-            Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
-            flags.on(flag);
-
-            cursesFindFlags(slotObject, flags);
-        }
-    }
-
-    /**
-     * Learns the to-AC rune, and the curse's own rune, if any curse on the given item contributes an
-     * armour-class change the player has just felt. The port of C's
-     * {@code object_curses_find_to_a} ({@code obj-knowledge.c:1557}), the first of six near-identical
-     * functions covering to-AC, to-hit, to-damage, flags, modifiers and elements.
-     *
-     * <p>A curse is a thing the player learns by being bitten by it, which is why this is reached
-     * from {@link #equipLearnOnDefend} rather than from anything to do with inspecting the item. Two
-     * runes are learned, not one: the fact that <em>something</em> is altering the armour class, and
-     * the identity of the curse doing it.
-     *
-     * <p><b>Why the family lives here and not on {@link ItemObject}.</b> All six are {@code static}
-     * in {@code obj-knowledge.c}, the same translation unit as {@code player_learn_rune} — they are
-     * not object methods in C but player-side helpers that take an object, and the signature says so:
-     * {@code (struct player *p, struct object *obj)}. C's file boundary is this port's package
-     * boundary, so putting them here is what keeps {@link #learnRune} package-private and lets the
-     * compiler refuse any caller that reaches past a wrapper. They read the item entirely through its
-     * public surface.
-     *
-     * <p><b>Where the numbers come from.</b> The armour-class figure belongs to the curse
-     * definition, not to the item — {@link Curse#getCombatAC}, the port of {@code curses[i].obj->to_a},
-     * parsed once from {@code curse.txt}. What the item holds is the instance data: the power and
-     * timeout in {@link CurseData}. C keeps those in two arrays indexed alike, so every one of these
-     * functions has to walk {@code 1 .. curse_max} and read {@code obj->curses[i].power} and
-     * {@code curses[i].obj->to_a} at the same subscript. {@link ItemObject#getCurses} pairs them
-     * directly, mapping each curse to its own {@link CurseData}, so the loop visits only the curses
-     * the item actually carries and no index arithmetic survives the port.
-     *
-     * <p>That also disposes of C's two guards. {@code !obj->curses[i].power} is what stops a dense
-     * array from reporting curses the item does not have, and is unnecessary against a map that only
-     * contains the ones it does — the port removes a curse outright rather than zeroing it, so an
-     * entry of power zero should not arise. The test is kept as a cheap restatement of that
-     * invariant. {@code !curses[i].obj} is dead code upstream: the parser allocates that object at
-     * the {@code name:} line, so the only null in the array is index 0, the reserved no-curse slot
-     * the loop already skips.
-     *
-     * <p>The rune is resolved once, before the loop. C recomputes it into the same {@code index}
-     * variable it then overwrites with the curse's rune, so on a second qualifying curse it relearns
-     * the previous curse instead of the to-AC rune — harmless there only because the to-AC rune is
-     * already known by that point. Hoisting the lookup out makes the bug unexpressible.
-     *
-     * <p>Function cursesFindToA coded before 260815, commented in full before 260815, moved here
-     * from {@link ItemObject} on 260815 and its arguments turned round to C's order.
-     *
-     * @param item the item whose curses are being read
-     */
-    void cursesFindToA(ItemObject item) {
-        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_A);
-        if (!item.getCurses().isEmpty()) {
-            for (Curse curse : item.getCurses().keySet()) {
-                CurseData value = item.getCurses().get(curse);
-                if (value.getPower() != 0)
-                    if (curse.getCombatAC() != 0) {
-                        // Learn the to AC rune
-                        learnRune(rune, true);
-                        // Learn the to AC Curse rune
-                        learnRune(Rune.runeIndex(curse), true);
-                    }
-            }
-        }
-    }
-
-    /**
-     * Learns the to-damage rune, and the curse's own rune, if any curse on the given item
-     * contributes a damage change the player has just dealt. The port of C's
-     * {@code object_curses_find_to_d} ({@code obj-knowledge.c:1603}), the to-damage sibling of
-     * {@link #cursesFindToA}.
-     *
-     * <p>Structurally identical to that method, and the reasoning there applies unchanged: why the
-     * family lives on {@link Player} rather than {@link ItemObject}, why the figure is read from the
-     * curse definition ({@link Curse#getCombatDam}, C's {@code curses[i].obj->to_d}) rather than from
-     * the item, why the power test survives, and why the rune is resolved once above the loop.
-     *
-     * <p>What differs is the occasion. This is reached from {@link #equipLearnOnMeleeAttack} — a
-     * curse that saps damage announces itself when a blow lands softly, not when one is taken.
-     *
-     * <p>Function cursesFindToD coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
-     *
-     * @param item the item whose curses are being read
-     */
-    void cursesFindToD(ItemObject item) {
-        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_D);
-        if (!item.getCurses().isEmpty()) {
-            for (Curse curse : item.getCurses().keySet()) {
-                if (item.getCurses().get(curse).getPower() != 0)
-                    if (curse.getCombatDam() != 0) {
-                        // Learn the to-damage rune
-                        learnRune(rune, true);
-                        // Learn the rune of the curse that caused it
-                        learnRune(Rune.runeIndex(curse), true);
-                    }
-            }
-        }
-    }
-
-    /**
-     * Learns the to-hit rune, and the curse's own rune, if any curse on the given item contributes
-     * an accuracy change the player has just felt. The port of C's {@code object_curses_find_to_h}
-     * ({@code obj-knowledge.c:1580}), the to-hit sibling of {@link #cursesFindToA}.
-     *
-     * <p>Structurally identical to that method — see it for why the family lives here, why the
-     * figure is read from the curse definition ({@link Curse#getCombatToHit}, C's
-     * {@code curses[i].obj->to_h}), why the power test is kept, and why the rune is hoisted above
-     * the loop.
-     *
-     * <p>This is the one of the three reached from both attack methods,
-     * {@link #equipLearnOnMeleeAttack} and {@link #equipLearnOnRangedAttack}: a curse that spoils
-     * the player's aim shows itself whichever way they attack.
-     *
-     * <p>Note that the curse's contribution is judged by a plain non-zero test, with no counterpart
-     * to {@link ItemObject#hasStandardToH}. That asymmetry is correct: "standard" is a fact about
-     * what a kind of item normally carries, and a curse has no normal to-hit to be measured against.
-     *
-     * <p>Function cursesFindToH coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
-     *
-     * @param item the item whose curses are being read
-     */
-    void cursesFindToH(ItemObject item) {
-        Rune rune = Rune.runeIndex(CombatRunes.COMBAT_RUNE_TO_H);
-        if (!item.getCurses().isEmpty()) {
-            for (Curse curse : item.getCurses().keySet()) {
-                if (item.getCurses().get(curse).getPower() != 0)
-                    if (curse.getCombatToHit() != 0) {
-                        // Learn the to-hit rune
-                        learnRune(rune, true);
-                        // Learn the rune of the curse that caused it
-                        learnRune(Rune.runeIndex(curse), true);
-                    }
-            }
-        }
-    }
-
-    /**
-     * Learns any of the given flags that a curse on the given item has just betrayed, together with
-     * the rune of the curse betraying them — the port of C's {@code object_curses_find_flags}
-     * ({@code obj-knowledge.c:1634}), the flag member of the same family as {@link #cursesFindToA}
-     * and its two siblings.
-     *
-     * <p><b>Why this one takes a set where the others take nothing.</b> The to-AC, to-hit and
-     * to-damage finders each pursue a single fixed property, so the caller has nothing to say. Flags
-     * are a population, and the caller decides which of them this occasion could plausibly have
-     * revealed. C passes that as a {@code bitflag *test_flags} and intersects it with the curse's
-     * own flags, keeping only what is in both. Three call sites, three different sets: a one-element
-     * set built on the spot by {@code equip_learn_flag}, the {@code obvious_mask} of everything a
-     * wield could show, and the {@code timed_mask} of what only prolonged wear reveals.
-     *
-     * <p>As in the sibling finders, two runes are learned per hit and not one — the flag itself, and
-     * the identity of the curse that carries it. The curse's rune is learned whether or not the flag
-     * was new, since meeting a curse is knowledge even when its effect was already understood.
-     *
-     * <p><b>The intersection is taken on a copy, and it has to be.</b> {@link Flag#inter} is
-     * {@code retainAll} — it mutates the set it is called on. The flags being intersected belong to
-     * the {@link Curse} definition parsed once from {@code curse.txt} and shared by every item
-     * carrying that curse, so intersecting them in place would permanently delete from the
-     * definition every flag this one occasion happened not to be asking about.
-     * {@link Flag#set(java.util.List)} copies element by element into a fresh set, which is what
-     * keeps the definition intact. The caller's own set is left alone for the same reason:
-     * {@link #equipLearnFlag} builds one and hands it to every slot in turn.
-     *
-     * <p><b>The curse's rune is learned inside the flag loop, not beside it.</b> That is C's
-     * placement and it is load-bearing in one direction: a curse whose flags do not meet the test
-     * set teaches nothing at all, not even its own existence, because the player has had no
-     * evidence of it. It also means a curse matching two flags learns its rune twice, which the
-     * guard inside {@link #learnRune} makes harmless.
-     *
-     * <p><b>The message is conditional where the learning is not.</b> C wraps only
-     * {@code flag_message} in {@code p->upkeep->playing}, so knowledge is recorded during character
-     * generation and loading but nothing is announced into a game that has not started. The
-     * returned {@code boolean} is C's {@code new} — true if any flag was learned that was not
-     * already known, ignored by this caller and used by the wield-time learning.
-     *
-     * <p>The per-curse guard is on {@link CurseData#getPower}, as in the three sibling finders and
-     * as C's {@code if (!obj->curses[i].power)} requires. Power is what says the curse is on the
-     * item at all — {@link CurseData#setPower} with a zero is how a curse is removed, so a zeroed
-     * entry can outlive the curse it names. C's second guard, {@code !curses[i].obj}, has no
-     * counterpart: it exists to skip the reserved index 0 of a dense array, and a map holding only
-     * the curses this item carries has no such hole.
-     *
-     * <p><b>Outstanding:</b> {@link ItemObject#description} is still a stub, deferred to Chapter 7,
-     * so the message names the item with a placeholder.
-     *
-     * <p>Function cursesFindFlags coded on 260815, commented in full on 260815, moved here from
-     * {@link ItemObject} on 260815 and its arguments turned round to C's order, {@code testFlags}
-     * widened to {@link FlagView} on 260818.
-     *
-     * @param item      the item whose curses are being read
-     * @param testFlags the flags this occasion could have revealed, C's {@code test_flags}; read
-     *                  only, hence the {@link FlagView} — it is intersected into a working copy
-     *                  rather than modified
-     * @return whether any flag was learned that the player did not already know
-     */
-    boolean cursesFindFlags(ItemObject item, FlagView<ObjectFlag> testFlags) {
-        boolean curseLearned = false;
-
-        Flag<ObjectDescription> baseDesc = new Flag<>(ObjectDescription.class);
-        baseDesc.on(ObjectDescription.ODESC_BASE);
-        String name = item.description(baseDesc, this);
-
-        if (item.getCurses().isEmpty()) return false;
-
-        // Only loop through the curses on the object, not the entire set of curses
-        for (Curse curse : item.getCurses().keySet()) {
-            CurseData value = item.getCurses().get(curse);
-            if (value.getPower() == 0) continue;
-
-            Flag<ObjectFlag> toTest = new Flag<>(ObjectFlag.class);
-            toTest.union(curse.getObjectFlags());
-            toTest.inter(testFlags);
-
-            for (ObjectFlag testSubject : toTest) {
-                if (!itemKnowledge.flagIsKnown(testSubject)) {
-                    curseLearned = true;
-                    learnRune(Rune.runeIndex(testSubject), true);
-                    if (getPlayerUpkeep().isPlaying())
-                        item.flagMessage(testSubject, name);
-                }
-
-                // Learn the curse
-                Rune rune = Rune.runeIndex(curse);
-                if (rune != null)
-                    learnRune(rune, true);
-            }
-        }
-
-        return curseLearned;
-    }
-
-    /**
-     * Reports whether an active timed effect is currently at the grade of the given name — the
-     * port of C's {@code player_timed_grade_eq} ({@code player-timed.c:734}).
-     *
-     * <p>A timed effect is a single counter, but the player-facing status is a band of that
-     * counter: stunning runs "Stun" → "Heavy Stun" → "Knocked Out" as the number climbs. This
-     * answers which band the counter is in, by name, so that callers can branch on severity
-     * without knowing the thresholds — {@code GameWorld.decreaseTimeouts} asks whether a wound is
-     * a "Mortal Wound" before deciding it does not bleed down, and the digestion code asks whether
-     * nourishment is "Full" or "Faint".
-     *
-     * <p><b>Exactly one grade is tested.</b> The grades are ordered by ascending {@code max}, and
-     * the effect's band is the first one whose {@code max} the value does not exceed; that grade's
-     * name is compared and the answer returned whether it matched or not. Continuing past it into
-     * the higher grades would be the easy mistake, because their maxima also cover the value — a
-     * lightly stunned player would answer {@code true} to "Knocked Out". C expresses this as a
-     * {@code while} that walks to the band and then a single {@code streq} outside the loop.
-     *
-     * <p>An effect at zero answers {@code false} without consulting its grades, matching C's
-     * opening {@code if (p->timed[idx])}. The check is needed rather than incidental: the map is
-     * populated with a zero for every effect at construction, and the port's grade list has no
-     * entry for the dormant state, so a zero reaching the loop would be tested against the first
-     * real grade.
-     *
-     * <p>The null definition guard has no counterpart in C, which indexes a static table that is
-     * always populated. Here the effects are loaded from {@code player_timed.txt} into
-     * {@link PlayerRegistry}, and {@link PlayerRegistry#lookupPlayerTimedEffect} answers null for
-     * an effect with no loaded definition — {@link TimedEffect#TMD_NONE} being the standing
-     * example, though its zero value means it never reaches this far.
-     *
-     * <p>Function timedGradeEq coded on 260818, commented in full on 260818.
-     *
-     * @param index the timed effect to inspect
-     * @param match the grade name to compare against, as written in {@code player_timed.txt}
-     * @return {@code true} if the effect is running and its current grade has that name
-     */
-    public boolean timedGradeEq(TimedEffect index, String match) {
-        if (timed != null && timed.containsKey(index) && timed.get(index) != 0) {
-            int value = timed.get(index);
-            PlayerTimedEffect effect = PlayerRegistry.lookupPlayerTimedEffect(index);
-            if (effect == null) return false;
-
-            List<TimedGrade> grades = effect.getGrade();
-
-            for (TimedGrade grade : grades) {
-                if (grade.max() < value)
-                    continue;
-
-                return (grade.status() != null && grade.status().equals(match));
-            }
-        }
-
-        return false;
     }
 
     /**
@@ -4674,1064 +1358,121 @@ public class Player {
             flags.on(ObjectFlag.OF_PROT_FEAR);
         }
     }
-
+    
     /**
-     * Works out the player's maximum mana, and whether their armour is heavy enough to cost them
-     * some — the port of C's {@code calc_mana} ({@code player-calcs.c:1480-1554}).
+     * Reads one entry of the rolled hit-point table - the port of C's {@code p->player_hp[]}.
      *
-     * <p>Three questions in order. Can the class cast at all: a class with no spells has its mana
-     * zeroed outright and the method returns. What does level give: mana grows with the levels
-     * gained <em>since</em> the class's first spell level, scaled by a table indexed on the average
-     * of the governing stats, so a caster below that level gets nothing. What does armour take
-     * away: everything worn except weapon, launcher, rings, amulet and light is weighed, and each
-     * ten tenth-pounds above the class's allowance costs a point and raises the encumbrance flag.
+     * <p>The table is the character's whole hit-point history, rolled once at birth
+     * ({@code player-birth.c:296}) and never re-rolled, so that a character's maximum is a property
+     * of who they are rather than of when the calculation last ran. Entries are cumulative totals,
+     * not per-level gains, and the array is indexed from zero: C reads the current level's figure as
+     * {@code p->player_hp[p->lev - 1]} ({@code player-calcs.c:1577}), and the port passes that
+     * subtraction in at the call site rather than hiding it here.
      *
-     * <p>Writes to two places, and the split follows {@code update}. The encumbrance flag always
-     * goes to the state, because it describes the calculation. The maximum itself goes to the
-     * <em>player</em>, not the state, and only when {@code update} is set — so a hypothetical
-     * recalculation leaves the character's mana alone. When the maximum does change, current mana is
-     * capped to it and a redraw is asked for.
+     * <p>The table is null on a freshly constructed player, and the port's birth code does not roll
+     * it yet, so this throws for every character the port can currently make; the tests that need it
+     * install an array by reflection.
      *
-     * <p>Function calcMana commented in full on 260820.
+     * <p>Function getPlayerHP commented in full on 260901.
      *
-     * @param state  the state being filled; receives the armour-encumbrance flag
-     * @param update {@code true} to store the new maximum on the player, {@code false} to compute
-     *               and discard it
+     * @param level the zero-based index into the table, one below the character level being asked
+     *              about
+     * @return the cumulative hit points rolled by that level
      */
-    public void calcMana(PlayerState state, boolean update) {
-        // Must know spells
-        if (getPlayerClass().getMagic().getTotalSpells() == 0) {
-            maxSP = 0;
-            curSp = 0;
-            cspFrac = 0;
-            return;
-        }
-
-        int tempMaxSP;
-
-        // Extract effective player level
-        int levels = (level - getPlayerClass().getMagic().getSpellFirst()) + 1;
-        if (levels > 0) {
-            tempMaxSP = 1;
-            tempMaxSP += StatTables.adjMagMana[averageSpellStat(state)] * levels / 100;
-        } else {
-            tempMaxSP = 0;
-        }
-
-        // Assume not encumbered by armour
-        state.setCumberArmour(false);
-
-        // weigh the armour
-        int currentWeight = 0;
-        for (EquipSlot slot : body.getSlots()) {
-            if (slot.getType() == EquipmentSlotsEnum.EQUIP_WEAPON) continue;
-            if (slot.getType() == EquipmentSlotsEnum.EQUIP_BOW) continue;
-            if (slot.getType() == EquipmentSlotsEnum.EQUIP_RING) continue;
-            if (slot.getType() == EquipmentSlotsEnum.EQUIP_AMULET) continue;
-            if (slot.getType() == EquipmentSlotsEnum.EQUIP_LIGHT) continue;
-
-            ItemObject item = slot.getItem();
-
-            if (item != null)
-                currentWeight += item.weightOne();
-        }
-
-        // determine max weight allowance
-        int maxWeight = getPlayerClass().getMagic().getSpellWeight();
-
-        // Heavy armour penalises mana
-        if (((currentWeight - maxWeight) / 10) > 0) {
-            // Encumbered
-            state.setCumberArmour(true);
-
-            // reduce mana
-            tempMaxSP -= ((currentWeight - maxWeight) / 10);
-        }
-
-        // Non-negative
-        tempMaxSP = Math.max(tempMaxSP, 0);
-
-        // if no updates, return
-        if (!update) return;
-
-        if (maxSP != tempMaxSP) {
-            maxSP = tempMaxSP;
-
-            // enforce new limits
-            if (curSp >= maxSP) {
-                curSp = maxSP;
-                cspFrac = 0;
-            }
-
-            // Display mana at next draw
-            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_MANA);
-        }
+    public int getPlayerHP(int level) {
+        return playerHP[level];
     }
 
     /**
-     * The stat table index a caster's mana is scaled by, averaged over every realm the class draws
-     * on — the port of C's {@code average_spell_stat}
-     * ({@code player-calcs.c:1247-1259}).
+     * Sets the player's maximum hit points - the port of writing C's {@code p->mhp}.
      *
-     * <p>Averages the compressed <em>indices</em>, not the stat values, because that is what indexes
-     * the mana table. A class casting from one realm gets that realm's stat unchanged; a class
-     * spanning two is held to the mean of both, so neglecting either costs mana. The division rounds
-     * up.
+     * <p>Named for the calculation rather than the field, to keep it clear of {@link #getPlayerHP},
+     * which reads the rolled table and not this derived ceiling.
      *
-     * <p>Function averageSpellStat commented in full on 260820.
+     * <p>Function setPlayerMaxHP commented in full on 260901.
      *
-     * @param state the state whose stat indices to read
-     * @return the averaged stat index
-     * @throws ArithmeticException if the class has no realms — the caller must establish that it
-     *                             casts before asking, as {@code calcMana}'s literacy test does
+     * @param maxHP the new maximum hit points
      */
-    private int averageSpellStat(PlayerState state) {
-        Set<MagicRealm> realms = getPlayerClass().magicRealm();
-        int numRealms = realms.size();
-        int total = 0;
-        for (MagicRealm realm : realms) {
-            total += state.getStatInd(realm.getStat());
-        }
-
-        return (total + numRealms - 1) / numRealms;
+    public void setPlayerMaxHP(int maxHP) {
+        this.maxHP = maxHP;
     }
 
     /**
-     * Gives this player the body their race is built with — the slots they can wear things in.
+     * Sets the player's current hit points - the port of writing C's {@code p->chp}.
      *
-     * <p><b>Copies rather than shares.</b> A race's body is a template held once and used by every
-     * member of that race; a player's body holds the items actually worn. Taking the reference
-     * instead of a copy would have every character of a race wearing the same equipment.
+     * <p>Unclamped in both directions, exactly as C leaves it: death is decided by the damage code
+     * rather than by this write, and {@code calc_hitpoints} ({@code player-calcs.c:1588}) is what
+     * pulls the value down when the maximum falls.
      *
-     * <p>Returns quietly if the player has no race yet, which happens during character creation
-     * before a race is chosen.
+     * <p>Function setCurrentHP commented in full on 260901.
      *
-     * <p>Function embody commented in full on 260820.
+     * @param currentHP the new current hit points
      */
-    public void embody() {
-        if (race == null)
-            return;
-
-        body = race.getBody().copy();
+    public void setCurrentHP(int currentHP) {
+        this.currentHP = currentHP;
     }
 
     /**
-     * Blows per turn with a given weapon, scaled by 100 — the port of C's {@code calc_blows}
-     * ({@code player-calcs.c:1703-1735}).
+     * Sets the fractional part of the current hit points - the port of writing C's
+     * {@code p->chp_frac}.
      *
-     * <p>Strength is weighed against the weapon: {@code adjStrBlow[STR]} times the class's attack
-     * multiplier, divided by the weapon's weight. A heavy weapon in a weak arm lands on a low rung,
-     * and the class's minimum weight is a floor on the divisor — a weapon lighter than that is
-     * treated as if it weighed that much, which both stops the division by zero for a weightless
-     * weapon and stops a class with a high minimum profiting endlessly from daggers. Dexterity gives
-     * the second subscript; both saturate at 11.
+     * <p>The sixteen-bit remainder that lets regeneration of less than a whole hit point accumulate;
+     * cleared whenever the current total is forced down to a new maximum.
      *
-     * <p>The table holds energy per blow, so the count is 10000 divided by it, capped at the class's
-     * maximum attacks. Extra blows from equipment are added <em>after</em> that cap, so a modifier
-     * can carry a character past the class ceiling where strength and dexterity alone cannot.
+     * <p>Function setChpFrac commented in full on 260901.
      *
-     * <p>The floor at the end is one blow, or two under the percentage-damage birth option, where
-     * blows are worth proportionally less.
-     *
-     * <p>Function calcBlows commented in full on 260820.
-     *
-     * @param item       the weapon, or {@code null} for unarmed — which weighs nothing and so gets
-     *                   the class minimum as its divisor
-     * @param state      the state whose strength and dexterity indices to read
-     * @param extraBlows extra blows gathered from equipment, shape and statuses
-     * @return blows per turn, multiplied by 100
+     * @param chpFrac the new fractional hit points, scaled by 2^16
      */
-    private int calcBlows(ItemObject item, PlayerState state, int extraBlows) {
-        int weight = (item == null) ? 0 : item.weightOne();
-        int minWeight = playerClass.getMinWeight();
-
-        // Enforce a 1/10 pound minimum weight
-        int divisor = Math.max(weight, minWeight);
-
-        // Get the strength v weight
-        int strIndex = StatTables.adjStrBlow[state.getStatInd(Stats.STAT_STR)]
-                * playerClass.getAttMultiply() / divisor;
-
-        // Maximal value
-        if (strIndex > 11) strIndex = 11;
-
-        // Dexterity
-        int dexIndex = Math.min(StatTables.adjDexBlow[state.getStatInd(Stats.STAT_DEX)], 11);
-
-        // Energy per blow
-        int blowEnergy = StatTables.blowsTable[strIndex][dexIndex];
-
-        int blows = Math.min((10000 / blowEnergy), (100 * playerClass.getMaxAttacks()));
-
-        return Math.max(blows + (100 * extraBlows),
-                getPlayerOptions().has(PlayerOptionEnum.OP_birth_percent_damage) ? 200 : 100);
+    public void setChpFrac(int chpFrac) {
+        this.chpFrac = chpFrac;
     }
 
     /**
-     * Adds the player's current shape's contribution to the state — the port of C's
-     * {@code calc_shapechange} ({@code player-calcs.c:1798-1853}).
+     * Installs the player's fully calculated state - the port of writing C's {@code p->state}.
      *
-     * <p>A shape contributes on the same terms as a piece of equipment: combat bonuses, skills,
-     * object and player flags, stats, the seven other modifiers, and resistances. It is applied
-     * after the equipment walk and before vulnerabilities are settled, so a shape's resistance is
-     * weighed against the gear's on equal footing and its vulnerability is remembered for later
-     * alongside everything else's.
+     * <p>C recalculates in place, into the live {@code p->state}; the port calculates into a copy and
+     * swaps it in here at the end of {@code PlayerCalcs.updateBonuses}, because the comparisons that
+     * decide what to redraw need the old state to still be readable while the new one is being
+     * built. So the value handed in is taken by identity and becomes the state from that moment,
+     * with no copy made.
      *
-     * <p>Two departures from C, both forced by the port's shapes:
+     * <p>Function setState commented in full on 260901.
      *
-     * <ul>
-     *   <li><b>A null shape returns the totals untouched.</b> C cannot reach this state — a player
-     *       always has a shape, "normal", assigned at birth and restored on changing back
-     *       ({@code player-birth.c:456}, {@code player-util.c:1050}) — but the port allows the field
-     *       to be absent, and an absent shape must contribute nothing rather than throw.</li>
-     *   <li><b>The extra blows and shots travel by value.</b> C passes four pointers and adds into
-     *       the caller's storage; see {@link Extras}.</li>
-     * </ul>
-     *
-     * <p>Function calcShapechange commented in full on 260820.
-     *
-     * @param state           the state being filled, mutated in place
-     * @param vulnerabilities the running set of elements something has made the player vulnerable
-     *                        to, added to if the shape carries a vulnerability
-     * @param shape           the player's current shape, or {@code null} if none is set
-     * @param incoming        the blow, shot, might and move totals gathered so far
-     * @return the same four totals with the shape's contribution added
+     * @param state the newly calculated state, kept by reference
      */
-    private Extras calcShapechange(PlayerState state,
-                                   Map<ElementEnum, Boolean> vulnerabilities,
-                                   PlayerShape shape,
-                                   Extras incoming) {
-        // If shape == null, not shape changed
-        if (shape == null) return incoming;
-
-        // Combat stats
-        state.toAcAdd(shape.getToAc());
-        state.toHitAdd(shape.getToHit());
-        state.toDamAdd(shape.getToDam());
-
-        // Skills
-        for (PlayerSkill skill : PlayerSkill.values()) {
-            if (skill == PlayerSkill.SKILL_NONE || skill == PlayerSkill.SKILL_MAX) continue;
-            state.skillAdd(skill, shape.getSkills().getOrDefault(skill, 0));
-        }
-
-        // Object flags
-        state.unionObjectFlags(shape.getFlags());
-
-        // Player flags
-        state.unionPlayerFlags(shape.getPflags());
-
-        // Stats
-        for (Stats stat : Stats.values()) {
-            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
-            state.statAdd(stat, shape.getModifier(stat));
-        }
-
-        // Other modifiers
-        state.skillAdd(PlayerSkill.SKILL_STEALTH, shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_STEALTH, 0));
-        state.skillAdd(PlayerSkill.SKILL_SEARCH, shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_SEARCH, 0) * 5);
-        state.infraAdd(shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_INFRA, 0));
-        state.skillAdd(PlayerSkill.SKILL_DIGGING,
-                shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_TUNNEL, 0) * 20);
-        state.setSpeed(state.getSpeed() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_SPEED, 0));
-        state.setDamRed(state.getDamRed() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_DAM_RED, 0));
-
-        int extraBlows = incoming.blows() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0);
-        int extraShots = incoming.shots() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0);
-        int extraMight = incoming.might() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_MIGHT, 0);
-        int extraMoves = incoming.moves() + shape.getObjectValueModifiers().getOrDefault(ObjectModifier.OM_MOVES, 0);
-
-        // Resists and vulnerabilities
-        for (ElementEnum element : ElementEnum.values()) {
-            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
-            ElementInfo elInfo = shape.getElementValueModifiers().getOrDefault(element, null);
-            if (elInfo != null && elInfo.getResLevel() == -1) {
-                vulnerabilities.put(element, true);
-            } else if (elInfo != null && elInfo.getResLevel() > state.getResLevel(element)) {
-                state.setResLevel(element, elInfo.getResLevel());
-            }
-        }
-
-        return new Extras(extraBlows, extraShots, extraMight, extraMoves);
-    }
-
-    /**
-     * Works out the radius of light the player sheds — the port of C's {@code calc_light}
-     * ({@code player-calcs.c:1598-1646}).
-     *
-     * <p>Sums rather than picks: every worn item's contribution is added, so a lantern and a glowing
-     * ring both count. An item's contribution is its innate radius from {@code OF_LIGHT_2} or
-     * {@code OF_LIGHT_3} plus its light modifier, with two adjustments. A player with
-     * {@code PF_UNLIGHT} loses a point from any positive light modifier, which lets them carry
-     * lightly-glowing gear without spoiling the dark they depend on. And a fuelled light source that
-     * has burnt out contributes nothing at all — its whole contribution is zeroed, not just its
-     * innate part.
-     *
-     * <p>In the town by day the answer is simply zero and the method returns early, but not before
-     * checking whether that differs from the player's current light and asking for a redraw if so —
-     * which is why the early return is inside the {@code update} branch rather than around it.
-     *
-     * <p>Function calcLight commented in full on 260820.
-     *
-     * @param state  the state to write the light radius to
-     * @param update {@code true} if this is a real recalculation, which may ask the display to
-     *               refresh
-     */
-    public void calcLight(PlayerState state, boolean update) {
-        state.setCurLight(0);
-
-        // Is it day in the town
-        if (depth == 0 && GameWorld.isDaytime() && update) {
-            if (this.state != null && this.state.getCurLight() != state.getCurLight()) {
-                getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
-                getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
-            }
-            return;
-        }
-
-        // Get brightest of wielded objects
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject item = slot.getItem();
-            if (item == null) continue;
-            int amount = 0;
-
-            // does item have light radius?
-            if (item.hasFlag(ObjectFlag.OF_LIGHT_2)) {
-                amount = 2;
-            } else if (item.hasFlag(ObjectFlag.OF_LIGHT_3)) {
-                amount = 3;
-            }
-            amount += item.getModifierValue(ObjectModifier.OM_LIGHT);
-
-            // Adjustment to allow UNLIGHT players to use +1 LIGHT gear
-            if (item.getModifierValue(ObjectModifier.OM_LIGHT) > 0 && state.hasPFlag(PlayerFlag.PF_UNLIGHT)) {
-                amount--;
-            }
-
-            if (item.gettValue() != null && item.gettValue().isLight()
-                    && !item.hasFlag(ObjectFlag.OF_NO_FUEL)
-                    && item.getTimeout() == 0) {
-                // Items without fuel yield no light
-                amount = 0;
-            }
-
-            state.setCurLight(state.getCurLight() + amount);
-        }
-    }
-
-    /**
-     * Scales a skill by a fraction of itself — the port of C's {@code adjust_skill_scale}
-     * ({@code player-calcs.c:1781-1792}), the way every temporary skill penalty and bonus in
-     * {@code calcBonuses} is applied.
-     *
-     * <p>Proportional rather than flat: blessing improves device skill by a twentieth of what it
-     * already is, so it is worth more to a character who is already good. The adjustment is computed
-     * from the magnitude of the value, so a negative skill is scaled by the same amount a positive
-     * one would be rather than moving the other way, and {@code minValue} sets a floor on that
-     * magnitude so a skill of zero can still be adjusted.
-     *
-     * <p><b>A negative numerator is not simply the positive case with the sign flipped.</b> The
-     * subtraction rounds <em>up</em> — the {@code + denominator - 1} — so that the result matches
-     * what {@code value * (denominator + numerator) / denominator} would give for a positive value.
-     * Truncating instead would make a penalty slightly gentler than the equivalent multiplication,
-     * and the two idioms are used interchangeably in the original.
-     *
-     * <p>Function adjustSkillScale commented in full on 260820.
-     *
-     * @param value       the skill value to adjust
-     * @param numerator   the fraction's numerator; negative for a penalty
-     * @param denominator the fraction's denominator
-     * @param minValue    a floor on the magnitude the fraction is taken of, so that a small or zero
-     *                    skill still moves
-     * @return the adjusted skill value
-     */
-    public int adjustSkillScale(int value, int numerator, int denominator, int minValue) {
-        if (numerator >= 0) {
-            int add = Math.max(minValue, Math.abs(value)) * numerator / denominator;
-            return value + add;
-        }
-        int sub = ((Math.max(minValue, Math.abs(value)) * -numerator) + denominator - 1) / denominator;
-        return value - sub;
-    }
-
-    /**
-     * Recalculates the character's maximum hit points and clamps the current total to it — the port
-     * of C's {@code calc_hitpoints} ({@code player-calcs.c:1562-1588}).
-     *
-     * <p>Two numbers make the maximum. {@code playerHP[level - 1]} is the running total of the hit
-     * dice rolled at each level, fixed at birth and never re-rolled, and {@code adjConMhp} adds a
-     * bonus for constitution expressed in hundredths of a hit point per level — so the table's 250
-     * at 18/40 is two and a half hit points for every level the character has. The bonus is negative
-     * for poor constitution, and the division truncates toward zero in both languages, so a penalty
-     * is rounded the same way a bonus is rather than one point harsher.
-     *
-     * <p>C declares {@code bonus} as {@code long}; an {@code int} carries it here because the widest
-     * product the table can reach is 1250 × 50, nowhere near overflow.
-     *
-     * <p><b>Everything is guarded on the maximum having actually changed.</b> Most calls do not move
-     * it, and the body must not run for those: it would clamp and repaint on every recalculation.
-     * Inside the guard the clamp is {@code >=}, not {@code >}, so a character already sitting exactly
-     * on the new maximum has {@link #chpFrac} cleared as well. That matters because the fraction is
-     * sub-hitpoint regeneration credit — leaving a stale one behind hands out a free hit point at
-     * the next tick.
-     *
-     * <p>{@link PlayerRedraw#PR_HP} is raised rather than the display being touched, in keeping with
-     * the rest of the calculation: this runs in the game half and the UI repaints when it is told.
-     *
-     * <p>The constitution read is {@code state}'s <em>derived</em> stat index, so this must run after
-     * {@code calcBonuses} has filled it. C guarantees that by ordering the flags in
-     * {@code update_stuff}, where {@code PU_BONUS} is handled before {@code PU_HP}
-     * ({@code player-calcs.c:2575-2588}).
-     *
-     * <p>Function calcHitpoints commented in full on 260820.
-     */
-    public void calcHitpoints() {
-        // 1/100th hitpoint bonus per level
-        int bonus = StatTables.adjConMhp[state.getStatInd(Stats.STAT_CON)];
-
-        // Calculate max hp
-        int mhp = playerHP[level - 1] + (bonus * level / 100);
-
-        // Always have 1 hp per level
-        if (mhp < level + 1) mhp = level + 1;
-
-        // New maximum hitpoints
-        if (this.maxHP != mhp) {
-            // save the new limit
-            this.maxHP = mhp;
-
-            // enforce new limit
-            if (this.currentHP >= mhp) {
-                this.currentHP = mhp;
-                this.chpFrac = 0;
-            }
-
-            // Prepare to display the hitpoints
-            getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_HP);
-        }
-    }
-
-    /**
-     * Recalculates the character's whole derived state and then reports what moved — the port of
-     * C's {@code update_bonuses} ({@code player-calcs.c:2336-2456}), and the only caller of
-     * {@link #calcBonuses}.
-     *
-     * <p>The method is in two halves. The first derives a fresh state from scratch; the second sets
-     * it beside the old one, raises an update or redraw flag for each difference that something
-     * downstream cares about, and finally installs the new state over the old. Nothing here draws
-     * anything or recalculates hit points itself — it only records that those things are now due,
-     * and {@code updateStuff} runs them in its own order afterwards. C guarantees that ordering by
-     * handling {@code PU_BONUS} before {@code PU_HP}, {@code PU_MANA} and {@code PU_SPELLS}
-     * ({@code player-calcs.c:2570-2600}), so a flag raised here is always serviced after this
-     * returns and never during.
-     *
-     * <p><b>The two {@code copy} calls are the load-bearing line of the method.</b> C opens with
-     * {@code struct player_state state = p->state;} — a by-value copy of the entire struct, taken
-     * before anything is recalculated, so that {@code p->state} still holds the old values while
-     * the local holds the new. A Java assignment would bind a second name to the same object
-     * instead: {@code calcBonuses} would write straight through into the field, every comparison
-     * below would compare an object with itself, and the whole second half would silently do
-     * nothing. {@link PlayerState#copy()} exists for this one call site.
-     *
-     * <p>The null guard has no counterpart in C, where {@code p->state} is an inline struct member
-     * and so exists, zeroed, from the moment the player does. The port's fields start as
-     * {@code null}, and this is the first thing to want them, so it is the natural place to give
-     * them a zeroed state. That makes the first call after birth report every stat as changed, which
-     * is correct rather than merely harmless: C's zeroed struct behaves identically, and the flags
-     * it raises are exactly the ones a newly created character needs serviced.
-     *
-     * <p><b>Two of the comparisons read a different pair of states from the rest, and both are
-     * deliberate.</b> Armour compares the new known state against the old <em>known</em> state,
-     * because the armour class on the display is what the character believes it to be, not what it
-     * truly is. The light radius compares the two <em>plain</em> states, because how far the
-     * character can actually see is a fact about the world and not a matter of belief. Everything
-     * else compares plain against plain.
-     *
-     * <p>The stat loop leans on {@link PlayerState#wipe()} having filled every stat map, so
-     * {@link PlayerState#getStatTop} and {@link PlayerState#getStatUse} can read straight out of the
-     * map: a missing stat would be a real defect and is better heard about loudly. Only a change in
-     * the compressed index raises anything beyond a redraw, since that index is what the
-     * {@code adj_*} tables are read with — a stat that moves without changing its rung changes no
-     * derived number, and constitution is singled out because it is the one that feeds hit points.
-     *
-     * <p>The message block is skipped in partial-update mode. C sets {@code only_partial} around the
-     * full-screen rebuild on arriving at a new level ({@code ui-display.c:2522-2557}), where the
-     * state is being recomputed wholesale rather than responding to anything the character did;
-     * announcing "you have trouble wielding such a heavy bow" there would be reporting a change that
-     * never happened.
-     *
-     * <p>Function updateBonuses commented in full on 260820.
-     */
-    public void updateBonuses() {
-        if (this.state == null) this.state = new PlayerState();
-        if (this.knownState == null) this.knownState = new PlayerState();
-
-        PlayerState state = this.state.copy();
-        PlayerState knownState = this.knownState.copy();
-
-        // calculate bonuses
-        calcBonuses(state, false, true);
-        calcBonuses(knownState, true, true);
-
-        // Notice changes
-        // Analyze stats
-        for (Stats stat : Stats.values()) {
-            // Only check non-guard stats
-            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
-
-            // Check for changes
-            if (state.getStatTop(stat) != this.getPlayerState().getStatTop(stat))
-                // Set to redraw stats
-                this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
-
-            // Check for changes
-            if (state.getStatUse(stat) != this.getPlayerState().getStatUse(stat))
-                // Set to redraw stats
-                this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
-
-            // Check for changes
-            if (state.getStatInd(stat) != this.getPlayerState().getStatInd(stat)) {
-                // change in Con can affect Hitpoints
-                if (stat == Stats.STAT_CON)
-                    this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_HP);
-
-                // Change in stats may affect mana and spells
-                this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MANA);
-                this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_SPELLS);
-            }
-        }
-
-        // Telepathy change
-        if (state.hasOFlag(ObjectFlag.OF_TELEPATHY) != this.getPlayerState().hasOFlag(ObjectFlag.OF_TELEPATHY))
-            // Update monster visibility
-            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
-
-        // See invis change
-        if (state.hasOFlag(ObjectFlag.OF_SEE_INVIS) != this.getPlayerState().hasOFlag(ObjectFlag.OF_SEE_INVIS))
-            // Update monster visibility
-            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
-
-        // Redraw speed if required
-        if (state.getSpeed() != this.getPlayerState().getSpeed())
-            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_SPEED);
-
-        // Redraw armour if required
-        if (knownState.getBaseAc() != this.knownState.getBaseAc()
-                || knownState.getToAc() != this.knownState.getToAc())
-            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_ARMOR);
-
-        // Notice changes in the 'light radius'
-        if (state.getCurLight() != this.getPlayerState().getCurLight()) {
-            // Update visuals
-            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_UPDATE_VIEW);
-            this.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_MONSTERS);
-        }
-
-        // Notice changes to the weight limit
-        if (this.getPlayerState().weightLimit() != state.weightLimit())
-            this.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_INVEN);
-
-        // Partial modes
-        if (!this.getPlayerUpkeep().isOnlyPartial()) {
-            // Has Heavy Bow changed
-            if (state.isHeavyShoot() != this.getPlayerState().isHeavyShoot()) {
-                if (state.isHeavyShoot())
-                    Message.message("You have trouble wielding such a heavy bow.");
-                else if (this.getPlayerBody().equippedItemBySlotName("shooting") != null)
-                    Message.message("You have no trouble wielding your bow.");
-                else
-                    Message.message("You feel relieved to put down your heavy bow.");
-            }
-
-            // Has heavy weapon changed
-            if (state.isHeavyWield() != this.getPlayerState().isHeavyWield()) {
-                if (state.isHeavyWield())
-                    Message.message("You have trouble wielding such a heavy weapon.");
-                else if (this.getPlayerBody().equippedItemBySlotName("weapon") != null)
-                    Message.message("You have no trouble wielding your weapon.");
-                else
-                    Message.message("You feel relieved to put down your heavy weapon.");
-            }
-
-            // Has illegal weapon changed
-            if (state.isBlessWield() != this.getPlayerState().isBlessWield()) {
-                if (state.isBlessWield())
-                    Message.message("You feel attuned to your weapon.");
-                else if (this.getPlayerBody().equippedItemBySlotName("weapon") != null)
-                    Message.message("You feel less attuned to your weapon.");
-            }
-
-            // Has armour state changed
-            if (state.isCumberArmour() != this.getPlayerState().isCumberArmour()) {
-                if (state.isCumberArmour())
-                    Message.message("The weight of your armor reduces your maximum SP.");
-                else
-                    Message.message("Your maximum SP is no longer reduced by armor weight.");
-            }
-        }
-
+    public void setState(PlayerState state) {
         this.state = state;
+    }
+
+    /**
+     * The state as the player is entitled to see it - the port of C's {@code p->known_state}.
+     *
+     * <p>Calculated by the same pass as {@link #getPlayerState}, but with the unknown runes of the
+     * carried gear left out, so it is what the character sheet may print rather than what the game
+     * actually resolves attacks with. Null until the first bonus calculation, which is what creates
+     * both.
+     *
+     * <p>Function getKnownState commented in full on 260901.
+     *
+     * @return the known state, or {@code null} before the first bonus calculation
+     */
+    public PlayerState getKnownState() {
+        return knownState;
+    }
+
+    /**
+     * Installs the player's known state - the port of writing C's {@code p->known_state}.
+     *
+     * <p>Taken by identity and swapped in alongside {@link #setState}, for the same reason: the
+     * armour-class comparison that decides whether to redraw reads the outgoing known state, so the
+     * incoming one cannot be written until that has been asked.
+     *
+     * <p>Function setKnownState commented in full on 260901.
+     *
+     * @param knownState the newly calculated known state, kept by reference
+     */
+    public void setKnownState(PlayerState knownState) {
         this.knownState = knownState;
-    }
-
-    /**
-     * Rebuilds the pack and quiver views over the gear - the port of C's {@code calc_inventory}
-     * ({@code player-calcs.c:1023}).
-     *
-     * <p>The gear is the one true list of what the player carries; {@code upkeep.inventory} and
-     * {@code upkeep.quiver} are only views onto it, arrays that give the display and the commands
-     * something to index. Nothing edits those views in place - every change to the gear raises
-     * {@code PU_INVEN} and they are thrown away and rebuilt here.
-     *
-     * <p>The work is a single pass over the gear per destination slot, and the {@code assigned}
-     * list is what keeps the passes from claiming the same object twice. It is seeded from
-     * {@link PlayerBody#itemIsEquipped}, so equipped items start out already spoken for and are
-     * never offered to either view; the remaining entries are filled false out to {@code numMax},
-     * which is C's {@code n_max}, the largest gear list that can exist - a pack that may be
-     * overfull by one, plus a full quiver, plus every body slot.
-     *
-     * <p>The quiver is filled in two stages, because an inscription outranks the ordering. First
-     * every object carrying an {@code @vN} inscription is offered its named slot, taken from
-     * {@link #preferredQuiverSlot}, and gets it if it is empty. Then the slots still empty are
-     * filled in index order, each taking the earliest remaining ammunition by
-     * {@link ItemObject#earlierObject}. The pack is filled the same way afterwards from whatever is
-     * left, and its loop deliberately runs to {@code pack_size} inclusive: that extra slot is where
-     * an overfull pack shows, and is why {@code upkeep.inventory} is one longer than the pack size.
-     *
-     * <p>A stack too large for one quiver slot is split, with the remainder appended to the gear by
-     * {@link #gearInsertEnd} to be picked up by the pack pass. Thrown weapons count
-     * {@code thrown_quiver_mult} against the slot, so their limit is reached sooner than
-     * ammunition's. Splitting is refused once {@code numStackSplit} would pass
-     * {@code numPackRemaining}, the free pack slots measured before any of this ran: overfilling
-     * the pack by one slot is tolerated, by more is not, and the object simply stays unassigned
-     * rather than forcing the pack past that. {@link #invenCanStackPartial} declines to make
-     * quiver-bound partial stacks for the same reason - a stack combined there would only be split
-     * again here.
-     *
-     * <p>C's asserts on those invariants are thrown as {@link RuntimeException}s: an oversized gear
-     * list, a split that would not shrink the stack, and a split attempted with no room for it.
-     * They are all "cannot happen" guards on the caller's arithmetic, not conditions to recover
-     * from.
-     *
-     * <p>Both views are compared against the copies taken before the rebuild, and a message is
-     * given if anything moved. The pack comparison is skipped unless the count is unchanged, since
-     * a pack that gained or lost an object has re-arranged itself for a reason the player can
-     * already see, and an object that moved out to the equipment does not count as a re-arrangement
-     * either. Neither message is given before the dungeon exists, which is character creation
-     * stocking the pack.
-     *
-     * <p>Function calcInventory stubbed on 260822, coded on 260826, commented in full on 260827.
-     */
-    public void calcInventory() {
-        int oldInventoryCount = getPlayerUpkeep().getInventoryCount();
-        int numStackSplit = 0;
-        int numPackRemaining = GameConstants.getCarryCapPackSize() - packSlotsUsed();
-        int numMax = 1 + GameConstants.getCarryCapPackSize() + GameConstants.getCarryCapQuiverSize() + body.getCount();
-        ItemObject[] oldQuiver = new ItemObject[GameConstants.getCarryCapQuiverSize()];
-        ItemObject[] oldPack = new ItemObject[GameConstants.getCarryCapPackSize()];
-        List<Boolean> assigned = new ArrayList<>();
-
-        // Start with the equipped items - this step is vital
-        int count = 0;
-        for (ItemObject current : getGear()) {
-            count++;
-            if (count > numMax) {
-                String message = "Number of equipped items greater than total number of items allowed.";
-                logger.error(message);
-                throw new RuntimeException(message);
-            }
-            assigned.add(this.body.itemIsEquipped(current));
-        }
-        // Now the rest of the gear slots
-        for (int index = count; index < numMax; index++) {
-            assigned.add(false);
-        }
-
-        // Preparation for filling of the quiver
-        getPlayerUpkeep().setQuiverCount(0);
-
-        // Save the state of the quiver and clear it down
-        int index = 0;
-        for (ItemObject quiverItem : getPlayerUpkeep().getQuiver()) {
-            oldQuiver[index] = quiverItem;
-            getPlayerUpkeep().getQuiver()[index] = null;
-            index++;
-        }
-
-        // Fill the quiver - allocate inscribed items first
-        for (index = 0; index < getGear().size(); index++) {
-            ItemObject quiverCurrent = getGear().get(index);
-            if (assigned.get(index)) continue; // skip already assigned (equipped) items
-
-            int preferredSlot = preferredQuiverSlot(quiverCurrent);
-            if (preferredSlot >= 0 && preferredSlot < GameConstants.getCarryCapQuiverSize()
-                    && getPlayerUpkeep().getQuiver()[preferredSlot] == null) {
-                // Split the stack if required - don't allow splitting if it
-                // will result in overfilling the pack by more than one
-                // slot.
-                int mult = quiverCurrent.gettValue().isAmmo() ? 1 : GameConstants.getCarryCapThrownQuiverMult();
-                ItemObject toQuiver;
-
-                if (quiverCurrent.getNumber() * mult <= GameConstants.getCarryCapQuiverSlotSize()) {
-                    toQuiver = quiverCurrent;
-                } else {
-                    int numSplit = GameConstants.getCarryCapQuiverSlotSize() / mult;
-
-                    if (numSplit >= quiverCurrent.getNumber()) {
-                        String message = "Number of slots in the quiver required for the number of items in the stack " +
-                                "is too many.";
-                        logger.error(message);
-                        throw new RuntimeException(message);
-                    }
-                    if (numSplit > 0 && numStackSplit <= numPackRemaining) {
-                        // Split off the portion that goes into the pack.
-                        toQuiver = quiverCurrent;
-                        gearInsertEnd(quiverCurrent.objectSplit(quiverCurrent.getNumber() - numSplit));
-                        numStackSplit++;
-                    } else {
-                        toQuiver = null;
-                    }
-                }
-
-                if (toQuiver != null) {
-                    getPlayerUpkeep().getQuiver()[preferredSlot] = toQuiver;
-                    getPlayerUpkeep().setQuiverCount(getPlayerUpkeep().getQuiverCount() + toQuiver.getNumber() * mult);
-
-                    // Mark that item done
-                    assigned.set(index, true);
-                }
-            }
-        }
-
-        // Now the rest of the slots in order
-        for (int quiverIndex = 0; quiverIndex < GameConstants.getCarryCapQuiverSize(); quiverIndex++) {
-            ItemObject first = null;
-            int firstIndex = -1;
-
-            // skip over full slots
-            if (getPlayerUpkeep().getQuiver()[quiverIndex] != null) continue;
-
-            // Find the quiver object that should go there.
-            // At this point we are at the first empty quiver slot
-            int gearIndex = -1;
-            ItemObject current;
-
-            while (true) {
-                gearIndex++;
-                if (gearIndex >= getGear().size()) break;
-
-                current = getGear().get(gearIndex);
-
-                // Only try to assign if not already assigned, ammo and, if necessary to split
-                // have room for the split stacks.
-                if (!assigned.get(gearIndex) && current.gettValue().isAmmo()
-                        && (current.getNumber() <= GameConstants.getCarryCapQuiverSlotSize()
-                        || (GameConstants.getCarryCapQuiverSlotSize() > 0
-                        && numStackSplit <= numPackRemaining))) {
-                    // Get the first in order
-                    if (ItemObject.earlierObject(first, current, false)) {
-                        first = current;
-                        firstIndex = gearIndex;
-                    }
-                }
-            }
-
-            // Stop looking if there is nothing left in the gear
-            if (first == null) break;
-
-            // Put the item in the slot, splitting if needed
-            if (first.getNumber() > GameConstants.getCarryCapQuiverSlotSize()) {
-                if (GameConstants.getCarryCapQuiverSlotSize() <= 0 || numStackSplit > numPackRemaining) {
-                    String message = "Invalid numStackSplit: " + numStackSplit
-                            + " & numPackRemaining: " + numPackRemaining + " values.";
-                    logger.error(message);
-                    throw new RuntimeException(message);
-                }
-                gearInsertEnd(first.objectSplit(first.getNumber() - GameConstants.getCarryCapQuiverSlotSize()));
-            }
-            getPlayerUpkeep().getQuiver()[quiverIndex] = first;
-            getPlayerUpkeep().setQuiverCount(getPlayerUpkeep().getQuiverCount() + first.getNumber());
-
-            // Mark that item as assigned
-            assigned.set(firstIndex, true);
-        }
-
-        // Note reordering
-        if (GameWorld.hasCharacterDungeon()) {
-            for (int quiverIndex = 0; quiverIndex < playerUpkeep.getQuiver().length; quiverIndex++) {
-                ItemObject oldQuiverItem = oldQuiver[quiverIndex];
-                ItemObject newQuiverItem = playerUpkeep.getQuiver()[quiverIndex];
-                if (oldQuiverItem != null && oldQuiverItem != newQuiverItem) {
-                    Message.message("You re-arrange your quiver.");
-                    break;
-                }
-            }
-        }
-
-        // (Shallow?) copy the current pack
-        ItemObject[] inventory = getPlayerUpkeep().getInventory();
-        System.arraycopy(inventory, 0, oldPack, 0, GameConstants.getCarryCapPackSize());
-
-        // Prepare to fill the inventory
-        getPlayerUpkeep().setInventoryCount(0);
-
-        for (int equipIndex = 0; equipIndex <= GameConstants.getCarryCapPackSize(); equipIndex++) {
-            ItemObject first = null;
-            int firstIndex = -1;
-
-            // Find the object that should go there
-            for (int gearIndex = 0; gearIndex < getGear().size(); gearIndex++) { // Changes numMax to getGear().size()
-                ItemObject current = getGear().get(gearIndex);
-
-                // Consider if it if hasn't already been handled
-                if (!assigned.get(gearIndex)) {
-                    if (ItemObject.earlierObject(first, current, false)) {
-                        first = current;
-                        firstIndex = gearIndex;
-                    }
-                }
-            }
-
-            // Allocate
-            getPlayerUpkeep().getInventory()[equipIndex] = first;
-            if (first != null) {
-                getPlayerUpkeep().setInventoryCount(getPlayerUpkeep().getInventoryCount() + 1);
-                assigned.set(firstIndex, true);
-            }
-        }
-
-        // Note reordering
-        if (GameWorld.hasCharacterDungeon() && getPlayerUpkeep().getInventoryCount() == oldInventoryCount) {
-            for (int checkIndex = 0; checkIndex < oldInventoryCount; checkIndex++) {
-                if (oldPack[checkIndex] != null
-                        && oldPack[checkIndex] != getPlayerUpkeep().getInventory()[checkIndex]
-                        && !getPlayerBody().itemIsEquipped(oldPack[checkIndex])) {
-                    Message.message("You re-arrange your pack.");
-                    break;
-                }
-            }
-        }
-    }
-
-    /**
-     * Appends an object to the end of the gear, and its known half to the parallel known list - the
-     * port of C's {@code gear_insert_end} ({@code obj-gear.c}).
-     *
-     * <p>C walks its linked list to the tail and links the object on; a list append is the same
-     * thing. The two lists are kept in step by every gear operation, which is what lets the pack
-     * rebuild address an object and its knowledge by the same position.
-     *
-     * <p>Function gearInsertEnd commented in full on 260827.
-     *
-     * @param itemObject the object to append; its known half is appended too
-     */
-    private void gearInsertEnd(ItemObject itemObject) {
-        gear.add(itemObject);
-        gearKnown.add(itemObject.getKnown());
-    }
-
-    /**
-     * Recalculates which spells the player may cast and how many they may learn - the port of C's
-     * {@code calc_spells} ({@code player-calcs.c}).
-     *
-     * <p><b>Stub:</b> not yet implemented, awaiting the magic subsystem. C's version announces newly
-     * learnable spells, forgets spells the player no longer has the levels for, and raises the
-     * spell-related redraws; none of that happens yet.
-     *
-     * <p>Function calcSpells commented in full on 260827.
-     */
-    public void calcSpells() {
-        // Stub class. TODO: Implement
-    }
-
-    /**
-     * Tests whether an object may be ignored right now - the port of C's {@code ignore_item_ok}
-     * ({@code obj-ignore.c:622}).
-     *
-     * <p>Nothing is ignorable while the player is unignoring, which is the state the "show ignored
-     * items" toggle puts them in; otherwise the question is passed to {@link #isIgnored}.
-     *
-     * <p>Function ignoreItemOK coded on 260822, commented in full on 260824.
-     *
-     * @param item the object to test
-     * @return {@code true} if the object is eligible to be ignored
-     */
-    private boolean ignoreItemOK(ItemObject item) {
-        if (unignoring != 0) return false;
-
-        return isIgnored(item);
-    }
-
-    /**
-     * Tests whether an object falls under the player's ignore settings - the port of C's
-     * {@code object_is_ignored} ({@code obj-ignore.c:576}).
-     *
-     * <p>An object with no known half cannot be ignored at all: the player has nothing to judge it
-     * by. Beyond that the tests run in C's order - the per-object ignore mark, then the escapes
-     * ({@code !k} or {@code !*}, or being an artefact, which is only ever ignored by an explicit
-     * mark), then ignore-by-kind, then by ego, then by quality.
-     *
-     * <p>Every test that asks what the player knows reads {@code item.getKnown()}, the object's own
-     * knowledge, and not {@link #itemKnowledge}, which is the port of C's {@code p->obj_k} and
-     * records which runes the player has learned in general. The distinction matters most at the
-     * ego test: C gates on the <em>known</em> ego but takes the index from the real one, so an ego
-     * the player has not yet learned does not make the object ignorable.
-     *
-     * <p>Function isIgnored coded on 260822, commented in full on 260824.
-     *
-     * @param item the object to test
-     * @return {@code true} if the player's settings cover this object
-     */
-    private boolean isIgnored(ItemObject item) {
-        // Can't ignore unknown things
-        if (item.getKnown() == null) return false;
-
-        // Are individual items are marked ignore
-        if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_IGNORE)) return true;
-
-        // Only ignore artefacts marked to be ignored
-        if (item.isArtifact() || item.checkForInscription("!k") != 0
-                || item.checkForInscription("!*") != 0) return false;
-
-        // Do ignore by kind
-        if (item.flavourIsAware() ? item.getKind().isIgnoredAware()
-                : item.getKind().isIgnoredUnaware()) return true;
-
-        IgnoreType type = item.getIgnoreTypeOf();
-        if (type == IgnoreType.ITYPE_MAX) return false;
-
-        // ignore ego items if known
-        if (item.getKnown().isEgo() && item.egoIsIgnored(type)) return true;
-
-        // Ignore non-artefact objects
-        if (item.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED) && !item.isArtifact()
-                && ObjectInfo.ignoreLevel.get(type) == QualityValueEnum.IGNORE_ALL) return true;
-
-        return item.ignoreLevelOf().ordinal() <= ObjectInfo.ignoreLevel.get(type).ordinal();
-    }
-
-    /**
-     * Finds an equipment slot of a given type, preferring an empty one - the port of C's
-     * {@code slot_by_type} ({@code obj-gear.c:71}).
-     *
-     * <p>Walks the body in order and stops at the first slot of the right type that is in the state
-     * asked for: empty when {@code full} is {@code false}, occupied when it is {@code true}. Failing
-     * that it answers the first slot of the right type in the wrong state - the fallback - and
-     * failing even that, the slot count, one past the last index, which is this code's "not found".
-     *
-     * <p>Two slots of the same type is the case that makes the fallback matter: with both rings on,
-     * asking for an empty ring slot yields the first ring slot rather than nothing, so a caller
-     * wanting to swap has somewhere to put the new one.
-     *
-     * <p><b>Why the counter is shaped the way it is.</b> C's loop variable outlives its loop, so a
-     * completed pass leaves it equal to the slot count and the closing test can distinguish "ran off
-     * the end" from "stopped somewhere". Java's cannot, so {@code outValue} stands in for it: it
-     * starts at {@code -1}, is assigned at the <em>foot</em> of the body so {@code break} skips it,
-     * and is incremented after the loop. A break at index <i>k</i> therefore yields <i>k</i>, a
-     * completed pass yields the slot count, and an empty body yields the fallback - the three cases
-     * C produces.
-     *
-     * <p>Function slotByType commented in full on 260827.
-     *
-     * @param type the slot type wanted
-     * @param full {@code true} to look for an occupied slot, {@code false} for an empty one
-     * @return the index of the best matching slot, or the slot count if the body has none of that
-     * type
-     */
-    public int slotByType(EquipmentSlotsEnum type, boolean full) {
-        int fallback = body.getSlots().size();
-
-        int outValue = -1;
-
-        for (int index = 0; index < body.getSlots().size(); index++) {
-            EquipSlot slot = body.getSlots().get(index);
-            if (slot.getType() == type) {
-                if (full) {
-                    if (slot.getItem() != null) break;
-                } else {
-                    if (slot.getItem() == null) break;
-                }
-
-                if (fallback == body.getSlots().size())
-                    fallback = index;
-            }
-            outValue = index;
-        }
-        outValue++;
-
-        return (outValue != body.getCount()) ? outValue : fallback;
-    }
-
-    /**
-     * Finds the equipment slot with a given name - the port of C's {@code slot_by_name}
-     * ({@code obj-gear.c}).
-     *
-     * <p>Names come from {@code body.txt}: {@code weapon}, {@code shooting}, {@code right hand} and
-     * so on. Every caller in the power and gear code passes a literal, so a miss means a coding
-     * error rather than a runtime condition.
-     *
-     * <p><b>Diverges from C on a miss.</b> C returns {@code body.count} - one past the last slot -
-     * and leaves the caller to notice; the port logs and throws. That is deliberate: no caller here
-     * tests for the one-past value, so a wrong name would otherwise be read as a real slot number.
-     *
-     * <p>Function slotByName commented in full on 260827.
-     *
-     * @param name the slot's name as {@code body.txt} spells it
-     * @return the slot's index
-     * @throws IllegalArgumentException if no slot carries that name
-     */
-    public int slotByName(String name) {
-        for (EquipSlot slot : body.getSlots()) {
-            if (slot.getName().equals(name))
-                return numberFromSlot(slot);
-        }
-
-        String message = "Invalid slot name passed to Player.slotByName()";
-        logger.error(message);
-        throw new IllegalArgumentException(message);
-    }
-
-    /**
-     * Returns the equipment slot at a given index - the port of indexing C's
-     * {@code p->body.slots[number]}.
-     *
-     * <p>Unguarded, as C's array access is: callers pass an index that came from
-     * {@link #slotByName(String)} or {@link #slotByType(EquipmentSlotsEnum, boolean)}, and both of
-     * those can answer one past the last slot, so a caller that has not checked will get an
-     * exception here rather than a wrong slot.
-     *
-     * <p>Function slotByNumber commented in full on 260827.
-     *
-     * @param number the slot index
-     * @return the slot at that index
-     */
-    public EquipSlot slotByNumber(int number) {
-        return body.getSlots().get(number);
-    }
-
-    /**
-     * Finds the index of a given equipment slot - the reverse of
-     * {@link #slotByNumber(int)}.
-     *
-     * <p>Compares by identity rather than equality, because the slots are the player's own instances
-     * and two slots of the same type are still different slots.
-     *
-     * <p>Answers the slot count - one past the last index - for a slot this body does not hold,
-     * which is C's convention for "not found" throughout the gear code.
-     *
-     * <p>Function numberFromSlot commented in full on 260827.
-     *
-     * @param slot the slot to locate
-     * @return its index, or the slot count if this body does not hold it
-     */
-    public int numberFromSlot(EquipSlot slot) {
-        int index = -1;
-        for (EquipSlot testSlot : body.getSlots()) {
-            index++;
-            if (testSlot == slot) return index;
-        }
-
-        return body.getSlots().size();
     }
 
     /**
@@ -5747,311 +1488,54 @@ public class Player {
     public int getLevel() {
         return level;
     }
-
+    
     /**
-     * Learns the elemental resistances carried by the player's wielded items — the port of C's
-     * {@code equip_learn_element} ({@code src/obj-knowledge.c:2155}).
+     * Whether the player has temporarily switched ignoring off - the port of reading C's
+     * {@code p->unignoring}.
      *
-     * <p>Called whenever something would have shown the player how well they resist an element: a
-     * breath weapon landing, a timed resistance running out, a light or dark attack. Every equipped
-     * item is asked whether it moves the resistance level for that element. One that does announces
-     * itself as glowing and teaches the player the resistance rune; one that does not has the fact
-     * recorded on its known counterpart, so the item is remembered as having had its chance to show
-     * the property and stays silent about it thereafter. Either way the item's curses are searched
-     * too, because a curse carries element figures of its own.
+     * <p>Ignoring normally hides things: an item whose kind or quality the player has told the game
+     * to ignore is dropped out of lists and off the floor display. This flag is the override that
+     * suspends that, so everything shows again. It changes nothing about <em>what</em> is ignored -
+     * the per-kind and per-quality settings are untouched - only whether the hiding is currently
+     * being applied. C's {@code ignore_item_ok} and {@code ignore_known_item_ok} both test it before
+     * anything else and answer {@code false} while it is set; the port does the same in
+     * {@code middle.objects.ObjectIgnore.ignoreItemOK}.
      *
-     * <p>The two sentinels stand in for C's {@code element < 0 || element >= ELEM_MAX} bounds check.
-     * {@link ElementEnum} declares {@code ELEM_MAX} in the same position C does — after
-     * {@code ELEM_ARROW} — so the pair of comparisons admits exactly the elements C's pair admits,
-     * the unresistable damage types among them.
+     * <p>Held as an {@code int} because C holds a {@code uint8_t}, and read as a number rather than a
+     * boolean for the same reason: the value C writes is {@code !p->unignoring}, so it is only ever
+     * zero or one, and callers ask {@code != 0}. The {@code is} prefix promises a boolean the return
+     * type does not give; the name follows the field.
      *
-     * <p>C asserts that each equipped item has a known counterpart; the port skips an item without
-     * one instead. The assert is a debug-build check rather than a behavioural clause, and the same
-     * treatment appears elsewhere in this class.
+     * <p>Function isUnignoring commented in full on 260901.
      *
-     * <p>C reads its element figures out of a fixed {@code el_info[ELEM_MAX]} array, so an element
-     * the object's data line never mentioned still reads back as a zero resistance level and an
-     * empty flag set. The port holds only the elements an item actually names, so both reads are
-     * guarded by presence: an absent element takes the same branch C's zero takes, and the flag copy
-     * is skipped because the known counterpart's flag set is already the empty one C would have
-     * copied. The resistance level is written either way, which is the half that matters.
-     *
-     * <p>Where the element has no resistance rune, {@link Rune#runeIndex(ElementEnum)} answers
-     * {@code null} and {@link #learnRune} declines it, in place of C's {@code -1} index — the same
-     * treatment recorded at {@link #objectCursesFindElement}.
-     *
-     * <p>Function equipLearnElement commented in full on 260831.
-     *
-     * @param elem the element the player has just been given a chance to notice
+     * @return non-zero while ignored items are being shown
      */
-    public void equipLearnElement(ElementEnum elem) {
-        if (elem == ElementEnum.ELEM_NONE || elem == ElementEnum.ELEM_MAX)
-            return;
-
-        if (itemKnowledge.getElementResistInfo().get(elem))
-            return;
-
-        // All wielded items are eligible
-        for (EquipSlot slot : body.getSlots()) {
-            ItemObject item = slot.getItem();
-            if (item == null) continue;
-            if (item.getKnown() == null) continue;
-
-            // Does the object affect the player's resistance to the element?
-            if (item.getElInfo().containsKey(elem) && item.getElInfo().get(elem).getResLevel() != 0) {
-                String name = ObjectUtils.objectDesc(item,
-                        new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE), this);
-
-                // Message
-                Message.message("Your %s glows.", name);
-
-                // Learn the element properties
-                learnRune(Rune.runeIndex(elem), true);
-            } else if (!item.isFullyKnown()) {
-                // Objects not fully known yet get marked as having had a chance to display
-                // the element
-                item.getKnown().setElInfoResLevel(elem, 1);
-                ElementInfo info = item.getKnown().getElInfo().get(elem);
-                info.getFlags().copyFrom(item.getElInfo().getOrDefault(elem, new ElementInfo()).getFlags());
-            }
-            // Element may be on a curse
-            objectCursesFindElement(item, elem);
-        }
+    public int isUnignoring() {
+        return unignoring;
     }
 
     /**
-     * Learns what a curse on an item teaches about one element — the port of C's
-     * {@code object_curses_find_element} ({@code src/obj-knowledge.c:1748}).
+     * This character's quest history - the port of reading C's {@code p->quests}.
      *
-     * <p>An item's own element figures are not the only thing that can change how the player resists
-     * an element: a curse merged onto the item carries element figures of its own. This walks the
-     * item's curses and, for every one actually in force — power non-zero — asks whether it moves
-     * the resistance level for {@code elem}. If it does, the player learns the resistance rune
-     * (announced once, on first discovery, as the item glowing) and the curse's own rune, and the
-     * method reports back that the element was found on a curse.
+     * <p>Not the same list as the one in
+     * {@link uk.co.jackoftrades.middle.game.globals.registry.WorldRegistry#getQuests}. That one is
+     * the set of standard quests loaded from {@code quest.txt}, shared by the whole game and never
+     * altered; this one is a per-character copy taken from it at birth, by C's
+     * {@code player_quests_reset}, and it is the copy that records progress. Completing a quest sets
+     * that character's entry level to zero ({@code player-quest.c:233}), which is what makes
+     * {@link PlayerQuest#isQuest} a test for the quests still outstanding rather than for every
+     * quest in the game.
      *
-     * <p>C skips curse slot 0 and any curse whose definition carries no object; neither has an
-     * analogue here. The port holds an item's curses as a map of the curses it actually has, so
-     * there is no empty slot to step over, and {@link Curse} flattens C's nested
-     * {@code curse-&gt;obj} into fields of its own, so a curse cannot be missing one.
+     * <p>C holds a fixed array of {@code z_info->quest_max} entries and indexes it directly. The port
+     * holds a list and hands it back wrapped, so a caller can walk the quests but cannot add or
+     * remove one; the {@link Quest} objects inside are the live ones, not copies.
      *
-     * <p>The null check on the element entry is where the two data shapes part company. C indexes an
-     * array of length {@code ELEM_MAX}, so every element always has a {@code res_level}, defaulting
-     * to zero; {@link Curse#getElInfo()} holds only the elements that curse's data lines name, and
-     * most of the curses in {@code curse.txt} name none at all. A missing entry therefore means what
-     * C's zero means — this curse does not touch that element — and is passed over rather than
-     * treated as a fault.
+     * <p>Function getQuests commented in full on 260901.
      *
-     * <p>C's {@code if (index >= 0)} guard before learning the curse rune is absent for the reason
-     * it is absent elsewhere in this class: {@link Rune#runeIndex(Curse)} answers {@code null} where
-     * C answers {@code -1}, and {@link #learnRune} already declines a null rune. The resistance rune
-     * is learned unguarded in both, which is C's own choice rather than an omission here.
-     *
-     * <p>The description is built once, before the loop, exactly as C builds its {@code o_name}. The
-     * cost is paid whether or not anything is found, but it means the message names the item as it
-     * read on entry rather than as the first rune learned this call left it.
-     *
-     * <p>Function objectCursesFindElement commented in full on 260831.
-     *
-     * @param item the item whose curses to search
-     * @param elem the element being learned about
-     * @return whether the element appeared on any curse this item carries
+     * @return the character's quests, unmodifiable
      */
-    private boolean objectCursesFindElement(ItemObject item, ElementEnum elem) {
-        boolean newCurse = false;
-
-        Flag<ObjectDescription> flags = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE);
-        String name = item.description(flags, this);
-
-        for (Curse curse : item.getCurses().keySet()) {
-            CurseData curseData = item.getCurses().get(curse);
-
-            if (curseData.getPower() == 0)
-                continue;
-
-            // Does the object affect the player's resistance to the element?
-            if (curse.getElInfo().get(elem) != null && curse.getElInfo().get(elem).getResLevel() != 0) {
-                // Learn the element property if we don't know it already
-                if (!itemKnowledge.getElementResistInfo().get(elem)) {
-                    Message.message("Your %s glows.", name);
-
-                    learnRune(Rune.runeIndex(elem), true);
-                }
-
-                // Learn the curse
-                learnRune(Rune.runeIndex(curse), true);
-                newCurse = true;
-            }
-        }
-
-        return newCurse;
-    }
-
-    /**
-     * Adds {@code amount} to the current duration of a timed effect - the port of C's
-     * {@code player_inc_timed} ({@code player-timed.c:1053}).
-     *
-     * <p>Three gates stand between the request and the change. The first is the caller's
-     * {@code check} flag: when it is set, {@link #incCheck} is asked whether anything the player
-     * carries or is already under prevents the effect, and a veto ends the call at once. When it is
-     * clear the question is never asked, so none of the learning {@code incCheck} does on the way
-     * past happens either. The second gate is the effect's own non-stacking property: an effect
-     * marked {@code NONSTACKING} that is already running refuses a further increase outright rather
-     * than extending itself. The third is {@link #setTimed}, which does the real work and decides
-     * everything about announcement, grades and upkeep.
-     *
-     * <p>The new duration is the current value plus {@code amount}, computed here and handed to
-     * {@code setTimed} as an absolute value. Nothing clamps it at this level: a negative
-     * {@code amount} is a legitimate way to shorten an effect, and the lower and upper bounds are
-     * {@code setTimed}'s business. C computes {@code p->timed[idx] + v} in the same place and for
-     * the same reason.
-     *
-     * <p>The return value is {@code setTimed}'s, and so means what that method's means: whether the
-     * player was notified, not whether the stored duration moved. Both refusals - a failed check and
-     * a blocked non-stacking increase - answer {@code false}, which is indistinguishable from a
-     * silent change that did happen. Callers in C that care about resistance test the return anyway
-     * ({@code mon-blows.c:548}), which is C's own looseness rather than something the port tightens.
-     *
-     * <p>C asserts the index is in range, since it is about to subscript {@code timed_effects}; a
-     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
-     * analogue here. C then reads {@code timed_effects[idx].flags} directly, where the port walks
-     * the registry's list for the definition of that name. An effect the registry has no definition
-     * for leaves the local null, and the non-stacking question is simply not asked - the call falls
-     * through to {@code setTimed}, which raises {@code IllegalArgumentException} on the same missing
-     * definition. That is the same class of programming error C's assert catches, reported one call
-     * deeper.
-     *
-     * <p>The {@code timed.containsKey} test costs nothing and finds nothing: the constructor seeds
-     * the map with every {@link TimedEffect} at zero, so the lookup below it is never null.
-     *
-     * <p>Function playerIncTimed coded on 260831, commented in full on 260831.
-     *
-     * @param index      the effect to lengthen; must be one the registry knows
-     * @param amount     how much to add to the current duration; may be negative
-     * @param notify     whether the caller wants an ordinary change announced, passed on to
-     *                   {@link #setTimed} unaltered
-     * @param canDisturb whether a notifying change may interrupt resting or running
-     * @param check      whether the player is allowed to resist the effect, by way of
-     *                   {@link #incCheck}
-     * @return {@code true} if the player was notified, which is C's return value - not whether the
-     * effect actually grew
-     */
-    public boolean playerIncTimed(TimedEffect index, int amount, boolean notify,
-                                  boolean canDisturb, boolean check) {
-        if (!check || incCheck(index, false)) {
-            List<PlayerTimedEffect> timedEffects = PlayerRegistry.getPlayerTimedEffects();
-            PlayerTimedEffect actualEffect = null;
-
-            for (PlayerTimedEffect timedEffect : timedEffects) {
-                if (timedEffect.getName() != index) continue;
-                else {
-                    actualEffect = timedEffect;
-                    break;
-                }
-            }
-
-            if (actualEffect != null && actualEffect.isNonStacking()
-                    && timed.containsKey(index) && timed.get(index) > 0) {
-                // Block the increase if the effect is nonstacking and already active
-                return false;
-            } else {
-                return setTimed(index, timed.get(index) + amount, notify, canDisturb);
-            }
-        }
-
-        return false;
-    }
-
-    /**
-     * Subtracts {@code amount} from the current duration of a timed effect - the port of C's
-     * {@code player_dec_timed} ({@code player-timed.c:1097}).
-     *
-     * <p>Almost all of the work belongs to {@link #setTimed}: the new duration is worked out here
-     * as an absolute value and handed over, and every decision about messages, grades, transition
-     * effects and upkeep is made there. What this method contributes is one rule, and it is worth
-     * stating plainly - an effect that is finishing always announces itself. If the subtraction
-     * leaves anything behind, the caller's {@code notify} is passed on unaltered; if it leaves
-     * nothing, {@code notify} is overridden to {@code true} so the "you feel yourself again"
-     * message and the accompanying redraw cannot be suppressed. The turn-by-turn decay in
-     * {@code game-world.c:348} relies on exactly this: it decrements every running effect by one
-     * with {@code notify} false, silently, and gets told only about the tick on which an effect
-     * actually lapses.
-     *
-     * <p>Nothing is clamped at this level. A subtraction that overshoots produces a negative value
-     * and that negative value is what {@code setTimed} receives, where {@code Math.max} against the
-     * effect's lower bound turns it into the floor. Passing the result through rather than a
-     * pre-clamped zero matters because {@code setTimed} compares the incoming value against the
-     * stored one to decide whether anything changed at all. C computes {@code p->timed[idx] - v}
-     * and forwards it untouched for the same reason.
-     *
-     * <p>By symmetry with {@link #playerIncTimed} a negative {@code amount} is a legitimate way to
-     * lengthen an effect, and takes the first branch as an ordinary change.
-     *
-     * <p>The return value is {@code setTimed}'s, and so means what that method's means: whether the
-     * player was notified, not whether the stored duration moved. A decrement of an effect that was
-     * already at zero answers {@code false}, since nothing changed.
-     *
-     * <p>C asserts the index is in range, since it is about to subscript {@code p->timed}; a
-     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
-     * analogue here. The {@code getOrDefault} default costs nothing and is never used: the
-     * constructor seeds the map with every {@link TimedEffect} at zero.
-     *
-     * <p>Function playerDecTimed coded on 260831, commented in full on 260831.
-     *
-     * @param index      the effect to shorten; must be one the registry knows
-     * @param amount     how much to take off the current duration; may be negative, which lengthens
-     *                   it
-     * @param notify     whether the caller wants an ordinary change announced; ignored, and treated
-     *                   as {@code true}, when the effect finishes
-     * @param canDisturb whether a notifying change may interrupt resting or running
-     * @return {@code true} if the player was notified, which is C's return value - not whether the
-     * effect actually shrank
-     */
-    public boolean playerDecTimed(TimedEffect index, int amount, boolean notify, boolean canDisturb) {
-        int newValue = timed.getOrDefault(index, 0) - amount;
-
-        if (newValue > 0) {
-            return setTimed(index, newValue, notify, canDisturb);
-        }
-        return setTimed(index, newValue, true, canDisturb);
-    }
-
-    /**
-     * Cancels a timed effect outright, setting its duration to zero. Ports
-     * {@code player_clear_timed} ({@code player-timed.c:1127}).
-     *
-     * <p>A one-line delegation to {@link #setTimed}, which does everything: the lapse messages, the
-     * grade transitions, the recalculation and redraw flags, and the decision about whether the
-     * player is disturbed. All this method fixes is the destination, zero.
-     *
-     * <p>Note what it does <em>not</em> do. Unlike {@link #playerDecTimed}, which forces
-     * {@code notify} to {@code true} whenever a subtraction takes an effect to its end, this method
-     * passes the caller's {@code notify} through untouched. Clearing an effect silently is
-     * therefore possible and is deliberately used: {@code game-world.c:1078} clears
-     * {@code TMD_COMMAND} with {@code notify} false when a level ends, because the player is not to
-     * be told about bookkeeping. The asymmetry is real and is in the C.
-     *
-     * <p>Zero is not a special value to {@code setTimed}; it is an ordinary target that happens to
-     * be the floor for most effects. So the usual rules apply - an effect already at zero is
-     * unchanged, and the method answers {@code false}. The return value is {@code setTimed}'s and
-     * means what that method's means: whether the player was notified, not whether the duration
-     * moved.
-     *
-     * <p>C asserts the index is in range, since it is about to subscript {@code p->timed}; a
-     * {@link TimedEffect} makes an out-of-range index unrepresentable, so the assertions have no
-     * analogue here.
-     *
-     * <p>Function playerClearTimed coded on 260831, commented in full on 260831.
-     *
-     * @param index      the effect to cancel; must be one the registry knows
-     * @param notify     whether the caller wants the change announced - passed straight through,
-     *                   not forced true as it is in {@link #playerDecTimed}
-     * @param canDisturb whether a notifying change may interrupt resting or running
-     * @return {@code true} if the player was notified, which is C's return value - not whether the
-     * effect was actually running
-     */
-    public boolean playerClearTimed(TimedEffect index, boolean notify, boolean canDisturb) {
-        return setTimed(index, 0, notify, canDisturb);
+    public List<Quest> getQuests() {
+        return Collections.unmodifiableList(quests);
     }
 
     /**
@@ -6200,43 +1684,4 @@ public class Player {
         adjustLevel(true);
     }
 
-    /**
-     * The four running totals {@code calcBonuses} accumulates across the equipment walk and then
-     * hands to {@code calcShapechange} to add to — extra blows, shots, shooting might and movement
-     * actions.
-     *
-     * <p>Exists only because of a difference in how the two languages pass things. C declares four
-     * {@code int}s and passes their addresses ({@code player-calcs.c:2030-2031}), so
-     * {@code calc_shapechange} adds into the caller's own storage. The port cannot take an address,
-     * so the four travel together as a value in and a value out, and the caller assigns the result
-     * back over its locals.
-     *
-     * @param blows extra blows per turn, unscaled
-     * @param shots extra shots per turn, unscaled
-     * @param might extra shooting multiplier
-     * @param moves extra movement actions per turn
-     */
-    private record Extras(int blows, int shots, int might, int moves) {
-    }
-
-    /**
-     * The pair of counts {@link #quiverAbsorbNum} takes in and hands back - how many of an object
-     * can go to the quiver, and how many of the offered pack slots are left unspent.
-     *
-     * <p>Exists only because of a difference in how the two languages pass things. C declares two
-     * {@code int}s and passes their addresses ({@code obj-gear.c:649-650}), so
-     * {@code quiver_absorb_num} writes back into the caller's own storage. The port cannot take an
-     * address, so the two travel together as a value in and a value out. Compare {@link Extras},
-     * which solves the same problem for {@code calc_shapechange}.
-     *
-     * <p>On the way in only {@code noToPack} is read, as the maximum number of extra pack slots the
-     * quiver may claim; {@code numToQuiver} is ignored. On the way out both carry answers.
-     *
-     * <p>Record SplitBetweenPackAndQuiver coded on 260822, commented in full on 260824.
-     *
-     * @param numToQuiver the number of items that can be added to the quiver
-     * @param noToPack    the number of pack slots offered, and on return those left unspent
-     */
-    private record SplitBetweenPackAndQuiver(int numToQuiver, int noToPack) {
-    }
 }

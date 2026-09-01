@@ -93,7 +93,7 @@ public class HistoryInfo {
      *
      * <p>The flag set is stored as given rather than copied. C's {@code hist_copy} does the copying
      * inside {@code history_add_full}, and the port keeps it there, in
-     * {@code Player.historyAddFull}, so an entry arrives here already owning its flags.
+     * {@code PlayerHistory.historyAddFull}, so an entry arrives here already owning its flags.
      *
      * <p>Constructor HistoryInfo coded on 260831, commented in full on 260831.
      *

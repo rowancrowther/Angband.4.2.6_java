@@ -29,7 +29,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#adjustSkillScale(int, int, int, int)}, the port of C's
+ * Tests {@link PlayerCalcs#adjustSkillScale(int, int, int, int)}, the port of C's
  * {@code adjust_skill_scale} ({@code player-calcs.c:1781-1792}) — the way every temporary skill
  * bonus and penalty in {@code calcBonuses} is applied.
  *
@@ -86,8 +86,8 @@ class PlayerAdjustSkillScaleTest {
         @DisplayName("a fraction of the value is added")
         void addsAFraction() {
             assertAll(
-                    () -> assertEquals(105, player.adjustSkillScale(100, 1, 20, 0)),
-                    () -> assertEquals(210, player.adjustSkillScale(200, 1, 20, 0)));
+                    () -> assertEquals(105, PlayerCalcs.adjustSkillScale(100, 1, 20, 0)),
+                    () -> assertEquals(210, PlayerCalcs.adjustSkillScale(200, 1, 20, 0)));
         }
 
         /**
@@ -97,7 +97,7 @@ class PlayerAdjustSkillScaleTest {
         @Test
         @DisplayName("a bonus truncates rather than rounding up")
         void bonusTruncates() {
-            assertEquals(10, player.adjustSkillScale(10, 1, 20, 0));
+            assertEquals(10, PlayerCalcs.adjustSkillScale(10, 1, 20, 0));
         }
 
         /**
@@ -109,8 +109,8 @@ class PlayerAdjustSkillScaleTest {
         @DisplayName("the minimum lifts the base the fraction is taken of")
         void minimumLiftsTheBase() {
             assertAll(
-                    () -> assertEquals(0, player.adjustSkillScale(0, 1, 20, 0)),
-                    () -> assertEquals(5, player.adjustSkillScale(0, 1, 20, 100)));
+                    () -> assertEquals(0, PlayerCalcs.adjustSkillScale(0, 1, 20, 0)),
+                    () -> assertEquals(5, PlayerCalcs.adjustSkillScale(0, 1, 20, 100)));
         }
     }
 
@@ -129,7 +129,7 @@ class PlayerAdjustSkillScaleTest {
         @Test
         @DisplayName("a fraction of the value is subtracted")
         void subtractsAFraction() {
-            assertEquals(90, player.adjustSkillScale(100, -1, 10, 0));
+            assertEquals(90, PlayerCalcs.adjustSkillScale(100, -1, 10, 0));
         }
 
         /**
@@ -142,7 +142,7 @@ class PlayerAdjustSkillScaleTest {
         @DisplayName("a penalty rounds up, matching the equivalent multiplication")
         void penaltyRoundsUp() {
             int value = 95;
-            int viaScale = player.adjustSkillScale(value, -1, 10, 0);
+            int viaScale = PlayerCalcs.adjustSkillScale(value, -1, 10, 0);
             int viaMultiplication = value * (10 - 1) / 10;
 
             assertAll(
@@ -163,7 +163,7 @@ class PlayerAdjustSkillScaleTest {
                 for (int den : denominators) {
                     for (int value = 1; value <= 200; value++) {
                         assertEquals(value * (den - 1) / den,
-                                player.adjustSkillScale(value, -1, den, 0),
+                                PlayerCalcs.adjustSkillScale(value, -1, den, 0),
                                 "value " + value + " over " + den);
                     }
                 }
@@ -178,7 +178,7 @@ class PlayerAdjustSkillScaleTest {
         @Test
         @DisplayName("a numerator other than one obeys the same rule")
         void largerNumerator() {
-            assertEquals(70, player.adjustSkillScale(100, -3, 10, 0));
+            assertEquals(70, PlayerCalcs.adjustSkillScale(100, -3, 10, 0));
         }
     }
 
@@ -199,7 +199,7 @@ class PlayerAdjustSkillScaleTest {
         @Test
         @DisplayName("a bonus to a negative skill moves it upward")
         void bonusMovesNegativeUpward() {
-            int adjusted = player.adjustSkillScale(-100, 1, 20, 0);
+            int adjusted = PlayerCalcs.adjustSkillScale(-100, 1, 20, 0);
 
             assertAll(
                     () -> assertEquals(-95, adjusted),
@@ -214,7 +214,7 @@ class PlayerAdjustSkillScaleTest {
         @Test
         @DisplayName("a penalty to a negative skill moves it downward")
         void penaltyMovesNegativeDownward() {
-            assertEquals(-110, player.adjustSkillScale(-100, -1, 10, 0));
+            assertEquals(-110, PlayerCalcs.adjustSkillScale(-100, -1, 10, 0));
         }
     }
 }

@@ -20,6 +20,8 @@ package uk.co.jackoftrades.middle.monsters;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.monsters.enums.MonTimed;
+import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerCalcs;
 
 /**
  * Free-standing helper routines for the monster subsystem — a port landing spot for the utility
@@ -97,5 +99,41 @@ public class MonsterUtils {
      */
     public static void showMonsterMessages() {
         // STUB class: TODO: implement as part of chapter 6
+    }
+
+    /**
+     * Refreshes every living monster's view of the player - the port of C's
+     * {@code update_monsters} ({@code mon-util.c:481}).
+     *
+     * <p>C walks the current level's monster array from index 1 to
+     * {@code cave_monster_max(cave)} and calls {@code update_mon} on each entry that still has a
+     * race, a dead monster being one whose race has been cleared. All the work is in
+     * {@code update_mon} ({@code mon-util.c:291}), which touches only three things per monster: its
+     * distance from the player, whether the player can currently see it, and the
+     * {@code MFLAG_VIEW} flag that records line of sight.
+     *
+     * <p>The {@code full} flag is passed straight through: set, it also recomputes each monster's
+     * cached distance from the player, which is needed only when the player or the monster has
+     * moved. A visibility-only pass - the player going blind, gaining telepathy or see-invisible, a
+     * grid changing its lighting - leaves the distances alone and passes {@code false}. That is why
+     * {@link PlayerCalcs#updateStuff(Player)} lets {@code PU_DISTANCE} subsume {@code PU_MONSTERS}: the full pass
+     * does everything the cheap one would.
+     *
+     * <p>C notes that this runs once per monster on every player move, and is one of the main
+     * bottlenecks while running, alongside view recalculation - so the eventual implementation
+     * should stay allocation-free in the loop.
+     *
+     * <p><b>Outstanding:</b> this is a stub and does nothing. It is scheduled for chapter 6 with
+     * the rest of the monster work, and the loop is over the level's monsters rather than over anything
+     * the player owns.
+     *
+     * <p>Function updateMonsters coded before 260828, commented in full on 260828.
+     *
+     * @param full {@code true} to recompute each monster's distance from the player as well as its
+     *             visibility; {@code false} for a visibility-only pass.
+     * @see PlayerCalcs#updateStuff(Player)
+     */
+    public static void updateMonsters(boolean full) {
+        // STUB function: TODO: Implement in chapter 6
     }
 }

@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * ({@code src/player-history.h:47}) together with the memory management C keeps beside it in
  * {@code history_init} and {@code history_realloc} ({@code src/player-history.c:36}, {@code :46}).
  *
- * <p>The ledger is tested here on its own, rather than through the {@code Player.historyAdd} funnel
+ * <p>The ledger is tested here on its own, rather than through the {@code PlayerHistory.historyAdd} funnel
  * that {@link PlayerHistoryAddTest} drives. The funnel decides <em>what</em> goes into an entry;
  * this class is only concerned with <em>where</em> entries end up and in what order, which is the
  * half of {@code history_add_full} that the struct owns.
@@ -152,7 +152,7 @@ class PlayerHistoryLedgerTest {
 
         /**
          * The entry object itself is what the ledger holds. C's copying is done by the caller
-         * before it arrives — the port's {@code Player.historyAddFull} builds the entry with its
+         * before it arrives — the port's {@code PlayerHistory.historyAddFull} builds the entry with its
          * own flag set — so a ledger that copied again would be doing work C does not.
          */
         @Test

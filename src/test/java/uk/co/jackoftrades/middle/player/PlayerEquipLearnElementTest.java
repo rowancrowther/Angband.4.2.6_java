@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#equipLearnElement}, the port of C's {@code equip_learn_element}
+ * Tests {@link PlayerKnowledge#equipLearnElement}, the port of C's {@code equip_learn_element}
  * ({@code src/obj-knowledge.c:2155}).
  *
  * <p>The expected values are read off the C rather than off the port. The clauses that carry weight
@@ -359,8 +359,8 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_NONE);
-            player.equipLearnElement(ElementEnum.ELEM_MAX);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_NONE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_MAX);
 
             assertAll(
                     () -> assertEquals(List.of(), announced(), "nothing was announced"),
@@ -381,7 +381,7 @@ class PlayerEquipLearnElementTest {
             bus.messages.clear();
             clearMessageLog();
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(List.of(), announced()),
@@ -392,7 +392,7 @@ class PlayerEquipLearnElementTest {
         @Test
         @DisplayName("a body wearing nothing is walked without incident")
         void noItems() {
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(List.of(), announced()),
@@ -409,7 +409,7 @@ class PlayerEquipLearnElementTest {
             ItemObject armour = item(Map.of(ElementEnum.ELEM_FIRE, elementInfo(1)));
             equip(bare, armour);
 
-            assertDoesNotThrow(() -> player.equipLearnElement(ElementEnum.ELEM_FIRE));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE));
 
             assertAll(
                     () -> assertEquals(1, glows(), "only the item with a counterpart glowed"),
@@ -432,7 +432,7 @@ class PlayerEquipLearnElementTest {
             ItemObject armour = item(Map.of(ElementEnum.ELEM_FIRE, elementInfo(1)));
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(1, glows(), "the item glows once"),
@@ -447,7 +447,7 @@ class PlayerEquipLearnElementTest {
             ItemObject armour = item(Map.of(ElementEnum.ELEM_FIRE, elementInfo(-1)));
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(1, glows()),
@@ -460,7 +460,7 @@ class PlayerEquipLearnElementTest {
             ItemObject armour = item(Map.of(ElementEnum.ELEM_FIRE, elementInfo(3)));
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(1, glows()),
@@ -477,7 +477,7 @@ class PlayerEquipLearnElementTest {
             ItemObject second = item(Map.of(ElementEnum.ELEM_FIRE, elementInfo(1)));
             equip(first, second);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(2, glows(), "each item announces itself"),
@@ -493,7 +493,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertNull(knownResLevel(armour, ElementEnum.ELEM_FIRE),
                     "the else branch did not run for this item");
@@ -517,7 +517,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(List.of(), announced(), "nothing glows"),
@@ -536,7 +536,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            assertDoesNotThrow(() -> player.equipLearnElement(ElementEnum.ELEM_FIRE));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE));
 
             assertAll(
                     () -> assertEquals(List.of(), announced()),
@@ -550,7 +550,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            assertDoesNotThrow(() -> player.equipLearnElement(ElementEnum.ELEM_FIRE));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE));
 
             assertEquals(1, knownResLevel(armour, ElementEnum.ELEM_FIRE));
         }
@@ -567,7 +567,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertTrue(armour.getKnown().getElInfo().get(ElementEnum.ELEM_FIRE).getFlags()
                             .has(ElementInfoEnum.EL_INFO_HATES),
@@ -581,7 +581,7 @@ class PlayerEquipLearnElementTest {
             makeUnknown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertFalse(armour.getKnown().getElInfo().get(ElementEnum.ELEM_FIRE).getFlags()
                             .has(ElementInfoEnum.EL_INFO_HATES),
@@ -597,7 +597,7 @@ class PlayerEquipLearnElementTest {
             makeFullyKnown(armour);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertTrue(armour.isFullyKnown(), "the fixture is fully known"),
@@ -625,7 +625,7 @@ class PlayerEquipLearnElementTest {
             curse(armour, fireResisting, 40);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE),
@@ -644,7 +644,7 @@ class PlayerEquipLearnElementTest {
             curse(armour, fireResisting, 40);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertEquals(1, glows()),
@@ -659,7 +659,7 @@ class PlayerEquipLearnElementTest {
             curse(armour, fireResisting, 0);
             equip(armour);
 
-            player.equipLearnElement(ElementEnum.ELEM_FIRE);
+            PlayerKnowledge.equipLearnElement(player, ElementEnum.ELEM_FIRE);
 
             assertAll(
                     () -> assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE)),

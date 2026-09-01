@@ -146,12 +146,9 @@ class PlayerExpGainTest {
      * The player's history entries.
      *
      * @return the ledger
-     * @throws Exception if the field cannot be reached
      */
-    private List<HistoryInfo> history() throws Exception {
-        Field field = Player.class.getDeclaredField("playerHistory");
-        field.setAccessible(true);
-        return ((PlayerHistory) field.get(player)).entries;
+    private List<HistoryInfo> history() {
+        return player.getPlayerHistory().entries;
     }
 
     /**

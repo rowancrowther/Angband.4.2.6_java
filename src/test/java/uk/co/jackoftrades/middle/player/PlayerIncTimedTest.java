@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.playerIncTimed}, the port of C's {@code player_inc_timed}
+ * Tests {@code PlayerTimed.playerIncTimed}, the port of C's {@code player_inc_timed}
  * ({@code src/player-timed.c:1053}).
  *
  * <p>Every expectation below is read off that C. The function itself is small - three gates and a
@@ -75,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 @ExtendWith(uk.co.jackoftrades.testsupport.SeededPlayerRegistry.class)
-@DisplayName("Player.playerIncTimed")
+@DisplayName("PlayerTimed.playerIncTimed")
 class PlayerIncTimedTest {
 
     /**
@@ -219,7 +219,7 @@ class PlayerIncTimedTest {
      * @return what the method returned
      */
     private boolean inc(int amount, boolean notify, boolean canDisturb, boolean check) {
-        return player.playerIncTimed(EFFECT, amount, notify, canDisturb, check);
+        return PlayerTimed.playerIncTimed(player, EFFECT, amount, notify, canDisturb, check);
     }
 
     /**
@@ -239,7 +239,7 @@ class PlayerIncTimedTest {
         loadPlain();
 
         assertThrows(IllegalArgumentException.class,
-                () -> player.playerIncTimed(TimedEffect.TMD_AFRAID, 5, true, true, false));
+                () -> PlayerTimed.playerIncTimed(player, TimedEffect.TMD_AFRAID, 5, true, true, false));
     }
 
     /**

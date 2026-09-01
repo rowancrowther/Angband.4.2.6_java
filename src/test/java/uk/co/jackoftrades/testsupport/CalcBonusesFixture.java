@@ -33,13 +33,7 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftrades.middle.objects.enums.ObjectNotice;
 import uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
-import uk.co.jackoftrades.middle.player.EquipSlot;
-import uk.co.jackoftrades.middle.player.Player;
-import uk.co.jackoftrades.middle.player.PlayerBody;
-import uk.co.jackoftrades.middle.player.PlayerClass;
-import uk.co.jackoftrades.middle.player.PlayerRace;
-import uk.co.jackoftrades.middle.player.PlayerShape;
-import uk.co.jackoftrades.middle.player.PlayerState;
+import uk.co.jackoftrades.middle.player.*;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
@@ -103,8 +97,8 @@ public final class CalcBonusesFixture {
      *
      * @throws ReflectiveOperationException if a field cannot be reached
      */
-    private CalcBonusesFixture() throws ReflectiveOperationException {
-        player = new Player();
+    private CalcBonusesFixture(Player supplied) throws ReflectiveOperationException {
+        player = supplied;
         body = SeededPlayerRegistry.humanoidBody();
 
         set("body", body);
@@ -132,7 +126,22 @@ public final class CalcBonusesFixture {
      * @throws ReflectiveOperationException if a field cannot be reached
      */
     public static CalcBonusesFixture plainCharacter() throws ReflectiveOperationException {
-        return new CalcBonusesFixture();
+        return new CalcBonusesFixture(new Player());
+    }
+
+    /**
+     * The same plain character, built on a {@link Player} the caller supplies rather than a fresh
+     * one — the route in for a test whose player is a subclass that records or stubs something.
+     *
+     * <p>Function plainCharacter coded on 260901, commented in full on 260901.
+     *
+     * @param supplied the player to furnish; its own fields are overwritten with the plain defaults
+     * @return a character with an empty race, an empty class, no gear and no statuses
+     * @throws ReflectiveOperationException if a field cannot be reached
+     */
+    public static CalcBonusesFixture plainCharacter(Player supplied)
+            throws ReflectiveOperationException {
+        return new CalcBonusesFixture(supplied);
     }
 
     /**
@@ -371,7 +380,7 @@ public final class CalcBonusesFixture {
      * @return the filled state
      */
     public PlayerState calculate() {
-        player.calcBonuses(state, false, true);
+        PlayerCalcs.calcBonuses(player, state, false, true);
         return state;
     }
 
@@ -382,7 +391,7 @@ public final class CalcBonusesFixture {
      * @return the filled state
      */
     public PlayerState calculateKnownOnly() {
-        player.calcBonuses(state, true, true);
+        PlayerCalcs.calcBonuses(player, state, true, true);
         return state;
     }
 
@@ -394,7 +403,7 @@ public final class CalcBonusesFixture {
      * @return the filled state
      */
     public PlayerState calculateHypothetical() {
-        player.calcBonuses(state, false, false);
+        PlayerCalcs.calcBonuses(player, state, false, false);
         return state;
     }
 

@@ -47,7 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.playerDecTimed}, the port of C's {@code player_dec_timed}
+ * Tests {@code PlayerTimed.playerDecTimed}, the port of C's {@code player_dec_timed}
  * ({@code src/player-timed.c:1097}).
  *
  * <p>Every expectation below is read off that C. The function is four lines - a subtraction and a
@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 @ExtendWith(uk.co.jackoftrades.testsupport.SeededPlayerRegistry.class)
-@DisplayName("Player.playerDecTimed")
+@DisplayName("PlayerTimed.playerDecTimed")
 class PlayerDecTimedTest {
 
     /**
@@ -193,7 +193,7 @@ class PlayerDecTimedTest {
      * @return what the method returned
      */
     private boolean dec(int amount, boolean notify, boolean canDisturb) {
-        return player.playerDecTimed(EFFECT, amount, notify, canDisturb);
+        return PlayerTimed.playerDecTimed(player, EFFECT, amount, notify, canDisturb);
     }
 
     /**
@@ -213,7 +213,7 @@ class PlayerDecTimedTest {
         loadPlain();
 
         assertThrows(IllegalArgumentException.class,
-                () -> player.playerDecTimed(TimedEffect.TMD_AFRAID, 5, true, true));
+                () -> PlayerTimed.playerDecTimed(player, TimedEffect.TMD_AFRAID, 5, true, true));
     }
 
     /**

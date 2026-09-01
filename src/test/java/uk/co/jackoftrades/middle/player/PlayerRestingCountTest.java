@@ -24,14 +24,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
- * Tests {@link Player}'s resting-count accessor — the port of C's {@code player_resting_count} in
- * {@code player-util.c}.
+ * Tests {@link PlayerUtils#playerRestingCount(Player)}, the port of C's
+ * {@code player_resting_count} in {@code player-util.c}.
  *
  * <p>The C function is one line, {@code return p->upkeep->resting}, so what is worth asserting is not
  * arithmetic but that the value survives the trip unchanged. Three classes of value share the one
@@ -45,9 +44,12 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
  * {@code REST_COMPLETE} -2 and {@code REST_SOME_POINTS} -3. They are asserted as literals here
  * deliberately — the point is that the accessor is transparent to them, not that it recognises them.
  *
- * <p>The method is private, matching its single caller in {@code redrawStuff}, where C exports it for
- * the UI and command layers. It is therefore reached by reflection, as is the counter itself, which
- * {@link PlayerUpkeep} exposes only for reading.
+ * <p>The method now sits on {@link PlayerUtils} as a static taking the player, where C's
+ * {@code player-util.c} keeps it, so it is called directly. The counter itself is still reached by
+ * reflection: {@link PlayerUpkeep} exposes it for reading only.
+ *
+ * <p>Class PlayerRestingCountTest reworked on 260901 for the move of the accessor to
+ * {@link PlayerUtils}.
  *
  * @author Rowan Crowther
  */
@@ -80,15 +82,12 @@ class PlayerRestingCountTest {
     }
 
     /**
-     * Calls the private accessor under test.
+     * Calls the accessor under test.
      *
      * @return whatever the accessor returned
-     * @throws Exception if the method cannot be reached
      */
-    private int restingCount() throws Exception {
-        Method method = Player.class.getDeclaredMethod("playerRestingCount");
-        method.setAccessible(true);
-        return (int) method.invoke(player);
+    private int restingCount() {
+        return PlayerUtils.playerRestingCount(player);
     }
 
     /**
@@ -190,9 +189,6 @@ class PlayerRestingCountTest {
 
         assertEquals(25, restingCount());
         assertEquals(0, other.getPlayerUpkeep().getRestingCounter(), "the other player is unaffected");
-
-        Method method = Player.class.getDeclaredMethod("playerRestingCount");
-        method.setAccessible(true);
-        assertEquals(0, (int) method.invoke(other));
+        assertEquals(0, PlayerUtils.playerRestingCount(other), "and reads back zero of its own");
     }
 }

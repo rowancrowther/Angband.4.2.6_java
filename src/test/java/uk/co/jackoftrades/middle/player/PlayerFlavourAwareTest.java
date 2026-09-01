@@ -25,11 +25,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -42,9 +41,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
- * Tests {@link Player}'s {@code flavourAware} and {@code isCarried} — the ports of C's
+ * Tests {@link PlayerKnowledge#flavourAware} and {@link ObjectUtils#isCarried} — the ports of C's
  * {@code object_flavor_aware} ({@code obj-knowledge.c:2262}) and {@code object_is_carried}
  * ({@code obj-util.c}).
+ *
+ * <p><b>Both have left {@link Player}, and each is now called directly.</b>
+ * {@code flavourAware} has moved onto {@link PlayerKnowledge}, where it is public and static and
+ * takes the player, the level and the gear as arguments rather than reading them off {@code this};
+ * that is why the fixtures below hand over {@code player.getCave()} and {@code player.getGear()} —
+ * the same two fields the method used to read for itself. {@code isCarried} has moved the other
+ * way, onto {@link ObjectUtils} with the object subsystem it belongs to, and became public and
+ * static in the process, so the reflection this suite used to need for it has gone.
  *
  * <p><b>The subject of awareness is the kind, and that is what these tests are mostly about.</b>
  * Every assertion about the flavour side reads state off the {@link ObjectKind} rather than off the
@@ -61,7 +68,8 @@ import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
  * cave is left null — which is also a real case, since awareness can be gained before a level
  * exists.
  *
- * <p>Class PlayerFlavourAwareTest coded on 260816, commented in full on 260816.
+ * <p>Class PlayerFlavourAwareTest coded on 260816, commented in full on 260816, followed onto
+ * {@link PlayerKnowledge} and {@link ObjectUtils} on 260901.
  *
  * @author Rowan Crowther
  */
@@ -101,19 +109,12 @@ class PlayerFlavourAwareTest {
     }
 
     /**
-     * Calls a private {@link Player} method taking one {@link ItemObject}. Both methods under test
-     * are private and have no public caller that does not drag {@code knowObject} in with it, so
-     * reaching them directly is what keeps these tests about them.
+     * Makes the player aware of the given object's kind, with the level and the pack they currently
+     * hold. A one-line wrapper so the tests below read as they did before the method moved, and so
+     * that a later change to its argument list is edited in one place.
      */
-    private Object invoke(String name, ItemObject item) throws Exception {
-        Method m = Player.class.getDeclaredMethod(name, ItemObject.class);
-        m.setAccessible(true);
-        try {
-            return m.invoke(player, item);
-        } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException runtime) throw runtime;
-            throw e;
-        }
+    private void flavourAware(ItemObject item) {
+        PlayerKnowledge.flavourAware(player, player.getCave(), player.getGear(), item);
     }
 
     @BeforeEach
@@ -135,7 +136,7 @@ class PlayerFlavourAwareTest {
         void kindBecomesAware() throws Exception {
             ItemObject potion = unknownPotion();
 
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertTrue(potion.getKind().isAware());
         }
@@ -150,7 +151,7 @@ class PlayerFlavourAwareTest {
             ItemObject potion = unknownPotion();
 
             assertNull(potion.getKnown().getEffect());
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertSame(potion.getEffect(), potion.getKnown().getEffect());
         }
@@ -167,7 +168,7 @@ class PlayerFlavourAwareTest {
             ItemObject potion = unknownPotion();
             potion.getKind().setAware(true);
 
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertNull(potion.getKnown().getEffect());
             assertTrue(player.getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE));
@@ -185,8 +186,8 @@ class PlayerFlavourAwareTest {
             ItemObject noKind = new ItemObject();
             poke(ItemObject.class, noKind, "known", new ItemObject());
 
-            assertDoesNotThrow(() -> invoke("flavourAware", noCounterpart));
-            assertDoesNotThrow(() -> invoke("flavourAware", noKind));
+            assertDoesNotThrow(() -> flavourAware(noCounterpart));
+            assertDoesNotThrow(() -> flavourAware(noKind));
         }
     }
 
@@ -210,7 +211,7 @@ class PlayerFlavourAwareTest {
             ItemObject potion = unknownPotion();
             potion.getKind().setIgnoredUnaware(true);
 
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertTrue(potion.getKind().isIgnoredAware());
         }
@@ -224,7 +225,7 @@ class PlayerFlavourAwareTest {
         void unignoredKindStaysUnignored() throws Exception {
             ItemObject potion = unknownPotion();
 
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertFalse(potion.getKind().isIgnoredAware());
         }
@@ -239,15 +240,15 @@ class PlayerFlavourAwareTest {
         void ignorePassIsRequested() throws Exception {
             ItemObject potion = unknownPotion();
 
-            invoke("flavourAware", potion);
+            flavourAware(potion);
 
             assertFalse(player.getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE));
         }
     }
 
     /**
-     * {@code isCarried} — the pack, quiver and worn items are one list, so one containment test
-     * answers for all three.
+     * {@link ObjectUtils#isCarried} — the pack, quiver and worn items are one list, so one
+     * containment test answers for all three.
      *
      * @author Rowan Crowther
      */
@@ -265,7 +266,7 @@ class PlayerFlavourAwareTest {
             ItemObject sword = new ItemObject();
             carrying(sword);
 
-            assertTrue((Boolean) invoke("isCarried", sword));
+            assertTrue(ObjectUtils.isCarried(player, sword));
         }
 
         @Test
@@ -273,7 +274,7 @@ class PlayerFlavourAwareTest {
         void otherObjectIsNotCarried() throws Exception {
             carrying(new ItemObject());
 
-            assertFalse((Boolean) invoke("isCarried", new ItemObject()));
+            assertFalse(ObjectUtils.isCarried(player, new ItemObject()));
         }
 
         /**
@@ -283,7 +284,7 @@ class PlayerFlavourAwareTest {
         @Test
         @DisplayName("an empty pack carries nothing")
         void emptyGearCarriesNothing() throws Exception {
-            assertFalse((Boolean) invoke("isCarried", new ItemObject()));
+            assertFalse(ObjectUtils.isCarried(player, new ItemObject()));
         }
 
         /**
@@ -298,8 +299,8 @@ class PlayerFlavourAwareTest {
             ItemObject itsTwin = new ItemObject();
             carrying(inPack);
 
-            assertTrue((Boolean) invoke("isCarried", inPack));
-            assertFalse((Boolean) invoke("isCarried", itsTwin));
+            assertTrue(ObjectUtils.isCarried(player, inPack));
+            assertFalse(ObjectUtils.isCarried(player, itsTwin));
         }
 
         /**
@@ -313,9 +314,9 @@ class PlayerFlavourAwareTest {
             ItemObject third = new ItemObject();
             carrying(first, second, third);
 
-            assertTrue((Boolean) invoke("isCarried", first));
-            assertTrue((Boolean) invoke("isCarried", second));
-            assertTrue((Boolean) invoke("isCarried", third));
+            assertTrue(ObjectUtils.isCarried(player, first));
+            assertTrue(ObjectUtils.isCarried(player, second));
+            assertTrue(ObjectUtils.isCarried(player, third));
         }
     }
 }

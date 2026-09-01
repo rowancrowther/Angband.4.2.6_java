@@ -36,7 +36,6 @@ import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerNotice;
-import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftrades.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
@@ -51,12 +50,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#noticeStuff()} and the two actions it dispatches to — the port of C's
- * {@code notice_stuff} ({@code player-calcs.c:2536}) and the top of {@code ignore_drop} and
- * {@code calc_inventory}.
+ * Tests {@link PlayerCalcs#noticeStuff(Player)} and the inventory rebuild it ends with — the port
+ * of C's {@code notice_stuff} ({@code player-calcs.c:2536}) and the top of {@code calc_inventory}.
  *
  * <p>The dispatcher's shape is what these tests are about. Each flag is cleared <em>before</em> the
  * work it asks for runs, and that ordering is deliberate: {@code ignoreDrop} raises the combine flag
@@ -66,6 +63,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>{@code noticeStuff} also returns immediately when nothing is pending, which is the common case
  * — it runs every turn.
+ *
+ * <p>What the ignore pass itself does is no longer tested here. {@code ignoreDrop} moved to
+ * {@link uk.co.jackoftrades.middle.objects.ObjectIgnore} on 260901 and its own tests went with it,
+ * to {@code ObjectIgnoreTest}. What stays is the half that is a fact about this dispatcher: that
+ * the combine the ignore pass asks for is carried out in the same pass, which is a consequence of
+ * the block order here and of nothing in {@code ignoreDrop}.
  *
  * @author Rowan Crowther
  */
@@ -239,7 +242,7 @@ class PlayerNoticeChainTest {
         timed.put(uk.co.jackoftrades.middle.player.enums.TimedEffect.TMD_CONFUSED, 5);
         set(player, "timed", timed);
 
-        assertFalse(player.attackRandomMonster(),
+        assertFalse(PlayerUtils.attackRandomMonster(player),
                 "the confusion test is the first thing it does");
     }
 
@@ -249,7 +252,7 @@ class PlayerNoticeChainTest {
     @Test
     @DisplayName("an unconfused player finds nothing to attack yet")
     void unconfusedPlayerFindsNothing() {
-        assertFalse(player.attackRandomMonster());
+        assertFalse(PlayerUtils.attackRandomMonster(player));
     }
 
     /**
@@ -267,7 +270,7 @@ class PlayerNoticeChainTest {
         void nothingPendingDoesNothing() {
             assertFalse(player.getPlayerUpkeep().isNotice());
 
-            player.noticeStuff();
+            PlayerCalcs.noticeStuff(player);
 
             assertFalse(player.getPlayerUpkeep().isNotice());
         }
@@ -280,7 +283,7 @@ class PlayerNoticeChainTest {
         void combineIsCarriedOutAndCleared() {
             player.getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_COMBINE);
 
-            player.noticeStuff();
+            PlayerCalcs.noticeStuff(player);
 
             assertFalse(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_COMBINE));
             assertFalse(player.getPlayerUpkeep().isNotice(), "nothing is left pending");
@@ -300,7 +303,7 @@ class PlayerNoticeChainTest {
         void ignoreCombineRunsImmediately() {
             player.getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_IGNORE);
 
-            player.noticeStuff();
+            PlayerCalcs.noticeStuff(player);
 
             assertFalse(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_IGNORE),
                     "the ignore pass is done");
@@ -319,7 +322,7 @@ class PlayerNoticeChainTest {
         void monsterMessageFlagIsCleared() {
             player.getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_MON_MESSAGE);
 
-            player.noticeStuff();
+            PlayerCalcs.noticeStuff(player);
 
             assertFalse(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_MON_MESSAGE));
         }
@@ -334,48 +337,11 @@ class PlayerNoticeChainTest {
             player.getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_COMBINE);
             player.getPlayerUpkeep().setNoticeFlagOn(PlayerNotice.PN_MON_MESSAGE);
 
-            player.noticeStuff();
+            PlayerCalcs.noticeStuff(player);
 
             assertFalse(player.getPlayerUpkeep().isNotice(),
                     "every pending action was dealt with, including the combine the ignore pass "
                             + "asked for after the first one had run");
-        }
-    }
-
-    /**
-     * The ignore pass, which drops what the player has marked and asks for a rebuild.
-     */
-    @Nested
-    @DisplayName("ignoreDrop")
-    class IgnoreDrop {
-
-        /**
-         * An empty pack drops nothing, but still asks for the gear to be rebuilt and the pack
-         * recombined — the two flags at the foot are raised whatever happened above, because a chain
-         * that dropped earlier items still needs them.
-         */
-        @Test
-        @DisplayName("it always asks for a rebuild and a recombine")
-        void alwaysAsksForRebuild() {
-            player.ignoreDrop();
-
-            assertTrue(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_COMBINE));
-        }
-
-        /**
-         * Nothing is dropped when nothing is marked, so an ordinary pack survives the pass intact.
-         *
-         * @throws Exception if a fixture field cannot be reached
-         */
-        @Test
-        @DisplayName("an unmarked pack is left alone")
-        void unmarkedPackIsUntouched() throws Exception {
-            ItemObject potion = item();
-            player.getGear().add(potion);
-
-            player.ignoreDrop();
-
-            assertTrue(player.getGear().contains(potion));
         }
     }
 
@@ -392,7 +358,7 @@ class PlayerNoticeChainTest {
         @Test
         @DisplayName("an empty gear list gives an empty pack")
         void emptyGearGivesEmptyPack() {
-            player.calcInventory();
+            PlayerCalcs.calcInventory(player);
 
             assertEquals(0, player.getPlayerUpkeep().getInventoryCount());
             assertEquals(0, player.getPlayerUpkeep().getQuiverCount());
@@ -409,7 +375,7 @@ class PlayerNoticeChainTest {
             ItemObject potion = item();
             player.getGear().add(potion);
 
-            player.calcInventory();
+            PlayerCalcs.calcInventory(player);
 
             assertEquals(1, player.getPlayerUpkeep().getInventoryCount());
             assertSame(potion, player.getPlayerUpkeep().getInventory()[0]);
@@ -426,52 +392,14 @@ class PlayerNoticeChainTest {
         void packIsRebuilt() throws Exception {
             ItemObject potion = item();
             player.getGear().add(potion);
-            player.calcInventory();
+            PlayerCalcs.calcInventory(player);
 
             player.getGear().remove(potion);
-            player.calcInventory();
+            PlayerCalcs.calcInventory(player);
 
             assertEquals(0, player.getPlayerUpkeep().getInventoryCount());
             assertNotNull(player.getPlayerUpkeep().getInventory(),
                     "the array itself survives the rebuild");
-        }
-    }
-
-    /**
-     * {@code embody}, which gives the player the body their race describes.
-     */
-    @Nested
-    @DisplayName("embody")
-    class Embody {
-
-        /**
-         * With no race there is no body to take, and the call is harmless rather than an error —
-         * the character is built in stages and this one may run before the race is chosen.
-         */
-        @Test
-        @DisplayName("a player with no race is left alone")
-        void noRaceIsHarmless() {
-            player.embody();
-        }
-
-        /**
-         * With a race, the player takes a <em>copy</em> of its body rather than the race's own — so
-         * two characters of the same race do not share their equipment slots.
-         *
-         * @throws Exception if a fixture field cannot be reached
-         */
-        @Test
-        @DisplayName("the body is copied from the race, not shared with it")
-        void bodyIsCopiedFromTheRace() throws Exception {
-            PlayerRace testRace = race(new PlayerBody("Humanoid", new ArrayList<>(List.of(
-                    new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
-            set(player, "race", testRace);
-
-            player.embody();
-
-            assertEquals(1, player.getPlayerBody().getSlots().size());
-            assertFalse(player.getPlayerBody() == testRace.getBody(),
-                    "the player's body is its own");
         }
     }
 }

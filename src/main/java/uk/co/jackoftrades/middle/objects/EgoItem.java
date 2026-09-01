@@ -22,6 +22,7 @@ import uk.co.jackoftrades.middle.numerics.Random;
 import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.Activation;
 import uk.co.jackoftrades.middle.objects.enums.*;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 
 import java.util.*;
 
@@ -253,7 +254,7 @@ public class EgoItem {
      *
      * <p>Not knowledge, but a record of whether the news has been broken. Recognising a Long Sword of
      * Extra Attacks for the first time is worth a message; the tenth is not, and this flag is how
-     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} tells the two apart.
+     * {@link PlayerKnowledge#knowObject} tells the two apart.
      *
      * <p>Function isEverSeen commented in full on 260816.
      *

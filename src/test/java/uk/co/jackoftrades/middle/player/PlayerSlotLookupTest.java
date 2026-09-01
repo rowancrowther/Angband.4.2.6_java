@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
@@ -38,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * Tests {@link Player}'s equipment slot lookups — the port of C's {@code slot_by_type},
  * {@code slot_by_name} and the index helpers around them ({@code obj-gear.c:71}).
  *
- * <p>{@link Player#slotByType} is the one that earns a test of every path. C's loop variable outlives
+ * <p>{@link ObjectUtils#slotByType} is the one that earns a test of every path. C's loop variable outlives
  * its loop, so a pass that finds nothing leaves the counter one past the end and the closing ternary
  * yields the fallback; Java's cannot, and the port stands a separate counter in for it. That counter
  * has to produce three different answers — the index it stopped at, the count when it ran off the
@@ -123,8 +124,8 @@ class PlayerSlotLookupTest {
         @Test
         @DisplayName("an empty slot of the type is found at its own index")
         void emptySlotFound() {
-            assertEquals(1, player.slotByType(EquipmentSlotsEnum.EQUIP_BOW, false));
-            assertEquals(0, player.slotByType(EquipmentSlotsEnum.EQUIP_WEAPON, false));
+            assertEquals(1, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOW, false));
+            assertEquals(0, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_WEAPON, false));
         }
 
         /**
@@ -138,7 +139,7 @@ class PlayerSlotLookupTest {
         void fullSlotFound() throws Exception {
             wear(1, new ItemObject());
 
-            assertEquals(1, player.slotByType(EquipmentSlotsEnum.EQUIP_BOW, true));
+            assertEquals(1, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOW, true));
         }
 
         /**
@@ -152,8 +153,8 @@ class PlayerSlotLookupTest {
         void firstMatchingSlotWins() throws Exception {
             wear(2, new ItemObject());
 
-            assertEquals(3, player.slotByType(EquipmentSlotsEnum.EQUIP_RING, false));
-            assertEquals(2, player.slotByType(EquipmentSlotsEnum.EQUIP_RING, true));
+            assertEquals(3, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false));
+            assertEquals(2, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, true));
         }
 
         /**
@@ -169,7 +170,7 @@ class PlayerSlotLookupTest {
             wear(2, new ItemObject());
             wear(3, new ItemObject());
 
-            assertEquals(2, player.slotByType(EquipmentSlotsEnum.EQUIP_RING, false));
+            assertEquals(2, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false));
         }
 
         /**
@@ -184,7 +185,7 @@ class PlayerSlotLookupTest {
             setBody(new PlayerBody("Torso", new ArrayList<>(List.of(
                     new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
 
-            assertEquals(1, player.slotByType(EquipmentSlotsEnum.EQUIP_RING, false),
+            assertEquals(1, ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false),
                     "one past the only slot");
         }
 
@@ -215,9 +216,9 @@ class PlayerSlotLookupTest {
         @Test
         @DisplayName("a known name answers its index")
         void knownNameAnswersIndex() {
-            assertEquals(0, player.slotByName("weapon"));
-            assertEquals(1, player.slotByName("shooting"));
-            assertEquals(4, player.slotByName("neck"));
+            assertEquals(0, ObjectUtils.slotByName(player, "weapon"));
+            assertEquals(1, ObjectUtils.slotByName(player, "shooting"));
+            assertEquals(4, ObjectUtils.slotByName(player, "neck"));
         }
 
         /**
@@ -227,8 +228,8 @@ class PlayerSlotLookupTest {
         @Test
         @DisplayName("the two ring slots are distinguished by name")
         void ringSlotsAreDistinct() {
-            assertEquals(2, player.slotByName("right hand"));
-            assertEquals(3, player.slotByName("left hand"));
+            assertEquals(2, ObjectUtils.slotByName(player, "right hand"));
+            assertEquals(3, ObjectUtils.slotByName(player, "left hand"));
         }
 
         /**
@@ -239,7 +240,7 @@ class PlayerSlotLookupTest {
         @Test
         @DisplayName("an unknown name is refused rather than answered")
         void unknownNameThrows() {
-            assertThrows(IllegalArgumentException.class, () -> player.slotByName("tail"));
+            assertThrows(IllegalArgumentException.class, () -> ObjectUtils.slotByName(player, "tail"));
         }
     }
 
@@ -258,7 +259,7 @@ class PlayerSlotLookupTest {
         void numberAnswersSlot() {
             EquipSlot expected = player.getPlayerBody().getSlots().get(2);
 
-            assertSame(expected, player.slotByNumber(2));
+            assertSame(expected, ObjectUtils.slotByNumber(player, 2));
         }
 
         /**
@@ -271,8 +272,8 @@ class PlayerSlotLookupTest {
             EquipSlot rightHand = player.getPlayerBody().getSlots().get(2);
             EquipSlot leftHand = player.getPlayerBody().getSlots().get(3);
 
-            assertEquals(2, player.numberFromSlot(rightHand));
-            assertEquals(3, player.numberFromSlot(leftHand));
+            assertEquals(2, ObjectUtils.numberFromSlot(player, rightHand));
+            assertEquals(3, ObjectUtils.numberFromSlot(player, leftHand));
         }
 
         /**
@@ -284,7 +285,7 @@ class PlayerSlotLookupTest {
         void foreignSlotAnswersPastTheEnd() {
             EquipSlot foreign = new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "right hand");
 
-            assertEquals(5, player.numberFromSlot(foreign),
+            assertEquals(5, ObjectUtils.numberFromSlot(player, foreign),
                     "an equal-looking slot from elsewhere is still not this body's");
         }
 
@@ -296,7 +297,7 @@ class PlayerSlotLookupTest {
         @DisplayName("the two helpers are inverses")
         void helpersAreInverses() {
             for (int index = 0; index < player.getPlayerBody().getSlots().size(); index++) {
-                assertEquals(index, player.numberFromSlot(player.slotByNumber(index)));
+                assertEquals(index, ObjectUtils.numberFromSlot(player, ObjectUtils.slotByNumber(player, index)));
             }
         }
     }

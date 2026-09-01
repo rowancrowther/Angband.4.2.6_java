@@ -43,14 +43,13 @@ import uk.co.jackoftrades.middle.monsters.MonsterRace;
 import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftrades.middle.objects.enums.*;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 import uk.co.jackoftrades.middle.strings.MessageTag;
 import uk.co.jackoftrades.middle.utils.NumberUtils;
 
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
-import static uk.co.jackoftrades.middle.objects.enums.ObjectOriginEnum.ORIGIN_NONE;
 
 /**
  * A concrete item instance in the game — a specific sword, potion, etc. — as
@@ -703,7 +702,7 @@ public class ItemObject {
      * the property doing its job, an effect by using the item — so an item can easily be complete on
      * one count and not the other.
      *
-     * <p>Its role in {@link uk.co.jackoftrades.middle.player.Player#equipLearnFlag} is the
+     * <p>Its role in {@link PlayerKnowledge#equipLearnFlag} is the
      * interesting one, and it is a negative: an item that is <em>not</em> yet fully known gets a
      * flag switched on in its known set to record that the flag was ruled out. Once the item is
      * fully known there is nothing left to rule out, so the bookkeeping stops.
@@ -743,7 +742,7 @@ public class ItemObject {
 
         if (!cursesAreEqual(known)) return false;
 
-        return Player.nonCurseRunesKnown(this);
+        return PlayerKnowledge.nonCurseRunesKnown(this);
     }
 
     /**
@@ -1220,7 +1219,7 @@ public class ItemObject {
      * penalty as a matter of course — Chain Mail is {@code attack:1d4:-2:0} in {@code object.txt},
      * and every hauberk ever rolled has {@code toHit == -2}. A plain {@code getToHit() != 0} would
      * read that as evidence of enchantment and teach the to-hit rune to anyone who put one on, which
-     * is why {@link uk.co.jackoftrades.middle.player.Player#equipLearnOnMeleeAttack} asks this
+     * is why {@link PlayerKnowledge#equipLearnOnMeleeAttack} asks this
      * instead. To-damage and to-AC need no such test: nothing has those as standard equipment, so
      * {@link #getToDam} and {@link #getToAC} are compared against zero directly.
      *
@@ -2515,7 +2514,7 @@ public class ItemObject {
         if (this.getKnown() != null && toAbsorb.getKnown() != null) {
             if (toAbsorb.getKnown().getEffect() != null && !toAbsorb.getKnown().getEffect().isEmpty())
                 this.getKnown().setEffect(this.getEffect());
-            player.knowObject(this);
+            PlayerKnowledge.knowObject(player, this);
         }
 
         if (toAbsorb.getNote() != null && !toAbsorb.getNote().isEmpty())
@@ -4303,7 +4302,7 @@ public class ItemObject {
      * @return the total, rescaled if this object is worn in the shooting slot
      */
     private int rescaleBowPower(int power) {
-        if (wieldSlot() == player.slotByName("shooting")) {
+        if (wieldSlot() == ObjectUtils.slotByName(player, "shooting")) {
             power /= ObjectRegistry.MAX_BLOWS;
             logger.info("Rescaling bow power, total is {}", power);
         }
@@ -4774,7 +4773,7 @@ public class ItemObject {
         if (this.getKind() == null) return 0;
         ObjectKind kind = this.getKind();
 
-        if (wieldSlot() == player.slotByName("shooting")) {
+        if (wieldSlot() == ObjectUtils.slotByName(player, "shooting")) {
             if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_SHOTS))
                 shoots = TValue.TV_SHOT;
             else if (kind.getKindFlags().has(ObjectKindFlag.KF_SHOOTS_ARROWS))
@@ -4833,7 +4832,7 @@ public class ItemObject {
         if (this.gettValue().isMeleeWeapon() || this.gettValue().isAmmo()) {
             dice = ((this.damageDice * (this.damageSides + 1) * ObjectRegistry.DAMAGE_POWER) / 4);
             logger.info("Add {} power for damage dice, ", dice);
-        } else if (wieldSlot() != player.slotByName("shooting")) {
+        } else if (wieldSlot() != ObjectUtils.slotByName(player, "shooting")) {
             if (!this.getBrands().isEmpty() || !this.getSlays().isEmpty()
                     || getModifiers().getOrDefault(ObjectModifier.OM_BLOWS, 0) > 0
                     || getModifiers().getOrDefault(ObjectModifier.OM_SHOTS, 0) > 0
@@ -4893,7 +4892,7 @@ public class ItemObject {
             logger.info("{} power from to_dam", power);
 
         // Add second lot of damage power for non weapons
-        if ((this.wieldSlot() != player.slotByName("shooting"))
+        if ((this.wieldSlot() != ObjectUtils.slotByName(player, "shooting"))
                 && !this.gettValue().isMeleeWeapon()
                 && !this.gettValue().isAmmo()) {
             int nonWeaponPower = this.toDam * ObjectRegistry.DAMAGE_POWER;
@@ -4948,29 +4947,29 @@ public class ItemObject {
     private int wieldSlot() {
         switch (this.gettValue()) {
             case TV_BOW:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_BOW, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOW, false);
             case TV_AMULET:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_AMULET, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_AMULET, false);
             case TV_CLOAK:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_CLOAK, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_CLOAK, false);
             case TV_SHIELD:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_SHIELD, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_SHIELD, false);
             case TV_GLOVES:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_GLOVES, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_GLOVES, false);
             case TV_BOOTS:
-                return player.slotByType(EquipmentSlotsEnum.EQUIP_BOOTS, false);
+                return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOOTS, false);
         }
 
         if (this.gettValue().isMeleeWeapon())
-            return player.slotByType(EquipmentSlotsEnum.EQUIP_WEAPON, false);
+            return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_WEAPON, false);
         else if (this.gettValue().isRing())
-            return player.slotByType(EquipmentSlotsEnum.EQUIP_RING, false);
+            return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_RING, false);
         else if (this.gettValue().isLight())
-            return player.slotByType(EquipmentSlotsEnum.EQUIP_LIGHT, false);
+            return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_LIGHT, false);
         else if (this.gettValue().isBodyArmour())
-            return player.slotByType(EquipmentSlotsEnum.EQUIP_BODY_ARMOR, false);
+            return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BODY_ARMOR, false);
         else if (this.gettValue().isHeadArmour())
-            return player.slotByType(EquipmentSlotsEnum.EQUIP_HAT, false);
+            return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_HAT, false);
 
         // No slots available
         return -1;

@@ -27,6 +27,7 @@ import uk.co.jackoftrades.middle.game.globals.registry.TerrainRegistry;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.Pile;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -150,7 +151,7 @@ public class Square {
      * whether something like it is. Two Flasks of Oil on the floor are distinct objects and the test
      * distinguishes them, which is what makes it usable as a location check — C uses it to decide
      * whether a known object is still attached to the pile it thinks it is on, and
-     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} uses it to tell an object under the
+     * {@link PlayerKnowledge#knowObject} uses it to tell an object under the
      * player's feet from one elsewhere on the level.
      *
      * <p>Function holdsObject coded on 260816, commented in full on 260816.

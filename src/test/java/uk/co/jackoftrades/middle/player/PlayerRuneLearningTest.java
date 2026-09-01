@@ -77,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
- * Tests {@link Player}'s object-knowledge path — {@link Player#learnRune}, the wrappers over it,
+ * Tests {@link Player}'s object-knowledge path — {@link PlayerKnowledge#learnRune}, the wrappers over it,
  * and the two small high-water-mark updaters that sit beside them.
  *
  * <p>{@code learnRune} is the port of C's {@code player_learn_rune} ({@code src/obj-knowledge.c}),
@@ -458,7 +458,7 @@ class PlayerRuneLearningTest {
 
     /**
      * Puts the player in a started game, which is what {@code p->upkeep->playing} reports. It is
-     * false on a fresh {@link PlayerUpkeep}, and {@link Player#cursesFindFlags} gates its
+     * false on a fresh {@link PlayerUpkeep}, and {@link PlayerKnowledge#cursesFindFlags} gates its
      * message on it, so a test about messages has to say so.
      */
     private void startPlaying() throws Exception {
@@ -558,7 +558,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a combat rune learns only its own bonus")
         void combat() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
 
             assertTrue(knowledge.toHIsKnown());
             assertFalse(knowledge.toDIsKnown());
@@ -568,11 +568,11 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("each combat rune reaches a different bonus")
         void combatVarietiesAreDistinct() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)), false);
             assertTrue(knowledge.toDIsKnown());
             assertFalse(knowledge.toAIsKnown());
 
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A)), false);
             assertTrue(knowledge.toAIsKnown());
         }
 
@@ -583,7 +583,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the combat sentinel learns nothing and says nothing")
         void combatSentinel() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX)), true);
 
             assertFalse(knowledge.toHIsKnown());
             assertFalse(knowledge.toDIsKnown());
@@ -594,7 +594,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a modifier rune learns a modifier")
         void modifier() {
-            player.learnRune(new Rune(new RuneVariety.ModKey(ObjectModifier.OM_STR, strengthProperty)),
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.ModKey(ObjectModifier.OM_STR, strengthProperty)),
                     false);
 
             assertTrue(knowledge.modifierIsKnown(ObjectModifier.OM_STR));
@@ -604,7 +604,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a resist rune learns a resistance")
         void resist() {
-            player.learnRune(new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null)), false);
 
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
             assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_COLD));
@@ -613,7 +613,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a flag rune learns a flag")
         void flag() {
-            player.learnRune(new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, strengthProperty)),
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, strengthProperty)),
                     false);
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
@@ -627,7 +627,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a brand rune learns the brand's whole group")
         void brand() {
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), false);
 
             assertTrue(knowledge.brandIsKnown(weakAcid));
             assertTrue(knowledge.brandIsKnown(strongAcid));
@@ -636,7 +636,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a slay rune learns the slay's whole group")
         void slay() {
-            player.learnRune(new Rune(new RuneVariety.SlayKey(evil3)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.SlayKey(evil3)), false);
 
             assertTrue(knowledge.slayIsKnown(evil3));
             assertTrue(knowledge.slayIsKnown(evil5));
@@ -645,7 +645,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a curse rune learns a curse")
         void curse() {
-            player.learnRune(new Rune(new RuneVariety.CurseKey(siren)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CurseKey(siren)), false);
 
             assertTrue(knowledge.curseIsKnown(siren));
         }
@@ -658,7 +658,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a null rune is ignored rather than thrown on")
         void nullRune() {
-            player.learnRune(null, true);
+            PlayerKnowledge.learnRune(player, null, true);
 
             assertTrue(knowledge.getFlags().isEmpty());
             assertTrue(bus.messages.isEmpty());
@@ -678,7 +678,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("names the rune and is tagged MSG_RUNE")
         void namesTheRune() {
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), true);
 
             assertEquals(1, bus.messages.size());
             assertEquals(MessageType.MSG_RUNE, bus.messages.get(0).type());
@@ -688,9 +688,9 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("uses the variety's own name for each kind of rune")
         void usesTheVarietyName() {
-            player.learnRune(new Rune(new RuneVariety.SlayKey(evil3)), true);
-            player.learnRune(new Rune(new RuneVariety.CurseKey(siren)), true);
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.SlayKey(evil3)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CurseKey(siren)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), true);
 
             assertEquals(List.of(
                             "You have learned the rune of slay evil.",
@@ -706,8 +706,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("is not repeated when the rune is already known")
         void notRepeated() {
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), true);
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), true);
 
             assertEquals(1, bus.messages.size());
         }
@@ -718,8 +718,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("is not repeated for another member of a known group")
         void notRepeatedForTheGroup() {
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), true);
-            player.learnRune(new Rune(new RuneVariety.BrandKey(strongAcid)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), true);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(strongAcid)), true);
 
             assertEquals(1, bus.messages.size());
         }
@@ -731,7 +731,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("is suppressed when the caller asks for silence")
         void suppressed() {
-            player.learnRune(new Rune(new RuneVariety.BrandKey(weakAcid)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)), false);
 
             assertTrue(knowledge.brandIsKnown(weakAcid));
             assertTrue(bus.messages.isEmpty());
@@ -753,7 +753,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link Player#knowsRune}, the mirror of {@link Player#learnRune} and the port of C's
+     * {@link PlayerKnowledge#knowsRune}, the mirror of {@link PlayerKnowledge#learnRune} and the port of C's
      * {@code player_knows_rune}. Each variety is asked before and after the matching learn, because
      * an arm wired to the wrong corner of the knowledge would answer correctly for whichever
      * property happens to be unlearned and wrongly for the rest.
@@ -769,11 +769,11 @@ class PlayerRuneLearningTest {
         void combat() {
             Rune toHit = new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H));
 
-            assertFalse(player.knowsRune(toHit));
+            assertFalse(PlayerKnowledge.knowsRune(player, toHit));
 
-            player.learnRune(toHit, false);
+            PlayerKnowledge.learnRune(player, toHit, false);
 
-            assertTrue(player.knowsRune(toHit));
+            assertTrue(PlayerKnowledge.knowsRune(player, toHit));
         }
 
         /**
@@ -783,15 +783,15 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the three combat runes answer separately")
         void combatRunesAreDistinct() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)), false);
 
             assertAll(
-                    () -> assertTrue(player.knowsRune(
-                            new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)))),
-                    () -> assertFalse(player.knowsRune(
-                            new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)))),
-                    () -> assertFalse(player.knowsRune(
-                            new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A)))));
+                    () -> assertTrue(PlayerKnowledge.knowsRune(
+                            player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_D)))),
+                    () -> assertFalse(PlayerKnowledge.knowsRune(
+                            player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)))),
+                    () -> assertFalse(PlayerKnowledge.knowsRune(
+                            player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_A)))));
         }
 
         /**
@@ -801,10 +801,10 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the combat sentinel is never known")
         void combatSentinel() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
 
-            assertFalse(player.knowsRune(
-                    new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX))));
+            assertFalse(PlayerKnowledge.knowsRune(
+                    player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_MAX))));
         }
 
         @Test
@@ -812,13 +812,13 @@ class PlayerRuneLearningTest {
         void modifier() {
             Rune strength = new Rune(new RuneVariety.ModKey(ObjectModifier.OM_STR, strengthProperty));
 
-            assertFalse(player.knowsRune(strength));
+            assertFalse(PlayerKnowledge.knowsRune(player, strength));
 
-            player.learnRune(strength, false);
+            PlayerKnowledge.learnRune(player, strength, false);
 
-            assertTrue(player.knowsRune(strength));
-            assertFalse(player.knowsRune(
-                    new Rune(new RuneVariety.ModKey(ObjectModifier.OM_INT, strengthProperty))));
+            assertTrue(PlayerKnowledge.knowsRune(player, strength));
+            assertFalse(PlayerKnowledge.knowsRune(
+                    player, new Rune(new RuneVariety.ModKey(ObjectModifier.OM_INT, strengthProperty))));
         }
 
         @Test
@@ -826,13 +826,13 @@ class PlayerRuneLearningTest {
         void resist() {
             Rune fire = new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null));
 
-            assertFalse(player.knowsRune(fire));
+            assertFalse(PlayerKnowledge.knowsRune(player, fire));
 
-            player.learnRune(fire, false);
+            PlayerKnowledge.learnRune(player, fire, false);
 
-            assertTrue(player.knowsRune(fire));
-            assertFalse(player.knowsRune(
-                    new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_COLD, null))));
+            assertTrue(PlayerKnowledge.knowsRune(player, fire));
+            assertFalse(PlayerKnowledge.knowsRune(
+                    player, new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_COLD, null))));
         }
 
         @Test
@@ -840,11 +840,11 @@ class PlayerRuneLearningTest {
         void flag() {
             Rune sustain = new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, sustainProperty));
 
-            assertFalse(player.knowsRune(sustain));
+            assertFalse(PlayerKnowledge.knowsRune(player, sustain));
 
-            player.learnRune(sustain, false);
+            PlayerKnowledge.learnRune(player, sustain, false);
 
-            assertTrue(player.knowsRune(sustain));
+            assertTrue(PlayerKnowledge.knowsRune(player, sustain));
         }
 
         @Test
@@ -852,11 +852,11 @@ class PlayerRuneLearningTest {
         void curse() {
             Rune sirenRune = new Rune(new RuneVariety.CurseKey(siren));
 
-            assertFalse(player.knowsRune(sirenRune));
+            assertFalse(PlayerKnowledge.knowsRune(player, sirenRune));
 
-            player.learnRune(sirenRune, false);
+            PlayerKnowledge.learnRune(player, sirenRune, false);
 
-            assertTrue(player.knowsRune(sirenRune));
+            assertTrue(PlayerKnowledge.knowsRune(player, sirenRune));
         }
 
         /**
@@ -866,21 +866,21 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("a brand rune is known through any member of its group")
         void brandGroup() {
-            player.learnBrand(weakAcid);
+            PlayerKnowledge.learnBrand(player, weakAcid);
 
             assertAll(
-                    () -> assertTrue(player.knowsRune(new Rune(new RuneVariety.BrandKey(weakAcid)))),
-                    () -> assertTrue(player.knowsRune(new Rune(new RuneVariety.BrandKey(strongAcid)))));
+                    () -> assertTrue(PlayerKnowledge.knowsRune(player, new Rune(new RuneVariety.BrandKey(weakAcid)))),
+                    () -> assertTrue(PlayerKnowledge.knowsRune(player, new Rune(new RuneVariety.BrandKey(strongAcid)))));
         }
 
         @Test
         @DisplayName("a slay rune is known through any member of its group")
         void slayGroup() {
-            player.learnSlay(evil3);
+            PlayerKnowledge.learnSlay(player, evil3);
 
             assertAll(
-                    () -> assertTrue(player.knowsRune(new Rune(new RuneVariety.SlayKey(evil3)))),
-                    () -> assertTrue(player.knowsRune(new Rune(new RuneVariety.SlayKey(evil5)))));
+                    () -> assertTrue(PlayerKnowledge.knowsRune(player, new Rune(new RuneVariety.SlayKey(evil3)))),
+                    () -> assertTrue(PlayerKnowledge.knowsRune(player, new Rune(new RuneVariety.SlayKey(evil5)))));
         }
 
         /**
@@ -891,19 +891,19 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("each variety answers from its own corner")
         void varietiesDoNotCrossTalk() {
-            player.learnRune(new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
-            player.learnRune(new Rune(new RuneVariety.ModKey(ObjectModifier.OM_STR, strengthProperty)), false);
-            player.learnRune(new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null)), false);
-            player.learnRune(new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, sustainProperty)), false);
-            player.learnRune(new Rune(new RuneVariety.CurseKey(siren)), false);
-            player.learnRune(new Rune(new RuneVariety.SlayKey(evil3)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CombatKey(CombatRunes.COMBAT_RUNE_TO_H)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.ModKey(ObjectModifier.OM_STR, strengthProperty)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.ResistKey(ElementEnum.ELEM_FIRE, null)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.FlagKey(ObjectFlag.OF_SUST_STR, sustainProperty)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.CurseKey(siren)), false);
+            PlayerKnowledge.learnRune(player, new Rune(new RuneVariety.SlayKey(evil3)), false);
 
-            assertFalse(player.knowsRune(new Rune(new RuneVariety.BrandKey(weakAcid))));
+            assertFalse(PlayerKnowledge.knowsRune(player, new Rune(new RuneVariety.BrandKey(weakAcid))));
         }
     }
 
     /**
-     * {@link Player#learnInnate}, the port of C's {@code player_learn_innate} — the birth-time pass
+     * {@link PlayerKnowledge#learnInnate}, the port of C's {@code player_learn_innate} — the birth-time pass
      * that gives a character the runes for the properties of their own body.
      *
      * <p>The race is installed by reflection because {@link Player} has no setter for it: C assigns
@@ -940,7 +940,7 @@ class PlayerRuneLearningTest {
         void resistance() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1)));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
         }
@@ -954,7 +954,7 @@ class PlayerRuneLearningTest {
         void vulnerability() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, -1)));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
         }
@@ -964,7 +964,7 @@ class PlayerRuneLearningTest {
         void flag() throws Exception {
             set(player, "race", race(new HashMap<>(), ObjectFlag.OF_SUST_STR));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
         }
@@ -974,7 +974,7 @@ class PlayerRuneLearningTest {
         void both() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertAll(
                     () -> assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE)),
@@ -991,7 +991,7 @@ class PlayerRuneLearningTest {
         void silent() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertTrue(bus.messages.isEmpty());
         }
@@ -1006,7 +1006,7 @@ class PlayerRuneLearningTest {
         void nothingInnate() throws Exception {
             set(player, "race", race(new HashMap<>()));
 
-            assertDoesNotThrow(() -> player.learnInnate());
+            assertDoesNotThrow(() -> PlayerKnowledge.learnInnate(player));
 
             assertAll(
                     () -> assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE)),
@@ -1022,7 +1022,7 @@ class PlayerRuneLearningTest {
         void zeroLevel() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 0)));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
         }
@@ -1037,7 +1037,7 @@ class PlayerRuneLearningTest {
         void nothingElse() throws Exception {
             set(player, "race", race(resistMap(ElementEnum.ELEM_FIRE, 1), ObjectFlag.OF_SUST_STR));
 
-            player.learnInnate();
+            PlayerKnowledge.learnInnate(player);
 
             assertAll(
                     () -> assertFalse(knowledge.resistanceIsKnown(ElementEnum.ELEM_COLD)),
@@ -1062,14 +1062,14 @@ class PlayerRuneLearningTest {
 
             set(player, "race", race(resists));
 
-            assertDoesNotThrow(() -> player.learnInnate());
+            assertDoesNotThrow(() -> PlayerKnowledge.learnInnate(player));
 
             assertTrue(knowledge.resistanceIsKnown(ElementEnum.ELEM_FIRE));
         }
     }
 
     /**
-     * {@link Player#cursesFindToA} — learning a curse by being hurt by it.
+     * {@link PlayerKnowledge#cursesFindToA} — learning a curse by being hurt by it.
      *
      * <p>The function reads two things that live apart: the power, which is on the item, and the
      * armour-class contribution, which is on the curse definition in the registry. C walks
@@ -1092,7 +1092,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertAll(
                     () -> assertTrue(knowledge.toAIsKnown()),
@@ -1112,7 +1112,7 @@ class PlayerRuneLearningTest {
         void signDoesNotMatter() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertTrue(knowledge.toAIsKnown());
             assertTrue(knowledge.curseIsKnown(enveloping));
@@ -1127,7 +1127,7 @@ class PlayerRuneLearningTest {
         void curseWithoutArmourChange() throws Exception {
             ItemObject item = itemWith(cursed(siren, 20));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertAll(
                     () -> assertFalse(knowledge.toAIsKnown()),
@@ -1145,7 +1145,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsAbsent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 0));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertFalse(knowledge.toAIsKnown());
             assertFalse(knowledge.curseIsKnown(vulnerability));
@@ -1163,7 +1163,7 @@ class PlayerRuneLearningTest {
         void curseNotOnTheItem() throws Exception {
             ItemObject item = itemWith(cursed(siren, 20));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertAll(
                     () -> assertFalse(knowledge.toAIsKnown()),
@@ -1176,7 +1176,7 @@ class PlayerRuneLearningTest {
         void uncursedItem() throws Exception {
             ItemObject item = itemWith();
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertFalse(knowledge.toAIsKnown());
             assertTrue(bus.messages.isEmpty());
@@ -1197,7 +1197,7 @@ class PlayerRuneLearningTest {
         void twoQualifyingCurses() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20), cursed(enveloping, 20));
 
-            player.cursesFindToA(item);
+            PlayerKnowledge.cursesFindToA(player, item);
 
             assertAll(
                     () -> assertTrue(knowledge.toAIsKnown()),
@@ -1212,7 +1212,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link Player#equipLearnOnDefend} — the occasion on which worn armour explains itself.
+     * {@link PlayerKnowledge#equipLearnOnDefend} — the occasion on which worn armour explains itself.
      *
      * <p>A property announces itself when it does its job, so an armour-class bonus is learned by
      * being hit rather than by being examined. Three sources are checked in order and the first
@@ -1239,7 +1239,7 @@ class PlayerRuneLearningTest {
         void emptySlotsAreSkipped() throws Exception {
             set(player, "body", bodyWearing(null, null));
 
-            assertDoesNotThrow(() -> player.equipLearnOnDefend());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnDefend(player));
 
             assertFalse(knowledge.toAIsKnown());
         }
@@ -1249,7 +1249,7 @@ class PlayerRuneLearningTest {
         void cursedItemTeaches() throws Exception {
             set(player, "body", bodyWearing(null, itemWith(cursed(vulnerability, 20))));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertTrue(knowledge.toAIsKnown());
             assertTrue(knowledge.curseIsKnown(vulnerability));
@@ -1264,7 +1264,7 @@ class PlayerRuneLearningTest {
         void uncursedItemWithNoBonusTeachesNothing() throws Exception {
             set(player, "body", bodyWearing(itemWith()));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertFalse(knowledge.toAIsKnown());
         }
@@ -1279,7 +1279,7 @@ class PlayerRuneLearningTest {
         void uncursedItemWithABonusTeaches() throws Exception {
             set(player, "body", bodyWearing(itemWithCombat(0, 0, 5)));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertTrue(knowledge.toAIsKnown());
         }
@@ -1293,7 +1293,7 @@ class PlayerRuneLearningTest {
         void aPenaltyTeachesToo() throws Exception {
             set(player, "body", bodyWearing(itemWithCombat(0, 0, -5)));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertTrue(knowledge.toAIsKnown());
         }
@@ -1309,7 +1309,7 @@ class PlayerRuneLearningTest {
             knowledge.learnToA();
             set(player, "body", bodyWearing(itemWith(cursed(vulnerability, 20))));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertFalse(knowledge.curseIsKnown(vulnerability));
             assertTrue(bus.messages.isEmpty());
@@ -1326,7 +1326,7 @@ class PlayerRuneLearningTest {
                     itemWith(cursed(vulnerability, 20)),
                     itemWith(cursed(enveloping, 20))));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertTrue(knowledge.toAIsKnown());
             assertTrue(knowledge.curseIsKnown(vulnerability));
@@ -1343,7 +1343,7 @@ class PlayerRuneLearningTest {
             set(player, "body", emptyBody());
             set(player, "shape", shapeWithToAc(5));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertTrue(knowledge.toAIsKnown());
         }
@@ -1354,7 +1354,7 @@ class PlayerRuneLearningTest {
             set(player, "body", emptyBody());
             set(player, "shape", shapeWithToAc(0));
 
-            player.equipLearnOnDefend();
+            PlayerKnowledge.equipLearnOnDefend(player);
 
             assertFalse(knowledge.toAIsKnown());
         }
@@ -1367,14 +1367,14 @@ class PlayerRuneLearningTest {
         void noShape() throws Exception {
             set(player, "body", emptyBody());
 
-            assertDoesNotThrow(() -> player.equipLearnOnDefend());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnDefend(player));
 
             assertFalse(knowledge.toAIsKnown());
         }
     }
 
     /**
-     * {@link Player#cursesFindToH} — the to-hit sibling of {@link Player#cursesFindToA}.
+     * {@link PlayerKnowledge#cursesFindToH} — the to-hit sibling of {@link PlayerKnowledge#cursesFindToA}.
      *
      * <p>The mechanics are covered under {@code cursesFindToA} and are not repeated: what is worth
      * pinning here is that the three functions read three different figures off the curse
@@ -1396,7 +1396,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            player.cursesFindToH(item);
+            PlayerKnowledge.cursesFindToH(player, item);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1417,7 +1417,7 @@ class PlayerRuneLearningTest {
         void aToAOnlyCurseIsSilent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            player.cursesFindToH(item);
+            PlayerKnowledge.cursesFindToH(player, item);
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1434,7 +1434,7 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 0));
 
-            player.cursesFindToH(item);
+            PlayerKnowledge.cursesFindToH(player, item);
 
             assertFalse(knowledge.toHIsKnown());
         }
@@ -1442,14 +1442,14 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
-            player.cursesFindToH(itemWith());
+            PlayerKnowledge.cursesFindToH(player, itemWith());
 
             assertFalse(knowledge.toHIsKnown());
         }
     }
 
     /**
-     * {@link Player#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
+     * {@link PlayerKnowledge#cursesFindToD} — the to-damage sibling, and the one whose rune the shared
      * fixture does not hold, so each case registers it first. See {@link #withToDRune()}.
      *
      * <p>Class CursesFindToD coded on 260815, commented in full on 260815, call sites turned round
@@ -1478,7 +1478,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 20));
 
-            player.cursesFindToD(item);
+            PlayerKnowledge.cursesFindToD(player, item);
 
             assertAll(
                     () -> assertTrue(knowledge.toDIsKnown()),
@@ -1494,7 +1494,7 @@ class PlayerRuneLearningTest {
         void aToAOnlyCurseIsSilent() throws Exception {
             ItemObject item = itemWith(cursed(vulnerability, 20));
 
-            player.cursesFindToD(item);
+            PlayerKnowledge.cursesFindToD(player, item);
 
             assertAll(
                     () -> assertFalse(knowledge.toDIsKnown()),
@@ -1507,14 +1507,14 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemWith(cursed(enveloping, 0));
 
-            player.cursesFindToD(item);
+            PlayerKnowledge.cursesFindToD(player, item);
 
             assertFalse(knowledge.toDIsKnown());
         }
     }
 
     /**
-     * {@link Player#equipLearnOnRangedAttack} — the occasion on which a shot explains itself.
+     * {@link PlayerKnowledge#equipLearnOnRangedAttack} — the occasion on which a shot explains itself.
      *
      * <p>Only to-hit is at stake: a missile's damage belongs to the launcher and the ammunition, so
      * a bowshot is no evidence about the player's own to-damage. What distinguishes this method from
@@ -1535,7 +1535,7 @@ class PlayerRuneLearningTest {
         void emptySlotsAreSkipped() throws Exception {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
-            assertDoesNotThrow(() -> player.equipLearnOnRangedAttack());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnRangedAttack(player));
 
             assertFalse(knowledge.toHIsKnown());
         }
@@ -1551,7 +1551,7 @@ class PlayerRuneLearningTest {
             poke(sword, "toHit", 8);
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON), sword));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1570,7 +1570,7 @@ class PlayerRuneLearningTest {
             poke(bow, "toHit", 8);
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1587,7 +1587,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     itemWith(cursed(enveloping, 20))));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1605,7 +1605,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     weaponWithToHit(0)));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertFalse(knowledge.toHIsKnown());
         }
@@ -1620,7 +1620,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     weaponWithToHit(5)));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertTrue(knowledge.toHIsKnown());
         }
@@ -1637,7 +1637,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_RING),
                     itemWith(cursed(enveloping, 20))));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertFalse(knowledge.curseIsKnown(enveloping));
             assertTrue(bus.messages.isEmpty());
@@ -1655,7 +1655,7 @@ class PlayerRuneLearningTest {
                     itemWith(cursed(enveloping, 20)),
                     itemWith(cursed(siren, 20))));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1673,7 +1673,7 @@ class PlayerRuneLearningTest {
             set(player, "body", emptyBody());
             set(player, "shape", shapeWith(0, 5, 0));
 
-            player.equipLearnOnRangedAttack();
+            PlayerKnowledge.equipLearnOnRangedAttack(player);
 
             assertTrue(knowledge.toHIsKnown());
         }
@@ -1690,7 +1690,7 @@ class PlayerRuneLearningTest {
                 set(player, "body", emptyBody());
                 set(player, "shape", shapeWith(0, 0, 7));
 
-                player.equipLearnOnRangedAttack();
+                PlayerKnowledge.equipLearnOnRangedAttack(player);
 
                 assertFalse(knowledge.toDIsKnown());
             } finally {
@@ -1703,21 +1703,21 @@ class PlayerRuneLearningTest {
         void noShape() throws Exception {
             set(player, "body", emptyBody());
 
-            assertDoesNotThrow(() -> player.equipLearnOnRangedAttack());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnRangedAttack(player));
 
             assertFalse(knowledge.toHIsKnown());
         }
     }
 
     /**
-     * {@link Player#equipLearnOnMeleeAttack} — the largest of the family, because it is the only
+     * {@link PlayerKnowledge#equipLearnOnMeleeAttack} — the largest of the family, because it is the only
      * one pursuing two runes at once.
      *
      * <p>That pairing is what makes its guards different in kind: both the leading test and the one
      * at the foot of the loop are conjunctions, so a player who has already worked out their
      * weapon's damage keeps walking the remaining slots in the hope of learning accuracy from their
      * gloves. Only the launcher is skipped — the weapon is very much part of a sword-stroke, which
-     * is precisely the slot {@link Player#equipLearnOnRangedAttack} has to leave alone.
+     * is precisely the slot {@link PlayerKnowledge#equipLearnOnRangedAttack} has to leave alone.
      *
      * <p>The two tests are also asymmetrical: to-damage is a plain non-zero check, while to-hit goes
      * through {@link ItemObject#hasStandardToH} because body armour carries a penalty as standard
@@ -1749,7 +1749,7 @@ class PlayerRuneLearningTest {
         void emptySlotsAreSkipped() throws Exception {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
-            assertDoesNotThrow(() -> player.equipLearnOnMeleeAttack());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnMeleeAttack(player));
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1767,7 +1767,7 @@ class PlayerRuneLearningTest {
             poke(bow, "toDam", 8);
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_BOW), bow));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -1785,7 +1785,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     itemWithCombat(0, 6, 0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertTrue(knowledge.toDIsKnown());
         }
@@ -1801,7 +1801,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 6, 0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toDIsKnown()),
@@ -1818,7 +1818,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, -6, 0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertTrue(knowledge.toDIsKnown());
         }
@@ -1833,7 +1833,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 0, 0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertFalse(knowledge.toDIsKnown()),
@@ -1849,7 +1849,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(5)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1868,7 +1868,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertFalse(knowledge.toHIsKnown());
         }
@@ -1884,7 +1884,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     weaponWithToHit(5)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertTrue(knowledge.toHIsKnown());
         }
@@ -1899,7 +1899,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemWithCombat(0, 6, 0)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertTrue(knowledge.toDIsKnown());
         }
@@ -1916,7 +1916,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_WEAPON),
                     itemWith(cursed(enveloping, 20))));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertFalse(knowledge.curseIsKnown(enveloping));
             assertTrue(bus.messages.isEmpty());
@@ -1935,7 +1935,7 @@ class PlayerRuneLearningTest {
                     itemWith(cursed(enveloping, 20)),
                     itemWith(cursed(siren, 20))));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1956,7 +1956,7 @@ class PlayerRuneLearningTest {
                     itemWithCombat(0, 6, 0),
                     weaponWithToHit(5)));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toDIsKnown()),
@@ -1973,7 +1973,7 @@ class PlayerRuneLearningTest {
             set(player, "body", emptyBody());
             set(player, "shape", shapeWith(0, 5, 7));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -1990,7 +1990,7 @@ class PlayerRuneLearningTest {
             set(player, "body", emptyBody());
             set(player, "shape", shapeWith(0, 0, 7));
 
-            player.equipLearnOnMeleeAttack();
+            PlayerKnowledge.equipLearnOnMeleeAttack(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toDIsKnown()),
@@ -2002,7 +2002,7 @@ class PlayerRuneLearningTest {
         void noShape() throws Exception {
             set(player, "body", emptyBody());
 
-            assertDoesNotThrow(() -> player.equipLearnOnMeleeAttack());
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnOnMeleeAttack(player));
 
             assertAll(
                     () -> assertFalse(knowledge.toHIsKnown()),
@@ -2023,9 +2023,9 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnBrand learns the brand and announces it")
         void learnBrand() {
-            player.learnBrand(weakAcid);
+            PlayerKnowledge.learnBrand(player, weakAcid);
 
-            assertTrue(player.knowsBrand(weakAcid));
+            assertTrue(PlayerKnowledge.knowsBrand(player, weakAcid));
             assertEquals(1, bus.messages.size());
         }
 
@@ -2037,17 +2037,17 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnBrand resolves a strength that no rune holds")
         void learnBrandResolvesTheGroup() {
-            player.learnBrand(strongAcid);
+            PlayerKnowledge.learnBrand(player, strongAcid);
 
-            assertTrue(player.knowsBrand(strongAcid));
-            assertTrue(player.knowsBrand(weakAcid));
+            assertTrue(PlayerKnowledge.knowsBrand(player, strongAcid));
+            assertTrue(PlayerKnowledge.knowsBrand(player, weakAcid));
         }
 
         @Test
         @DisplayName("learnBrand does nothing the second time")
         void learnBrandIsIdempotent() {
-            player.learnBrand(weakAcid);
-            player.learnBrand(weakAcid);
+            PlayerKnowledge.learnBrand(player, weakAcid);
+            PlayerKnowledge.learnBrand(player, weakAcid);
 
             assertEquals(1, bus.messages.size());
         }
@@ -2055,17 +2055,17 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("knowsBrand reports the knowledge, not the item")
         void knowsBrand() {
-            assertFalse(player.knowsBrand(weakAcid));
+            assertFalse(PlayerKnowledge.knowsBrand(player, weakAcid));
 
-            player.learnBrand(weakAcid);
+            PlayerKnowledge.learnBrand(player, weakAcid);
 
-            assertTrue(player.knowsBrand(weakAcid));
+            assertTrue(PlayerKnowledge.knowsBrand(player, weakAcid));
         }
 
         @Test
         @DisplayName("learnCurse learns the curse and announces it")
         void learnCurse() {
-            player.learnCurse(siren);
+            PlayerKnowledge.learnCurse(player, siren);
 
             assertTrue(knowledge.curseIsKnown(siren));
             assertEquals(1, bus.messages.size());
@@ -2083,13 +2083,13 @@ class PlayerRuneLearningTest {
             Curse rebuilt = new Curse("siren", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
                     0, 0, 0, List.of(), objectFlags(), "wakes monsters", "The curse fires.");
 
-            player.learnCurse(rebuilt);
+            PlayerKnowledge.learnCurse(player, rebuilt);
 
             assertTrue(knowledge.curseIsKnown(siren));
         }
 
         /**
-         * A curse with no rune reaches {@link Player#learnRune} as null, where C's guard is
+         * A curse with no rune reaches {@link PlayerKnowledge#learnRune} as null, where C's guard is
          * {@code index >= 0}. Nothing is learned and nothing is said.
          */
         @Test
@@ -2098,7 +2098,7 @@ class PlayerRuneLearningTest {
             Curse unknown = new Curse("nowhere", List.of(), 0, null, objectFlags(), Map.of(), Map.of(),
                     0, 0, 0, List.of(), objectFlags(), "does nothing", "Nothing happens.");
 
-            player.learnCurse(unknown);
+            PlayerKnowledge.learnCurse(player, unknown);
 
             assertTrue(bus.messages.isEmpty());
         }
@@ -2106,9 +2106,9 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnSlay learns the slay and announces it")
         void learnSlay() {
-            player.learnSlay(evil3);
+            PlayerKnowledge.learnSlay(player, evil3);
 
-            assertTrue(player.knowsSlay(evil3));
+            assertTrue(PlayerKnowledge.knowsSlay(player, evil3));
             assertEquals(1, bus.messages.size());
             assertEquals("You have learned the rune of slay evil.", bus.messages.get(0).message());
         }
@@ -2122,17 +2122,17 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnSlay resolves a strength that no rune holds")
         void learnSlayResolvesTheGroup() {
-            player.learnSlay(evil5);
+            PlayerKnowledge.learnSlay(player, evil5);
 
-            assertTrue(player.knowsSlay(evil5));
-            assertTrue(player.knowsSlay(evil3));
+            assertTrue(PlayerKnowledge.knowsSlay(player, evil5));
+            assertTrue(PlayerKnowledge.knowsSlay(player, evil3));
         }
 
         @Test
         @DisplayName("learnSlay does nothing the second time")
         void learnSlayIsIdempotent() {
-            player.learnSlay(evil3);
-            player.learnSlay(evil3);
+            PlayerKnowledge.learnSlay(player, evil3);
+            PlayerKnowledge.learnSlay(player, evil3);
 
             assertEquals(1, bus.messages.size());
         }
@@ -2140,21 +2140,21 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("knowsSlay reports the knowledge, not the weapon")
         void knowsSlay() {
-            assertFalse(player.knowsSlay(evil3));
+            assertFalse(PlayerKnowledge.knowsSlay(player, evil3));
 
-            player.learnSlay(evil3);
+            PlayerKnowledge.learnSlay(player, evil3);
 
-            assertTrue(player.knowsSlay(evil3));
+            assertTrue(PlayerKnowledge.knowsSlay(player, evil3));
         }
 
         @Test
         @DisplayName("knowsCurse reports the knowledge, not the item")
         void knowsCurse() {
-            assertFalse(player.knowsCurse(siren));
+            assertFalse(PlayerKnowledge.knowsCurse(player, siren));
 
-            player.learnCurse(siren);
+            PlayerKnowledge.learnCurse(player, siren);
 
-            assertTrue(player.knowsCurse(siren));
+            assertTrue(PlayerKnowledge.knowsCurse(player, siren));
         }
 
         /**
@@ -2166,15 +2166,15 @@ class PlayerRuneLearningTest {
             Curse other = new Curse("teleportation", List.of(), 0, null, objectFlags(), Map.of(),
                     Map.of(), 0, 0, 0, List.of(), objectFlags(), "teleports", "The curse fires.");
 
-            player.learnCurse(siren);
+            PlayerKnowledge.learnCurse(player, siren);
 
-            assertFalse(player.knowsCurse(other));
+            assertFalse(PlayerKnowledge.knowsCurse(player, other));
         }
 
         @Test
         @DisplayName("learnFlag learns the flag and announces it")
         void learnFlag() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
+            PlayerKnowledge.learnFlag(player, ObjectFlag.OF_SUST_STR);
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
             assertEquals(1, bus.messages.size());
@@ -2190,8 +2190,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnFlag does nothing the second time")
         void learnFlagIsIdempotent() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
+            PlayerKnowledge.learnFlag(player, ObjectFlag.OF_SUST_STR);
+            PlayerKnowledge.learnFlag(player, ObjectFlag.OF_SUST_STR);
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_SUST_STR));
             assertEquals(1, bus.messages.size());
@@ -2207,7 +2207,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnFlag survives a flag with no rune")
         void learnFlagWithoutARune() {
-            player.learnFlag(ObjectFlag.OF_FEATHER);
+            PlayerKnowledge.learnFlag(player, ObjectFlag.OF_FEATHER);
 
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_FEATHER));
             assertTrue(bus.messages.isEmpty());
@@ -2216,14 +2216,14 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learnFlag touches only the flag it was given")
         void learnFlagIsNarrow() {
-            player.learnFlag(ObjectFlag.OF_SUST_STR);
+            PlayerKnowledge.learnFlag(player, ObjectFlag.OF_SUST_STR);
 
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_SUST_INT));
         }
     }
 
     /**
-     * {@link Player#equipLearnFlag} — the occasion on which a flag gives itself away by doing
+     * {@link PlayerKnowledge#equipLearnFlag} — the occasion on which a flag gives itself away by doing
      * something.
      *
      * <p>The busiest member of the family upstream, called from some thirty places each naming the
@@ -2250,9 +2250,9 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
-            assertDoesNotThrow(() -> player.equipLearnFlag(null));
-            assertDoesNotThrow(() -> player.equipLearnFlag(ObjectFlag.OF_NONE));
-            assertDoesNotThrow(() -> player.equipLearnFlag(ObjectFlag.OF_MAX));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, null));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_NONE));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_MAX));
 
             assertAll(
                     () -> assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2264,7 +2264,7 @@ class PlayerRuneLearningTest {
         void emptySlotsAreSkipped() throws Exception {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), (ItemObject) null));
 
-            assertDoesNotThrow(() -> player.equipLearnFlag(ObjectFlag.OF_AFRAID));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID));
 
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
         }
@@ -2272,7 +2272,7 @@ class PlayerRuneLearningTest {
         /**
          * The first arm: an item that has the flag announces it and teaches its rune. The message
          * comes before the rune here, which is C's order in this function and the opposite of
-         * {@link Player#cursesFindFlags}'s.
+         * {@link PlayerKnowledge#cursesFindFlags}'s.
          */
         @Test
         @DisplayName("an item carrying the flag teaches and announces it")
@@ -2280,7 +2280,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2302,7 +2302,7 @@ class PlayerRuneLearningTest {
                     itemFlagged(ObjectFlag.OF_AFRAID),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertEquals(List.of(
                             "Your {DESCRIPTION_TAG} makes you tremble.",
@@ -2321,7 +2321,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemFlagged(ObjectFlag.OF_AFRAID)));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertTrue(bus.messages.isEmpty());
         }
@@ -2350,7 +2350,7 @@ class PlayerRuneLearningTest {
             giveKnownCounterpart(item);
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), item));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertAll(
                     () -> assertTrue(item.getKnown().getFlags().has(ObjectFlag.OF_AFRAID)),
@@ -2370,7 +2370,7 @@ class PlayerRuneLearningTest {
         void aCounterpartlessItemIsSurvivable() throws Exception {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES), itemFlagged()));
 
-            assertDoesNotThrow(() -> player.equipLearnFlag(ObjectFlag.OF_AFRAID));
+            assertDoesNotThrow(() -> PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID));
         }
 
         /**
@@ -2384,7 +2384,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemCursed(cursed(cowardice, 20))));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2401,7 +2401,7 @@ class PlayerRuneLearningTest {
             set(player, "body", bodyOf(List.of(EquipmentSlotsEnum.EQUIP_GLOVES),
                     itemCursed(cursed(cowardice, 20))));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP));
         }
@@ -2419,7 +2419,7 @@ class PlayerRuneLearningTest {
                     itemFlagged(ObjectFlag.OF_AFRAID),
                     itemCursed(cursed(cowardice, 20))));
 
-            player.equipLearnFlag(ObjectFlag.OF_AFRAID);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_AFRAID);
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2428,7 +2428,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link Player#learnAllRunes} — the debug, cheat and winner's-dump path.
+     * {@link PlayerKnowledge#learnAllRunes} — the debug, cheat and winner's-dump path.
      *
      * @author Rowan Crowther
      */
@@ -2443,7 +2443,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learns every rune the registry holds")
         void learnsEverything() {
-            player.learnAllRunes();
+            PlayerKnowledge.learnAllRunes(player);
 
             assertAll(
                     () -> assertTrue(knowledge.toHIsKnown()),
@@ -2464,19 +2464,19 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("learns the runes that exist, not the ones that could")
         void onlyWhatTheRegistryHolds() {
-            player.learnAllRunes();
+            PlayerKnowledge.learnAllRunes(player);
 
             assertFalse(knowledge.toDIsKnown());
         }
 
         /**
-         * Silent, and for a plainer reason than {@link Player#learnInnate}'s: several hundred
+         * Silent, and for a plainer reason than {@link PlayerKnowledge#learnInnate}'s: several hundred
          * discoveries announced one at a time is not a message but a wall.
          */
         @Test
         @DisplayName("says nothing at all")
         void saysNothing() {
-            player.learnAllRunes();
+            PlayerKnowledge.learnAllRunes(player);
 
             assertTrue(bus.messages.isEmpty());
         }
@@ -2484,8 +2484,8 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("running it twice changes nothing and still says nothing")
         void isIdempotent() {
-            player.learnAllRunes();
-            player.learnAllRunes();
+            PlayerKnowledge.learnAllRunes(player);
+            PlayerKnowledge.learnAllRunes(player);
 
             assertTrue(knowledge.toAIsKnown());
             assertTrue(knowledge.curseIsKnown(siren));
@@ -2574,7 +2574,7 @@ class PlayerRuneLearningTest {
     }
 
     /**
-     * {@link Player#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
+     * {@link PlayerKnowledge#cursesFindFlags} — the flag member of the {@code object_curses_find_*}
      * family, and the only one that takes a set.
      *
      * <p>Its siblings each pursue one fixed property, so the caller has nothing to say. Flags are a
@@ -2612,7 +2612,7 @@ class PlayerRuneLearningTest {
         void teachesBothRunes() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            boolean learned = PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertTrue(learned),
@@ -2631,7 +2631,7 @@ class PlayerRuneLearningTest {
         void theIntersectionIsRespected() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID)),
@@ -2648,7 +2648,7 @@ class PlayerRuneLearningTest {
         @Test
         @DisplayName("the curse definition survives being intersected against")
         void theCurseDefinitionIsNotMutated() throws Exception {
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+            PlayerKnowledge.cursesFindFlags(player, itemCursed(cursed(cowardice, 20)),
                     testing(ObjectFlag.OF_AFRAID));
 
             assertTrue(cowardice.getObjectFlags().has(ObjectFlag.OF_AFRAID));
@@ -2656,7 +2656,7 @@ class PlayerRuneLearningTest {
             assertEquals(2, cowardice.getObjectFlags().count(),
                     "the intersection took a copy rather than narrowing the definition");
 
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)),
+            PlayerKnowledge.cursesFindFlags(player, itemCursed(cursed(cowardice, 20)),
                     testing(ObjectFlag.OF_IMPAIR_HP));
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP));
@@ -2672,7 +2672,7 @@ class PlayerRuneLearningTest {
         void theTestSetIsNotMutated() throws Exception {
             Flag<ObjectFlag> testFlags = testing(ObjectFlag.OF_AFRAID, ObjectFlag.OF_SUST_STR);
 
-            player.cursesFindFlags(itemCursed(cursed(cowardice, 20)), testFlags);
+            PlayerKnowledge.cursesFindFlags(player, itemCursed(cursed(cowardice, 20)), testFlags);
 
             assertTrue(testFlags.has(ObjectFlag.OF_SUST_STR));
         }
@@ -2687,7 +2687,7 @@ class PlayerRuneLearningTest {
         void aMissTeachesNothingAtAll() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_SUST_STR));
+            boolean learned = PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_SUST_STR));
 
             assertAll(
                     () -> assertFalse(learned),
@@ -2707,7 +2707,7 @@ class PlayerRuneLearningTest {
             knowledge.learnFlag(ObjectFlag.OF_AFRAID);
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            boolean learned = player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            boolean learned = PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID));
 
             assertAll(
                     () -> assertFalse(learned),
@@ -2723,14 +2723,14 @@ class PlayerRuneLearningTest {
         void zeroPowerIsNotACurse() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 0));
 
-            assertFalse(player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID)));
+            assertFalse(PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID)));
             assertFalse(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
         }
 
         @Test
         @DisplayName("an uncursed item teaches nothing")
         void uncursedItemIsSilent() throws Exception {
-            assertFalse(player.cursesFindFlags(itemCursed(), testing(ObjectFlag.OF_AFRAID)));
+            assertFalse(PlayerKnowledge.cursesFindFlags(player, itemCursed(), testing(ObjectFlag.OF_AFRAID)));
         }
 
         /**
@@ -2744,7 +2744,7 @@ class PlayerRuneLearningTest {
         void theMessageIsSuppressedBeforePlay() throws Exception {
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID));
 
             assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_AFRAID));
             assertEquals(List.of(
@@ -2755,7 +2755,7 @@ class PlayerRuneLearningTest {
 
         /**
          * And once play is under way, the property's own wording is sent, between the two runes —
-         * this method learns then announces, where {@link Player#equipLearnFlag} announces then
+         * this method learns then announces, where {@link PlayerKnowledge#equipLearnFlag} announces then
          * learns. Both match their own C originals, which differ.
          */
         @Test
@@ -2764,7 +2764,7 @@ class PlayerRuneLearningTest {
             startPlaying();
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_AFRAID));
+            PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_AFRAID));
 
             assertEquals(List.of(
                             "You have learned the rune of fear.",
@@ -2784,7 +2784,7 @@ class PlayerRuneLearningTest {
             startPlaying();
             ItemObject item = itemCursed(cursed(cowardice, 20));
 
-            player.cursesFindFlags(item, testing(ObjectFlag.OF_IMPAIR_HP));
+            PlayerKnowledge.cursesFindFlags(player, item, testing(ObjectFlag.OF_IMPAIR_HP));
 
             assertAll(
                     () -> assertTrue(knowledge.flagIsKnown(ObjectFlag.OF_IMPAIR_HP)),

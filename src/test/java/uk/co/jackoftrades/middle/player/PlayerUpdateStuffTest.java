@@ -33,16 +33,20 @@ import uk.co.jackoftrades.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
+import uk.co.jackoftrades.middle.game.globals.registry.StatTables;
 import uk.co.jackoftrades.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftrades.middle.gameinput.GameInputHolder;
 import uk.co.jackoftrades.middle.magic.ClassMagic;
 import uk.co.jackoftrades.middle.magic.MagicBook;
 import uk.co.jackoftrades.middle.magic.MagicRealm;
+import uk.co.jackoftrades.middle.monsters.MonsterUtils;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
+import uk.co.jackoftrades.middle.player.enums.PlayerRedraw;
 import uk.co.jackoftrades.middle.player.enums.PlayerSkill;
 import uk.co.jackoftrades.middle.player.enums.PlayerUpdateEnum;
+import uk.co.jackoftrades.testsupport.CalcBonusesFixture;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -53,10 +57,11 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#updateStuff()}, the port of C's {@code update_stuff}
+ * Tests {@link PlayerCalcs#updateStuff(Player)}, the port of C's {@code update_stuff}
  * ({@code player-calcs.c:2565}).
  *
  * <p>The method is a dispatcher, so what is worth pinning is not arithmetic but which calculations
@@ -67,16 +72,40 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * map, and {@code PU_DISTANCE} clearing {@code PU_MONSTERS} as well so the monster pass runs once
  * with {@code full} set rather than twice.
  *
- * <p>The recalculations themselves are covered by their own suites, so the player under test is a
- * {@link RecordingPlayer} that notes each call and does nothing else. That is what makes the
- * ordering observable — with the real calculations running, the order would only be visible in their
- * results, and a wrong order would show up as a wrong number somewhere else entirely.
+ * <p><b>How the dispatch is observed, now that the calculations are static.</b> The recalculations
+ * live on {@link PlayerCalcs} as static methods, so a player subclass can no longer stand in front
+ * of them and record the calls. What the dispatcher does reach through, on every clause, is
+ * {@link PlayerUpkeep}: each clause asks {@link PlayerUpkeep#updateHas} and then clears with
+ * {@link PlayerUpkeep#updateOff}. So the recording moves down a layer, to a {@link RecordingUpkeep}
+ * installed on the player, and the sequence of those questions <em>is</em> C's clause sequence -
+ * one question per clause, in source order, whether or not the flag it asks about is raised.
+ *
+ * <p>That gives the order for free and without running a single calculation: with
+ * {@link RecordingUpkeep#pretendStale} set, the leading guard is passed while every flag reads
+ * clear, so every clause is asked and none does any work. The calculations themselves then run for
+ * real in the rest of the suite - the player is a {@link CalcBonusesFixture} plain character, which
+ * is exactly the null character those calculations are already tested against - and each clause is
+ * checked by the mark its own calculation leaves: new hit points, a fresh state object, a rebuilt
+ * view, a monster pass, an event on the bus.
+ *
+ * <p>Three calculations leave no mark that this suite can read. {@code calcSpells} is a stub, and
+ * {@code calcMana} on a class with no magic writes a zero over a zero; for those clauses the
+ * dispatch is pinned by the question and the clearing, and the arithmetic belongs to
+ * {@link PlayerCalcManaTest} either way. The third is
+ * {@link MonsterUtils#updateMonsters(boolean)}, which is both static - so no subclass can stand in
+ * front of it - and a chapter-6 stub that does nothing at all. Its two clauses are read off the
+ * clearing instead, and that reading is exact rather than a fallback: the whole of what separates
+ * the full pass from the cheap one is that {@code PU_DISTANCE} gives up {@code PU_MONSTERS}
+ * alongside its own flag, so a {@code cleared} list of both flags <em>is</em> the full pass and a
+ * list of {@code PU_MONSTERS} alone is the partial one.
  *
  * <p>The two early returns read global state ({@link GameWorld#characterGenerated} and the
  * {@code GameInput} boundary), so both are set explicitly here and put back afterwards; a test that
  * left either changed would silently decide the outcome of another class.
  *
- * <p>Class PlayerUpdateStuffTest coded on 260828, commented in full on 260828.
+ * <p>Class PlayerUpdateStuffTest coded on 260828, commented in full on 260828, reworked on 260901
+ * for the move of the calculations to {@link PlayerCalcs} and of the monster pass to
+ * {@link MonsterUtils}.
  *
  * @author Rowan Crowther
  */
@@ -84,9 +113,34 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PlayerUpdateStuffTest {
 
     /**
-     * The player under test, recording rather than calculating.
+     * The hit points every level rolls, so {@code calcHitpoints} has a table to read.
      */
-    private RecordingPlayer player;
+    private static final int HP_PER_LEVEL = 10;
+
+    /**
+     * The level-one maximum {@code calcHitpoints} arrives at once the bonus pass has filled the
+     * stat indices: a neutral constitution's row of {@code adjConMhp} is zero, so the roll stands.
+     */
+    private static final int HP_AFTER_BONUSES = HP_PER_LEVEL;
+
+    /**
+     * The level-one maximum on a state the bonus pass has <em>not</em> filled, where every stat
+     * index is still zero - the bottom row of {@code adjConMhp}, and the table's harshest penalty.
+     * Pinning it makes the point that the hit point clause reads whatever the state currently holds
+     * rather than recomputing the stats itself.
+     */
+    private static final int HP_ON_A_RAW_STATE =
+            HP_PER_LEVEL + StatTables.adjConMhp[0] / 100;
+
+    /**
+     * The player under test.
+     */
+    private Player player;
+
+    /**
+     * The player's upkeep, recording the questions the dispatcher asks of it.
+     */
+    private RecordingUpkeep upkeep;
 
     /**
      * The level the view clause updates.
@@ -114,12 +168,24 @@ class PlayerUpdateStuffTest {
     private Chunk realCave;
 
     /**
-     * A player with a level, a visible map and a generated character - the ordinary mid-game
-     * conditions under which every clause is reachable.
+     * A plain character with a level, a visible map and a generated character - the ordinary
+     * mid-game conditions under which every clause is reachable.
+     *
+     * @throws ReflectiveOperationException if a field cannot be reached
      */
     @BeforeEach
-    void newPlayer() {
-        player = new RecordingPlayer();
+    void newPlayer() throws ReflectiveOperationException {
+        player = new Player();
+        CalcBonusesFixture.plainCharacter(player);
+
+        upkeep = new RecordingUpkeep();
+        set("playerUpkeep", upkeep);
+
+        // calcHitpoints reads the per-level roll table, which birth would have filled.
+        int[] hitPoints = new int[50];
+        for (int i = 0; i < hitPoints.length; i++) hitPoints[i] = HP_PER_LEVEL * (i + 1);
+        set("playerHP", hitPoints);
+
         level = new RecordingChunk(player);
         player.setCave(level);
 
@@ -147,6 +213,19 @@ class PlayerUpdateStuffTest {
         GameWorld.characterGenerated = realCharacterGenerated;
         GameState.setCave(realCave);
         GameInputHolder.resetInstance();
+    }
+
+    /**
+     * Writes one of {@link Player}'s private fields.
+     *
+     * @param name  the field
+     * @param value the value
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private void set(String name, Object value) throws ReflectiveOperationException {
+        Field field = Player.class.getDeclaredField(name);
+        field.setAccessible(true);
+        field.set(player, value);
     }
 
     /**
@@ -180,9 +259,7 @@ class PlayerUpdateStuffTest {
                 0, 0, new Flag<>(ObjectFlag.class), new Flag<>(PlayerFlag.class),
                 5, 30, 5, List.of(), new ClassMagic(5, 300, books.size(), books));
 
-        Field field = Player.class.getDeclaredField("playerClass");
-        field.setAccessible(true);
-        field.set(player, playerClass);
+        set("playerClass", playerClass);
     }
 
     /**
@@ -197,50 +274,46 @@ class PlayerUpdateStuffTest {
     }
 
     /**
-     * A player that records which recalculations were asked for, and runs none of them.
+     * An upkeep that records the questions the dispatcher asks of it.
+     *
+     * <p>Every answer is the real one - this only listens. The clause order is the order of
+     * {@link #queries}, and {@link #cleared} is the order in which the clauses gave their flags up.
      *
      * @author Rowan Crowther
      */
-    private static final class RecordingPlayer extends Player {
+    private static final class RecordingUpkeep extends PlayerUpkeep {
 
         /**
-         * The recalculations asked for, in the order they were asked for.
+         * The flags asked about, in the order the clauses asked.
          */
-        private final List<String> calls = new ArrayList<>();
+        private final List<PlayerUpdateEnum> queries = new ArrayList<>();
+
+        /**
+         * The flags cleared, in the order the clauses cleared them.
+         */
+        private final List<PlayerUpdateEnum> cleared = new ArrayList<>();
+
+        /**
+         * Whether the leading "is anything stale" guard is answered yes regardless, so a pass can
+         * reach the clauses with nothing raised and do nothing at all.
+         */
+        private boolean pretendStale;
 
         @Override
-        public void calcInventory() {
-            calls.add("inventory");
+        public boolean getUpdate() {
+            return pretendStale || super.getUpdate();
         }
 
         @Override
-        public void updateBonuses() {
-            calls.add("bonuses");
+        public boolean updateHas(PlayerUpdateEnum flag) {
+            queries.add(flag);
+            return super.updateHas(flag);
         }
 
         @Override
-        public void calcLight(PlayerState state, boolean update) {
-            calls.add("light");
-        }
-
-        @Override
-        public void calcHitpoints() {
-            calls.add("hitpoints");
-        }
-
-        @Override
-        public void calcMana(PlayerState state, boolean update) {
-            calls.add("mana");
-        }
-
-        @Override
-        public void calcSpells() {
-            calls.add("spells");
-        }
-
-        @Override
-        public void updateMonsters(boolean full) {
-            calls.add(full ? "monsters(full)" : "monsters(partial)");
+        public boolean updateOff(PlayerUpdateEnum flag) {
+            cleared.add(flag);
+            return super.updateOff(flag);
         }
     }
 
@@ -313,48 +386,50 @@ class PlayerUpdateStuffTest {
     }
 
     /**
-     * The dispatch itself: which calculations run, and in which order.
+     * The dispatch itself: which clauses are reached, and in which order.
      */
     @Nested
     @DisplayName("dispatch")
     class Dispatch {
 
         /**
-         * With nothing stale the method returns at C's leading {@code if (!p->upkeep->update)}, and
-         * no calculation is asked for.
+         * With nothing stale the method returns at C's leading {@code if (!p->upkeep->update)}, so
+         * no clause is even asked about.
          */
         @Test
-        @DisplayName("nothing stale means nothing recalculated")
+        @DisplayName("nothing stale means no clause is reached")
         void noFlagsMeansNoWork() {
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertTrue(player.calls.isEmpty(), "no recalculation was asked for");
+            assertTrue(upkeep.queries.isEmpty(), "the leading guard returned before any clause");
+            assertTrue(upkeep.cleared.isEmpty(), "and nothing was cleared");
             assertEquals(0, level.viewUpdates);
             assertTrue(bus.events.isEmpty());
         }
 
         /**
          * C's clause order is load-bearing - the inventory feeds the bonuses, and the bonuses feed
-         * the light, hit points and mana - so it is pinned as a sequence rather than a set.
-         *
-         * @throws ReflectiveOperationException if the class cannot be installed
+         * the light, hit points and mana - so it is pinned as a sequence rather than a set. Past the
+         * leading guard every clause asks its question whether or not its flag is raised, so with
+         * nothing raised the questions are the clause order on their own, and no calculation runs to
+         * obscure it.
          */
         @Test
-        @DisplayName("every clause runs in C's order")
-        void allClausesRunInOrder() throws ReflectiveOperationException {
-            giveClass(4);
-            raise(PlayerUpdateEnum.PU_PANEL, PlayerUpdateEnum.PU_MONSTERS,
-                    PlayerUpdateEnum.PU_UPDATE_VIEW, PlayerUpdateEnum.PU_SPELLS,
-                    PlayerUpdateEnum.PU_MANA, PlayerUpdateEnum.PU_HP,
-                    PlayerUpdateEnum.PU_TORCH, PlayerUpdateEnum.PU_BONUS,
-                    PlayerUpdateEnum.PU_INVEN);
+        @DisplayName("every clause is reached in C's order")
+        void allClausesRunInOrder() {
+            upkeep.pretendStale = true;
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("inventory", "bonuses", "light", "hitpoints", "mana", "spells",
-                    "monsters(partial)"), player.calls);
-            assertEquals(1, level.viewUpdates, "the view was rebuilt once");
-            assertEquals(List.of(GameEventType.EVENT_PLAYERMOVED), bus.events);
+            assertEquals(List.of(PlayerUpdateEnum.PU_INVEN, PlayerUpdateEnum.PU_BONUS,
+                            PlayerUpdateEnum.PU_TORCH, PlayerUpdateEnum.PU_HP,
+                            PlayerUpdateEnum.PU_MANA, PlayerUpdateEnum.PU_SPELLS,
+                            PlayerUpdateEnum.PU_UPDATE_VIEW, PlayerUpdateEnum.PU_DISTANCE,
+                            PlayerUpdateEnum.PU_MONSTERS, PlayerUpdateEnum.PU_PANEL),
+                    upkeep.queries);
+            assertTrue(upkeep.cleared.isEmpty(), "no flag was raised, so none was cleared");
+            assertEquals(0, level.viewUpdates);
+            assertTrue(bus.events.isEmpty());
         }
 
         /**
@@ -369,27 +444,66 @@ class PlayerUpdateStuffTest {
             giveClass(4);
             raise(PlayerUpdateEnum.values());
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
             assertFalse(player.getPlayerUpkeep().getUpdate(), "nothing was left stale");
 
-            player.calls.clear();
-            player.updateStuff();
+            upkeep.queries.clear();
+            PlayerCalcs.updateStuff(player);
 
-            assertTrue(player.calls.isEmpty(), "the second pass found nothing to do");
+            assertTrue(upkeep.queries.isEmpty(), "the second pass found nothing to do");
         }
 
         /**
-         * One raised flag runs one calculation - the others are neither run nor disturbed.
+         * Each clause clears in its own order too, and clears before it calls - the clearing is what
+         * lets a calculation legitimately ask for another pass of itself.
+         */
+        @Test
+        @DisplayName("each clause gives up its own flag")
+        void eachClauseClearsItsOwn() {
+            raise(PlayerUpdateEnum.PU_HP, PlayerUpdateEnum.PU_TORCH, PlayerUpdateEnum.PU_PANEL);
+
+            PlayerCalcs.updateStuff(player);
+
+            assertEquals(List.of(PlayerUpdateEnum.PU_TORCH, PlayerUpdateEnum.PU_HP,
+                    PlayerUpdateEnum.PU_PANEL), upkeep.cleared);
+        }
+
+        /**
+         * One raised flag runs one calculation - here the hit point pass, which is visible in the
+         * new maximum and the repaint it asks for. The others are neither run nor disturbed.
          */
         @Test
         @DisplayName("a single flag runs only its own calculation")
         void oneFlagRunsOneCalculation() {
             raise(PlayerUpdateEnum.PU_HP);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("hitpoints"), player.calls);
+            assertEquals(HP_ON_A_RAW_STATE, player.getMaxHP(), "the hit points were recalculated");
+            assertTrue(player.getPlayerUpkeep().getRedrawFlags().has(PlayerRedraw.PR_HP));
+            assertEquals(List.of(PlayerUpdateEnum.PU_HP), upkeep.cleared,
+                    "and no monster pass was reached");
+            assertEquals(0, level.viewUpdates);
+        }
+
+        /**
+         * The bonus clause installs a freshly derived state over the old one, which is the mark it
+         * leaves; the flags it raises for the figures it changed are then serviced by the clauses
+         * below it, on this same pass, because C puts {@code PU_BONUS} first for that reason.
+         */
+        @Test
+        @DisplayName("the bonus clause runs, and its own requests are serviced below it")
+        void bonusClauseRunsAndFeedsTheRest() {
+            PlayerState before = player.getPlayerState();
+            raise(PlayerUpdateEnum.PU_BONUS);
+
+            PlayerCalcs.updateStuff(player);
+
+            assertNotSame(before, player.getPlayerState(), "a fresh state was installed");
+            assertTrue(upkeep.cleared.contains(PlayerUpdateEnum.PU_HP),
+                    "the hit point recalculation it asked for ran on the same pass");
+            assertEquals(HP_AFTER_BONUSES, player.getMaxHP());
         }
     }
 
@@ -401,19 +515,26 @@ class PlayerUpdateStuffTest {
     class Spells {
 
         /**
-         * A class with spells to learn has them recalculated.
+         * A class with spells to learn reaches the recalculation.
+         *
+         * <p><b>Outstanding:</b> {@code calcSpells} is a stub taking no arguments, so a caster's
+         * pass leaves no mark to assert on; what is pinned here is that the clause was reached and
+         * the flag consumed. When the magic subsystem lands, this is the test that should grow to
+         * check the spells themselves.
          *
          * @throws ReflectiveOperationException if the class cannot be installed
          */
         @Test
-        @DisplayName("a caster has their spells recalculated")
+        @DisplayName("a caster reaches the recalculation")
         void casterRecalculatesSpells() throws ReflectiveOperationException {
             giveClass(9);
             raise(PlayerUpdateEnum.PU_SPELLS);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("spells"), player.calls);
+            assertEquals(List.of(PlayerUpdateEnum.PU_SPELLS), upkeep.cleared);
+            assertTrue(player.getPlayerClass().getMagic().getTotalSpells() > 0,
+                    "the class the clause tested had spells to learn");
         }
 
         /**
@@ -428,9 +549,9 @@ class PlayerUpdateStuffTest {
             giveClass(0);
             raise(PlayerUpdateEnum.PU_SPELLS);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertTrue(player.calls.isEmpty(), "no spell recalculation was asked for");
+            assertEquals(0, player.getPlayerClass().getMagic().getTotalSpells());
             assertFalse(player.getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_SPELLS));
         }
     }
@@ -444,7 +565,7 @@ class PlayerUpdateStuffTest {
 
         /**
          * Before the character exists the model half still runs - birth calls this while building
-         * the character - but nothing touches the map.
+         * the character - but nothing below the guard is even asked about.
          */
         @Test
         @DisplayName("an ungenerated character gets the model half only")
@@ -453,9 +574,13 @@ class PlayerUpdateStuffTest {
             raise(PlayerUpdateEnum.PU_HP, PlayerUpdateEnum.PU_UPDATE_VIEW,
                     PlayerUpdateEnum.PU_PANEL);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("hitpoints"), player.calls);
+            assertEquals(HP_ON_A_RAW_STATE, player.getMaxHP(), "the model half ran");
+            assertEquals(List.of(PlayerUpdateEnum.PU_INVEN, PlayerUpdateEnum.PU_BONUS,
+                            PlayerUpdateEnum.PU_TORCH, PlayerUpdateEnum.PU_HP,
+                            PlayerUpdateEnum.PU_MANA, PlayerUpdateEnum.PU_SPELLS),
+                    upkeep.queries, "and the map half was never reached");
             assertEquals(0, level.viewUpdates);
             assertTrue(bus.events.isEmpty());
         }
@@ -470,9 +595,11 @@ class PlayerUpdateStuffTest {
             raise(PlayerUpdateEnum.PU_HP, PlayerUpdateEnum.PU_UPDATE_VIEW,
                     PlayerUpdateEnum.PU_PANEL);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("hitpoints"), player.calls);
+            assertEquals(HP_ON_A_RAW_STATE, player.getMaxHP(), "the model half ran");
+            assertFalse(upkeep.queries.contains(PlayerUpdateEnum.PU_UPDATE_VIEW),
+                    "the map half was never reached");
             assertEquals(0, level.viewUpdates);
             assertTrue(bus.events.isEmpty());
         }
@@ -487,13 +614,13 @@ class PlayerUpdateStuffTest {
             GameInputHolder.setInstance(new HiddenMapInput());
             raise(PlayerUpdateEnum.PU_UPDATE_VIEW, PlayerUpdateEnum.PU_PANEL);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
             assertTrue(player.getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_UPDATE_VIEW));
             assertTrue(player.getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_PANEL));
 
             GameInputHolder.resetInstance();
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
             assertEquals(1, level.viewUpdates, "the deferred view rebuild ran");
             assertEquals(List.of(GameEventType.EVENT_PLAYERMOVED), bus.events);
@@ -502,6 +629,10 @@ class PlayerUpdateStuffTest {
 
     /**
      * The monster clauses, where one flag consumes the other.
+     *
+     * <p>The pass itself is a static stub, so each case is read off which flags the clause gave up
+     * - the subsumption is the observable behaviour, and it is the only thing C's two clauses
+     * differ by.
      */
     @Nested
     @DisplayName("the monster clauses")
@@ -516,9 +647,10 @@ class PlayerUpdateStuffTest {
         void distanceSubsumesMonsters() {
             raise(PlayerUpdateEnum.PU_DISTANCE, PlayerUpdateEnum.PU_MONSTERS);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("monsters(full)"), player.calls);
+            assertEquals(List.of(PlayerUpdateEnum.PU_DISTANCE, PlayerUpdateEnum.PU_MONSTERS),
+                    upkeep.cleared, "the distance clause gave up both flags, so the full pass ran");
             assertFalse(player.getPlayerUpkeep().updateHas(PlayerUpdateEnum.PU_MONSTERS));
         }
 
@@ -531,9 +663,10 @@ class PlayerUpdateStuffTest {
         void distanceAloneIsFull() {
             raise(PlayerUpdateEnum.PU_DISTANCE);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("monsters(full)"), player.calls);
+            assertEquals(List.of(PlayerUpdateEnum.PU_DISTANCE, PlayerUpdateEnum.PU_MONSTERS),
+                    upkeep.cleared, "the distance clause still gave up both flags");
         }
 
         /**
@@ -544,9 +677,47 @@ class PlayerUpdateStuffTest {
         void monstersAloneIsPartial() {
             raise(PlayerUpdateEnum.PU_MONSTERS);
 
-            player.updateStuff();
+            PlayerCalcs.updateStuff(player);
 
-            assertEquals(List.of("monsters(partial)"), player.calls);
+            assertEquals(List.of(PlayerUpdateEnum.PU_MONSTERS), upkeep.cleared,
+                    "only the monster clause was reached, so the pass was the cheap one");
+        }
+    }
+
+    /**
+     * The view and panel clauses, the two that reach across the boundary.
+     */
+    @Nested
+    @DisplayName("the map clauses")
+    class MapClauses {
+
+        /**
+         * The view is rebuilt on the real level, not the player's own reference to it.
+         */
+        @Test
+        @DisplayName("the view clause rebuilds the level's view")
+        void viewClauseRebuilds() {
+            raise(PlayerUpdateEnum.PU_UPDATE_VIEW);
+
+            PlayerCalcs.updateStuff(player);
+
+            assertEquals(1, level.viewUpdates);
+            assertTrue(bus.events.isEmpty(), "and nothing else was signalled");
+        }
+
+        /**
+         * The panel clause signals the event the viewport re-centres on, which is all C does here
+         * too.
+         */
+        @Test
+        @DisplayName("the panel clause signals a player move")
+        void panelClauseSignals() {
+            raise(PlayerUpdateEnum.PU_PANEL);
+
+            PlayerCalcs.updateStuff(player);
+
+            assertEquals(List.of(GameEventType.EVENT_PLAYERMOVED), bus.events);
+            assertEquals(0, level.viewUpdates);
         }
     }
 }

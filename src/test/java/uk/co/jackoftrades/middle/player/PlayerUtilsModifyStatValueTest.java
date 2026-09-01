@@ -17,7 +17,6 @@
 
 package uk.co.jackoftrades.middle.player;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,20 +53,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * plausible range of stats and modifiers. The hand-written cases stay because they say what the
  * behaviour is meant to be; the sweep only says the two agree.
  *
- * <p>The method is an instance method on a class whose every other member is static, so the tests
- * hold an instance. Constructing one runs the class initialiser, which reads the game's player and
- * is content with there being none.
+ * <p>The method is static, and calling it runs {@link PlayerUtils}'s class initialiser, which reads
+ * the game's player; it is content with there being none, so no fixture is needed here.
  *
- * <p>Class PlayerUtilsModifyStatValueTest coded on 260818, commented in full on 260818.
+ * <p>Class PlayerUtilsModifyStatValueTest coded on 260818, commented in full on 260818, reworked on
+ * 260901 for the method becoming static.
  *
  * @author Rowan Crowther
  */
 class PlayerUtilsModifyStatValueTest {
-
-    /**
-     * The instance the tests call through.
-     */
-    private PlayerUtils utils;
 
     /**
      * A transliteration of C's {@code modify_stat_value}, kept deliberately close to the original
@@ -94,11 +88,6 @@ class PlayerUtilsModifyStatValueTest {
         return value;
     }
 
-    @BeforeEach
-    void setUp() {
-        utils = new PlayerUtils();
-    }
-
     /**
      * Bonuses below the boundary, where a point is worth a point.
      */
@@ -108,12 +97,12 @@ class PlayerUtilsModifyStatValueTest {
         @ParameterizedTest
         @CsvSource({"3, 1, 4", "10, 1, 11", "17, 1, 18", "3, 5, 8", "10, 7, 17"})
         void aPointIsWorthAPoint(int value, int amount, int expected) {
-            assertEquals(expected, utils.modifyStatValue(value, amount));
+            assertEquals(expected, PlayerUtils.modifyStatValue(value, amount));
         }
 
         @Test
         void aBonusReachingEighteenStopsThereWithoutJumping() {
-            assertEquals(18, utils.modifyStatValue(15, 3));
+            assertEquals(18, PlayerUtils.modifyStatValue(15, 3));
         }
     }
 
@@ -125,13 +114,13 @@ class PlayerUtilsModifyStatValueTest {
 
         @Test
         void thePointAfterEighteenIsWorthTen() {
-            assertEquals(28, utils.modifyStatValue(18, 1));
+            assertEquals(28, PlayerUtils.modifyStatValue(18, 1));
         }
 
         @ParameterizedTest
         @CsvSource({"28, 1, 38", "38, 1, 48", "28, 3, 58", "88, 2, 108"})
         void eachFurtherPointAddsAnotherTen(int value, int amount, int expected) {
-            assertEquals(expected, utils.modifyStatValue(value, amount));
+            assertEquals(expected, PlayerUtils.modifyStatValue(value, amount));
         }
 
         /**
@@ -140,8 +129,8 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void aBonusCrossingTheBoundaryChangesStepPartWayThrough() {
-            assertEquals(28, utils.modifyStatValue(17, 2));
-            assertEquals(38, utils.modifyStatValue(17, 3));
+            assertEquals(28, PlayerUtils.modifyStatValue(17, 2));
+            assertEquals(38, PlayerUtils.modifyStatValue(17, 3));
         }
 
         /**
@@ -150,12 +139,12 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void theResultIsNotAClosedFormOfValueAndAmount() {
-            assertEquals(38, utils.modifyStatValue(16, 4));
+            assertEquals(38, PlayerUtils.modifyStatValue(16, 4));
         }
 
         @Test
         void gainsAreNotCappedByThisMethod() {
-            assertEquals(1018, utils.modifyStatValue(18, 100));
+            assertEquals(1018, PlayerUtils.modifyStatValue(18, 100));
         }
     }
 
@@ -168,13 +157,13 @@ class PlayerUtilsModifyStatValueTest {
         @ParameterizedTest
         @CsvSource({"4, -1, 3", "10, -1, 9", "18, -1, 17", "17, -5, 12"})
         void belowTheBoundaryAPointCostsAPoint(int value, int amount, int expected) {
-            assertEquals(expected, utils.modifyStatValue(value, amount));
+            assertEquals(expected, PlayerUtils.modifyStatValue(value, amount));
         }
 
         @ParameterizedTest
         @CsvSource({"28, -1, 18", "38, -1, 28", "58, -3, 28", "38, -2, 18"})
         void atOrAboveTwentyEightAPointCostsTen(int value, int amount, int expected) {
-            assertEquals(expected, utils.modifyStatValue(value, amount));
+            assertEquals(expected, PlayerUtils.modifyStatValue(value, amount));
         }
 
         /**
@@ -183,14 +172,14 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void aLossCrossingTheBoundaryChangesStepPartWayThrough() {
-            assertEquals(17, utils.modifyStatValue(28, -2));
+            assertEquals(17, PlayerUtils.modifyStatValue(28, -2));
         }
 
         @Test
         void lossesStopAtThree() {
-            assertEquals(3, utils.modifyStatValue(3, -1));
-            assertEquals(3, utils.modifyStatValue(5, -10));
-            assertEquals(3, utils.modifyStatValue(108, -100));
+            assertEquals(3, PlayerUtils.modifyStatValue(3, -1));
+            assertEquals(3, PlayerUtils.modifyStatValue(5, -10));
+            assertEquals(3, PlayerUtils.modifyStatValue(108, -100));
         }
 
         /**
@@ -198,7 +187,7 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void aValueBelowTheFloorIsNotRaisedToIt() {
-            assertEquals(1, utils.modifyStatValue(1, -5));
+            assertEquals(1, PlayerUtils.modifyStatValue(1, -5));
         }
 
         /**
@@ -207,9 +196,9 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void aLossToTheFloorIsNotReversedByTheSameGain() {
-            int drained = utils.modifyStatValue(5, -8);
+            int drained = PlayerUtils.modifyStatValue(5, -8);
             assertEquals(3, drained);
-            assertEquals(11, utils.modifyStatValue(drained, 8));
+            assertEquals(11, PlayerUtils.modifyStatValue(drained, 8));
         }
     }
 
@@ -222,7 +211,7 @@ class PlayerUtilsModifyStatValueTest {
         @ParameterizedTest
         @ValueSource(ints = {19, 20, 24, 27})
         void aSinglePointOfLossSnapsBackToEighteen(int value) {
-            assertEquals(18, utils.modifyStatValue(value, -1));
+            assertEquals(18, PlayerUtils.modifyStatValue(value, -1));
         }
 
         /**
@@ -230,7 +219,7 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void theRemainingPenaltyIsSpentFromEighteen() {
-            assertEquals(16, utils.modifyStatValue(25, -3));
+            assertEquals(16, PlayerUtils.modifyStatValue(25, -3));
         }
 
         /**
@@ -239,9 +228,9 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void theSnapBoundarySitsBetweenTwentySevenAndTwentyEight() {
-            assertEquals(18, utils.modifyStatValue(27, -1));
-            assertEquals(18, utils.modifyStatValue(28, -1));
-            assertEquals(28, utils.modifyStatValue(38, -1));
+            assertEquals(18, PlayerUtils.modifyStatValue(27, -1));
+            assertEquals(18, PlayerUtils.modifyStatValue(28, -1));
+            assertEquals(28, PlayerUtils.modifyStatValue(38, -1));
         }
 
         /**
@@ -249,7 +238,7 @@ class PlayerUtilsModifyStatValueTest {
          */
         @Test
         void aGainFromBetweenTheStepsAddsTenWithoutSnapping() {
-            assertEquals(30, utils.modifyStatValue(20, 1));
+            assertEquals(30, PlayerUtils.modifyStatValue(20, 1));
         }
     }
 
@@ -262,7 +251,7 @@ class PlayerUtilsModifyStatValueTest {
         @ParameterizedTest
         @ValueSource(ints = {3, 17, 18, 19, 28, 118})
         void anAmountOfZeroReturnsTheValueUnchanged(int value) {
-            assertEquals(value, utils.modifyStatValue(value, 0));
+            assertEquals(value, PlayerUtils.modifyStatValue(value, 0));
         }
 
         /**
@@ -274,7 +263,7 @@ class PlayerUtilsModifyStatValueTest {
             int compared = 0;
             for (int value = 0; value <= 220; value++) {
                 for (int amount = -40; amount <= 40; amount++) {
-                    assertEquals(cReference(value, amount), utils.modifyStatValue(value, amount),
+                    assertEquals(cReference(value, amount), PlayerUtils.modifyStatValue(value, amount),
                             "value " + value + ", amount " + amount);
                     compared++;
                 }

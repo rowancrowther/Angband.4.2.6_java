@@ -58,9 +58,7 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.objects.enums.ObjectDescription;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftrades.middle.player.EquipSlot;
-import uk.co.jackoftrades.middle.player.Player;
-import uk.co.jackoftrades.middle.player.PlayerUtils;
+import uk.co.jackoftrades.middle.player.*;
 import uk.co.jackoftrades.middle.player.enums.*;
 
 import java.util.ArrayDeque;
@@ -249,8 +247,8 @@ public class GameWorld {
 
         // Player turn fully complete, run the main loop until the player input is needed again
         while (true) {
-            player.noticeStuff();
-            player.handleStuff();
+            PlayerCalcs.noticeStuff(player);
+            PlayerCalcs.handleStuff(player);
             GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
 
             // Process the rest of the world
@@ -265,8 +263,8 @@ public class GameWorld {
                 MonsterTurn.resetMonsters();
 
                 // refresh
-                player.noticeStuff();
-                player.handleStuff();
+                PlayerCalcs.noticeStuff(player);
+                PlayerCalcs.handleStuff(player);
                 GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
 
                 if (player.isDead() || !player.getPlayerUpkeep().isPlaying())
@@ -276,8 +274,8 @@ public class GameWorld {
                 if (GameState.getTurn() % 10 == 0 && !player.getPlayerUpkeep().generateLevel()) {
                     processWorld();
 
-                    player.noticeStuff();
-                    player.handleStuff();
+                    PlayerCalcs.noticeStuff(player);
+                    PlayerCalcs.handleStuff(player);
                     GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
                     if (player.isDead() || !player.getPlayerUpkeep().isPlaying())
                         return;
@@ -515,9 +513,9 @@ public class GameWorld {
         player.getPlayerUpkeep().setUpdateFlagsOn(PlayerUpdateEnum.PU_BONUS, PlayerUpdateEnum.PU_HP,
                 PlayerUpdateEnum.PU_SPELLS, PlayerUpdateEnum.PU_INVEN);
         player.getPlayerUpkeep().noticeFlagOn(PlayerNotice.PN_COMBINE);
-        player.noticeStuff();
-        player.updateStuff();
-        player.redrawStuff();
+        PlayerCalcs.noticeStuff(player);
+        PlayerCalcs.updateStuff(player);
+        PlayerCalcs.redrawStuff(player);
 
         // Refresh
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
@@ -552,15 +550,15 @@ public class GameWorld {
      */
     private void onLeaveLevel() {
         // Cancel any command
-        player.clearTimed(TimedEffect.TMD_COMMAND, false, false);
+        PlayerTimed.clearTimed(TimedEffect.TMD_COMMAND, false, false);
 
         // Don't allow command repeat if move away from item used.
         GameState.getCommandQueue().disableRepeatFloorItem();
 
         // Any pending processing
-        player.noticeStuff();
-        player.updateStuff();
-        player.redrawStuff();
+        PlayerCalcs.noticeStuff(player);
+        PlayerCalcs.updateStuff(player);
+        PlayerCalcs.redrawStuff(player);
 
         // Flush messages
         GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_MESSAGE_FLUSH);
@@ -668,8 +666,8 @@ public class GameWorld {
         player.getPlayerUpkeep().setDropping(false);
 
         // HACK! update needed first because inventory may have changed
-        player.updateStuff();
-        player.redrawStuff();
+        PlayerCalcs.updateStuff(player);
+        PlayerCalcs.redrawStuff(player);
     }
 
     /**
@@ -742,10 +740,10 @@ public class GameWorld {
         if (player.getTimedEffect(TimedEffect.TMD_CUT) != 0) {
             if (player.hasPlayerFlag(PlayerFlag.PF_ROCK))
                 index = 0;
-            else if (player.timedGradeEq(TimedEffect.TMD_CUT, "Mortal Wound") ||
-                    player.timedGradeEq(TimedEffect.TMD_CUT, "Deep Gash"))
+            else if (PlayerTimed.timedGradeEq(player, TimedEffect.TMD_CUT, "Mortal Wound") ||
+                    PlayerTimed.timedGradeEq(player, TimedEffect.TMD_CUT, "Deep Gash"))
                 index = 3;
-            else if (player.timedGradeEq(TimedEffect.TMD_CUT, "Severe Cut"))
+            else if (PlayerTimed.timedGradeEq(player, TimedEffect.TMD_CUT, "Severe Cut"))
                 index = 2;
             else
                 index = 1;
@@ -797,7 +795,7 @@ public class GameWorld {
         // Check food and regenerate
 
         // Digest
-        if (!player.timedGradeEq(TimedEffect.TMD_FOOD, "Full")) {
+        if (!PlayerTimed.timedGradeEq(player, TimedEffect.TMD_FOOD, "Full")) {
             // Digest normally
             if ((turn % 100) == 0) {
                 // basic digestion rate based on speed
@@ -816,34 +814,34 @@ public class GameWorld {
                 if (digestAmount < 1) digestAmount = 1;
 
                 // Digest some food
-                player.decTimed(TimedEffect.TMD_FOOD, digestAmount, false, true);
+                PlayerTimed.playerDecTimed(player, TimedEffect.TMD_FOOD, digestAmount, false, true);
             }
 
             // Fast metabolism
             if (player.getTimedEffect(TimedEffect.TMD_HEAL) != 0) {
-                player.decTimed(TimedEffect.TMD_FOOD, 8 * GameConstants.getPlayerFoodValue(), false, true);
+                PlayerTimed.playerDecTimed(player, TimedEffect.TMD_FOOD, 8 * GameConstants.getPlayerFoodValue(), false, true);
                 if (player.getTimedEffect(TimedEffect.TMD_FOOD) < Food.PY_FOOD_HUNGRY.getFoodValue()) {
-                    player.setTimed(TimedEffect.TMD_HEAL, 0, true, true);
+                    PlayerTimed.setTimed(player, TimedEffect.TMD_HEAL, 0, true, true);
                 }
             }
 
         } else { // Digest quicker when gorged
-            player.decTimed(TimedEffect.TMD_FOOD, 5000 / GameConstants.getPlayerFoodValue(), false, true);
+            PlayerTimed.playerDecTimed(player, TimedEffect.TMD_FOOD, 5000 / GameConstants.getPlayerFoodValue(), false, true);
             player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
         }
 
         // Faint or starving
-        if (player.timedGradeEq(TimedEffect.TMD_FOOD, "Faint")) {
+        if (PlayerTimed.timedGradeEq(player, TimedEffect.TMD_FOOD, "Faint")) {
             // Faint occasionally
             if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) == 0 && RandomValueUtils.oneIn(10)) {
                 Message.message("You faint from the lack of food.");
                 PlayerUtils.disturb();
 
                 // Faint - bypass free action
-                player.incTimed(TimedEffect.TMD_PARALYZED, 1 + RandomValueUtils.randInt0(5),
+                PlayerTimed.incTimed(TimedEffect.TMD_PARALYZED, 1 + RandomValueUtils.randInt0(5),
                         true, true, false);
             }
-        } else if (player.timedGradeEq(TimedEffect.TMD_FOOD, "Starving")) {
+        } else if (PlayerTimed.timedGradeEq(player, TimedEffect.TMD_FOOD, "Starving")) {
             int damage = (Food.PY_FOOD_STARVING.getFoodValue() - player.getTimedEffect(TimedEffect.TMD_FOOD)) / 10;
 
             PlayerUtils.takeHit(PlayerUtils.applyDamageReduction(damage), "starvation");
@@ -880,7 +878,7 @@ public class GameWorld {
                 player.playerExpLose(damage / 10, false);
             }
 
-            player.equipLearnFlag(ObjectFlag.OF_DRAIN_EXP);
+            PlayerKnowledge.equipLearnFlag(player, ObjectFlag.OF_DRAIN_EXP);
         }
 
         // Recharge activatable objects and rods
@@ -910,7 +908,7 @@ public class GameWorld {
                     PlayerUtils.dungeonChangeLevel(0);
                 } else {
                     Message.messageType(MessageType.MSG_TPLEVEL, "You feel yourself yanked downwards!");
-                    player.setRecallDepth();
+                    PlayerUtils.setRecallDepth();
                     PlayerUtils.dungeonChangeLevel(player.getRecallDepth());
                 }
             }
@@ -981,7 +979,7 @@ public class GameWorld {
                 case TMD_FOOD -> decrement = 0; // handle separately
                 case TMD_CUT -> {
                     // Check for truely mortal wounds
-                    if (player.timedGradeEq(effect, "Mortal Wound"))
+                    if (PlayerTimed.timedGradeEq(player, effect, "Mortal Wound"))
                         decrement = 0;
                     else
                         decrement = adjust;
@@ -997,7 +995,7 @@ public class GameWorld {
                         Flag<MonTimedFlags> notify = new Flag<>(MonTimedFlags.class);
                         notify.on(MonTimedFlags.MON_TMD_FLG_NOTIFY);
                         monster.clearTimed(MonTimed.MON_TMD_COMMAND, notify);
-                        player.clearTimed(TimedEffect.TMD_COMMAND, true, true);
+                        PlayerTimed.clearTimed(TimedEffect.TMD_COMMAND, true, true);
                     } else {
                         monster.decrementTimed(MonTimed.MON_TMD_COMMAND, decrement, new Flag<>(MonTimedFlags.class));
                     }
@@ -1005,7 +1003,7 @@ public class GameWorld {
             }
 
             // decrement the effect
-            player.decTimed(effect, decrement, false, true);
+            PlayerTimed.playerDecTimed(player, effect, decrement, false, true);
         }
 
         // Curse effects always decrement by 1
@@ -1021,7 +1019,7 @@ public class GameWorld {
                         curseData.decrementTimeout();
                         if (curseData.getTimeout() == 0) {
                             if (ObjectUtils.doCurseEffect(curse, slot.getItem()))
-                                player.learnCurse(curse);
+                                PlayerKnowledge.learnCurse(player, curse);
                             curseData.setTimeout(curse.getEffect().getTime().randCalc(0, DamageAspect.RANDOMIZE));
                         }
                     }
@@ -1250,8 +1248,8 @@ public class GameWorld {
         // repeat until energy is reduced
         do {
             //refresh
-            player.noticeStuff();
-            player.handleStuff();
+            PlayerCalcs.noticeStuff(player);
+            PlayerCalcs.handleStuff(player);
             GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_REFRESH);
 
             // Pack overflow
@@ -1278,7 +1276,7 @@ public class GameWorld {
 
             // Paralyzed or knocked out players get no turn
             if (player.getTimedEffect(TimedEffect.TMD_PARALYZED) != 0 ||
-                    player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out")) {
+                    PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Knocked Out")) {
                 GameState.getCommandQueue().push(CommandCode.CMD_SLEEP);
             }
 
@@ -1306,6 +1304,6 @@ public class GameWorld {
                 !player.getPlayerUpkeep().generateLevel());
 
         // If needed, notice stuff
-        player.noticeStuff();
+        PlayerCalcs.noticeStuff(player);
     }
 }

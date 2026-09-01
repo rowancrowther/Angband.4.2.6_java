@@ -66,7 +66,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#incCheck}, the port of C's {@code player_inc_check}
+ * Tests {@link PlayerTimed#incCheck}, the port of C's {@code player_inc_check}
  * ({@code src/player-timed.c:926}).
  *
  * <p>The expected values are read off the C, not off the port. The clauses that carry weight there
@@ -83,7 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * state and leaves the other clear, and asserts the answer the branch under test would give.
  *
  * <p><b>Learning is a side effect worth asserting on.</b> The live branches call
- * {@link Player#equipLearnFlag} and {@link Player#equipLearnElement} before they test, so a
+ * {@link PlayerKnowledge#equipLearnFlag} and {@link PlayerKnowledge#equipLearnElement} before they test, so a
  * condition that ends up vetoing has still identified equipment on the way past; the lore branches
  * must not, since nothing happened to the character. {@link #unknownItem} is the lever: an item its
  * counterpart has not caught up with records the chance it was given, and that record is what these
@@ -377,8 +377,8 @@ class PlayerIncCheckTest {
             conditions();
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false), "live check"),
-                    () -> assertTrue(player.incCheck(SUBJECT, true), "lore check"));
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "live check"),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, true), "lore check"));
         }
 
         @Test
@@ -387,7 +387,7 @@ class PlayerIncCheckTest {
             conditions(resist(ElementEnum.ELEM_FIRE), playerFlag(PlayerFlag.PF_UNLIGHT),
                     timedEffect(REFERENT));
 
-            assertTrue(player.incCheck(SUBJECT, false),
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false),
                     "none of the three conditions holds, so the walk reaches its return");
         }
 
@@ -397,7 +397,7 @@ class PlayerIncCheckTest {
             conditions(resist(ElementEnum.ELEM_FIRE), vulnerability(ElementEnum.ELEM_COLD));
             state.setElInfo(ElementEnum.ELEM_COLD, -1);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         /**
@@ -414,7 +414,7 @@ class PlayerIncCheckTest {
             running(REFERENT, 5);
 
             assertAll(
-                    () -> assertFalse(player.incCheck(SUBJECT, false), "the first condition holds"),
+                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false), "the first condition holds"),
                     () -> assertFalse(learnedAbout(counterpart, ElementEnum.ELEM_FIRE),
                             "the resist condition was never reached, so nothing was learned"));
         }
@@ -429,7 +429,7 @@ class PlayerIncCheckTest {
             conditions(timedEffect(REFERENT), resist(ElementEnum.ELEM_FIRE));
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false), "neither condition holds"),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "neither condition holds"),
                     () -> assertTrue(learnedAbout(counterpart, ElementEnum.ELEM_FIRE),
                             "the resist condition was reached and learned from the equipment"));
         }
@@ -453,7 +453,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
             known.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
-            assertFalse(player.incCheck(SUBJECT, true));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -462,7 +462,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
             state.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
-            assertTrue(player.incCheck(SUBJECT, true),
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, true),
                     "the player does not know about the flag, so their lore says nothing stops it");
         }
 
@@ -472,7 +472,7 @@ class PlayerIncCheckTest {
             ItemObject counterpart = unknownItem();
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
 
-            player.incCheck(SUBJECT, true);
+            PlayerTimed.incCheck(player, SUBJECT, true);
 
             assertFalse(learnedAbout(counterpart, ObjectFlag.OF_FREE_ACT),
                     "a lore check is a query and must leave the character alone");
@@ -485,7 +485,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
             state.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -495,7 +495,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
             known.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
-            assertTrue(player.incCheck(SUBJECT, false),
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false),
                     "believing in a flag one does not have does not turn the effect aside");
         }
 
@@ -507,7 +507,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false)),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false)),
                     () -> assertTrue(learnedAbout(counterpart, ObjectFlag.OF_FREE_ACT)));
         }
 
@@ -524,7 +524,7 @@ class PlayerIncCheckTest {
             state.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
             assertAll(
-                    () -> assertFalse(player.incCheck(SUBJECT, false)),
+                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false)),
                     () -> assertFalse(resistWasAnnounced(), "no actor, so nothing is announced"));
         }
 
@@ -536,7 +536,7 @@ class PlayerIncCheckTest {
             state.getObjectFlag().on(ObjectFlag.OF_FREE_ACT);
 
             assertAll(
-                    () -> assertFalse(player.incCheck(SUBJECT, false)),
+                    () -> assertFalse(PlayerTimed.incCheck(player, SUBJECT, false)),
                     () -> assertTrue(resistWasAnnounced(), "the monster's effect was resisted"));
         }
 
@@ -547,7 +547,7 @@ class PlayerIncCheckTest {
             conditions(objectFlag(ObjectFlag.OF_FREE_ACT));
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false)),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false)),
                     () -> assertFalse(resistWasAnnounced(),
                             "the message belongs to the resisting branch alone"));
         }
@@ -572,7 +572,7 @@ class PlayerIncCheckTest {
             conditions(resist(ElementEnum.ELEM_POIS));
             known.setElInfo(ElementEnum.ELEM_POIS, 1);
 
-            assertFalse(player.incCheck(SUBJECT, true));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -583,7 +583,7 @@ class PlayerIncCheckTest {
             state.setElInfo(ElementEnum.ELEM_POIS, 1);
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, true),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, true),
                             "an unknown resistance is not part of the player's lore"),
                     () -> assertFalse(learnedAbout(counterpart, ElementEnum.ELEM_POIS),
                             "and the lore branch learns nothing"));
@@ -595,7 +595,7 @@ class PlayerIncCheckTest {
             conditions(resist(ElementEnum.ELEM_POIS));
             state.setElInfo(ElementEnum.ELEM_POIS, 1);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -603,7 +603,7 @@ class PlayerIncCheckTest {
         void resistLiveAbsent() {
             conditions(resist(ElementEnum.ELEM_POIS));
 
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         /**
@@ -617,8 +617,8 @@ class PlayerIncCheckTest {
             known.setElInfo(ElementEnum.ELEM_POIS, -1);
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false), "live"),
-                    () -> assertTrue(player.incCheck(SUBJECT, true), "lore"));
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "live"),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, true), "lore"));
         }
 
         @Test
@@ -627,7 +627,7 @@ class PlayerIncCheckTest {
             conditions(vulnerability(ElementEnum.ELEM_POIS));
             known.setElInfo(ElementEnum.ELEM_POIS, -1);
 
-            assertFalse(player.incCheck(SUBJECT, true));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -636,7 +636,7 @@ class PlayerIncCheckTest {
             conditions(vulnerability(ElementEnum.ELEM_POIS));
             state.setElInfo(ElementEnum.ELEM_POIS, -1);
 
-            assertTrue(player.incCheck(SUBJECT, true));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -645,7 +645,7 @@ class PlayerIncCheckTest {
             conditions(vulnerability(ElementEnum.ELEM_POIS));
             state.setElInfo(ElementEnum.ELEM_POIS, -1);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         /**
@@ -659,8 +659,8 @@ class PlayerIncCheckTest {
             known.setElInfo(ElementEnum.ELEM_POIS, 1);
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false), "live"),
-                    () -> assertTrue(player.incCheck(SUBJECT, true), "lore"));
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "live"),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, true), "lore"));
         }
 
         @Test
@@ -669,7 +669,7 @@ class PlayerIncCheckTest {
             conditions(resist(ElementEnum.ELEM_POIS), vulnerability(ElementEnum.ELEM_POIS));
             state.setElInfo(ElementEnum.ELEM_POIS, 0);
 
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -679,7 +679,7 @@ class PlayerIncCheckTest {
             conditions(vulnerability(ElementEnum.ELEM_POIS));
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false)),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false)),
                     () -> assertTrue(learnedAbout(counterpart, ElementEnum.ELEM_POIS)));
         }
     }
@@ -703,7 +703,7 @@ class PlayerIncCheckTest {
             conditions(playerFlag(PlayerFlag.PF_UNLIGHT));
             known.playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
-            assertFalse(player.incCheck(SUBJECT, true));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -712,7 +712,7 @@ class PlayerIncCheckTest {
             conditions(playerFlag(PlayerFlag.PF_UNLIGHT));
             state.playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
-            assertTrue(player.incCheck(SUBJECT, true));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -721,7 +721,7 @@ class PlayerIncCheckTest {
             conditions(playerFlag(PlayerFlag.PF_UNLIGHT));
             state.playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -730,7 +730,7 @@ class PlayerIncCheckTest {
             conditions(playerFlag(PlayerFlag.PF_UNLIGHT));
             known.playerFlagOn(PlayerFlag.PF_UNLIGHT);
 
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -738,7 +738,7 @@ class PlayerIncCheckTest {
         void absent() {
             conditions(playerFlag(PlayerFlag.PF_UNLIGHT));
 
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
     }
 
@@ -767,8 +767,8 @@ class PlayerIncCheckTest {
             conditions(timedEffect(REFERENT));
 
             assertAll(
-                    () -> assertTrue(player.incCheck(SUBJECT, false), "live"),
-                    () -> assertTrue(player.incCheck(SUBJECT, true), "lore"));
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, false), "live"),
+                    () -> assertTrue(PlayerTimed.incCheck(player, SUBJECT, true), "lore"));
         }
 
         @Test
@@ -777,7 +777,7 @@ class PlayerIncCheckTest {
             conditions(timedEffect(REFERENT));
             running(REFERENT, 1);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         /**
@@ -790,7 +790,7 @@ class PlayerIncCheckTest {
             conditions(timedEffect(REFERENT));
             running(REFERENT, 7);
 
-            assertEquals(player.incCheck(SUBJECT, false), player.incCheck(SUBJECT, true));
+            assertEquals(PlayerTimed.incCheck(player, SUBJECT, false), PlayerTimed.incCheck(player, SUBJECT, true));
         }
 
         @Test
@@ -799,7 +799,7 @@ class PlayerIncCheckTest {
             conditions(timedEffect(REFERENT));
             running(REFERENT, 1);
 
-            assertFalse(player.incCheck(SUBJECT, true));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, true));
         }
     }
 
@@ -824,7 +824,7 @@ class PlayerIncCheckTest {
         @Test
         @DisplayName("an ordinary character can be poisoned")
         void ordinaryCharacterIsPoisoned() {
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -832,7 +832,7 @@ class PlayerIncCheckTest {
         void permanentResistance() {
             state.setElInfo(ElementEnum.ELEM_POIS, 1);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -840,7 +840,7 @@ class PlayerIncCheckTest {
         void temporaryResistance() throws Exception {
             running(REFERENT, 20);
 
-            assertFalse(player.incCheck(SUBJECT, false));
+            assertFalse(PlayerTimed.incCheck(player, SUBJECT, false));
         }
 
         @Test
@@ -848,7 +848,7 @@ class PlayerIncCheckTest {
         void expiredTemporaryResistance() throws Exception {
             running(REFERENT, 0);
 
-            assertTrue(player.incCheck(SUBJECT, false));
+            assertTrue(PlayerTimed.incCheck(player, SUBJECT, false));
         }
     }
 
@@ -870,7 +870,7 @@ class PlayerIncCheckTest {
             poke(malformed, "index", TimedEffectReasonType.TYPE_NONE);
             conditions(malformed);
 
-            assertThrows(RuntimeException.class, () -> player.incCheck(SUBJECT, false));
+            assertThrows(RuntimeException.class, () -> PlayerTimed.incCheck(player, SUBJECT, false));
         }
     }
 }

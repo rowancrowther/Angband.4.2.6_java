@@ -51,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.setTimed}, the port of C's {@code player_set_timed}
+ * Tests {@code PlayerTimed.setTimed}, the port of C's {@code player_set_timed}
  * ({@code src/player-timed.c:787}).
  *
  * <p>Every expectation below is read off that C rather than off the Java. The function is a chain of
@@ -83,7 +83,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Rowan Crowther
  */
 @ExtendWith(uk.co.jackoftrades.testsupport.SeededPlayerRegistry.class)
-@DisplayName("Player.setTimed")
+@DisplayName("PlayerTimed.setTimed")
 class PlayerSetTimedTest {
 
     /**
@@ -248,7 +248,7 @@ class PlayerSetTimedTest {
      * @return what the method returned
      */
     private boolean set(int amount, boolean notify, boolean canDisturb) {
-        return player.setTimed(EFFECT, amount, notify, canDisturb);
+        return PlayerTimed.setTimed(player, EFFECT, amount, notify, canDisturb);
     }
 
     /**
@@ -268,7 +268,7 @@ class PlayerSetTimedTest {
         loadLadder();
 
         assertThrows(IllegalArgumentException.class,
-                () -> player.setTimed(TimedEffect.TMD_STUN, 5, true, true));
+                () -> PlayerTimed.setTimed(player, TimedEffect.TMD_STUN, 5, true, true));
     }
 
     /**

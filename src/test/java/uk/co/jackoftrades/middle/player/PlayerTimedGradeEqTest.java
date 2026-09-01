@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
- * Tests {@link Player#timedGradeEq}, the port of C's {@code player_timed_grade_eq}
+ * Tests {@link PlayerTimed#timedGradeEq}, the port of C's {@code player_timed_grade_eq}
  * ({@code player-timed.c:734}).
  *
  * <p>A timed effect is one counter, but the status the player is told about is a <em>band</em> of
@@ -169,7 +169,7 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         @Test
@@ -177,7 +177,7 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 60);
 
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Heavy Stun"));
         }
 
         @Test
@@ -185,7 +185,7 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 200);
 
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Knocked Out"));
         }
 
         @Test
@@ -193,8 +193,8 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 50);
 
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Heavy Stun"));
         }
 
         @Test
@@ -202,8 +202,8 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 51);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Heavy Stun"));
         }
     }
 
@@ -218,9 +218,9 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out"),
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Knocked Out"),
                     "grades above the active one also cover the value; they must not be compared");
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Heavy Stun"));
         }
 
         @Test
@@ -228,8 +228,8 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 200);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Heavy Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Heavy Stun"));
         }
 
         @Test
@@ -239,8 +239,8 @@ class PlayerTimedGradeEqTest {
                     grade(2, 150, "Different"));
             setTimedValue(TimedEffect.TMD_STUN, 100);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Same"));
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Different"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Same"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Different"));
         }
     }
 
@@ -262,15 +262,15 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 0);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Knocked Out"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Knocked Out"));
         }
 
         @Test
         void aFreshPlayerHasEveryEffectDormant() throws Exception {
             loadStunGrades();
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         @Test
@@ -278,7 +278,7 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_POISONED, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_POISONED, "Poisoned"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_POISONED, "Poisoned"));
         }
 
         @Test
@@ -286,7 +286,7 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Bewildered"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Bewildered"));
         }
 
         @Test
@@ -294,7 +294,7 @@ class PlayerTimedGradeEqTest {
             loadEffect(TimedEffect.TMD_STUN, grade(1, 50, null));
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         @Test
@@ -302,7 +302,7 @@ class PlayerTimedGradeEqTest {
             loadEffect(TimedEffect.TMD_STUN);
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         /**
@@ -316,7 +316,7 @@ class PlayerTimedGradeEqTest {
             loadEffect(TimedEffect.TMD_STUN, grade(1, 50, "Stun"));
             setTimedValue(TimedEffect.TMD_STUN, 500);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         /**
@@ -330,14 +330,14 @@ class PlayerTimedGradeEqTest {
             loadStunGrades();
             setTimedValue(TimedEffect.TMD_STUN, -5);
 
-            assertTrue(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertTrue(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         @Test
         void theSentinelEffectIsNeverAtAGrade() throws Exception {
             loadStunGrades();
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_NONE, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_NONE, "Stun"));
         }
 
         @Test
@@ -345,7 +345,7 @@ class PlayerTimedGradeEqTest {
             registryField().set(null, new ArrayList<PlayerTimedEffect>());
             setTimedValue(TimedEffect.TMD_STUN, 10);
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
 
         @Test
@@ -355,7 +355,7 @@ class PlayerTimedGradeEqTest {
             f.setAccessible(true);
             f.set(player, new HashMap<TimedEffect, Integer>());
 
-            assertFalse(player.timedGradeEq(TimedEffect.TMD_STUN, "Stun"));
+            assertFalse(PlayerTimed.timedGradeEq(player, TimedEffect.TMD_STUN, "Stun"));
         }
     }
 }

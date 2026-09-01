@@ -29,6 +29,7 @@ import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.ElementInfoEnum;
 import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftrades.middle.objects.enums.*;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 
 import java.util.*;
 
@@ -270,7 +271,7 @@ public class ObjectKind {
      *
      * <p>What turns on it: a special artifact is its own item rather than a template many items
      * share, so there is nothing about it left to be unsure of once it is in hand.
-     * {@link uk.co.jackoftrades.middle.player.Player#knowObject} makes the player aware of a
+     * {@link PlayerKnowledge#knowObject} makes the player aware of a
      * non-jewellery special artifact outright rather than waiting for its runes to be read.
      *
      * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.

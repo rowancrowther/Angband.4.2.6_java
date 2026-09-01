@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 import uk.co.jackoftrades.middle.player.PlayerState;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerOptionEnum;
@@ -320,8 +321,8 @@ public class Monster {
      *
      * <p>The method has two halves that serve different parties. The first half is unconditional
      * and works on the player: whatever a monster might learn from an event, the player is given
-     * the same chance to learn it, so {@link Player#equipLearnFlag} and
-     * {@link Player#equipLearnElement} run before any of the monster's own gates. The second half
+     * the same chance to learn it, so {@link PlayerKnowledge#equipLearnFlag} and
+     * {@link PlayerKnowledge#equipLearnElement} run before any of the monster's own gates. The second half
      * writes the monster's picture of the player into {@link #knownPState}, and is fenced by four
      * successive returns — the {@code birth_ai_learn} option being off, the monster being stupid,
      * a non-smart monster failing a one-in-two roll, and a flat one-in-a-hundred failure that
@@ -374,10 +375,10 @@ public class Monster {
 
         // Anything a monster might learn, the player should learn
         if (objFlag != ObjectFlag.OF_NONE)
-            player.equipLearnFlag(objFlag);
+            PlayerKnowledge.equipLearnFlag(player, objFlag);
 
         if (elementOK)
-            player.equipLearnElement(elem);
+            PlayerKnowledge.equipLearnElement(player, elem);
 
         // Not allowed to learn
         if (!player.opt(PlayerOptionEnum.OP_birth_ai_learn)) return;

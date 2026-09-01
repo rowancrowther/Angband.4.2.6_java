@@ -34,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#calcHitpoints()}, the port of C's {@code calc_hitpoints}
+ * Tests {@link PlayerCalcs#calcHitpoints()}, the port of C's {@code calc_hitpoints}
  * ({@code player-calcs.c:1562-1588}) — the maximum every wound, potion and killing blow is measured
  * against.
  *
@@ -182,7 +182,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(0, 0, 0);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertEquals(100, read("maxHP"));
         }
@@ -199,12 +199,12 @@ class PlayerCalcHitpointsTest {
         void constitutionScalesWithLevel() throws ReflectiveOperationException {
             character(10, 100, CON_STRONG);
             hitPoints(0, 0, 0);
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
             int atTen = read("maxHP");
 
             character(2, 100, CON_STRONG);
             hitPoints(0, 0, 0);
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
             int atTwo = read("maxHP");
 
             assertAll(
@@ -225,7 +225,7 @@ class PlayerCalcHitpointsTest {
             character(3, 30, CON_WORST);
             hitPoints(0, 0, 0);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertEquals(23, read("maxHP"));
         }
@@ -243,7 +243,7 @@ class PlayerCalcHitpointsTest {
             character(20, 10, CON_WORST);
             hitPoints(0, 0, 0);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertEquals(21, read("maxHP"));
         }
@@ -270,7 +270,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(50, 30, 500);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertAll(
                     () -> assertEquals(100, read("maxHP")),
@@ -290,7 +290,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(125, 125, 900);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertAll(
                     () -> assertEquals(100, read("maxHP")),
@@ -311,7 +311,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(125, 100, 900);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertAll(
                     () -> assertEquals(100, read("maxHP")),
@@ -341,7 +341,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(100, 100, 900);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertAll(
                     () -> assertEquals(100, read("currentHP")),
@@ -361,7 +361,7 @@ class PlayerCalcHitpointsTest {
             character(10, 100, CON_NEUTRAL);
             hitPoints(90, 90, 0);
 
-            player.calcHitpoints();
+            PlayerCalcs.calcHitpoints(player);
 
             assertTrue(repaintAsked(), "PR_HP should be raised");
         }

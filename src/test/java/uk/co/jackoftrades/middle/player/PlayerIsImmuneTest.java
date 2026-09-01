@@ -25,14 +25,14 @@ import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.playerIsImmune}, the port of C's {@code player_is_immune}
+ * Tests {@link PlayerUtils#playerIsImmune(Player, ElementEnum)}, the port of C's
+ * {@code player_is_immune}
  * ({@code player-util.c:1566}).
  *
  * <p>The C function is a single comparison, {@code p->state.el_info[element].res_level == 3}, and
@@ -47,10 +47,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the knowledge check separately, alongside this one, which is only correct if this one ignores
  * knowledge.
  *
- * <p>The method is private, so it is reached by reflection rather than by exercising the timed
- * effect that calls it; the timed path has its own conditions and would not isolate this comparison.
+ * <p>The method is called directly rather than through the timed effect that uses it; the timed
+ * path has its own conditions and would not isolate this comparison. The calculated state it reads
+ * is still installed by reflection, since {@code new Player()} leaves it null.
  *
- * <p>Class PlayerIsImmuneTest coded on 260829, commented in full on 260829.
+ * <p>Class PlayerIsImmuneTest coded on 260829, commented in full on 260829, reworked on 260901 for
+ * the move of the method to {@link PlayerUtils}.
  *
  * @author Rowan Crowther
  */
@@ -68,16 +70,11 @@ class PlayerIsImmuneTest {
     private PlayerState state;
 
     /**
-     * The private method under test, made reachable once.
-     */
-    private Method playerIsImmune;
-
-    /**
      * A new player with an empty calculated state — {@code new Player()} leaves {@code state} null,
      * since C's state is only filled by {@code calc_bonuses}, so one is installed directly. A fresh
      * {@link PlayerState} has an entry at level 0 for every real element.
      *
-     * @throws Exception if the field or method cannot be reached
+     * @throws Exception if the field cannot be reached
      */
     @BeforeEach
     void newPlayer() throws Exception {
@@ -86,9 +83,6 @@ class PlayerIsImmuneTest {
         Field field = Player.class.getDeclaredField("state");
         field.setAccessible(true);
         field.set(player, state);
-
-        playerIsImmune = Player.class.getDeclaredMethod("playerIsImmune", ElementEnum.class);
-        playerIsImmune.setAccessible(true);
     }
 
     /**
@@ -96,10 +90,9 @@ class PlayerIsImmuneTest {
      *
      * @param element the element to ask about
      * @return what the method returned
-     * @throws Exception if the call fails
      */
-    private boolean isImmune(ElementEnum element) throws Exception {
-        return (boolean) playerIsImmune.invoke(player, element);
+    private boolean isImmune(ElementEnum element) {
+        return PlayerUtils.playerIsImmune(player, element);
     }
 
     /**

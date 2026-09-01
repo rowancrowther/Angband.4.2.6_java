@@ -31,6 +31,7 @@ import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.ObjectKind;
+import uk.co.jackoftrades.middle.objects.ObjectUtils;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.TValue;
@@ -52,16 +53,22 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
- * Tests the three capacity helpers behind {@code combinePack} — {@code packSlotsUsed},
- * {@code preferredQuiverSlot} and {@code quiverAbsorbNum} — the ports of C's
- * {@code pack_slots_used} ({@code obj-gear.c:257}), {@code preferred_quiver_slot}
- * ({@code obj-gear.c:1396}) and {@code quiver_absorb_num} ({@code obj-gear.c:649}).
+ * Tests the three capacity helpers behind {@link ObjectUtils#combinePack} —
+ * {@link ObjectUtils#packSlotsUsed}, {@link ObjectUtils#preferredQuiverSlot} and
+ * {@code quiverAbsorbNum} — the ports of C's {@code pack_slots_used} ({@code obj-gear.c:257}),
+ * {@code preferred_quiver_slot} ({@code obj-gear.c:1396}) and {@code quiver_absorb_num}
+ * ({@code obj-gear.c:649}).
  *
- * <p>All three are private, and reached here by reflection. They are worth testing at that cost
- * because they are the arithmetic {@code invenCanStackPartial} rests on, and because none of them
- * has a visible failure mode: a wrong slot count does not throw, it just quietly decides that a
- * quiver with room in it is full, or that a full one has room. The player sees ammunition that will
- * not combine, which looks like nothing at all.
+ * <p>All three used to be instance methods on {@link Player} and were reached here by reflection.
+ * They now live on {@link ObjectUtils} as statics taking the player as their first argument, so the
+ * first two are called directly; only {@code quiverAbsorbNum} is still private and still reflected
+ * on, along with the {@code SplitBetweenPackAndQuiver} record it passes its pair of counts in.
+ *
+ * <p>They are worth testing at that cost because they are the arithmetic
+ * {@code invenCanStackPartial} rests on, and because none of them has a visible failure mode: a
+ * wrong slot count does not throw, it just quietly decides that a quiver with room in it is full, or
+ * that a full one has room. The player sees ammunition that will not combine, which looks like
+ * nothing at all.
  *
  * <p><b>What the quiver is.</b> C indexes {@code p->upkeep->quiver[i]} over a fixed
  * {@code z_info->quiver_size} slots and reads a {@code NULL} entry as an empty one. The empty slots
@@ -74,11 +81,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * figure here wants the second. The tests use sizes above 10 throughout, so that reaching for the
  * first shows up as a failure rather than as an answer that happens to agree.
  *
- * <p>Class PlayerQuiverCapacityTest coded on 260824, commented in full on 260824.
+ * <p>Class PlayerQuiverCapacityTest coded on 260824, commented in full on 260824, retargeted
+ * from {@link Player} to {@link ObjectUtils} on 260901.
  *
  * @author Rowan Crowther
  */
-@DisplayName("Player quiver and pack capacity")
+@DisplayName("ObjectUtils quiver and pack capacity")
 class PlayerQuiverCapacityTest {
 
     /**
@@ -230,30 +238,34 @@ class PlayerQuiverCapacityTest {
     }
 
     /**
-     * Calls the private {@code packSlotsUsed}.
+     * Calls {@link ObjectUtils#packSlotsUsed} against the player under test.
      *
      * @return the number of pack slots in use
      */
     private int packSlotsUsed() {
-        return (Integer) invoke("packSlotsUsed", new Class<?>[]{});
+        return ObjectUtils.packSlotsUsed(player);
     }
 
     /**
-     * Calls the private {@code preferredQuiverSlot}.
+     * Calls {@link ObjectUtils#preferredQuiverSlot} against the player under test.
+     *
+     * <p>The player is a parameter of the method rather than its receiver, and it is read: the fire
+     * key the inscription is matched against depends on the roguelike-keyset option.
      *
      * @param item the object whose inscription is read
      * @return the slot asked for, or {@code -1}
      */
     private int preferredQuiverSlot(ItemObject item) {
-        return (Integer) invoke("preferredQuiverSlot", new Class<?>[]{ItemObject.class}, item);
+        return ObjectUtils.preferredQuiverSlot(player, item);
     }
 
     /**
      * Calls the private {@code quiverAbsorbNum}, building the {@code SplitBetweenPackAndQuiver} it
      * takes and unpacking the one it returns.
      *
-     * <p>The record is private to {@link Player} too, so it is reached by name through the enclosing
-     * class's declared types rather than imported.
+     * <p>The record is private to {@link ObjectUtils} too, so it is reached by name through the
+     * enclosing class's declared types rather than imported. The method is static now, so the
+     * receiver passed to {@code invoke} is {@code null} and the player travels as an argument.
      *
      * @param item        the object being offered to the quiver
      * @param numToQuiver the incoming quiver figure, which the method does not read
@@ -263,22 +275,22 @@ class PlayerQuiverCapacityTest {
     private int[] quiverAbsorbNum(ItemObject item, int numToQuiver, int noToPack) {
         try {
             Class<?> splitType = null;
-            for (Class<?> declared : Player.class.getDeclaredClasses()) {
+            for (Class<?> declared : ObjectUtils.class.getDeclaredClasses()) {
                 if (declared.getSimpleName().equals("SplitBetweenPackAndQuiver")) {
                     splitType = declared;
                 }
             }
             if (splitType == null) {
-                throw new AssertionError("Player.SplitBetweenPackAndQuiver no longer exists");
+                throw new AssertionError("ObjectUtils.SplitBetweenPackAndQuiver no longer exists");
             }
             var ctor = splitType.getDeclaredConstructor(int.class, int.class);
             ctor.setAccessible(true);
             Object in = ctor.newInstance(numToQuiver, noToPack);
 
-            Method method = Player.class.getDeclaredMethod("quiverAbsorbNum", ItemObject.class,
-                    splitType);
+            Method method = ObjectUtils.class.getDeclaredMethod("quiverAbsorbNum", Player.class,
+                    ItemObject.class, splitType);
             method.setAccessible(true);
-            Object out = method.invoke(player, item, in);
+            Object out = method.invoke(null, player, item, in);
 
             Method quiverPart = splitType.getDeclaredMethod("numToQuiver");
             Method packPart = splitType.getDeclaredMethod("noToPack");
@@ -291,46 +303,16 @@ class PlayerQuiverCapacityTest {
             }
             throw new AssertionError(e.getCause());
         } catch (ReflectiveOperationException e) {
-            throw new AssertionError("Player.quiverAbsorbNum is no longer callable by reflection", e);
+            throw new AssertionError(
+                    "ObjectUtils.quiverAbsorbNum is no longer callable by reflection", e);
         }
     }
 
     /**
-     * Calls a private method on the player under test, letting a {@link RuntimeException} thrown
-     * inside it out unwrapped so that {@code assertThrows} sees what the method really threw.
-     *
-     * @param name  the method name
-     * @param types its parameter types
-     * @param args  the arguments
-     * @return whatever the method returned
+     * @return the player's gear list, the same list {@code buildPlayer} installed
      */
-    private Object invoke(String name, Class<?>[] types, Object... args) {
-        try {
-            Method method = Player.class.getDeclaredMethod(name, types);
-            method.setAccessible(true);
-            return method.invoke(player, args);
-        } catch (InvocationTargetException e) {
-            if (e.getCause() instanceof RuntimeException cause) {
-                throw cause;
-            }
-            throw new AssertionError(e.getCause());
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError("Player." + name + " is no longer callable by reflection", e);
-        }
-    }
-
-    /**
-     * @return the player's gear list
-     */
-    @SuppressWarnings("unchecked")
     private List<ItemObject> gear() {
-        try {
-            Field field = Player.class.getDeclaredField("gear");
-            field.setAccessible(true);
-            return (List<ItemObject>) field.get(player);
-        } catch (ReflectiveOperationException e) {
-            throw new AssertionError("Player.gear is no longer reachable by reflection", e);
-        }
+        return player.getGear();
     }
 
     /**

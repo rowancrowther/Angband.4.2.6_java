@@ -3,14 +3,16 @@
 Every C function of Angband 4.2.6 that this port implements **in full**. Stubs, partial ports, and Java methods that
 merely *call* a C counterpart rather than reproduce it are deliberately absent.
 
-Each function listed here also carries a `/* Ported to Java 2026-08-30 */` comment immediately above its definition in
-the reference C source at `/home/rowan/Desktop/Angband-4.2.6/src`.
+Each function listed here also carries a `/* Ported to Java <date> */` comment immediately above its definition in the
+reference C source at `/home/rowan/Desktop/Angband-4.2.6/src`, stamped with the date it was added to this list.
 
-**274 C functions across 41 files**, listed 2026-08-30.
+**295 C functions across 43 files**, listed 2026-08-30, revised 2026-09-01.
 
-Twelve C functions are split across more than one Java method — `player_knows_brand`/`_slay`/`_curse`
-each answer from both `Player` and `KnownObject`, `update_stuff` and `update_bonuses` straddle `Player`
-and its upkeep/state, and `splashscreen_note`'s two branches became three methods. Every Java site is listed against its
+Fourteen C functions are split across more than one Java method — `player_knows_brand`/`_slay`/`_curse`
+each answer from both `PlayerKnowledge` and `KnownObject`, `update_stuff` and `update_bonuses` straddle
+`PlayerCalcs` and the player's upkeep/state, `player_embody` splits the copy from the assignment,
+`history_add_full` splits building the entry from appending it, and `splashscreen_note`'s two branches became three
+methods. Every Java site is listed against its
 C function. Annotations are stripped from the signatures; the return type has its own column.
 
 ## Contents
@@ -33,20 +35,22 @@ C function. Annotations are stripped from the signatures; the return type has it
 - [`obj-desc.c`](#obj-descc) — 2
 - [`obj-gear.c`](#obj-gearc) — 14
 - [`obj-ignore.c`](#obj-ignorec) — 10
-- [`obj-knowledge.c`](#obj-knowledgec) — 32
+- [`obj-knowledge.c`](#obj-knowledgec) — 34
 - [`obj-pile.c`](#obj-pilec) — 8
 - [`obj-power.c`](#obj-powerc) — 24
 - [`obj-properties.c`](#obj-propertiesc) — 2
 - [`obj-slays.c`](#obj-slaysc) — 1
 - [`obj-tval.c`](#obj-tvalc) — 4
 - [`obj-util.c`](#obj-utilc) — 9
-- [`player-birth.c`](#player-birthc) — 1
+- [`player-birth.c`](#player-birthc) — 2
 - [`player-calcs.c`](#player-calcsc) — 18
+- [`player-history.c`](#player-historyc) — 4
 - [`player-quest.c`](#player-questc) — 1
 - [`player-spell.c`](#player-spellc) — 3
-- [`player-timed.c`](#player-timedc) — 4
+- [`player-timed.c`](#player-timedc) — 7
 - [`player-util.c`](#player-utilc) — 6
-- [`player.c`](#playerc) — 4
+- [`player.c`](#playerc) — 13
+- [`randname.c`](#randnamec) — 2
 - [`ui-birth.c`](#ui-birthc) — 2
 - [`ui-display.c`](#ui-displayc) — 8
 - [`ui-entry-combiner.c`](#ui-entry-combinerc) — 14
@@ -233,78 +237,80 @@ C function. Annotations are stripped from the signatures; the return type has it
 
 ## `obj-gear.c`
 
-| C function                   | Java class   | Java signature                                                                                                                 | Returns                     |
-|------------------------------|--------------|--------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
-| `combine_pack`               | `Player`     | `combinePack()`                                                                                                                | `void`                      |
-| `equipped_item_by_slot_name` | `PlayerBody` | `equippedItemBySlotName(String name)`                                                                                          | `ItemObject`                |
-| `gear_insert_end`            | `Player`     | `gearInsertEnd(ItemObject itemObject)`                                                                                         | `void`                      |
-| `gear_to_label`              | `Player`     | `gearToLabel(ItemObject item)`                                                                                                 | `char`                      |
-| `inven_can_stack_partial`    | `Player`     | `invenCanStackPartial(ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> stackMode1, Flag<ObjectStackEnum> stackMode2)` | `boolean`                   |
-| `object_is_carried`          | `Player`     | `isCarried(ItemObject item)`                                                                                                   | `boolean`                   |
-| `object_is_equipped`         | `PlayerBody` | `itemIsEquipped(ItemObject item)`                                                                                              | `boolean`                   |
-| `object_is_in_quiver`        | `ItemObject` | `isInQuiver(Player player)`                                                                                                    | `boolean`                   |
-| `pack_slots_used`            | `Player`     | `packSlotsUsed()`                                                                                                              | `int`                       |
-| `preferred_quiver_slot`      | `Player`     | `preferredQuiverSlot(ItemObject item)`                                                                                         | `int`                       |
-| `quiver_absorb_num`          | `Player`     | `quiverAbsorbNum(ItemObject item, SplitBetweenPackAndQuiver splitIn)`                                                          | `SplitBetweenPackAndQuiver` |
-| `slot_by_name`               | `Player`     | `slotByName(String name)`                                                                                                      | `int`                       |
-| `slot_by_type`               | `Player`     | `slotByType(EquipmentSlotsEnum type, boolean full)`                                                                            | `int`                       |
-| `wield_slot`                 | `ItemObject` | `wieldSlot()`                                                                                                                  | `int`                       |
+| C function                   | Java class    | Java signature                                                                                                                                | Returns                     |
+|------------------------------|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------|-----------------------------|
+| `combine_pack`               | `ObjectUtils` | `combinePack(Player player)`                                                                                                                  | `void`                      |
+| `equipped_item_by_slot_name` | `PlayerBody`  | `equippedItemBySlotName(String name)`                                                                                                         | `ItemObject`                |
+| `gear_insert_end`            | `ObjectUtils` | `gearInsertEnd(Player player, ItemObject itemObject)`                                                                                         | `void`                      |
+| `gear_to_label`              | `ObjectUtils` | `gearToLabel(Player player, ItemObject item)`                                                                                                 | `char`                      |
+| `inven_can_stack_partial`    | `ObjectUtils` | `invenCanStackPartial(Player player, ItemObject item1, ItemObject item2, Flag<ObjectStackEnum> stackMode1, Flag<ObjectStackEnum> stackMode2)` | `boolean`                   |
+| `object_is_carried`          | `ObjectUtils` | `isCarried(Player player, ItemObject item)`                                                                                                   | `boolean`                   |
+| `object_is_equipped`         | `PlayerBody`  | `itemIsEquipped(ItemObject item)`                                                                                                             | `boolean`                   |
+| `object_is_in_quiver`        | `ItemObject`  | `isInQuiver(Player player)`                                                                                                                   | `boolean`                   |
+| `pack_slots_used`            | `ObjectUtils` | `packSlotsUsed(Player player)`                                                                                                                | `int`                       |
+| `preferred_quiver_slot`      | `ObjectUtils` | `preferredQuiverSlot(Player player, ItemObject item)`                                                                                         | `int`                       |
+| `quiver_absorb_num`          | `ObjectUtils` | `quiverAbsorbNum(Player player, ItemObject item, SplitBetweenPackAndQuiver splitIn)`                                                          | `SplitBetweenPackAndQuiver` |
+| `slot_by_name`               | `ObjectUtils` | `slotByName(Player player, String name)`                                                                                                      | `int`                       |
+| `slot_by_type`               | `ObjectUtils` | `slotByType(Player player, EquipmentSlotsEnum type, boolean full)`                                                                            | `int`                       |
+| `wield_slot`                 | `ItemObject`  | `wieldSlot()`                                                                                                                                 | `int`                       |
 
 ## `obj-ignore.c`
 
-| C function                | Java class   | Java signature                               | Returns            |
-|---------------------------|--------------|----------------------------------------------|--------------------|
-| `cmp_object_trait`        | `ItemObject` | `compareObjectTrait(int bonus, Random base)` | `int`              |
-| `ego_is_ignored`          | `ItemObject` | `egoIsIgnored(IgnoreType type)`              | `boolean`          |
-| `ignore_drop`             | `Player`     | `ignoreDrop()`                               | `void`             |
-| `ignore_item_ok`          | `Player`     | `ignoreItemOK(ItemObject item)`              | `boolean`          |
-| `ignore_level_of`         | `ItemObject` | `ignoreLevelOf()`                            | `QualityValueEnum` |
-| `ignore_type_of`          | `ItemObject` | `getIgnoreTypeOf()`                          | `IgnoreType`       |
-| `is_object_good`          | `ItemObject` | `isGood()`                                   | `int`              |
-| `kind_ignore_when_aware`  | `ObjectKind` | `setIgnoredAware(boolean ignoredAware)`      | `void`             |
-| `kind_is_ignored_unaware` | `ObjectKind` | `isIgnoredUnaware()`                         | `boolean`          |
-| `object_is_ignored`       | `Player`     | `isIgnored(ItemObject item)`                 | `boolean`          |
+| C function                | Java class     | Java signature                                 | Returns            |
+|---------------------------|----------------|------------------------------------------------|--------------------|
+| `cmp_object_trait`        | `ItemObject`   | `compareObjectTrait(int bonus, Random base)`   | `int`              |
+| `ego_is_ignored`          | `ItemObject`   | `egoIsIgnored(IgnoreType type)`                | `boolean`          |
+| `ignore_drop`             | `ObjectIgnore` | `ignoreDrop(Player player)`                    | `void`             |
+| `ignore_item_ok`          | `ObjectIgnore` | `ignoreItemOK(Player player, ItemObject item)` | `boolean`          |
+| `ignore_level_of`         | `ItemObject`   | `ignoreLevelOf()`                              | `QualityValueEnum` |
+| `ignore_type_of`          | `ItemObject`   | `getIgnoreTypeOf()`                            | `IgnoreType`       |
+| `is_object_good`          | `ItemObject`   | `isGood()`                                     | `int`              |
+| `kind_ignore_when_aware`  | `ObjectKind`   | `setIgnoredAware(boolean ignoredAware)`        | `void`             |
+| `kind_is_ignored_unaware` | `ObjectKind`   | `isIgnoredUnaware()`                           | `boolean`          |
+| `object_is_ignored`       | `ObjectIgnore` | `isIgnored(ItemObject item)`                   | `boolean`          |
 
 ## `obj-knowledge.c`
 
-| C function                     | Java class       | Java signature                                                     | Returns   |
-|--------------------------------|------------------|--------------------------------------------------------------------|-----------|
-| `easy_know`                    | `ItemObject`     | `easyKnow()`                                                       | `boolean` |
-| `equip_learn_flag`             | `Player`         | `equipLearnFlag(ObjectFlag flag)`                                  | `void`    |
-| `equip_learn_on_defend`        | `Player`         | `equipLearnOnDefend()`                                             | `void`    |
-| `equip_learn_on_melee_attack`  | `Player`         | `equipLearnOnMeleeAttack()`                                        | `void`    |
-| `equip_learn_on_ranged_attack` | `Player`         | `equipLearnOnRangedAttack()`                                       | `void`    |
-| `init_rune`                    | `Rune`           | `initRunes()`                                                      | `void`    |
-| `max_runes`                    | `ObjectRegistry` | `getMaxRunes()`                                                    | `int`     |
-| `object_curses_find_flags`     | `Player`         | `cursesFindFlags(ItemObject item, FlagView<ObjectFlag> testFlags)` | `boolean` |
-| `object_curses_find_to_a`      | `Player`         | `cursesFindToA(ItemObject item)`                                   | `void`    |
-| `object_curses_find_to_d`      | `Player`         | `cursesFindToD(ItemObject item)`                                   | `void`    |
-| `object_curses_find_to_h`      | `Player`         | `cursesFindToH(ItemObject item)`                                   | `void`    |
-| `object_flavor_aware`          | `Player`         | `flavourAware(ItemObject item)`                                    | `void`    |
-| `object_flavor_is_aware`       | `ItemObject`     | `flavourIsAware()`                                                 | `boolean` |
-| `object_flavor_is_aware`       | `ItemObject`     | `objectFlavourIsAware()`                                           | `boolean` |
-| `object_fully_known`           | `ItemObject`     | `isFullyKnown()`                                                   | `boolean` |
-| `object_has_standard_to_h`     | `ItemObject`     | `hasStandardToH()`                                                 | `boolean` |
-| `object_non_curse_runes_known` | `Player`         | `nonCurseRunesKnown(ItemObject item)`                              | `boolean` |
-| `object_set_base_known`        | `Player`         | `setBaseKnown(ItemObject item)`                                    | `void`    |
-| `player_know_object`           | `Player`         | `knowObject(ItemObject item)`                                      | `void`    |
-| `player_knows_brand`           | `KnownObject`    | `brandIsKnown(Brand brand)`                                        | `boolean` |
-| `player_knows_brand`           | `Player`         | `knowsBrand(Brand brand)`                                          | `boolean` |
-| `player_knows_curse`           | `KnownObject`    | `curseIsKnown(Curse curse)`                                        | `boolean` |
-| `player_knows_curse`           | `Player`         | `knowsCurse(Curse curse)`                                          | `boolean` |
-| `player_knows_ego`             | `Player`         | `knowsEgo(ItemObject item)`                                        | `boolean` |
-| `player_knows_rune`            | `Player`         | `knowsRune(Rune rune)`                                             | `boolean` |
-| `player_knows_slay`            | `KnownObject`    | `slayIsKnown(Slay slay)`                                           | `boolean` |
-| `player_knows_slay`            | `Player`         | `knowsSlay(Slay slay)`                                             | `boolean` |
-| `player_learn_all_runes`       | `Player`         | `learnAllRunes()`                                                  | `void`    |
-| `player_learn_brand`           | `Player`         | `learnBrand(Brand brand)`                                          | `void`    |
-| `player_learn_curse`           | `Player`         | `learnCurse(Curse curse)`                                          | `void`    |
-| `player_learn_flag`            | `Player`         | `learnFlag(ObjectFlag flag)`                                       | `void`    |
-| `player_learn_innate`          | `Player`         | `learnInnate()`                                                    | `void`    |
-| `player_learn_rune`            | `Player`         | `learnRune(Rune rune, boolean printMessage)`                       | `void`    |
-| `player_learn_slay`            | `Player`         | `learnSlay(Slay slay)`                                             | `void`    |
-| `rune_index`                   | `Rune`           | `runeIndex(CombatRunes key)`                                       | `Rune`    |
-| `rune_set_note`                | `Rune`           | `setNote(String note)`                                             | `void`    |
+| C function                     | Java class        | Java signature                                                                         | Returns   |
+|--------------------------------|-------------------|----------------------------------------------------------------------------------------|-----------|
+| `easy_know`                    | `ItemObject`      | `easyKnow()`                                                                           | `boolean` |
+| `equip_learn_element`          | `PlayerKnowledge` | `equipLearnElement(Player player, ElementEnum elem)`                                   | `void`    |
+| `equip_learn_flag`             | `PlayerKnowledge` | `equipLearnFlag(Player player, ObjectFlag flag)`                                       | `void`    |
+| `equip_learn_on_defend`        | `PlayerKnowledge` | `equipLearnOnDefend(Player player)`                                                    | `void`    |
+| `equip_learn_on_melee_attack`  | `PlayerKnowledge` | `equipLearnOnMeleeAttack(Player player)`                                               | `void`    |
+| `equip_learn_on_ranged_attack` | `PlayerKnowledge` | `equipLearnOnRangedAttack(Player player)`                                              | `void`    |
+| `init_rune`                    | `Rune`            | `initRunes()`                                                                          | `void`    |
+| `max_runes`                    | `ObjectRegistry`  | `getMaxRunes()`                                                                        | `int`     |
+| `object_curses_find_element`   | `PlayerKnowledge` | `objectCursesFindElement(Player player, ItemObject item, ElementEnum elem)`            | `boolean` |
+| `object_curses_find_flags`     | `PlayerKnowledge` | `cursesFindFlags(Player player, ItemObject item, FlagView<ObjectFlag> testFlags)`      | `boolean` |
+| `object_curses_find_to_a`      | `PlayerKnowledge` | `cursesFindToA(Player player, ItemObject item)`                                        | `void`    |
+| `object_curses_find_to_d`      | `PlayerKnowledge` | `cursesFindToD(Player player, ItemObject item)`                                        | `void`    |
+| `object_curses_find_to_h`      | `PlayerKnowledge` | `cursesFindToH(Player player, ItemObject item)`                                        | `void`    |
+| `object_flavor_aware`          | `PlayerKnowledge` | `flavourAware(Player player, Chunk cave, ArrayList<ItemObject> gear, ItemObject item)` | `void`    |
+| `object_flavor_is_aware`       | `ItemObject`      | `flavourIsAware()`                                                                     | `boolean` |
+| `object_flavor_is_aware`       | `ItemObject`      | `objectFlavourIsAware()`                                                               | `boolean` |
+| `object_fully_known`           | `ItemObject`      | `isFullyKnown()`                                                                       | `boolean` |
+| `object_has_standard_to_h`     | `ItemObject`      | `hasStandardToH()`                                                                     | `boolean` |
+| `object_non_curse_runes_known` | `PlayerKnowledge` | `nonCurseRunesKnown(ItemObject item)`                                                  | `boolean` |
+| `object_set_base_known`        | `PlayerKnowledge` | `setBaseKnown(Player player, ItemObject item)`                                         | `void`    |
+| `player_know_object`           | `PlayerKnowledge` | `knowObject(Player player, ItemObject item)`                                           | `void`    |
+| `player_knows_brand`           | `KnownObject`     | `brandIsKnown(Brand brand)`                                                            | `boolean` |
+| `player_knows_brand`           | `PlayerKnowledge` | `knowsBrand(Player player, Brand brand)`                                               | `boolean` |
+| `player_knows_curse`           | `KnownObject`     | `curseIsKnown(Curse curse)`                                                            | `boolean` |
+| `player_knows_curse`           | `PlayerKnowledge` | `knowsCurse(Player player, Curse curse)`                                               | `boolean` |
+| `player_knows_ego`             | `PlayerKnowledge` | `knowsEgo(Player player, ItemObject item)`                                             | `boolean` |
+| `player_knows_rune`            | `PlayerKnowledge` | `knowsRune(Player player, Rune rune)`                                                  | `boolean` |
+| `player_knows_slay`            | `KnownObject`     | `slayIsKnown(Slay slay)`                                                               | `boolean` |
+| `player_knows_slay`            | `PlayerKnowledge` | `knowsSlay(Player player, Slay slay)`                                                  | `boolean` |
+| `player_learn_all_runes`       | `PlayerKnowledge` | `learnAllRunes(Player player)`                                                         | `void`    |
+| `player_learn_brand`           | `PlayerKnowledge` | `learnBrand(Player player, Brand brand)`                                               | `void`    |
+| `player_learn_curse`           | `PlayerKnowledge` | `learnCurse(Player player, Curse curse)`                                               | `void`    |
+| `player_learn_flag`            | `PlayerKnowledge` | `learnFlag(Player player, ObjectFlag flag)`                                            | `void`    |
+| `player_learn_innate`          | `PlayerKnowledge` | `learnInnate(Player player)`                                                           | `void`    |
+| `player_learn_rune`            | `PlayerKnowledge` | `learnRune(Player player, Rune rune, boolean printMessage)`                            | `void`    |
+| `player_learn_slay`            | `PlayerKnowledge` | `learnSlay(Player player, Slay slay)`                                                  | `void`    |
+| `rune_index`                   | `Rune`            | `runeIndex(CombatRunes key)`                                                           | `Rune`    |
+| `rune_set_note`                | `Rune`            | `setNote(String note)`                                                                 | `void`    |
 
 ## `obj-pile.c`
 
@@ -389,40 +395,52 @@ C function. Annotations are stripped from the signatures; the return type has it
 
 ## `player-birth.c`
 
-| C function      | Java class   | Java signature | Returns      |
-|-----------------|--------------|----------------|--------------|
-| `player_embody` | `PlayerBody` | `copy()`       | `PlayerBody` |
+| C function                | Java class    | Java signature                      | Returns      |
+|---------------------------|---------------|-------------------------------------|--------------|
+| `find_roman_suffix_start` | `PlayerName`  | `findRomanSuffixStart(String name)` | `String`     |
+| `player_embody`           | `PlayerBirth` | `embody(Player player)`             | `void`       |
+| `player_embody`           | `PlayerBody`  | `copy()`                            | `PlayerBody` |
 
 ## `player-calcs.c`
 
 | C function           | Java class     | Java signature                                                                                                      | Returns       |
 |----------------------|----------------|---------------------------------------------------------------------------------------------------------------------|---------------|
-| `adjust_skill_scale` | `Player`       | `adjustSkillScale(int value, int numerator, int denominator, int minValue)`                                         | `int`         |
-| `average_spell_stat` | `Player`       | `averageSpellStat(PlayerState state)`                                                                               | `int`         |
-| `calc_blows`         | `Player`       | `calcBlows(ItemObject item, PlayerState state, int extraBlows)`                                                     | `int`         |
-| `calc_bonuses`       | `Player`       | `calcBonuses(PlayerState state, boolean knownOnly, boolean update)`                                                 | `void`        |
-| `calc_hitpoints`     | `Player`       | `calcHitpoints()`                                                                                                   | `void`        |
-| `calc_inventory`     | `Player`       | `calcInventory()`                                                                                                   | `void`        |
-| `calc_light`         | `Player`       | `calcLight(PlayerState state, boolean update)`                                                                      | `void`        |
-| `calc_mana`          | `Player`       | `calcMana(PlayerState state, boolean update)`                                                                       | `void`        |
-| `calc_shapechange`   | `Player`       | `calcShapechange(PlayerState state, Map<ElementEnum, Boolean> vulnerabilities, PlayerShape shape, Extras incoming)` | `Extras`      |
+| `adjust_skill_scale` | `PlayerCalcs`  | `adjustSkillScale(int value, int numerator, int denominator, int minValue)`                                         | `int`         |
+| `average_spell_stat` | `PlayerCalcs`  | `averageSpellStat(Player player, PlayerState state)`                                                                | `int`         |
+| `calc_blows`         | `PlayerCalcs`  | `calcBlows(Player player, ItemObject item, PlayerState state, int extraBlows)`                                      | `int`         |
+| `calc_bonuses`       | `PlayerCalcs`  | `calcBonuses(Player player, PlayerState state, boolean knownOnly, boolean update)`                                  | `void`        |
+| `calc_hitpoints`     | `PlayerCalcs`  | `calcHitpoints(Player player)`                                                                                      | `void`        |
+| `calc_inventory`     | `PlayerCalcs`  | `calcInventory(Player player)`                                                                                      | `void`        |
+| `calc_light`         | `PlayerCalcs`  | `calcLight(Player player, PlayerState state, boolean update)`                                                       | `void`        |
+| `calc_mana`          | `PlayerCalcs`  | `calcMana(Player player, PlayerState state, boolean update)`                                                        | `void`        |
+| `calc_shapechange`   | `PlayerCalcs`  | `calcShapechange(PlayerState state, Map<ElementEnum, Boolean> vulnerabilities, PlayerShape shape, Extras incoming)` | `Extras`      |
 | `earlier_object`     | `ItemObject`   | `earlierObject(ItemObject origObj, ItemObject newObj, boolean store)`                                               | `boolean`     |
 | `equipped_item_slot` | `PlayerBody`   | `equippedItemSlot(ItemObject item)`                                                                                 | `int`         |
-| `handle_stuff`       | `Player`       | `handleStuff()`                                                                                                     | `void`        |
+| `handle_stuff`       | `PlayerCalcs`  | `handleStuff(Player player)`                                                                                        | `void`        |
 | `health_track`       | `PlayerUpkeep` | `healthTrack(Monster monster)`                                                                                      | `void`        |
-| `notice_stuff`       | `Player`       | `noticeStuff()`                                                                                                     | `void`        |
-| `redraw_stuff`       | `Player`       | `redrawStuff()`                                                                                                     | `void`        |
-| `update_bonuses`     | `Player`       | `updateBonuses()`                                                                                                   | `void`        |
+| `notice_stuff`       | `PlayerCalcs`  | `noticeStuff(Player player)`                                                                                        | `void`        |
+| `redraw_stuff`       | `PlayerCalcs`  | `redrawStuff(Player player)`                                                                                        | `void`        |
+| `update_bonuses`     | `PlayerCalcs`  | `updateBonuses(Player player)`                                                                                      | `void`        |
 | `update_bonuses`     | `PlayerState`  | `copy()`                                                                                                            | `PlayerState` |
-| `update_stuff`       | `Player`       | `updateStuff()`                                                                                                     | `void`        |
+| `update_stuff`       | `PlayerCalcs`  | `updateStuff(Player player)`                                                                                        | `void`        |
 | `update_stuff`       | `PlayerUpkeep` | `updateOff(PlayerUpdateEnum flag)`                                                                                  | `boolean`     |
 | `weight_limit`       | `PlayerState`  | `weightLimit()`                                                                                                     | `int`         |
 
+## `player-history.c`
+
+| C function               | Java class      | Java signature                                                                                                                | Returns   |
+|--------------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------|-----------|
+| `history_add`            | `PlayerHistory` | `historyAdd(Player player, String buf, PlayerHistoryType flag)`                                                               | `boolean` |
+| `history_add_full`       | `PlayerHistory` | `addEntry(HistoryInfo entry)`                                                                                                 | `void`    |
+| `history_add_full`       | `PlayerHistory` | `historyAddFull(Player player, Flag<PlayerHistoryType> flags, Artifact artifact, int dLev, int cLev, int turnNo, String buf)` | `boolean` |
+| `history_add_with_flags` | `PlayerHistory` | `historyAddWithFlags(Player player, String buf, Flag<PlayerHistoryType> flags, Artifact artifact)`                            | `boolean` |
+| `history_init`           | `PlayerHistory` | `PlayerHistory()`                                                                                                             | `—`       |
+
 ## `player-quest.c`
 
-| C function | Java class | Java signature       | Returns   |
-|------------|------------|----------------------|-----------|
-| `is_quest` | `Player`   | `isQuest(int level)` | `boolean` |
+| C function | Java class    | Java signature                      | Returns   |
+|------------|---------------|-------------------------------------|-----------|
+| `is_quest` | `PlayerQuest` | `isQuest(Player player, int level)` | `boolean` |
 
 ## `player-spell.c`
 
@@ -434,32 +452,51 @@ C function. Annotations are stripped from the signatures; the return type has it
 
 ## `player-timed.c`
 
-| C function                | Java class | Java signature                                                                      | Returns   |
-|---------------------------|------------|-------------------------------------------------------------------------------------|-----------|
-| `player_dec_timed`        | `Player`   | `decTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb)` | `boolean` |
-| `player_of_has_not_timed` | `Player`   | `playerOfHasNotTimed(ObjectFlag objectFlag)`                                        | `boolean` |
-| `player_set_timed`        | `Player`   | `setTimed(TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb)` | `boolean` |
-| `player_timed_grade_eq`   | `Player`   | `timedGradeEq(TimedEffect index, String match)`                                     | `boolean` |
+| C function                | Java class    | Java signature                                                                                                    | Returns   |
+|---------------------------|---------------|-------------------------------------------------------------------------------------------------------------------|-----------|
+| `player_clear_timed`      | `PlayerTimed` | `playerClearTimed(Player player, TimedEffect index, boolean notify, boolean canDisturb)`                          | `boolean` |
+| `player_dec_timed`        | `PlayerTimed` | `playerDecTimed(Player player, TimedEffect index, int amount, boolean notify, boolean canDisturb)`                | `boolean` |
+| `player_inc_check`        | `PlayerTimed` | `incCheck(Player player, TimedEffect index, boolean lore)`                                                        | `boolean` |
+| `player_inc_timed`        | `PlayerTimed` | `playerIncTimed(Player player, TimedEffect index, int amount, boolean notify, boolean canDisturb, boolean check)` | `boolean` |
+| `player_of_has_not_timed` | `PlayerUtils` | `playerOfHasNotTimed(Player player, ObjectFlag objectFlag)`                                                       | `boolean` |
+| `player_set_timed`        | `PlayerTimed` | `setTimed(Player player, TimedEffect timedEffect, int amount, boolean notify, boolean canDisturb)`                | `boolean` |
+| `player_timed_grade_eq`   | `PlayerTimed` | `timedGradeEq(Player player, TimedEffect index, String match)`                                                    | `boolean` |
 
 ## `player-util.c`
 
-| C function               | Java class    | Java signature                                     | Returns   |
-|--------------------------|---------------|----------------------------------------------------|-----------|
-| `dungeon_change_level`   | `PlayerUtils` | `dungeonChangeLevel(int dungeonLevel)`             | `void`    |
-| `dungeon_get_next_level` | `PlayerUtils` | `dungeonGetNextLevel(int dungeonLevel, int added)` | `int`     |
-| `modify_stat_value`      | `PlayerUtils` | `modifyStatValue(int value, int amount)`           | `int`     |
-| `player_is_immune`       | `Player`      | `playerIsImmune(ElementEnum element)`              | `boolean` |
-| `player_is_shapechanged` | `Player`      | `isShapeChanged()`                                 | `boolean` |
-| `player_resting_count`   | `Player`      | `playerRestingCount()`                             | `int`     |
+| C function               | Java class    | Java signature                                       | Returns   |
+|--------------------------|---------------|------------------------------------------------------|-----------|
+| `dungeon_change_level`   | `PlayerUtils` | `dungeonChangeLevel(int dungeonLevel)`               | `void`    |
+| `dungeon_get_next_level` | `PlayerUtils` | `dungeonGetNextLevel(int dungeonLevel, int added)`   | `int`     |
+| `modify_stat_value`      | `PlayerUtils` | `modifyStatValue(int value, int amount)`             | `int`     |
+| `player_is_immune`       | `PlayerUtils` | `playerIsImmune(Player player, ElementEnum element)` | `boolean` |
+| `player_is_shapechanged` | `Player`      | `isShapeChanged()`                                   | `boolean` |
+| `player_resting_count`   | `PlayerUtils` | `playerRestingCount(Player player)`                  | `int`     |
 
 ## `player.c`
 
-| C function           | Java class     | Java signature                                           | Returns |
-|----------------------|----------------|----------------------------------------------------------|---------|
-| `init_player`        | `PlayerUpkeep` | `PlayerUpkeep()`                                         | `—`     |
-| `player_exp_lose`    | `Player`       | `expLose(int amount, boolean permanent)`                 | `void`  |
-| `player_flags`       | `Player`       | `playerFlags(PlayerState state, Flag<ObjectFlag> flags)` | `void`  |
-| `player_flags_timed` | `Player`       | `flagsTimed(Flag<ObjectFlag> flags)`                     | `void`  |
+| C function           | Java class       | Java signature                                                  | Returns      |
+|----------------------|------------------|-----------------------------------------------------------------|--------------|
+| `adjust_level`       | `Player`         | `adjustLevel(boolean verbose)`                                  | `void`       |
+| `init_player`        | `PlayerUpkeep`   | `PlayerUpkeep()`                                                | `—`          |
+| `lookup_realm`       | `PlayerRegistry` | `lookupRealm(String realmName)`                                 | `MagicRealm` |
+| `player_exp_gain`    | `Player`         | `playerExpGain(long amount)`                                    | `void`       |
+| `player_exp_lose`    | `Player`         | `playerExpLose(long amount, boolean permanent)`                 | `void`       |
+| `player_flags`       | `Player`         | `playerFlags(PlayerState state, Flag<ObjectFlag> flags)`        | `void`       |
+| `player_flags_timed` | `Player`         | `flagsTimed(Flag<ObjectFlag> flags)`                            | `void`       |
+| `player_random_name` | `PlayerName`     | `playerRandomName()`                                            | `String`     |
+| `player_safe_name`   | `PlayerName`     | `playerSafeName(int safeLen, String name, boolean stripSuffix)` | `String`     |
+| `player_stat_dec`    | `Player`         | `statDec(Stats stat, boolean permanant)`                        | `boolean`    |
+| `player_stat_inc`    | `Player`         | `playerStatInc(Stats stat)`                                     | `boolean`    |
+| `stat_idx_to_name`   | `Stats`          | `statIdxToName(Stats stat)`                                     | `String`     |
+| `stat_name_to_idx`   | `Stats`          | `statNameToIdx(String name)`                                    | `Stats`      |
+
+## `randname.c`
+
+| C function      | Java class   | Java signature                                          | Returns     |
+|-----------------|--------------|---------------------------------------------------------|-------------|
+| `build_prob`    | `PlayerName` | `buildProbs(RandnameType nameType)`                     | `int[][][]` |
+| `randname_make` | `PlayerName` | `randnameMake(RandnameType nameType, int min, int max)` | `String`    |
 
 ## `ui-birth.c`
 
@@ -549,4 +586,3 @@ C function. Annotations are stripped from the signatures; the return type has it
 |--------------|------------|---------------------------|---------|
 | `add_guardi` | `Guards`   | `addGuardI(int a, int b)` | `int`   |
 | `sub_guardi` | `Guards`   | `subGuardI(int a, int b)` | `int`   |
-

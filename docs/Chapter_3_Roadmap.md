@@ -297,6 +297,7 @@ boxes span these stages rather than matching them one-to-one.
 
 ### G — `player_generate` and its helpers *(needs C, F)*
 
+- [ ] `playerKnowledge` (`:1004`)
 - [ ] `player_embody` (`[C] player-birth.c:369`)
 - [ ] `get_ahw` (`:353`)
 - [ ] `get_history` (`:330`)
@@ -322,7 +323,9 @@ boxes span these stages rather than matching them one-to-one.
 - [ ] Quickstart: `save_roller_data` / `load_roller_data` (`[C] player-birth.c:146, 179`), `do_birth_reset` (`:1034`)
 - [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
   the existing `UIBirth` / `BirthEvents` plumbing
-- [ ] Roman-numeral suffixes: `find_roman_suffix_start`, `int_to_roman`, `roman_to_int`
+- [X] Roman-numeral suffixes: `find_roman_suffix_start`,
+- [X] `int_to_roman`,
+- [X] `roman_to_int`
   (`[C] player-birth.c:1334, 1366, 1426`)
 - [ ] `PlayerHistory` — only enough for birth's opening entry; the rest is Chapter 8
 

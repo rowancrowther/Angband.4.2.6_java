@@ -272,16 +272,20 @@ class PlayerCursesFindElementTest {
     }
 
     /**
-     * Calls the method under test. Private, as C's is {@code static}, so reflection is how a test
-     * reaches it; the cause of any exception thrown inside is unwrapped so a failure reads as
-     * itself rather than as an {@link InvocationTargetException}.
+     * Calls the method under test. It is private on {@link PlayerKnowledge}, as C's is
+     * {@code static} in {@code obj-knowledge.c}, so reflection is how a test reaches it; the cause
+     * of any exception thrown inside is unwrapped so a failure reads as itself rather than as an
+     * {@link InvocationTargetException}.
+     *
+     * <p>It is now static in the port too, with the player as its first argument rather than as
+     * {@code this} — hence the {@code null} receiver and the three-argument call.
      */
     private boolean findElement(ItemObject item, ElementEnum elem) throws Exception {
-        Method method = Player.class.getDeclaredMethod("objectCursesFindElement",
-                ItemObject.class, ElementEnum.class);
+        Method method = PlayerKnowledge.class.getDeclaredMethod("objectCursesFindElement",
+                Player.class, ItemObject.class, ElementEnum.class);
         method.setAccessible(true);
         try {
-            return (boolean) method.invoke(player, item, elem);
+            return (boolean) method.invoke(null, player, item, elem);
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof Exception cause) throw cause;
             throw e;

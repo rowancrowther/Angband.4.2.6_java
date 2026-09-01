@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p>C builds a player's body from the race's template with a {@code memcpy} of the struct followed
  * by a freshly allocated, zeroed slot array whose entries take their type and name from the
- * template. This method is both halves, which is what lets {@code Player.embody} be one assignment.
+ * template. This method is both halves, which is what lets {@code PlayerBirth.embody} be one assignment.
  *
  * <p><b>Nothing may be shared with the source.</b> The source is normally a race's template, held
  * once in the registry and shared by every player of that race, so a copy that shared its list or

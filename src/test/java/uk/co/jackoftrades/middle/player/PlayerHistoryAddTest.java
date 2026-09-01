@@ -43,8 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.historyAdd}, {@code Player.historyAddWithFlags} and
- * {@code Player.historyAddFull} — the ports of C's {@code history_add},
+ * Tests {@code PlayerHistory.historyAdd}, {@code PlayerHistory.historyAddWithFlags} and
+ * {@code PlayerHistory.historyAddFull} — the ports of C's {@code history_add},
  * {@code history_add_with_flags} and {@code history_add_full}
  * ({@code src/player-history.c:76}, {@code :110}, {@code :127}).
  *
@@ -123,45 +123,29 @@ class PlayerHistoryAddTest {
     }
 
     /**
-     * @return the player's history ledger, C's {@code p->hist}
-     * @throws Exception if the field cannot be reached
-     */
-    private PlayerHistory ledger() throws Exception {
-        Field field = Player.class.getDeclaredField("playerHistory");
-        field.setAccessible(true);
-        return (PlayerHistory) field.get(player);
-    }
-
-    /**
      * @return the entries in the order they were added, C's {@code h->entries} up to {@code h->next}
-     * @throws Exception if the field cannot be reached
      */
-    private List<HistoryInfo> entries() throws Exception {
-        return ledger().entries;
+    private List<HistoryInfo> entries() {
+        return player.getPlayerHistory().entries;
     }
 
     /**
      * @return the only entry in the ledger, failing if there is not exactly one
-     * @throws Exception if the field cannot be reached
      */
-    private HistoryInfo onlyEntry() throws Exception {
+    private HistoryInfo onlyEntry() {
         assertEquals(1, entries().size(), "exactly one entry should have been added");
         return entries().getFirst();
     }
 
     /**
-     * Calls the private {@code historyAdd}.
+     * Calls {@code historyAdd}, which is package-private and so needs no reflection from here.
      *
      * @param text the entry's text
      * @param type the single history type
      * @return the method's answer
-     * @throws Exception if the method cannot be reached or throws
      */
-    private boolean historyAdd(String text, PlayerHistoryType type) throws Exception {
-        Method method = Player.class.getDeclaredMethod("historyAdd", String.class,
-                PlayerHistoryType.class);
-        method.setAccessible(true);
-        return (boolean) method.invoke(player, text, type);
+    private boolean historyAdd(String text, PlayerHistoryType type) {
+        return PlayerHistory.historyAdd(player, text, type);
     }
 
     /**
@@ -175,10 +159,10 @@ class PlayerHistoryAddTest {
      */
     private boolean historyAddWithFlags(String text, Flag<PlayerHistoryType> flags,
                                         Artifact artifact) throws Exception {
-        Method method = Player.class.getDeclaredMethod("historyAddWithFlags", String.class,
-                Flag.class, Artifact.class);
+        Method method = PlayerHistory.class.getDeclaredMethod("historyAddWithFlags", Player.class,
+                String.class, Flag.class, Artifact.class);
         method.setAccessible(true);
-        return (boolean) method.invoke(player, text, flags, artifact);
+        return (boolean) method.invoke(null, player, text, flags, artifact);
     }
 
     /**
@@ -195,10 +179,10 @@ class PlayerHistoryAddTest {
      */
     private boolean historyAddFull(Flag<PlayerHistoryType> flags, Artifact artifact, int dLev,
                                    int cLev, int turnNo, String text) throws Exception {
-        Method method = Player.class.getDeclaredMethod("historyAddFull", Flag.class,
-                Artifact.class, int.class, int.class, int.class, String.class);
+        Method method = PlayerHistory.class.getDeclaredMethod("historyAddFull", Player.class,
+                Flag.class, Artifact.class, int.class, int.class, int.class, String.class);
         method.setAccessible(true);
-        return (boolean) method.invoke(player, flags, artifact, dLev, cLev, turnNo, text);
+        return (boolean) method.invoke(null, player, flags, artifact, dLev, cLev, turnNo, text);
     }
 
     /**
@@ -212,12 +196,10 @@ class PlayerHistoryAddTest {
 
         /**
          * The type asked for is on, and the text arrives unaltered.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("the type asked for is the type recorded")
-        void theTypeAskedForIsRecorded() throws Exception {
+        void theTypeAskedForIsRecorded() {
             assertTrue(historyAdd("Reached level 7", PlayerHistoryType.HIST_GAIN_LEVEL));
 
             HistoryInfo entry = onlyEntry();
@@ -229,12 +211,10 @@ class PlayerHistoryAddTest {
          * C starts from {@code hist_wipe}, so exactly one type is on and every other is off. Two
          * of the others are named explicitly, since a count alone would not catch a set holding the
          * wrong single type.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("no other type is switched on")
-        void noOtherTypeIsOn() throws Exception {
+        void noOtherTypeIsOn() {
             historyAdd("Killed Grip, Farmer Maggot's dog", PlayerHistoryType.HIST_SLAY_UNIQUE);
 
             HistoryInfo entry = onlyEntry();
@@ -246,12 +226,10 @@ class PlayerHistoryAddTest {
         /**
          * C passes {@code NULL} for the artifact, which reaches the entry as index 0; the port's
          * equivalent is a null reference.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("the entry relates to no artifact")
-        void theEntryRelatesToNoArtifact() throws Exception {
+        void theEntryRelatesToNoArtifact() {
             historyAdd("Began the quest to destroy Morgoth.",
                     PlayerHistoryType.HIST_PLAYER_BIRTH);
 
@@ -343,9 +321,8 @@ class PlayerHistoryAddTest {
          *
          * @param totalEnergy the player's cumulative energy
          * @return the turn stored on the entry
-         * @throws Exception if reflection fails
          */
-        private long turnAt(int totalEnergy) throws Exception {
+        private long turnAt(int totalEnergy) {
             player.setTotalEnergy(totalEnergy);
             historyAdd("note", PlayerHistoryType.HIST_USER_INPUT);
             return onlyEntry().turn;
@@ -353,46 +330,38 @@ class PlayerHistoryAddTest {
 
         /**
          * A fresh character has recorded no energy and so is on turn zero.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("no energy is turn zero")
-        void noEnergyIsTurnZero() throws Exception {
+        void noEnergyIsTurnZero() {
             assertEquals(0L, turnAt(0));
         }
 
         /**
          * The lower side of the boundary: 99 is still turn 0, which is where a port that rounded
          * would answer 1 instead.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("ninety-nine is still turn zero")
-        void ninetyNineIsStillTurnZero() throws Exception {
+        void ninetyNineIsStillTurnZero() {
             assertEquals(0L, turnAt(99));
         }
 
         /**
          * The exact multiple, the one value both truncation and rounding agree on.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("a hundred is turn one")
-        void aHundredIsTurnOne() throws Exception {
+        void aHundredIsTurnOne() {
             assertEquals(1L, turnAt(100));
         }
 
         /**
          * The upper side: the remainder is dropped, not carried.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("a hundred and ninety-nine is still turn one")
-        void aHundredAndNinetyNineIsStillTurnOne() throws Exception {
+        void aHundredAndNinetyNineIsStillTurnOne() {
             assertEquals(1L, turnAt(199));
         }
     }
@@ -480,23 +449,19 @@ class PlayerHistoryAddTest {
 
         /**
          * A fresh player's ledger starts empty, C's {@code h->next == 0}.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("a new player's ledger is empty")
-        void aNewPlayersLedgerIsEmpty() throws Exception {
+        void aNewPlayersLedgerIsEmpty() {
             assertTrue(entries().isEmpty());
         }
 
         /**
          * Entries accumulate in call order rather than replacing one another.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("entries keep the order they were added in")
-        void entriesKeepTheirOrder() throws Exception {
+        void entriesKeepTheirOrder() {
             historyAdd("first", PlayerHistoryType.HIST_PLAYER_BIRTH);
             historyAdd("second", PlayerHistoryType.HIST_GAIN_LEVEL);
             historyAdd("third", PlayerHistoryType.HIST_PLAYER_DEATH);
@@ -511,12 +476,10 @@ class PlayerHistoryAddTest {
         /**
          * C allocates twenty slots and grows by twenty; fifty entries carries the ledger past both
          * the initial block and the first growth, and every one must still be there in order.
-         *
-         * @throws Exception if reflection fails
          */
         @Test
         @DisplayName("the ledger grows past its first twenty entries")
-        void theLedgerGrowsPastTwenty() throws Exception {
+        void theLedgerGrowsPastTwenty() {
             for (int i = 0; i < 50; i++) {
                 historyAdd("Reached level " + i, PlayerHistoryType.HIST_GAIN_LEVEL);
             }

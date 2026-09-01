@@ -36,7 +36,6 @@ import uk.co.jackoftrades.middle.enums.Stats;
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@code Player.playerOfHasNotTimed}, the port of C's {@code player_of_has_not_timed}
+ * Tests {@link PlayerUtils#playerOfHasNotTimed(Player, ObjectFlag)}, the port of C's
+ * {@code player_of_has_not_timed}
  * ({@code player-timed.c:747}).
  *
  * <p>The C is five clauses: wipe a collecting set by filling it from {@code player_flags}, walk
@@ -67,10 +67,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * late in the body is reached — a loop that stopped at the first empty slot would pass a test that
  * only ever equipped the weapon).
  *
- * <p>The method is private, so it is reached by reflection; its one caller, {@code setTimed}, has
- * conditions of its own and would not isolate this.
+ * <p>The method is called directly rather than through its one caller, {@code setTimed}, which has
+ * conditions of its own and would not isolate this. The player's race, class, body and state are
+ * still installed by reflection, birth being the only thing that would otherwise fill them.
  *
- * <p>Class PlayerOfHasNotTimedTest coded on 260829, commented in full on 260829.
+ * <p>Class PlayerOfHasNotTimedTest coded on 260829, commented in full on 260829, reworked on 260901
+ * for the move of the method to {@link PlayerUtils}.
  *
  * @author Rowan Crowther
  */
@@ -93,11 +95,6 @@ class PlayerOfHasNotTimedTest {
      * fills one.
      */
     private PlayerBody body;
-
-    /**
-     * The private method under test, made reachable once.
-     */
-    private Method playerOfHasNotTimed;
 
     /**
      * @param on the flags to switch on
@@ -199,9 +196,6 @@ class PlayerOfHasNotTimedTest {
         setField(player, Player.class, "race", race(flagsOf()));
         setField(player, Player.class, "playerClass", playerClass(flagsOf()));
         setField(player, Player.class, "level", 1);
-
-        playerOfHasNotTimed = Player.class.getDeclaredMethod("playerOfHasNotTimed", ObjectFlag.class);
-        playerOfHasNotTimed.setAccessible(true);
     }
 
     /**
@@ -209,10 +203,9 @@ class PlayerOfHasNotTimedTest {
      *
      * @param flag the flag to ask about
      * @return what the method returned
-     * @throws Exception if the call fails
      */
-    private boolean has(ObjectFlag flag) throws Exception {
-        return (boolean) playerOfHasNotTimed.invoke(player, flag);
+    private boolean has(ObjectFlag flag) {
+        return PlayerUtils.playerOfHasNotTimed(player, flag);
     }
 
     /**

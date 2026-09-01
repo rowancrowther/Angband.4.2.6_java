@@ -22,6 +22,10 @@ import uk.co.jackoftrades.middle.cave.Loc;
 import uk.co.jackoftrades.middle.cave.store.Store;
 import uk.co.jackoftrades.middle.game.gameengine.GameState;
 import uk.co.jackoftrades.middle.game.globals.GameConstants;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
+import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerOverExertion;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
@@ -33,8 +37,15 @@ import uk.co.jackoftrades.middle.player.enums.TimedEffect;
  * commands call through. Modelled as static methods over a passed-in {@link Player}, mirroring C's
  * free functions that take {@code struct player *} rather than reading a global.
  *
+ * <p>Two shapes of method live here side by side. Those ported from C functions that read the
+ * {@code player} global take no player and use the cached {@link #player} field; those ported from
+ * C functions that take a {@code struct player *} - and the ones moved here from {@link Player} as
+ * the port caught up with C's file layout - take the player as their first parameter. Prefer the
+ * parameter form: the cached field is fixed at class-initialisation time and does not follow a
+ * later change of character.
+ *
  * <p><b>Status:</b> a stub landed to unblock the game loop; individual routines are ported as callers
- * need them.
+ * need them, so several methods below still do nothing and say so.
  *
  * @author Rowan Crowther
  */
@@ -118,7 +129,9 @@ public class PlayerUtils {
     /**
      * Reduces an incoming damage figure by the player's protections — the port of C's percentage
      * damage-reduction handling. Invulnerability nullifies non-massive hits outright; otherwise the
-     * player's percentage reduction is applied, and the result is floored at zero.
+     * player's percentage reduction is applied, and the result is floored at zero. C runs the flat
+     * reduction first ({@code dam -= p->state.dam_red}) and only then the percentage one
+     * ({@code perc_dam_red}), so a player with both keeps the flat points off the top.
      *
      * @param damage the raw incoming damage
      * @return the damage remaining after reduction (never negative)
@@ -127,7 +140,7 @@ public class PlayerUtils {
         // Hack - apply invulnerability
         if (player.getTimedEffect(TimedEffect.TMD_INVULN) != 0 && (damage < 9000)) return 0;
 
-        damage -= player.getPlayerState().perDamRed();
+        damage -= player.getPlayerState().getDamRed();
 
         if (damage > 0 && player.getPlayerState().perDamRed() != 0) {
             damage -= (damage * player.getPlayerState().perDamRed() / 100);
@@ -238,7 +251,7 @@ public class PlayerUtils {
 
         // Check intermediate levels for quests
         for (index = dungeonLevel; index < targetLevel; index++) {
-            if (player.isQuest(index))
+            if (PlayerQuest.isQuest(player, index))
                 return index;
         }
 
@@ -328,5 +341,145 @@ public class PlayerUtils {
         }
 
         return value;
+    }
+
+    /**
+     * Makes a bloodlust-driven attack on a random adjacent monster in place of the player's chosen
+     * command - the port of C's {@code player_attack_random_monster}, invoked from
+     * {@link uk.co.jackoftrades.middle.game.gameengine.CommandProcessor#processCommand} when a
+     * bloodlust check fires. <b>Stub:</b> the attack itself is not yet ported, so this currently takes
+     * no action and reports that no attack was made.
+     *
+     * @param player the character making the attack; a confused player never does, which is the one
+     *               clause of C's that is ported
+     * @return {@code true} if an attack was made (so the original command should be abandoned);
+     * {@code false} otherwise - always {@code false} while stubbed
+     */
+    public static boolean attackRandomMonster(Player player) {
+        int index;
+        int direction = RandomValueUtils.randInt0(8);
+
+        if (player.getTimedEffect(TimedEffect.TMD_CONFUSED) != 0) return false;
+
+        for (index = 0; index < 8; index++, direction++) {
+
+            // DO stuff - this is currently a stub class
+
+        }
+
+        return false;
+    }
+
+    /**
+     * Reads the resting counter — the port of C's {@code player_resting_count}.
+     *
+     * <p>A plain read of the upkeep's {@code resting} field, with no interpretation: a positive value
+     * is the number of rest turns still to run, zero means not resting, and a negative value is one of
+     * the "rest until a condition is met" sentinels classified by {@link #restingIsSpecial(int)}. C
+     * stores the field as an {@code int16_t} and this returns a Java {@code int}, which is a widening
+     * of the same value; the sentinels are compared for equality rather than ordered, so the wider type
+     * changes nothing.
+     *
+     * <p>Function playerRestingCount coded on 260828, commented in full on 260828.
+     *
+     * @param player the character whose upkeep is read; the counter belongs to the player, not to
+     *               anything shared, so two characters rest independently
+     * @return the resting counter: turns of rest remaining, or a special "rest until…" sentinel
+     */
+    public static int playerRestingCount(Player player) {
+        return player.getPlayerUpkeep().getRestingCounter();
+    }
+
+    /**
+     * Tests whether the player holds the given object flag permanently - the port of C's
+     * {@code player_of_has_not_timed} ({@code player-timed.c:747}).
+     *
+     * <p>The answer is rebuilt from scratch rather than read off the calculated state, and that is
+     * the whole point of the method. Its sibling {@code player_of_has} reads
+     * {@code p->state.flags}, and {@code calcBonuses} finishes by folding the object-flag duplicate
+     * of every running timed effect into that set, so the state answers "yes" for a player who is
+     * merely temporarily heroic. Here the collector is filled from {@link Player#playerFlags} - race,
+     * class, and the level-30 bravery grant - and then unioned with the flags of every worn item,
+     * so a flag that arrived by a timed effect is not seen.
+     *
+     * <p>{@code setTimed} uses it for exactly that distinction: a message about gaining a
+     * protection is suppressed only when the player already has that protection for keeps.
+     *
+     * <p>Empty slots are skipped; the scratch set handed to {@link ItemObject#objectFlags} is wiped
+     * on entry there, so items accumulate into the collector rather than overwriting one another.
+     *
+     * <p>Function playerOfHasNotTimed coded on 260829, commented in full on 260829.
+     *
+     * @param player     the character to ask about; its race, class, level and worn equipment are
+     *                   what the answer is built from
+     * @param objectFlag the flag to ask about
+     * @return {@code true} if the race, the class or a worn item grants it, ignoring timed effects
+     */
+    public static boolean playerOfHasNotTimed(Player player, ObjectFlag objectFlag) {
+        Flag<ObjectFlag> collectFlags = new Flag<>(ObjectFlag.class);
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+
+        player.playerFlags(player.getPlayerState(), collectFlags);
+
+        for (EquipSlot slot : player.getPlayerBody().getSlots()) {
+            ItemObject slotObject = slot.getItem();
+
+            if (slotObject == null) continue;
+            slotObject.objectFlags(flags);
+            collectFlags.union(flags);
+        }
+
+        return (collectFlags.has(objectFlag));
+    }
+
+    /**
+     * Tests whether the player is immune to the given element - the port of C's
+     * {@code player_is_immune}.
+     *
+     * <p>Immunity is not a separate flag: it is the top of the resistance scale, so the test is an
+     * exact match on a resistance level of 3 (C's {@code p->state.el_info[element].res_level == 3}).
+     * The literal is deliberate rather than a {@code >=} comparison, exactly as in the original -
+     * nothing raises a player's level above 3, and the equality is what C checks. Vulnerability
+     * ({@code -1}), no resistance ({@code 0}) and ordinary resistance ({@code 1}) all return
+     * {@code false}.
+     *
+     * <p>The reading is taken from the calculated state, not the known state, so it reflects what is
+     * true of the player rather than what they have learned.
+     *
+     * <p>Function playerIsImmune coded on 260829, commented in full on 260829.
+     *
+     * @param player  the character to ask about; the reading comes from their calculated state,
+     *                which {@code calcBonuses} must therefore have filled
+     * @param element the element to test; must be one of the real elements, since the state's
+     *                per-element map holds no entry for {@code ELEM_NONE} or {@code ELEM_MAX}
+     * @return {@code true} if the player's resistance level for that element is exactly 3
+     */
+    public static boolean playerIsImmune(Player player, ElementEnum element) {
+        return player.getPlayerState().getElInfo().get(element).getResLevel() == 3;
+    }
+
+    /**
+     * Recomputes and stores the depth Word of Recall should return the player to — the port of C's
+     * recall-depth handling.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     */
+    public static void setRecallDepth() {
+        // Stub function TODO: implement
+    }
+
+    /**
+     * Tests whether the given resting counter denotes one of the "rest until a condition is met"
+     * sentinel values (as opposed to a fixed turn count) — the port of C's special resting-count
+     * handling.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * @param restingCounter the resting counter to classify
+     * @return {@code true} if the counter is a special "rest until…" value
+     */
+    static boolean restingIsSpecial(int restingCounter) {
+        // Stub function TODO: implement
+        return false;
     }
 }

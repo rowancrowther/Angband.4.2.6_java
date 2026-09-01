@@ -21,6 +21,7 @@ import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 import uk.co.jackoftrades.middle.game.enums.CommandCode;
 import uk.co.jackoftrades.middle.game.enums.CommandContext;
 import uk.co.jackoftrades.middle.player.Player;
+import uk.co.jackoftrades.middle.player.PlayerUtils;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
 import java.util.EnumMap;
@@ -249,7 +250,7 @@ public class CommandProcessor {
                 }
             } else if (info.canUseEnergy() && player.getSkipCmdCoercion() == 0) {
                 if (RandomValueUtils.randInt0(200) < player.getTimedEffect(TimedEffect.TMD_BLOODLUST)) {
-                    if (player.attackRandomMonster()) return;
+                    if (PlayerUtils.attackRandomMonster(player)) return;
                 } else if (player.getTimedEffect(TimedEffect.TMD_BLOODLUST) != 0) {
                     player.setSkipCmdCoercion(1);
                 }

@@ -20,6 +20,7 @@ package uk.co.jackoftrades.middle.game.globals.registry;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftrades.middle.player.PlayerTimed;
 import uk.co.jackoftrades.middle.player.PlayerTimedEffect;
 import uk.co.jackoftrades.middle.player.enums.TimedEffect;
 
@@ -40,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * lookup cannot fail. The port searches a list loaded from {@code player_timed.txt} and keyed by
  * enum identity, so an effect the data file never defined has no entry at all — and the method
  * answers {@code null} rather than throwing. Callers such as
- * {@link uk.co.jackoftrades.middle.player.Player#timedGradeEq} guard on that, so the null has to
+ * {@link PlayerTimed#timedGradeEq} guard on that, so the null has to
  * keep arriving.
  *
  * <p>{@link TimedEffect#TMD_NONE} is the standing example of an effect with no definition: it is a

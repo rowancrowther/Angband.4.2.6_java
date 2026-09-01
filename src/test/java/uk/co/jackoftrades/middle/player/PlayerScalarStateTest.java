@@ -216,8 +216,8 @@ class PlayerScalarStateTest {
         void newPlayerIsIdle() {
             assertFalse(player.isDead());
             assertFalse(player.isResting());
-            assertFalse(player.isQuest(1), "no quest is registered on any level");
-            assertFalse(player.isQuest(0), "and the town level never has one");
+            assertFalse(PlayerQuest.isQuest(player, 1), "no quest is registered on any level");
+            assertFalse(PlayerQuest.isQuest(player, 0), "and the town level never has one");
             assertFalse(player.isShapeChanged());
         }
 
@@ -235,6 +235,35 @@ class PlayerScalarStateTest {
 
             set("shape", shapeNamed("bear"));
             assertTrue(player.isShapeChanged());
+        }
+
+        /**
+         * A fresh player has no shape at all, which is a state C never reaches: {@code player_init}
+         * ({@code player-birth.c:457}) assigns the "normal" shape at birth, and that assignment is
+         * not ported. So {@code getShape} answering null is the port's normal condition, not an
+         * error case, and everything that reads it has to cope.
+         */
+        @Test
+        @DisplayName("a new player has no shape")
+        void newPlayerHasNoShape() {
+            assertNull(player.getShape());
+        }
+
+        /**
+         * The shape is handed back by identity, not copied. It is the registry's own description of
+         * the form — C's {@code p->shape} points into the {@code shapes} list — so a caller that
+         * wrote through it would change that form for every character assuming it.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("the shape is handed back by identity")
+        void shapeIsHandedBackByIdentity() throws Exception {
+            PlayerShape bat = shapeNamed("bat");
+
+            set("shape", bat);
+
+            assertSame(bat, player.getShape());
         }
 
         /**
@@ -352,8 +381,8 @@ class PlayerScalarStateTest {
         @Test
         @DisplayName("an item with no knowledge is not known")
         void noKnowledgeIsNotKnown() {
-            assertFalse(Player.nonCurseRunesKnown(null));
-            assertFalse(Player.nonCurseRunesKnown(new ItemObject()));
+            assertFalse(PlayerKnowledge.nonCurseRunesKnown(null));
+            assertFalse(PlayerKnowledge.nonCurseRunesKnown(new ItemObject()));
         }
     }
 }

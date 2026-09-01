@@ -21,6 +21,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.player.PlayerKnowledge;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * reports what was put in it is {@link uk.co.jackoftrades.middle.objects.Pile}'s business. What this
  * method promises on top is that two objects which are alike in every respect are still told apart —
  * without that, a known object could be judged to be on a pile it was never attached to, and
- * {@link uk.co.jackoftrades.middle.player.Player#knowObject} could report an object as being under
+ * {@link PlayerKnowledge#knowObject} could report an object as being under
  * the player's feet when a duplicate of it was.
  *
  * <p>Class SquareHoldsObjectTest coded on 260816, commented in full on 260816.

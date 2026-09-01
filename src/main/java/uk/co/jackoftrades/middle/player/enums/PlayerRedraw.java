@@ -18,6 +18,7 @@
 package uk.co.jackoftrades.middle.player.enums;
 
 import uk.co.jackoftrades.channel.enums.GameEventType;
+import uk.co.jackoftrades.middle.player.Player;
 
 /**
  * "Redraw" flags identifying which on-screen region has become stale and needs
@@ -171,7 +172,7 @@ public enum PlayerRedraw {
      * step with the flag list.
      *
      * <p>{@code PR_MAP} is the one flag whose event is not signalled from here:
-     * {@link uk.co.jackoftrades.middle.player.Player#redrawStuff()} skips it in the loop and emits
+     * {@link uk.co.jackoftrades.middle.player.PlayerCalcs#redrawStuff(Player)} skips it in the loop and emits
      * {@code EVENT_MAP} separately, because it is the only event of the set that carries data (the
      * point {@code (-1, -1)}, meaning the whole map). C's table likewise has no {@code PR_MAP} row.
      *

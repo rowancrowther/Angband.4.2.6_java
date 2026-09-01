@@ -277,7 +277,7 @@ class ObjectKindTest {
          * Every constructor has to leave a usable ignore set behind it, including the artifact one,
          * which builds its collections by hand rather than sharing the others' code. A kind whose
          * flag set was never created answers the question with a null pointer instead of a boolean —
-         * and the caller is {@code Player.flavourAware}, which asks it of whatever kind it is handed
+         * and the caller is {@code PlayerKnowledge.flavourAware}, which asks it of whatever kind it is handed
          * rather than of a kind it built.
          */
         @Test

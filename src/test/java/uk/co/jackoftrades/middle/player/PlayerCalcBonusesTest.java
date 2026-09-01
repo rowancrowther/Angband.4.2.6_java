@@ -41,7 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#calcBonuses}, the port of C's {@code calc_bonuses}
+ * Tests {@link PlayerCalcs#calcBonuses}, the port of C's {@code calc_bonuses}
  * ({@code player-calcs.c:1877-2325}) — the derivation every other number about a character rests on.
  *
  * <p><b>Absolute totals are mostly not what is asserted.</b> Almost every quantity here is a sum of

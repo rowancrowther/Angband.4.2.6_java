@@ -50,7 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#redrawStuff()}, the port of C's {@code redraw_stuff}
+ * Tests {@link PlayerCalcs#redrawStuff()}, the port of C's {@code redraw_stuff}
  * ({@code player-calcs.c:2678}).
  *
  * <p>Nothing is painted by the method, so what is worth pinning is which events reach the bus, which
@@ -262,7 +262,7 @@ class PlayerRedrawStuffTest {
         @Test
         @DisplayName("nothing stale means nothing signalled")
         void noFlagsMeansNoEvents() {
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
         }
@@ -276,7 +276,7 @@ class PlayerRedrawStuffTest {
         void raisedFlagsSignalTheirEvents() {
             raise(PlayerRedraw.PR_HP, PlayerRedraw.PR_GOLD, PlayerRedraw.PR_DEPTH);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertEquals(Set.of(GameEventType.EVENT_HP, GameEventType.EVENT_GOLD,
                             GameEventType.EVENT_DUNGEONLEVEL, GameEventType.EVENT_END),
@@ -297,7 +297,7 @@ class PlayerRedrawStuffTest {
                 raise(flag);
             }
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             Set<GameEventType> expected = new LinkedHashSet<>(C_TABLE.values());
             expected.add(GameEventType.EVENT_MAP);
@@ -317,7 +317,7 @@ class PlayerRedrawStuffTest {
             raise(PlayerRedraw.PR_MAP, PlayerRedraw.PR_HP, PlayerRedraw.PR_MESSAGE,
                     PlayerRedraw.PR_MONLIST);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             int map = bus.events.indexOf(GameEventType.EVENT_MAP);
             assertEquals(bus.events.size() - 2, map, "the map is the last event before EVENT_END");
@@ -333,7 +333,7 @@ class PlayerRedrawStuffTest {
         void mapCarriesWholeMapSentinel() {
             raise(PlayerRedraw.PR_MAP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             int map = bus.events.indexOf(GameEventType.EVENT_MAP);
             assertEquals(new EventDataGrid(-1, -1), bus.data.get(map));
@@ -347,7 +347,7 @@ class PlayerRedrawStuffTest {
         void actedFlagsAreCleared() {
             raise(PlayerRedraw.PR_HP, PlayerRedraw.PR_MAP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(pending().isEmpty(), "nothing is left pending");
         }
@@ -371,7 +371,7 @@ class PlayerRedrawStuffTest {
             });
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(pending().has(PlayerRedraw.PR_GOLD), "the new flag is still pending");
             assertFalse(pending().has(PlayerRedraw.PR_HP), "the handled flag was cleared");
@@ -412,7 +412,7 @@ class PlayerRedrawStuffTest {
             GameWorld.characterGenerated = false;
             raise(PlayerRedraw.PR_HP, PlayerRedraw.PR_MAP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
             assertTrue(pending().has(PlayerRedraw.PR_HP), "the flags are still pending");
@@ -431,7 +431,7 @@ class PlayerRedrawStuffTest {
                 raise(flag);
             }
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             Set<GameEventType> expected = new LinkedHashSet<>();
             for (PlayerRedraw flag : C_SUBWINDOW) {
@@ -458,7 +458,7 @@ class PlayerRedrawStuffTest {
             GameInputHolder.setInstance(new HiddenMapInput());
             raise(PlayerRedraw.PR_HP, PlayerRedraw.PR_MAP, PlayerRedraw.PR_MESSAGE);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
             assertTrue(pending().has(PlayerRedraw.PR_HP));
@@ -484,7 +484,7 @@ class PlayerRedrawStuffTest {
             setCounter("restingCounter", 50);
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
             assertTrue(pending().has(PlayerRedraw.PR_HP), "the flag is still pending");
@@ -499,7 +499,7 @@ class PlayerRedrawStuffTest {
             setCounter("runningCounter", 7);
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
             assertTrue(pending().has(PlayerRedraw.PR_HP));
@@ -514,7 +514,7 @@ class PlayerRedrawStuffTest {
             setCounter("restingCounter", 100);
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.contains(GameEventType.EVENT_HP), "the redraw happened");
             assertTrue(pending().isEmpty());
@@ -531,7 +531,7 @@ class PlayerRedrawStuffTest {
             setCounter("restingCounter", -1);
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "no event was signalled");
             assertTrue(pending().has(PlayerRedraw.PR_HP));
@@ -547,7 +547,7 @@ class PlayerRedrawStuffTest {
             setCounter("restingCounter", 50);
             raise(PlayerRedraw.PR_MESSAGE, PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.contains(GameEventType.EVENT_MESSAGE));
             assertTrue(bus.events.contains(GameEventType.EVENT_HP),
@@ -564,7 +564,7 @@ class PlayerRedrawStuffTest {
             setCounter("runningCounter", 50);
             raise(PlayerRedraw.PR_MAP, PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.contains(GameEventType.EVENT_MAP));
             assertTrue(bus.events.contains(GameEventType.EVENT_HP));
@@ -583,7 +583,7 @@ class PlayerRedrawStuffTest {
             setCounter("restingCounter", 50);
             raise(PlayerRedraw.PR_MESSAGE, PlayerRedraw.PR_MAP, PlayerRedraw.PR_MONLIST);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertTrue(bus.events.isEmpty(), "the hack returned before the subwindows refreshed");
             assertTrue(pending().has(PlayerRedraw.PR_MONLIST), "even the subwindow flag waits");
@@ -598,7 +598,7 @@ class PlayerRedrawStuffTest {
         void standingStillAlwaysRedraws() {
             raise(PlayerRedraw.PR_HP);
 
-            player.redrawStuff();
+            PlayerCalcs.redrawStuff(player);
 
             assertSame(GameEventType.EVENT_HP, bus.events.get(0));
         }

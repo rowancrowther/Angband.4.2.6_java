@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#calcMana}, the port of C's {@code calc_mana} ({@code player-calcs.c}).
+ * Tests {@link PlayerCalcs#calcMana}, the port of C's {@code calc_mana} ({@code player-calcs.c}).
  *
  * <p>Three things decide a caster's mana, and each has an edge the tests here pin. A class that
  * knows no spells has none at all, and is answered before anything else is worked out. A caster
@@ -229,7 +229,7 @@ class PlayerCalcManaTest {
             set("playerClass", casterClass(0));
             set("maxSP", 30);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertEquals(0, intField("maxSP"));
             assertEquals(0, intField("curSp"));
@@ -246,7 +246,7 @@ class PlayerCalcManaTest {
         void tooLowLevelHasNoMana() throws Exception {
             set("level", FIRST_SPELL_LEVEL - 1);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertEquals(0, intField("maxSP"));
         }
@@ -261,7 +261,7 @@ class PlayerCalcManaTest {
         void firstSpellLevelHasMana() throws Exception {
             set("level", FIRST_SPELL_LEVEL);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertTrue(intField("maxSP") > 0, "the boundary level is inclusive");
         }
@@ -282,7 +282,7 @@ class PlayerCalcManaTest {
         @Test
         @DisplayName("wearing nothing is not encumbering")
         void nothingWornIsNotEncumbering() throws Exception {
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertFalse(state.isCumberArmour());
         }
@@ -297,7 +297,7 @@ class PlayerCalcManaTest {
         void lightArmourIsNotEncumbering() throws Exception {
             wearBodyArmour(SPELL_WEIGHT - 50);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertFalse(state.isCumberArmour());
         }
@@ -311,11 +311,11 @@ class PlayerCalcManaTest {
         @Test
         @DisplayName("armour beyond the allowance costs mana")
         void heavyArmourCostsMana() throws Exception {
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
             int unencumbered = intField("maxSP");
 
             wearBodyArmour(SPELL_WEIGHT + 200);
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertTrue(state.isCumberArmour());
             assertTrue(intField("maxSP") < unencumbered, "the armour cost mana");
@@ -332,7 +332,7 @@ class PlayerCalcManaTest {
         void weaponIsExempt() throws Exception {
             wearWeapon(SPELL_WEIGHT * 3);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertFalse(state.isCumberArmour(), "a heavy weapon does not encumber a caster");
         }
@@ -347,7 +347,7 @@ class PlayerCalcManaTest {
         void manaNeverGoesNegative() throws Exception {
             wearBodyArmour(SPELL_WEIGHT + 100000);
 
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertEquals(0, intField("maxSP"));
         }
@@ -371,7 +371,7 @@ class PlayerCalcManaTest {
         void withoutUpdatingNothingIsStored() throws Exception {
             set("maxSP", 99);
 
-            player.calcMana(state, false);
+            PlayerCalcs.calcMana(player, state, false);
 
             assertEquals(99, intField("maxSP"));
         }
@@ -387,7 +387,7 @@ class PlayerCalcManaTest {
         void encumbranceIsWrittenRegardless() throws Exception {
             wearBodyArmour(SPELL_WEIGHT + 200);
 
-            player.calcMana(state, false);
+            PlayerCalcs.calcMana(player, state, false);
 
             assertTrue(state.isCumberArmour());
         }
@@ -400,7 +400,7 @@ class PlayerCalcManaTest {
         @Test
         @DisplayName("a changed maximum asks for a redraw")
         void changedMaximumAsksForRedraw() throws Exception {
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertTrue(player.getPlayerUpkeep().getRedrawFlags().has(PlayerRedraw.PR_MANA));
         }
@@ -414,12 +414,12 @@ class PlayerCalcManaTest {
         @Test
         @DisplayName("current mana is capped at the new maximum")
         void currentManaIsCapped() throws Exception {
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
             int maximum = intField("maxSP");
             set("curSp", maximum + 50);
 
             wearBodyArmour(SPELL_WEIGHT + 200);
-            player.calcMana(state, true);
+            PlayerCalcs.calcMana(player, state, true);
 
             assertTrue(intField("curSp") <= intField("maxSP"));
         }

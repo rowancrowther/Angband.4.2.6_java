@@ -415,7 +415,7 @@ public class PlayerRegistry {
      * <p>Hence the null return, which C has no equivalent of. {@link TimedEffect#TMD_NONE} is the
      * standing example: it is a sentinel the parsers hand back for an unresolvable name, not a
      * status, so no record is ever loaded for it. Callers are expected to guard — see
-     * {@link uk.co.jackoftrades.middle.player.Player#timedGradeEq}.
+     * {@link PlayerTimed#timedGradeEq}.
      *
      * <p>Function lookupPlayerTimedEffect coded on 260818, commented in full on 260818.
      *

@@ -747,7 +747,7 @@ public class PlayerState {
 
     /**
      * @return the bonus to armour class from equipment and effects - C's {@code state.to_a}, and
-     * separate from {@link #getAc()}, which is the base
+     * separate from {@link #getBaseAc()}, which is the base
      */
     public int getToAc() {
         return this.toA;
@@ -777,7 +777,7 @@ public class PlayerState {
      * <p>C gets this for nothing: {@code struct player_state state = p->state;} copies every byte,
      * so the local and the field are thereafter separate values. Java would bind a second name to
      * the same object, which is not a copy at all, and the caller that most needs one is exactly the
-     * one that would suffer for it — {@link Player#updateBonuses()} recalculates into the duplicate
+     * one that would suffer for it — {@link PlayerCalcs#updateBonuses(Player)} recalculates into the duplicate
      * and then compares it field by field against the original, so an alias would reduce every
      * comparison to an object against itself. This method exists to make that assignment mean in
      * Java what it means in C.

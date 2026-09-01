@@ -438,11 +438,94 @@ public abstract class StringUtils {
         return lower == 'a' || lower == 'e' || lower == 'i' || lower == 'o' || lower == 'u';
     }
 
+    /**
+     * Turn a lower-case letter into its zero-based index, C's {@code A2I} macro from
+     * {@code h-basic.h}. {@code 'a'} gives 0 through to {@code 'z'} giving 25, which is how
+     * the game addresses menu entries, inventory slots and the letter tables in the name
+     * file.
+     *
+     * <p>C names the macro for its argument ({@code A2I}, letter to index) and this port
+     * names it for the types ({@code C2I}, char to int); the arithmetic is the same
+     * subtraction of {@code 'a'} in both. The macro's own comment records the contract that
+     * neither version enforces: the argument must be a lower-case letter. Anything else
+     * subtracts just as happily, so {@code 'A'} yields -32 and {@code '0'} yields -49 rather
+     * than any kind of error, exactly as C behaves.
+     *
+     * <p>Method C2I coded on 260901, commented in full on 260901.
+     *
+     * @param ch The lower-case letter to convert
+     * @return The letter's offset from {@code 'a'}, so 0 to 25 for {@code 'a'} to {@code 'z'}
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
     public static int C2I(char ch) {
         return ch - 'a';
     }
 
+    /**
+     * Turn a zero-based index into its lower-case letter, C's {@code I2A} macro from
+     * {@code h-basic.h} and the inverse of {@link #C2I}. 0 gives {@code 'a'} through to 25
+     * giving {@code 'z'}, which is how the game labels the entries it later reads back with
+     * {@link #C2I}.
+     *
+     * <p>C names the macro for its result ({@code I2A}, index to letter) and this port names
+     * it for the types ({@code I2C}, int to char); both add {@code 'a'}. The cast to
+     * {@code char} is the one thing C does not write, because its macro yields an {@code int}
+     * that the caller assigns to a character. The two agree over the contract the macro's
+     * comment states — indices 0 to 25 — and diverge only outside it, where C wraps in a
+     * narrow character type and Java in an unsigned 16-bit one. No caller passes such a value.
+     *
+     * <p>Method I2C coded on 260901, commented in full on 260901.
+     *
+     * @param c The index to convert, 0 to 25
+     * @return The letter that many places after {@code 'a'}
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
     public static char I2C(int c) {
         return (char) (c + 'a');
+    }
+
+    /**
+     * Determine whether a character is an ASCII letter, standing in for C's {@code isalpha}
+     * from {@code <ctype.h>}.
+     *
+     * <p>The explicit {@code 'a'}-{@code 'z'} and {@code 'A'}-{@code 'Z'} ranges are the point
+     * of the method rather than an expansion of it. C's {@code isalpha} is locale-dependent in
+     * principle, but the game runs in the default {@code "C"} locale, in which it is exactly
+     * these fifty-two characters — and every call site casts to {@code unsigned char} to keep
+     * it there. {@link Character#isLetter} would be a wider test, accepting letters from every
+     * script Unicode knows, so it is deliberately not used.
+     *
+     * <p>Method isAlpha coded on 260901, commented in full on 260901.
+     *
+     * @param ch The character to test
+     * @return true if ch is one of {@code a}-{@code z} or {@code A}-{@code Z}, false otherwise
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public static boolean isAlpha(char ch) {
+        return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+    }
+
+    /**
+     * Determine whether a character is an ASCII decimal digit, standing in for C's
+     * {@code isdigit} from {@code <ctype.h>}.
+     *
+     * <p>As with {@link #isAlpha}, the literal {@code '0'}-{@code '9'} range is what C's
+     * {@code isdigit} amounts to in the {@code "C"} locale the game runs in, and is narrower
+     * than {@link Character#isDigit}, which also accepts the decimal digits of other scripts.
+     * The places that lean on this — dice strings, inscriptions, keypress handling — all
+     * expect the ASCII ten only.
+     *
+     * <p>Method isDigit coded on 260901, commented in full on 260901.
+     *
+     * @param ch The character to test
+     * @return true if ch is one of {@code 0}-{@code 9}, false otherwise
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public static boolean isDigit(char ch) {
+        return (ch >= '0' && ch <= '9');
     }
 }

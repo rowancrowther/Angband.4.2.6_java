@@ -293,16 +293,22 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `stat_idx_to_name`
 - [X] `lookup_realm` (`[C] player.c:111, 122, 130`)
 - [X] `player_random_name`
-- [ ] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
+- [X] `player_safe_name` (`[C] player.c:375, 389`) — birth needs both
 
 ### G — `player_generate` and its helpers *(needs C, F)*
 
-- [ ] `player_embody` (`[C] player-birth.c:369`), `get_ahw` (`:353`), `get_history` (`:330`), `get_money` (`:390`)
-- [ ] `roll_hp` (`[C] player-birth.c:279`), `get_bonuses` (`:311`), `get_stats` (`:231`)
+- [ ] `player_embody` (`[C] player-birth.c:369`)
+- [ ] `get_ahw` (`:353`)
+- [ ] `get_history` (`:330`)
+- [ ] `get_money` (`:390`)
+- [ ] `roll_hp` (`[C] player-birth.c:279`)
+- [ ] `get_bonuses` (`:311`)
+- [ ] `get_stats` (`:231`)
 - [ ] `player_generate` (`[C] player-birth.c:979`)
 - [ ] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
 - [ ] `player_make_simple` (`[C] player-birth.c:522`)
-- [ ] `player_outfit` (`[C] player-birth.c:584`) and `wield_all` (`:462`) — **stubs**, per decision 2
+- [ ] `player_outfit` (`[C] player-birth.c:584`)
+- [ ] `wield_all` (`:462`) — **stubs**, per decision 2
 - [ ] **Remove the `LitPlayer` test double** in `src/test/.../cave/ChunkMarkWasSeenTest.java` once this stage gives a
   player a real `PlayerState`, and go back to `new Player()`. `Player()` leaves `state` null, but
   `Chunk.updateView` → `calcLighting` reads `Player.getStateLight()` (`Player.java:762`, `state.getCurLight()`), so

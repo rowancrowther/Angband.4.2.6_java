@@ -25,8 +25,10 @@ import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * The definition of a curse (as loaded from {@code curse.txt}) — a negative
@@ -91,7 +93,7 @@ public class Curse {
      * {@link Effect} already carries its own dice/subtype/timing/message, so a
      * curse simply holds the list.
      */
-    private final Effect effect;
+    private Effect effect;
 
     /**
      * The object flags this curse grants (C: {@code curse->obj->flags}). Only the
@@ -106,7 +108,7 @@ public class Curse {
      * family of the {@code values:} line; resistances are deliberately excluded
      * (they live in {@link #elInfo}).
      */
-    private final Map<ObjectModifier, Integer> modifiers;
+    private Map<ObjectModifier, Integer> modifiers;
 
     /**
      * Per-element resistance level and hates/ignores flags this curse imposes
@@ -115,22 +117,22 @@ public class Curse {
      * resistance levels, and the {@code HATES_}/{@code IGNORE_} tokens of the
      * {@code flags:} line set its flags.
      */
-    private final Map<ElementEnum, ElementInfo> elInfo;
+    private Map<ElementEnum, ElementInfo> elInfo;
 
     /**
      * To-hit penalty imposed by the curse (C: {@code curse->obj->to_h}).
      */
-    private final int combatToHit;
+    private int combatToHit;
 
     /**
      * To-damage penalty imposed by the curse (C: {@code curse->obj->to_d}).
      */
-    private final int combatDam;
+    private int combatDam;
 
     /**
      * Armour-class penalty imposed by the curse (C: {@code curse->obj->to_a}).
      */
-    private final int combatAC;
+    private int combatAC;
 
     /**
      * The curses this one conflicts with (cannot co-occur on the same object).
@@ -162,6 +164,19 @@ public class Curse {
      * {@code msg:} line).
      */
     private final String message;
+
+    private int knownCombatToHit;
+    private int knownCombatToDam;
+    private int knownCombatToAC;
+
+    private Map<ObjectModifier, Integer> knownModifiers;
+
+    private Map<ElementEnum, ElementInfo> knownElInfo;
+
+    private Flag<ObjectFlag> knownObjectFlags;
+
+    private Effect knownEffect;
+    
 
     /**
      * Build a curse from its assembled fields. This takes already-resolved domain
@@ -214,6 +229,9 @@ public class Curse {
         this.conflictFlags = conflictFlags;
         this.description = description;
         this.message = message;
+        knownElInfo = new HashMap<>();
+        knownObjectFlags = new Flag<>(ObjectFlag.class);
+        knownModifiers = new HashMap<>();
     }
 
     /**
@@ -433,5 +451,241 @@ public class Curse {
         }
 
         return result;
+    }
+
+    /**
+     * Whether this curse's to-hit figure is the unremarkable one for its bearer — the curse arm of
+     * C's {@code object_has_standard_to_h} ({@code obj-knowledge.c:590}). The question behind the
+     * name is not "is it zero" but "is it worth telling the player about": an ordinary to-hit
+     * teaches nothing, so {@code PlayerKnowledge.knowObject} declines to write it into the known
+     * figure.
+     *
+     * <p><b>C answers true here unconditionally, and this does not.</b> C's first line is a
+     * commented hack for exactly this case — a curse carries its properties on a bearer-less object
+     * whose {@code kind} is null, and the function returns true for a null kind before looking at
+     * anything else. It has no choice: the branch below reads {@code obj->kind->to_h}, which a curse
+     * has no kind to supply. {@link ItemObject#hasStandardToH()} keeps that null-kind line; this
+     * one instead applies C's other branch, the {@code obj->to_h == 0} test written for ordinary
+     * objects.
+     *
+     * <p>The two disagree exactly where a curse carries a non-zero to-hit, which three in
+     * {@code curse.txt} do — <em>enveloping</em> (-5), <em>irritation</em> (-15) and
+     * <em>air swing</em> (-20). C never copies their to-hit into the known figure; this lets it
+     * through once the player can read to-hit. That is the deliberate half of the divergence rather
+     * than an oversight: {@link #isFullyKnown()} compares {@code combatToHit} against
+     * {@code knownCombatToHit}, so under C's answer those three curses could never become fully
+     * known. C is not troubled by that because it returns from {@code player_know_object} before its
+     * own fully-known block ever sees a curse — see {@link #isFullyKnown()}.
+     *
+     * <p>Function hasStandardToH coded before 260901, commented in full on 260901.
+     *
+     * @return true if this curse imposes no to-hit penalty
+     */
+    public boolean hasStandardToH() {
+        return combatToHit == 0;
+    }
+
+    /**
+     * Records the to-hit penalty the player is currently entitled to read off this curse
+     * (C: {@code curse->obj->known->to_h}). Written only by {@code PlayerKnowledge.knowObject}, and
+     * only when {@link #hasStandardToH()} says the figure is remarkable; a curse whose to-hit is
+     * unremarkable leaves this at zero.
+     *
+     * <p>Function setKnownCombatToHit coded before 260901, commented in full on 260901.
+     *
+     * @param toHit the known to-hit penalty — the real one where the player can read to-hit,
+     *              otherwise zero
+     */
+    public void setKnownCombatToHit(int toHit) {
+        knownCombatToHit = toHit;
+    }
+
+    /**
+     * Records the to-damage penalty the player is currently entitled to read off this curse
+     * (C: {@code curse->obj->known->to_d}). Written only by {@code PlayerKnowledge.knowObject},
+     * where the value arrives already masked by the player's knowledge bit, so zero means "cannot
+     * read it" as much as "there is none" — C's idiom, and the zero is what the display wants for
+     * both.
+     *
+     * <p>Function setKnownCombatToDam coded before 260901, commented in full on 260901.
+     *
+     * @param toDam the known to-damage penalty
+     */
+    public void setKnownCombatToDam(int toDam) {
+        knownCombatToDam = toDam;
+    }
+
+    /**
+     * Records the armour-class penalty the player is currently entitled to read off this curse
+     * (C: {@code curse->obj->known->to_a}). As with {@link #setKnownCombatToDam(int)} the value is
+     * pre-masked by the player's knowledge bit.
+     *
+     * <p>Function setKnownCombatToAC coded before 260901, commented in full on 260901.
+     *
+     * @param toAC the known armour-class penalty
+     */
+    public void setKnownCombatToAC(int toAC) {
+        knownCombatToAC = toAC;
+    }
+
+    /**
+     * Replaces the modifiers the player is entitled to read off this curse
+     * (C: {@code curse->obj->known->modifiers}). {@code PlayerKnowledge.knowObject} builds the map
+     * whole — every {@link ObjectModifier} present with a zero, then the known ones overwritten with
+     * their real values — so this stores the reference rather than merging into what was there.
+     * That is C's dense array rebuilt each pass, and it is why the map is taken over wholesale: a
+     * modifier the player has since stopped being able to read must go back to zero, which a merge
+     * would not do.
+     *
+     * <p>Function setKnownModifiers coded before 260901, commented in full on 260901.
+     *
+     * @param modifiers the freshly derived known-modifier map; stored, not copied
+     */
+    public void setKnownModifiers(Map<ObjectModifier, Integer> modifiers) {
+        this.knownModifiers = modifiers;
+    }
+
+    /**
+     * Replaces the per-element information the player is entitled to read off this curse
+     * (C: {@code curse->obj->known->el_info}). Rebuilt whole by
+     * {@code PlayerKnowledge.knowObject} for the same reason as {@link #setKnownModifiers(Map)},
+     * and stored by reference — {@link #putKnownElementInfo(ElementEnum, ElementInfo)} then writes
+     * into the map this hands over.
+     *
+     * <p>The {@link ElementInfo} values are copies, not the curse's own: C assigns
+     * {@code res_level} and {@code flags} field by field into a separate struct, so the known view
+     * must not alias the real one.
+     *
+     * <p>Function setKnownElInfo coded before 260901, commented in full on 260901.
+     *
+     * @param knownElInfo the freshly derived known element map; stored, not copied
+     */
+    public void setKnownElInfo(Map<ElementEnum, ElementInfo> knownElInfo) {
+        this.knownElInfo = knownElInfo;
+    }
+
+    /**
+     * Replaces the object flags the player is entitled to read off this curse
+     * (C: {@code of_wipe(obj->known->flags)} followed by the flag-by-flag copy in
+     * {@code player_know_object}). The wipe before the copy is C's and is load-bearing: the flags
+     * are derived afresh from what the player knows now, so a flag that was readable and no longer
+     * is has to disappear rather than linger.
+     *
+     * <p>Unlike its two neighbours this copies into the existing {@link Flag} rather than taking
+     * the caller's, so {@link #knownObjectFlags} is never null and never aliases the player's own
+     * knowledge set.
+     *
+     * <p>Function setKnownObjectFlags coded before 260901, commented in full on 260901.
+     *
+     * @param flags the flags to copy in — the intersection of the player's known flags with this
+     *              curse's own
+     */
+    public void setKnownObjectFlags(Flag<ObjectFlag> flags) {
+        knownObjectFlags.wipe();
+        knownObjectFlags.copyFrom(flags);
+    }
+
+    /**
+     * Records the effect chain the player is entitled to read off this curse
+     * (C: {@code curse->obj->known->effect}). Held as a reference to the very same {@link Effect},
+     * not a copy, because knowledge of an effect is tested by identity —
+     * {@code obj->effect == obj->known->effect} in C's {@code object_effect_is_known}, and
+     * {@code effect == knownEffect} in {@link #isFullyKnown()}. A copy would compare unequal and
+     * the curse could never read as fully known.
+     *
+     * <p>Function setKnownEffect coded before 260901, commented in full on 260901.
+     *
+     * @param first the head of this curse's effect chain, or null while it is unknown
+     */
+    public void setKnownEffect(Effect first) {
+        knownEffect = first;
+    }
+
+    /**
+     * Writes one element's known information, leaving the rest of the map alone — the single-entry
+     * counterpart to {@link #setKnownElInfo(Map)}. This is what the fully-known pass of
+     * {@code PlayerKnowledge.knowObject} uses: once a curse is completely understood its known
+     * element view is promoted entry by entry to the real values, so the player sees what the curse
+     * actually does rather than what it would be doing if it had the elements they can read.
+     *
+     * <p>The {@link ElementInfo} passed in should be a {@link ElementInfo#copy()}, for the aliasing
+     * reason given on {@link #setKnownElInfo(Map)}.
+     *
+     * <p>Function putKnownElementInfo coded before 260901, commented in full on 260901.
+     *
+     * @param em the element to record
+     * @param ei the information to record for it
+     */
+    public void putKnownElementInfo(ElementEnum em, ElementInfo ei) {
+        this.knownElInfo.put(em, ei);
+    }
+
+    /**
+     * Whether the player understands everything this curse does — the curse-shaped port of C's
+     * {@code object_fully_known} ({@code obj-knowledge.c:763}) and the two predicates beneath it,
+     * {@code object_runes_known} and {@code object_non_curse_runes_known}
+     * ({@code obj-knowledge.c:741, 500}), collapsed into one method because most of what they test
+     * cannot arise on a curse.
+     *
+     * <p><b>What survives the collapse</b> is C's checklist in C's order: the three combat figures
+     * compared exactly, every modifier compared exactly, every element with a real resistance
+     * required to have a known one, the real flags required to be a subset of the known flags, and
+     * finally the effect compared by identity. What falls away is everything about a nested object:
+     * C's brand, slay and curse blocks, and the {@code curses_are_equal} call at the head of
+     * {@code object_runes_known}. A curse has no brands, no slays and no curses of its own, and it
+     * is not something that can carry a known counterpart with a different kind, so the null-known
+     * guards go too.
+     *
+     * <p><b>The flag test reads backwards and is right.</b> C's
+     * {@code of_is_subset(obj->known->flags, obj->flags)} asks whether the real flags are contained
+     * in the known ones; {@link Flag#isSubset(uk.co.jackoftrades.channel.utils.FlagView)} answers
+     * whether its <em>argument</em> is a subset of the receiver, so
+     * {@code knownObjectFlags.isSubset(objectFlags)} is the same question with the arguments in the
+     * same places.
+     *
+     * <p><b>The modifier loop walks fewer entries than C's.</b> C compares all
+     * {@code OBJ_MOD_MAX} slots of a dense array; this walks the keys the curse's data lines
+     * actually name, since {@link #modifiers} holds only those. The two agree as long as the known
+     * map is built solely from the real one, which is what {@code PlayerKnowledge.knowObject} does —
+     * a known non-zero for a modifier the curse does not have would be invisible here and is not
+     * reachable from that caller.
+     *
+     * <p><b>Outstanding: C never asks this question of a curse.</b> Its
+     * {@code player_know_object} returns at "Curse object structures are finished now" — before the
+     * effect assignment and before the fully-known block — so no curse object ever reaches
+     * {@code object_fully_known} in the original, and none of its other callers is handed one. This
+     * method and the block that calls it are therefore the port's own, following from the decision
+     * recorded on this class to flatten C's nested {@code curse->obj} onto {@link Curse} itself.
+     * The one place it changes an answer is the to-hit comparison, discussed at
+     * {@link #hasStandardToH()}.
+     *
+     * <p>Function isFullyKnown coded before 260901, commented in full on 260901.
+     *
+     * @return true if every property this curse confers is one the player can currently read
+     */
+    public boolean isFullyKnown() {
+        if (combatToHit != knownCombatToHit
+                || combatDam != knownCombatToDam
+                || combatAC != knownCombatToAC)
+            return false;
+
+        for (ObjectModifier om : modifiers.keySet()) {
+            if (!knownModifiers.containsKey(om))
+                return false;
+            if (!Objects.equals(knownModifiers.get(om), modifiers.get(om)))
+                return false;
+        }
+
+        for (ElementEnum em : elInfo.keySet()) {
+            if ((elInfo.get(em).getResLevel() != 0)
+                    && (!knownElInfo.containsKey(em)
+                    || knownElInfo.get(em).getResLevel() == 0))
+                return false;
+        }
+
+        if (!knownObjectFlags.isSubset(objectFlags))
+            return false;
+
+        return effect == knownEffect;
     }
 }

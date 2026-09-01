@@ -5287,6 +5287,10 @@ public class ItemObject {
         return string;
     }
 
+    public Object getObjectFlags() {
+        return flags;
+    }
+
     /**
      * A running power total and the shooting multiplier that goes with it, returned together by the
      * extra-might step.

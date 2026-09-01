@@ -28,6 +28,7 @@ import uk.co.jackoftrades.channel.utils.FlagView;
 import uk.co.jackoftrades.middle.Message;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.cave.Loc;
+import uk.co.jackoftrades.middle.effect.Effect;
 import uk.co.jackoftrades.middle.enums.DamageAspect;
 import uk.co.jackoftrades.middle.enums.MessageType;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
@@ -1041,7 +1042,9 @@ public class PlayerKnowledge {
         // TODO: Implement this branch in chapter 8
 
         // Curse objects
-        // TODO: Implement this branch once known object on curse is understood
+        for (Curse curse : ObjectRegistry.getCurses()) {
+            knowObject(player, curse);
+        }
 
         // Inscription
         // TODO: Implement this branch in chapter 4
@@ -1049,6 +1052,129 @@ public class PlayerKnowledge {
         EventsHandler eventsBusHandler = GameEngine.getEventsBusHandler();
         eventsBusHandler.eventSignal(GameEventType.EVENT_INVENTORY);
         eventsBusHandler.eventSignal(GameEventType.EVENT_EQUIPMENT);
+    }
+
+    /**
+     * Transfers what the player knows about object properties in general onto one curse definition —
+     * the curse half of C's {@code player_know_object} ({@code obj-knowledge.c:1032}), which the
+     * port has to split into a second method because a curse is no longer an object.
+     *
+     * <p><b>Why there is an overload at all.</b> C hangs a curse's properties on a bearer-less
+     * {@code struct object} with a null {@code kind} ({@code curses[i].obj}) and feeds it to the
+     * same function as a real sword; the null kind is what makes it take the short path.
+     * {@link Curse} flattens those properties onto itself instead — the shape recorded on that
+     * class — so there is no {@link ItemObject} to hand to
+     * {@link #knowObject(Player, ItemObject)}, and the short path becomes a method of its own. The
+     * TODO this discharges is the one described at {@link #updateObjectKnowledge}: the curse
+     * population had nowhere to put its answer until {@link Curse} grew the {@code known*} fields.
+     *
+     * <p><b>The direction of travel is the same as the object version's.</b> Nothing is read off
+     * the curse to find out what the player has learned; {@link Player#itemKnowledge} — the standing
+     * knowledge of what each rune, modifier and element means — decides what the curse is allowed to
+     * show, and the {@code known*} fields are rewritten to match. Learning happens in the
+     * {@code learnRune} family; this is the propagation afterwards, which is why it runs over every
+     * curse in {@link ObjectRegistry} on each rune learned rather than over the curses on some
+     * particular item.
+     *
+     * <p><b>What C's short path omits, and this omits with it.</b> There are no early returns: a
+     * curse always exists, always has its known fields, has no kind to mismatch and is never a
+     * distant object, so the three guards at the head of {@link #knowObject(Player, ItemObject)}
+     * have nothing to guard. The dice/sides/base-AC/pval block goes too — a curse has none of them.
+     * What is left is C's four blocks in C's order: combat details, modifiers, elements, flags.
+     *
+     * <p>Within those four, two details differ from the object version and both follow from the
+     * flattening:
+     *
+     * <ul>
+     *   <li><b>Elements are read with {@code getOrDefault}.</b> C indexes a dense
+     *       {@code el_info[ELEM_MAX]} where an unmentioned element is simply zero;
+     *       {@link Curse#getElInfo()} holds only the elements the curse's data lines name, so an
+     *       element the player can read but the curse never mentions has to be defaulted rather than
+     *       fetched. Same treatment as {@link #objectCursesFindElement}.</li>
+     *   <li><b>The new element map starts empty</b> rather than from the existing known one, because
+     *       every non-sentinel element is written on the way through — first to a zeroed
+     *       {@link ElementInfo}, then to a copy of the real one where the player can read it.
+     *       {@link ElementEnum#ELEM_NONE} and {@link ElementEnum#ELEM_MAX} are skipped as
+     *       sentinels.</li>
+     * </ul>
+     *
+     * <p>The flag intersection looks as though it damages the player's own knowledge — {@code inter}
+     * mutates its receiver — but {@link KnownObject#getFlags()} hands back a fresh copy, so what is
+     * narrowed is a throwaway.
+     *
+     * <p><b>Outstanding: the last two steps have no counterpart in C.</b> C returns at "Curse object
+     * structures are finished now", immediately after the flags — before the effect assignment and
+     * before the fully-known block — so a curse object never reaches either, and
+     * {@code object_fully_known} is never handed one from anywhere else in the original. This method
+     * carries on into both. The effect assignment is unconditional here, where C's is gated on the
+     * kind's awareness and flavour, neither of which a curse has; the consequence is that
+     * {@link Curse#isFullyKnown()}'s effect test always passes. Whether the port wants these two
+     * steps at all is the open question — see {@link Curse#isFullyKnown()} and
+     * {@link Curse#hasStandardToH()}, where the one behavioural difference they produce is set out.
+     *
+     * <p>Function knowObject(Player, Curse) coded before 260901, commented in full on 260901.
+     *
+     * @param player the player whose standing rune knowledge decides what the curse is allowed to
+     *               show; nothing here is read off the curse to decide it
+     * @param curse  the curse definition whose {@code known*} fields should be brought up to date
+     */
+    private static void knowObject(Player player, Curse curse) {
+        // combat details
+        curse.setKnownCombatToAC(curse.getCombatAC() * player.itemKnowledge.getToA());
+        if (!curse.hasStandardToH())
+            curse.setKnownCombatToHit(curse.getCombatToHit() * player.itemKnowledge.getToH());
+        curse.setKnownCombatToDam(curse.getCombatDam() * player.itemKnowledge.getToD());
+
+        // modifiers
+        Map<ObjectModifier, Integer> modifiers = curse.getModifiers();
+        Map<ObjectModifier, Integer> newModifiers = new HashMap<>();
+        for (ObjectModifier modifier : ObjectModifier.values()) {
+            newModifiers.put(modifier, 0);
+        }
+        for (ObjectModifier key : modifiers.keySet()) {
+            if (player.itemKnowledge.modifierIsKnown(key))
+                newModifiers.put(key, modifiers.get(key));
+        }
+        curse.setKnownModifiers(newModifiers);
+
+        // Elements
+        Map<ElementEnum, Boolean> knownElements = player.itemKnowledge.getElementResistInfo();
+        Map<ElementEnum, ElementInfo> itemElInfo = curse.getElInfo();
+        Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
+        for (ElementEnum element : ElementEnum.values()) {
+            if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
+
+            ElementInfo zero = new ElementInfo();
+            zero.setResLevel(0);
+            newElInfo.put(element, zero);
+        }
+        for (ElementEnum key : knownElements.keySet()) {
+            if (knownElements.get(key))
+                newElInfo.put(key, itemElInfo.getOrDefault(key, new ElementInfo()).copy());
+        }
+        curse.setKnownElInfo(newElInfo);
+
+        // ObjectFlags
+        Flag<ObjectFlag> knownFlags = player.itemKnowledge.getFlags();
+        FlagView<ObjectFlag> itemFlags = curse.getObjectFlags();
+        knownFlags.inter(itemFlags);
+        curse.setKnownObjectFlags(knownFlags);
+
+        curse.setKnownEffect(curse.getEffect());
+
+        // Fully known objects
+        if (curse.isFullyKnown()) {
+            for (ElementEnum element : curse.getElInfo().keySet()) {
+                if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX) continue;
+
+                ElementInfo eInfo = itemElInfo.get(element).copy();
+                curse.putKnownElementInfo(element, eInfo);
+            }
+
+            Flag<ObjectFlag> copy = new Flag<>(ObjectFlag.class);
+            copy.copyFrom(curse.getObjectFlags());
+            curse.setKnownObjectFlags(copy);
+        }
     }
 
     /**

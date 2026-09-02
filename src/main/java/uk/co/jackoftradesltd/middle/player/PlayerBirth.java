@@ -19,10 +19,15 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
+
+import java.util.Map;
+
+import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
 
 /**
  * The character-creation machinery - the port of C's {@code player-birth.c}, minus its parsing, its
@@ -314,5 +319,97 @@ public class PlayerBirth {
 
         // Fully rested
         player.setCurSp(player.getMaxSP());
+    }
+
+    /**
+     * Rolls a fresh set of stats for a character being born - the port of C's {@code get_stats}
+     * ({@code player-birth.c:231}). This is the standard roller: {@code do_cmd_roll_stats} calls it
+     * for each re-roll ({@code player-birth.c:1167}), and the point-based birth path does not use it
+     * at all.
+     *
+     * <p>Fifteen dice are rolled at once, three per stat, and the sizes cycle with the index:
+     * {@code randint1(3 + index % 3)} gives a d3, a d4 and a d5 to each stat in turn. The three
+     * belonging to a stat are consecutive - {@code dice[3i]}, {@code dice[3i + 1]},
+     * {@code dice[3i + 2]} - so the coefficient three is the stride, and every stat draws its own
+     * d3, d4 and d5 rather than a mixture of its neighbours'. Added to a base of 5, that gives a
+     * value of 8 to 17 per stat, before race and class.
+     *
+     * <p>The whole set is rejected and re-rolled unless the fifteen dice total strictly between
+     * {@code 7 * STAT_MAX} and {@code 9 * STAT_MAX} - 36 to 44 inclusive, against a possible range
+     * of 15 to 60. Both comparisons are strict, so 35 and 45 are both rejected. The accumulator is
+     * declared inside the loop precisely so that it starts at zero on every attempt; C resets it in
+     * the {@code for} initialiser, {@code for (j = i = 0; ...)} ({@code player-birth.c:239}). A
+     * total carried between attempts could never fall back inside the window, and the loop would
+     * never terminate.
+     *
+     * <p>The roll is a rejection sampler with no attempt limit in either version, which is safe
+     * because the window sits around the mean: a d3, a d4 and a d5 average 7.5 between them, so
+     * fifteen dice average 37.5 and an acceptable set turns up in a handful of attempts.
+     *
+     * <p>Five things are written per stat, in C's order: the rolled maximum, the current value
+     * seeded equal to it, the identity entry in the scramble map, the caller's working value, and
+     * the birth record. The working value is where the comment in C about including "a chunk of
+     * {@code calc_bonuses()}" comes in - the race and class adjustments are applied through
+     * {@link PlayerUtils#modifyStatValue} here so the birth screen can show usable figures without
+     * a full recalculation, and {@link PlayerCalcs} will compute the same thing properly later.
+     * Note that the bonus reaches only {@code statUse}: the stat stored on the player stays the
+     * bare rolled value.
+     *
+     * <p>Where C walks {@code i} from zero to {@code STAT_MAX}, the port walks the enum and skips
+     * the two sentinels, which covers exactly the five real stats in the same order.
+     *
+     * <p>Function getStats commented in full on 260902.
+     *
+     * @param player  the character being born; their maxima, current values, scramble map and birth
+     *                record are all overwritten
+     * @param statUse receives the rolled values with the racial and class adjustments applied, one
+     *                entry per real stat; the caller owns the map, and existing entries for the five
+     *                stats are replaced
+     */
+    public static void getStats(Player player, Map<Stats, Integer> statUse) {
+        int[] dice = new int[3 * Stats.STAT_MAX.getValue()];
+
+        // roll and verify some stats
+        while (true) {
+            int total = 0;
+            // roll some dice
+            for (int index = 0; index < 3 * Stats.STAT_MAX.getValue(); index++) {
+                // Roll the dice
+                dice[index] = RandomValueUtils.randInt1(3 + index % 3);
+
+                // collect the totals
+                total += dice[index];
+            }
+
+            // Verify totals
+            if (total > 7 * Stats.STAT_MAX.getValue() && total < 9 * Stats.STAT_MAX.getValue()) break;
+        }
+
+        // Roll the stats
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+            int bonus;
+            int idx = stat.getValue();
+
+            // extract 5 + 1d3 + 1d4 + 1d5
+            int maxValue = 5 + dice[3 * idx] + dice[3 * idx + 1] + dice[3 * idx + 2];
+
+            // Save that value
+            player.setStatMax(stat, maxValue);
+
+            // Obtain a bonus for race and class
+            bonus = player.getRace().getStatAdjust(stat) + player.getPlayerClass().getStatsAdj(stat);
+
+            // Start fully healed
+            player.setCurrStatValue(stat, player.getMaxStatValue(stat));
+
+            // Start with unscrambple stats
+            player.setCurrStatMap(stat, stat);
+
+            // Efficienvcy - apply the racial/class bonuses
+            statUse.put(stat, modifyStatValue(player.getMaxStatValue(stat), bonus));
+
+            player.setStatBirth(stat, player.getStatMax(stat));
+        }
     }
 }

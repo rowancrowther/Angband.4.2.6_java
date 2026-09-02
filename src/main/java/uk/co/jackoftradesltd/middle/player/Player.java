@@ -234,7 +234,7 @@ public class Player {
     /**
      * Tracks stats remapped by a temporary stat swap - the port of C's {@code p->stat_map}.
      */
-    private HashMap<Stats, Integer> statMap;
+    private HashMap<Stats, Stats> statMap;
 
     /**
      * Turns remaining on each timed effect - the port of C's {@code p->timed}.
@@ -1993,5 +1993,124 @@ public class Player {
      */
     public void setPlayerHitpoint(int level, int levelHitpoints) {
         playerHP[level] = levelHitpoints;
+    }
+
+    /**
+     * Writes one of the player's "maximal" stat values (see {@link #getMaxStatValue}) - the port of
+     * writing C's {@code p->stat_max[stat]}.
+     *
+     * <p>Only three things move this value in the whole game, and all of them go through here:
+     * birth sets it from the dice ({@code player-birth.c:259}), a gain that takes the current value
+     * past it drags it up ({@link #playerStatInc}), and a permanent drain lowers it
+     * ({@link #statDec}). Everything else reads it.
+     *
+     * <p>The value uses the C encoding shared with {@link #getCurStatValue}: 3 to 18, then
+     * {@code 18 + percentile} up to {@code 18 + 100}. Nothing is clamped to that range here - C's
+     * bare array write does not either, and the callers that need the ceiling apply it themselves
+     * before calling.
+     *
+     * <p>Function setStatMax commented in full on 260902.
+     *
+     * @param stat     the stat to write; one of the five real stats, not {@code STAT_NONE} or
+     *                 {@code STAT_MAX}
+     * @param maxValue the maximal value to store, in the 3-to-18-then-percentile scale
+     */
+    public void setStatMax(Stats stat, int maxValue) {
+        statMax.put(stat, maxValue);
+    }
+
+    /**
+     * Writes one of the player's current "natural" stat values (see {@link #getCurStatValue}) - the
+     * port of writing C's {@code p->stat_cur[stat]}.
+     *
+     * <p>This is the drained figure, so it is the one that damage lowers and restoration copies the
+     * maximum back over. At birth it is seeded equal to the maximum ({@code player-birth.c:265}),
+     * which is what "start fully healed" means for stats.
+     *
+     * <p>The value uses the C encoding shared with {@link #getMaxStatValue}: 3 to 18, then
+     * {@code 18 + percentile} up to {@code 18 + 100}. As with {@link #setStatMax}, nothing is
+     * clamped or checked against the maximum here; C's array write does neither, and a caller that
+     * pushes the current value above the maximum is expected to raise the maximum itself, as
+     * {@link #playerStatInc} does.
+     *
+     * <p>Function setCurrStatValue commented in full on 260902.
+     *
+     * @param stat         the stat to write; one of the five real stats, not {@code STAT_NONE} or
+     *                     {@code STAT_MAX}
+     * @param curStatValue the current natural value to store, in the 3-to-18-then-percentile scale
+     */
+    public void setCurrStatValue(Stats stat, int curStatValue) {
+        statCur.put(stat, curStatValue);
+    }
+
+    /**
+     * Points one stat slot at the stat whose value it should display - the port of writing C's
+     * {@code p->stat_map[stat]}.
+     *
+     * <p>The map is how scrambling works: it is a permutation of the five stats, and the game reads
+     * a character's strength through whichever entry the map sends it to. Birth writes the identity
+     * permutation, {@code p->stat_map[i] = i} ({@code player-birth.c:268}), which is the unscrambled
+     * state.
+     *
+     * <p>Where C stores an index into its own array, the port stores the {@link Stats} constant
+     * directly, so the identity case reads as {@code setCurrStatMap(stat, stat)} rather than as an
+     * assignment of a loop counter. Taking the target as a parameter rather than assuming identity
+     * is what lets the scramble path share this method.
+     *
+     * <p>Nothing checks that the entries across all five stats form a permutation. C has no such
+     * check either, and it is the caller building the shuffle that owns the invariant.
+     *
+     * <p>Function setCurrStatMap commented in full on 260902.
+     *
+     * @param original the stat slot being written; one of the five real stats, not
+     *                 {@code STAT_NONE} or {@code STAT_MAX}
+     * @param mapped   the stat that slot should read through; the same stat when unscrambled
+     */
+    public void setCurrStatMap(Stats original, Stats mapped) {
+        this.statMap.put(original, mapped);
+    }
+
+    /**
+     * Returns one of the player's "maximal" stat values - the port of reading C's
+     * {@code p->stat_max[stat]}, and the counterpart of {@link #setStatMax}.
+     *
+     * <p>Identical in behaviour to {@link #getMaxStatValue}, which was ported first from the same
+     * C expression; the two are interchangeable at every call site.
+     *
+     * <p>Function getStatMax commented in full on 260902.
+     *
+     * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
+     *             {@code STAT_MAX}
+     * @return the maximal value of that stat, before drain
+     */
+    public int getStatMax(Stats stat) {
+        return statMax.get(stat);
+    }
+
+    /**
+     * Records the value a stat was born with - the port of writing C's {@code p->stat_birth[stat]}.
+     *
+     * <p>Written at birth from the rolled maximum ({@code player-birth.c:274}) - or, on the
+     * point-based roller, from the points spent ({@code player-birth.c:689}) - and never touched
+     * again by play: drain and gain move {@code stat_cur} and {@code stat_max}, leaving this as the
+     * record of where the character started.
+     *
+     * <p>Two things read it. The roller's undo copies it out to the saved previous roll
+     * ({@code player-birth.c:160}) and restores {@code stat_max} and {@code stat_cur} from it on the
+     * way back ({@code player-birth.c:204}), which is what makes a re-roll reversible. The savefile
+     * writes and reads it as a field of its own ({@code save.c:446}, {@code load.c:732}), so it
+     * survives a session rather than being recomputed.
+     *
+     * <p>The value uses the same encoding as {@link #getMaxStatValue}, and as with the other stat
+     * writers nothing is validated on the way in.
+     *
+     * <p>Function setStatBirth commented in full on 260902.
+     *
+     * @param stat  the stat to write; one of the five real stats, not {@code STAT_NONE} or
+     *              {@code STAT_MAX}
+     * @param value the value the character was born with, in the 3-to-18-then-percentile scale
+     */
+    public void setStatBirth(Stats stat, int value) {
+        statsBirth.put(stat, value);
     }
 }

@@ -303,8 +303,8 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `get_history` (`:330`)
 - [X] `get_money` (`:390`)
 - [X] `roll_hp` (`[C] player-birth.c:279`)
-- [ ] `get_bonuses` (`:311`)
-- [ ] `get_stats` (`:231`)
+- [X] `get_bonuses` (`:311`)
+- [X] `get_stats` (`:231`)
 - [ ] `player_generate` (`[C] player-birth.c:979`)
 - [ ] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
 - [ ] `player_make_simple` (`[C] player-birth.c:522`)

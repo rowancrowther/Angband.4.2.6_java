@@ -122,8 +122,9 @@ from one thread to another (the UIQueue goes from the Core thread to the UI thre
 CoreSender, and the EDTSender; the CoreQueue goes from the UI thread to the Core thread, and receives messages from the
 UISender).
 
-In the current state of the port, Angband.java is in package uk.co.jackoftrades.channel.globals, part of the game that
-is used by both the UI and the core, not in the UI (package uk.co.jackoftrades.frontend). I would argue that it is the
+In the current state of the port, Angband.java is in package uk.co.jackoftradesltd.channel.globals, part of the game
+that is used by both the UI and the core, not in the UI (package uk.co.jackoftradesltd.frontend). I would argue that it
+is the
 right side of the design, as it is UI-agnostic, but contains data that both the UI and the core need access to, so it
 fulfils the "only put in the channels things to do with the communication between the two areas, or common
 nomenclature".

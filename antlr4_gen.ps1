@@ -17,7 +17,7 @@ $CP += ";$M2\com\ibm\icu\icu4j\77.1\icu4j-77.1.jar"
 
 $Root   = (Get-Location).Path
 $G      = "$Root\src\main\java\uk\co\jackoftrades\backend\parser\grammars"
-$PKG    = "uk.co.jackoftrades.backend.parser.grammars.$DirName"
+$PKG    = "uk.co.jackoftradesltd.backend.parser.grammars.$DirName"
 $OUT    = "$G\$DirName"
 $LIB    = "$G\imports"
 

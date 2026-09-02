@@ -17,13 +17,10 @@
 
 // Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/scratch/visuals_probe5/VisualsGrammar.g4 by ANTLR 4.13.2
 
-    import uk.co.jackoftrades.backend.parser.visuals.VisualsFlickerParseRecord;
-    import uk.co.jackoftrades.backend.parser.visuals.VisualsCycleParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.visuals.VisualsFlickerParseRecord;
+    import uk.co.jackoftradesltd.backend.parser.visuals.VisualsCycleParseRecord;
 
-    import java.util.List;
-    import java.util.ArrayList;
-
-import org.antlr.v4.runtime.atn.*;
+    import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;

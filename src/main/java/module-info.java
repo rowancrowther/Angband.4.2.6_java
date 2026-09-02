@@ -1,4 +1,4 @@
-module uk.co.jackoftrades {
+module uk.co.jackoftradesltd {
     requires org.apache.logging.log4j;
     requires org.jetbrains.annotations;
     requires org.antlr.antlr4.runtime;
@@ -8,6 +8,6 @@ module uk.co.jackoftrades {
     requires java.sql;
     requires org.apache.logging.log4j.core;
 
-    exports uk.co.jackoftrades;
-    exports uk.co.jackoftrades.channel;
+    exports uk.co.jackoftradesltd;
+    exports uk.co.jackoftradesltd.channel;
 }

@@ -1,0 +1,127 @@
+/*
+ * Copyright (c) 1987-2022 Angband contributors.
+ *
+ * This work is free software; you can redistribute it and/or modify it
+ * under the terms of either:
+ *
+ * a) the GNU General Public License as published by the Free Software
+ *    Foundation, version 2, or
+ *
+ * b) the Angband licence:
+ *    This software may be copied and distributed for educational, research,
+ *    and not for profit purposes provided that this copyright and statement
+ *    are included in all such copies.  Other copyrights may also apply.
+ *
+ *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
+ */
+
+package uk.co.jackoftradesltd.frontend.entries;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+
+import java.util.List;
+
+/**
+ * A reusable template for {@link UIEntry} definitions: the shared defaults
+ * (renderer, combiner, categories, flags, description) that concrete entries
+ * inherit from. This is the "base" half of the C original's UI-entry system
+ * ({@code src/ui-entry.c}), letting many status entries share common settings.
+ *
+ * @author Rowan Crowther
+ */
+public class UIEntryBase {
+    /**
+     * Logger (reserved for diagnostics).
+     */
+    private final static Logger logger = LogManager.getLogger();
+
+    /**
+     * The template's name, referenced by entries that use it.
+     */
+    private final String name;
+    /**
+     * Default renderer for entries built from this template.
+     */
+    private final UIEntryRenderer renderer;
+    /**
+     * Default value-combining strategy.
+     */
+    private final CombinerName combine;
+    /**
+     * Categories this template belongs to (used to group entries on screen).
+     */
+    private final List<String> categories;
+    /**
+     * Raw flag string applied to entries built from this template.
+     */
+    private final String flags;
+    /**
+     * Human-readable description.
+     */
+    private final String desc;
+
+    /**
+     * Build a UI-entry template from its parsed fields.
+     *
+     * @param name       template name
+     * @param renderer   default renderer
+     * @param combine    default value combiner
+     * @param categories categories the template belongs to
+     * @param flags      raw flag string
+     * @param desc       description
+     */
+    public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine, List<String> categories, String flags, String desc) {
+        this.name = name;
+        this.renderer = renderer;
+        this.combine = combine;
+        this.categories = categories;
+        this.flags = flags;
+        this.desc = desc;
+    }
+
+    /**
+     * Getter - the name of the UIEntryBase
+     *
+     * @return the name of the UIEntryBase
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * @return a debug string listing this template's fields
+     */
+    @Override
+    public String toString() {
+        return "UIEntryBase{" +
+                "name='" + name + '\'' +
+                ", renderer=" + renderer +
+                ", combine=" + combine +
+                ", categories=" + categories +
+                ", flags='" + flags + '\'' +
+                ", desc='" + desc + '\'' +
+                '}';
+    }
+
+    public UIEntryRenderer getRenderer() {
+        return renderer;
+    }
+
+    public CombinerName getCombine() {
+        return combine;
+    }
+
+    public List<String> getCategories() {
+        return categories;
+    }
+
+    public String getFlags() {
+        return flags;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+}

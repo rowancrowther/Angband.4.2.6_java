@@ -15,31 +15,31 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/scratch/antlr_artifact_check/src/uk/co/jackoftrades/backend/parser/grammars/Monster.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/scratch/antlr_artifact_check/src/uk/co/jackoftradesltd/backend/parser/grammars/Monster.g4 by ANTLR 4.13.2
 
-    import uk.co.jackoftrades.backend.numerics.Random;
-    import uk.co.jackoftrades.backend.strings.AngbandDisplayCharacter;
-    import uk.co.jackoftrades.backend.utils.Flag;
-    import uk.co.jackoftrades.middle.combat.BlowMethod;
-    import uk.co.jackoftrades.middle.game.globals.GameConstants;
-    import uk.co.jackoftrades.middle.monsters.BlowEffect;
-    import uk.co.jackoftrades.middle.monsters.MonsterAltmsg;
-    import uk.co.jackoftrades.middle.monsters.MonsterBase;
-    import uk.co.jackoftrades.middle.monsters.MonsterBlow;
-    import uk.co.jackoftrades.middle.monsters.MonsterDrop;
-    import uk.co.jackoftrades.middle.monsters.MonsterFriends;
-    import uk.co.jackoftrades.middle.monsters.MonsterFriendsBase;
-    import uk.co.jackoftrades.middle.monsters.MonsterMimic;
-    import uk.co.jackoftrades.middle.monsters.MonsterRace;
-    import uk.co.jackoftrades.middle.monsters.MonsterShape;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterAltmsgType;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterGroupRole;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
-    import uk.co.jackoftrades.middle.objects.ObjectKind;
-    import uk.co.jackoftrades.middle.objects.enums.TValue;
-    import uk.co.jackoftrades.frontend.colour.VisualsColourCyclesByRace;
-    import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+    import uk.co.jackoftradesltd.backend.numerics.Random;
+    import uk.co.jackoftradesltd.backend.strings.AngbandDisplayCharacter;
+    import uk.co.jackoftradesltd.backend.utils.Flag;
+    import uk.co.jackoftradesltd.middle.combat.BlowMethod;
+    import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+    import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterAltmsg;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterBlow;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterDrop;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterFriends;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterFriendsBase;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterMimic;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterShape;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterAltmsgType;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
+    import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+    import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+    import uk.co.jackoftradesltd.frontend.colour.VisualsColourCyclesByRace;
+    import uk.co.jackoftradesltd.frontend.colour.enums.ColourType;
 
 
     import java.util.ArrayList;
@@ -50,9 +50,8 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
-import java.util.List;
-import java.util.Iterator;
-import java.util.ArrayList;
+
+    import java.util.Iterator;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class MonsterParser extends Parser {

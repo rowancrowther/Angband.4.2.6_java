@@ -15,17 +15,17 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/.claude/worktrees/gameconstants-assembler/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterNest.g4 by ANTLR 4.13.2
+// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/.claude/worktrees/gameconstants-assembler/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterNest.g4 by ANTLR 4.13.2
 
-    import uk.co.jackoftrades.backend.utils.Flag;
-    import uk.co.jackoftrades.middle.cave.PitProfile;
-    import uk.co.jackoftrades.middle.cave.enums.PitRoomType;
-    import uk.co.jackoftrades.middle.game.globals.GameConstants;
-    import uk.co.jackoftrades.middle.monsters.MonsterBase;
-    import uk.co.jackoftrades.middle.monsters.MonsterRace;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterRaceFlag;
-    import uk.co.jackoftrades.middle.monsters.enums.MonsterSpell;
-    import uk.co.jackoftrades.frontend.colour.enums.ColourType;
+    import uk.co.jackoftradesltd.backend.utils.Flag;
+    import uk.co.jackoftradesltd.middle.cave.PitProfile;
+    import uk.co.jackoftradesltd.middle.cave.enums.PitRoomType;
+    import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
+    import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+    import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
+    import uk.co.jackoftradesltd.frontend.colour.enums.ColourType;
 
     import java.util.ArrayList;
     import java.util.List;
@@ -35,9 +35,8 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
-import java.util.List;
-import java.util.Iterator;
-import java.util.ArrayList;
+
+    import java.util.Iterator;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class MonsterNestParser extends Parser {

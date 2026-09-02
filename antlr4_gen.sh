@@ -20,8 +20,8 @@
 # Example: bash antlr4_gen.sh Activations activations
 #
 # Generates <GrammarName>Lexer.g4 (if present) then <GrammarName>Grammar.g4 into
-# src/main/java/uk/co/jackoftrades/backend/parser/grammars/<outputDir>/
-# with package uk.co.jackoftrades.backend.parser.grammars.<outputDir>
+# src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/<outputDir>/
+# with package uk.co.jackoftradesltd.backend.parser.grammars.<outputDir>
 
 set -e
 
@@ -42,7 +42,7 @@ $M2/org/antlr/ST4/4.3.4/ST4-4.3.4.jar;\
 $M2/org/abego/treelayout/org.abego.treelayout.core/1.0.3/org.abego.treelayout.core-1.0.3.jar;\
 $M2/com/ibm/icu/icu4j/77.1/icu4j-77.1.jar"
 
-G=src/main/java/uk/co/jackoftrades/backend/parser/grammars
+G=src/main/java/uk/co/jackoftradesltd/backend/parser/grammars
 PKG="uk.co.jackoftrades.backend.parser.grammars.$DIR_NAME"
 OUT="$G/$DIR_NAME"
 LIB="$G/imports"

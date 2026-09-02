@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 
 /**
@@ -166,5 +167,35 @@ public class PlayerBirth {
         }
         
         return result.toString();
+    }
+
+    /**
+     * Gives the character their starting money - the port of C's {@code get_money}
+     * ({@code player-birth.c:391}).
+     *
+     * <p>Both purses open at the same figure, {@code player:start-gold} from
+     * {@code constants.txt}, which the shipped data sets to 600. C says it in one chained
+     * assignment, {@code p->au = p->au_birth = z_info->start_gold}; the port says it in two
+     * statements, reading the working total back for the birth copy so that the two cannot drift
+     * apart. C's chain assigns right to left, so it writes the birth copy first, but neither field
+     * is read while the other is being written and the outcome is the same.
+     *
+     * <p>The order in birth matters more than the assignment order does. {@code get_money} runs
+     * from {@code do_cmd_accept_character} ({@code player-birth.c:1256}), before
+     * {@code player_outfit} ({@code player-birth.c:1298}) buys the starting kit and spends the
+     * working total back down - so this is the gross sum, not what the character reaches the
+     * dungeon with. It also overwrites whatever the point-based roller had put in the birth copy
+     * (see {@link Player#setAUBirth(int)}).
+     *
+     * <p>C holds the constant as {@code uint16_t} and both fields as {@code int32_t}, so no
+     * starting figure the data file can express is capable of overflowing either.
+     *
+     * <p>Function getMoney coded on 260902, commented in full on 260902.
+     *
+     * @param player the character being born, whose gold and birth gold are both set
+     */
+    public static void getMoney(Player player) {
+        player.setAU(GameConstants.getPlayerStartGold());
+        player.setAUBirth(player.getAU());
     }
 }

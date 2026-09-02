@@ -1850,4 +1850,86 @@ public class Player {
     public void setWeightBirth(int weight) {
         this.wtBirth = weight;
     }
+
+    /**
+     * The character's current gold - the port of C's {@code p->au} ({@code player.h:522}).
+     *
+     * <p>The unit is the gold piece, and the field is the whole of the character's purse: Angband
+     * has no bank and no second currency, so this one number is what the stores price against
+     * ({@code store.c:1693}) and what the tombstone and the high-score table print
+     * ({@code ui-death.c:100}, {@code score.c:206}).
+     *
+     * <p>Birth opens it at {@code player:start-gold}, which the shipped {@code constants.txt} sets
+     * to 600, and the starting kit is then bought out of it - {@code player_outfit} subtracts each
+     * item's {@code object_value_real} and floors the result at zero
+     * ({@code player-birth.c:655}, {@code player-birth.c:663}), so a character can walk into the
+     * dungeon penniless but never in debt. In play it rises on gold picked up
+     * ({@code cmd-pickup.c:117}), on a monster's dropped coin ({@code mon-util.c:1483}) and on a
+     * sale ({@code store.c:1919}), and falls on a purchase ({@code store.c:1700}) and on a thieving
+     * monster's touch, which takes {@code au / 10 + randint1(25)} and can take no more than is
+     * there ({@code mon-blows.c:797}).
+     *
+     * <p>C holds it as {@code int32_t} and the port holds it as {@code int}, which is the same
+     * width, so the ceiling is the same one C's own wizard command names when it clamps a typed
+     * amount to {@code (1 << 31) - 1} ({@code cmd-wizard.c:1240}).
+     *
+     * <p>Function getAU commented in full on 260902.
+     *
+     * @return the current gold, never negative once birth has finished
+     */
+    public int getAU() {
+        return au;
+    }
+
+    /**
+     * Sets the character's current gold - the port of C's {@code p->au}.
+     *
+     * <p>See {@link #getAU()} for what the field holds and who moves it. No clamping is applied
+     * here, because C applies none either: every C writer either adds to the field directly or
+     * guards its own subtraction, and the one floor in the game - the sanity check after the
+     * starting kit is bought - belongs to {@code player_outfit} rather than to the assignment
+     * ({@code player-birth.c:663}).
+     *
+     * <p>Function setAU commented in full on 260902.
+     *
+     * @param currentAU the gold total to hold
+     */
+    public void setAU(int currentAU) {
+        this.au = currentAU;
+    }
+
+    /**
+     * Sets the saved birth gold, the quickstart copy - the port of C's {@code p->au_birth}
+     * ({@code player.h:586}).
+     *
+     * <p>Birth writes it from the same figure that opens the working purse, in one statement -
+     * {@code p->birthAU = p->au_birth = z_info->start_gold} ({@code player-birth.c:393}) - and nothing
+     * in play touches it afterwards, so it keeps the sum the character was born with however much
+     * the working total is later spent down.
+     *
+     * <p>Quickstart is the reader, and it treats the two fields differently from the way it treats
+     * the height and weight pair. It copies this field out to the saved character
+     * ({@code player-birth.c:156}), but coming back in it restores only the birth copy from the
+     * saved value and re-opens the working purse from the data file:
+     * {@code player->au_birth = saved->birthAU; player->birthAU = z_info->start_gold}
+     * ({@code player-birth.c:199}). The save file carries the two separately
+     * ({@code save.c:451}, {@code load.c:737}).
+     *
+     * <p>The point-based roller writes this field a second way while the character is being built,
+     * as {@code z_info->start_gold + (50 * points_left)}, so that unspent stat points show as gold
+     * ({@code player-birth.c:694}). That figure does not reach the started game: every caller of
+     * {@code recalculate_stats} sits in the point-based birth commands, and accepting the character
+     * runs {@code get_money} afterwards ({@code player-birth.c:1256}), which overwrites both fields
+     * with the plain starting sum.
+     *
+     * <p>C holds it as {@code int32_t}; see {@link #getAU()} for why {@code int} is interchangeable
+     * here.
+     *
+     * <p>Function setAUBirth commented in full on 260902.
+     *
+     * @param birthAU the birth gold in gold pieces
+     */
+    public void setAUBirth(int birthAU) {
+        this.auBirth = birthAU;
+    }
 }

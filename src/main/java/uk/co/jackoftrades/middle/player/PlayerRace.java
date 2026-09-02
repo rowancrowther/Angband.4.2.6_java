@@ -323,4 +323,117 @@ public class PlayerRace {
     public int getStatAdjust(Stats stat) {
         return statsAdj.get(stat);
     }
+
+    /**
+     * The race's base starting age in years — C's {@code race->b_age}, the first field of the
+     * {@code age:base:mod} line of {@code p_race.txt} ({@code init.c:2698,2808}).
+     *
+     * <p>It is the floor of the starting age, never the whole of it: birth rolls
+     * {@code p->age = race->b_age + randint1(race->m_age)} ({@code player-birth.c:356}), so the
+     * base alone is one below the lowest age a character can actually start with.
+     *
+     * <p>Function getBaseAge commented in full on 260902.
+     *
+     * @return the base starting age in years
+     */
+    public int getBaseAge() {
+        return baseAge;
+    }
+
+    /**
+     * The random spread added to {@link #getBaseAge()} at birth — C's {@code race->m_age}, the second field
+     * of the {@code age:base:mod} line of {@code p_race.txt} ({@code init.c:2699,2808}).
+     *
+     * <p>Used as the argument to {@code randint1}, which returns 1..m_age inclusive, so a race's
+     * starting age lies in {@code b_age + 1 .. b_age + m_age} — the spread contributes at least
+     * one year, and the top of the range is {@code b_age + m_age}, not {@code b_age + m_age - 1}.
+     * The widest shipped spread is the Elf's 75 on a base of 75; the oldest possible starting
+     * character is the High-Elf at {@code 100 + 30}.
+     *
+     * <p>Function getModAge commented in full on 260902.
+     *
+     * @return the random age spread in years
+     */
+    public int getModAge() {
+        return modAge;
+    }
+
+    /**
+     * The race's mean height in inches — C's {@code race->base_hgt}, the first field of the
+     * {@code height:base_hgt:mod_hgt} line of {@code p_race.txt} ({@code init.c:2707,2809}).
+     *
+     * <p>Unlike {@link #getBaseAge()} this is a centre, not a floor. Birth rolls
+     * {@code Rand_normal(race->base_hgt, race->mod_hgt)} ({@code player-birth.c:359}), which spreads
+     * symmetrically about the mean, so roughly half of a race's characters start shorter than the
+     * base and half taller.
+     *
+     * <p>The shipped range runs from the Hobbit's 34 inches to the Half-Troll's 90.
+     *
+     * <p>Function getBaseHeight commented in full on 260902.
+     *
+     * @return the mean starting height in inches
+     */
+    public int getBaseHeight() {
+        return baseHeight;
+    }
+
+    /**
+     * The race's height spread — C's {@code race->mod_hgt}, the second field of the
+     * {@code height:base_hgt:mod_hgt} line of {@code p_race.txt} ({@code init.c:2708,2809}).
+     *
+     * <p>It is the standard deviation passed to {@code Rand_normal} as {@code stand}, not a plain
+     * range. The offset drawn is {@code stand * low / RANDNOR_STD} with {@code low} in
+     * {@code 0 .. 256} and {@code RANDNOR_STD} 64 ({@code z-rand.c:314}), so the spread reaches at
+     * most four times this value either side of the base, and a {@code stand} below 1 short-circuits
+     * the roll and returns the mean unchanged ({@code z-rand.c:296}).
+     *
+     * <p>Shipped values run from the Half-Orc's 2 — a race of nearly uniform height — to the
+     * Half-Troll's 16, whose characters can be born anywhere from 26 to 154 inches.
+     *
+     * <p>Function getModHeight commented in full on 260902.
+     *
+     * @return the height standard deviation in inches
+     */
+    public int getModHeight() {
+        return modHeight;
+    }
+
+    /**
+     * The race's weight spread - C's {@code race->mod_wgt}, the second field of the
+     * {@code weight:base_wgt:mod_wgt} line of {@code p_race.txt} ({@code init.c:2717,2810}).
+     *
+     * <p>It is the standard deviation handed to {@code Rand_normal} at birth
+     * ({@code player-birth.c:360}), so the reachable weights run four deviations either side of the
+     * base and a spread below one pins every character of the race to the base exactly
+     * ({@code z-rand.c:296}).
+     *
+     * <p>Shipped values run from the 5 of the Hobbit, the Gnome and the Kobold - small races of
+     * near-uniform build - to the Half-Troll's 60, which is wide enough that the low tail reaches
+     * zero pounds.
+     *
+     * <p>Function getModWeight commented in full on 260902.
+     *
+     * @return the weight standard deviation in pounds
+     */
+    public int getModWeight() {
+        return modWeight;
+    }
+
+    /**
+     * The race's mean weight in pounds - C's {@code race->base_wgt}, the first field of the
+     * {@code weight:base_wgt:mod_wgt} line of {@code p_race.txt} ({@code init.c:2716,2810}).
+     *
+     * <p>It is the mean handed to {@code Rand_normal} at birth ({@code player-birth.c:360}), not a
+     * floor: the offset is added or subtracted with even odds ({@code z-rand.c:316}), so about half
+     * a race's characters weigh less than this.
+     *
+     * <p>Shipped values run from the Hobbit's 55 to the Half-Troll's 240.
+     *
+     * <p>Function getBaseWeight commented in full on 260902.
+     *
+     * @return the mean starting weight in pounds
+     */
+    public int getBaseWeight() {
+        return baseWeight;
+    }
 }

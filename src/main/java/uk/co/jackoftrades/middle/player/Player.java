@@ -419,6 +419,29 @@ public class Player {
     private PlayerUpkeep playerUpkeep;
 
     /**
+     * Sets the character's age in years — C's {@code p->age}.
+     *
+     * <p>Written at birth by {@code get_ahw} as {@code race->b_age + randint1(race->m_age)}
+     * ({@code player-birth.c:356}), saved and restored across the birth "roller" by
+     * {@code save_roller_data}/{@code load_roller_data} ({@code player-birth.c:153,196}), and read
+     * back from a savefile by {@code rd_player} ({@code load.c:718}). Nothing in the game ages a
+     * character after birth; the debug and stats-collection builds simply overwrite it
+     * ({@code wiz-debug.c:31}, {@code main-stats.c:471}).
+     *
+     * <p>C's field is an {@code int16_t} ({@code player.h:518}) while the port uses {@code int}, so
+     * the port accepts values C would wrap. No birth roll can reach that range — the largest
+     * {@code b_age + m_age} in {@code p_race.txt} is the High-Elf's 130 — and no clamping is
+     * applied here, because C applies none either.
+     *
+     * <p>Function setAge commented in full on 260902.
+     *
+     * @param age the age in years to store
+     */
+    public void setAge(int age) {
+        this.age = age;
+    }
+
+    /**
      * Sets the player's remembered version of the current level - C's {@code p->cave}.
      *
      * <p>C allocates it in {@code prepare_next_level} ({@code generate.c:1241}), sized from the real
@@ -1684,4 +1707,147 @@ public class Player {
         adjustLevel(true);
     }
 
+    /**
+     * The character's working height in inches - the read half of C's {@code p->ht}.
+     *
+     * <p>C reads the field directly and only from the character sheet, which splits it into feet
+     * and inches ({@code ui-player.c:829}) - nothing in play consults a character's height. The
+     * save writer is the other reader ({@code save.c:437}).
+     *
+     * <p>See {@link #setHeight(int)} for the units, the birth roll and the range.
+     *
+     * <p>Function getHeight commented in full on 260902.
+     *
+     * @return the height in inches
+     */
+    public int getHeight() {
+        return height;
+    }
+
+    /**
+     * Sets the character's working height in inches - the port of C's {@code p->ht}.
+     *
+     * <p>The unit is inches, not any composite: the character sheet is the only place the value is
+     * shown, and it splits it there with {@code player->ht / 12} and {@code player->ht % 12}
+     * ({@code ui-player.c:829}).
+     *
+     * <p>Height is rolled once, at birth, from the race's height distribution, and the same roll is
+     * stored to both this field and the birth copy in one statement -
+     * {@code p->ht = p->ht_birth = Rand_normal(p->race->base_hgt, p->race->mod_hgt)}
+     * ({@code player-birth.c:359}). Nothing in play changes it afterwards; the only other writers
+     * are the save-file loader ({@code load.c:719}) and quickstart, which restores the saved birth
+     * value ({@code player-birth.c:198}).
+     *
+     * <p>C holds the height as {@code int16_t} and the port holds it as {@code int}. The wider type
+     * costs nothing: {@code Rand_normal} caps its offset at four standard deviations, so even the
+     * tallest race, the Half-Troll at {@code 90} base and {@code 16} spread, is confined to
+     * {@code 26 .. 154} inches.
+     *
+     * <p>Function setHeight commented in full on 260902.
+     *
+     * @param height the height in inches
+     */
+    public void setHeight(int height) {
+        this.height = height;
+    }
+
+    /**
+     * Sets the saved birth height, the quickstart copy - the port of C's {@code p->ht_birth}.
+     *
+     * <p>Birth writes it from the same {@code Rand_normal} roll that sets the working height
+     * ({@code player-birth.c:359}), and it is left alone from then on, so it keeps the height the
+     * character was born with however the working value is later reloaded.
+     *
+     * <p>It is read back in two places. Quickstart restores it -
+     * {@code player->ht = player->ht_birth = saved->ht} ({@code player-birth.c:198}) - and its
+     * being non-zero is what C uses to decide a previous character exists to quickstart from
+     * ({@code player-birth.c:1061}), which is why a zero here is meaningful rather than merely
+     * unset.
+     *
+     * <p>C holds it as {@code int16_t}; see {@link #setHeight(int)} for why {@code int} is
+     * interchangeable here.
+     *
+     * <p>Function setHeightBirth commented in full on 260902.
+     *
+     * @param height the birth height in inches
+     */
+    public void setHeightBirth(int height) {
+        this.htBirth = height;
+    }
+
+    /**
+     * The character's working weight in pounds - the read half of C's {@code p->wt}.
+     *
+     * <p>Unlike the height, the weight is read in play: it is one of the four terms of a shield
+     * bash's quality, {@code p->wt / 8} ({@code player-attack.c:929}), so a heavier character bashes
+     * harder. The character sheet ({@code ui-player.c:830}) and the save writer
+     * ({@code save.c:438}) are the other readers.
+     *
+     * <p>See {@link #setWeight(int)} for the units, the birth roll and the range.
+     *
+     * <p>Function getWeight commented in full on 260902.
+     *
+     * @return the weight in pounds
+     */
+    public int getWeight() {
+        return weight;
+    }
+
+    /**
+     * Sets the character's working weight in pounds - the port of C's {@code p->wt}.
+     *
+     * <p>The unit is pounds. The character sheet is where that shows: it prints stones and pounds
+     * with {@code player->wt / 14} and {@code player->wt % 14} ({@code ui-player.c:830}), a stone
+     * being fourteen pounds.
+     *
+     * <p>Weight is rolled once, at birth, from the race's weight distribution, and the same roll is
+     * stored to both this field and the birth copy in one statement -
+     * {@code p->wt = p->wt_birth = Rand_normal(p->race->base_wgt, p->race->mod_wgt)}
+     * ({@code player-birth.c:360}). Nothing in play changes it: gear carried is tracked separately
+     * as {@code upkeep->total_weight}, and the only other writers here are the save-file loader
+     * ({@code load.c:720}) and quickstart, which restores the saved birth value
+     * ({@code player-birth.c:197}).
+     *
+     * <p>The value is read in play, which the height is not - a shield bash's quality takes
+     * {@code p->wt / 8} alongside the melee skill, the carried weight and the shield's own weight
+     * ({@code player-attack.c:929}).
+     *
+     * <p>C holds the weight as {@code int16_t} and the port holds it as {@code int}. The wider type
+     * costs nothing: {@code Rand_normal} caps its offset at four standard deviations, so even the
+     * heaviest race, the Half-Troll at {@code 240} base and {@code 60} spread, is confined to
+     * {@code 0 .. 480} pounds.
+     *
+     * <p>Function setWeight commented in full on 260902.
+     *
+     * @param weight the weight in pounds
+     */
+    public void setWeight(int weight) {
+        this.weight = weight;
+    }
+
+    /**
+     * Sets the saved birth weight, the quickstart copy - the port of C's {@code p->wt_birth}.
+     *
+     * <p>Birth writes it from the same {@code Rand_normal} roll that sets the working weight
+     * ({@code player-birth.c:360}), and nothing changes it afterwards, so it keeps the weight the
+     * character was born with however the working value is later reloaded - which for the weight
+     * matters more than it does for the height, since play has no way to change {@code p->wt}
+     * either.
+     *
+     * <p>Quickstart is the reader: it copies this field out to the saved character
+     * ({@code player-birth.c:154}) and restores both weights from it on the way back in -
+     * {@code player->wt = player->wt_birth = saved->wt} ({@code player-birth.c:197}). The save
+     * file carries it separately from the working weight ({@code save.c:449},
+     * {@code load.c:735}).
+     *
+     * <p>C holds it as {@code int16_t}; see {@link #setWeight(int)} for why {@code int} is
+     * interchangeable here.
+     *
+     * <p>Function setWeightBirth commented in full on 260902.
+     *
+     * @param weight the birth weight in pounds
+     */
+    public void setWeightBirth(int weight) {
+        this.wtBirth = weight;
+    }
 }

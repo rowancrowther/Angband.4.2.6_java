@@ -19,6 +19,7 @@ package uk.co.jackoftrades.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftrades.middle.numerics.RandomValueUtils;
 
 /**
  * The character-creation machinery - the port of C's {@code player-birth.c}, minus its parsing, its
@@ -59,5 +60,50 @@ public class PlayerBirth {
             return;
 
         player.setBody(player.getRace().getBody().copy());
+    }
+    
+    /**
+     * Rolls the character's age, height and weight - the port of C's {@code get_ahw}
+     * ({@code player-birth.c:353}).
+     *
+     * <p>Three rolls from the race's own numbers, in that order. The age is
+     * {@code b_age + randint1(m_age)}, so it is strictly above the base - a race's base age is a
+     * floor the character is always at least a year past. The height and weight are
+     * {@code Rand_normal(base, mod)} instead, where the base is a <em>mean</em>: it is reachable,
+     * and about half of a race's characters fall below it.
+     *
+     * <p>C writes each of the last two with one chained assignment putting a single roll into both
+     * the working field and the birth copy -
+     * {@code p->ht = p->ht_birth = Rand_normal(p->race->base_hgt, p->race->mod_hgt)}
+     * ({@code player-birth.c:359-360}). The port spells that as two calls, the second reading the
+     * value back off the player, which keeps the one-roll-two-fields property that matters:
+     * rolling a second time for the birth copy would leave a character whose recorded birth height
+     * was not the height they were born at. The age has no birth copy - quickstart saves
+     * {@code p->age} itself ({@code player-birth.c:153}).
+     *
+     * <p>C calls this from two places, and both take fresh values rather than reusing any:
+     * {@code player_generate} when a character is built ({@code player-birth.c:1018}) and the
+     * roller each time it produces a new candidate ({@code player-birth.c:1173}, whose comment
+     * concedes it is only there by tradition). Calling it again on a live player therefore rerolls
+     * all three, birth copies included.
+     *
+     * <p>The player's race must already be set; C asserts as much upstream, and the port would
+     * throw here.
+     *
+     * <p>Function getAHW coded on 260902, commented in full on 260902.
+     *
+     * @param player the character being born
+     */
+    public static void getAHW(Player player) {
+        // calculate age
+        player.setAge(player.getRace().getBaseAge() + RandomValueUtils.randInt1(player.getRace().getModAge()));
+
+        // height
+        player.setHeight(RandomValueUtils.normal(player.getRace().getBaseHeight(), player.getRace().getModHeight()));
+        player.setHeightBirth(player.getHeight());
+
+        // weight
+        player.setWeight(RandomValueUtils.normal(player.getRace().getBaseWeight(), player.getRace().getModWeight()));
+        player.setWeightBirth(player.getWeight());
     }
 }

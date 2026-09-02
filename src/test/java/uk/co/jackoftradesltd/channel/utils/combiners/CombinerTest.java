@@ -148,7 +148,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void vecRejectsAListShorterThanTheRequestedCount(Combiner combiner) {
             // Guarding rather than throwing: the C original indexes raw arrays here, so a
             // short list is a caller bug that must be caught before it reads off the end.
@@ -158,7 +158,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void vecOfNothingIsNotPresent(Combiner combiner) {
             UIEntryCombinerState result = combiner.vec(0, List.of(), List.of());
 
@@ -167,7 +167,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void vecOfASingleValueIsThatValue(Combiner combiner) {
             // Whatever the strategy, folding one contribution cannot change it - except for
             // the two that normalise ("is it non-zero?"), so a plain 1 is used here.
@@ -178,7 +178,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void cloningAnUninitialisedCombinerGivesAFreshOneOfTheSameKind(Combiner combiner) {
             Combiner copy = combiner.clone();
 
@@ -187,7 +187,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void aCloneCarriesTheStateButAccumulatesIndependently(Combiner combiner) {
             combiner.init(1, 1);
 
@@ -200,7 +200,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void finishReturnsADetachedStateRatherThanTheLiveOne(Combiner combiner) {
             combiner.init(1, 1);
 
@@ -211,7 +211,7 @@ class CombinerTest {
         }
 
         @ParameterizedTest
-        @MethodSource("uk.co.jackoftrades.channel.utils.combiners.CombinerTest#allCombiners")
+        @MethodSource("uk.co.jackoftradesltd.channel.utils.combiners.CombinerTest#allCombiners")
         void anAbsentContributionIsSkippedEntirely(Combiner combiner) {
             // NOT_PRESENT is the "no opinion" sentinel: folding it in must give the same
             // answer as not folding it at all, for every strategy.

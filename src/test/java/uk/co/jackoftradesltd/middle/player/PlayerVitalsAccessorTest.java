@@ -165,15 +165,30 @@ class PlayerVitalsAccessorTest {
     class HitPoints {
 
         /**
-         * The rolled table is null on a freshly constructed player, and the port's birth code does
-         * not roll it yet, so every read throws. That is the port's normal condition rather than an
-         * error case — the tests that need the table install one by reflection, exactly as this one
-         * does below.
+         * A freshly constructed player has the table allocated and empty, not absent. The
+         * constructor sizes it at {@code PY_MAX_LEVEL + 1} entries and Java zeroes them, so a read
+         * before birth has rolled anything answers zero rather than throwing.
+         *
+         * <p>That is not the same as C, and the difference is deliberate rather than a divergence
+         * to fix. C's {@code player_hp} is an inline {@code int16_t[PY_MAX_LEVEL]} inside the player
+         * struct ({@code player.h:583}), so it exists from the moment the struct does and reads zero
+         * until {@code player_generate} seeds entry zero ({@code player-birth.c:1003}) and
+         * {@code roll_hp} fills the rest ({@code player-birth.c:296}). An allocated Java array is
+         * the closer match to that; a null one was the port's earlier state.
+         *
+         * <p>The extra slot is the one place the shapes part company: C's array has fifty entries
+         * for fifty levels, indexed zero to forty-nine, and the port's has fifty-one. Nothing writes
+         * or reads the top one — {@link PlayerBirth#rollHP(Player)} stops one below it — so it is
+         * slack rather than an off-by-one, and {@link PlayerBirthRollHPTest} pins that it stays
+         * untouched.
          */
         @Test
-        @DisplayName("a new player has no rolled hit-point table")
-        void newPlayerHasNoRolledTable() {
-            assertThrows(NullPointerException.class, () -> player.getPlayerHP(0));
+        @DisplayName("a new player's rolled table is allocated and zeroed")
+        void newPlayerHasAnEmptyRolledTable() {
+            assertEquals(0, player.getPlayerHP(0));
+            assertEquals(0, player.getPlayerHP(49), "the last level C has an entry for");
+            assertThrows(ArrayIndexOutOfBoundsException.class, () -> player.getPlayerHP(51),
+                    "the table is sized PY_MAX_LEVEL + 1, so 51 is past its end");
         }
 
         /**

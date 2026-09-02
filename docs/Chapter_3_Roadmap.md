@@ -302,7 +302,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `get_ahw` (`:353`)
 - [X] `get_history` (`:330`)
 - [X] `get_money` (`:390`)
-- [ ] `roll_hp` (`[C] player-birth.c:279`)
+- [X] `roll_hp` (`[C] player-birth.c:279`)
 - [ ] `get_bonuses` (`:311`)
 - [ ] `get_stats` (`:231`)
 - [ ] `player_generate` (`[C] player-birth.c:979`)

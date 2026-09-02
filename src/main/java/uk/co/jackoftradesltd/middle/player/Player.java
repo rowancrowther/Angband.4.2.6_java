@@ -216,6 +216,7 @@ public class Player {
         statMap = new HashMap<>();
         statsBirth = new HashMap<>();
         state = null;
+        playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
     }
     /**
      * Fractional part of the current spell points, scaled by 2^16 - the port of C's {@code p->csp_frac}.
@@ -1392,10 +1393,6 @@ public class Player {
      * {@code p->player_hp[p->lev - 1]} ({@code player-calcs.c:1577}), and the port passes that
      * subtraction in at the call site rather than hiding it here.
      *
-     * <p>The table is null on a freshly constructed player, and the port's birth code does not roll
-     * it yet, so this throws for every character the port can currently make; the tests that need it
-     * install an array by reflection.
-     *
      * <p>Function getPlayerHP commented in full on 260901.
      *
      * @param level the zero-based index into the table, one below the character level being asked
@@ -1931,5 +1928,70 @@ public class Player {
      */
     public void setAUBirth(int birthAU) {
         this.auBirth = birthAU;
+    }
+
+    /**
+     * Returns the number of sides on the player's hit die - the port of reading C's {@code p->hitdie}
+     * ({@code player.h:582}).
+     *
+     * <p>It is a property of the character rather than of the moment: birth adds the race's and the
+     * class's contributions once, as {@code p->hitdie = p->race->r_mhp + p->class->c_mhp}
+     * ({@code player-birth.c:998}), and nothing in play changes it afterwards. So the die a
+     * character rolls at level fifty is the die they rolled at level two.
+     *
+     * <p>It is a die size, not a hit point total. The rolling code reads it twice over: once as the
+     * bound of the per-level roll, {@code randint1(player->hitdie)}, and once inside the window the
+     * finished table has to land in, both in {@code roll_hp} ({@code player-birth.c:284-296}) - see
+     * {@link PlayerBirth#rollHP(Player)}. The wizard command that re-rates a character
+     * ({@code cmd-wizard.c:2271-2288}) reads it the same two ways.
+     *
+     * <p>C holds it as {@code int16_t}; the sum of two data-file figures cannot approach either
+     * type's ceiling, so {@code int} is interchangeable here.
+     *
+     * <p>Function getHitDie commented in full on 260902.
+     *
+     * @return the number of sides on the player's hit die
+     */
+    public int getHitDie() {
+        return hitDie;
+    }
+
+    /**
+     * Writes one entry of the rolled hit point table - the port of writing C's
+     * {@code p->player_hp[i]} ({@code player.h:583}).
+     *
+     * <p>Entries are cumulative totals rather than per-level gains: the value stored against an
+     * index is everything the character has rolled up to and including that level, which is why C
+     * builds each one from the one below it, {@code player_hp[i] = player_hp[i-1] + j}
+     * ({@code player-birth.c:296}). The addition belongs to the caller, not to this method, exactly
+     * as it does in C.
+     *
+     * <p>The index is zero-based against a one-based level, so the entry for character level
+     * {@code n} sits at {@code n - 1}; {@code calc_hitpoints} reads it as
+     * {@code p->player_hp[p->lev - 1]} ({@code player-calcs.c:1577}). The port passes that
+     * subtraction in at the call site, matching {@link #getPlayerHP(int)}.
+     *
+     * <p>The table is written twice in a character's life and no more: {@code player_generate} seeds
+     * index zero with the whole hit die ({@code player-birth.c:1003}), and {@code roll_hp} fills
+     * indices one upwards ({@code player-birth.c:296}). After that a character's maximum is fixed,
+     * which is what makes it a property of who they are rather than of when the calculation last
+     * ran. The wizard re-rate command ({@code cmd-wizard.c:2271-2280}) is the deliberate exception.
+     *
+     * <p>Unchecked in both directions, as C's bare array write is. The port's array runs to
+     * {@code PY_MAX_LEVEL + 1} entries against C's {@code PY_MAX_LEVEL}
+     * ({@code player.h:583}); the top slot is never written by any caller ported so far, since the
+     * rolling loop stops one below it.
+     *
+     * <p>C holds the entries as {@code int16_t}. Fifty levels of a hit die no data file makes large
+     * cannot reach that ceiling, so {@code int} is interchangeable here.
+     *
+     * <p>Function setPlayerHitpoint commented in full on 260902.
+     *
+     * @param level          the zero-based index into the table, one below the character level being
+     *                       written
+     * @param levelHitpoints the cumulative hit points rolled by that level
+     */
+    public void setPlayerHitpoint(int level, int levelHitpoints) {
+        playerHP[level] = levelHitpoints;
     }
 }

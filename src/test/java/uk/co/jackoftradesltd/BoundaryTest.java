@@ -130,9 +130,15 @@ class BoundaryTest {
     /**
      * A qualified name of ours, as it appears in an import or in the middle of an expression. The
      * trailing segments are matched greedily so that the whole name is reported, not its prefix.
+     *
+     * <p>The prefix is built from {@link #OURS} rather than written out a second time. It was
+     * written out once, and a package rename moved {@code OURS} without moving the copy — leaving a
+     * pattern that matched nothing, a scan that found no references anywhere, and a rule test that
+     * passed by having nothing to look at. Deriving it means the two cannot part company again.
      */
     private static final Pattern REFERENCE = Pattern.compile(
-            "uk\\.co\\.jackoftrades(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)+");
+            Pattern.quote(OURS.substring(0, OURS.length() - 1))
+                    + "(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)+");
 
     /**
      * Rule 1's known crossings: the front end naming something of ours outside {@code channel}.

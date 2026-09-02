@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 
 /**
@@ -197,5 +198,69 @@ public class PlayerBirth {
     public static void getMoney(Player player) {
         player.setAU(GameConstants.getPlayerStartGold());
         player.setAUBirth(player.getAU());
+    }
+
+    /**
+     * Rolls the character's hit points for every level they will ever reach - the port of C's
+     * {@code roll_hp} ({@code player-birth.c:279-308}).
+     *
+     * <p>A character's hit points are settled once, at birth, for all fifty levels. Gaining a level
+     * later reads this table rather than rolling against it, so a run of bad luck at level thirty is
+     * decided here, before the character has taken a step.
+     *
+     * <p><b>The acceptance window.</b> A straight run of fifty rolls would sometimes produce a
+     * character too frail or too sturdy to be worth playing, so the finished table has to land
+     * between two bounds on its top entry. The bounds are three-eighths and five-eighths of the
+     * greatest total the die could give above one per level, plus one level's worth for each level:
+     * {@code (PY_MAX_LEVEL * (hitdie - 1) * 3) / 8 + PY_MAX_LEVEL} and the same with five. For the
+     * common ten-sided die that is 218 to 331 against an unconstrained range of 50 to 500 - roughly
+     * the middle quarter. Both divisions truncate, and both operands are positive for any hit die a
+     * data file can express, so C's truncation toward zero and Java's are the same rounding.
+     *
+     * <p><b>The retry loop.</b> Failing either bound throws the whole table away and rolls all of it
+     * again; there is no cap on attempts and no adjustment of a table that came close. The bounds
+     * are wide enough that this is not a practical concern. Note that the loop rolls indices one
+     * upwards and never touches index zero: {@code player_generate} has already seeded that with the
+     * full hit die ({@code player-birth.c:1003}), and leaving it alone is what keeps the level-one
+     * total the same across every attempt. That makes the seeding a precondition of this method
+     * rather than an incidental ordering - see {@link Player#setPlayerHitpoint(int, int)}.
+     *
+     * <p>The top index tested is {@code PY_MAX_LEVEL - 1}, the last one the loop writes, since the
+     * table is indexed one below the character level. C carries a note here that the mid-level
+     * totals could be constrained too; they are not, in C or in the port.
+     *
+     * <p>Rolling at birth rather than on level-up is also what stops a player from resetting the
+     * birth screen until the rolls suit them: {@code player_generate} fills the levels it can see
+     * with deliberate overestimates and leaves the real rolls to this method, which runs only when
+     * the character is accepted ({@code player-birth.c:1237}).
+     *
+     * <p>Function rollHP coded on 260902, commented in full on 260902.
+     *
+     * @param player the character being born, whose whole hit point table is written
+     */
+    public static void rollHP(Player player) {
+        // Minimum hit points at highest level
+        int minValue = (PlayerRegistry.PY_MAX_LEVEL * (player.getHitDie() - 1) * 3) / 8;
+        minValue += PlayerRegistry.PY_MAX_LEVEL;
+
+        // Maximum hit points at highest level
+        int maxValue = (PlayerRegistry.PY_MAX_LEVEL * (player.getHitDie() - 1) * 5) / 8;
+        maxValue += PlayerRegistry.PY_MAX_LEVEL;
+
+        // Roll out the hit points
+        while (true) {
+            // roll the hit point values
+            for (int level = 1; level < PlayerRegistry.PY_MAX_LEVEL; level++) {
+                int levelHP = RandomValueUtils.randInt1(player.getHitDie());
+                player.setPlayerHitpoint(level, player.getPlayerHP(level - 1) + levelHP);
+            }
+
+            // Require "valid" hitpoints at highest level
+            if (player.getPlayerHP(PlayerRegistry.PY_MAX_LEVEL - 1) < minValue) continue;
+            if (player.getPlayerHP(PlayerRegistry.PY_MAX_LEVEL - 1) > maxValue) continue;
+
+            // Acceptable values
+            break;
+        }
     }
 }

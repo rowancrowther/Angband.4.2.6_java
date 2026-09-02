@@ -298,7 +298,7 @@ boxes span these stages rather than matching them one-to-one.
 ### G — `player_generate` and its helpers *(needs C, F)*
 
 - [X] `playerKnowledge` (`:1004`)
-- [ ] `player_embody` (`[C] player-birth.c:369`)
+- [X] `player_embody` (`[C] player-birth.c:369`)
 - [ ] `get_ahw` (`:353`)
 - [ ] `get_history` (`:330`)
 - [ ] `get_money` (`:390`)

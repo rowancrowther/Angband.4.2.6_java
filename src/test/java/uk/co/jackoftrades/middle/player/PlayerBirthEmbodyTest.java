@@ -26,6 +26,7 @@ import uk.co.jackoftrades.middle.game.globals.GameConstants;
 import uk.co.jackoftrades.middle.game.globals.data.CarryCapData;
 import uk.co.jackoftrades.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftrades.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftrades.middle.objects.ItemObject;
 import uk.co.jackoftrades.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftrades.middle.player.enums.PlayerFlag;
@@ -37,6 +38,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static uk.co.jackoftrades.testsupport.ItemFixture.set;
 
 /**
@@ -55,7 +58,8 @@ import static uk.co.jackoftrades.testsupport.ItemFixture.set;
  * <p>{@link Player}'s constructor reads the registry for a race, so the fixture seeds it and puts
  * the old tables back afterwards.
  *
- * <p>Class PlayerBirthEmbodyTest coded on 260901, commented in full on 260901.
+ * <p>Class PlayerBirthEmbodyTest coded on 260901, extended on 260902, commented in full on
+ * 260902.
  *
  * @author Rowan Crowther
  */
@@ -165,11 +169,15 @@ class PlayerBirthEmbodyTest {
      * @throws Exception if a fixture field cannot be reached
      */
     @Test
-    @DisplayName("a player with no race is left alone")
+    @DisplayName("a player with no race keeps the body they already had")
     void noRaceIsHarmless() throws Exception {
         set(player, "race", null);
+        PlayerBody before = player.getPlayerBody();
 
         PlayerBirth.embody(player);
+
+        assertSame(before, player.getPlayerBody(),
+                "the early return leaves the constructor's body in place");
     }
 
     /**
@@ -190,5 +198,81 @@ class PlayerBirthEmbodyTest {
         assertEquals(1, player.getPlayerBody().getSlots().size());
         assertNotSame(testRace.getBody(), player.getPlayerBody(),
                 "the player's body is its own");
+        assertNotSame(testRace.getBody().getSlot(0), player.getPlayerBody().getSlot(0),
+                "C allocates a fresh slot array; the slots must not be the race's own");
+    }
+
+    /**
+     * C's {@code memcpy} carries the template's name across and {@code string_make} gives the
+     * player a copy of it; the loop then copies each slot's type and name in body order. So the
+     * player's body has to read back as the same layout, slot for slot and in the same order — the
+     * order is the slots' identity, the gear system addressing them by index.
+     *
+     * @throws Exception if a fixture field cannot be reached
+     */
+    @Test
+    @DisplayName("name, slot count, order, types and names all carry across")
+    void layoutIsCarriedAcross() throws Exception {
+        PlayerBody template = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+                new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"),
+                new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "right hand"),
+                new EquipSlot(EquipmentSlotsEnum.EQUIP_RING, "left hand"))));
+        set(player, "race", race(template));
+
+        PlayerBirth.embody(player);
+
+        PlayerBody body = player.getPlayerBody();
+        assertEquals("Humanoid", body.getName());
+        assertEquals(3, body.getCount());
+        for (int i = 0; i < template.getCount(); i++) {
+            assertEquals(template.getSlot(i).getType(), body.getSlot(i).getType(),
+                    "slot " + i + " keeps its type");
+            assertEquals(template.getSlot(i).getName(), body.getSlot(i).getName(),
+                    "slot " + i + " keeps its name");
+        }
+    }
+
+    /**
+     * C allocates the slot array with {@code mem_zalloc}, so every slot's {@code obj} starts NULL:
+     * a new character wears nothing, whatever the template happens to be holding. The template in
+     * the registry is never worn, so this can only be checked by wearing something on it first.
+     *
+     * @throws Exception if a fixture field cannot be reached
+     */
+    @Test
+    @DisplayName("the new body is unworn, whatever the template holds")
+    void theCopyIsUnworn() throws Exception {
+        PlayerBody template = new PlayerBody("Humanoid", new ArrayList<>(List.of(
+                new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon"))));
+        set(template.getSlot(0), "item", new ItemObject());
+        set(player, "race", race(template));
+
+        PlayerBirth.embody(player);
+
+        assertNull(player.getPlayerBody().getSlot(0).getItem(),
+                "mem_zalloc leaves every slot empty");
+    }
+
+    /**
+     * The reason the copy exists: a race's body is held once in the registry and pointed at by
+     * every character of that race, so two characters embodied from the same race must come away
+     * with separate slots. Sharing them would have one character's equipment appear on the other.
+     *
+     * @throws Exception if a fixture field cannot be reached
+     */
+    @Test
+    @DisplayName("two characters of a race do not share slots")
+    void twoCharactersOfARaceAreIndependent() throws Exception {
+        PlayerRace shared = race(new PlayerBody("Humanoid", new ArrayList<>(List.of(
+                new EquipSlot(EquipmentSlotsEnum.EQUIP_WEAPON, "weapon")))));
+        Player other = new Player();
+        set(player, "race", shared);
+        set(other, "race", shared);
+
+        PlayerBirth.embody(player);
+        PlayerBirth.embody(other);
+
+        assertNotSame(player.getPlayerBody(), other.getPlayerBody());
+        assertNotSame(player.getPlayerBody().getSlot(0), other.getPlayerBody().getSlot(0));
     }
 }

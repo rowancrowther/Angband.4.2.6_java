@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 
 /**
  * The character-creation machinery - the port of C's {@code player-birth.c}, minus its parsing, its
@@ -262,5 +263,56 @@ public class PlayerBirth {
             // Acceptable values
             break;
         }
+    }
+
+    /**
+     * Recalculates the character's derived totals and then fills them - the port of C's
+     * {@code get_bonuses} ({@code player-birth.c:311-324}).
+     *
+     * <p>Called at each point in birth where a choice has changed what the character is made of -
+     * after the race and class are picked ({@code player-birth.c:697}), after the stats are rolled
+     * ({@code player-birth.c:1047}), and at the end of the whole process
+     * ({@code player-birth.c:1170, 1202}) - so that the birth screen always shows totals that match
+     * the current choices rather than the previous ones.
+     *
+     * <p><b>Two flags, then one update pass.</b> {@code PU_BONUS} rebuilds the whole player state
+     * (the stat totals, the skills, the speed) and {@code PU_MANA} is raised as a consequence of it,
+     * not here; {@code PU_HP} recomputes the maximum hit points from the rolled table and the new
+     * constitution bonus. Raising both before a single {@link PlayerCalcs#updateStuff} call rather
+     * than calling twice matters, because the hit point calculation reads the constitution the bonus
+     * pass has just settled: {@code updateStuff} handles {@code PU_BONUS} before {@code PU_HP}
+     * ({@code PlayerCalcs.java:769, 779}), which is the order C's chain of {@code if} blocks gives.
+     *
+     * <p>The flags are raised, never replaced - {@link PlayerUpkeep#setUpdateFlagOn} is the port of
+     * C's {@code |=} - so anything else already pending is serviced by the same pass.
+     *
+     * <p><b>Then fully healed and fully rested.</b> The two assignments are deliberately unclamped
+     * and unconditional: a character being born has no history to preserve, so the current values
+     * are simply set to the maxima the update pass has just produced. This must follow the update,
+     * not precede it, or it would copy the previous maxima. Note that the fractional remainders
+     * ({@code chp_frac}, {@code csp_frac}) are left alone; C does not clear them here either,
+     * and at birth they are already zero.
+     *
+     * <p>A character with no spell realm gets a maximum of zero from the mana calculation, so the
+     * rest line writes zero and the method needs no special case for one.
+     *
+     * <p>Function getBonuses coded on 260902, commented in full on 260902.
+     *
+     * @param player the character being born, whose state, maxima and current totals are all
+     *               rewritten
+     */
+    public static void getBonuses(Player player) {
+        // Calculate the bonuses and hitpoints
+        player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
+        player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_HP);
+
+        // Update stuff
+        PlayerCalcs.updateStuff(player);
+
+        // Fully healed
+        player.setCurrentHP(player.getMaxHP());
+
+        // Fully rested
+        player.setCurSp(player.getMaxSP());
     }
 }

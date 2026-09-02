@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
+import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.util.Map;
 
@@ -410,6 +411,101 @@ public class PlayerBirth {
             statUse.put(stat, modifyStatValue(player.getMaxStatValue(stat), bonus));
 
             player.setStatBirth(stat, player.getStatMax(stat));
+        }
+    }
+
+    /**
+     * Fleshes out a character from the race and class chosen so far - the port of C's
+     * {@code player_generate} ({@code player-birth.c:980-1028}).
+     *
+     * <p>This runs every time a choice is made on the birth screen, not once at the end of it. C
+     * calls it when the screen is reset, when a race is picked and when a class is picked
+     * ({@code player-birth.c:1042, 1079, 1099, 1110}), so it has to be able to overwrite the
+     * results of its own previous run rather than assuming a blank character. That is why each
+     * step assigns outright instead of accumulating, and why the level-1 hit point entry is
+     * rewritten below even though a hit point table may already exist from an earlier choice.
+     *
+     * <p>A {@code null} race or class means "keep what the player already has", which is how the
+     * two single-choice callers work: picking a class passes {@code null} for the race and leaves
+     * it standing. The port hands the player a {@link PlayerRace#copy} and
+     * {@link PlayerClass#copy} where C assigns the pointer to the shared definition, so a
+     * character owns its race and class rather than aliasing the registry's.
+     *
+     * <p>What is derived, in C's order: the character is set to level 1; the experience factor is
+     * the race's plus the class's; the hit die is likewise the sum of the two contributions. The
+     * level-1 entry of the hit point table is then the whole hit die - a character does not roll
+     * for their first level - and the loop above level 1 fills in <em>overestimates</em>, a full
+     * hit die per level rather than a roll. That is deliberate: rolling here would let a player
+     * reset the birth screen until the rolls came out well, so the real rolls are left to
+     * {@link #rollHP(Player)} once the character is committed. Since the level is 1 the loop never
+     * actually runs, and maximum hit points come from the single entry it skipped over.
+     *
+     * <p>Age, height and weight are then rolled, and the character starts one point below a full
+     * stomach. That last write goes straight into the timed-effect map rather than through
+     * {@link PlayerTimed#setTimed}, matching C's raw {@code p->timed[TMD_FOOD] =}
+     * ({@code player-birth.c:1021}): there is no character yet for the grade-change messages and
+     * recalculations to be about.
+     *
+     * <p>The history is regenerated last, unless {@code oldHistory} says to keep the one already
+     * there - the flag quickstart sets when it restores a previous character, so that a replayed
+     * background is not silently rerolled.
+     *
+     * <p>Function playerGenerate commented in full on 260902.
+     *
+     * @param player      the character to flesh out; must not be {@code null}
+     * @param race        the race to apply, or {@code null} to keep the player's current one
+     * @param playerClass the class to apply, or {@code null} to keep the player's current one
+     * @param oldHistory  {@code true} to leave the existing history text alone, {@code false} to
+     *                    roll a fresh one from the race's chart
+     * @throws RuntimeException if {@code player} is {@code null}
+     */
+    public static void playerGenerate(Player player, PlayerRace race,
+                                      PlayerClass playerClass, boolean oldHistory) {
+        if (player == null) {
+            String message = "Trying to generate on a null player";
+            logger.error(message);
+            throw new RuntimeException(message);
+        }
+
+        if (playerClass == null) playerClass = player.getPlayerClass();
+        if (race == null) race = player.getRace();
+
+        player.setClass(playerClass.copy());
+        player.setRace(race.copy());
+
+        // Level 1
+        player.setMaxLevel(1);
+        player.setLevel(1);
+
+        // Experience factor
+        player.setExpFact(player.getRace().getExpFactor() + player.getPlayerClass().getExpFactor());
+
+        // Hitdice
+        player.setHitDie(player.getRace().getMaxHitDie() + player.getPlayerClass().getMaxHitDie());
+
+        // Pre calculate level 1 hitdice
+        player.setPlayerHitpoint(0, player.getHitDie());
+
+        /*
+         * Fill in overestimates of hitpoints for additional levels.  Do not
+         * do the actual rolls so the player can not reset the birth screen
+         * to get a desirable set of initial rolls.
+         */
+        for (int level = 1; level < player.getLevel(); level++) {
+            player.setPlayerHitpoint(level, player.getPlayerHP(level - 1) + player.getHitDie());
+        }
+
+        // Initial hitpoints
+        player.setPlayerMaxHP(player.getPlayerHP(player.getLevel() - 1));
+
+        // Roll for age/weight/height
+        getAHW(player);
+
+        // Always start with a well-fed player
+        player.putTimed(TimedEffect.TMD_FOOD, PlayerRegistry.getPyFoodFull() - 1);
+
+        if (!oldHistory) {
+            player.setPlayerHistory(getHistory(player.getRace().getHistory()));
         }
     }
 }

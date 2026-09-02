@@ -56,6 +56,105 @@ public class PlayerRegistry {
     public static final long PY_MAX_EXP = 99999999L;
     public static final int PY_MAX_LEVEL = 50;
     public static final int PY_KNOW_LEVEL = 30;
+    /**
+     * The six nourishment thresholds the game compares a {@code TMD_FOOD} counter against - the
+     * port of C's {@code PY_FOOD_*} globals ({@code player-timed.c:36-41}).
+     *
+     * <p><b>These are not constants in C either</b>, which is why they sit here among the loaded
+     * data rather than beside {@link #PY_MAX_EXP}. C declares them as bare {@code int}s and fills
+     * them in during parsing, matching each grade of the {@code FOOD} timed effect by name and
+     * copying its maximum into the matching global ({@code player-timed.c:321-336}). The port does
+     * the same work at the same point, in {@link #setPlayerTimedEffects}, and they are zero until
+     * that runs.
+     *
+     * <p>The maxima come from {@code player_timed.txt} as percentages - {@code 1 / 4 / 8 / 15 / 90
+     * / 100} - and are scaled by {@code player:food-value} from {@code constants.txt} before being
+     * stored, so the figures held here are the products: {@code 100 / 400 / 800 / 1500 / 9000 /
+     * 10000}. They are only meaningful against a counter on that same scale.
+     *
+     * <p>Fields PY_FOOD_* commented in full on 260902.
+     */
+    private static int PY_FOOD_STARVE;
+    private static int PY_FOOD_FAINT;
+    private static int PY_FOOD_WEAK;
+    private static int PY_FOOD_HUNGRY;
+    private static int PY_FOOD_FULL;
+    private static int PY_FOOD_MAX;
+
+    /**
+     * The "Starving" grade's ceiling. Below it the character takes damage from hunger every turn.
+     *
+     * <p>Function getPyFoodStarve commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_STARVE}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodStarve() {
+        return PY_FOOD_STARVE;
+    }
+
+    /**
+     * The "Faint" grade's ceiling - the band in which the character passes out at random.
+     *
+     * <p>Function getPyFoodFaint commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_FAINT}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodFaint() {
+        return PY_FOOD_FAINT;
+    }
+
+    /**
+     * The "Weak" grade's ceiling.
+     *
+     * <p>Function getPyFoodWeak commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_WEAK}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodWeak() {
+        return PY_FOOD_WEAK;
+    }
+
+    /**
+     * The "Hungry" grade's ceiling, and the point below which {@code calcBonuses} starts taking
+     * to-hit, to-damage and skill away. It serves as both the origin and the divisor when that
+     * shortfall is scaled.
+     *
+     * <p>Function getPyFoodHungry commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_HUNGRY}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodHungry() {
+        return PY_FOOD_HUNGRY;
+    }
+
+    /**
+     * The "Fed" grade's ceiling: comfortably nourished, the state in which no food adjustment
+     * applies at all. Anything above it is a surfeit that costs speed.
+     *
+     * <p>This is the one a new character starts just inside:
+     * {@link uk.co.jackoftradesltd.middle.player.PlayerBirth#playerGenerate} writes this value
+     * less one, as C does at {@code player-birth.c:1021}.
+     *
+     * <p>Function getPyFoodFull commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_FULL}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodFull() {
+        return PY_FOOD_FULL;
+    }
+
+    /**
+     * The "Full" grade's ceiling and the counter's maximum - bloated. The gap between this and
+     * {@link #getPyFoodFull} is the range the speed penalty is scaled over, so the two are only
+     * meaningful as a pair.
+     *
+     * <p>Function getPyFoodMax commented in full on 260902.
+     *
+     * @return C's {@code PY_FOOD_MAX}, or zero if the timed effects are not loaded yet
+     */
+    public static int getPyFoodMax() {
+        return PY_FOOD_MAX;
+    }
 
     public static Map<Integer, Long> playerExperience = new HashMap<>();
     
@@ -210,10 +309,54 @@ public class PlayerRegistry {
     }
 
     /**
-     * Stores the loaded timed-effect definitions; set once by {@code PlayerDataLoader}.
+     * Stores the loaded timed-effect definitions; set once by {@code PlayerDataLoader}, and fills
+     * in the {@code PY_FOOD_*} thresholds from the {@code FOOD} effect on the way through.
+     *
+     * <p>The second job looks like an oddity of the port but is faithful to C. There the food
+     * thresholds are written grade by grade as {@code player_timed.txt} is parsed
+     * ({@code player-timed.c:321-336}); a name matching one of the six fixed strings copies that
+     * grade's maximum into the corresponding global, and a grade whose name is a dummy - one
+     * character, which C reduces to {@code NULL} - matches nothing and is skipped. The port does
+     * the same matching once, here, over the assembled list. Doing it at registration rather than
+     * during parsing keeps the assembler free of the dependency, and the end state is the same
+     * because the only thing that reads the thresholds is the running game.
+     *
+     * <p>The grade maxima arrive already multiplied by {@code player:food-value}: the assembler
+     * applies that scale as C does ({@code player-timed.c:263, 322}), so the values stored here
+     * are the same {@code 100 / 400 / 800 / 1500 / 9000 / 10000} the game compares a
+     * {@code TMD_FOOD} counter against. Nothing rescales them afterwards.
+     *
+     * <p>Both versions tolerate the {@code FOOD} effect being absent - C never enters the branch,
+     * the port's search yields nothing - and leave the thresholds at zero, which is why they
+     * cannot be read meaningfully before the load has run.
+     *
+     * <p><b>Outstanding:</b> C guards the whole block on {@code food_scl != 1}, so were
+     * {@code player:food-value} ever set to 1 the C globals would stay at zero while the port
+     * would store the unscaled percentages. No shipped data reaches that case -
+     * {@code constants.txt:204} sets the value to 100 - and the divergence is a difference in what
+     * degenerate data does, not in what the game does.
+     *
+     * <p>Function setPlayerTimedEffects commented in full on 260902.
+     *
+     * @param playerTimedEffects the assembled timed-effect definitions, in file order
      */
     public static void setPlayerTimedEffects(@NotNull List<PlayerTimedEffect> playerTimedEffects) {
         PlayerRegistry.playerTimedEffects = playerTimedEffects;
+
+        PlayerTimedEffect food = playerTimedEffects.stream()
+                .filter(t -> t.getName() == TimedEffect.TMD_FOOD).findFirst().orElse(null);
+        if (food != null) {
+            for (TimedGrade grade : food.getGrade()) {
+                switch (grade.status()) {
+                    case "Starving" -> PY_FOOD_STARVE = grade.max();
+                    case "Faint" -> PY_FOOD_FAINT = grade.max();
+                    case "Weak" -> PY_FOOD_WEAK = grade.max();
+                    case "Hungry" -> PY_FOOD_HUNGRY = grade.max();
+                    case "Fed" -> PY_FOOD_FULL = grade.max();
+                    case "Full" -> PY_FOOD_MAX = grade.max();
+                }
+            }
+        }
     }
 
     /**

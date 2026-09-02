@@ -302,4 +302,85 @@ public class PlayerClass {
     public int getXSkill(PlayerSkill skill) {
         return extraSkills.get(skill);
     }
+
+    /**
+     * A private duplicate of this class definition, for a player to own.
+     *
+     * <p>There is no C counterpart: {@code player_generate} simply writes the shared pointer
+     * ({@code p->class = c}, {@code player-birth.c:989}), because C's class records are read-only
+     * data owned by the registry and every character of a class points at the same struct. The port
+     * hands the player a copy instead, so that a player can never write through to the template
+     * behind every other character of the same class — the boundary between shared game data and
+     * one character's state is drawn here rather than trusted to convention.
+     *
+     * <p>The copy is deep exactly where it needs to be. The four collections are rebuilt, so adding
+     * a title or a skill entry to the copy cannot reach the original; their contents —
+     * {@link String}, {@link Integer}, {@link StartItem} — are immutable, so the elements are safely
+     * shared. Both flag sets are new {@link Flag} instances filled by {@code copyFrom}, never the
+     * originals aliased. {@link ClassMagic} is shared by reference: it holds the spell data that C
+     * also shares across every caster of the class, and what a particular character knows lives on
+     * the player, not in the book.
+     *
+     * <p>Function copy commented in full on 260902.
+     *
+     * @return a new {@code PlayerClass} equal to this one, sharing no mutable structure with it
+     */
+    public PlayerClass copy() {
+        Flag<ObjectFlag> oFlagsClone = new Flag<>(ObjectFlag.class);
+        oFlagsClone.copyFrom(oFlags);
+        Flag<PlayerFlag> pFlagsClone = new Flag<>(PlayerFlag.class);
+        pFlagsClone.copyFrom(pFlags);
+
+        return new PlayerClass(name, new ArrayList<>(this.titles), new HashMap<>(this.stats),
+                new HashMap<>(this.classSkills), new HashMap<>(extraSkills), this.hpAdj,
+                this.expAdj, oFlagsClone, pFlagsClone, this.maxAttacks, this.minWeight,
+                this.attMultiplier, new ArrayList<>(startItems), this.magic);
+    }
+
+    /**
+     * The class's contribution to a character's experience factor.
+     *
+     * <p>C reads the field directly, and only in one place: {@code player_generate} sets
+     * {@code p->expfact = p->race->r_exp + p->class->c_exp} ({@code player-birth.c:997}). The class
+     * half is added to, not multiplied by, the race's factor, and in 4.2.6 it is always zero: the
+     * parser reads an {@code exp:} line ({@code init.c:3483}) but no class in {@code class.txt}
+     * carries one, so every shipped class leaves the whole factor to the race. The field is
+     * therefore a hook for variant data rather than something the base game varies.
+     *
+     * <p>Despite the field name ({@code expAdj}, after that {@code exp:} line) the value is not an
+     * adjustment applied to experience gained. It is one addend of the percentage that scales every
+     * level threshold: {@code Player.adjustLevel} multiplies a threshold by {@code expFact} and
+     * divides by 100 before comparing, so a larger factor means each level costs proportionately
+     * more.
+     *
+     * <p>Function getExpFactor commented in full on 260902.
+     *
+     * @return the class's experience factor, a percentage addend in C's {@code c_exp}
+     */
+    public int getExpFactor() {
+        return this.expAdj;
+    }
+
+    /**
+     * The class's contribution to the size of the character's hit die.
+     *
+     * <p>C reads {@code c_mhp} directly, and only in one place:
+     * {@code p->hitdie = p->race->r_mhp + p->class->c_mhp} ({@code player-birth.c:1000}). The class
+     * half is added to, not multiplied by, the race's, and it is the smaller of the two — the
+     * shipped classes run from 0 for a Mage to 9 for a Warrior, so the class chosen can more than
+     * double a frail race's die or leave it untouched.
+     *
+     * <p>Despite the field name ({@code hpAdj}, after the {@code hitdie:} line the parser reads at
+     * {@code init.c:3474}) the value is not hit points and not an adjustment applied to them. It is
+     * one addend of a die size: {@link PlayerBirth#rollHP(Player)} rolls
+     * {@code randint1(hitdie)} once per level above the first, so a larger figure widens every
+     * roll of the character's career rather than granting a fixed amount.
+     *
+     * <p>Function getMaxHitDie commented in full on 260902.
+     *
+     * @return the class's hit-die contribution, C's {@code c_mhp}
+     */
+    public int getMaxHitDie() {
+        return this.hpAdj;
+    }
 }

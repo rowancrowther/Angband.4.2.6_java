@@ -2113,4 +2113,157 @@ public class Player {
     public void setStatBirth(Stats stat, int value) {
         statsBirth.put(stat, value);
     }
+
+    /**
+     * Sets the character's class.
+     *
+     * <p>This is C's {@code p->class = c} from {@code player_generate} ({@code player-birth.c:989}),
+     * which is the only assignment to the field outside loading a savefile. C stores the shared
+     * pointer into the class registry, because its class records are read-only data; the port hands
+     * the player a private copy instead, and {@link PlayerClass#copy} explains why. Making the copy
+     * is the caller's job — this writer takes whatever it is given.
+     *
+     * <p>Nothing else is recomputed here. In C the class assignment is one line of
+     * {@code player_generate}, which goes on to reset the level, the experience factor and the hit
+     * dice in the same breath; the port keeps those as separate writers, so a class change made
+     * through this method alone leaves the character carrying the previous class's derived values.
+     *
+     * <p>Function setClass commented in full on 260902.
+     *
+     * @param playerClass the class the character belongs to, normally a private copy of a registry
+     *                    entry
+     */
+    public void setClass(PlayerClass playerClass) {
+        this.playerClass = playerClass;
+    }
+
+    /**
+     * Sets the character's race.
+     *
+     * <p>This is C's {@code p->race = r} ({@code player-birth.c:990}), the companion to
+     * {@link #setClass} and subject to the same reasoning: C aliases the registry's read-only
+     * record, while the port expects a copy from {@link PlayerRace#copy} so that one character can
+     * never write through to the template shared by every other member of the race.
+     *
+     * <p>As with the class, the values C derives from the race in the following lines of
+     * {@code player_generate} — the experience factor, the hit dice, the body — are written by
+     * their own methods here and are not refreshed by this call.
+     *
+     * <p>Function setRace commented in full on 260902.
+     *
+     * @param race the race the character belongs to, normally a private copy of a registry entry
+     */
+    public void setRace(PlayerRace race) {
+        this.race = race;
+    }
+
+    /**
+     * Sets the highest level the character has ever reached.
+     *
+     * <p>C writes {@code p->max_lev} in {@code player_generate}, where birth sets
+     * {@code p->max_lev = p->lev = 1} ({@code player-birth.c:993}). Thereafter the field is C's
+     * record of the character's true standing: it is driven by {@code max_exp} alone, so draining a
+     * character's experience lowers {@code lev} but never {@code max_lev}, and restoring it climbs
+     * back to a level already earned rather than earning it twice.
+     *
+     * <p>The field is {@code int16_t} in C ({@code player.h:528}) but is only ever moved by the
+     * {@code PY_MAX_LEVEL}-bounded loops in {@code adjustLevel}, and raised to meet the current level
+     * by {@link #updateMaxLevel}. This writer enforces nothing: it is the birth-time and
+     * savefile-load path, where the value is already known good.
+     *
+     * <p>Function setMaxLevel commented in full on 260902.
+     *
+     * @param level the highest level reached, 1 at birth and never above {@code PY_MAX_LEVEL}
+     */
+    public void setMaxLevel(int level) {
+        this.maxLevel = level;
+    }
+
+    /**
+     * Sets the character's current level.
+     *
+     * <p>The other half of C's {@code p->max_lev = p->lev = 1} ({@code player-birth.c:993}).
+     * Where {@link #setMaxLevel} records what the character has earned, {@code lev} is what they
+     * have right now, and the two part company as soon as experience is drained: the working level
+     * follows {@code exp} and can fall, while the maximum follows {@code max_exp} and cannot.
+     *
+     * <p>No invariant is imposed here. A caller writing a level above the recorded maximum leaves the
+     * two out of step until {@link #updateMaxLevel} pulls the maximum up to match.
+     *
+     * <p>Function setLevel commented in full on 260902.
+     *
+     * @param level the character's current level, 1 at birth
+     */
+    public void setLevel(int level) {
+        this.level = level;
+    }
+
+    /**
+     * Sets the character's experience factor.
+     *
+     * <p>C computes the value at birth rather than storing it per source:
+     * {@code p->expfact = p->race->r_exp + p->class->c_exp} ({@code player-birth.c:997}), summing
+     * {@link PlayerRace#getExpFactor} and {@link PlayerClass#getExpFactor}. It is a percentage
+     * that scales the cost of every level: each threshold in
+     * {@code PlayerRegistry.playerExperience} is multiplied by it and divided by 100 before being
+     * compared against the character's experience, so 100 means the table price and anything above
+     * it means a slower climb.
+     *
+     * <p>C's field is {@code uint8_t} ({@code player.h:516}) and the port's is an {@code int}. The
+     * widening is safe for the shipped data — the largest race and class factors sum well short of
+     * 255 — and nothing here range-checks the value, so a caller that invents one outside that
+     * range gets a character C could not represent.
+     *
+     * <p>Function setExpFact commented in full on 260902.
+     *
+     * @param fact the summed race and class experience factor, as a percentage
+     */
+    public void setExpFact(int fact) {
+        this.expFact = fact;
+    }
+
+    /**
+     * Sets the number of sides on the player's hit die.
+     *
+     * <p>C computes the value at birth rather than storing it per source:
+     * {@code p->hitdie = p->race->r_mhp + p->class->c_mhp} ({@code player-birth.c:1000}), summing
+     * {@link PlayerRace#getMaxHitDie} and {@link PlayerClass#getMaxHitDie}. Nothing else writes it
+     * — a character's die is fixed for life the moment race and class are settled, so the only
+     * caller is {@link PlayerBirth#playerGenerate}, which runs again for each choice made on the
+     * birth screen.
+     *
+     * <p>C's field is {@code int16_t} ({@code player.h:583}) and the port's is an {@code int}. The
+     * widening is safe for the shipped data — the largest race and class figures sum to 21 — and
+     * nothing here range-checks the value, so a caller that invents one outside that range gets a
+     * character C could not represent. See {@link #getHitDie} for how the die is read.
+     *
+     * <p>Function setHitDie commented in full on 260902.
+     *
+     * @param hitDie the summed race and class hit-die contributions
+     */
+    public void setHitDie(int hitDie) {
+        this.hitDie = hitDie;
+    }
+
+    /**
+     * Sets the character's background history text - the port of writing C's {@code p->history}
+     * ({@code player.h}).
+     *
+     * <p>The string is the finished, rolled background, not a template: {@code get_history} walks
+     * the race's chart chain and assembles the lines before this is called
+     * ({@code player-birth.c:1027}). It is display text — the character sheet and the tombstone
+     * read it — and nothing in the game derives behaviour from it.
+     *
+     * <p>C frees the previous string before assigning the new one ({@code player-birth.c:1024}).
+     * The port has nothing to do there; the old value is simply unreferenced. Writing is
+     * unconditional in both, so the caller owns the decision not to overwrite a history that
+     * should survive, which is what {@code player_generate}'s {@code old_history} flag is for.
+     *
+     * <p>Function setPlayerHistory commented in full on 260902.
+     *
+     * @param history the generated background text
+     */
+    public void setPlayerHistory(String history) {
+        this.history = history;
+    }
 }

@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -435,5 +436,126 @@ public class PlayerRace {
      */
     public int getBaseWeight() {
         return baseWeight;
+    }
+
+    /**
+     * A copy of this race that shares no mutable structure with it — the value
+     * {@code PlayerBirth.playerGenerate} gives a player as its own race
+     * ({@code PlayerBirth.java:428}).
+     *
+     * <p><b>There is no C counterpart, and the divergence is deliberate.</b> C's
+     * {@code player_generate} writes the pointer straight through — {@code p->race = r}
+     * ({@code player-birth.c:991}) — because a race record is read-only data loaded once from
+     * {@code p_race.txt} and shared by every character of that race. This port holds races in
+     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry} and hands out
+     * objects with mutable interiors, so a shared reference would let one character write into the
+     * registry's template and through it into every other character of the race. Copying at the
+     * birth boundary is what keeps that from happening.
+     *
+     * <p><b>What is deep and why.</b> The two adjustment maps, both flag sets and the whole
+     * resistance map are rebuilt: {@link ElementInfo#getFlags()} deliberately returns its
+     * live set, matching C's {@code el_info[i].flags}, so an {@link ElementInfo} shared between
+     * copies is writable through, and each is therefore copied in turn. {@link PlayerBody#copy()}
+     * does the same for the equipment template. The maps come back as {@link HashMap}s whatever the
+     * source used; every reader is a lookup ({@link #getStatAdjust}, {@link #getSkill},
+     * {@link #getResistanceLevel}), so no ordering rests on it.
+     *
+     * <p><b>What is shared, and legitimately.</b> {@code name} is a {@link String}, and
+     * {@link #history} is shared by reference: a {@link PlayerHistoryChart} is a node in the global
+     * chart graph, linked to its successors, and C shares exactly that graph across every character
+     * — copying one would mean copying the graph it leads to. The same reasoning makes
+     * {@code PlayerClass.copy} share its {@code ClassMagic}.
+     *
+     * <p>{@code rIndex} is carried across unchanged, so a copy still answers to the identity races
+     * are matched by; only the storage is the character's own.
+     *
+     * <p>Function copy coded on 260902, commented in full on 260902.
+     *
+     * @return a race equal to this one field for field, sharing only its name and history chart
+     */
+    public PlayerRace copy() {
+        Map<Stats, Integer> statsAdjClone = new HashMap<>(this.statsAdj);
+        Map<PlayerSkill, Integer> skillsAdjClone = new HashMap<>(this.skillsAdj);
+        Flag<ObjectFlag> oFlagsClone = new Flag<>(ObjectFlag.class);
+        oFlagsClone.copyFrom(oFlags);
+        Flag<PlayerFlag> pFlagsClone = new Flag<>(PlayerFlag.class);
+        pFlagsClone.copyFrom(pFlags);
+        Map<ElementEnum, ElementInfo> resistsClone = new HashMap<>();
+        for (ElementEnum element : resists.keySet()) {
+            ElementInfo info = resists.get(element).copy();
+            resistsClone.put(element, info);
+        }
+
+        return new PlayerRace(this.name, this.rIndex, this.raceMhp, this.raceExp,
+                this.baseAge, this.modAge, this.baseHeight, this.modHeight, this.baseWeight,
+                this.modWeight, this.infravision, this.body.copy(), statsAdjClone,
+                skillsAdjClone, oFlagsClone, pFlagsClone, this.history, resistsClone);
+    }
+
+    /**
+     * The race's contribution to a character's experience factor.
+     *
+     * <p>C reads {@code r_exp} directly, and in one place only:
+     * {@code p->expfact = p->race->r_exp + p->class->c_exp} ({@code player-birth.c:997}). The race
+     * supplies the bulk of the value — 100 for a Human, rising through the longer-lived and more
+     * gifted races — and the class adds a smaller amount on top.
+     *
+     * <p>The number is a percentage, and it scales the cost of every level rather than the
+     * experience awarded for a kill: the level thresholds in
+     * {@code PlayerRegistry.playerExperience} are multiplied by it and divided by 100 wherever a
+     * level is recomputed. A race at 100 pays the table price; one at 145 pays 45% more for every
+     * level of its career.
+     *
+     * <p>Function getExpFactor commented in full on 260902.
+     *
+     * @return the race's experience factor, a percentage addend in C's {@code r_exp}
+     */
+    public int getExpFactor() {
+        return raceExp;
+    }
+
+    /**
+     * The race's contribution to the size of the character's hit die.
+     *
+     * <p>C reads {@code r_mhp} directly, and in one place only:
+     * {@code p->hitdie = p->race->r_mhp + p->class->c_mhp} ({@code player-birth.c:1000}). The race
+     * supplies the bulk of the figure and covers a narrow band — 7 for a Hobbit up to 12 for a
+     * Half-Troll, with most races at 9 or 10 — while the class adds the wider-swinging remainder
+     * on top.
+     *
+     * <p>The value is a die size, not a quantity of hit points:
+     * {@link PlayerBirth#rollHP(Player)} rolls {@code randint1(hitdie)} for every level above the
+     * first, so the race sets the floor under how fast a character can be expected to toughen up
+     * rather than handing out anything at birth.
+     *
+     * <p>Function getMaxHitDie commented in full on 260902.
+     *
+     * @return the race's hit-die contribution, C's {@code r_mhp}
+     */
+    public int getMaxHitDie() {
+        return this.raceMhp;
+    }
+
+    /**
+     * The background chart the race's history is generated from — the port of reading C's
+     * {@code p->race->history} ({@code player.h:200}).
+     *
+     * <p>A chart is the entry point to a chain, not a single table of text. Each entry it holds
+     * carries a successor chart, so generating a history walks from this starting chart through as
+     * many linked charts as the race's background has stages, concatenating a rolled line from
+     * each. {@code player_generate} passes this straight to {@code get_history}
+     * ({@code player-birth.c:1027}), whose result becomes the character's history string.
+     *
+     * <p>The chart belongs to the race definition rather than to the character: it is fixed data
+     * describing what backgrounds that race can have, and it is read afresh every time the birth
+     * screen regenerates the player, which is why choosing a different race there replaces the
+     * history outright.
+     *
+     * <p>Function getHistory commented in full on 260902.
+     *
+     * @return the race's starting background chart, C's {@code history}
+     */
+    public PlayerHistoryChart getHistory() {
+        return history;
     }
 }

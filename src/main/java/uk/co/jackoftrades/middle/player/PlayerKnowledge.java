@@ -988,16 +988,11 @@ public class PlayerKnowledge {
      * unnoticed. It is not free, though: each call sweeps four populations and signals two events,
      * so the port calls it once, from {@link PlayerKnowledge#learnRune}.
      *
-     * <p><b>Two of the four populations are live.</b> The level and the pack are walked; stores and
-     * curse objects are not, and neither is a matter of writing the loop:
+     * <p><b>One of the four populations are live.</b> The level and the pack are walked; stores is 
+     * not, and isn't a matter of writing the loop:
      *
      * <ul>
      *   <li><b>Stores</b> wait on the shop subsystem, Chapter 8.</li>
-     *   <li><b>Curse objects</b> wait on somewhere to put the answer. C sweeps
-     *       {@code curses[i].obj}, which is the curse's properties held as a template object with a
-     *       known counterpart of its own; the port flattens those properties onto {@link Curse}
-     *       itself, which is the more accurate shape but leaves no field holding what the player has
-     *       learned about them.</li>
      *   <li><b>Autoinscribe</b> of ground and pack waits on Chapter 4.</li>
      * </ul>
      *
@@ -1120,10 +1115,12 @@ public class PlayerKnowledge {
      */
     private static void knowObject(Player player, Curse curse) {
         // combat details
-        curse.setKnownCombatToAC(curse.getCombatAC() * player.itemKnowledge.getToA());
-        if (!curse.hasStandardToH())
-            curse.setKnownCombatToHit(curse.getCombatToHit() * player.itemKnowledge.getToH());
-        curse.setKnownCombatToDam(curse.getCombatDam() * player.itemKnowledge.getToD());
+        if (player.itemKnowledge != null) {
+            curse.setKnownCombatToAC(curse.getCombatAC() * player.itemKnowledge.getToA());
+            if (!curse.hasStandardToH())
+                curse.setKnownCombatToHit(curse.getCombatToHit() * player.itemKnowledge.getToH());
+            curse.setKnownCombatToDam(curse.getCombatDam() * player.itemKnowledge.getToD());
+        }
 
         // modifiers
         Map<ObjectModifier, Integer> modifiers = curse.getModifiers();
@@ -1132,13 +1129,14 @@ public class PlayerKnowledge {
             newModifiers.put(modifier, 0);
         }
         for (ObjectModifier key : modifiers.keySet()) {
-            if (player.itemKnowledge.modifierIsKnown(key))
+            if (player.itemKnowledge != null && player.itemKnowledge.modifierIsKnown(key))
                 newModifiers.put(key, modifiers.get(key));
         }
         curse.setKnownModifiers(newModifiers);
 
         // Elements
-        Map<ElementEnum, Boolean> knownElements = player.itemKnowledge.getElementResistInfo();
+        Map<ElementEnum, Boolean> knownElements = player.itemKnowledge == null ?
+                new HashMap<>() : player.itemKnowledge.getElementResistInfo();
         Map<ElementEnum, ElementInfo> itemElInfo = curse.getElInfo();
         Map<ElementEnum, ElementInfo> newElInfo = new HashMap<>();
         for (ElementEnum element : ElementEnum.values()) {
@@ -1155,7 +1153,8 @@ public class PlayerKnowledge {
         curse.setKnownElInfo(newElInfo);
 
         // ObjectFlags
-        Flag<ObjectFlag> knownFlags = player.itemKnowledge.getFlags();
+        Flag<ObjectFlag> knownFlags = player.itemKnowledge != null ? player.itemKnowledge.getFlags()
+                : new Flag<>(ObjectFlag.class);
         FlagView<ObjectFlag> itemFlags = curse.getObjectFlags();
         knownFlags.inter(itemFlags);
         curse.setKnownObjectFlags(knownFlags);

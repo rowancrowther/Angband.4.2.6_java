@@ -25,31 +25,42 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftrades.channel.enums.GameEventType;
 import uk.co.jackoftrades.channel.messages.data.GameEventData;
+import uk.co.jackoftrades.channel.utils.Flag;
 import uk.co.jackoftrades.middle.cave.Chunk;
 import uk.co.jackoftrades.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftrades.middle.game.event.EventsHandler;
 import uk.co.jackoftrades.middle.game.gameengine.GameEngine;
+import uk.co.jackoftrades.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftrades.middle.objects.Curse;
+import uk.co.jackoftrades.middle.objects.ElementInfo;
 import uk.co.jackoftrades.middle.objects.ItemObject;
+import uk.co.jackoftrades.middle.objects.KnownObject;
+import uk.co.jackoftrades.middle.objects.enums.ElementEnum;
+import uk.co.jackoftrades.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftrades.middle.objects.enums.ObjectModifier;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
 
 /**
- * Tests the two populations {@link PlayerKnowledge#updateObjectKnowledge} can currently reach — the
- * objects lying on the level and the ones the player is carrying — and the events it always signals.
- * The port of C's {@code update_player_object_knowledge} ({@code obj-knowledge.c:1214}).
+ * Tests the three populations {@link PlayerKnowledge#updateObjectKnowledge} can currently reach —
+ * the objects lying on the level, the ones the player is carrying, and the curse definitions in the
+ * registry — and the events it always signals. The port of C's
+ * {@code update_player_object_knowledge} ({@code obj-knowledge.c:1214}).
  *
  * <p><b>What is observed, and why it is the walk rather than the outcome.</b> The method's real work
- * is delegated to {@link PlayerKnowledge#knowObject}. These tests watch <em>which objects the two
+ * is delegated to {@link PlayerKnowledge#knowObject}. These tests watch <em>what the three
  * loops yielded</em>, and in what order, rather than what the knowledge transfer then did. That is
  * deliberately the durable half of the behaviour: this method is responsible for visiting the right
  * objects in the right order and signalling afterwards, not for what visiting one does, so the suite
@@ -66,13 +77,33 @@ import uk.co.jackoftrades.testsupport.SeededPlayerRegistry;
  * rather than what it calls, so it survives {@code knowObject} moving again, changing signature, or
  * being called through something else entirely.
  *
- * <p>Two of C's four populations have no test here because they have no code yet: stores wait on
- * Chapter 8, and curse objects wait on {@link uk.co.jackoftrades.middle.objects.Curse} gaining
- * somewhere to hold what is known about it. Autoinscribe is Chapter 4. The absence of those branches
- * is not something a test can assert, so it is recorded in the method's Javadoc instead.
+ * <p><b>The curse population is the exception to the walk-only rule.</b> {@link Curse} now holds
+ * its own {@code known*} fields, so the third loop both visits and writes, and there is no known
+ * counterpart object to inspect afterwards — {@link Curse#isFullyKnown()} is the only public window
+ * onto the result. So that group tests the walk as the other two do, and adds a pair of end-to-end
+ * cases that show the visit is a transfer rather than an empty pass.
+ *
+ * <p>The curse loop is fed by installing a recording list into {@link ObjectRegistry} for the
+ * duration of one test, and putting back whatever was there afterwards. That matters more than the
+ * usual tidiness: the registry is global static state, and
+ * {@link uk.co.jackoftrades.testsupport.SeededPlayerRegistry} seeds it only when it is empty, so a
+ * class that left curses behind would change what a later class sees.
+ *
+ * <p><b>Every test starts from an empty curse registry, not from whatever was loaded.</b> The
+ * extension can only seed a list that is {@code null}, so a class running after a reader has parsed
+ * {@code curse.txt} inherits the real forty-odd curses. That is not a neutral difference here: the
+ * curse loop dereferences {@code player.itemKnowledge} before it does anything else, and a
+ * {@link Player} that has not been through birth has none, so the whole class throws in a full-suite
+ * run and passes when run alone. Pinning the list makes the result independent of what ran first.
+ * The underlying asymmetry — the two object loops survive a knowledge-free player and the curse loop
+ * does not — is a property of the code under test, not of the fixture.
+ *
+ * <p>One of C's four populations still has no test here because it has no code yet: stores wait on
+ * Chapter 8, and autoinscribe is Chapter 4. The absence of those branches is not something a test
+ * can assert, so it is recorded in the method's Javadoc instead.
  *
  * <p>Class PlayerUpdateObjectKnowledgeTest coded on 260815, commented in full on 260815, reworked
- * onto the collection seam on 260901.
+ * onto the collection seam on 260901, curse population added on 260901.
  *
  * @author Rowan Crowther
  */
@@ -84,6 +115,18 @@ class PlayerUpdateObjectKnowledgeTest {
      * install. Cleared for each test with the player.
      */
     private final List<ItemObject> visited = new ArrayList<>();
+
+    /**
+     * Everything the three loops yielded, in one list and in order, so that a test can pin the
+     * order of the populations against each other. Objects and curses have no common supertype, so
+     * this is the only place they can be compared side by side.
+     */
+    private final List<Object> visitOrder = new ArrayList<>();
+
+    /**
+     * Whatever {@link ObjectRegistry} held before a test replaced it, put back afterwards.
+     */
+    private List<Curse> realCurses;
     private CapturingBus bus;
     private EventsHandler realBus;
     private Player player;
@@ -102,18 +145,67 @@ class PlayerUpdateObjectKnowledgeTest {
         f.set(target, value);
     }
 
+    /**
+     * Reads a private static field, for saving global registry state a test is about to replace.
+     */
+    @SuppressWarnings("unchecked")
+    private static <T> T peekStatic(Class<?> owner, String name) throws Exception {
+        Field f = owner.getDeclaredField(name);
+        f.setAccessible(true);
+        return (T) f.get(null);
+    }
+
+    /**
+     * Writes a private static field, the counterpart of {@link #peekStatic}.
+     */
+    private static void pokeStatic(Class<?> owner, String name, Object value) throws Exception {
+        Field f = owner.getDeclaredField(name);
+        f.setAccessible(true);
+        f.set(null, value);
+    }
+
+    /**
+     * A curse carrying the given modifiers and nothing else — no flags, no elements, no effect and
+     * no combat figures, so that {@link Curse#isFullyKnown()} turns on the modifiers alone.
+     */
+    private static Curse curseWithModifiers(String name, Map<ObjectModifier, Integer> modifiers) {
+        return new Curse(name, List.of(), 0, null, new Flag<>(ObjectFlag.class), modifiers,
+                Map.<ElementEnum, ElementInfo>of(), 0, 0, 0,
+                List.of(), new Flag<>(ObjectFlag.class), "", "");
+    }
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         player = new Player();
         visited.clear();
+        visitOrder.clear();
+        realCurses = peekStatic(ObjectRegistry.class, "curses");
+        pokeStatic(ObjectRegistry.class, "curses", new RecordingCurseList());
         realBus = GameEngine.getEventsBusHandler();
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
     }
 
     @AfterEach
-    void tearDown() {
+    void tearDown() throws Exception {
         GameEngine.setEventsBusHandler(realBus);
+        pokeStatic(ObjectRegistry.class, "curses", realCurses);
+    }
+
+    /**
+     * Puts the given curses in the registry, where the third loop reads them, and gives the player
+     * the knowledge object that loop dereferences.
+     *
+     * <p>The knowledge is built after the curses are installed, because {@link KnownObject} sizes
+     * its own curse map from the registry — C's {@code z_info->curse_max} ordering constraint, kept.
+     * That constructor walks the same list this is recording, so the record is cleared afterwards
+     * and each test sees only what {@code updateObjectKnowledge} itself visited.
+     */
+    private void registryHolding(Curse... curses) throws Exception {
+        pokeStatic(ObjectRegistry.class, "curses", new RecordingCurseList(curses));
+        player.itemKnowledge = new KnownObject();
+        visited.clear();
+        visitOrder.clear();
     }
 
     /**
@@ -164,7 +256,43 @@ class PlayerUpdateObjectKnowledgeTest {
                 public ItemObject next() {
                     ItemObject item = underlying.next();
                     visited.add(item);
+                    visitOrder.add(item);
                     return item;
+                }
+            };
+        }
+    }
+
+    /**
+     * The curse list the third loop iterates, recording each curse into {@link #visitOrder} as the
+     * loop takes it. The same device as {@link RecordingList} and for the same reason, but a
+     * separate class because the registry field is a {@code List<Curse>}.
+     *
+     * <p>{@link ObjectRegistry#getCurses()} hands out a {@code Collections.unmodifiableList} view
+     * rather than the field itself, and that view's iterator delegates to this one, so the recording
+     * survives the wrapper.
+     *
+     * @author Rowan Crowther
+     */
+    private final class RecordingCurseList extends ArrayList<Curse> {
+        RecordingCurseList(Curse... curses) {
+            super(List.of(curses));
+        }
+
+        @Override
+        public Iterator<Curse> iterator() {
+            Iterator<Curse> underlying = super.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return underlying.hasNext();
+                }
+
+                @Override
+                public Curse next() {
+                    Curse curse = underlying.next();
+                    visitOrder.add(curse);
+                    return curse;
                 }
             };
         }
@@ -280,7 +408,8 @@ class PlayerUpdateObjectKnowledgeTest {
     }
 
     /**
-     * The two null guards. They are not the same in origin, which is worth keeping apart.
+     * The null guards. They are not the same in origin, which is worth keeping apart: two are about
+     * the populations being absent, the third about the player's knowledge being absent.
      *
      * @author Rowan Crowther
      */
@@ -332,6 +461,38 @@ class PlayerUpdateObjectKnowledgeTest {
             assertDoesNotThrow(() -> PlayerKnowledge.updateObjectKnowledge(player));
 
             assertTrue(visited.isEmpty());
+        }
+
+        /**
+         * The curse loop is the one population that reads {@code player.itemKnowledge}, and it reads
+         * it four times over - the combat figures, the modifiers, the elements and the flags. A
+         * player who has not been through birth has none, and C cannot reach this state at all
+         * because {@code p->obj_k} is allocated with the player rather than assigned into them, so
+         * the guards are the port paying for its own construction order.
+         *
+         * <p>The curse here is deliberately not the empty one the other curse tests use: it carries
+         * a modifier, a flag, an element and all three combat figures, so that every one of the four
+         * reads is actually reached rather than skipped over an empty collection.
+         *
+         * <p>The registry is installed directly rather than through {@link #registryHolding}, which
+         * would supply the {@link KnownObject} this test exists to withhold.
+         */
+        @Test
+        @DisplayName("no knowledge is not an error, even with a curse to walk")
+        void noItemKnowledgeIsSurvivable() throws Exception {
+            Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+            flags.set(ObjectFlag.OF_FEATHER);
+            Curse curse = new Curse("uncursed player", List.of(), 0, null, flags,
+                    Map.of(ObjectModifier.OM_STR, 3),
+                    Map.of(ElementEnum.ELEM_FIRE, new ElementInfo()), 2, 3, 4,
+                    List.of(), new Flag<>(ObjectFlag.class), "", "");
+            pokeStatic(ObjectRegistry.class, "curses", new RecordingCurseList(curse));
+            poke(player, "gear", null);
+            player.itemKnowledge = null;
+
+            assertDoesNotThrow(() -> PlayerKnowledge.updateObjectKnowledge(player));
+
+            assertEquals(List.of(curse), visitOrder);
         }
     }
 
@@ -386,6 +547,126 @@ class PlayerUpdateObjectKnowledgeTest {
             PlayerKnowledge.updateObjectKnowledge(player);
 
             assertEquals(2, bus.signalled.size());
+        }
+    }
+
+    /**
+     * The third population — the curse definitions in {@link ObjectRegistry}. C walks
+     * {@code curses[i].obj}, the carrier object each curse hangs its properties on; the port walks
+     * the {@link Curse} objects themselves, which is the same population reached without the
+     * indirection.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("the curse population")
+    class Curses {
+
+        @Test
+        @DisplayName("every curse in the registry is visited")
+        void everyCurseIsVisited() throws Exception {
+            Curse first = curseWithModifiers("first", Map.of());
+            Curse second = curseWithModifiers("second", Map.of());
+            registryHolding(first, second);
+            carrying();
+
+            PlayerKnowledge.updateObjectKnowledge(player);
+
+            assertEquals(List.of(first, second), visitOrder);
+        }
+
+        /**
+         * C's order: level, gear, stores, curses. Stores are missing, so what can be pinned is that
+         * the curses come last of the three that exist.
+         */
+        @Test
+        @DisplayName("the curses are walked after the level and the pack")
+        void cursesComeLast() throws Exception {
+            ItemObject onFloor = new ItemObject();
+            ItemObject inPack = new ItemObject();
+            Curse curse = curseWithModifiers("last", Map.of());
+            registryHolding(curse);
+            poke(player, "cave", levelHolding(onFloor));
+            carrying(inPack);
+
+            PlayerKnowledge.updateObjectKnowledge(player);
+
+            assertEquals(List.of(onFloor, inPack, curse), visitOrder);
+        }
+
+        /**
+         * The state the shipped fixtures leave the registry in, and the state a data-free unit test
+         * runs in. Nothing to walk is not an error.
+         */
+        @Test
+        @DisplayName("an empty registry visits no curse")
+        void emptyRegistryVisitsNothing() throws Exception {
+            registryHolding();
+            carrying();
+
+            assertDoesNotThrow(() -> PlayerKnowledge.updateObjectKnowledge(player));
+
+            assertTrue(visitOrder.isEmpty());
+        }
+
+        /**
+         * The visit is a transfer, not a pass. A curse whose only property is a modifier is not
+         * fully known before the walk, because nothing has yet been written into its known
+         * modifiers, and is afterwards once the player can read that modifier.
+         *
+         * <p>{@link Curse#isFullyKnown()} is the only public window onto the result — the
+         * {@code known*} fields have setters but no getters — which is why this asserts on the
+         * predicate rather than on the values.
+         */
+        @Test
+        @DisplayName("a curse the player can read becomes fully known")
+        void aReadableCurseBecomesFullyKnown() throws Exception {
+            Curse curse = curseWithModifiers("sickliness", Map.of(ObjectModifier.OM_STR, -5));
+            registryHolding(curse);
+            player.itemKnowledge.learnModifier(ObjectModifier.OM_STR);
+            carrying();
+
+            assertFalse(curse.isFullyKnown());
+
+            PlayerKnowledge.updateObjectKnowledge(player);
+
+            assertTrue(curse.isFullyKnown());
+        }
+
+        /**
+         * The other half of the pair, and the one that shows the transfer is gated on knowledge
+         * rather than unconditional: the same curse, a player who cannot read the modifier, and the
+         * walk leaves it as unknown as it found it. The known modifier is written — as a zero,
+         * C's mask for a property the player cannot read — which is why this is not the same
+         * assertion as the one before the walk above.
+         */
+        @Test
+        @DisplayName("a curse the player cannot read stays unknown")
+        void anUnreadableCurseStaysUnknown() throws Exception {
+            Curse curse = curseWithModifiers("sickliness", Map.of(ObjectModifier.OM_STR, -5));
+            registryHolding(curse);
+            carrying();
+
+            PlayerKnowledge.updateObjectKnowledge(player);
+
+            assertFalse(curse.isFullyKnown());
+        }
+
+        /**
+         * The signals are after all three loops, so a registry full of curses does not change how
+         * many go out.
+         */
+        @Test
+        @DisplayName("the events still fire once each after the curse walk")
+        void eventsAreUnaffectedByTheCurseWalk() throws Exception {
+            registryHolding(curseWithModifiers("one", Map.of()),
+                    curseWithModifiers("two", Map.of()));
+            carrying();
+
+            PlayerKnowledge.updateObjectKnowledge(player);
+
+            assertEquals(List.of(GameEventType.EVENT_INVENTORY, GameEventType.EVENT_EQUIPMENT),
+                    bus.signalled);
         }
     }
 }

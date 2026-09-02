@@ -118,4 +118,26 @@ public class PlayerHistoryChart {
     public PlayerHistoryChart getSuccessor() {
         return successor;
     }
+
+    /**
+     * The candidate entries for this chart, in the order the roll must walk them.
+     *
+     * <p><b>The order is load-bearing.</b> {@link PlayerHistoryEntry#getRoll()} is a cumulative
+     * threshold, not a weight, so selection is "the first entry whose roll is at least the number
+     * rolled" — which is only correct while the entries ascend. That is the order they appear in
+     * {@code history.txt}, and the order the assembler adds them in. C has to work for the same
+     * order the hard way: its parser pushes each entry onto the front of a linked list, so
+     * {@code finish_parse_history} reverses every chart's list before the game ever reads one
+     * ({@code init.c:2491-2523}). The port needs no such repair, because a {@link List} appends.
+     *
+     * <p>The returned list is this chart's own, not a copy; nothing outside the assembler has cause
+     * to change it.
+     *
+     * <p>Function getEntries coded on 260902, commented in full on 260902.
+     *
+     * @return this chart's entries, in ascending order of roll threshold
+     */
+    public List<PlayerHistoryEntry> getEntries() {
+        return entries;
+    }
 }

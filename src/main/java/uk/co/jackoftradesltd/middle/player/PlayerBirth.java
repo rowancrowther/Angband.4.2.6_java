@@ -106,4 +106,65 @@ public class PlayerBirth {
         player.setWeight(RandomValueUtils.normal(player.getRace().getBaseWeight(), player.getRace().getModWeight()));
         player.setWeightBirth(player.getWeight());
     }
+
+    /**
+     * Walks the history-chart graph and assembles the character's background - the port of C's
+     * {@code get_history} ({@code player-birth.c:330}).
+     *
+     * <p>One chart is one sentence fragment. Starting at the race's chart, a d100 picks one of the
+     * chart's entries, its phrase is appended, and generation moves to the successor chart; the
+     * biography is finished when a chart has no successor. The Human's chain
+     * {@code 1 -> 2 -> 3 -> 50 -> 51 -> 52 -> 53} ({@code history.txt}) is seven charts, so seven
+     * rolls and seven fragments, which is why the shipped phrases carry their own leading capital
+     * and trailing spaces - nothing is inserted between them.
+     *
+     * <p><b>The roll is a threshold, not a weight.</b> {@code roll <= entry.getRoll()} takes the
+     * first entry the roll does not exceed, so the entries must ascend and the last must be
+     * {@code 100}; chart 1's {@code 10/20/95/100} gives its four phrases 10%, 10%, 75% and 5%. The
+     * order that makes this work is {@link PlayerHistoryChart#getEntries()}'s concern.
+     *
+     * <p>A chart whose entries stop short of {@code 100} can be rolled past, and C says so with
+     * {@code assert(entry)} - which is a crash, and only in a build with asserts on. The port
+     * throws instead: a data file that cannot answer a legal roll is a load-time fault worth
+     * naming, not a silent null dereference.
+     *
+     * <p>Two divergences from C, both deliberate. The successor is read off the <em>chart</em>
+     * rather than the chosen entry, because the port hoisted that edge up a level (see
+     * {@link PlayerHistoryChart}). And a {@code null} chart yields the empty string where C yields
+     * {@code NULL}; C's only callers pass {@code p->race->history}, which is never null, so the
+     * difference has no caller to trouble.
+     *
+     * <p>Function getHistory coded on 260902, commented in full on 260902.
+     *
+     * @param chart the chart to start from, normally the player race's own; {@code null} gives the
+     *              empty string
+     * @return the assembled biography, the chosen phrases concatenated in chart order
+     * @throws RuntimeException if a chart's entries do not cover the whole 1-100 range and the roll
+     *                          falls past the last of them
+     */
+    public static String getHistory(PlayerHistoryChart chart) {
+        StringBuilder result = new StringBuilder();
+
+        while (chart != null) {
+            int roll = RandomValueUtils.randInt1(100);
+
+            PlayerHistoryEntry chosenEntry = null;
+            for (PlayerHistoryEntry entry : chart.getEntries()) {
+                if (roll <= entry.getRoll()) {
+                    chosenEntry = entry;
+                    break;
+                }
+            }
+            if (chosenEntry == null) {
+                String message = "Percentage chance greater than 100 found on PlayerHistoryEntry";
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            result.append(chosenEntry.getText());
+            chart = chart.getSuccessor();
+        }
+        
+        return result.toString();
+    }
 }

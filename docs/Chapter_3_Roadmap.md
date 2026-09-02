@@ -299,7 +299,7 @@ boxes span these stages rather than matching them one-to-one.
 
 - [X] `playerKnowledge` (`:1004`)
 - [X] `player_embody` (`[C] player-birth.c:369`)
-- [ ] `get_ahw` (`:353`)
+- [X] `get_ahw` (`:353`)
 - [ ] `get_history` (`:330`)
 - [ ] `get_money` (`:390`)
 - [ ] `roll_hp` (`[C] player-birth.c:279`)

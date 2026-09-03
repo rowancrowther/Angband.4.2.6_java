@@ -20,14 +20,23 @@ package uk.co.jackoftradesltd.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftradesltd.middle.monsters.MonsterLore;
+import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
+import java.util.HashMap;
 import java.util.Map;
 
+import static uk.co.jackoftradesltd.middle.objects.ObjectUtils.*;
 import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
 
 /**
@@ -507,5 +516,112 @@ public class PlayerBirth {
         if (!oldHistory) {
             player.setPlayerHistory(getHistory(player.getRace().getHistory()));
         }
+    }
+
+    /**
+     * Resets a player to Angband's blank starting state - the port of C's {@code player_init}
+     * ({@code player-birth.c:396}). This runs before {@link #playerGenerate} does the actual
+     * character build, so what a fresh character inherits from here is the baseline every
+     * race/class combination starts from: no artifacts made, no quests underway, every object
+     * kind untried and every monster race unkilled.
+     *
+     * <p>{@link Player#wipe} stands in for C's {@code memset(p, 0, sizeof(struct player))}. It
+     * mutates every field on the object the caller already holds rather than allocating a new
+     * one, because reassigning a Java parameter is only ever visible inside this method - unlike
+     * C's pointer write, the caller would never see it.
+     *
+     * <p>The object-kind and monster-race loops both start one element past the port's own
+     * index 0, matching C's {@code for (i = 1; ...)} bound at {@code player-birth.c:415,421}.
+     * C's tables carry a synthetic zeroth entry - {@code k_info[0]} is the {@code <pile>}
+     * sentinel kind, {@code r_info[0]} is the {@code <player>} sentinel race used only to hold
+     * the minimap glyph colour - and {@code player_init} explicitly skips both. The port's kind
+     * and race lists carry the same sentinel entries first, in the same file order, so the loops
+     * here skip index 0 for the same reason.
+     *
+     * <p>The player's options are saved before the wipe and restored after it, matching C's
+     * {@code opts_save}/{@code p->opts = opts_save}: a fresh player still keeps whatever options
+     * were already in force. The upkeep, timed-effect table and item-knowledge (brand/slay/curse)
+     * records are then rebuilt to size, and the player is left pointed at the first race and
+     * class in the edit files with an unshapechanged {@code "normal"} shape, exactly as C leaves
+     * {@code p->race}, {@code p->class} and {@code p->shape}.
+     *
+     * <p>Outstanding: nothing calls this yet. C's {@code player_init} runs once at game start,
+     * before the birth screen; nothing in the port's birth flow reaches this method.
+     *
+     * <p>Function playerInit coded on 260903, commented in full on 260903.
+     *
+     * @param player the character to reset to Angband's starting baseline
+     */
+    private void playerInit(Player player) {
+        PlayerOptions optionsSave = player.getPlayerOptions().copy();
+
+        // Wipe the player
+        player.wipe();
+
+        // Start with no artifacts made yet
+        for (Artifact art : ObjectRegistry.getArtifacts()) {
+            ObjectUtils.markArtifactCreated(art, false);
+            ObjectUtils.markArtifactSeen(art, false);
+        }
+
+        // Quests
+        PlayerQuest.playerQuestsReset(player);
+
+        int index = 0;
+        for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+            if (index == 0) {
+                index++;
+                continue;
+            }
+            kind.setTried(false);
+            kind.setAware(false);
+        }
+
+        index = 0;
+        for (MonsterRace race : MonsterRegistry.getMonsterRaces()) {
+            if (index == 0) {
+                index++;
+                continue;
+            }
+            MonsterLore lore = race.getLore();
+            race.setCurNum(0);
+            race.setMaxNum(100);
+            if (race.hasMonsterRaceFlag(MonsterRaceFlag.RF_UNIQUE))
+                race.setMaxNum(1);
+            lore.setPSkills(0);
+            lore.setThefts(0);
+        }
+
+        PlayerUpkeep playerUpkeep = new PlayerUpkeep();
+        player.setUpkeep(playerUpkeep);
+        playerUpkeep.setQuiverObjects(new ItemObject[GameConstants.getCarryCapQuiverSize()]);
+        playerUpkeep.setInventory(new ItemObject[GameConstants.getCarryCapPackSize() + 1]);
+        Map<TimedEffect, Integer> timed = new HashMap<>();
+        for (TimedEffect effect : TimedEffect.values()) {
+            timed.put(effect, 0);
+        }
+        player.setTimed(timed);
+        KnownObject itemKnowledge = new KnownObject();
+        itemKnowledge.initBrands();
+        itemKnowledge.initSlays();
+        itemKnowledge.initCurses();
+        player.setItemKnowledge(itemKnowledge);
+
+        // Options should persist
+        player.setOptions(optionsSave);
+
+        // First turn
+        GameState.setTurn(1);
+        player.setTotalEnergy(0);
+        player.setRestingTurn(0);
+
+        // Default ot the first race/class in the edit file
+        PlayerRace race = PlayerRegistry.getPlayerRaces().getFirst();
+        PlayerClass playerClass = PlayerRegistry.getPlayerClasses().getFirst();
+        player.setClass(playerClass);
+        player.setRace(race);
+
+        // Player starts unshapechanged
+        player.setShape(PlayerRegistry.lookupPlayerShape("normal"));
     }
 }

@@ -29,23 +29,29 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests the three {@link PlayerUpkeep} members the object-knowledge work reaches for:
- * {@link PlayerUpkeep#orNoticeFlag}, {@link PlayerUpkeep#getQuiver} and
- * {@link PlayerUpkeep#getInventory}.
+ * Tests the {@link PlayerUpkeep} members around the pack and quiver: the notice-flag request queue
+ * ({@link PlayerUpkeep#orNoticeFlag}), the two live views ({@link PlayerUpkeep#getQuiver},
+ * {@link PlayerUpkeep#getInventory}), and the two wholesale replacements
+ * ({@link PlayerUpkeep#setInventory}, {@link PlayerUpkeep#setQuiverObjects}).
  *
- * <p><b>Two contracts, both easy to break without noticing.</b> The notice flag is a request queue,
- * so setting one twice has to be the same as setting it once — a caller deep in the knowledge code
- * asks for the ignore pass to be re-run and must not care whether someone else asked first. The two
- * list getters are live views into the upkeep rather than snapshots of it, which is what lets the
- * label code walk them by index and see the pack as it currently stands. A defensive copy in either
- * would be correct-looking and wrong, so both are asserted by identity.
+ * <p><b>Three contracts, each easy to break without noticing.</b> The notice flag is a request
+ * queue, so setting one twice has to be the same as setting it once — a caller deep in the
+ * knowledge code asks for the ignore pass to be re-run and must not care whether someone else asked
+ * first. The two list getters are live views into the upkeep rather than snapshots of it, which is
+ * what lets the label code walk them by index and see the pack as it currently stands; a defensive
+ * copy in either would be correct-looking and wrong, so both are asserted by identity. The two
+ * setters are the one place the port does something C never does — replace the array reference
+ * outright rather than write through a slot — so what they're tested against is the shape of that
+ * difference rather than a C-derived value.
  *
- * <p>Class PlayerUpkeepGearViewsTest coded on 260816, commented in full on 260816.
+ * <p>Class PlayerUpkeepGearViewsTest coded on 260816, commented in full on 260816, gear-replacement
+ * nested class added 260903.
  *
  * @author Rowan Crowther
  */
@@ -221,6 +227,93 @@ class PlayerUpkeepGearViewsTest {
             for (ItemObject slot : upkeep.getQuiver()) {
                 assertNull(slot);
             }
+        }
+    }
+
+    /**
+     * {@link PlayerUpkeep#setInventory} and {@link PlayerUpkeep#setQuiverObjects}: the wholesale
+     * swap the C original never performs. C allocates {@code p->upkeep->inven} and
+     * {@code p->upkeep->quiver} exactly once and only ever writes through a slot afterwards, so
+     * these two setters have no C statement to derive expected values from — what's being tested is
+     * that the swap is exactly that, a reference replacement, with none of the slot-preserving
+     * behaviour a real C write would have.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("replacing the pack and the quiver outright")
+    class GearReplacement {
+
+        /**
+         * The new array becomes what {@link PlayerUpkeep#getInventory} returns — a plain reference
+         * write, checked by identity because a copy would pass an equals-by-content check just as
+         * well and hide the difference this method exists to make.
+         */
+        @Test
+        @DisplayName("setInventory installs the given array as the pack")
+        void setInventoryInstallsTheArray() {
+            ItemObject[] fresh = new ItemObject[]{new ItemObject(), new ItemObject()};
+
+            upkeep.setInventory(fresh);
+
+            assertSame(fresh, upkeep.getInventory());
+        }
+
+        /**
+         * Same claim, for the quiver.
+         */
+        @Test
+        @DisplayName("setQuiverObjects installs the given array as the quiver")
+        void setQuiverObjectsInstallsTheArray() {
+            ItemObject[] fresh = new ItemObject[]{new ItemObject()};
+
+            upkeep.setQuiverObjects(fresh);
+
+            assertSame(fresh, upkeep.getQuiver());
+        }
+
+        /**
+         * The caveat the Javadoc calls out: a reference taken before the swap is not updated by it.
+         * C has nothing to test here — the pointer it hands out never goes stale, because C never
+         * replaces it — so this fixes the one way the port's convenience differs from the original.
+         */
+        @Test
+        @DisplayName("a reference held before the swap does not see it")
+        void oldReferenceGoesStale() {
+            ItemObject[] original = upkeep.getInventory();
+            ItemObject[] replacement = new ItemObject[]{new ItemObject()};
+
+            upkeep.setInventory(replacement);
+
+            assertSame(replacement, upkeep.getInventory());
+            assertNotSame(replacement, original);
+            for (ItemObject slot : original) {
+                assertNull(slot);
+            }
+        }
+
+        /**
+         * The setters do not police the array they are given — no length check against pack size or
+         * quiver size, and no rejection of {@code null}. Nothing in C constrains them either, since C
+         * never performs this operation at all; this fixes that the port's version is equally
+         * unguarded, not that it ought to be.
+         */
+        @Test
+        @DisplayName("setInventory accepts a null array")
+        void setInventoryAcceptsNull() {
+            upkeep.setInventory(null);
+
+            assertNull(upkeep.getInventory());
+        }
+
+        @Test
+        @DisplayName("setQuiverObjects accepts an array of a different length")
+        void setQuiverObjectsAcceptsAnyLength() {
+            ItemObject[] oversized = new ItemObject[GameConstants.getCarryCapQuiverSize() + 5];
+
+            upkeep.setQuiverObjects(oversized);
+
+            assertEquals(oversized.length, upkeep.getQuiver().length);
         }
     }
 }

@@ -303,6 +303,47 @@ class ObjectKindAccessorsTest {
             field.setAccessible(true);
             assertSame(recharge, field.get(kind));
         }
+
+        /**
+         * A bare kind starts untried — C's {@code object_kind} is zero-initialised, so
+         * {@code kind->tried} is {@code false} until something sets it.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("a kind starts untried")
+        void startsUntried() throws Exception {
+            assertFalse(triedField());
+        }
+
+        /**
+         * {@link ObjectKind#setTried} writes the field as given, matching C's raw
+         * {@code kind->tried = true} in {@code object_flavor_tried} — the artifact guard that
+         * wrapper adds is not this method's concern.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("setTried stores the value given")
+        void triedStored() throws Exception {
+            kind.setTried(true);
+            assertEquals(true, triedField());
+
+            kind.setTried(false);
+            assertEquals(false, triedField());
+        }
+
+        /**
+         * Reads the {@code tried} field, which has a setter but no getter.
+         *
+         * @return its value
+         * @throws Exception if the field cannot be reached
+         */
+        private boolean triedField() throws Exception {
+            Field field = ObjectKind.class.getDeclaredField("tried");
+            field.setAccessible(true);
+            return field.getBoolean(kind);
+        }
     }
 
     /**

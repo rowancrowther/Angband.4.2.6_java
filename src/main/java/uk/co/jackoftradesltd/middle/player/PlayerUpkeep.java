@@ -572,7 +572,7 @@ public class PlayerUpkeep {
      * <p>The notice flags are a request queue rather than a description of state: setting
      * {@code PN_IGNORE} does not ignore anything, it asks for the ignore pass to be run at the next
      * convenient point in the turn. That indirection is what lets a discovery deep inside the
-     * knowledge code — {@link PlayerKnowledge#knowObject} becoming aware of a
+     * knowledge code — {@code PlayerKnowledge.knowObject} becoming aware of a
      * flavour — ask for expensive work without doing it there and then.
      *
      * <p>The name says {@code or} because C's is a bitwise or, and the return value is the answer to
@@ -612,7 +612,7 @@ public class PlayerUpkeep {
      * <p>This is a view of part of the gear, not a second store of it. C keeps every carried object
      * on the one {@code p->gear} list and rebuilds {@code inven} as an index into it, so an object
      * appearing here is also in the gear; see
-     * {@link PlayerKnowledge#knowObject} for the carried test that relies on
+     * {@code PlayerKnowledge.knowObject} for the carried test that relies on
      * that.
      *
      * <p>Function getInventory coded on 260816, commented in full on 260816.
@@ -858,5 +858,40 @@ public class PlayerUpkeep {
      */
     public int getRunning() {
         return runningCounter;
+    }
+
+    /**
+     * Replaces the pack outright - there is no single C statement this ports, because C never
+     * reassigns {@code p->upkeep->inven} once {@code init_player} ({@code player.c:495}) or
+     * {@code player_generate} ({@code player-birth.c:433}) allocates it; every other C write goes
+     * through a slot, {@code p->upkeep->inven[i] = obj}.
+     *
+     * <p>{@link #getInventory} promises a live view, not a copy - true only up to the next call
+     * here. A reference obtained before a swap keeps pointing at the old array, so a caller that
+     * holds onto one across a call to this method is looking at a stale pack.
+     *
+     * <p>Function setInventory commented in full on 260903.
+     *
+     * @param inventory the array to install as the pack, replacing whatever was there
+     */
+    public void setInventory(ItemObject[] inventory) {
+        this.inventoryObjects = inventory;
+    }
+
+    /**
+     * Replaces the quiver outright - the same wholesale swap as {@link #setInventory}, and for the
+     * same reason with no single C statement behind it: {@code p->upkeep->quiver} is allocated once,
+     * at {@code player.c:496} and {@code player-birth.c:435}, and every other C write addresses a
+     * slot rather than the array itself.
+     *
+     * <p>{@link #getQuiver} promises a live view, not a copy - true only up to the next call here;
+     * see {@link #setInventory} for what that means for a caller holding an old reference.
+     *
+     * <p>Function setQuiverObjects commented in full on 260903.
+     *
+     * @param quiverObjects the array to install as the quiver, replacing whatever was there
+     */
+    public void setQuiverObjects(ItemObject[] quiverObjects) {
+        this.quiverObjects = quiverObjects;
     }
 }

@@ -150,6 +150,8 @@ public class Artifact {
      */
     private Random time;
 
+    private ArtifactUpkeep aupInfo;
+
     /**
      * Build an artifact from its parsed {@code artifact.txt} fields.
      *
@@ -217,6 +219,7 @@ public class Artifact {
         this.activation = activation;
         this.activationMessage = activationMessage;
         this.time = time;
+        this.aupInfo = new ArtifactUpkeep();
     }
 
     /**
@@ -449,5 +452,9 @@ public class Artifact {
                 oFlags, newModifiers, newElInfo, newBrands, newSlays,
                 newCurses, newLevel, newAllocProb, newAllocMin, newAllocMax,
                 newActivation, newActivationMessage, newTime);
+    }
+
+    public ArtifactUpkeep getAup() {
+        return aupInfo;
     }
 }

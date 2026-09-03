@@ -347,6 +347,7 @@ public class PlayerRegistry {
                 .filter(t -> t.getName() == TimedEffect.TMD_FOOD).findFirst().orElse(null);
         if (food != null) {
             for (TimedGrade grade : food.getGrade()) {
+                if (grade.status() == null) continue;
                 switch (grade.status()) {
                     case "Starving" -> PY_FOOD_STARVE = grade.max();
                     case "Faint" -> PY_FOOD_FAINT = grade.max();

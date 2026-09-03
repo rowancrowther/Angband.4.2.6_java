@@ -17,6 +17,13 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
+import uk.co.jackoftradesltd.middle.game.globals.registry.DungeonRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
+
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * The quest machinery - the port of C's {@code player-quest.c}, minus its parser.
  *
@@ -80,5 +87,35 @@ public class PlayerQuest {
         }
 
         return false;
+    }
+
+    /**
+     * Rebuilds this character's quest history from the shared standard set - the port of C's
+     * {@code player_quests_reset} ({@code player-quest.c:158}).
+     *
+     * <p>C frees any existing {@code p->quests} first, {@code mem_zalloc}s a fresh array sized to
+     * {@code z_info->quest_max}, and copies each of the shared {@code quests[]} entries into it field
+     * by field. The port has no array to free - the old list, if any, is simply dropped in favour of
+     * the new one when {@link Player#setQuests} runs - and builds the replacement by asking each
+     * shared {@link Quest} for {@link Quest#copy()}, which does the per-field work C's loop body does.
+     * The result is the same either way: a list the same length as
+     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry#getQuests}, holding
+     * entries that are independent of the shared set and of each other - except for
+     * {@link Quest#getRace}, which {@link Quest#copy()} deliberately leaves shared. See that method
+     * for why.
+     *
+     * <p>Called once at birth ({@code player_birth.c:413}) and once on loading a save
+     * ({@code load.c:636}); the port's callers are expected to follow the same two occasions.
+     *
+     * <p>Function playerQuestsReset coded on 260903, commented in full on 260903.
+     *
+     * @param player the character whose quest history is (re)built from the standard set
+     */
+    public static void playerQuestsReset(Player player) {
+        ArrayList<Quest> quests = new ArrayList<>();
+        for (Quest quest : WorldRegistry.getQuests()) {
+            quests.add(quest.copy());
+        }
+        player.setQuests(quests);
     }
 }

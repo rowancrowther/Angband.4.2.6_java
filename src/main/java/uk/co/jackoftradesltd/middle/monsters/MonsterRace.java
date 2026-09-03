@@ -72,6 +72,35 @@ public class MonsterRace {
     }
 
     /**
+     * Sets the number of this race currently alive on the level, C's {@code race->cur_num}. C
+     * writes this field directly rather than through an accumulator — reset to zero on level
+     * generation, decremented on death, incremented on generation ({@code mon-make.c}) — and this
+     * setter carries the same plain assignment, with no clamping against {@link #maxNum}.
+     *
+     * <p>Function setCurNum coded on 260903, commented in full on 260903.
+     *
+     * @param num the new current population for this race
+     */
+    public void setCurNum(int num) {
+        this.curNum = num;
+    }
+
+    /**
+     * Sets the maximum number of this race permitted alive at once, C's {@code race->max_num}
+     * (typically {@code 100} for an ordinary monster, {@code 1} for a unique, and {@code 0} once a
+     * unique has been slain — see {@code load.c} and {@code mon-util.c}). C only ever writes this
+     * field directly, never derives it, and this setter does the same with no range checking, even
+     * though C declares the field as an unsigned byte.
+     *
+     * <p>Function setMaxNum coded on 260903, commented in full on 260903.
+     *
+     * @param num the new population cap for this race
+     */
+    public void setMaxNum(int num) {
+        this.maxNum = num;
+    }
+
+    /**
      * The three message variants shown when a monster casts a spell, chosen by what the player can
      * perceive: {@code visible} when the caster is seen, {@code invisible} when only the effect is
      * noticed, and {@code miss} when the spell fails to connect. Groups the C original's parallel
@@ -321,6 +350,20 @@ public class MonsterRace {
      */
     public void setLore(MonsterLore lore) {
         this.lore = lore;
+    }
+
+    /**
+     * Returns this race's accumulated lore record. C's {@code get_lore} instead indexes a global
+     * {@code l_list} array by {@code race->ridx}; this class stores the record directly on the race
+     * as a field (see {@link #setLore(MonsterLore)}) rather than reproducing that lookup table, so
+     * this accessor is a plain field read rather than a search.
+     *
+     * <p>Function getLore coded on 260903, commented in full on 260903.
+     *
+     * @return this race's lore record
+     */
+    public MonsterLore getLore() {
+        return lore;
     }
 
     /**

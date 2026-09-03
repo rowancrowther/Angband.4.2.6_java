@@ -306,7 +306,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `get_bonuses` (`:311`)
 - [X] `get_stats` (`:231`)
 - [X] `player_generate` (`[C] player-birth.c:979`)
-- [ ] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
+- [X] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
 - [ ] `player_make_simple` (`[C] player-birth.c:522`)
 - [ ] `player_outfit` (`[C] player-birth.c:584`)
 - [ ] `wield_all` (`:462`) — **stubs**, per decision 2

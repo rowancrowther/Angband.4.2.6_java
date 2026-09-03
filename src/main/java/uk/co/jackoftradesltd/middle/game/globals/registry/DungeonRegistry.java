@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.cave.profiles.dungeon.CaveProfile;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
+import uk.co.jackoftradesltd.middle.player.Quest;
 
 import java.util.List;
 

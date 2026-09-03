@@ -189,4 +189,17 @@ public class PlayerOptions {
             }
         }
     }
+
+    public PlayerOptions copy() {
+        Flag<PlayerOptionEnum> copyOptions = new Flag<>(PlayerOptionEnum.class);
+        copyOptions.copyFrom(options);
+
+        PlayerOptions copy = new PlayerOptions();
+        copy.options = copyOptions;
+        copy.hitpointWarn = hitpointWarn;
+        copy.lazymoveDelay = lazymoveDelay;
+        copy.delayFactor = delayFactor;
+        copy.nameSuffix = nameSuffix;
+        return copy;
+    }
 }

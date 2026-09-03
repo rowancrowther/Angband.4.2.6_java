@@ -114,4 +114,38 @@ public class Quest {
     public int getMaxNumber() {
         return maxNumber;
     }
+
+    /**
+     * Builds this quest's per-character copy — the port of the four field assignments inside C's
+     * {@code player_quests_reset} loop ({@code player-quest.c:166-171}) that fill one entry of
+     * {@code p->quests[i]} from the matching entry of the shared {@code quests[]} array.
+     *
+     * <p><b>{@link #race} is shared, not copied.</b> C writes {@code p->quests[i].race = quests[i].race;}
+     * — a bare pointer copy, so the player's quest and the shared template point at the same
+     * {@code struct monster_race}. This matters beyond birth: the still-unported {@code quest_check}
+     * credits a kill with {@code m->race == p->quests[i].race} ({@code player-quest.c:229}), an
+     * identity test against the race of the monster just killed. A deep copy here would give every
+     * player's quest its own {@link uk.co.jackoftradesltd.middle.monsters.MonsterRace} instance, and
+     * that test could then never succeed, however faithfully everything else was ported. So this
+     * carries the reference across untouched, exactly as C carries the pointer.
+     *
+     * <p><b>{@link #index} and {@link #currentNumber} come back zero, not copied.</b> C's array is
+     * {@code mem_zalloc}'d before the loop runs, and the loop body only ever assigns {@code name},
+     * {@code level}, {@code race} and {@code max_num} — {@code index} and {@code cur_num} are left at
+     * the zero the allocation gave them. This quest's own {@link #index} and {@link #currentNumber}
+     * are therefore deliberately not read here, whatever they currently hold.
+     *
+     * <p>{@link #name}, {@link #level} and {@link #maxNumber} are copied by value, matching C's
+     * {@code string_make}, {@code level} and {@code max_num} assignments respectively; a Java
+     * {@code String} needs no explicit duplication to get the same independence C's fresh allocation
+     * gives {@code name}.
+     *
+     * <p>Function copy coded on 260903, commented in full on 260903.
+     *
+     * @return a fresh {@link Quest} for one character's quest history: independent of this quest and
+     * of the shared standard set for every field except {@link #race}, which both continue to share
+     */
+    public Quest copy() {
+        return new Quest(0, name, level, race, 0, maxNumber);
+    }
 }

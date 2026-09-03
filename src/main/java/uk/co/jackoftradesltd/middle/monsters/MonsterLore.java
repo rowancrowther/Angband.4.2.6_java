@@ -167,4 +167,30 @@ public class MonsterLore {
         this.timeBlowsSeen = timeBlowsSeen;
         this.monsterBase = monsterBase;
     }
+
+    /**
+     * Sets the number of this monster the player has killed this life, C's {@code lore->pkills}. C
+     * only ever writes this field directly (never derives it), and this setter does the same, with
+     * no range checking even though C declares the field as an unsigned 16-bit count.
+     *
+     * <p>Function setPSkills coded on 260903, commented in full on 260903.
+     *
+     * @param pSkills the new player-kill count for this monster
+     */
+    public void setPSkills(int pSkills) {
+        this.pkills = pSkills;
+    }
+
+    /**
+     * Sets the number of times this monster has stolen from the player this life, C's
+     * {@code lore->thefts}. C only ever writes this field directly, and this setter does the same,
+     * with no range checking even though C declares the field as an unsigned 16-bit count.
+     *
+     * <p>Function setThefts coded on 260903, commented in full on 260903.
+     *
+     * @param thefts the new theft count for this monster
+     */
+    public void setThefts(int thefts) {
+        this.thefts = thefts;
+    }
 }

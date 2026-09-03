@@ -788,7 +788,7 @@ public class ObjectUtils {
      * keeps that arrangement, which is why this is one line and not three.
      *
      * <p>The distinction it draws is between an object the player has and an object that is merely
-     * nearby — {@link PlayerKnowledge#knowObject} uses it to pick between "You have a Long Sword (c)." and "On the
+     * nearby — {@code PlayerKnowledge.knowObject} uses it to pick between "You have a Long Sword (c)." and "On the
      * ground: a Long Sword." when reporting something newly recognised.
      *
      * <p>Function isCarried coded on 260816, commented in full on 260816, moved here from
@@ -800,6 +800,42 @@ public class ObjectUtils {
      */
     public static boolean isCarried(Player player, ItemObject item) {
         return player.getGear().contains(item);
+    }
+
+    /**
+     * Records whether the given artifact has been created this game, the port of C's
+     * {@code mark_artifact_created} ({@code obj-util.c}).
+     *
+     * <p>C looks the artifact up in the parallel {@code aup_info} array by {@code aidx} and
+     * asserts the slot it finds agrees with that index before writing to it. The port holds each
+     * artifact's {@link ArtifactUpkeep} directly on the {@link Artifact} rather than in a parallel
+     * array, so there is no index to disagree and nothing for that assert to guard — see
+     * {@link ArtifactUpkeep}'s class Javadoc for the fuller reasoning.
+     *
+     * <p>Function markArtifactCreated coded on 260903, commented in full on 260903.
+     *
+     * @param artifact the artifact to update
+     * @param created  whether the artifact has been created
+     */
+    public static void markArtifactCreated(Artifact artifact, boolean created) {
+        artifact.getAup().setCreated(created);
+    }
+
+    /**
+     * Records whether the given artifact has been seen this game, the port of C's
+     * {@code mark_artifact_seen} ({@code obj-util.c}).
+     *
+     * <p>Same shape as {@link #markArtifactCreated}: C writes into the parallel {@code aup_info}
+     * array behind an {@code aidx} assert, and the port writes straight into the artifact's own
+     * {@link ArtifactUpkeep}, for which see {@link ArtifactUpkeep}'s class Javadoc.
+     *
+     * <p>Function markArtifactSeen coded on 260903, commented in full on 260903.
+     *
+     * @param artifact the artifact to update
+     * @param seen     whether the artifact has been seen this game
+     */
+    public static void markArtifactSeen(Artifact artifact, boolean seen) {
+        artifact.getAup().setSeen(seen);
     }
 
     /**

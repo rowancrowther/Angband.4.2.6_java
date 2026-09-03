@@ -29,7 +29,6 @@ import uk.co.jackoftradesltd.middle.effect.Effect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
-import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 
 import java.util.*;
 
@@ -271,7 +270,7 @@ public class ObjectKind {
      *
      * <p>What turns on it: a special artifact is its own item rather than a template many items
      * share, so there is nothing about it left to be unsure of once it is in hand.
-     * {@link PlayerKnowledge#knowObject} makes the player aware of a
+     * {@code PlayerKnowledge.knowObject} makes the player aware of a
      * non-jewellery special artifact outright rather than waiting for its runes to be read.
      *
      * <p>Field isSpecialArtifactKind coded before 260817, commented in full on 260817.
@@ -1034,5 +1033,21 @@ public class ObjectKind {
      */
     public int getCost() {
         return cost;
+    }
+
+    /**
+     * Records that the player has tried this kind - C's {@code kind->tried}, which the
+     * unaware-flavour code checks before offering a flavour's inferred name.
+     *
+     * <p>This is the raw field-set only. C also has
+     * {@code object_flavor_tried}, a wrapper that guards artifact kinds out before
+     * calling this same assignment - that guard is not reproduced here.
+     *
+     * <p>Function setTried commented in full on 260903.
+     *
+     * @param tried whether the player has tried this kind
+     */
+    public void setTried(boolean tried) {
+        this.tried = tried;
     }
 }

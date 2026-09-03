@@ -175,7 +175,7 @@ public class KnownObject {
      * Populates the curse map with every registered curse, all unrecognised. C reaches the same
      * state with {@code mem_zalloc(z_info->curse_max * sizeof(struct curse_data))}.
      */
-    private void initCurses() {
+    public void initCurses() {
         curses = new HashMap<>();
         for (Curse curse : ObjectRegistry.getCurses()) {
             curses.put(curse, false);
@@ -454,7 +454,7 @@ public class KnownObject {
      * Creates the empty brand set. Nothing is pre-populated from the registry, because membership
      * is the state: an absent brand is an unrecognised one.
      */
-    private void initBrands() {
+    public void initBrands() {
         brands = new HashSet<>();
     }
 
@@ -502,7 +502,7 @@ public class KnownObject {
     /**
      * Creates the empty slay set. See {@link #initBrands()}.
      */
-    private void initSlays() {
+    public void initSlays() {
         slays = new HashSet<>();
     }
 

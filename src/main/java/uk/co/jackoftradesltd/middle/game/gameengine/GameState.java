@@ -72,6 +72,21 @@ public class GameState {
     }
 
     /**
+     * Replaces the game-turn counter directly - the port of writing C's global {@code turn}
+     * ({@code int32_t}, {@code game-world.c}). C has no single setter for this global; every call
+     * site assigns it directly, and this is the boundary's general-purpose counterpart to those
+     * sites, alongside the birth- and load-specific {@link #resetTurnForNewPlayer()} and
+     * {@link #resetTurnFromSave(int)}. No bounds check in either language.
+     *
+     * <p>Function setTurn commented in full on 260903.
+     *
+     * @param turn the new game-turn count
+     */
+    public static void setTurn(int turn) {
+        GameState.turn = turn;
+    }
+
+    /**
      * @return the number of game days elapsed
      */
     public static int getDaycount() {

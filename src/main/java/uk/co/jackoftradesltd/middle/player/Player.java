@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
@@ -239,7 +240,7 @@ public class Player {
     /**
      * Turns remaining on each timed effect - the port of C's {@code p->timed}.
      */
-    private HashMap<TimedEffect, Integer> timed;
+    private Map<TimedEffect, Integer> timed;
 
     /**
      * Turns until a pending Word of Recall fires - the port of C's {@code p->word_recall}.
@@ -418,6 +419,91 @@ public class Player {
      * Transient per-turn bookkeeping - the port of C's {@code p->upkeep}.
      */
     private PlayerUpkeep playerUpkeep;
+
+    public void wipe() {
+        // C initialisation
+        playerUpkeep = new PlayerUpkeep();
+        timed = new HashMap<>();
+        for (TimedEffect effect : TimedEffect.values()) {
+            timed.put(effect, 0);
+        }
+        itemKnowledge = null;
+        options = new PlayerOptions();
+        options.initDefaults();
+
+        // Java initialisation
+        body = PlayerRegistry.lookupPlayerBody(0);
+        // TO be changed to a chunk on level creation
+        cave = null;
+        gear = new ArrayList<>();
+        gearKnown = new ArrayList<>();
+        grid = Loc.zero;
+        isDead = false;
+        isWizard = false;
+        knownState = null;
+        oldGrid = Loc.zero;
+        playerClass = null;
+        playerHistory = new PlayerHistory();
+        quests = new ArrayList<>();
+        race = PlayerRegistry.getFirstPlayerRace();
+        // Crash if there are no races
+        if (race == null) {
+            logger.fatal("No player races loaded - game crashing.");
+            throw new IllegalStateException("No player races loaded - game crashing.");
+        }
+        shape = null;
+        statCur = new HashMap<>();
+        statMax = new HashMap<>();
+        statMap = new HashMap<>();
+        statsBirth = new HashMap<>();
+        state = null;
+        playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
+
+        // other members
+        fullName = null;
+        diedFrom = null;
+        history = null;
+        level = 0;
+        maxLevel = 0;
+        exp = 0L;
+        maxExp = 0L;
+        expFrac = 0;
+
+        currentHP = 0;
+        maxHP = 0;
+        chpFrac = 0;
+        curSp = 0;
+        maxSP = 0;
+        cspFrac = 0;
+        hitDie = 0;
+        expFact = 0;
+
+        age = 0;
+        height = 0;
+        weight = 0;
+        au = 0;
+        auBirth = 0;
+        htBirth = 0;
+        wtBirth = 0;
+
+        maxDepth = 0;
+        recallDepth = 0;
+        depth = 0;
+
+        wordRecall = 0;
+        deepDescent = 0;
+        energy = 0;
+        food = 0;
+        unignoring = 0;
+        skipCmdCoercion = 0;
+        spellFlags = 0;
+        spellOrder = 0;
+        totalWinner = 0;
+        noScore = 0;
+
+        totalEnergy = 0;
+        restingTurn = 0;
+    }
 
     /**
      * Sets the character's age in years — C's {@code p->age}.
@@ -2265,5 +2351,133 @@ public class Player {
      */
     public void setPlayerHistory(String history) {
         this.history = history;
+    }
+
+    /**
+     * Replaces this character's quest history - the port of writing C's {@code p->quests}
+     * ({@code player.h}).
+     *
+     * <p>C assigns the field directly wherever a fresh array is allocated - {@code init_player}
+     * ({@code player.c:494}) and {@code player_birth} ({@code player-birth.c:432}) both
+     * {@code mem_zalloc} one before anything is stored in it, and {@code player_quests_reset}
+     * ({@code player-quest.c:158-170}) frees the old array and {@code mem_zalloc}s its
+     * replacement before copying the standard quests in. Nothing in C validates the pointer or the
+     * array's length against {@code z_info->quest_max} at assignment time; the same is true here.
+     * The port's only caller is {@link PlayerQuest#playerQuestsReset}, which builds the whole
+     * replacement list before calling this, mirroring {@code player_quests_reset}'s
+     * allocate-then-fill order without a separate free step - the old list, if any, is simply
+     * dropped in favour of the new one.
+     *
+     * <p>Function setQuests commented in full on 260903.
+     *
+     * @param quests the character's new quest history
+     */
+    public void setQuests(ArrayList<Quest> quests) {
+        this.quests = quests;
+    }
+
+    /**
+     * Replaces this character's transient per-turn bookkeeping - the port of writing C's
+     * {@code p->upkeep} ({@code player.h}).
+     *
+     * <p>C assigns the field directly wherever a fresh struct is allocated - {@code init_player}
+     * ({@code player.c:494}) and {@code player_birth} ({@code player-birth.c:432}) both
+     * {@code mem_zalloc} a {@code struct player_upkeep} and assign it before populating its
+     * {@code inven} and {@code quiver} arrays. Assignment itself does no validation or cleanup of
+     * a previous value in either language - {@code player_cleanup_members} ({@code player.c:451})
+     * is the C function responsible for freeing the old struct, and it runs separately, not as
+     * part of the assignment.
+     *
+     * <p>Function setUpkeep commented in full on 260903.
+     *
+     * @param upkeep the character's new transient per-turn bookkeeping
+     */
+    public void setUpkeep(PlayerUpkeep upkeep) {
+        this.playerUpkeep = upkeep;
+    }
+
+    /**
+     * Replaces this character's timed-effect durations - the port of writing C's {@code p->timed}
+     * ({@code player.h}).
+     *
+     * <p>C assigns the field directly wherever a fresh array is allocated - {@code init_player}
+     * ({@code player.c:497}) and {@code player_birth} ({@code player-birth.c:437}) both
+     * {@code mem_zalloc} a {@code TMD_MAX}-length {@code int16_t} array and assign it before any
+     * duration is set. Assignment itself does no validation of the map's keys or values in either
+     * language.
+     *
+     * <p>Function setTimed commented in full on 260903.
+     *
+     * @param timed the character's new timed-effect durations, keyed by {@link TimedEffect}
+     */
+    public void setTimed(Map<TimedEffect, Integer> timed) {
+        this.timed = timed;
+    }
+
+    /**
+     * Replaces this character's object/rune knowledge - the port of writing C's {@code p->obj_k}
+     * ({@code player.h}).
+     *
+     * <p>C assigns the field directly wherever a fresh struct is allocated - {@code init_player}
+     * ({@code player.c:498}) allocates it via {@code object_new} and {@code player_birth}
+     * ({@code player-birth.c:438}) via a bare {@code mem_zalloc}, and both assign it before its
+     * {@code brands}/{@code slays}/{@code curses} arrays are populated. Assignment itself does no
+     * validation or cleanup of a previous value in either language.
+     *
+     * <p>Function setItemKnowledge commented in full on 260903.
+     *
+     * @param itemKnowledge the character's new object/rune knowledge
+     */
+    public void setItemKnowledge(KnownObject itemKnowledge) {
+        this.itemKnowledge = itemKnowledge;
+    }
+
+    /**
+     * Replaces this character's option settings - the port of writing C's {@code p->opts}
+     * ({@code player.h}). C assigns the struct directly in {@code player_generate}
+     * ({@code player-birth.c:445}), copying {@code opts_save} back onto the freshly wiped player so
+     * options persist across a birth/restart. Assignment itself does no validation of the incoming
+     * settings in either language.
+     *
+     * <p>Function setOptions commented in full on 260903.
+     *
+     * @param options the character's new option settings
+     */
+    public void setOptions(PlayerOptions options) {
+        this.options = options;
+    }
+
+    /**
+     * Replaces the count of player turns spent resting - the port of writing C's
+     * {@code p->resting_turn} ({@code player.h:554}, {@code uint32_t}). C assigns the field directly
+     * at both boundaries this mirrors: {@code player_generate} zeroes it on a fresh character
+     * ({@code player-birth.c:450}), and {@code rd_u32b} restores the saved count on load
+     * ({@code load.c:834}). Neither language validates the incoming value here; the per-turn
+     * increment lives separately in {@code resting_turn++} ({@code player-util.c:1492}).
+     *
+     * <p>Function setRestingTurn commented in full on 260903.
+     *
+     * @param restingTurn the number of player turns spent resting
+     */
+    public void setRestingTurn(int restingTurn) {
+        this.restingTurn = restingTurn;
+    }
+
+    /**
+     * Replaces the shape the player is currently in - the port of writing C's {@code p->shape}
+     * ({@code player.h}). C assigns the field directly at each of its boundaries: birth sets it to
+     * {@code lookup_player_shape("normal")} ({@code player-birth.c:457}), the shapechange effect
+     * assigns the chosen form ({@code effect-handler-general.c:3453}), returning to normal form
+     * reassigns {@code "normal"} ({@code player-util.c:1053}), and load restores the saved shape
+     * ({@code load.c:685}). Assignment itself does no validation in either language; see
+     * {@link #getShape} for what a {@code null} shape means in this port and why C never sees one
+     * outside a corrupt save.
+     *
+     * <p>Function setShape commented in full on 260903.
+     *
+     * @param shape the player's new shape
+     */
+    public void setShape(PlayerShape shape) {
+        this.shape = shape;
     }
 }

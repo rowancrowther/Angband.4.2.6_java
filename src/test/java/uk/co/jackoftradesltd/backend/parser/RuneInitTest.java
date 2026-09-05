@@ -106,9 +106,14 @@ class RuneInitTest {
     private static Object savedMonsterBases;
     private static Object savedSummons;
     private static Object savedObjectBases;
+    private static Object savedRunes;
 
     @BeforeAll
     static void seed() throws Exception {
+        Field runesField = RegistrySeeding.resolve("allRunes");
+        runesField.setAccessible(true);
+        savedRunes = runesField.get(null);
+
         // UI entries first: the object-property assembler resolves its bindui targets against them.
         savedRenderers = setStatic("uiEntryRenderers",
                 new UIEntryRendererReader().parseWithResults(UI_RENDERER_FILE).items());
@@ -154,6 +159,7 @@ class RuneInitTest {
         setStatic("brands", savedBrands);
         setStatic("slays", savedSlays);
         setStatic("curses", savedCurses);
+        setStatic("allRunes", savedRunes);
     }
 
     private static Object setStatic(String field, Object value) throws Exception {

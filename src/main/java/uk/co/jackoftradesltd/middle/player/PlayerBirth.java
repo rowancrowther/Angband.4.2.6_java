@@ -19,12 +19,15 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
+import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.Command;
 import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
@@ -66,6 +69,8 @@ import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
  */
 public class PlayerBirth {
     private static final Logger logger = LogManager.getLogger(PlayerBirth.class);
+
+    private static final int MAX_BIRTH_POINTS = 20;
 
     /**
      * The point-buy price of a stat, indexed by <em>stat value + 1</em> - the port of C's
@@ -951,5 +956,64 @@ public class PlayerBirth {
             player.getGear().insertEnd(newPile);
             player.getGearKnown().insertEnd(newKnownPile);
         }
+    }
+
+    /**
+     * Recalculates the derived character state from a set of point-buy stat values - the port of
+     * C's {@code recalculate_stats} ({@code player-birth.c:685-707}).
+     *
+     * <p>Writes each of the five real stats' current, maximum and birth values from the supplied
+     * map, resets the scramble map to the identity permutation, derives the birth gold from the
+     * points left unspent, and then calls {@link #getBonuses} and signals the UI so every display
+     * driven by these totals catches up. The stat loop skips {@code STAT_NONE} and {@code STAT_MAX}
+     * - the same guard {@link #getStats} uses on the same enum - because {@link Stats#values()}
+     * enumerates those two sentinels alongside the five real stats, and {@code statsLocalLocal}
+     * carries no entry for either.
+     *
+     * <p>Where C reaches for the global {@code player}, this is the one method in the class that
+     * fetches the equivalent through {@link GameState#getPlayer()} rather than taking the character
+     * as a parameter, since C's version is likewise free-standing rather than a method on the
+     * struct.
+     *
+     * <p>Gold is the inverse of point-buy cost - C's own comment reads "gold is inversely
+     * proportional to cost": {@code z_info->start_gold + (50 * points_left_local)}, so the fewer
+     * points spent on stats, the more gold is left over. See {@link Player#setAUBirth} for why this
+     * figure never reaches the started game: every C caller of {@code recalculate_stats} is one of
+     * the point-buy birth commands, and accepting the character re-derives the plain starting gold
+     * afterwards.
+     *
+     * <p>Those callers - {@code buy_stat}, {@code sell_stat} and {@code reset_stats} - are the
+     * point-buy birth screen and stay out of the model's scope, so this method has no caller yet.
+     *
+     * <p>Function recalculateStats commented in full on 260905.
+     *
+     * @param statsLocalLocal the point-buy stat values, one entry per real stat
+     * @param pointsLeftLocal the unspent point-buy points, used to derive the starting gold
+     */
+    public static void recalculateStats(Map<Stats, Integer> statsLocalLocal, int pointsLeftLocal) {
+        Player player = GameState.getPlayer();
+
+        // Variable stat maxes
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            
+            player.setCurrStatValue(stat, statsLocalLocal.get(stat));
+            player.setStatMax(stat, statsLocalLocal.get(stat));
+            player.setStatBirth(stat, statsLocalLocal.get(stat));
+            player.setCurrStatMap(stat, stat);
+        }
+
+        // Gold is inversely proportional to cost
+        player.setAUBirth(GameConstants.getPlayerStartGold() + (50 * pointsLeftLocal));
+
+        // Update bonuses, hp, etc
+        getBonuses(player);
+
+        // Tell the UI about all the stuff that's changed
+        EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
+        eventsHandler.eventSignal(GameEventType.EVENT_GOLD);
+        eventsHandler.eventSignal(GameEventType.EVENT_AC);
+        eventsHandler.eventSignal(GameEventType.EVENT_HP);
+        eventsHandler.eventSignal(GameEventType.EVENT_STATS);
     }
 }

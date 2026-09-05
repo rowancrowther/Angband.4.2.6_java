@@ -68,6 +68,30 @@ public class PlayerBirth {
     private static final Logger logger = LogManager.getLogger(PlayerBirth.class);
 
     /**
+     * The point-buy price of a stat, indexed by <em>stat value + 1</em> - the port of C's
+     * {@code birth_stat_costs} ({@code player-birth.c:679}).
+     *
+     * <p>A stat's own value is the index minus one, so entry 0 answers "what does base 9 cost"
+     * and is never read: the point-buy screen starts every stat at 10 and can only sell down to
+     * 10, never below. Reading at {@code stat + 1} rather than {@code stat} is what buys the next
+     * point rather than pricing the one already held - {@code buy_stat} charges
+     * {@code birth_stat_costs[stats_local[choice] + 1]} for raising a stat that currently sits at
+     * {@code stats_local[choice]} ({@code player-birth.c:744}).
+     *
+     * <p>Costs are flat through 10-17 (one point each) and jump to 2 and then 4 for 18 and 19,
+     * which is why the C comment above the array notes it was feasible to autoroll a base 17 in
+     * three stats - the array is shaped around what the roller could already produce, not an
+     * arbitrary curve.
+     *
+     * <p>Ported here as a bare field because the point-buy screen itself - {@code buy_stat},
+     * {@code sell_stat}, {@code reset_stats} - is UI, not model, and is out of scope for this
+     * class (see the class Javadoc). Nothing in the Java code reads this array yet.
+     *
+     * <p>Field birthStatCosts coded on 260901 / commented in full on 260905.
+     */
+    private final int[] birthStatCosts = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 4};
+
+    /**
      * Gives this player the body their race is built with — the slots they can wear things in.
      *
      * <p><b>Copies rather than shares.</b> A race's body is a template held once and used by every

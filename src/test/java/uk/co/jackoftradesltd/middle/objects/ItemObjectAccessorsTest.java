@@ -417,20 +417,19 @@ class ItemObjectAccessorsTest {
         }
 
         /**
-         * An object built by the empty constructor has no curse map at all, and the accessor
-         * absorbs that rather than handing back a null for every caller to test. C reaches the same
-         * answer from the other end — {@code curses_are_equal} treats two null curse arrays as
-         * equal, so "no map" and "empty map" mean the same thing there too.
+         * An object built by the empty constructor now has an empty curse map rather than none
+         * (the bare {@link ItemObject} constructor's own fix, 260905), so the accessor's remaining
+         * job is narrower than it once was: wrapping that map so a caller can't write through it,
+         * not standing in for a missing one.
          *
          * <p>The returned map must still refuse writes, or a caller that happens to meet an
          * uncursed object would find the contract quietly different.
          */
         @Test
-        @DisplayName("getCurses reports an empty unmodifiable map when the field is null")
-        void cursesAreEmptyWhenUnset() throws Exception {
+        @DisplayName("getCurses reports an empty unmodifiable map for an uncursed item")
+        void cursesAreEmptyWhenUnset() {
             ItemObject item = new ItemObject();
 
-            assertNull(read(item, "curses"));
             assertTrue(item.getCurses().isEmpty());
             assertThrows(UnsupportedOperationException.class,
                     () -> item.getCurses().put(curse("itches"), new CurseData(1, 0)));

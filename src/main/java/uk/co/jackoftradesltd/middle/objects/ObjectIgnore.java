@@ -483,6 +483,8 @@ public class ObjectIgnore {
      * @param player the character whose gear is walked
      */
     public static void autoinscribePack(Player player) {
+        if (player.getGear() == null) return;
+        
         Iterator<ItemObject> it = player.getGear().getIterator();
 
         while (it.hasNext()) {

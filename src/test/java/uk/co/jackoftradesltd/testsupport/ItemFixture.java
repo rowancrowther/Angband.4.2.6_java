@@ -214,6 +214,13 @@ public final class ItemFixture {
     /**
      * A kind carrying a base, which is where the stacking limit lives.
      *
+     * <p>Also carries the same four dice {@link #kindWithDice} does, for the same reason: C's
+     * {@code kind->to_h} and friends are value-type struct fields, always present, so
+     * {@code object_set_base_known} dereferences them unconditionally for every kind regardless
+     * of type. The port's {@link Random}-typed fields are nullable, so a kind built without them
+     * throws the moment anything reads one - not just the armour and launcher kinds C's own
+     * comment calls out.
+     *
      * @param tValue   the kind's type
      * @param name     the base's name
      * @param maxStack the largest stack the base allows
@@ -223,6 +230,9 @@ public final class ItemFixture {
         ObjectKind kind = new ObjectKind();
         set(kind, "base", new ObjectBase(tValue, name, null,
                 new Flag<>(ObjectKindFlag.class), new Flag<>(ElementEnum.class), 0, maxStack));
+        for (String field : new String[]{"toH", "toD", "toA", "pVal"}) {
+            set(kind, field, new Random(0, 1, 1, 1, false));
+        }
         return kind;
     }
 

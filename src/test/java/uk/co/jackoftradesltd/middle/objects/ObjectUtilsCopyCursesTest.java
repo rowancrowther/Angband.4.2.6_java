@@ -43,7 +43,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -263,23 +262,27 @@ class ObjectUtilsCopyCursesTest {
     }
 
     /**
-     * The boundary stage 1 found: an {@link ItemObject} whose curse map has never been created.
+     * The boundary stage 1 found: an {@link ItemObject} whose curse map was never populated.
+     * {@code new ItemObject()} now creates that map empty rather than leaving it {@code null}
+     * (the bare constructor's own fix, 260905), so the regression this nested class was written
+     * to pin - a {@link NullPointerException} out of {@link ItemObject#setCurses}'s
+     * {@code curses.clear()}, before {@code copyCurses} called {@link ItemObject#initCurses} - can
+     * no longer arise from a null field. The tests stay to pin the same outward behaviour by the
+     * route that is now reachable.
      */
     @Nested
-    @DisplayName("an item whose curse map was never initialised")
+    @DisplayName("an item whose curse map was never populated")
     class NeverInitialised {
 
         /**
-         * {@code new ItemObject()} leaves {@code curses} {@code null}; before {@code copyCurses}
-         * called {@link ItemObject#initCurses}, this threw a {@link NullPointerException} out of
-         * {@link ItemObject#setCurses}'s {@code curses.clear()}, for any non-null source -
-         * including an empty one, since {@code setCurses} runs unconditionally after the merge loop.
+         * The starting state {@code copyCurses} has to cope with, and the transfer it performs
+         * onto it.
          */
         @Test
         @DisplayName("does not throw, and the curse is applied")
         void doesNotThrowAndApplies() {
             ItemObject dest = new ItemObject();
-            assertNull(rawCurses(dest), "precondition: a fresh ItemObject has no curse map yet");
+            assertTrue(rawCurses(dest).isEmpty(), "precondition: a fresh ItemObject has no curses yet");
             Curse curse = curseWithFixedTimeout("regression curse", 11);
 
             assertDoesNotThrow(() -> ObjectUtils.copyCurses(dest, Map.of(curse, new CurseData(6, 0))));

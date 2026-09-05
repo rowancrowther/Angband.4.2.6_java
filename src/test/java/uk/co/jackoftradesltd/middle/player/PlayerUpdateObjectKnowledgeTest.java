@@ -30,11 +30,13 @@ import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -100,12 +102,17 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
  * The underlying asymmetry — the two object loops survive a knowledge-free player and the curse loop
  * does not — is a property of the code under test, not of the fixture.
  *
- * <p>One of C's four populations still has no test here because it has no code yet: stores wait on
- * Chapter 8, and autoinscribe is Chapter 4. The absence of those branches is not something a test
- * can assert, so it is recorded in the method's Javadoc instead.
+ * <p>One of C's four populations still has no test here because it has no code yet: stores wait
+ * on Chapter 8. Autoinscribe, the other missing population noted here until 260905, has code
+ * now, and this suite does not test its own walk order — {@code ObjectIgnore}'s own tests do
+ * that — but cannot help observing that it runs: {@code autoinscribePack} reads the same
+ * {@link RecordingPile} the gear-knowledge loop already read, so a carried item recorded here
+ * appears twice per call, not once. Tests that assert on {@link #visited} or {@link
+ * #visitOrder} account for that second read explicitly rather than being surprised by it.
  *
  * <p>Class PlayerUpdateObjectKnowledgeTest coded on 260815, commented in full on 260815, reworked
- * onto the collection seam on 260901, curse population added on 260901.
+ * onto the collection seam on 260901, curse population added on 260901, accounted for the
+ * autoinscribe pack pass on 260905.
  *
  * @author Rowan Crowther
  */
@@ -132,6 +139,15 @@ class PlayerUpdateObjectKnowledgeTest {
     private CapturingBus bus;
     private EventsHandler realBus;
     private Player player;
+
+    /**
+     * Whatever {@link GameState} held the current level as before a test installed its own,
+     * put back afterwards. The same global-state discipline as {@link #realCurses}, and for
+     * the same reason: {@link PlayerKnowledge#updateObjectKnowledge} reads the level from
+     * {@link GameState#getCave()}, not from the player, so a class that left one behind would
+     * change what a later class sees.
+     */
+    private Chunk realCave;
 
     /**
      * Writes a private field on anything, for the state a running game would have filled in and this
@@ -176,6 +192,21 @@ class PlayerUpdateObjectKnowledgeTest {
                 List.of(), new Flag<>(ObjectFlag.class), "", "");
     }
 
+    /**
+     * An item fit to carry — the bare {@link ItemObject} constructor plus a bare {@link ObjectKind},
+     * since {@link uk.co.jackoftradesltd.middle.objects.ObjectIgnore#applyAutoinscription} now reads
+     * {@code getKind()} unconditionally for everything the pack walk reaches, and a real object
+     * always has one. Only {@link #carrying} needs this: the level walk never autoinscribes the
+     * objects this suite's 0×0 chunk holds, since {@link
+     * uk.co.jackoftradesltd.middle.objects.ObjectIgnore#autoinscribeGround} bounds-checks the
+     * player's grid against the chunk first and a 0×0 chunk contains no grid at all.
+     */
+    private static ItemObject itemInGear() {
+        ItemObject item = new ItemObject();
+        item.setKind(new ObjectKind());
+        return item;
+    }
+
     @BeforeEach
     void setUp() throws Exception {
         player = new Player();
@@ -183,15 +214,11 @@ class PlayerUpdateObjectKnowledgeTest {
         visitOrder.clear();
         realCurses = peekStatic(ObjectRegistry.class, "curses");
         pokeStatic(ObjectRegistry.class, "curses", new RecordingCurseList());
+        realCave = GameState.getCave();
+        GameState.setCave(null);
         realBus = GameEngine.getEventsBusHandler();
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
-    }
-
-    @AfterEach
-    void tearDown() throws Exception {
-        GameEngine.setEventsBusHandler(realBus);
-        pokeStatic(ObjectRegistry.class, "curses", realCurses);
     }
 
     /**
@@ -210,14 +237,11 @@ class PlayerUpdateObjectKnowledgeTest {
         visitOrder.clear();
     }
 
-    /**
-     * A level holding the given objects. The smallest legal chunk is 0×0 — nothing here reads a
-     * square, and a real level's dimensions would only slow the fixture down.
-     */
-    private Chunk levelHolding(ItemObject... items) throws Exception {
-        Chunk chunk = new Chunk("test", 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, player);
-        poke(chunk, "objects", new RecordingList(items));
-        return chunk;
+    @AfterEach
+    void tearDown() throws Exception {
+        GameEngine.setEventsBusHandler(realBus);
+        pokeStatic(ObjectRegistry.class, "curses", realCurses);
+        GameState.setCave(realCave);
     }
 
     /**
@@ -227,6 +251,22 @@ class PlayerUpdateObjectKnowledgeTest {
      */
     private void carrying(ItemObject... items) throws Exception {
         poke(player, "gear", new RecordingPile(items));
+    }
+
+    /**
+     * A level holding the given objects, installed as {@link GameState}'s current level — the
+     * level walk in {@link PlayerKnowledge#updateObjectKnowledge} reads {@link GameState#getCave()},
+     * not {@code player.getCave()} (the player's own field is C's {@code p->cave}, the remembered
+     * level, a different thing from the live level C's {@code update_player_object_knowledge} walks).
+     * {@link #realCave} carries the previous value back in on {@link #tearDown}, so installing one
+     * here does not leak into whatever test runs next. The smallest legal chunk is 0×0 — nothing
+     * here reads a square, and a real level's dimensions would only slow the fixture down.
+     */
+    private Chunk levelHolding(ItemObject... items) throws Exception {
+        Chunk chunk = new Chunk("test", 0, 0, 0, 0, 0, false, 0, 0, 0, 0, 0, 0, 0, 0, player);
+        poke(chunk, "objects", new RecordingList(items));
+        GameState.setCave(chunk);
+        return chunk;
     }
 
     /**
@@ -387,7 +427,7 @@ class PlayerUpdateObjectKnowledgeTest {
         void levelObjectsAreVisited() throws Exception {
             ItemObject first = new ItemObject();
             ItemObject second = new ItemObject();
-            poke(player, "cave", levelHolding(first, second));
+            levelHolding(first, second);
             carrying();
 
             PlayerKnowledge.updateObjectKnowledge(player);
@@ -395,57 +435,70 @@ class PlayerUpdateObjectKnowledgeTest {
             assertEquals(List.of(first, second), visited);
         }
 
+        /**
+         * The pack is read twice over one call, not once - the knowledge loop first, then
+         * {@link uk.co.jackoftradesltd.middle.objects.ObjectIgnore#autoinscribePack} again, since
+         * {@code updateObjectKnowledge} calls that unconditionally over the same gear. That second
+         * pass is real, not a fixture artefact: C's {@code update_player_object_knowledge} walks
+         * {@code p->gear} twice in exactly the same way, once in its own loop and again inside
+         * {@code autoinscribe_pack}.
+         */
         @Test
         @DisplayName("every object in the pack is visited")
         void gearObjectsAreVisited() throws Exception {
-            ItemObject first = new ItemObject();
-            ItemObject second = new ItemObject();
+            ItemObject first = itemInGear();
+            ItemObject second = itemInGear();
             carrying(first, second);
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertEquals(List.of(first, second), visited);
+            assertEquals(List.of(first, second, first, second), visited);
         }
 
         /**
          * Both populations in one call, and the level before the pack — C's order. Nothing depends on
-         * it today, but a walk that reordered itself would be a divergence worth noticing.
+         * it today, but a walk that reordered itself would be a divergence worth noticing. The pack's
+         * one item still appears twice in a row at the end — see {@link #gearObjectsAreVisited} for
+         * why - so what this pins is that both of those follow the level, not that the pack contributes
+         * only one entry.
          */
         @Test
         @DisplayName("the level is walked before the pack")
         void levelComesBeforeGear() throws Exception {
             ItemObject onFloor = new ItemObject();
-            ItemObject inPack = new ItemObject();
-            poke(player, "cave", levelHolding(onFloor));
+            ItemObject inPack = itemInGear();
+            levelHolding(onFloor);
             carrying(inPack);
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertEquals(List.of(onFloor, inPack), visited);
+            assertEquals(List.of(onFloor, inPack, inPack), visited);
         }
 
         /**
-         * The same object in both populations is visited twice. C does the same — the loops do not
-         * consult each other — and `player_know_object` is idempotent, so the repeat is wasted work
-         * rather than a bug.
+         * The same object in both populations is visited three times, not two: once from the level,
+         * and twice from the pack - see {@link #gearObjectsAreVisited} for why the pack contributes
+         * two. C's own loops do not consult each other either, and {@code player_know_object} is
+         * idempotent, so every repeat here is wasted work rather than a bug.
          */
         @Test
         @DisplayName("an object in both populations is visited from each")
-        void anObjectInBothIsVisitedTwice() throws Exception {
-            ItemObject item = new ItemObject();
-            poke(player, "cave", levelHolding(item));
+        void anObjectInBothPopulationsIsVisitedFromEach() throws Exception {
+            ItemObject item = itemInGear();
+            levelHolding(item);
             carrying(item);
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertEquals(List.of(item, item), visited);
+            assertEquals(List.of(item, item, item), visited);
             assertSame(visited.get(0), visited.get(1));
+            assertSame(visited.get(1), visited.get(2));
         }
 
         @Test
         @DisplayName("an empty level and an empty pack visit nothing")
         void emptyPopulationsVisitNothing() throws Exception {
-            poke(player, "cave", levelHolding());
+            levelHolding();
             carrying();
 
             PlayerKnowledge.updateObjectKnowledge(player);
@@ -466,17 +519,20 @@ class PlayerUpdateObjectKnowledgeTest {
 
         /**
          * C guards the level walk with {@code if (cave)} for a real reason: knowledge is updated
-         * during birth and on loading a save, before any level exists.
+         * during birth and on loading a save, before any level exists. {@code inPack} appears twice
+         * rather than once - see {@link Populations#gearObjectsAreVisited} for why - since
+         * {@link uk.co.jackoftradesltd.middle.objects.ObjectIgnore#autoinscribePack} runs
+         * unconditionally, cave or no cave.
          */
         @Test
         @DisplayName("no level is not an error, and the pack is still walked")
         void noCaveIsSurvivable() throws Exception {
-            ItemObject inPack = new ItemObject();
+            ItemObject inPack = itemInGear();
             carrying(inPack);
 
             assertDoesNotThrow(() -> PlayerKnowledge.updateObjectKnowledge(player));
 
-            assertEquals(List.of(inPack), visited);
+            assertEquals(List.of(inPack, inPack), visited);
         }
 
         /**
@@ -489,7 +545,7 @@ class PlayerUpdateObjectKnowledgeTest {
         @DisplayName("no pack is not an error, and the level is still walked")
         void noGearIsSurvivable() throws Exception {
             ItemObject onFloor = new ItemObject();
-            poke(player, "cave", levelHolding(onFloor));
+            levelHolding(onFloor);
             poke(player, "gear", null);
 
             assertDoesNotThrow(() -> PlayerKnowledge.updateObjectKnowledge(player));
@@ -556,7 +612,7 @@ class PlayerUpdateObjectKnowledgeTest {
         @Test
         @DisplayName("inventory and equipment are both signalled, in that order")
         void bothEventsAreSignalled() throws Exception {
-            carrying(new ItemObject());
+            carrying(itemInGear());
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
@@ -587,9 +643,8 @@ class PlayerUpdateObjectKnowledgeTest {
         @Test
         @DisplayName("signalled once per call, whatever the population size")
         void eventsAreNotPerObject() throws Exception {
-            poke(player, "cave",
-                    levelHolding(new ItemObject(), new ItemObject(), new ItemObject()));
-            carrying(new ItemObject());
+            levelHolding(new ItemObject(), new ItemObject(), new ItemObject());
+            carrying(itemInGear());
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
@@ -624,21 +679,24 @@ class PlayerUpdateObjectKnowledgeTest {
 
         /**
          * C's order: level, gear, stores, curses. Stores are missing, so what can be pinned is that
-         * the curses come last of the three that exist.
+         * the curses come after the level and the pack's knowledge walk. {@code inPack} appears
+         * again at the very end, after the curse - see {@link Populations#gearObjectsAreVisited}
+         * for why - since {@code autoinscribePack} runs last of all, after the curse loop rather
+         * than before it.
          */
         @Test
         @DisplayName("the curses are walked after the level and the pack")
         void cursesComeLast() throws Exception {
             ItemObject onFloor = new ItemObject();
-            ItemObject inPack = new ItemObject();
+            ItemObject inPack = itemInGear();
             Curse curse = curseWithModifiers("last", Map.of());
             registryHolding(curse);
-            poke(player, "cave", levelHolding(onFloor));
+            levelHolding(onFloor);
             carrying(inPack);
 
             PlayerKnowledge.updateObjectKnowledge(player);
 
-            assertEquals(List.of(onFloor, inPack, curse), visitOrder);
+            assertEquals(List.of(onFloor, inPack, curse, inPack), visitOrder);
         }
 
         /**

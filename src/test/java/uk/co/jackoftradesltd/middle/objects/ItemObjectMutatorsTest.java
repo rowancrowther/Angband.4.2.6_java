@@ -45,7 +45,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -303,19 +302,18 @@ class ItemObjectMutatorsTest {
         }
 
         /**
-         * On an item built the short way there is no map at all, and this accessor reads the field
-         * directly rather than through the null-safe getter beside it — so it throws where
-         * {@code getModifiers()} would answer an empty map. Worth pinning: the two are one line
-         * apart and disagree about the same state.
+         * On an item built the short way the map is created empty rather than left {@code null}
+         * (the bare {@link ItemObject} constructor's own fix, 260905), so this accessor and the
+         * null-safe getter beside it now agree: both answer empty rather than one of them
+         * throwing.
          */
         @Test
-        @DisplayName("an item with no modifier map at all throws rather than reading zero")
-        void bareItemThrowsOnModifierRead() {
+        @DisplayName("an item with no modifiers reads every modifier as zero")
+        void bareItemReadsModifiersAsZero() {
             ItemObject bare = new ItemObject();
 
             assertTrue(bare.getModifiers().isEmpty(), "the null-safe getter answers empty");
-            assertThrows(NullPointerException.class,
-                    () -> bare.getModifierValue(ObjectModifier.OM_STEALTH));
+            assertEquals(0, bare.getModifierValue(ObjectModifier.OM_STEALTH));
         }
 
         /**

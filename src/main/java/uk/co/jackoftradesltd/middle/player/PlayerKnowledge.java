@@ -1017,7 +1017,7 @@ public class PlayerKnowledge {
         // Know the cave objects
         Chunk cave = GameState.getCave();
         if (cave != null) {
-            for (ItemObject itemObject : player.getCave().getObjects()) {
+            for (ItemObject itemObject : cave.getObjects()) {
                 knowObject(player, itemObject);
             }
         }

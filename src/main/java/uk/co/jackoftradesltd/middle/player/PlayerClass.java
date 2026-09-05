@@ -383,4 +383,35 @@ public class PlayerClass {
     public int getMaxHitDie() {
         return this.hpAdj;
     }
+
+    /**
+     * The class's display name, e.g. {@code "Ranger"} — C's {@code class->name}.
+     *
+     * <p>Read directly wherever C names the class: the character sheet and death screen
+     * ({@code ui-player.c}, {@code ui-death.c}), the save file
+     * ({@code save.c}, {@code save-charoutput.c}), preference file matching
+     * ({@code ui-prefs.c}) and the status line ({@code ui-display.c}).
+     *
+     * <p>Function getName commented in full on 260904.
+     *
+     * @return the class's display name
+     */
+    public String getName() {
+        return name;
+    }
+
+    /**
+     * The equipment a character of this class begins with — C's {@code class->start_items}.
+     *
+     * <p>C stores this as a singly-linked {@code struct start_item} chain, walked head-to-tail at
+     * birth ({@code player_outfit}, {@code player-birth.c:607}); the port holds the same sequence as
+     * a {@link List}, read in the same order by {@link PlayerBirth}.
+     *
+     * <p>Function getStartItems commented in full on 260904.
+     *
+     * @return the class's starting-equipment list, in the order it is granted at birth
+     */
+    public List<StartItem> getStartItems() {
+        return this.startItems;
+    }
 }

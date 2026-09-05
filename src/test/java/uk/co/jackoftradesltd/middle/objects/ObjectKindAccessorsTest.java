@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.IgnoreFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
@@ -33,6 +34,9 @@ import uk.co.jackoftradesltd.testsupport.ItemFixture;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static uk.co.jackoftradesltd.testsupport.ItemFixture.set;
 
@@ -42,6 +46,7 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link ObjectKind}'s accessors — the template every object of a type is built from, and the
@@ -278,12 +283,51 @@ class ObjectKindAccessorsTest {
         }
 
         /**
+         * {@code hasFlavour} is the null check on the same field, spelled out because the knowledge
+         * code reads it directly rather than testing {@link ObjectKind#getFlavour} for null itself.
+         * A bare kind has none.
+         */
+        @Test
+        @DisplayName("a bare kind reports having no flavour")
+        void bareKindHasFlavourIsFalse() {
+            assertFalse(kind.hasFlavour());
+        }
+
+        /**
+         * Once a flavour is attached, {@code hasFlavour} reports it — the disguise a sword never
+         * needs and a potion does until identified.
+         */
+        @Test
+        @DisplayName("a kind with a flavour reports having one")
+        void flavouredKindHasFlavourIsTrue() {
+            set(kind, "flavour", new Flavour("murky", ColourEnum.COLOUR_WHITE, 0));
+
+            assertTrue(kind.hasFlavour());
+        }
+
+        /**
          * Whether the player has ever seen this kind starts false and is knowledge, not data: it
          * belongs to the save file rather than to {@code object.txt}.
          */
         @Test
         @DisplayName("a kind starts unseen")
         void startsUnseen() {
+            assertFalse(kind.isEverseen());
+        }
+
+        /**
+         * {@link ObjectKind#setEverSeen} writes the field as given, matching C's direct
+         * {@code kind->everseen = true}/{@code false} assignments at every call site — there is no
+         * dedicated C setter, so the port takes the value both ways rather than only ever setting
+         * {@code true}.
+         */
+        @Test
+        @DisplayName("setEverSeen stores the value given")
+        void everSeenStored() {
+            kind.setEverSeen(true);
+            assertTrue(kind.isEverseen());
+
+            kind.setEverSeen(false);
             assertFalse(kind.isEverseen());
         }
 
@@ -343,6 +387,162 @@ class ObjectKindAccessorsTest {
             Field field = ObjectKind.class.getDeclaredField("tried");
             field.setAccessible(true);
             return field.getBoolean(kind);
+        }
+
+        /**
+         * The two autoinscription notes, C's {@code note_aware} and {@code note_unaware}. Neither
+         * has a setter — only the data-file constructor and {@link ObjectIgnore} write them — so a
+         * bare kind is given values by reflection, as elsewhere in this class.
+         */
+        @Test
+        @DisplayName("a bare kind has neither autoinscription note")
+        void bareKindHasNoNotes() {
+            assertNull(kind.getNoteAware());
+            assertNull(kind.getNoteUnaware());
+        }
+
+        /**
+         * The aware and unaware notes are separate fields, not a fallback pair: setting one leaves
+         * the other {@code null}.
+         */
+        @Test
+        @DisplayName("the aware and unaware notes are independent")
+        void notesAreIndependent() {
+            set(kind, "noteAware", "{ blessed}");
+
+            assertEquals("{ blessed}", kind.getNoteAware());
+            assertNull(kind.getNoteUnaware());
+        }
+
+        /**
+         * And the same the other way round.
+         */
+        @Test
+        @DisplayName("setting only the unaware note leaves the aware note null")
+        void unawareNoteAloneLeavesAwareNull() {
+            set(kind, "noteUnaware", "{ tried}");
+
+            assertEquals("{ tried}", kind.getNoteUnaware());
+            assertNull(kind.getNoteAware());
+        }
+    }
+
+    /**
+     * Weight, the two per-item recharge/charge dice, and the modifier lookup — the fields
+     * {@link ObjectUtils#objectPrep} copies onto every item built from a kind.
+     */
+    @Nested
+    @DisplayName("weight, timing/charge dice and modifiers")
+    class WeightTimeChargeAndModifiers {
+
+        /**
+         * A bare kind has no weight — C's zero-initialised {@code object_kind} leaves
+         * {@code kind->weight} at {@code 0} until {@code object.txt} sets it.
+         */
+        @Test
+        @DisplayName("a bare kind has no weight")
+        void bareKindHasNoWeight() {
+            assertEquals(0, kind.getWeight());
+        }
+
+        /**
+         * The weight setter and getter read and write the same field.
+         */
+        @Test
+        @DisplayName("weight round-trips through the setter")
+        void weightRoundTrips() {
+            kind.setWeight(37);
+
+            assertEquals(37, kind.getWeight());
+        }
+
+        /**
+         * {@link ObjectKind#getTime} reads back exactly what {@link ObjectKind#setTime} stored,
+         * with no copying in between.
+         */
+        @Test
+        @DisplayName("getTime reads back what setTime stored")
+        void timeRoundTrips() {
+            Random recharge = new Random(20, 1, 1, 20, false);
+            kind.setTime(recharge);
+
+            assertSame(recharge, kind.getTime());
+        }
+
+        /**
+         * A bare kind has no charge dice, since the no-argument constructor never touches the
+         * field — unlike {@code weight}, there is no C zero-value to fall back on because the
+         * dice are a {@link Random}, not a primitive.
+         */
+        @Test
+        @DisplayName("a bare kind has no charge dice")
+        void bareKindHasNoCharge() {
+            assertNull(kind.getCharge());
+        }
+
+        /**
+         * {@link ObjectKind#getCharge} reads back the stored dice as given, with no getter to
+         * exercise a setter through — the field is parser-written, so the value goes in by
+         * reflection.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getCharge reads back the stored dice")
+        void chargeStored() throws Exception {
+            Random charge = new Random(0, 1, 1, 12, false);
+            set(kind, "charge", charge);
+
+            assertSame(charge, kind.getCharge());
+        }
+
+        /**
+         * A modifier the kind actually carries comes back as the exact dice stored for it.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getModifier returns the dice a kind carries")
+        void modifierPresentReturnsItsDice() throws Exception {
+            Random str = new Random(1, 5, 0, 0, false);
+            Map<ObjectModifier, Random> modifiers = new HashMap<>();
+            modifiers.put(ObjectModifier.OM_STR, str);
+            set(kind, "modifiers", modifiers);
+
+            assertSame(str, kind.getModifier(ObjectModifier.OM_STR));
+        }
+
+        /**
+         * C keeps every modifier in a fixed {@code OBJ_MOD_MAX}-length array
+         * ({@code object.h}), zero-allocated before parsing; {@code parse_object_values}
+         * ({@code obj-init.c}) only overwrites the indices a kind's {@code values:} line names,
+         * so an index it never mentions still reads back as a valid, zero-value
+         * {@code random_value} rather than as an absence. Real data bears this out — most kinds
+         * in {@code object.txt} carry no {@code values:} line at all, let alone one naming every
+         * modifier.
+         *
+         * <p>This kind keeps modifiers in a {@link Map} instead, populated only for the
+         * modifiers a {@code values:} line names, so a plain lookup would return {@code null}
+         * for the common case above — which is exactly what previously made
+         * {@link ObjectUtils#objectPrep} throw a {@link NullPointerException} for such a kind.
+         * {@link ObjectKind#getModifier} now falls back to a fresh zero-dice {@link Random}
+         * instead, whose {@link Random#randCalc} comes out {@code 0} for every aspect that does
+         * not require loaded world data to evaluate, matching what C's zeroed array slot would
+         * compute. ({@code AVERAGE} routes through {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants#getWorldMaxDepth}
+         * and is left to whatever exercises that path with the game data actually loaded.)
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getModifier falls back to a zero dice for a modifier the kind does not carry")
+        void modifierAbsentFallsBackToZeroDice() throws Exception {
+            set(kind, "modifiers", new HashMap<ObjectModifier, Random>());
+
+            Random fallback = kind.getModifier(ObjectModifier.OM_STEALTH);
+
+            assertEquals(0, fallback.randCalc(50, DamageAspect.MINIMIZE));
+            assertEquals(0, fallback.randCalc(50, DamageAspect.MAXIMIZE));
+            assertEquals(0, fallback.randCalc(50, DamageAspect.EXTREMIFY));
         }
     }
 
@@ -421,5 +621,85 @@ class ObjectKindAccessorsTest {
             set(kind, "modifiers", new HashMap<ObjectModifier, Random>());
         }
 
+    }
+
+    /**
+     * The slays, brands and curses every item of this kind carries — {@link ObjectKind#getSlays},
+     * {@link ObjectKind#getBrands} and {@link ObjectKind#getCurses}. Both constructors initialise
+     * these to empty rather than {@code null} ({@code ObjectKind.java:289-291,355-357,500-502}), so
+     * unlike the {@code time}/{@code charge} dice a bare kind still has something to iterate.
+     */
+    @Nested
+    @DisplayName("slays, brands and curses")
+    class SlaysBrandsAndCurses {
+
+        /**
+         * A bare kind (either constructor) has none of the three, but a fresh, non-null, empty
+         * collection rather than {@code null} — there is no C zero-value here since C's
+         * {@code kind->brands}/{@code slays} are {@code NULL} pointers until parsed, but this port
+         * always has a container to add to.
+         */
+        @Test
+        @DisplayName("a bare kind has empty slays, brands and curses")
+        void bareKindHasEmptyCollections() {
+            assertTrue(kind.getSlays().isEmpty());
+            assertTrue(kind.getBrands().isEmpty());
+            assertTrue(kind.getCurses().isEmpty());
+        }
+
+        /**
+         * {@link ObjectKind#getSlays} reads back exactly what the field holds, with no copying.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getSlays reads back the stored set")
+        void getSlaysReadsBackStoredSet() throws Exception {
+            Slay slay = new Slay("EVIL_2", "evil", null, "smite", "pierces",
+                    null, 2, 2, 5);
+            Set<Slay> slays = new HashSet<>();
+            slays.add(slay);
+            set(kind, "slays", slays);
+
+            assertSame(slays, kind.getSlays());
+            assertTrue(kind.getSlays().contains(slay));
+        }
+
+        /**
+         * {@link ObjectKind#getBrands} reads back exactly what the field holds, with no copying.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getBrands reads back the stored set")
+        void getBrandsReadsBackStoredSet() throws Exception {
+            Brand brand = new Brand("FIRE", "fire", "burns", null, null, 3, 3, 5);
+            Set<Brand> brands = new HashSet<>();
+            brands.add(brand);
+            set(kind, "brands", brands);
+
+            assertSame(brands, kind.getBrands());
+            assertTrue(kind.getBrands().contains(brand));
+        }
+
+        /**
+         * {@link ObjectKind#getCurses} reads back exactly what the field holds — including the
+         * {@link CurseData} each curse maps to — with no copying.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("getCurses reads back the stored map")
+        void getCursesReadsBackStoredMap() throws Exception {
+            Curse curse = new Curse("siren", null, 0, null, null, null, null,
+                    0, 0, 0, null, null, null, null);
+            CurseData data = new CurseData(3, 0);
+            Map<Curse, CurseData> curses = new HashMap<>();
+            curses.put(curse, data);
+            set(kind, "curses", curses);
+
+            assertSame(curses, kind.getCurses());
+            assertSame(data, kind.getCurses().get(curse));
+        }
     }
 }

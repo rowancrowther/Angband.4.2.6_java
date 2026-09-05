@@ -26,6 +26,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * A pile of objects is defined as a LIFO ArrayList of ItemObjects
@@ -99,7 +100,9 @@ public class Pile {
      */
     @CheckReturnValue
     private ItemObject pop() {
-        return pile.removeLast();
+        ItemObject popped = pile.removeLast();
+        popped.setOwningPile(null);
+        return popped;
     }
 
     /**
@@ -108,6 +111,7 @@ public class Pile {
      * @param item the object to put on the top
      */
     private void push(@NotNull ItemObject item) {
+        item.setOwningPile(this);
         pile.addLast(item);
     }
 
@@ -191,12 +195,31 @@ public class Pile {
         System.exit(-1);
     }
 
+
     /**
-     * Push an object onto the top of the stack
+     * Inserts a new object at the top of the stack.
      *
-     * @param item The object to push
+     * <p>Ports C's {@code pile_insert} ({@code obj-pile.c}): the newest item becomes the pile's
+     * head there, which corresponds to this pile's last (top) index, so {@link #push(ItemObject)}
+     * is the correct match. C guards the precondition by checking {@code obj->prev || obj->next} —
+     * an approximation that misses an {@code obj} that is the sole element of some other list, since
+     * a singleton has null prev and next either way. This port tracks ownership directly via
+     * {@link ItemObject#getOwningPile()}, so the check here catches that case too rather than
+     * missing it.
+     *
+     * <p>Method insert commented in full on 260905.
+     *
+     * @param item the object to insert; must not already belong to a pile
+     * @throws RuntimeException if {@code item} already belongs to a pile
      */
     public void insert(@NotNull ItemObject item) {
+        if (item.getOwningPile() != null) {
+            String message = "Pile integrity failure";
+            logger.fatal(message);
+            throw new RuntimeException(message);
+        }
+
+        item.setOwningPile(this);
         push(item);
     }
 
@@ -206,7 +229,17 @@ public class Pile {
      * @param item the object to insert
      */
     public void insertEnd(@NotNull ItemObject item) {
+        item.setOwningPile(this);
         pile.addFirst(item);
+    }
+
+    public void insertEnd(@NotNull Pile items) {
+        Iterator<ItemObject> it = items.getIterator();
+        while (it.hasNext()) {
+            ItemObject obj = it.next();
+            obj.setOwningPile(null);
+            this.insert(obj);
+        }
     }
 
     /**
@@ -229,6 +262,7 @@ public class Pile {
      * @param item the object to remove
      */
     public void excise(@NotNull ItemObject item) {
+        item.setOwningPile(null);
         pile.remove(item);
     }
 
@@ -270,6 +304,29 @@ public class Pile {
      */
     @TestOnly
     public void clear() {
+        for (ItemObject object : pile) {
+            object.setOwningPile(null);
+        }
         pile.clear();
+    }
+
+    public int size() {
+        return pile.size();
+    }
+
+    public ItemObject get(int index) {
+        return pile.get(index);
+    }
+
+    public List<ItemObject> reversed() {
+        return pile.reversed();
+    }
+
+    public void removeIf(ItemObject obj) {
+        pile.removeIf(item -> item == obj);
+    }
+
+    public void remove(int index) {
+        pile.remove(index);
     }
 }

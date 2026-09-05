@@ -32,6 +32,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.ObjectUtils;
+import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -233,7 +234,6 @@ class PlayerQuiverCapacityTest {
     @BeforeEach
     void buildPlayer() {
         player = new Player();
-        set(player, "gear", new ArrayList<ItemObject>());
         GameState.setPlayer(player);
     }
 
@@ -309,9 +309,9 @@ class PlayerQuiverCapacityTest {
     }
 
     /**
-     * @return the player's gear list, the same list {@code buildPlayer} installed
+     * @return the player's gear pile, the one {@link Player}'s own constructor installed
      */
-    private List<ItemObject> gear() {
+    private Pile gear() {
         return player.getGear();
     }
 
@@ -371,8 +371,8 @@ class PlayerQuiverCapacityTest {
         @Test
         @DisplayName("each ordinary item costs one slot")
         void ordinaryItemsCostOneEach() {
-            gear().add(potion(1));
-            gear().add(potion(5));
+            gear().insert(potion(1));
+            gear().insert(potion(5));
 
             assertEquals(2, packSlotsUsed());
         }
@@ -386,7 +386,7 @@ class PlayerQuiverCapacityTest {
         @DisplayName("equipped items cost nothing")
         void equippedItemsCostNothing() {
             ItemObject sword = potion(1);
-            gear().add(sword);
+            gear().insert(sword);
             equip(sword);
 
             assertEquals(0, packSlotsUsed());
@@ -400,7 +400,7 @@ class PlayerQuiverCapacityTest {
         @DisplayName("a full quiver slot costs one pack slot")
         void fullQuiverSlotCostsOne() {
             ItemObject shafts = arrows(SLOT_SIZE);
-            gear().add(shafts);
+            gear().insert(shafts);
             quiver()[0] = shafts;
 
             assertEquals(1, packSlotsUsed());
@@ -416,7 +416,7 @@ class PlayerQuiverCapacityTest {
         @DisplayName("a part-used quiver slot still costs a whole pack slot")
         void partUsedQuiverSlotCostsOne() {
             ItemObject shafts = arrows(SLOT_SIZE + 1);
-            gear().add(shafts);
+            gear().insert(shafts);
             quiver()[0] = shafts;
 
             assertEquals(2, packSlotsUsed());
@@ -432,8 +432,8 @@ class PlayerQuiverCapacityTest {
         void looseAmmoCostsOneSlot() {
             ItemObject loose = arrows(SLOT_SIZE);
             ItemObject quivered = arrows(SLOT_SIZE);
-            gear().add(loose);
-            gear().add(quivered);
+            gear().insert(loose);
+            gear().insert(quivered);
             quiver()[0] = quivered;
 
             // One for the quivered stack's slot, one for the loose stack.
@@ -447,7 +447,7 @@ class PlayerQuiverCapacityTest {
         @DisplayName("thrown weapons are charged at the thrown multiplier")
         void thrownChargedAtMultiplier() {
             ItemObject flasks = thrown(SLOT_SIZE / THROWN_MULT);
-            gear().add(flasks);
+            gear().insert(flasks);
             quiver()[0] = flasks;
 
             assertEquals(1, packSlotsUsed());

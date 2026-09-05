@@ -44,7 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link ItemObject#ignoreLevelOf()} and {@link ItemObject#isInQuiver(Player)}.
+ * Tests {@link ItemObject#ignoreLevelOf()} and {@link ItemObject#objectIsInQuiver(Player)}.
  *
  * <p>{@code ignoreLevelOf} answers the quality band an item would be hidden at, and it is the
  * jewellery branch that carries the judgement: a ring is only ever bad or average, never good,
@@ -306,7 +306,7 @@ class ItemObjectQualityTest {
         void looseItemIsNotInQuiver() throws Exception {
             Player player = new Player();
 
-            assertFalse(knownItem(TValue.TV_ARROW).isInQuiver(player));
+            assertFalse(knownItem(TValue.TV_ARROW).objectIsInQuiver(player));
         }
 
         /**
@@ -321,7 +321,7 @@ class ItemObjectQualityTest {
             ItemObject arrows = knownItem(TValue.TV_ARROW);
             player.getPlayerUpkeep().getQuiver()[2] = arrows;
 
-            assertTrue(arrows.isInQuiver(player));
+            assertTrue(arrows.objectIsInQuiver(player));
         }
 
         /**
@@ -338,8 +338,8 @@ class ItemObjectQualityTest {
             ItemObject loose = knownItem(TValue.TV_ARROW);
             player.getPlayerUpkeep().getQuiver()[0] = quivered;
 
-            assertTrue(quivered.isInQuiver(player));
-            assertFalse(loose.isInQuiver(player), "a stack like it is still not it");
+            assertTrue(quivered.objectIsInQuiver(player));
+            assertFalse(loose.objectIsInQuiver(player), "a stack like it is still not it");
         }
     }
 }

@@ -289,5 +289,57 @@ class ObjectKindTest {
                     () -> assertFalse(artifactKind().isIgnoredUnaware()),
                     () -> assertFalse(artifactKind().isIgnoredAware()));
         }
+
+        /**
+         * hasIgnoreFlag is the general accessor {@link ObjectIgnore#kindIsIgnoredUnaware} is built
+         * from - it has to answer for either flag on its own, not just whichever one
+         * isIgnoredUnaware/isIgnoredAware happen to ask about.
+         */
+        @Test
+        @DisplayName("hasIgnoreFlag agrees with the flag-specific accessors")
+        void hasIgnoreFlagAgreesWithFlagSpecificAccessors() {
+            ObjectKind kind = new ObjectKind();
+            kind.setIgnoredUnaware(true);
+
+            assertAll(
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE)),
+                    () -> assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE)));
+
+            kind.setIgnoredAware(true);
+            kind.setIgnoredUnaware(false);
+
+            assertAll(
+                    () -> assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE)),
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE)));
+        }
+
+        /**
+         * setIgnoreFlag mirrors C's {@code kind->ignore |= FLAG}: it only ever turns a bit on, it
+         * leaves the other flag's bit alone, and setting an already-set bit is a no-op rather than an
+         * error - the same three things a bitwise OR would do.
+         */
+        @Test
+        @DisplayName("setIgnoreFlag only ever turns its own flag on")
+        void setIgnoreFlagOnlyTurnsItsOwnFlagOn() {
+            ObjectKind kind = new ObjectKind();
+
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE);
+
+            assertAll(
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE)),
+                    () -> assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE)));
+
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE);
+
+            assertAll(
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE)),
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE)));
+
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE);
+
+            assertAll(
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE)),
+                    () -> assertTrue(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE)));
+        }
     }
 }

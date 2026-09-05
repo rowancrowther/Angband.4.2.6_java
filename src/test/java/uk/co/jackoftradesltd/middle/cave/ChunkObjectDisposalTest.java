@@ -359,8 +359,8 @@ class ChunkObjectDisposalTest {
         }
 
         /**
-         * Only that square's pile: an object of the same identity elsewhere is untouched, because
-         * the excise works on the pile it was pointed at rather than searching the level.
+         * Only that square's pile: another object elsewhere is untouched, because the excise works
+         * on the pile it was pointed at rather than searching the level.
          *
          * @throws Exception if a fixture field cannot be reached
          */
@@ -368,14 +368,15 @@ class ChunkObjectDisposalTest {
         @DisplayName("only the named square's pile is touched")
         void onlyThatSquareIsTouched() throws Exception {
             ItemObject item = knownObject();
+            ItemObject other = knownObject();
             Loc here = Loc.row(2).col(3);
             Loc there = Loc.row(4).col(1);
             level.getSquare(here).getObjectPile().insert(item);
-            level.getSquare(there).getObjectPile().insert(item);
+            level.getSquare(there).getObjectPile().insert(other);
 
             level.squareExciseObject(here, item);
 
-            assertTrue(level.getSquare(there).getObjectPile().contains(item));
+            assertTrue(level.getSquare(there).getObjectPile().contains(other));
         }
 
         /**

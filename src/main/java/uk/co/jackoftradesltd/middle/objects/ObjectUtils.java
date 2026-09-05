@@ -22,18 +22,20 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
+import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
-import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectDescription;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
-import uk.co.jackoftradesltd.middle.objects.enums.ObjectStackEnum;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerCalcs;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
+
+import java.util.*;
 
 /**
  * Free-standing helper routines for the object/inventory subsystem — the port's landing spot for
@@ -197,7 +199,7 @@ public class ObjectUtils {
             // use an indexed for loop to ensure that we stop at item1
             for (int innerIndex = 0; innerIndex < outerIndex; innerIndex++) {
                 item2 = player.getGear().get(innerIndex);
-                stackMode2 = item2.isInQuiver(player) ? ObjectStackEnum.OSTACK_QUIVER
+                stackMode2 = item2.objectIsInQuiver(player) ? ObjectStackEnum.OSTACK_QUIVER
                         : ObjectStackEnum.OSTACK_PACK;
 
                 if (item2.getKind() == null) continue;
@@ -212,7 +214,7 @@ public class ObjectUtils {
                     // Ensure we drop the item from gearKnown before we drop it from here
                     ItemObject knownObject = item1.getKnown();
                     if (knownObject != null) {
-                        player.getGearKnown().removeIf(known -> known == knownObject);
+                        player.getGearKnown().removeIf(knownObject);
                         knownObject.nullKnown();
                     }
                     player.getGear().remove(outerIndex);
@@ -224,7 +226,7 @@ public class ObjectUtils {
 
                     break;
                 } else {
-                    ObjectStackEnum stackMode1 = item1.isInQuiver(player) ? ObjectStackEnum.OSTACK_QUIVER
+                    ObjectStackEnum stackMode1 = item1.objectIsInQuiver(player) ? ObjectStackEnum.OSTACK_QUIVER
                             : ObjectStackEnum.OSTACK_PACK;
                     Flag<ObjectStackEnum> modes1 = new Flag<>(ObjectStackEnum.class);
                     Flag<ObjectStackEnum> modes2 = new Flag<>(ObjectStackEnum.class);
@@ -548,7 +550,9 @@ public class ObjectUtils {
         int quiverAmmo = 0;
         int packSlots = 0;
 
-        for (ItemObject item : player.getGear()) {
+        Iterator<ItemObject> it = player.getGear().reversed().iterator();
+        while (it.hasNext()) {
+            ItemObject item = it.next();
             boolean found = false;
 
             // Equipped items don't count
@@ -594,8 +598,8 @@ public class ObjectUtils {
      * @param itemObject the object to append; its known half is appended too
      */
     public static void gearInsertEnd(Player player, ItemObject itemObject) {
-        player.getGear().add(itemObject);
-        player.getGearKnown().add(itemObject.getKnown());
+        player.getGear().insertEnd(itemObject);
+        player.getGearKnown().insertEnd(itemObject.getKnown());
     }
 
     /**
@@ -836,6 +840,368 @@ public class ObjectUtils {
      */
     public static void markArtifactSeen(Artifact artifact, boolean seen) {
         artifact.getAup().setSeen(seen);
+    }
+
+    /**
+     * Looks up the object kind with the given tval and numeric sval, the port of C's
+     * {@code lookup_kind} ({@code obj-util.c}).
+     *
+     * <p>C scans {@code k_info} linearly for the first matching {@code tval}/{@code sval} pair; the
+     * port dispatches to {@link ObjectRegistry#lookupObjectKind(TValue, int)}, which answers from the
+     * pre-built {@code kindsByTvalSval} index instead. The two agree on every input because the game
+     * data guarantees at most one kind per (tval, sval) pair — this is a performance substitution,
+     * not a behavioural one.
+     *
+     * <p>A miss is reported through {@link Message#message}, the port of C's {@code msg}, before
+     * {@code null} is returned — matching C's {@code msg(...); return NULL;} shape. Only the wording
+     * differs: C's message names the tval numerically with a parenthetical name
+     * ({@code "No object: %d:%d (%s)"}); the port names it by {@link TValue#getName()} alone.
+     *
+     * <p>Function lookupKind coded on 260904, commented in full on 260904.
+     *
+     * @param tVal the object's base type
+     * @param sVal the object's numeric subtype
+     * @return the matching object kind, or {@code null} if none is registered
+     */
+    public static ObjectKind lookupKind(TValue tVal, int sVal) {
+        ObjectKind kind = ObjectRegistry.lookupObjectKind(tVal, sVal);
+        if (kind == null)
+            Message.message("No object: " + tVal.getName() + ":" + sVal);
+
+        return kind;
+    }
+
+    /**
+     * Looks up the object kind with the given tval and sval <em>name</em> — the port of the C
+     * pattern {@code lookup_kind(tval, lookup_sval(tval, name))} (both {@code obj-util.c}), seen at
+     * call sites such as {@code obj-init.c:3086}.
+     *
+     * <p>C resolves a name to a numeric sval and looks up the kind as two separate calls; the port
+     * fuses both steps into {@link ObjectRegistry#lookupObjectKind(TValue, String)}, whose Javadoc
+     * documents the {@code lookup_sval} semantics it reproduces (digit string parsed as a literal
+     * sval, otherwise matched case-insensitively by sval name).
+     *
+     * <p>This overload exists because {@link uk.co.jackoftradesltd.middle.player.StartItem} keeps its
+     * sval as an unresolved name rather than the numeric value C stores after resolving it once at
+     * {@code class.txt} parse time ({@code init.c}, {@code parse_class_equip}). The port defers that
+     * resolution to birth time, calling this method where C's already-resolved
+     * {@code lookup_kind(si->tval, si->sval)} runs instead ({@code player-birth.c:609}); a name C
+     * would have rejected at load as {@code PARSE_ERROR_UNRECOGNISED_SVAL} instead loads cleanly and
+     * fails here, at birth, when the caller's own null check runs (see
+     * {@link uk.co.jackoftradesltd.middle.player.PlayerBirth}).
+     *
+     * <p>As with the numeric overload, a miss is reported through {@link Message#message} before
+     * {@code null} is returned.
+     *
+     * <p>Function lookupKind coded on 260904, commented in full on 260904.
+     *
+     * @param tVal the object's base type
+     * @param sVal the object's subtype name, or a digit string naming it by number
+     * @return the matching object kind, or {@code null} if none is registered
+     */
+    public static ObjectKind lookupKind(TValue tVal, String sVal) {
+        ObjectKind kind = ObjectRegistry.lookupObjectKind(tVal, sVal);
+        if (kind == null)
+            Message.message("No object: " + tVal.getName() + ":" + sVal);
+
+        return kind;
+    }
+
+    /**
+     * Wipes an object and makes it a standard object of the given kind, rolling its dice-based
+     * fields to a settled figure — the port of C's {@code object_prep} ({@code obj-make.c:817}).
+     *
+     * <p>{@link ItemObject#wipe} stands in for C's {@code memset(obj, 0, sizeof(*obj))}, after which
+     * the kind's plain fields — tval, sval, base AC, damage dice/sides, weight — are copied across,
+     * along with the kind's effect list and time dice; the effect list is stored, not copied, so
+     * {@code obj} and {@code kind} end up sharing the same list, matching C's shared
+     * {@code obj->effect = k->effect} pointer.
+     *
+     * <p>The flag copy takes only {@link #getFlags() kind.getFlags()}, not the kind's base's. C
+     * copies both — {@code of_copy(obj->flags, k->base->flags)} then
+     * {@code of_copy(obj->flags, k->flags)} — but {@code of_copy} is C's {@code flag_copy}, a
+     * {@code memcpy} that overwrites rather than unions; the second call therefore erases the first
+     * one's work outright, so the kind's own flags are the only ones that ever survive to reach
+     * {@code obj->flags}. Copying just the kind's flags here reproduces that net effect without
+     * reproducing the redundant first copy.
+     *
+     * <p>Every real {@link ObjectModifier} (the {@code OM_NONE}/{@code OM_MAX} placeholders are
+     * skipped) is rolled from the kind's dice at {@code level}/{@code damageAspect} into a fresh
+     * map, mirroring C's {@code for (i = 0; i < OBJ_MOD_MAX; i++)} loop over {@code k->modifiers}.
+     *
+     * <p>The pval is rolled from one of two mutually exclusive sources, matching the tval checks C
+     * makes in the same order: a wand or staff ({@link TValue#canHaveCharges}) rolls it from the
+     * kind's {@link ObjectKind#getCharge() charge} dice, while a potion, edible, fuel or launcher
+     * rolls it from the kind's own {@link ObjectKind#getPVal() pval} dice; no kind is ever both, so
+     * the two writes never contend for the same object. A light source's {@code timeout} is seeded
+     * from {@link GameConstants#getObjectMakeFuelTorch()} or
+     * {@link GameConstants#getObjectMakeDefaultLamp()} depending on whether the just-copied flags
+     * carry {@link ObjectFlag#OF_BURNS_OUT} or {@link ObjectFlag#OF_TAKES_FUEL}.
+     *
+     * <p>To-hit, to-damage and to-AC are each rolled from the kind's dice, then slays, brands and
+     * curses are folded on from the kind through {@link #copySlays}, {@link #copyBrands} and
+     * {@link #copyCurses} — the last of these safe to call unconditionally here only because
+     * {@code obj} was just wiped, so its curse map is always empty going in, matching what C's own
+     * {@code if (!obj->curses)} guard settles for after a fresh {@code object_prep}.
+     *
+     * <p>The per-element resistances are built fresh for every real {@link ElementEnum} (again
+     * skipping the {@code NONE}/{@code MAX} placeholders): each entry starts as a
+     * {@linkplain ElementInfo#copy() copy} of the kind's own {@link ObjectKind#getElInfo}, whose
+     * flags are then unioned — not overwritten — with the kind's base's flags for that element, via
+     * {@link uk.co.jackoftradesltd.channel.utils.Flag#set(List)}, and the whole map is then stored
+     * onto {@code obj} through {@link ItemObject#setElInfo}. That matches C's
+     * {@code obj->el_info[i].flags = k->el_info[i].flags; obj->el_info[i].flags |= k->base->el_info[i].flags;}
+     * exactly, unlike the object-flags copy above: here the base's contribution is a genuine union
+     * over what the kind already set, not a second assignment that discards it.
+     *
+     * <p>Function objectPrep coded before 260904, commented in full on 260904.
+     *
+     * @param obj          the object to wipe and prepare
+     * @param kind         the kind to prepare it as
+     * @param level        the level the object's dice-based fields are rolled at
+     * @param damageAspect how those dice are rolled (average, random, minimum, maximum)
+     */
+    public static void objectPrep(ItemObject obj, ObjectKind kind, int level, DamageAspect damageAspect) {
+        // clear slate
+        obj.wipe();
+
+        obj.setKind(kind);
+        obj.settValue(kind.gettValue());
+        obj.setsValue(kind.getsVal());
+        obj.setBaseAC(kind.getAc());
+        obj.setDamageDice(kind.getDamageDice());
+        obj.setDamageSides(kind.getDamageSides());
+        obj.setWeight(kind.getWeight());
+        obj.setEffect(kind.getEffect());
+        obj.setTime(kind.getTime());
+
+        // Default number
+        obj.setNumber(1);
+
+        // copy flags
+        Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
+        flags.copyFrom(kind.getFlags());
+        obj.setFlagsTo(flags);
+
+        // assign modifiers
+        Map<ObjectModifier, Integer> modifiers = new HashMap<>();
+        for (ObjectModifier modifier : ObjectModifier.values()) {
+            if (modifier == ObjectModifier.OM_NONE || modifier == ObjectModifier.OM_MAX) continue;
+
+            int value = kind.getModifier(modifier).randCalc(level, damageAspect);
+            modifiers.put(modifier, value);
+        }
+        obj.setModifiers(modifiers);
+
+        // Assign charged (wands & staves only)
+        if (obj.gettValue().canHaveCharges()) {
+            obj.setpValue(kind.getCharge().randCalc(level, damageAspect));
+        }
+
+        // Assign pval for food, oil and launchers
+        if (obj.gettValue().isPotion() || obj.gettValue().isEdible()
+                || obj.gettValue().isFuel() || obj.gettValue().isLauncher()) {
+            obj.setpValue(kind.getPVal().randCalc(level, damageAspect));
+        }
+
+        // Default fuel
+        if (obj.gettValue().isLight()) {
+            if (obj.hasFlag(ObjectFlag.OF_BURNS_OUT))
+                obj.setTimeout(GameConstants.getObjectMakeFuelTorch());
+            else if (obj.hasFlag(ObjectFlag.OF_TAKES_FUEL))
+                obj.setTimeout(GameConstants.getObjectMakeDefaultLamp());
+        }
+
+        // Default magic
+        obj.setToHit(kind.getToH().randCalc(level, damageAspect));
+        obj.setToDam(kind.getToD().randCalc(level, damageAspect));
+        obj.setToAC(kind.getToA().randCalc(level, damageAspect));
+
+        // Default slays/brands/curses
+        copySlays(obj.getSlays(), kind.getSlays());
+        copyBrands(obj.getBrands(), kind.getBrands());
+        copyCurses(obj, kind.getCurses());
+
+        // Default resists
+        Map<ElementEnum, ElementInfo> newResists = new HashMap<>();
+        for (ElementEnum elementEnum : ElementEnum.values()) {
+            if (elementEnum == ElementEnum.ELEM_NONE || elementEnum == ElementEnum.ELEM_MAX)
+                continue;
+
+            Flag<ElementInfoEnum> kindElFlags;
+            ElementInfo elInfo = kind.getElInfo(elementEnum).copy();
+            Flag<ElementInfoEnum> elFlags = elInfo.getFlags();
+            if (kind.getBase() != null && kind.getBase().getElementMap() != null
+                    && kind.getBase().getElementMap().containsKey(elementEnum))
+                kindElFlags = kind.getBase().getElementMap().get(elementEnum).getFlags();
+            else
+                kindElFlags = new Flag<>(ElementInfoEnum.class);
+            elFlags.set(kindElFlags.toList());
+
+            newResists.put(elementEnum, elInfo);
+        }
+        obj.setElInfo(newResists);
+    }
+
+    /**
+     * Applies every curse in {@code source} onto {@code dest}, overwriting whatever that curse
+     * already held there - the port of C's {@code copy_curses} ({@code obj-curse.c:52}).
+     *
+     * <p>Unlike {@link #copySlays} and {@link #copyBrands} there is no "keep the stronger one"
+     * comparison: a curse present in {@code source} always wins, its power taken as-is and its
+     * timeout re-rolled from the curse's own {@link Curse#getTime()} dice rather than carried over
+     * from any prior value - C's comment on the equivalent line reads "Timeouts need to be set for
+     * new objects". A curse on {@code dest} that {@code source} does not name is left exactly as it
+     * was.
+     *
+     * <p>{@code null} as source is C's {@code !source}, and returns immediately without touching
+     * {@code dest} at all - not even to reallocate an unset curse map, matching C's own early
+     * return before its allocation branch runs.
+     *
+     * <p>The merge itself runs against a scratch copy of {@code dest}'s existing curses
+     * ({@code destCurseMap}), so the write to {@code dest} happens once, at the end, through
+     * {@link ItemObject#initCurses} and {@link ItemObject#setCurses}. C instead allocates
+     * {@code obj->curses} lazily and writes straight into it index by index; the port's
+     * {@code initCurses} call is unconditional rather than gated on "was it already allocated",
+     * which C's is - but since every value merged into {@code destCurseMap} is read out of
+     * {@code dest} before that reset (and the port stores each curse's {@link CurseData} as a
+     * shared reference, not a copy, wherever it survives untouched), the reset costs nothing beyond
+     * a new backing {@link Map} object. It is also what makes this method safe to call on an object
+     * whose curse map has never been created, where {@code dest}'s own {@code curses} field is still
+     * {@code null} - a case the pre-{@code initCurses} version of this method did not handle, and
+     * {@link ObjectUtils#objectPrep} never exercises, since it always wipes {@code obj} first.
+     *
+     * <p>Function copyCurses coded before 260904, fixed to call {@link ItemObject#initCurses} on
+     * 260904, commented in full on 260904.
+     *
+     * @param dest   the item the curses are being attached to
+     * @param source the curses to copy on, keyed by curse and each mapped to its power; {@code null}
+     *               for none
+     */
+    public static void copyCurses(ItemObject dest, Map<Curse, CurseData> source) {
+        if (source == null)
+            return;
+
+        Map<Curse, CurseData> destCurseMap = new HashMap<>(dest.getCurses());
+
+        for (Curse sourceCurse : source.keySet()) {
+            boolean found = false;
+            for (Curse destCurse : destCurseMap.keySet()) {
+                if (sourceCurse == destCurse) {
+                    int power = source.get(sourceCurse).getPower();
+                    int timeout = sourceCurse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
+                    CurseData destCD = new CurseData(power, timeout);
+                    destCurseMap.put(destCurse, destCD);
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                int power = source.get(sourceCurse).getPower();
+                int timeout = sourceCurse.getTime().randCalc(0, DamageAspect.RANDOMIZE);
+                destCurseMap.put(sourceCurse, new CurseData(power, timeout));
+            }
+        }
+
+        dest.initCurses();
+        dest.setCurses(destCurseMap);
+    }
+
+    /**
+     * Adds every brand in {@code sourceBrands} to {@code destBrands}, keeping only the stronger of
+     * two brands that share a name - the port of C's {@code copy_brands} ({@code obj-slays.c:92}).
+     *
+     * <p>C stores brands as one {@code bool} per index into a fixed global table, so it first ORs
+     * the two arrays together and then walks every pair of set indices, clearing whichever of the
+     * two has the lower multiplier when both name the same element; on an exact multiplier tie it
+     * keeps whichever sits at the higher table index, a rule with no Java equivalent since a
+     * {@link Brand} here is a value the object holds directly rather than a bit into a shared table.
+     * The port instead scans {@code destBrands} for a name match and keeps whichever of the pair has
+     * the higher {@link Brand#getMultiplier()} outright, replacing the loser with the winner rather
+     * than clearing a flag. The two land on the same brand for every combination {@code brand.txt}
+     * actually defines - no two brands there share both a name and a multiplier, so the tie-break
+     * neither approach can express symmetrically never has to run.
+     *
+     * <p>The replacement is {@link Brand#copy}, not the source's own reference - see that method's
+     * Javadoc for why a copy is needed here where C only ever flips a bit.
+     *
+     * <p>Assumes {@code sourceBrands} is never {@code null}, unlike C's {@code copy_brands}, which
+     * guards against a null source before doing anything else. Every {@link ObjectKind} this is
+     * called with builds its brand set as an empty {@link java.util.HashSet}, never {@code null}, so
+     * the guard has nothing to catch under any input {@link #objectPrep} - the method's only
+     * caller - can currently produce.
+     *
+     * <p>Function copyBrands coded before 260904, commented in full on 260904.
+     *
+     * @param destBrands   the brand set the merge writes into
+     * @param sourceBrands the brands being added
+     */
+    private static void copyBrands(Set<Brand> destBrands, Set<Brand> sourceBrands) {
+        List<Brand> sourceList = sourceBrands.stream().toList();
+        List<Brand> destList = new ArrayList<>(destBrands.stream().toList());
+
+        for (Brand sourceBrand : sourceList) {
+            boolean found = false;
+            for (Brand destBrand : destList) {
+                if (sourceBrand.getName().equals(destBrand.getName())) {
+                    if (sourceBrand.getMultiplier() > destBrand.getMultiplier()) {
+                        destList.set(destList.indexOf(destBrand), sourceBrand.copy());
+                    }
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                destList.add(sourceBrand);
+            }
+        }
+
+        destBrands.clear();
+        destBrands.addAll(destList);
+    }
+
+    /**
+     * Adds every slay in {@code slays} to {@code destSlays}, keeping only the stronger of two slays
+     * that kill the same monsters - the port of C's {@code copy_slays} ({@code obj-slays.c:57}).
+     *
+     * <p>Same shape as {@link #copyBrands}, and for the same reason: C's array-and-index dedup
+     * becomes a scan of {@code destSlays} for a {@link Slay#sameMonsterSlain} match, with the
+     * stronger of the pair kept by comparing {@link Slay#getMultiplier()} directly rather than by
+     * table position. The two approaches agree wherever {@code slay.txt} does not declare two slays
+     * for the same race with the same multiplier, which it never does - every race's tiers (2/3, or
+     * 3/5 for the ones with a "kill" tier) are distinct values, so C's index-based tie-break is never
+     * the thing deciding the outcome.
+     *
+     * <p>Assumes {@code slays} is never {@code null}, as {@link #copyBrands} assumes of
+     * {@code sourceBrands} and for the same reason - see that method's Javadoc.
+     *
+     * <p>Function copySlays coded before 260904, commented in full on 260904.
+     *
+     * @param destSlays the slay set the merge writes into
+     * @param slays     the slays being added
+     */
+    private static void copySlays(Set<Slay> destSlays, Set<Slay> slays) {
+        List<Slay> sourceList = slays.stream().toList();
+        List<Slay> destList = new ArrayList<>(destSlays.stream().toList());
+
+        for (Slay sourceSlay : sourceList) {
+            boolean found = false;
+            for (Slay destSlay : destList) {
+                if (sourceSlay.sameMonsterSlain(destSlay)) {
+                    if (sourceSlay.getMultiplier() > destSlay.getMultiplier()) {
+                        destList.set(destList.indexOf(destSlay), sourceSlay.copy());
+                    }
+                    found = true;
+                }
+            }
+
+            if (!found) {
+                destList.add(sourceSlay);
+            }
+        }
+
+        destSlays.clear();
+        destSlays.addAll(destList);
     }
 
     /**

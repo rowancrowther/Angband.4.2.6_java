@@ -1050,4 +1050,235 @@ public class ObjectKind {
     public void setTried(boolean tried) {
         this.tried = tried;
     }
+
+    /**
+     * @return this kind's base weight, in tenths of a pound - C's {@code kind->weight}
+     */
+    public int getWeight() {
+        return weight;
+    }
+
+    /**
+     * Returns the recharge/effect timing dice for this kind, the port of reading C's
+     * {@code kind->time}.
+     *
+     * <p>Dice rather than a settled figure, for the same reason as {@link #getToH}: {@code object.txt}
+     * states the recipe once and {@link ObjectUtils#objectPrep} rolls each item's own value from it.
+     *
+     * <p>Function getTime commented in full on 260904.
+     *
+     * @return this kind's recharge/effect timing dice
+     */
+    public Random getTime() {
+        return time;
+    }
+
+    /**
+     * Returns the dice for one of this kind's numeric modifiers, the port of reading C's
+     * {@code kind->modifiers[i]}.
+     *
+     * <p>C keeps every modifier in a fixed {@code OBJ_MOD_MAX}-length array, so a modifier
+     * {@code object.txt} never mentions still reads back as a valid, zero-value {@code random_value}
+     * rather than as an absence. This kind keeps modifiers in a {@link Map} instead, populated only
+     * for the modifiers a kind's {@code values:} line actually names, so a plain {@code get} would
+     * return {@code null} for the common case of an unmentioned modifier - {@link #getModifier}
+     * falls back to a fresh zero dice ({@code base}/{@code dice}/{@code mBonus} all {@code 0}) in that
+     * case, whose {@link Random#randCalc} always comes out {@code 0} regardless of aspect, matching
+     * what C's zeroed array slot would compute.
+     *
+     * <p>Function getModifier commented in full on 260904.
+     *
+     * @param modifier the modifier to look up
+     * @return the dice for that modifier, or a zero-value dice if this kind does not carry it
+     */
+    public Random getModifier(ObjectModifier modifier) {
+        return modifiers.getOrDefault(modifier, new Random(0, 0, 0, 1, false));
+    }
+
+    /**
+     * Returns the charge-count dice for this kind (wands and staves), the port of reading C's
+     * {@code kind->charge}.
+     *
+     * <p>Dice rather than a settled figure, for the same reason as {@link #getTime}: rolled per item
+     * by {@link ObjectUtils#objectPrep} rather than fixed on the kind.
+     *
+     * <p>Function getCharge commented in full on 260904.
+     *
+     * @return this kind's charge-count dice
+     */
+    public Random getCharge() {
+        return charge;
+    }
+
+    /**
+     * Returns the slays this kind carries — see {@link #slays}.
+     *
+     * <p>Function getSlays commented in full on 260904.
+     *
+     * @return this kind's slays
+     */
+    public Set<Slay> getSlays() {
+        return slays;
+    }
+
+    /**
+     * Returns the brands this kind carries — see {@link #brands}.
+     *
+     * <p>Function getBrands commented in full on 260904.
+     *
+     * @return this kind's brands
+     */
+    public Set<Brand> getBrands() {
+        return brands;
+    }
+
+    /**
+     * Returns the curses this kind carries, each mapped to the {@link CurseData} the kind
+     * prescribes — see {@link #curses}.
+     *
+     * <p>Function getCurses commented in full on 260904.
+     *
+     * @return this kind's curses
+     */
+    public Map<Curse, CurseData> getCurses() {
+        return curses;
+    }
+
+    /**
+     * Returns this kind's per-element info for the given element, the port of reading C's
+     * {@code kind->el_info[element]}.
+     *
+     * <p>This kind's {@link #elInfo} map only holds an entry for an element that {@code object.txt}
+     * actually sets; C's array is fixed-size and every unmentioned slot reads back as an
+     * already-zeroed {@code element_info} — no resistance, no flags. A missing map entry answers
+     * the same way here, with a freshly built {@link ElementInfo} rather than a shared placeholder,
+     * so that {@link ObjectUtils#objectPrep}'s {@code .copy()} of whatever comes back is always
+     * copying something this kind alone owns.
+     *
+     * <p>Function getElInfo commented in full on 260904.
+     *
+     * @param elementEnum the element to look up
+     * @return this kind's info for that element, or a fresh zero-value {@link ElementInfo} if this
+     * kind carries none
+     */
+    public ElementInfo getElInfo(ElementEnum elementEnum) {
+        return elInfo.getOrDefault(elementEnum, new ElementInfo());
+    }
+
+    /**
+     * Returns the dice this kind's pval (extra parameter) is rolled from, the port of reading C's
+     * {@code kind->pval}.
+     *
+     * <p>Dice, not a settled number, for the same reason as {@link #getToH}: {@code object.txt}
+     * states the range once and {@link ObjectUtils#objectPrep} rolls each item's own figure from it
+     * — here for food, oil, launchers and potions, where a wand or staff instead rolls its pval from
+     * {@link #getCharge}.
+     *
+     * <p>Function getPVal commented in full on 260904.
+     *
+     * @return this kind's pval dice
+     */
+    public Random getPVal() {
+        return pVal;
+    }
+
+    /**
+     * Reports whether this kind is disguised behind a flavour, the port of C's null check on
+     * {@code kind->flavor} — for example the {@code obj->kind->flavor} test in
+     * {@code object_set_base_known} ({@code obj-knowledge.c:856}). See {@link #getFlavour()} for
+     * the flavour itself, and why the field is load-bearing rather than incidental.
+     *
+     * <p>Function hasFlavour coded before 260904, commented in full on 260904.
+     *
+     * @return {@code true} if this kind has a flavour to hide behind
+     */
+    public boolean hasFlavour() {
+        return flavour != null;
+    }
+
+    /**
+     * Returns the autoinscription applied once the player is aware of this kind, the port of the
+     * aware branch of C's {@code get_autoinscription} ({@code obj-ignore.c:229}), which reads
+     * {@code kind->note_aware} through {@code quark_str}. C's quark table returns {@code NULL} for
+     * an unset quark ({@code quark_t} 0), which is why a plain {@code null} field here needs no
+     * extra translation - an inscription never set reports the same absence both sides of the
+     * boundary.
+     *
+     * <p>Function getNoteAware coded on 260905, commented in full on 260905.
+     *
+     * @return the aware autoinscription, or {@code null} if none is set
+     */
+    public String getNoteAware() {
+        return noteAware;
+    }
+
+    /**
+     * Returns the autoinscription applied while the player remains unaware of this kind, the port
+     * of the unaware branch of C's {@code get_autoinscription} ({@code obj-ignore.c:229}), which
+     * reads {@code kind->note_unaware} through {@code quark_str}. See {@link #getNoteAware()} for
+     * why a {@code null} field matches C's unset-quark answer without further work.
+     *
+     * <p>Function getNoteUnaware coded on 260905, commented in full on 260905.
+     *
+     * @return the unaware autoinscription, or {@code null} if none is set
+     */
+    public String getNoteUnaware() {
+        return noteUnaware;
+    }
+
+    /**
+     * Reports whether this kind's ignore setting includes the given flag - the general form behind
+     * C's per-flag bit tests such as {@code kind_is_ignored_aware} and {@code kind_is_ignored_unaware}
+     * ({@code obj-ignore.c:555-564}), each of which is just {@code kind->ignore & FLAG} written out
+     * for one flag. Testing either bit through the same {@link Flag#has} call is what lets
+     * {@link ObjectIgnore#kindIsIgnoredUnaware} stay a one-line wrapper instead of repeating the
+     * flag-set lookup itself.
+     *
+     * <p>Function hasIgnoreFlag coded on 260905, commented in full on 260905.
+     *
+     * @param ignoreFlag the flag to test
+     * @return {@code true} if the flag is set in this kind's ignore setting
+     */
+    public boolean hasIgnoreFlag(IgnoreFlag ignoreFlag) {
+        return ignore.has(ignoreFlag);
+    }
+
+    /**
+     * Sets whether this kind has ever been seen identified - the port of writing C's
+     * {@code kind->everseen} directly. C has no dedicated setter for the field; every call site
+     * ({@code obj-desc.c:639}, {@code player-birth.c:659}, {@code load.c:612}) assigns it in place,
+     * which is why this setter takes the value rather than only ever setting {@code true}.
+     *
+     * <p>{@link #isEverseen} is the read side of the same flag.
+     *
+     * <p>Function setEverSeen commented in full on 260905.
+     *
+     * @param everseen the new everseen value
+     */
+    public void setEverSeen(boolean everseen) {
+        this.everseen = everseen;
+    }
+
+    /**
+     * Sets the given flag in this kind's ignore setting - the general form behind C's per-flag
+     * setters {@code kind_ignore_when_aware} and {@code kind_ignore_when_unaware}
+     * ({@code obj-ignore.c:567-577}), each of which is just {@code kind->ignore |= FLAG} written out
+     * for one flag. Setting a flag that is already on is a no-op either way, since a bitwise OR and
+     * {@link Flag#on} both leave an already-set bit alone.
+     *
+     * <p>Both C functions also raise {@code player->upkeep->notice |= PN_IGNORE} straight after the
+     * bit set; that side effect is not this setter's job, the same way {@link #hasIgnoreFlag} carries
+     * none of the side effects belonging to the C reads it generalises. It is the caller's boundary to
+     * cross, the way {@link ObjectIgnore#kindIgnoreWhenAware} takes a {@code Player} for exactly that
+     * purpose.
+     *
+     * <p>{@link #hasIgnoreFlag} is the read side of the same flag set.
+     *
+     * <p>Function setIgnoreFlag commented in full on 260905.
+     *
+     * @param ignoreFlag the flag to set
+     */
+    public void setIgnoreFlag(IgnoreFlag ignoreFlag) {
+        this.ignore.on(ignoreFlag);
+    }
 }

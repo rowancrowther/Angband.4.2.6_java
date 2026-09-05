@@ -162,4 +162,27 @@ public class Brand {
     public int getMultiplier() {
         return multiplier;
     }
+
+    /**
+     * Returns a value-equal, reference-distinct copy of this brand.
+     *
+     * <p>C has nothing to port here: {@code obj->brands} is a {@code bool} array indexed into the
+     * fixed global {@code brands[]} table ({@code obj-slays.c}'s {@code copy_brands}), so C never
+     * duplicates a {@code struct brand} — it only turns a bit on. This port stores the brand itself
+     * in each object's {@link ItemObject#getBrands() brand set}, so {@code
+     * ObjectUtils.copyBrands} needs an actual instance to put in the destination set when a
+     * stronger-multiplier brand of the same name displaces a weaker one there, and calls this
+     * rather than sharing the source's reference.
+     *
+     * <p>Every field is a primitive, a {@code String}, or an enum constant, all immutable, so
+     * copying each by value is exactly as deep as copying needs to be.
+     *
+     * <p>Function copy coded on 260904, commented in full on 260904.
+     *
+     * @return a new brand with the same code, name, verb, flags, multipliers and power as this one
+     */
+    public Brand copy() {
+        return new Brand(this.code, this.name, this.verb, this.resistFlag, this.vulnerableFlag,
+                this.multiplier, this.oMultiplier, this.power);
+    }
 }

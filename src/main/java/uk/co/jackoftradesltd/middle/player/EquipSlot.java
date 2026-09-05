@@ -69,4 +69,22 @@ public class EquipSlot {
     public String getName() {
         return name;
     }
+
+    /**
+     * Puts an item in this slot, or empties it if {@code obj} is {@code null}. The C original has
+     * no equivalent function - {@code obj} is a plain field on {@code struct equip_slot}
+     * ({@code player.h:154}), and every caller that changes what a slot holds (wielding, taking
+     * off, birth equipping, and so on) writes it directly, e.g.
+     * {@code player->body.slots[slot].obj = wielded;} ({@code obj-gear.c:991}). This setter is the
+     * port's encapsulation of that same direct field write; it carries no extra bookkeeping of its
+     * own; freeing the outgoing item, updating carried weight, and the like remain the caller's
+     * responsibility in both versions.
+     *
+     * <p>Method setItem coded on 260905, commented in full on 260905.
+     *
+     * @param obj the item to place in this slot, or {@code null} to empty it
+     */
+    public void setItem(ItemObject obj) {
+        this.item = obj;
+    }
 }

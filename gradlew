@@ -1,21 +1,20 @@
 #!/bin/sh
 
 #
-# Copyright © 2015 the original authors.
+# Copyright (c) 1987-2022 Angband contributors.
 #
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
+# This work is free software; you can redistribute it and/or modify it
+# under the terms of either:
 #
-#      https://www.apache.org/licenses/LICENSE-2.0
+# a) the GNU General Public License as published by the Free Software
+#    Foundation, version 2, or
 #
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
+# b) the Angband licence:
+#    This software may be copied and distributed for educational, research,
+#    and not for profit purposes provided that this copyright and statement
+#    are included in all such copies.  Other copyrights may also apply.
 #
-# SPDX-License-Identifier: Apache-2.0
+#    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
 #
 
 ##############################################################################

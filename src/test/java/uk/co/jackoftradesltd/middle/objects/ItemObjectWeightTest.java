@@ -31,7 +31,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests {@link ItemObject#weightOne()}, the port of C's {@code object_weight_one}
+ * Tests {@link ItemObject#objectWeightOne()}, the port of C's {@code object_weight_one}
  * ({@code obj-util.c:274}) — one item's weight after its curses have had their say.
  *
  * <p>Curses compose rather than override: each active curse is applied in turn to the running
@@ -109,7 +109,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("an uncursed item weighs its own weight")
         void uncursedWeighsItsOwn() throws Exception {
-            assertEquals(50, item(50, Map.of()).weightOne());
+            assertEquals(50, item(50, Map.of()).objectWeightOne());
         }
 
         /**
@@ -124,7 +124,7 @@ class ItemObjectWeightTest {
             ItemObject item = new ItemObject();
             set(item, "weight", 50);
 
-            assertEquals(50, item.weightOne());
+            assertEquals(50, item.objectWeightOne());
         }
 
         /**
@@ -136,7 +136,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a negative base weight is floored at zero")
         void negativeBaseIsFloored() throws Exception {
-            assertEquals(0, item(-30, Map.of()).weightOne());
+            assertEquals(0, item(-30, Map.of()).objectWeightOne());
         }
     }
 
@@ -155,7 +155,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a positive curse weight is added")
         void positiveIsAdded() throws Exception {
-            assertEquals(70, item(50, Map.of(curse(20, false), new CurseData(10, 0))).weightOne());
+            assertEquals(70, item(50, Map.of(curse(20, false), new CurseData(10, 0))).objectWeightOne());
         }
 
         /**
@@ -166,8 +166,8 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a negative curse weight subtracts, flooring at zero")
         void negativeSubtractsAndFloors() throws Exception {
-            assertEquals(30, item(50, Map.of(curse(-20, false), new CurseData(10, 0))).weightOne());
-            assertEquals(0, item(50, Map.of(curse(-80, false), new CurseData(10, 0))).weightOne());
+            assertEquals(30, item(50, Map.of(curse(-20, false), new CurseData(10, 0))).objectWeightOne());
+            assertEquals(0, item(50, Map.of(curse(-80, false), new CurseData(10, 0))).objectWeightOne());
         }
     }
 
@@ -187,7 +187,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a multiplier of 100 changes nothing")
         void hundredIsNoChange() throws Exception {
-            assertEquals(50, item(50, Map.of(curse(100, true), new CurseData(10, 0))).weightOne());
+            assertEquals(50, item(50, Map.of(curse(100, true), new CurseData(10, 0))).objectWeightOne());
         }
 
         /**
@@ -198,8 +198,8 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("the multiplier scales the weight")
         void multiplierScales() throws Exception {
-            assertEquals(100, item(50, Map.of(curse(200, true), new CurseData(10, 0))).weightOne());
-            assertEquals(25, item(50, Map.of(curse(50, true), new CurseData(10, 0))).weightOne());
+            assertEquals(100, item(50, Map.of(curse(200, true), new CurseData(10, 0))).objectWeightOne());
+            assertEquals(25, item(50, Map.of(curse(50, true), new CurseData(10, 0))).objectWeightOne());
         }
 
         /**
@@ -211,8 +211,8 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("the division rounds up at a half")
         void divisionRoundsAtAHalf() throws Exception {
-            assertEquals(8, item(5, Map.of(curse(150, true), new CurseData(10, 0))).weightOne());
-            assertEquals(7, item(5, Map.of(curse(149, true), new CurseData(10, 0))).weightOne());
+            assertEquals(8, item(5, Map.of(curse(150, true), new CurseData(10, 0))).objectWeightOne());
+            assertEquals(7, item(5, Map.of(curse(149, true), new CurseData(10, 0))).objectWeightOne());
         }
 
         /**
@@ -224,7 +224,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a heavier-making multiplier keeps at least a minimum weight")
         void heavierKeepsAMinimum() throws Exception {
-            assertEquals(2, item(0, Map.of(curse(150, true), new CurseData(10, 0))).weightOne());
+            assertEquals(2, item(0, Map.of(curse(150, true), new CurseData(10, 0))).objectWeightOne());
         }
     }
 
@@ -248,7 +248,7 @@ class ItemObjectWeightTest {
             both.put(curse(50, false), new CurseData(10, 0));
             both.put(curse(200, true), new CurseData(10, 0));
 
-            assertEquals(200, item(50, both).weightOne(),
+            assertEquals(200, item(50, both).objectWeightOne(),
                     "the multiplier saw the added weight, not the original");
         }
 
@@ -261,7 +261,7 @@ class ItemObjectWeightTest {
         @Test
         @DisplayName("a curse at zero power has no effect")
         void zeroPowerCurseIsInactive() throws Exception {
-            assertEquals(50, item(50, Map.of(curse(20, false), new CurseData(0, 0))).weightOne());
+            assertEquals(50, item(50, Map.of(curse(20, false), new CurseData(0, 0))).objectWeightOne());
         }
 
         /**
@@ -277,7 +277,7 @@ class ItemObjectWeightTest {
             mixed.put(curse(20, false), new CurseData(0, 0));
             mixed.put(curse(30, false), new CurseData(10, 0));
 
-            assertEquals(80, item(50, mixed).weightOne());
+            assertEquals(80, item(50, mixed).objectWeightOne());
         }
     }
 }

@@ -169,56 +169,9 @@ public class Player {
      */
     private int maxSP;
     /**
-     * Builds an empty player. The two comments below mark a real division: the first group is what
-     * C's own initialisation does — {@code player_init} ({@code src/player.c}) allocates the
-     * upkeep and the timed-effect table and calls {@code options_init_defaults} — while the second
-     * group sets fields C leaves to {@code mem_zalloc}. Java has no equivalent blanket zeroing for
-     * the reference fields, and writing them out is what makes the starting state readable rather
-     * than implied.
-     *
-     * <p>A player built here is not yet playable: race, class, body, state and level are all null
-     * or empty, and {@link #itemKnowledge} is null until the registries exist to size it against.
-     * Birth fills them in.
+     * The player's real carried gear - the port of C's {@code p->gear}.
      */
-    public Player() {
-        // C initialisation
-        playerUpkeep = new PlayerUpkeep();
-        timed = new HashMap<>();
-        for (TimedEffect effect : TimedEffect.values()) {
-            timed.put(effect, 0);
-        }
-        itemKnowledge = null;
-        options = new PlayerOptions();
-        options.initDefaults();
-
-        // Java initialisation
-        body = PlayerRegistry.lookupPlayerBody(0);
-        // TO be changed to a chunk on level creation
-        cave = null;
-        gear = new ArrayList<>();
-        gearKnown = new ArrayList<>();
-        grid = Loc.zero;
-        isDead = false;
-        isWizard = false;
-        knownState = null;
-        oldGrid = Loc.zero;
-        playerClass = null;
-        playerHistory = new PlayerHistory();
-        quests = new ArrayList<>();
-        race = PlayerRegistry.getFirstPlayerRace();
-        // Crash if there are no races
-        if (race == null) {
-            logger.fatal("No player races loaded - game crashing.");
-            throw new IllegalStateException("No player races loaded - game crashing.");
-        }
-        shape = null;
-        statCur = new HashMap<>();
-        statMax = new HashMap<>();
-        statMap = new HashMap<>();
-        statsBirth = new HashMap<>();
-        state = null;
-        playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
-    }
+    private Pile gear;
     /**
      * Fractional part of the current spell points, scaled by 2^16 - the port of C's {@code p->csp_frac}.
      */
@@ -375,16 +328,62 @@ public class Player {
      * The player's current shape, if shapechanged - the port of C's {@code p->shape}.
      */
     private PlayerShape shape;
-
-    /**
-     * The player's real carried gear - the port of C's {@code p->gear}.
-     */
-    private ArrayList<ItemObject> gear;
-
     /**
      * The player's gear as currently known to the player - the port of C's {@code p->gear_k}.
      */
-    private ArrayList<ItemObject> gearKnown;
+    private Pile gearKnown;
+
+    /**
+     * Builds an empty player. The two comments below mark a real division: the first group is what
+     * C's own initialisation does — {@code player_init} ({@code src/player.c}) allocates the
+     * upkeep and the timed-effect table and calls {@code options_init_defaults} — while the second
+     * group sets fields C leaves to {@code mem_zalloc}. Java has no equivalent blanket zeroing for
+     * the reference fields, and writing them out is what makes the starting state readable rather
+     * than implied.
+     *
+     * <p>A player built here is not yet playable: race, class, body, state and level are all null
+     * or empty, and {@link #itemKnowledge} is null until the registries exist to size it against.
+     * Birth fills them in.
+     */
+    public Player() {
+        // C initialisation
+        playerUpkeep = new PlayerUpkeep();
+        timed = new HashMap<>();
+        for (TimedEffect effect : TimedEffect.values()) {
+            timed.put(effect, 0);
+        }
+        itemKnowledge = null;
+        options = new PlayerOptions();
+        options.initDefaults();
+
+        // Java initialisation
+        body = PlayerRegistry.lookupPlayerBody(0);
+        // TO be changed to a chunk on level creation
+        cave = null;
+        gear = new Pile();
+        gearKnown = new Pile();
+        grid = Loc.zero;
+        isDead = false;
+        isWizard = false;
+        knownState = null;
+        oldGrid = Loc.zero;
+        playerClass = null;
+        playerHistory = new PlayerHistory();
+        quests = new ArrayList<>();
+        race = PlayerRegistry.getFirstPlayerRace();
+        // Crash if there are no races
+        if (race == null) {
+            logger.fatal("No player races loaded - game crashing.");
+            throw new IllegalStateException("No player races loaded - game crashing.");
+        }
+        shape = null;
+        statCur = new HashMap<>();
+        statMax = new HashMap<>();
+        statMap = new HashMap<>();
+        statsBirth = new HashMap<>();
+        state = null;
+        playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
+    }
 
     /**
      * The player's accumulated object knowledge ("runes") - the port of C's {@code p->obj_k}.
@@ -435,8 +434,8 @@ public class Player {
         body = PlayerRegistry.lookupPlayerBody(0);
         // TO be changed to a chunk on level creation
         cave = null;
-        gear = new ArrayList<>();
-        gearKnown = new ArrayList<>();
+        gear = new Pile();
+        gearKnown = new Pile();
         grid = Loc.zero;
         isDead = false;
         isWizard = false;
@@ -1245,7 +1244,7 @@ public class Player {
      *
      * @return the known counterparts of the carried gear, never {@code null}
      */
-    public ArrayList<ItemObject> getGearKnown() {
+    public Pile getGearKnown() {
         return gearKnown;
     }
 
@@ -1318,7 +1317,7 @@ public class Player {
     /**
      * @return the player's carried gear (inventory and equipment)
      */
-    public ArrayList<ItemObject> getGear() {
+    public Pile getGear() {
         return gear;
     }
 
@@ -2479,5 +2478,17 @@ public class Player {
      */
     public void setShape(PlayerShape shape) {
         this.shape = shape;
+    }
+
+    /**
+     * Returns this character's object/rune knowledge - the port of reading C's {@code p->obj_k}
+     * ({@code player.h}). Live, not a copy; the write path is {@link #setItemKnowledge}.
+     *
+     * <p>Function getItemKnowledge commented in full on 260904.
+     *
+     * @return the character's object/rune knowledge, shared with this instance
+     */
+    public KnownObject getItemKnowledge() {
+        return this.itemKnowledge;
     }
 }

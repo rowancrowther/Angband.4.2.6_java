@@ -265,7 +265,7 @@ class ObjectIgnoreTest {
         @DisplayName("an unmarked pack is left alone")
         void unmarkedPackIsUntouched() {
             ItemObject item = potion();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -282,7 +282,7 @@ class ObjectIgnoreTest {
         void markedItemIsDropped() {
             ItemObject item = ItemFixture.item(TValue.TV_POTION).number(4).fullyKnown().build();
             markIgnored(item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -306,7 +306,7 @@ class ObjectIgnoreTest {
         void dropIsABackgroundCommand() {
             ItemObject item = potion();
             markIgnored(item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -321,7 +321,7 @@ class ObjectIgnoreTest {
         @DisplayName("an object with no known half is never ignored")
         void unknownObjectIsNeverIgnored() {
             ItemObject item = ItemFixture.item(TValue.TV_POTION).build();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -338,7 +338,7 @@ class ObjectIgnoreTest {
             ObjectKind kind = new ObjectKind();
             kind.setIgnoredUnaware(true);
             ItemObject item = ItemFixture.item(TValue.TV_POTION).kind(kind).fullyKnown().build();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -355,7 +355,7 @@ class ObjectIgnoreTest {
             ObjectKind kind = new ObjectKind();
             kind.setIgnoredAware(true);
             ItemObject item = ItemFixture.item(TValue.TV_POTION).kind(kind).fullyKnown().build();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -373,7 +373,7 @@ class ObjectIgnoreTest {
             kind.setIgnoredUnaware(true);
             ItemObject item = ItemFixture.item(TValue.TV_POTION).kind(kind).fullyKnown().build();
             item.setNote("!k");
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -390,7 +390,7 @@ class ObjectIgnoreTest {
             kind.setIgnoredUnaware(true);
             ItemObject item = ItemFixture.item(TValue.TV_POTION).kind(kind).fullyKnown().build();
             item.setNote("!*");
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -408,7 +408,7 @@ class ObjectIgnoreTest {
             kind.setIgnoredUnaware(true);
             ItemObject item = ItemFixture.item(TValue.TV_POTION).kind(kind)
                     .artifact(artifact()).fullyKnown().build();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -426,7 +426,7 @@ class ObjectIgnoreTest {
             ItemObject item = ItemFixture.item(TValue.TV_POTION)
                     .artifact(artifact()).fullyKnown().build();
             markIgnored(item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -446,7 +446,7 @@ class ObjectIgnoreTest {
                 ObjectInfo.ignoreLevel.put(type, QualityValueEnum.IGNORE_ALL);
             }
             ItemObject item = potion();
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -466,7 +466,7 @@ class ObjectIgnoreTest {
             ItemObject item = ItemFixture.item(TValue.TV_SOFT_ARMOR)
                     .kind(ItemFixture.loadedKind(TValue.TV_SOFT_ARMOR, "armour", 40)).fullyKnown().build();
             item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -483,7 +483,7 @@ class ObjectIgnoreTest {
             ItemObject item = ItemFixture.item(TValue.TV_SOFT_ARMOR)
                     .kind(ItemFixture.loadedKind(TValue.TV_SOFT_ARMOR, "armour", 40)).fullyKnown().build();
             item.getKnown().orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -507,7 +507,7 @@ class ObjectIgnoreTest {
         void unignoringPlayerDropsNothing() {
             ItemObject item = potion();
             markIgnored(item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
             set(player, "unignoring", 1);
 
             ObjectIgnore.ignoreDrop(player);
@@ -527,7 +527,7 @@ class ObjectIgnoreTest {
             set(level.getSquare(Loc.zero), "feat", feature(TerrainFeatureFlags.TF_SHOP));
             ItemObject item = potion();
             markIgnored(item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -544,7 +544,7 @@ class ObjectIgnoreTest {
             ItemObject item = potion();
             markIgnored(item);
             item.setNote("!d");
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
 
             ObjectIgnore.ignoreDrop(player);
 
@@ -566,7 +566,7 @@ class ObjectIgnoreTest {
          */
         private void wield(ItemObject item) {
             set(player.getPlayerBody().getSlots().getFirst(), "item", item);
-            player.getGear().add(item);
+            player.getGear().insertEnd(item);
         }
 
         /**
@@ -652,6 +652,102 @@ class ObjectIgnoreTest {
             markIgnored(item);
 
             assertFalse(ObjectIgnore.ignoreKnownItemOk(item));
+        }
+    }
+
+    /**
+     * kindIsIgnoredUnaware is the one-flag wrapper around {@link ObjectKind#hasIgnoreFlag} - the
+     * port of C's {@code kind_is_ignored_unaware} ({@code obj-ignore.c:561-564}). It has to answer
+     * only for the unaware flag, and stay unmoved by the aware one.
+     */
+    @Nested
+    @DisplayName("kindIsIgnoredUnaware")
+    class KindIsIgnoredUnaware {
+
+        @Test
+        @DisplayName("true once the unaware flag is set")
+        void trueOnceUnawareFlagSet() {
+            ObjectKind kind = new ObjectKind();
+            kind.setIgnoredUnaware(true);
+
+            assertTrue(ObjectIgnore.kindIsIgnoredUnaware(kind));
+        }
+
+        @Test
+        @DisplayName("false on a fresh kind")
+        void falseOnAFreshKind() {
+            assertFalse(ObjectIgnore.kindIsIgnoredUnaware(new ObjectKind()));
+        }
+
+        @Test
+        @DisplayName("unmoved by the aware flag alone")
+        void unmovedByTheAwareFlagAlone() {
+            ObjectKind kind = new ObjectKind();
+            kind.setIgnoredAware(true);
+
+            assertFalse(ObjectIgnore.kindIsIgnoredUnaware(kind));
+        }
+    }
+
+    /**
+     * kindIgnoreWhenAware is the port of C's {@code kind_ignore_when_aware}
+     * ({@code obj-ignore.c:567-571}): it sets the aware-ignore bit on the kind and, unlike
+     * {@link ObjectKind#setIgnoredAware}, always raises {@code PN_IGNORE} on the player's upkeep too.
+     */
+    @Nested
+    @DisplayName("kindIgnoreWhenAware")
+    class KindIgnoreWhenAware {
+
+        @Test
+        @DisplayName("sets the aware-ignore flag on a fresh kind")
+        void setsTheAwareIgnoreFlagOnAFreshKind() {
+            ObjectKind kind = new ObjectKind();
+
+            ObjectIgnore.kindIgnoreWhenAware(kind, player);
+
+            assertTrue(kind.isIgnoredAware());
+        }
+
+        @Test
+        @DisplayName("leaves the unaware-ignore flag untouched")
+        void leavesTheUnawareIgnoreFlagUntouched() {
+            ObjectKind kind = new ObjectKind();
+
+            ObjectIgnore.kindIgnoreWhenAware(kind, player);
+
+            assertFalse(kind.isIgnoredUnaware());
+        }
+
+        @Test
+        @DisplayName("raises PN_IGNORE on the player's upkeep")
+        void raisesPnIgnoreOnThePlayersUpkeep() {
+            ObjectKind kind = new ObjectKind();
+
+            ObjectIgnore.kindIgnoreWhenAware(kind, player);
+
+            assertTrue(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_IGNORE));
+        }
+
+        @Test
+        @DisplayName("is a no-op on the flag when it is already set")
+        void isANoOpOnTheFlagWhenAlreadySet() {
+            ObjectKind kind = new ObjectKind();
+            kind.setIgnoredAware(true);
+
+            ObjectIgnore.kindIgnoreWhenAware(kind, player);
+
+            assertTrue(kind.isIgnoredAware());
+        }
+
+        @Test
+        @DisplayName("still raises PN_IGNORE when the flag was already set")
+        void stillRaisesPnIgnoreWhenTheFlagWasAlreadySet() {
+            ObjectKind kind = new ObjectKind();
+            kind.setIgnoredAware(true);
+
+            ObjectIgnore.kindIgnoreWhenAware(kind, player);
+
+            assertTrue(player.getPlayerUpkeep().getNoticeFlags().has(PlayerNotice.PN_IGNORE));
         }
     }
 }

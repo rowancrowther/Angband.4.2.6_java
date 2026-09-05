@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.effect.Effect;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
@@ -687,5 +688,40 @@ public class Curse {
             return false;
 
         return effect == knownEffect;
+    }
+
+    /**
+     * The recharge/duration dice this curse's {@code time:} line sets — the port's read of C's
+     * {@code curse->obj->time} ({@code object.h:459}), a field of {@code struct object}, not of
+     * {@code struct effect}: C's effect struct carries no {@code time} member at all, so
+     * {@code parse_curse_time} ({@code obj-init.c:1280-1288}) writes straight onto the curse's own
+     * object.
+     *
+     * <p>This class has no field of its own to read that from. The port instead folds the
+     * {@code time:} data line onto the single {@link Effect} the curse's {@code effect:} line
+     * produces — the grammar captures it as that effect block's trailing {@code timeDiceString}
+     * ({@code EffectBlock.g4}), and {@code CurseAssembler} carries the built {@link Effect} (with its
+     * timing dice already set) straight into {@link #effect}. That is only equivalent to C's
+     * per-curse field because every curse in {@code curse.txt} has at most one {@code effect:} block,
+     * so there is never a second effect for the timing to be mistaken for.
+     *
+     * <p>A curse can have no {@code effect:} block at all — <em>air swing</em> is one, combat penalty
+     * only, no {@code time:} either. C's {@code curse->obj} is still a {@code mem_zalloc}'d object
+     * there, so {@code curse->obj->time} is a zero {@code random_value} rather than a missing one, and
+     * every caller ({@code copy_curses}, {@code obj-curse.c:67,203}, {@code game-world.c:368}) reads
+     * it unconditionally. With no {@link #effect} to delegate to, this returns an equivalent
+     * zero-valued {@link Random} rather than propagating a {@code null}, so it agrees with C's answer
+     * of {@code 0} under every {@link uk.co.jackoftradesltd.middle.enums.DamageAspect} instead of
+     * throwing.
+     *
+     * <p>Function getTime coded on 260904, commented in full on 260904.
+     *
+     * @return this curse's timing dice, read off its one effect, or a zero-valued {@link Random} if
+     * it has no effect
+     */
+    public Random getTime() {
+        if (effect != null)
+            return effect.getTime();
+        return new Random(0, 0, 0, 1, false);
     }
 }

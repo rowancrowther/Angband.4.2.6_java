@@ -305,6 +305,50 @@ class ItemObjectCursesTest {
     }
 
     /**
+     * The allocation step {@code copy_curses} takes before it starts writing, ported as
+     * {@link ItemObject#initCurses}.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("initCurses")
+    class Initializing {
+
+        /**
+         * A fresh object's map is already reported as empty by {@link ItemObject#getCurses} — that
+         * is the null-absorbing behaviour {@code writersCreateTheMapOnDemand} exists to pin. This
+         * checks the allocation itself does not disturb that: after {@code initCurses} the map is
+         * real (not still null under the covers) and still empty, the Java analogue of C's
+         * {@code mem_zalloc} handing back curse_max zeroed slots.
+         */
+        @Test
+        @DisplayName("gives a fresh object an empty map")
+        void freshObjectGetsEmptyMap() {
+            item.initCurses();
+
+            assertTrue(item.getCurses().isEmpty());
+        }
+
+        /**
+         * C's allocation only ever runs behind {@code if (!obj->curses)}, so it never has to
+         * consider a curse array that already exists. The port's method carries no such guard
+         * itself — {@link ObjectUtils#copyCurses} is where that check lives — so called directly on
+         * an already-cursed object it does what a bare {@code mem_zalloc} into a live pointer would:
+         * the old data is gone, replaced by an empty map rather than leaked or merged.
+         */
+        @Test
+        @DisplayName("discards whatever curses were already there")
+        void discardsExistingCurses() {
+            item.addCurse(siren, 3, 7);
+            item.addCurse(teleport, 1, 0);
+
+            item.initCurses();
+
+            assertTrue(item.getCurses().isEmpty());
+        }
+    }
+
+    /**
      * What the mutators and the closed accessor promise each other.
      *
      * @author Rowan Crowther

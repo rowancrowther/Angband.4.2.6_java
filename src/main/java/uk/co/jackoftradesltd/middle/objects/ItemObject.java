@@ -50,6 +50,7 @@ import uk.co.jackoftradesltd.middle.utils.NumberUtils;
 import java.util.*;
 
 import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN_MIXED;
+import static uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum.ORIGIN_NONE;
 
 /**
  * A concrete item instance in the game — a specific sword, potion, etc. — as
@@ -306,12 +307,22 @@ public class ItemObject {
      */
     private MonsterRace originRace = null;
 
+    private Pile owningPile;
+
     /**
      * Build an empty item (used as a blank slot/placeholder).
      */
     public ItemObject() {
         player = GameState.getPlayer();
         origin = ObjectOriginEnum.ORIGIN_NONE;
+        owningPile = null;
+        notice = new Flag<>(ObjectNotice.class);
+        flags = new Flag<>(ObjectFlag.class);
+        modifiers = new LinkedHashMap<>();
+        curses = new LinkedHashMap<>();
+        elInfo = new LinkedHashMap<>();
+        brands = new HashSet<>();
+        slays = new HashSet<>();
     }
 
     /**
@@ -411,6 +422,7 @@ public class ItemObject {
         this.originRace = originRace;
         this.note = note;
         player = GameState.getPlayer();
+        owningPile = null;
     }
 
     /**
@@ -1615,6 +1627,7 @@ public class ItemObject {
      * @param modifiers the modifier map to set — C's {@code obj->modifiers}; stored, not copied
      */
     public void setModifiers(Map<ObjectModifier, Integer> modifiers) {
+        this.modifiers.clear();
         this.modifiers = modifiers;
     }
 
@@ -1642,6 +1655,7 @@ public class ItemObject {
      * @param elInfo the element info map to set — C's {@code obj->el_info}; stored, not copied
      */
     public void setElInfo(Map<ElementEnum, ElementInfo> elInfo) {
+        this.elInfo.clear();
         this.elInfo = elInfo;
     }
 
@@ -1853,6 +1867,7 @@ public class ItemObject {
      * @param flags the flags this item should end up with; read, never retained
      */
     public void setFlagsTo(Flag<ObjectFlag> flags) {
+        this.flags.wipe();
         this.flags.copyFrom(flags);
     }
 
@@ -2095,7 +2110,7 @@ public class ItemObject {
      *
      * @return this object's individual weight in tenth-pounds, never negative
      */
-    public int weightOne() {
+    public int objectWeightOne() {
         int result = Math.max(weight, 0);
 
         for (Curse curse : getCurses().keySet()) {
@@ -2371,7 +2386,7 @@ public class ItemObject {
      * @param player the player whose quiver to search
      * @return {@code true} if this exact object sits in a quiver slot
      */
-    public boolean isInQuiver(Player player) {
+    public boolean objectIsInQuiver(Player player) {
         for (ItemObject item : player.getPlayerUpkeep().getQuiver()) {
             if (item == this) return true;
         }
@@ -2725,7 +2740,7 @@ public class ItemObject {
      * @param includingKnown {@code true} to copy the known half as well
      * @return a new item that shares no mutable state with this one, bar the noted templates
      */
-    private ItemObject copy(boolean includingKnown) {
+    ItemObject copy(boolean includingKnown) {
         ItemObject copy = new ItemObject();
 
         copy.setKind(this.getKind());
@@ -2890,7 +2905,7 @@ public class ItemObject {
      * @param quantity how many items are being priced
      * @return the price of the stack in gold, never negative
      */
-    private int objectValueReal(int quantity) {
+    public int objectValueReal(int quantity) {
         int a = 1; // Quadratic coefficient for power - must be non-negative
         int b = 5; // Linear coefficient for power - must be non-negative
         int value;
@@ -3120,7 +3135,7 @@ public class ItemObject {
      * {@code nonstandard_weight_power} ({@code obj-power.c:930}).
      *
      * <p>Only curses can produce the difference: the object's own weight is the kind's, and
-     * {@link #weightOne()} is what the curses have made of it.
+     * {@link #objectWeightOne()} is what the curses have made of it.
      *
      * <p>Two separate adjustments, and an object can take both. An object with no base armour class
      * is judged on carrying capacity - lighter is better, because it leaves room for something else.
@@ -3141,7 +3156,7 @@ public class ItemObject {
      */
     private int nonStandardWeightPower(int power) {
         int standardWeight = Math.max(getWeight(), 0);
-        int nonStandardWeight = weightOne();
+        int nonStandardWeight = objectWeightOne();
         Flag<ObjectFlag> flags = new Flag<>(ObjectFlag.class);
         int adjustment = 0;
 
@@ -4185,7 +4200,7 @@ public class ItemObject {
      * deal of armour for almost no weight. A weightless object cannot be scaled at all and takes a
      * fixed multiple instead.
      *
-     * <p>The weight used is {@link #weightOne()}, so curses that make the object heavier or lighter
+     * <p>The weight used is {@link #objectWeightOne()}, so curses that make the object heavier or lighter
      * are already reflected; that is also why {@link #nonStandardWeightPower(int)} skips objects
      * with base armour, having been accounted for here.
      *
@@ -4195,7 +4210,7 @@ public class ItemObject {
      * @return the total with the base armour terms added
      */
     private int acPower(int power) {
-        int weight = weightOne();
+        int weight = objectWeightOne();
         int q = 0;
 
         if (getBaseAC() != 0) {
@@ -4944,7 +4959,7 @@ public class ItemObject {
      *
      * @return the index of the slot this object would occupy, or {@code -1} if it is not wearable
      */
-    private int wieldSlot() {
+    public int wieldSlot() {
         switch (this.gettValue()) {
             case TV_BOW:
                 return ObjectUtils.slotByType(player, EquipmentSlotsEnum.EQUIP_BOW, false);
@@ -4990,7 +5005,7 @@ public class ItemObject {
      *
      * @return {@code true} if the player is aware of this object's flavour
      */
-    private boolean objectFlavourIsAware() {
+    boolean objectFlavourIsAware() {
         if (getKind() == null) {
             String message = "Illegal call on objectFlavourIsAware - no kind exists";
             logger.error(message);
@@ -5287,8 +5302,168 @@ public class ItemObject {
         return string;
     }
 
-    public Object getObjectFlags() {
+    /**
+     * Returns this item's live flag set, unlike {@link #getFlags()}, which hands back a defensive
+     * copy — a caller here can mutate the set and reach the item's actual flags.
+     *
+     * @return this object's flags
+     */
+    public Flag<ObjectFlag> getObjectFlags() {
         return flags;
+    }
+
+    /**
+     * Resets this object to a blank slate, as if newly constructed.
+     *
+     * <p>The port of C's {@code object_wipe} ({@code obj-pile.c:704}), which frees {@code slays},
+     * {@code brands} and {@code curses} and then {@code memset}s the whole struct to zero. The port
+     * has no manual frees to make — the old collections are simply replaced — and where C's zero
+     * fill lands on a collection field, this method assigns a fresh empty collection rather than
+     * {@code null}, so callers see "empty" rather than risking a {@code NullPointerException}.
+     *
+     * <p>{@code origin} resets to {@link uk.co.jackoftradesltd.middle.objects.enums.ObjectOriginEnum#ORIGIN_NONE}
+     * rather than {@code null}: C's zeroed {@code origin} byte lands on ordinal 0, which is
+     * {@code ORIGIN_NONE} in both the C {@code ORIGIN(...)} list ({@code list-origins.h}) and this
+     * enum, matching the convention the no-arg {@link #ItemObject()} constructor already uses.
+     *
+     * <p>Does not touch C's {@code oidx}, {@code prev} or {@code next} — the port does not carry
+     * pile-list pointers or an item-list index as fields on this class.
+     *
+     * @author Rowan Crowther
+     * <p>Function wipe coded before 260904, commented in full on 260904.
+     */
+    public void wipe() {
+        kind = null;
+        ego = null;
+        artifact = null;
+        known = null;
+        location = null;
+        tValue = null;
+        sValue = 0;
+        pValue = 0;
+        weight = 0;
+        damageDice = 0;
+        damageSides = 0;
+        baseAC = 0;
+        toAC = 0;
+        baseDamage = null;
+        toDam = 0;
+        toHit = 0;
+        flags = new Flag<>(ObjectFlag.class);
+        modifiers = new HashMap<>();
+        elInfo = new HashMap<>();
+        brands = new HashSet<>();
+        slays = new HashSet<>();
+        curses = new LinkedHashMap<>();
+        effect = new ArrayList<>();
+        effectMessage = null;
+        activation = new ArrayList<>();
+        time = null;
+        timeout = 0;
+        number = 0;
+        notice = new Flag<>(ObjectNotice.class);
+        heldMIndex = 0;
+        origin = ORIGIN_NONE;
+        originDepth = 0;
+        originRace = null;
+        note = null;
+        mimickingMIndex = 0;
+    }
+
+    /**
+     * Sets the recharge-time dice — the port of C's {@code obj->time = k->time;} struct assign
+     * (e.g. {@code object_prep}, {@code obj-make.c:833}).
+     *
+     * <p>C's {@code random_value} is a plain struct, so assigning it copies the four dice terms by
+     * value; this class's {@link Random} is a mutable reference type, so a bare field assignment
+     * here would instead alias this item's dice with the caller's — a later change to one would leak
+     * into the other. {@link Random#copy()} restores the value semantics C gets for free.
+     *
+     * <p>{@code null} clears the dice outright, which C's struct assign cannot express; no current
+     * caller passes it.
+     *
+     * <p>Function setTime coded before 260904, commented in full on 260904.
+     *
+     * @param time the recharge dice to copy in, or {@code null} to clear it
+     */
+    public void setTime(Random time) {
+        if (time == null)
+            this.time = null;
+        else
+            this.time = time.copy();
+    }
+
+    /**
+     * Sets the turns remaining before this item can be used again — the port of C's
+     * {@code obj->timeout = ...} field assignment (e.g. {@code object_prep}, {@code obj-make.c:860}).
+     *
+     * <p>Function setTimeout coded before 260904, commented in full on 260904.
+     *
+     * @param timeout turns until ready; {@code 0} means ready now
+     */
+    public void setTimeout(int timeout) {
+        this.timeout = timeout;
+    }
+
+    /**
+     * Gives this object a fresh, empty curse map, discarding whatever it already held.
+     *
+     * <p>The port of the allocation branch inside C's {@code copy_curses} —
+     * {@code obj->curses = mem_zalloc(z_info->curse_max * sizeof(struct curse_data));}
+     * ({@code obj-curse.c:58-60}) — which runs only when {@code obj->curses} is still
+     * {@code null}. That guard is the caller's job here too; {@link ObjectUtils#copyCurses}
+     * checks {@link #getCurses()} for null before calling this method rather than this method
+     * checking itself.
+     *
+     * <p>An empty map is this port's equivalent of the zeroed array {@code mem_zalloc} hands
+     * back: {@link #getCurses()} already reads "no entry" the way C reads a curse slot at power
+     * zero, so there is no C-side loop to mirror here.
+     *
+     * <p>Function initCurses coded before 260904, commented in full on 260904.
+     */
+    public void initCurses() {
+        curses = new LinkedHashMap<>();
+    }
+
+    public void setCurses(Map<Curse, CurseData> destCurseMap) {
+        curses.clear();
+        curses.putAll(destCurseMap);
+    }
+
+    /**
+     * Sets where this item came from, the port of C's direct field assignment
+     * {@code obj->origin = origin}, repeated at each of C's origin-setting call sites (for example
+     * {@code gen-util.c:511} on generation, {@code mon-blows.c:829} on a theft) rather than gathered
+     * behind one function.
+     *
+     * <p>Function setOrigin coded before 260904, commented in full on 260904.
+     *
+     * @param objectOriginEnum the new origin
+     */
+    public void setOrigin(ObjectOriginEnum objectOriginEnum) {
+        this.origin = objectOriginEnum;
+    }
+
+    /**
+     * Attaches the player's known view of this item, the port of C's direct field assignment
+     * {@code obj->known = known}, made at each of C's own known-object call sites (for example
+     * {@code obj-knowledge.c:924} when a fresh known object is minted) rather than gathered behind
+     * one function. See {@link #getKnown()} for what the counterpart holds.
+     *
+     * <p>Function setKnown coded before 260904, commented in full on 260904.
+     *
+     * @param known the known counterpart to attach, or {@code null} to detach it
+     */
+    public void setKnown(ItemObject known) {
+        this.known = known;
+    }
+
+    public Pile getOwningPile() {
+        return this.owningPile;
+    }
+
+    public void setOwningPile(Pile owner) {
+        this.owningPile = owner;
     }
 
     /**

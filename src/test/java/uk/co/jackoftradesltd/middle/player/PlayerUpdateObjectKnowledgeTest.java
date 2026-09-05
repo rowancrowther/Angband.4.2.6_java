@@ -35,6 +35,7 @@ import uk.co.jackoftradesltd.middle.objects.Curse;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
+import uk.co.jackoftradesltd.middle.objects.Pile;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
@@ -72,10 +73,11 @@ import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
  * {@link Player} subclass overriding {@code knowObject}. That override is no longer possible, and
  * would no longer be right: knowledge has moved out of {@link Player} into {@link PlayerKnowledge},
  * where both methods are static, and a static call has nothing to override. What records instead is
- * {@link RecordingList}, the list the walk iterates — pushed into the level's objects and into the
- * player's gear — which reports each element as the loop takes it. That watches the loop itself
- * rather than what it calls, so it survives {@code knowObject} moving again, changing signature, or
- * being called through something else entirely.
+ * {@link RecordingList} and {@link RecordingPile}, the collections the walk iterates — pushed into
+ * the level's objects and into the player's gear respectively — which report each element as the
+ * loop takes it. That watches the loop itself rather than what it calls, so it survives
+ * {@code knowObject} moving again, changing signature, or being called through something else
+ * entirely.
  *
  * <p><b>The curse population is the exception to the walk-only rule.</b> {@link Curse} now holds
  * its own {@code known*} fields, so the third loop both visits and writes, and there is no known
@@ -220,10 +222,11 @@ class PlayerUpdateObjectKnowledgeTest {
 
     /**
      * Puts the given items in the player's pack. C walks {@code p->gear} as a linked list; the port
-     * holds an {@link ArrayList}, which is why the method needs a null guard where C needs none.
+     * holds a {@link uk.co.jackoftradesltd.middle.objects.Pile}, which is why the method needs a null
+     * guard where C needs none.
      */
     private void carrying(ItemObject... items) throws Exception {
-        poke(player, "gear", new RecordingList(items));
+        poke(player, "gear", new RecordingPile(items));
     }
 
     /**
@@ -246,6 +249,50 @@ class PlayerUpdateObjectKnowledgeTest {
         @Override
         public Iterator<ItemObject> iterator() {
             Iterator<ItemObject> underlying = super.iterator();
+            return new Iterator<>() {
+                @Override
+                public boolean hasNext() {
+                    return underlying.hasNext();
+                }
+
+                @Override
+                public ItemObject next() {
+                    ItemObject item = underlying.next();
+                    visited.add(item);
+                    visitOrder.add(item);
+                    return item;
+                }
+            };
+        }
+    }
+
+    /**
+     * The gear the second loop iterates, recording each item into {@link #visited} and
+     * {@link #visitOrder} as the loop takes it. The same device as {@link RecordingList} and for the
+     * same reason, but a {@link uk.co.jackoftradesltd.middle.objects.Pile} subclass rather than an
+     * {@link ArrayList} one, since that is what {@code Player.gear} is now declared as, and the field
+     * is written by reflection.
+     *
+     * <p>Only {@link #getIterator()} is intercepted, matching where
+     * {@link PlayerKnowledge#updateObjectKnowledge} actually reads the gear — through
+     * {@code player.getGear().getIterator()}, not an enhanced-for loop, since {@link
+     * uk.co.jackoftradesltd.middle.objects.Pile} is not {@link Iterable}. The constructor inserts the
+     * given items with {@link uk.co.jackoftradesltd.middle.objects.Pile#insert}, one at a time, so
+     * they land in the pile in the order given rather than reversed the way
+     * {@link uk.co.jackoftradesltd.middle.objects.Pile#insertEnd} would leave them.
+     *
+     * @author Rowan Crowther
+     */
+    private final class RecordingPile extends Pile {
+        RecordingPile(ItemObject... items) {
+            for (ItemObject item : items) {
+                insert(item);
+            }
+        }
+
+        @Override
+        public Iterator<ItemObject> getIterator() {
+            Iterator<ItemObject> underlying = super.getIterator();
             return new Iterator<>() {
                 @Override
                 public boolean hasNext() {

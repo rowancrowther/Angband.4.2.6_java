@@ -556,7 +556,7 @@ public class PlayerCalcs {
         // Analyze launcher
         state.setHeavyShoot(false);
         if (launcher != null) {
-            int launcherWeight = launcher.weightOne();
+            int launcherWeight = launcher.objectWeightOne();
 
             if (hold < launcherWeight / 10) {
                 state.toHitAdd(2 * (hold - launcherWeight / 10));
@@ -596,7 +596,7 @@ public class PlayerCalcs {
         state.setHeavyWield(false);
         state.setBlessWield(false);
         if (weapon != null) {
-            int weaponWeight = weapon.weightOne();
+            int weaponWeight = weapon.objectWeightOne();
 
             // Can you take the weight (of the weapon)
             if (hold < weaponWeight / 10) {
@@ -978,7 +978,7 @@ public class PlayerCalcs {
             ItemObject item = slot.getItem();
 
             if (item != null)
-                currentWeight += item.weightOne();
+                currentWeight += item.objectWeightOne();
         }
 
         // determine max weight allowance
@@ -1071,7 +1071,7 @@ public class PlayerCalcs {
      * @return blows per turn, multiplied by 100
      */
     public static int calcBlows(Player player, ItemObject item, PlayerState state, int extraBlows) {
-        int weight = (item == null) ? 0 : item.weightOne();
+        int weight = (item == null) ? 0 : item.objectWeightOne();
         int minWeight = player.getPlayerClass().getMinWeight();
 
         // Enforce a 1/10 pound minimum weight
@@ -1569,7 +1569,9 @@ public class PlayerCalcs {
 
         // Start with the equipped items - this step is vital
         int count = 0;
-        for (ItemObject current : player.getGear()) {
+        Iterator<ItemObject> it = player.getGear().getIterator();
+        while (it.hasNext()) {
+            ItemObject current = it.next();
             count++;
             if (count > numMax) {
                 String message = "Number of equipped items greater than total number of items allowed.";

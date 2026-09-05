@@ -22,7 +22,7 @@ Thirteen items.
     - `701–706` fully-known: `setFlags` is inside the element loop, and it unions where C wipes and copies — wants
       `setFlagsTo` outside the loop. Element copy aliases and does not skip
       `ELEM_NONE`/`ELEM_MAX`.
-- [ ] **`setBaseKnown`** — `dd`/`ds`/`ac` guards are inverted (C fills only when the known value is zero), and the
+- [ ] **`objectSetBaseKnown`** — `dd`/`ds`/`ac` guards are inverted (C fills only when the known value is zero), and the
   source is wrong: `getToD().getDice()` reads the kind's to-damage dice, not its damage dice. Needs
   `ObjectKind.getDamageDice` / `getDamageSides`.
 - [ ] **`knowsEgo`** — flag subset test is inverted; the `egoModifier == null` bail-out has no counterpart in C and
@@ -51,8 +51,8 @@ Thirteen items.
 
 ## `ObjectKind.java`
 
-- [x] **`getDamageDice`** — does not exist. The `damageDice` field does. Needed by `setBaseKnown`.
-- [x] **`getDamageSides`** — does not exist. The `damageSides` field does. Needed by `setBaseKnown`.
+- [x] **`getDamageDice`** — does not exist. The `damageDice` field does. Needed by `objectSetBaseKnown`.
+- [x] **`getDamageSides`** — does not exist. The `damageSides` field does. Needed by `objectSetBaseKnown`.
 
 ## `PlayerBody.java`
 

@@ -34,14 +34,15 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
- * Tests {@link Player#setTimed(Map)} and {@link Player#setItemKnowledge(KnownObject)} — the ports of
- * the plain field writes C makes to {@code p->timed} ({@code player.c:497}, {@code player-birth.c:437})
- * and {@code p->obj_k} ({@code player.c:498}, {@code player-birth.c:438}). Neither C assignment
- * validates or copies what it is given; both simply replace whatever the field held, and these tests
- * check that the port does the same, following {@link PlayerQuestsAndUpkeepAccessorTest}'s pattern for
- * the sibling {@code setQuests}/{@code setUpkeep} pair.
+ * Tests {@link Player#setTimed(Map)} and {@link Player#setItemKnowledge(KnownObject)} /
+ * {@link Player#getItemKnowledge()} — the ports of the plain field write and read C makes on
+ * {@code p->timed} ({@code player.c:497}, {@code player-birth.c:437}) and {@code p->obj_k}
+ * ({@code player.c:498}, {@code player-birth.c:438}). Neither C assignment validates or copies what
+ * it is given, and the read is a bare pointer dereference; these tests check that the port does the
+ * same, following {@link PlayerQuestsAndUpkeepAccessorTest}'s pattern for the sibling
+ * {@code setQuests}/{@code setUpkeep} pair.
  *
- * <p>Class PlayerTimedAndItemKnowledgeAccessorTest coded on 260903, commented in full on 260903.
+ * <p>Class PlayerTimedAndItemKnowledgeAccessorTest coded on 260903, commented in full on 260904.
  *
  * @author Rowan Crowther
  */
@@ -117,24 +118,24 @@ class PlayerTimedAndItemKnowledgeAccessorTest {
     }
 
     /**
-     * {@link Player#setItemKnowledge(KnownObject)}, the port of {@code p->obj_k = ...}
-     * ({@code player.c:498}, {@code player-birth.c:438}).
+     * {@link Player#setItemKnowledge(KnownObject)} and {@link Player#getItemKnowledge()}, the ports
+     * of writing and reading {@code p->obj_k} ({@code player.c:498}, {@code player-birth.c:438}).
      */
     @Nested
-    @DisplayName("setItemKnowledge")
+    @DisplayName("setItemKnowledge / getItemKnowledge")
     class SetItemKnowledge {
 
         /**
-         * The struct handed in is the struct held afterwards - the same reference, not a copy. C
-         * assigns the pointer {@code object_new}/{@code mem_zalloc} returned; nothing about the
-         * assignment itself inspects or duplicates the struct's contents.
+         * The struct handed in is the struct read back afterwards - the same reference, not a copy.
+         * C assigns the pointer {@code object_new}/{@code mem_zalloc} returned and reads it back with
+         * a bare dereference; nothing about either half inspects or duplicates the struct's contents.
          */
         @Test
         @DisplayName("stores the given struct by identity")
         void storesByIdentity() {
             KnownObject knowledge = new KnownObject();
             player.setItemKnowledge(knowledge);
-            assertSame(knowledge, player.itemKnowledge);
+            assertSame(knowledge, player.getItemKnowledge());
         }
 
         /**
@@ -151,8 +152,8 @@ class PlayerTimedAndItemKnowledgeAccessorTest {
             player.setItemKnowledge(first);
             player.setItemKnowledge(second);
 
-            assertSame(second, player.itemKnowledge);
-            assertNotSame(first, player.itemKnowledge);
+            assertSame(second, player.getItemKnowledge());
+            assertNotSame(first, player.getItemKnowledge());
         }
     }
 }

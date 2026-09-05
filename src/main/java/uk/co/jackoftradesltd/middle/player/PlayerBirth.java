@@ -19,7 +19,12 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
+import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
+import uk.co.jackoftradesltd.middle.game.gameengine.Command;
+import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
@@ -30,13 +35,16 @@ import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.*;
+import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
-import static uk.co.jackoftradesltd.middle.objects.ObjectUtils.*;
 import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
 
 /**
@@ -552,7 +560,7 @@ public class PlayerBirth {
      *
      * @param player the character to reset to Angband's starting baseline
      */
-    private void playerInit(Player player) {
+    private static void playerInit(Player player) {
         PlayerOptions optionsSave = player.getPlayerOptions().copy();
 
         // Wipe the player
@@ -623,5 +631,301 @@ public class PlayerBirth {
 
         // Player starts unshapechanged
         player.setShape(PlayerRegistry.lookupPlayerShape("normal"));
+    }
+
+    /**
+     * Drives a whole birth through the command queue in one call, as if a player had picked a
+     * race, a class and a name at the birth screen and accepted the result - the port of C's
+     * {@code player_make_simple} ({@code player-birth.c:523}). Angband's test suite and its
+     * spoiler-file generator both use this to get a fully-initialised player without a UI.
+     *
+     * <p>{@code raceName} and {@code className} are resolved to the index of the matching entry
+     * in {@link PlayerRegistry#getPlayerRaces()} / {@link PlayerRegistry#getPlayerClasses()},
+     * found by a forward scan for a name match, returning {@code false} if the list runs out
+     * first. C does the equivalent lookup against its {@code races}/{@code classes} linked lists,
+     * but then rewrites the found position with {@code ir = nr - ir - 1} ({@code
+     * player-birth.c:543}) before using it as a choice index. That rewrite exists only because
+     * C's lists are built by prepending each parsed entry, so a forward walk from the list head
+     * finds entries in the reverse of the file's order and needs converting back. The port's race
+     * and class lists are built by appending in file order (see {@code PlayerRaceAssembler},
+     * {@code PlayerClassAssembler}), so index 0 already means the first entry in the edit file on
+     * both sides, and the forward-scan index can be used directly with no rewrite needed. A
+     * {@code null} name leaves the corresponding index at 0, matching C's untouched {@code ir}/
+     * {@code ic} when {@code nrace}/{@code nclass} is {@code NULL} - both mean "first in the edit
+     * file".
+     *
+     * <p>The resolved indices, and the player name ({@code "Simple"} when {@code playerName} is
+     * {@code null}, matching C's own fallback), are pushed onto the command queue as {@code
+     * CMD_BIRTH_INIT}, {@code CMD_BIRTH_RESET}, {@code CMD_CHOOSE_RACE}, {@code CMD_CHOOSE_CLASS},
+     * {@code CMD_NAME_CHOICE} and {@code CMD_ACCEPT_CHARACTER} in that order, then executed under
+     * {@link CommandContext#CTX_BIRTH} - the same sequence and order as C's {@code cmdq_push}
+     * calls at {@code player-birth.c:564-574}.
+     *
+     * <p>Outstanding: nothing calls this yet; it exists for the same test/spoiler-harness use C
+     * puts it to, and the port has neither yet.
+     *
+     * <p>Function playerMakeSimple coded on 260903, commented in full on 260904.
+     *
+     * @param player     the character to build; passed through unused to the command handlers
+     *                   that do the actual building, matching C's implicit use of the global
+     *                   {@code player}
+     * @param raceName   the race to select by name, or {@code null} to use the first race in the
+     *                   edit file
+     * @param className  the class to select by name, or {@code null} to use the first class in
+     *                   the edit file
+     * @param playerName the name to give the character, or {@code null} to default to
+     *                   {@code "Simple"}
+     * @return {@code true} once the birth commands have been queued and executed; {@code false}
+     * if {@code raceName} or {@code className} was given but matched no entry in the edit files
+     */
+    public static boolean playerMakeSimple(Player player, String raceName, String className, String playerName) {
+        int raceIndex = 0;
+        List<PlayerRace> races = PlayerRegistry.getPlayerRaces();
+        int raceNum = races.size();
+
+        if (raceName != null) {
+            while (true) {
+                if (raceIndex >= races.size()) return false;
+                if (races.get(raceIndex).getName().equals(raceName)) break;
+                raceIndex++;
+            }
+        }
+
+        int classIndex = 0;
+        List<PlayerClass> classes = PlayerRegistry.getPlayerClasses();
+        int classNum = classes.size();
+
+        if (className != null) {
+            while (true) {
+                if (classIndex >= classes.size()) return false;
+                if (classes.get(classIndex).getName().equals(className)) break;
+                classIndex++;
+            }
+        }
+
+        CommandQueue commandQueue = GameState.getCommandQueue();
+        commandQueue.push(CommandCode.CMD_BIRTH_INIT);
+        commandQueue.push(CommandCode.CMD_BIRTH_RESET);
+        commandQueue.push(CommandCode.CMD_CHOOSE_RACE);
+        Command command = commandQueue.commandQueuePeek();
+        command.setArgChoice("choice", raceIndex);
+        commandQueue.push(CommandCode.CMD_CHOOSE_CLASS);
+        command = commandQueue.commandQueuePeek();
+        command.setArgChoice("choice", classIndex);
+        commandQueue.push(CommandCode.CMD_NAME_CHOICE);
+        command = commandQueue.commandQueuePeek();
+        command.setArgString("name", playerName == null ? "Simple" : playerName);
+        commandQueue.push(CommandCode.CMD_ACCEPT_CHARACTER);
+        commandQueue.execute(CommandContext.CTX_BIRTH);
+
+        return true;
+    }
+
+    /**
+     * Gives a freshly-born character their starting kit - the port of C's {@code player_outfit}
+     * ({@code player-birth.c:586-672}). Having an item identifies it and makes the player aware of
+     * its purpose, so this is also where a character's earliest object knowledge comes from.
+     *
+     * <p><b>Obvious knowledge first.</b> Before any item exists, the player's {@link KnownObject} is
+     * given the three properties that are never worth hiding - damage dice, damage sides and armour
+     * class always read as their true values - and then every flag whose {@link ObjectFlagType}
+     * subtype is {@code OFT_LIGHT}, {@code OFT_DIG}, {@code OFT_THROW} or {@code OFT_CURSE_ONLY} is
+     * marked known. C loops {@code i} from 1 to {@code OF_MAX} exclusive, skipping the zeroth
+     * sentinel flag; the port walks the enum and excludes {@code OF_NONE} and {@code OF_MAX} by name
+     * instead, which is the same range. C dereferences the looked-up {@code obj_property} with no
+     * null check; the port skips a flag whose property is missing rather than risk a
+     * {@code NullPointerException} - a difference that never bites while the data file registers a
+     * property for every flag, which it does.
+     *
+     * <p><b>The starting-equipment loop.</b> Each of the class's {@link StartItem} entries rolls a
+     * quantity, looks up its {@link ObjectKind}, and - unless {@code birth_start_kit} is on - is
+     * skipped outright unless it is food or light, in which case exactly one is granted regardless of
+     * the rolled quantity. A {@code null} kind is a data-file fault, not a runtime possibility, so the
+     * port throws where C only asserts.
+     *
+     * <p><b>Exclusion options.</b> A {@link StartOptionExclusion} that is not negated excludes the
+     * item when its option is set; one that is negated excludes it when the option is <em>not</em>
+     * set - matching C's sign-encoded {@code eopts} array, where a positive entry tests
+     * {@code p->opts.opt[i]} directly and a negative one tests the negation of
+     * {@code p->opts.opt[-i]}. The port evaluates every entry rather than stopping at the first
+     * exclusion, but continuing past a already-excluded entry cannot change {@code included} back to
+     * {@code true}, so the result is the same as C's short-circuiting {@code while} loop.
+     *
+     * <p>What survives both checks is built as a fresh {@link ItemObject}, given a matching
+     * {@code known} shadow, made base-known and flavour-aware, and marked
+     * {@link ObjectNotice#OBJ_NOTICE_ASSESSED} - all before it is priced and paid for out of the
+     * gold {@link #getMoney} set earlier, and carried into the gear. The kind itself is marked
+     * {@code everSeen} regardless of how many of it were granted.
+     *
+     * <p>Spending can drive gold negative if the starting kit is expensive enough, so the total is
+     * clamped to zero afterwards rather than checked before each purchase - C does the same, one
+     * clamp at the end rather than a guard per item. Finally {@link #wieldAll} tries to equip
+     * whatever was carried, and {@link PlayerKnowledge#updateObjectKnowledge} brings the player's
+     * overall knowledge state in line with everything just granted.
+     *
+     * <p>Function playerOutfit coded on 260905, commented in full on 260905.
+     *
+     * @param player the character being born, whose knowledge, gear and gold are all set from
+     *               scratch
+     */
+    public static void playerOutfit(Player player) {
+        ItemObject known;
+
+        // Currently carrying nothing
+        player.getPlayerUpkeep().setTotalWeight(0);
+
+        // Give the player obvious object knowledge
+        KnownObject itemKnowledge = player.getItemKnowledge();
+        itemKnowledge.setDD(1);
+        itemKnowledge.setDS(1);
+        itemKnowledge.setAC(1);
+
+        for (ObjectFlag flag : ObjectFlag.values()) {
+            if (flag == ObjectFlag.OF_NONE || flag == ObjectFlag.OF_MAX) continue;
+            ObjPropertyType flagType = ObjPropertyType.OBJ_PROPERTY_FLAG;
+            ObjectPropertyTypeWrapper wrapper = new ObjectPropertyTypeWrapper(flagType, flag);
+            ObjectProperty property = ObjectRegistry.lookupObjectProperty(flagType, wrapper);
+            if (property == null) continue;
+            if (property.getSubtype() == ObjectFlagType.OFT_LIGHT || property.getSubtype() == ObjectFlagType.OFT_DIG
+                    || property.getSubtype() == ObjectFlagType.OFT_THROW || property.getSubtype() == ObjectFlagType.OFT_CURSE_ONLY)
+                itemKnowledge.learnFlag(flag);
+        }
+
+        // Starting equipment
+        for (StartItem start : player.getPlayerClass().getStartItems()) {
+            int num = RandomValueUtils.randRange(start.getMin(), start.getMax());
+            ObjectKind kind = ObjectUtils.lookupKind(start.gettValue(), start.getsValue());
+
+            if (kind == null) {
+                String message = "Null kind obtained from start item: " + start.gettValue();
+                logger.error(message);
+                throw new RuntimeException(message);
+            }
+
+            // Without start kit, only start with 1 food and 1 light
+            if (!player.getPlayerOptions().has(PlayerOptionEnum.OP_birth_start_kit)) {
+                if (!kind.gettValue().isFood() && !kind.gettValue().isLight())
+                    continue;
+
+                num = 1;
+            }
+
+            // Exclude if configured to do so based on birth options
+            if (start.geteOpts() != null && !start.geteOpts().isEmpty()) {
+                boolean included = true;
+
+                for (StartOptionExclusion exclusion : start.geteOpts()) {
+                    if (!included) continue;
+
+                    if (!exclusion.negated()) {
+                        if (player.getPlayerOptions().has(exclusion.option())) {
+                            included = false;
+                        }
+                    } else if (!player.getPlayerOptions().has(exclusion.option()))
+                        included = false;
+                }
+                if (!included) continue;
+            }
+
+            // prepare a new object
+            ItemObject obj = new ItemObject();
+            ObjectUtils.objectPrep(obj, kind, 0, DamageAspect.MINIMIZE);
+            obj.setNumber(num);
+            obj.setOrigin(ObjectOriginEnum.ORIGIN_BIRTH);
+
+            known = new ItemObject();
+            obj.setKnown(known);
+            PlayerKnowledge.objectSetBaseKnown(player, obj);
+            PlayerKnowledge.flavourAware(player, obj);
+            known.setpValue(obj.getNumber());
+            known.setEffect(obj.getEffect());
+            known.orNotice(ObjectNotice.OBJ_NOTICE_ASSESSED);
+
+            // deduct cost of item from starting gold
+            player.setAU(player.getAU() - obj.objectValueReal(obj.getNumber()));
+
+            // Carry the item
+            ObjectGear.invenCarry(player, obj, true, false);
+            kind.setEverSeen(true);
+        }
+
+        // Sanity check
+        if (player.getAU() < 0)
+            player.setAU(0);
+
+        // Now try wielding everything
+        wieldAll(player);
+
+        // Update knowledge
+        PlayerKnowledge.updateObjectKnowledge(player);
+    }
+
+    /**
+     * Tries to wield everything wieldable in the gear pile — the port of C's {@code wield_all}
+     * ({@code player-birth.c:463}). Called once at the end of birth, after the starting kit has
+     * been bought and carried, so every newly-acquired item gets a pass at going into an equipment
+     * slot before play begins.
+     *
+     * <p>The scan is a single pass over the gear: an item is worn only if {@link ItemObject#wieldSlot()}
+     * names a slot that exists on this body and that slot is currently empty. A stack of more than
+     * one is split first — one goes on the body, the rest is held back in {@code newPile} /
+     * {@code newKnownPile} rather than being appended to the gear mid-scan, because the C original
+     * also defers the merge to the end ({@code pile_insert_end} after the loop) to avoid the new
+     * split object being walked again by the same {@code for (obj = p->gear; ...)} traversal this
+     * scan mirrors.
+     *
+     * <p>The slot-bounds check is {@code slotNum < 0 || slotNum >= size()}, matching C's
+     * {@code slot < 0 || slot >= p->body.count}: {@code size()} itself is one past the last valid
+     * index, so it must be excluded, not just exceeded.
+     *
+     * <p>Function wieldAll coded on 260819, commented in full on 260905.
+     *
+     * @param player the player whose gear is being wielded
+     */
+    private static void wieldAll(Player player) {
+        Pile newPile = new Pile();
+        Pile newKnownPile = new Pile();
+
+        // Scan through the gear
+        Iterator<ItemObject> it = player.getGear().getIterator();
+        while (it.hasNext()) {
+            ItemObject obj = it.next();
+            // Skip non-objects
+            if (obj == null) continue;
+
+            // Make sure we can wield it
+            int slotNum = obj.wieldSlot();
+            if (slotNum < 0 || slotNum >= player.getPlayerBody().getSlots().size())
+                continue;
+
+            EquipSlot slot = player.getPlayerBody().getSlot(slotNum);
+            ItemObject tempObj = slot.getItem();
+
+            if (tempObj != null)
+                continue;
+
+            // Split if necessary
+            if (obj.getNumber() > 1) {
+                // All but 1 go to the new object
+                ItemObject newObj = obj.objectSplit(obj.getNumber() - 1);
+
+                // Add to the pile of new objects to carry
+                newPile.insert(newObj);
+                newKnownPile.insert(newObj.getKnown());
+            }
+
+            // Wear the new stuff
+            slot.setItem(obj);
+            PlayerKnowledge.objectLearnOnWield(player, obj);
+
+            // Increment the equipment counter by hand
+            player.getPlayerUpkeep().setEquipCount(player.getPlayerUpkeep().getEquipCount() + 1);
+        }
+
+        // Add the unwielded split items to the gear
+        if (newPile != null) {
+            player.getGear().insertEnd(newPile);
+            player.getGearKnown().insertEnd(newKnownPile);
+        }
     }
 }

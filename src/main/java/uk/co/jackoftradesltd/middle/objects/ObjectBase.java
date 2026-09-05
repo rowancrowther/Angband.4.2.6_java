@@ -22,6 +22,7 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectKindFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 
@@ -62,6 +63,8 @@ public class ObjectBase {
      */
     private Map<ElementEnum, ElementInfo> elementInfo;
 
+    private Flag<ObjectFlag> flags;
+
     /**
      * Object-kind flags shared by kinds of this base.
      */
@@ -99,6 +102,7 @@ public class ObjectBase {
         this.name = name;
         this.attr = colour;
         this.kindFlags = kFlag;
+        this.flags = new Flag<>(ObjectFlag.class);
         this.elementInfo = new HashMap<>();
         for (ElementEnum element : hatesFlag) {
             ElementInfo info = elementInfo.computeIfAbsent(element, k -> new ElementInfo());
@@ -181,6 +185,10 @@ public class ObjectBase {
      */
     public Flag<ObjectKindFlag> getKindFlags() {
         return kindFlags;
+    }
+
+    public Flag<ObjectFlag> getFlags() {
+        return flags;
     }
 
     /**

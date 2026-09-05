@@ -135,6 +135,7 @@ class PlayerUpkeepStateTest {
             assertEquals(0, upkeep.getEnergyUse());
             assertEquals(0, upkeep.getInventoryCount());
             assertEquals(0, upkeep.getQuiverCount());
+            assertEquals(0, upkeep.getEquipCount());
             assertEquals(0, upkeep.getRestingCounter());
             assertEquals(0, upkeep.getTotalWeight());
             assertEquals(0, upkeep.getCommand_wrk());
@@ -263,6 +264,49 @@ class PlayerUpkeepStateTest {
             upkeep.setCommand_wrk(2);
 
             assertEquals(2, upkeep.getCommand_wrk());
+        }
+
+        /**
+         * The carried weight, C's {@code upkeep->total_weight} — written by {@code calc_inventory}
+         * and zeroed outright at birth ({@code player-birth.c:592}), never validated on the way in.
+         */
+        @Test
+        @DisplayName("the total weight round-trips")
+        void totalWeightRoundTrips() {
+            upkeep.setTotalWeight(340);
+
+            assertEquals(340, upkeep.getTotalWeight());
+
+            upkeep.setTotalWeight(0);
+
+            assertEquals(0, upkeep.getTotalWeight(), "birth zeroes it outright, not just decrements it");
+        }
+
+        /**
+         * The equipment count, C's {@code upkeep->equip_cnt} ({@code player.h:489}) — unlike
+         * {@link #countsRoundTrip} above, C never rebuilds this one wholesale; every write is an
+         * in-place {@code ++} or {@code --} at the moment one item is worn or removed
+         * ({@code player-birth.c:499}, {@code obj-gear.c:501,952,1069}, {@code load.c:1151}).
+         * The setter itself still just stores whatever it is given, but every real caller gets
+         * there by reading {@link PlayerUpkeep#getEquipCount()} first and passing the adjusted
+         * value back in, so that round trip is what this test drives.
+         */
+        @Test
+        @DisplayName("the equipment count round-trips by increment and decrement, not by rebuild")
+        void equipCountRoundTrips() {
+            assertEquals(0, upkeep.getEquipCount());
+
+            upkeep.setEquipCount(upkeep.getEquipCount() + 1);
+            assertEquals(1, upkeep.getEquipCount(), "wearing one item increments by one");
+
+            upkeep.setEquipCount(upkeep.getEquipCount() + 1);
+            assertEquals(2, upkeep.getEquipCount(), "each wear increments again, it is not reset first");
+
+            upkeep.setEquipCount(upkeep.getEquipCount() - 1);
+            assertEquals(1, upkeep.getEquipCount(), "taking one item off decrements by one");
+
+            upkeep.setEquipCount(5);
+            assertEquals(5, upkeep.getEquipCount(), "the setter does no validation on a direct write either");
         }
 
         /**

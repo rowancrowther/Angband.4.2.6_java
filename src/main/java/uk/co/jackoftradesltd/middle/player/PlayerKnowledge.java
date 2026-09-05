@@ -32,6 +32,7 @@ import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.numerics.Random;
@@ -106,7 +107,7 @@ public class PlayerKnowledge {
      * null counterpart is nothing to do. A kind mismatch between the object and its counterpart means
      * the player has the wrong idea about what the object even is — only sensed, not assessed — and
      * imposing property knowledge on that would be asserting detail about the wrong item. A distant
-     * object that has not been {@code OBJ_NOTICE_ASSESSED} gets {@link #setBaseKnown} and no more:
+     * object that has not been {@code OBJ_NOTICE_ASSESSED} gets {@link #objectSetBaseKnown} and no more:
      * the player can see a sword on the floor across the room and know it is a sword, without being
      * close enough to have formed a view about its enchantment.
      *
@@ -143,7 +144,7 @@ public class PlayerKnowledge {
 
         // Distant objects
         if (itemKind != null && !(known.getNotice().has(ObjectNotice.OBJ_NOTICE_ASSESSED))) {
-            setBaseKnown(player, item);
+            objectSetBaseKnown(player, item);
             return;
         }
 
@@ -221,7 +222,6 @@ public class PlayerKnowledge {
             known.clearBrands();
         }
 
-
         // Slays
         Set<Slay> itemSlays = item.getSlays();
         if (itemSlays == null) itemSlays = new HashSet<>();
@@ -279,11 +279,11 @@ public class PlayerKnowledge {
         if (item.gettValue().isJewellery()) {
             if (nonCurseRunesKnown(item)) {
                 seen = (item.isArtifact() || itemKind.isEverseen());
-                flavourAware(player, player.getCave(), player.getGear(), item);
+                flavourAware(player, item);
             }
         } else if (itemKind.isSpecialArtifactKind()) {
             seen = true;
-            flavourAware(player, player.getCave(), player.getGear(), item);
+            flavourAware(player, item);
         }
 
         // Effect is known
@@ -438,7 +438,7 @@ public class PlayerKnowledge {
      * @param item   the item whose known counterpart is being brought up to date
      * @throws RuntimeException if the item or its known counterpart is missing
      */
-    public static void setBaseKnown(Player player, ItemObject item) {
+    public static void objectSetBaseKnown(Player player, ItemObject item) {
         if (item == null || item.getKnown() == null) {
             logger.error("Item or item known nonexistent in PlayerKnowledge.setBaseKnown");
             throw new RuntimeException("Item or item known nonexistent in PlayerKnowledge.setBaseKnown");
@@ -498,7 +498,7 @@ public class PlayerKnowledge {
      * becomes one to ignore now that they are aware, so the pile of unknown potions they were
      * stepping over does not suddenly reappear under a name. {@code PN_IGNORE} then asks for the
      * ignore pass to be re-run. Finally every object the player is carrying has its base knowledge
-     * refreshed, because an aware flavour reveals pval and effect that {@link PlayerKnowledge#setBaseKnown}
+     * refreshed, because an aware flavour reveals pval and effect that {@link PlayerKnowledge#objectSetBaseKnown}
      * withholds while the kind is unknown.
      *
      * <p>The floor sweep exists because some kinds change tile on awareness, so any square holding
@@ -514,15 +514,9 @@ public class PlayerKnowledge {
      *
      * @param player the player who has just become aware of the flavour, and whose ignore
      *               settings and carried objects are brought into step with it
-     * @param cave   the level whose floor is swept for objects of the newly-aware kind, so that
-     *               their squares can be redrawn; {@code null} skips the sweep, as it must
-     *               during birth and on loading a save, when no level exists yet
-     * @param gear   the objects the player is carrying, each of which has its base knowledge
-     *               refreshed because an aware flavour reveals pval and effect that
-     *               {@link PlayerKnowledge#setBaseKnown} withholds while the kind is unknown
      * @param item   an object of the kind the player has just become aware of
      */
-    public static void flavourAware(Player player, Chunk cave, ArrayList<ItemObject> gear, ItemObject item) {
+    public static void flavourAware(Player player, ItemObject item) {
         ItemObject known = item.getKnown();
         if (known == null) return;
         ObjectKind kind = item.getKind();
@@ -538,13 +532,15 @@ public class PlayerKnowledge {
         player.getPlayerUpkeep().orNoticeFlag(PlayerNotice.PN_IGNORE);
 
         // Update player objects
-        for (ItemObject obj : gear) {
-            setBaseKnown(player, obj);
+        Iterator<ItemObject> it = player.getGear().getIterator();
+        while (it.hasNext()) {
+            objectSetBaseKnown(player, it.next());
         }
 
         // Store objects
         // STUB - Todo: Implement in chapter 8
 
+        Chunk cave = GameState.getCave();
         if (cave == null) return;
 
         for (int y = 1; y < cave.getHeight(); y++) {
@@ -1019,7 +1015,8 @@ public class PlayerKnowledge {
      */
     public static void updateObjectKnowledge(Player player) {
         // Know the cave objects
-        if (player.getCave() != null) {
+        Chunk cave = GameState.getCave();
+        if (cave != null) {
             for (ItemObject itemObject : player.getCave().getObjects()) {
                 knowObject(player, itemObject);
             }
@@ -1027,8 +1024,9 @@ public class PlayerKnowledge {
 
         // Know the player objects
         if (player.getGear() != null) {
-            for (ItemObject itemObject : player.getGear()) {
-                knowObject(player, itemObject);
+            Iterator<ItemObject> it = player.getGear().getIterator();
+            while (it.hasNext()) {
+                knowObject(player, it.next());
             }
         }
 
@@ -1041,7 +1039,10 @@ public class PlayerKnowledge {
         }
 
         // Inscription
-        // TODO: Implement this branch in chapter 4
+        if (cave != null) {
+            ObjectIgnore.autoinscribeGround(player);
+        }
+        ObjectIgnore.autoinscribePack(player);
 
         EventsHandler eventsBusHandler = GameEngine.getEventsBusHandler();
         eventsBusHandler.eventSignal(GameEventType.EVENT_INVENTORY);
@@ -1878,5 +1879,26 @@ public class PlayerKnowledge {
         }
 
         return newCurse;
+    }
+
+    public static void objectLearnOnWield(Player player, ItemObject obj) {
+        if (obj.getKnown() == null) {
+            String message = "NO known object for learning on wield.";
+            logger.error(message);
+            return;
+        }
+
+        Flag<ObjectDescription> flags = new Flag<>(ObjectDescription.class, ObjectDescription.ODESC_BASE);
+        String name = obj.description(flags, player);
+
+        // check the worn flag
+        if (obj.getKnown().getNotice().has(ObjectNotice.OBJ_NOTICE_WORN)) return;
+
+        obj.getKnown().getNotice().on(ObjectNotice.OBJ_NOTICE_WORN);
+
+        // Worn means tried (for flavoured wearables)
+        ObjectKnowledge.objectFlavourTried(obj);
+
+
     }
 }

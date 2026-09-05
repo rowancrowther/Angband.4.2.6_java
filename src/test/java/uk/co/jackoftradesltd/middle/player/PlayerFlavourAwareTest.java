@@ -30,7 +30,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -114,7 +113,7 @@ class PlayerFlavourAwareTest {
      * that a later change to its argument list is edited in one place.
      */
     private void flavourAware(ItemObject item) {
-        PlayerKnowledge.flavourAware(player, player.getCave(), player.getGear(), item);
+        PlayerKnowledge.flavourAware(player, item);
     }
 
     @BeforeEach
@@ -256,8 +255,10 @@ class PlayerFlavourAwareTest {
     @DisplayName("isCarried")
     class Carried {
 
-        private void carrying(ItemObject... items) throws Exception {
-            poke(Player.class, player, "gear", new ArrayList<>(List.of(items)));
+        private void carrying(ItemObject... items) {
+            for (ItemObject item : items) {
+                player.getGear().insert(item);
+            }
         }
 
         @Test

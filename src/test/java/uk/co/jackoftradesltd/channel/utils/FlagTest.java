@@ -589,6 +589,62 @@ class FlagTest {
     }
 
     /**
+     * {@link Flag#onDbg} and {@link Flag#toList}.
+     *
+     * <p>{@code onDbg} ports {@code flag_on_dbg} ({@code z-bitflag.c}), which in a release
+     * build ({@code NDEBUG} defined) is a macro that expands straight to {@code flag_on}
+     * ({@code z-bitflag.h}) - the two are therefore required to behave identically here, not
+     * merely similarly. {@code toList} has no C original; it is checked against the same
+     * enum-declaration-order contract {@link Iteration} already pins for {@link
+     * Flag#iterator()}, since both walk the same backing set.
+     *
+     * <p>Class DebugSetterAndListView coded on 260904, commented in full on 260904.
+     */
+    @Nested
+    class DebugSetterAndListView {
+
+        @Test
+        void onDbgSetsAFlagAndReportsTheChangeOnlyTheFirstTime() {
+            assertTrue(flags.onDbg(TestFlag.ALPHA));
+            assertTrue(flags.has(TestFlag.ALPHA));
+
+            assertFalse(flags.onDbg(TestFlag.ALPHA));
+            assertEquals(1, flags.count());
+        }
+
+        @Test
+        void onDbgAndOnLeaveTheSetInTheSameState() {
+            flags.onDbg(TestFlag.ALPHA);
+            Flag<TestFlag> viaOn = new Flag<>(TestFlag.class);
+            viaOn.on(TestFlag.ALPHA);
+
+            assertTrue(flags.isEqual(viaOn));
+        }
+
+        @Test
+        void toListReturnsTheSetFlagsInEnumDeclarationOrder() {
+            flags.set(TestFlag.DELTA, TestFlag.ALPHA);
+
+            assertEquals(List.of(TestFlag.ALPHA, TestFlag.DELTA), flags.toList());
+        }
+
+        @Test
+        void toListOnAnEmptySetReturnsAnEmptyList() {
+            assertEquals(List.of(), flags.toList());
+        }
+
+        @Test
+        void toListIsAnIndependentCopy() {
+            flags.set(TestFlag.ALPHA);
+
+            List<TestFlag> list = flags.toList();
+            list.add(TestFlag.BETA);
+
+            assertFalse(flags.has(TestFlag.BETA));
+        }
+    }
+
+    /**
      * Iteration, which is how ported code walks a flag set.
      */
     @Nested

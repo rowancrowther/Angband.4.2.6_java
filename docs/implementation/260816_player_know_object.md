@@ -38,7 +38,7 @@ field reflectively so nothing failed at compile time. Fixed on 260816.
 | `middle/cave/Square.java`              | **needs work** | `holdsObject` is correct (`square_holds_object`). `lightSpot()` is an empty stub, so the display refresh at the end of `flavourAware` does nothing.                                                                                                                                                                           |
 | `middle/cave/Chunk.java`               | **correct**    | `getSquare` / `getWidth` / `getHeight` are what the new code uses, and they are right. (Chunk's older stubs at 1535–1705 are outside this work.)                                                                                                                                                                              |
 | `middle/player/PlayerBody.java`        | **needs work** | `itemIsEquipped` correct. `equippedItemSlot` dereferences `slot.getItem()` without the null guard `itemIsEquipped` has — NPEs on the first empty slot.                                                                                                                                                                        |
-| `middle/objects/ObjectKind.java`       | **needs work** | Fields and accessors are fine in themselves, but there is no `getDamageDice()` / `getDamageSides()` exposing `damageDice` / `damageSides`, which is what `setBaseKnown` actually needs (see below). The `ignore` retype to `Flag<IgnoreFlag>` is correct and its call sites are fixed.                                        |
+| `middle/objects/ObjectKind.java`       | **needs work** | Fields and accessors are fine in themselves, but there is no `getDamageDice()` / `getDamageSides()` exposing `damageDice` / `damageSides`, which is what `objectSetBaseKnown` actually needs (see below). The `ignore` retype to `Flag<IgnoreFlag>` is correct and its call sites are fixed.                                  |
 | `middle/objects/KnownObject.java`      | **needs work** | Twelve-field `obj_k` stand-in is sound, but `toA` has no `getToA()` getter — which is why `knowObject` reaches for `getAc()` in its place.                                                                                                                                                                                    |
 | `middle/objects/ItemObject.java`       | **needs work** | `getKnownFlags()` returns a *copy* and reads `known.known`; `getCurses()` returns `Collections.unmodifiableMap`. Both are used as write targets by `knowObject`. `description()` (1186) is still a stub, so the "You have …" / "On the ground:" messages cannot render.                                                       |
 | `middle/player/Player.java`            | **needs work** | The main body. See `260816_functions_implemented.md` for the function-level breakdown. The inverted early return at 589 is fixed, so the rest of `knowObject` is now reachable — and the per-block findings below now matter in play rather than in theory. `flavourAware` and `isCarried` are correct, commented and tested. |
@@ -50,7 +50,7 @@ field reflectively so nothing failed at compile time. Fixed on 260816.
 3. The two accessor shapes that block writes: `ItemObject.getKnownFlags` (copy — and this is what the one remaining
    suite failure is) and `ItemObject.getCurses` (unmodifiable).
 4. The missing accessors: `KnownObject.getToA`, `ObjectKind.getDamageDice` / `getDamageSides`.
-5. The remaining per-block issues in `knowObject`, `setBaseKnown`, `knowsEgo`,
+5. The remaining per-block issues in `knowObject`, `objectSetBaseKnown`, `knowsEgo`,
    `nonCurseRunesKnown`, `gearToLabel`.
 
 ## Commented and tested on 260816
@@ -66,7 +66,8 @@ passing.
 | `middle/objects/EgoItemAccessorsTest`     | the seven ego accessors; pins the `null`-for-untouched-modifier divergence from C                                           |
 | `middle/player/PlayerFlavourAwareTest`    | `flavourAware` — awareness on the kind not the object, the effect, the ignore transition, the re-run guard; and `isCarried` |
 
-Not covered, and why: `flavourAware`'s gear refresh calls `setBaseKnown`, which is on the needs-work list, so a fixture
+Not covered, and why: `flavourAware`'s gear refresh calls `objectSetBaseKnown`, which is on the needs-work list, so a
+fixture
 carrying objects would be testing that instead; and its floor sweep needs
 `Square.lightSpot`, which is an empty stub. Both branches are reached and survived in the suite, not asserted on.
 

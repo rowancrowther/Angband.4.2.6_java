@@ -30,12 +30,14 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
@@ -218,6 +220,54 @@ class KnownObjectTest {
             assertFalse(knowledge.brandIsKnown(weakAcid));
             assertFalse(knowledge.slayIsKnown(evil3));
             assertFalse(knowledge.curseIsKnown(siren));
+        }
+    }
+
+    /**
+     * The dice and armour multipliers — not runes learned through {@code learnX}, but the birth
+     * code's direct writes ({@code p->obj_k->dd/ds/ac = 1}, {@code player-birth.c:595-597}). Each
+     * setter is a bare field write in C with no validation, so these pin the round-trip rather than
+     * any novelty behaviour.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("dice and armour multipliers")
+    class Multipliers {
+
+        @Test
+        @DisplayName("setDD round-trips and matches C's birth value of 1")
+        void setDDRoundTrips() {
+            knowledge.setDD(1);
+            assertEquals(1, knowledge.getDd());
+        }
+
+        @Test
+        @DisplayName("setDS round-trips and matches C's birth value of 1")
+        void setDSRoundTrips() {
+            knowledge.setDS(1);
+            assertEquals(1, knowledge.getDs());
+        }
+
+        @Test
+        @DisplayName("setAC round-trips and matches C's birth value of 1")
+        void setACRoundTrips() {
+            knowledge.setAC(1);
+            assertEquals(1, knowledge.getAc());
+        }
+
+        /**
+         * The three are separate fields, the same independence the birth statement group's three
+         * lines rely on — setting one must not touch the other two.
+         */
+        @Test
+        @DisplayName("the three are independent of each other")
+        void areIndependent() {
+            knowledge.setDD(1);
+
+            assertEquals(1, knowledge.getDd());
+            assertEquals(0, knowledge.getDs());
+            assertEquals(0, knowledge.getAc());
         }
     }
 
@@ -614,6 +664,56 @@ class KnownObjectTest {
         @DisplayName("an unregistered curse is not known")
         void unregisteredCurseIsNotKnown() {
             assertFalse(knowledge.curseIsKnown(curse("nowhere")));
+        }
+    }
+
+    /**
+     * Notice flags, C's {@code obj->known->notice |= <flag>} bitmask ({@code object.h}'s
+     * {@code OBJ_NOTICE_*} constants). {@code noticeFlags} was for a time left uninitialised by the
+     * constructor, so every one of these would have thrown a {@link NullPointerException} rather
+     * than reporting anything about the flag — {@link #switchingOnFreshInstanceDoesNotThrow} pins
+     * that regression directly.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("notice flags")
+    class NoticeFlags {
+
+        @Test
+        @DisplayName("switching one on a fresh instance does not throw")
+        void switchingOnFreshInstanceDoesNotThrow() {
+            assertDoesNotThrow(() -> knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
+        }
+
+        @Test
+        @DisplayName("switching a flag on reports novelty once and then sticks")
+        void switchingOnReportsNoveltyOnce() {
+            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
+            assertFalse(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN));
+        }
+
+        /**
+         * Each flag is its own bit in C's mask, so switching one on must leave the others reading as
+         * still off — provable here only by the fact that switching them on afterwards still reports
+         * novelty.
+         */
+        @Test
+        @DisplayName("flags are independent of each other")
+        void flagsAreIndependent() {
+            knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_WORN);
+
+            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_ASSESSED));
+            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IGNORE));
+            assertTrue(knowledge.noticeFlagOn(ObjectNotice.OBJ_NOTICE_IMAGINED));
+        }
+
+        @Test
+        @DisplayName("every flag can be switched on from a fresh instance")
+        void everyFlagIsReachable() {
+            for (ObjectNotice notice : ObjectNotice.values()) {
+                assertTrue(knowledge.noticeFlagOn(notice), notice + " should report novelty on a fresh instance");
+            }
         }
     }
 }

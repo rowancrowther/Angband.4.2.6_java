@@ -62,6 +62,7 @@ import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.*;
 
 import java.util.ArrayDeque;
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -366,7 +367,10 @@ public class GameWorld {
     public void rechargeObjects() {
         boolean dischargedStack;
 
-        for (ItemObject item : player.getGear()) {
+        Iterator<ItemObject> it = player.getGear().getIterator();
+
+        while (it.hasNext()) {
+            ItemObject item = it.next();
             // Skip items with null kinds
             if (item.getKind() == null)
                 continue;
@@ -546,7 +550,7 @@ public class GameWorld {
      * the level may leave that item's reference dangling. It then runs the pending notice/update/redraw
      * passes (needed here because leaving may have changed inventory or state) and flushes queued
      * messages. Note it is deliberately {@code notice → update → redraw}, mirroring C's three separate
-     * calls, rather than the bundled {@link Player#handleStuff()}.
+     * calls, rather than the bundled {@link PlayerCalcs#noticeStuff(Player)}.
      */
     private void onLeaveLevel() {
         // Cancel any command
@@ -1238,7 +1242,7 @@ public class GameWorld {
      * <p>Several steps delegate to subsystems not yet ported and currently call stubs:
      * {@link PlayerUtils#restingCompleteSpecial()}, {@link ObjectUtils#packOverflow},
      * {@link EffectUtil#effectSimple} (the ore-detection effect), and
-     * {@link Player#timedGradeEq(TimedEffect, String)}.
+     * {@link PlayerTimed#timedGradeEq(Player, TimedEffect, String)}.
      */
     private void processPlayer() {
         // check for interrupts

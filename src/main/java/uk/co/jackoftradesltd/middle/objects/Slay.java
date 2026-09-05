@@ -176,4 +176,13 @@ public class Slay {
     public int getPower() {
         return power;
     }
+
+    public Slay copy() {
+        Slay copySlay = new Slay(code, name, base, meleeVerb, rangedVerb, raceFlag,
+                multiplier, oMultiplier, power);
+        copySlay.monsterType = this.monsterType;
+        copySlay.monsterLevel = this.monsterLevel;
+
+        return copySlay;
+    }
 }

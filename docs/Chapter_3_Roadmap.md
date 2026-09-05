@@ -307,9 +307,9 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `get_stats` (`:231`)
 - [X] `player_generate` (`[C] player-birth.c:979`)
 - [X] `player_init` (`[C] player-birth.c:395`) — note this is *not* `player.c`'s `init_player`, already ported
-- [ ] `player_make_simple` (`[C] player-birth.c:522`)
-- [ ] `player_outfit` (`[C] player-birth.c:584`)
-- [ ] `wield_all` (`:462`) — **stubs**, per decision 2
+- [X] `player_make_simple` (`[C] player-birth.c:522`)
+- [X] `player_outfit` (`[C] player-birth.c:584`)
+- [X] `wield_all` (`:462`) — **stubs**, per decision 2
 - [ ] **Remove the `LitPlayer` test double** in `src/test/.../cave/ChunkMarkWasSeenTest.java` once this stage gives a
   player a real `PlayerState`, and go back to `new Player()`. `Player()` leaves `state` null, but
   `Chunk.updateView` → `calcLighting` reads `Player.getStateLight()` (`Player.java:762`, `state.getCurLight()`), so
@@ -318,9 +318,15 @@ boxes span these stages rather than matching them one-to-one.
 
 ### H — The birth flow *(needs G; the only stage that needs the UI)*
 
-- [ ] Point-buy: `recalculate_stats` (`[C] player-birth.c:681`), `reset_stats` (`:705`), `buy_stat` (`:732`),
-  `sell_stat` (`:770`), `generate_stats` (`:816`), and the `birth_stat_costs[]` table (`:676`)
-- [ ] Quickstart: `save_roller_data` / `load_roller_data` (`[C] player-birth.c:146, 179`), `do_birth_reset` (`:1034`)
+- [ ] Point-buy: `recalculate_stats` (`[C] player-birth.c:681`),
+- [ ] `reset_stats` (`:705`),
+- [ ] `buy_stat` (`:732`),
+- [ ] `sell_stat` (`:770`),
+- [ ] `generate_stats` (`:816`),
+- [ ] and the `birth_stat_costs[]` table (`:676`)
+- [ ] Quickstart: `save_roller_data` /
+- [ ] `load_roller_data` (`[C] player-birth.c:146, 179`),
+- [ ] `do_birth_reset` (`:1034`)
 - [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
   the existing `UIBirth` / `BirthEvents` plumbing
 - [X] Roman-numeral suffixes: `find_roman_suffix_start`,

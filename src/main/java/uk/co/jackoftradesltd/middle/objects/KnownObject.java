@@ -169,6 +169,7 @@ public class KnownObject {
         initResistances();
         initToValues();
         initCurses();
+        noticeFlags = new Flag<>(ObjectNotice.class);
     }
 
     /**
@@ -575,7 +576,65 @@ public class KnownObject {
         return toA;
     }
 
+    /**
+     * Switches a notice flag on, the port of C's {@code obj->known->notice |= <flag>}
+     * ({@code obj-knowledge.c}, {@code player-birth.c}). C's {@code notice} is a plain
+     * {@code uint32_t} bitmask over the {@code OBJ_NOTICE_*} constants ({@code object.h}); this
+     * class keeps the same four flags as {@link ObjectNotice} and stores them in a {@link Flag}
+     * rather than raw bits, so the bitwise-or becomes {@link Flag#on}.
+     *
+     * <p>Returns whether the flag was newly set, which C's {@code |=} has no equivalent for — the
+     * value is this port's own, not a translation of anything the original returns.
+     *
+     * <p>Function noticeFlagOn commented in full on 260904.
+     *
+     * @param notice the flag to switch on
+     * @return true if the flag was off and is now on, false if it was already on
+     */
     public boolean noticeFlagOn(ObjectNotice notice) {
         return noticeFlags.on(notice);
+    }
+
+    /**
+     * Sets the damage-dice knowledge bit - the port of writing C's {@code p->obj_k->dd}
+     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:595}), giving
+     * the player damage dice on every item from the start; nothing in the 4.2.6 tree ever writes it
+     * back to 0. Assignment itself does no validation in either language.
+     *
+     * <p>Function setDD commented in full on 260904.
+     *
+     * @param dd 1 if the player can read damage dice, 0 if not
+     * @see #getDd()
+     */
+    public void setDD(int dd) {
+        this.dd = dd;
+    }
+
+    /**
+     * Sets the damage-sides knowledge bit - the port of writing C's {@code p->obj_k->ds}
+     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:596}); see
+     * {@link #setDD} for the rest of that boundary, which the same statement group shares.
+     *
+     * <p>Function setDS commented in full on 260904.
+     *
+     * @param ds 1 if the player can read damage sides, 0 if not
+     * @see #getDs()
+     */
+    public void setDS(int ds) {
+        this.ds = ds;
+    }
+
+    /**
+     * Sets the armour-class knowledge bit - the port of writing C's {@code p->obj_k->ac}
+     * ({@code obj-knowledge.c}). Birth sets it to 1 outright ({@code player-birth.c:597}); see
+     * {@link #setDD} for the rest of that boundary, which the same statement group shares.
+     *
+     * <p>Function setAC commented in full on 260904.
+     *
+     * @param ac 1 if the player can read armour class, 0 if not
+     * @see #getAc()
+     */
+    public void setAC(int ac) {
+        this.ac = ac;
     }
 }

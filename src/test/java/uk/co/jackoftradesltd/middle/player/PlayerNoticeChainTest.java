@@ -373,7 +373,7 @@ class PlayerNoticeChainTest {
         @DisplayName("a carried item reaches the pack")
         void carriedItemReachesThePack() throws Exception {
             ItemObject potion = item();
-            player.getGear().add(potion);
+            player.getGear().insert(potion);
 
             PlayerCalcs.calcInventory(player);
 
@@ -391,10 +391,10 @@ class PlayerNoticeChainTest {
         @DisplayName("the pack is rebuilt, not added to")
         void packIsRebuilt() throws Exception {
             ItemObject potion = item();
-            player.getGear().add(potion);
+            player.getGear().insert(potion);
             PlayerCalcs.calcInventory(player);
 
-            player.getGear().remove(potion);
+            player.getGear().excise(potion);
             PlayerCalcs.calcInventory(player);
 
             assertEquals(0, player.getPlayerUpkeep().getInventoryCount());

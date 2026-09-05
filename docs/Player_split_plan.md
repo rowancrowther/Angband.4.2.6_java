@@ -51,7 +51,7 @@ line numbers, Javadoc included.
 |--------------------------------------------------------------------------------------------------------------|-----------|------|
 | `knowObject`                                                                                                 | 456-697   | Y    |
 | `nonCurseRunesKnown`                                                                                         | 801-878   | Y    |
-| `setBaseKnown`                                                                                               | 879-947   | Y    |
+| `objectSetBaseKnown`                                                                                         | 879-947   | Y    |
 | `flavourAware`                                                                                               | 1019-1099 | Y    |
 | `knowsEgo`                                                                                                   | 1100-1243 | Y    |
 | `learnCurse`                                                                                                 | 3541-3563 | Y    |

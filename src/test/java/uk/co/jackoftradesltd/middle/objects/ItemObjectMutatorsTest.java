@@ -26,6 +26,7 @@ import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
@@ -42,6 +43,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -367,6 +369,23 @@ class ItemObjectMutatorsTest {
             assertEquals(7, item.getDamageDice());
             assertEquals(8, item.getDamageSides());
         }
+
+        /**
+         * {@code setOrigin} writes the field as given — C's plain {@code obj->origin = origin}
+         * assignment, repeated at each of C's own call sites rather than gathered behind a function.
+         * There is no getter, so the write is read back by reflection.
+         *
+         * @throws Exception if the field cannot be reached
+         */
+        @Test
+        @DisplayName("setOrigin writes the field")
+        void setOriginWrites() throws Exception {
+            item.setOrigin(ObjectOriginEnum.ORIGIN_STOLEN);
+
+            Field field = ItemObject.class.getDeclaredField("origin");
+            field.setAccessible(true);
+            assertSame(ObjectOriginEnum.ORIGIN_STOLEN, field.get(item));
+        }
     }
 
     /**
@@ -385,6 +404,27 @@ class ItemObjectMutatorsTest {
             assertFalse(item.isKnown());
             assertFalse(item.isEgo());
             assertNull(item.getEgo());
+        }
+
+        /**
+         * {@code setKnown} attaches a counterpart directly — C's plain {@code obj->known = known}
+         * assignment, made at each of C's own call sites rather than gathered behind a function —
+         * and {@link ItemObject#isKnown()} switches on the strength of it alone.
+         */
+        @Test
+        @DisplayName("setKnown attaches a counterpart, and null detaches it")
+        void setKnownAttachesAndDetaches() {
+            assertFalse(item.isKnown(), "a freshly loaded item starts with no counterpart");
+
+            ItemObject counterpart = new ItemObject();
+            item.setKnown(counterpart);
+
+            assertTrue(item.isKnown());
+            assertSame(counterpart, item.getKnown());
+
+            item.setKnown(null);
+
+            assertFalse(item.isKnown(), "null is as valid a value as any other");
         }
 
         /**
@@ -556,6 +596,75 @@ class ItemObjectMutatorsTest {
             bare.setElInfoResLevel(ElementEnum.ELEM_COLD, 1);
 
             assertEquals(3, bare.getElInfo().size());
+        }
+    }
+
+    /**
+     * {@code setTime} and {@code setTimeout}, the ports of C's {@code obj->time = k->time;} struct
+     * assign and its plain {@code obj->timeout = ...} neighbour.
+     */
+    @Nested
+    @DisplayName("recharge time and timeout")
+    class RechargeTime {
+
+        /**
+         * The value lands, and reading it back gets the same terms C's struct copy would have given.
+         */
+        @Test
+        @DisplayName("setTime stores the dice")
+        void setTimeStores() {
+            Random dice = new Random(1, 1, 2, 4, false);
+            item.setTime(dice);
+
+            assertEquals(1, item.getTime().getBase());
+            assertEquals(2, item.getTime().getDice());
+            assertEquals(4, item.getTime().getSides());
+        }
+
+        /**
+         * C's struct assign copies the four dice terms by value, so a later change to the source
+         * struct cannot reach the copy. {@link Random} is a mutable reference type in Java, so this
+         * has to be earned deliberately: {@code setTime} copies in rather than aliasing, the same way
+         * {@code setFlagsTo} does for flags.
+         */
+        @Test
+        @DisplayName("setTime copies in rather than aliasing the caller's dice")
+        void setTimeCopiesIn() {
+            Random dice = new Random(1, 1, 2, 4, false);
+            item.setTime(dice);
+
+            assertNotSame(dice, item.getTime(), "the item holds its own copy");
+
+            dice.setBase(9);
+
+            assertEquals(1, item.getTime().getBase(),
+                    "a later change to the caller's dice does not reach the item");
+        }
+
+        /**
+         * {@code null} clears the dice outright — an accommodation C's struct assign has no need of,
+         * since C has no equivalent of a null struct.
+         */
+        @Test
+        @DisplayName("setTime(null) clears the dice")
+        void setTimeNullClears() {
+            item.setTime(new Random(1, 1, 2, 4, false));
+            item.setTime(null);
+
+            assertNull(item.getTime());
+        }
+
+        /**
+         * {@code setTimeout} is a bare field write, same as C's — no clamping, no zero special case.
+         */
+        @Test
+        @DisplayName("setTimeout writes the field")
+        void setTimeoutWrites() {
+            item.setTimeout(25);
+            assertEquals(25, item.getTimeout());
+
+            item.setTimeout(0);
+            assertEquals(0, item.getTimeout(), "zero is an ordinary value, not skipped");
         }
     }
 }

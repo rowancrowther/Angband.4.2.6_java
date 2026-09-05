@@ -628,11 +628,55 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
         return inter(mask);
     }
 
+    /**
+     * Sets the flag in this flag set. Debug counterpart to {@link #on}.
+     *
+     * <p>Ports {@code flag_on_dbg} ({@code z-bitflag.c}). In a debug build it repeats
+     * {@code flag_on}'s set logic but first asserts the flag's byte offset falls within the
+     * bitfield's size, calling {@code quit_fmt} with the offending file/line pair if it doesn't;
+     * in a release build ({@code NDEBUG} defined) {@code flag_on_dbg} is a macro that expands to
+     * {@code flag_on} outright ({@code z-bitflag.h}). Every {@code _on} wrapper macro in the C
+     * game ({@code of_on}, {@code rf_on}, {@code mflag_on}, {@code sqinfo_on}, ...) calls
+     * {@code flag_on_dbg}, not {@code flag_on} directly, so this is the path most C flag-setting
+     * actually takes, not the debug-only sideline the name suggests.
+     *
+     * <p>The bounds check has nothing to check here: {@code flag} is typed {@code E}, so an
+     * out-of-range flag id cannot be constructed, and this method is therefore identical to
+     * {@link #on}. That is a deliberate simplification, not a gap — the same shape of divergence
+     * as {@link #isFull}.
+     *
+     * <p>Function onDbg coded on 260904, commented in full on 260904.
+     *
+     * @param flag the flag to set
+     * @return false if the flag was already set, true otherwise
+     */
     public boolean onDbg(E flag) {
         if (flagSet.contains(flag))
             return false;
 
         flagSet.add(flag);
         return true;
+    }
+
+    /**
+     * Returns the flags currently switched on as a new list, in enum declaration order (the
+     * order {@link EnumSet} iterates in).
+     *
+     * <p>Has no single C counterpart — C has no call that hands back the set flags as a list.
+     * This is a Java-side convenience alongside {@link #iterator()}, which visits the same
+     * flags in the same order; use whichever shape the caller needs. The returned list is a
+     * fresh copy, so mutating it has no effect on this set.
+     *
+     * <p>Function toList coded on 260904, commented in full on 260904.
+     *
+     * @return a new list of the flags that are on, in enum declaration order
+     */
+    public List<E> toList() {
+        List<E> flags = new ArrayList<>();
+        for (E flag : flagSet) {
+            flags.add(flag);
+        }
+
+        return flags;
     }
 }

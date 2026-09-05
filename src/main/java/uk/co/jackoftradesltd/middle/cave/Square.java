@@ -135,7 +135,6 @@ public class Square {
 
     /**
      * Get the current light status of this square
-     * TODO: Change the light intensity from an integer to an enum?
      *
      * @return the current light status of this square
      */

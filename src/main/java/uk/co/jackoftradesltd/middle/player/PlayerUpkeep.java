@@ -894,4 +894,53 @@ public class PlayerUpkeep {
     public void setQuiverObjects(ItemObject[] quiverObjects) {
         this.quiverObjects = quiverObjects;
     }
+
+    /**
+     * Replaces the total weight the player is carrying - the port of writing C's
+     * {@code upkeep->total_weight} ({@code player.h:487}). C assigns the field directly wherever it
+     * recomputes the burden, most notably {@code calc_inventory} and {@code calc_weight}
+     * ({@code player-calcs.c}) after any change to the pack, quiver or worn gear, and birth zeroes it
+     * outright before either runs ({@code player-birth.c:592}). Assignment itself does no validation
+     * in either language; see {@link #getTotalWeight} for what the value is used for.
+     *
+     * <p>Function setTotalWeight commented in full on 260904.
+     *
+     * @param weight the carried weight in tenth-pounds
+     */
+    public void setTotalWeight(int weight) {
+        this.totalWeight = weight;
+    }
+
+    /**
+     * Returns the number of equipment slots currently occupied - the port of reading C's
+     * {@code upkeep->equip_cnt} ({@code player.h:489}). C never reads the field through a
+     * function; every caller ({@code ui-knowledge.c:3964}, {@code ui-death.c:212}) tests the
+     * struct member directly for zero/non-zero. This getter is that same read, wrapped, and is
+     * also how a caller here gets the value to increment or decrement (see {@link #setEquipCount}).
+     *
+     * <p>Function getEquipCount commented in full on 260905.
+     *
+     * @return the count of occupied equipment slots
+     */
+    public int getEquipCount() {
+        return equipmentCount;
+    }
+
+    /**
+     * Replaces the equipment count outright - the port of writing C's {@code upkeep->equip_cnt}
+     * ({@code player.h:489}). Unlike {@link #setInventoryCount} and {@link #setQuiverCount},
+     * which are rebuilt wholesale by {@code calcInventory} from scratch, C never assigns this
+     * field wholesale: every write is an in-place {@code ++} or {@code --} at the moment a single
+     * item is worn or removed ({@code player-birth.c:499}, {@code obj-gear.c:501,952,1069},
+     * {@code load.c:1151}). A caller here reproduces that by reading {@link #getEquipCount} and
+     * passing the incremented or decremented value straight back in; the setter itself does no
+     * arithmetic and no validation.
+     *
+     * <p>Function setEquipCount commented in full on 260905.
+     *
+     * @param equipmentCount the new count of occupied equipment slots
+     */
+    public void setEquipCount(int equipmentCount) {
+        this.equipmentCount = equipmentCount;
+    }
 }

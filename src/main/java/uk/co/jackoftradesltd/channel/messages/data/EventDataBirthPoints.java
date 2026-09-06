@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.channel.messages.data;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 
 import java.util.HashMap;
+import java.util.Map;
 
 /**
  * {@link GameEventData} payload for the point-buy stage of character creation —
@@ -32,11 +33,11 @@ public class EventDataBirthPoints implements GameEventData {
     /**
      * Points currently allocated to each stat.
      */
-    private HashMap<Stats, Integer> points;
+    private Map<Stats, Integer> points;
     /**
      * Cost to increment each stat by one.
      */
-    private HashMap<Stats, Integer> incPoints;
+    private Map<Stats, Integer> incPoints;
     /**
      * Points still available to spend.
      */
@@ -49,7 +50,7 @@ public class EventDataBirthPoints implements GameEventData {
      * @param incPoints increment cost per stat
      * @param remaining points still available
      */
-    public EventDataBirthPoints(HashMap<Stats, Integer> points, HashMap<Stats, Integer> incPoints, int remaining) {
+    public EventDataBirthPoints(Map<Stats, Integer> points, Map<Stats, Integer> incPoints, int remaining) {
         this.points = points;
         this.incPoints = incPoints;
         this.remaining = remaining;
@@ -58,14 +59,14 @@ public class EventDataBirthPoints implements GameEventData {
     /**
      * @return the points allocated per stat
      */
-    public HashMap<Stats, Integer> getPoints() {
+    public Map<Stats, Integer> getPoints() {
         return points;
     }
 
     /**
      * @return the increment cost per stat
      */
-    public HashMap<Stats, Integer> getIncPoints() {
+    public Map<Stats, Integer> getIncPoints() {
         return incPoints;
     }
 

@@ -83,18 +83,21 @@ public class PlayerBirth {
      * {@code birth_stat_costs[stats_local[choice] + 1]} for raising a stat that currently sits at
      * {@code stats_local[choice]} ({@code player-birth.c:744}).
      *
-     * <p>Costs are flat through 10-17 (one point each) and jump to 2 and then 4 for 18 and 19,
-     * which is why the C comment above the array notes it was feasible to autoroll a base 17 in
-     * three stats - the array is shaped around what the roller could already produce, not an
-     * arbitrary curve.
+     * <p>Costs are flat at one point per point through the climb from 10 to 16, then jump to 2 for
+     * the point that reaches 17 and to 4 for the point that reaches 18 - the highest a stat can
+     * reach through point-buy, and the array's last entry; there is no cost for 19. That is why the
+     * C comment above the array notes it was feasible to autoroll a base 17 in three stats - the
+     * array is shaped around what the roller could already produce, not an arbitrary curve, and it
+     * is the last two points that are made deliberately expensive rather than the whole climb.
      *
-     * <p>Ported here as a bare field because the point-buy screen itself - {@code buy_stat},
-     * {@code sell_stat}, {@code reset_stats} - is UI, not model, and is out of scope for this
-     * class (see the class Javadoc). Nothing in the Java code reads this array yet.
+     * <p>Ported here as a bare field because the point-buy screen itself is UI, not model, and is
+     * out of scope for this class (see the class Javadoc) - {@code sell_stat} is still nothing more
+     * than that C name here. {@link #resetStats} and {@link #buyStat} both read the field directly,
+     * since pricing a point is a one-line array lookup rather than something worth wrapping.
      *
-     * <p>Field birthStatCosts coded on 260901 / commented in full on 260905.
+     * <p>Field birthStatCosts coded on 260901 / commented in full on 260906.
      */
-    private final int[] birthStatCosts = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 4};
+    private static final int[] birthStatCosts = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 2, 4};
 
     /**
      * Gives this player the body their race is built with — the slots they can wear things in.
@@ -1015,5 +1018,191 @@ public class PlayerBirth {
         eventsHandler.eventSignal(GameEventType.EVENT_AC);
         eventsHandler.eventSignal(GameEventType.EVENT_HP);
         eventsHandler.eventSignal(GameEventType.EVENT_STATS);
+    }
+
+    /**
+     * Resets the point-buy stats to their starting values - the port of C's
+     * {@code reset_stats} ({@code player-birth.c:710-735}).
+     *
+     * <p>Every real stat goes back to base 10 with nothing spent on it yet, and its increment
+     * cost is reseeded from {@link #birthStatCosts} at <em>value + 1</em> - the same offset
+     * {@code buy_stat} uses when pricing the point it is about to buy
+     * ({@code player-birth.c:746}). Reading each stat's own freshly-set value, rather than some
+     * other stat's, is what keeps this in step with C, where {@code stats_local[i]} and
+     * {@code points_inc_local[i]} share the one index throughout the loop. The stat loop skips
+     * {@code STAT_NONE} and {@code STAT_MAX}, the same guard {@link #recalculateStats} and
+     * {@link #getStats} use on the same enum.
+     *
+     * <p>C takes the running point total as {@code int *points_left_local} and writes
+     * {@link #MAX_BIRTH_POINTS} through the pointer, so every caller's own variable is updated
+     * by the call regardless of what it held going in. The port has no by-reference {@code int},
+     * so it returns the new total instead and ignores whatever {@code pointsLeftLocal} arrived
+     * with - a caller has to assign the result rather than read a mutated parameter, unlike
+     * every C caller of {@code reset_stats} ({@code player-birth.c:1094,1105,1116,1148}).
+     *
+     * <p>{@code updateDisplay} is the same UI guard {@code buy_stat} and {@code sell_stat} take -
+     * when set, this also calls {@link #recalculateStats} and signals the birthpoints event, so
+     * the point-buy screen catches up with the reset.
+     *
+     * <p>This is the point-buy birth screen and stays out of the model's scope, so this method
+     * has no caller yet.
+     *
+     * <p>Function resetStats coded on 260906, commented in full on 260906.
+     *
+     * @param statsLocal       the point-buy stat values, one entry per real stat, overwritten in place
+     * @param pointsSpentLocal the points spent per stat, overwritten in place
+     * @param pointsIncLocal   the cost of the next point per stat, overwritten in place
+     * @param pointsLeftLocal  the caller's running point total; its incoming value is discarded,
+     *                         since the reset always replaces it
+     * @param updateDisplay    whether to recompute derived stats and signal the UI
+     * @return the point total after the reset, always {@link #MAX_BIRTH_POINTS}
+     */
+    public static int resetStats(Map<Stats, Integer> statsLocal, Map<Stats, Integer> pointsSpentLocal,
+                                 Map<Stats, Integer> pointsIncLocal, int pointsLeftLocal,
+                                 boolean updateDisplay) {
+        EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
+        pointsLeftLocal = MAX_BIRTH_POINTS;
+
+        for (int index = 0; index < Stats.values().length; index++) {
+            Stats stat = Stats.values()[index];
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            statsLocal.put(stat, 10);
+            pointsSpentLocal.put(stat, 0);
+            pointsIncLocal.put(stat, birthStatCosts[statsLocal.get(stat) + 1]);
+        }
+
+        // Use the new "birth stat" values to work out the "other" stat values (i.e. after
+        // modifiers) and tell the UI things have changed
+        if (updateDisplay) {
+            recalculateStats(statsLocal, pointsLeftLocal);
+            eventsHandler.eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS, pointsSpentLocal,
+                    pointsIncLocal, pointsLeftLocal);
+        }
+
+        return pointsLeftLocal;
+    }
+
+    /**
+     * Spends one point-buy point raising a single stat by one - the port of C's {@code buy_stat}
+     * ({@code player-birth.c:738-773}).
+     *
+     * <p>{@code choice} arrives as C's own raw stat index - {@code STAT_STR} is 0, {@code STAT_CON}
+     * is 4 - and is incremented once before use so it can index straight into
+     * {@link Stats#values()}, whose ordinal 0 is the {@code STAT_NONE} sentinel. That shift is why
+     * the validity test below reads {@code choice <= 0} and {@code choice >= STAT_MAX.getValue() + 1}
+     * rather than C's unshifted {@code choice < 0} / {@code choice >= STAT_MAX}: both exclude the
+     * same five stats, just at indices one higher.
+     *
+     * <p><b>Out-of-range {@code choice} returns, it does not throw.</b> C's {@code do_cmd_buy_stat}
+     * passes {@code choice} straight from a command argument with no validation of its own
+     * ({@code player-birth.c:1122-1130}), so {@code buy_stat} itself is the only thing standing
+     * between a malformed argument and an out-of-bounds array read - which is exactly why its
+     * guard is a plain {@code if}, not an {@code assert}, and answers {@code false} rather than
+     * crashing. The port's first check, before {@code choice} ever indexes {@link Stats#values()},
+     * reproduces that: any {@code choice} landing outside the enum's own bounds answers
+     * {@code new IntAndBoolean(pointsLeftLocal, false)} immediately, the same "no-op, nothing
+     * spent" result C gives for the identical input.
+     *
+     * <p>The point-cost lookup, the cost-mismatch guard and the spend are otherwise C's clauses in
+     * C's order: {@code birthStatCosts[stat + 1]} prices the point being bought, a mismatch against
+     * the caller's own {@code pointsIncLocal} throws rather than asserting (the same substitution
+     * documented on {@link #getHistory}), and the point is only taken if enough are left.
+     *
+     * <p><b>One deliberate divergence.</b> Buying a stat from 17 to 18 is reachable within
+     * {@link #MAX_BIRTH_POINTS} - the full climb from base 10 costs 12 of the 20 available points,
+     * eight of them on the last two steps alone ({@link #birthStatCosts}'s own entries 17 and 18
+     * are 2 and 4, not 1) - and C's next line then reads {@code birth_stat_costs[stat + 1]} with
+     * the freshly-incremented value 18, i.e.
+     * {@code birth_stat_costs[19]}: one past both that array's and {@link #birthStatCosts}'s
+     * nineteen entries, undefined behaviour in C. The port guards the same read with
+     * {@code index < birthStatCosts.length} and simply leaves {@code pointsIncLocal} unwritten at
+     * that point rather than following C past the end of the array - reproducing C's own
+     * out-of-bounds read is not something the port takes on.
+     *
+     * <p>Where C takes the running point total as {@code int *points_left_local} and writes through
+     * it, the port has no by-reference {@code int}: {@link IntAndBoolean} carries both the new
+     * points-left figure and the success flag back to the caller, the same pairing
+     * {@link #resetStats} uses its own return value for.
+     *
+     * <p>Function buyStat coded on 260906, commented in full on 260906.
+     *
+     * @param choice           the stat to raise, as C's raw {@code STAT_*} index (0 for
+     *                         {@code STAT_STR} through 4 for {@code STAT_CON}); any other value
+     *                         leaves the stats untouched
+     * @param statsLocal       the point-buy stat values, one entry per real stat; the chosen stat's
+     *                         entry is incremented on success
+     * @param pointsSpentLocal the points spent per stat so far; the chosen stat's entry grows by
+     *                         the cost paid on success
+     * @param pointsIncLocal   the cost of the next point per stat; refreshed for the chosen stat on
+     *                         success, except at the one boundary noted above
+     * @param pointsLeftLocal  the caller's running point total before this purchase
+     * @param updateDisplay    whether to recompute derived stats and signal the UI on a successful
+     *                         purchase
+     * @return the new points-left total paired with whether the purchase succeeded; the points-left
+     * figure is unchanged from {@code pointsLeftLocal} whenever the flag is {@code false}
+     */
+    public static IntAndBoolean buyStat(int choice, Map<Stats, Integer> statsLocal,
+                                        Map<Stats, Integer> pointsSpentLocal,
+                                        Map<Stats, Integer> pointsIncLocal,
+                                        int pointsLeftLocal, boolean updateDisplay) {
+        // Increment to handle Stats.STAT_NONE
+        choice++;
+        if (choice < 0 || choice >= Stats.values().length) {
+            return new IntAndBoolean(pointsLeftLocal, false);
+        }
+
+        Stats stat = Stats.values()[choice];
+
+        // Increment to max value to handle Stats.STAT_NONE
+        if (!(choice >= Stats.STAT_MAX.getValue() + 1 || choice <= 0) && (statsLocal.get(stat) < 18)) {
+            // Get the cost of buying the extra point (beyond what it has already cost
+            // to get this far            
+            int statCost = birthStatCosts[statsLocal.get(stat) + 1];
+
+            if (statCost != pointsIncLocal.get(stat)) {
+                String msg = "Invalid point buy cost";
+                logger.error(msg);
+                throw new RuntimeException(msg);
+            }
+            if (statCost <= pointsLeftLocal) {
+                statsLocal.compute(stat, (k, statLocal) -> statLocal + 1);
+                pointsSpentLocal.compute(stat, (k, statLocal) -> statLocal + statCost);
+
+                int index = statsLocal.get(stat) + 1;
+                if (index >= 0 && index < birthStatCosts.length) {
+                    pointsIncLocal.put(stat, birthStatCosts[statsLocal.get(stat) + 1]);
+                }
+                pointsLeftLocal -= statCost;
+
+                if (updateDisplay) {
+                    // tell the UI the new points situation
+                    GameEngine.getEventsBusHandler().eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS, pointsSpentLocal,
+                            pointsIncLocal, pointsLeftLocal);
+
+                    // Recalculate everything that's changed because the stat has changes,
+                    // and inform the UI
+                    recalculateStats(statsLocal, pointsLeftLocal);
+                }
+
+                return new IntAndBoolean(pointsLeftLocal, true);
+            }
+        }
+
+        // Didn't adjust stat
+        return new IntAndBoolean(pointsLeftLocal, false);
+    }
+
+    /**
+     * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
+     * return - {@code value} stands in for what C writes through {@code points_left_local} and
+     * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else
+     * in the class needs the pairing.
+     *
+     * <p>Record IntAndBoolean coded on 260906, commented in full on 260906.
+     *
+     * @param value the points-left total after the call
+     * @param bool  whether the purchase succeeded
+     */
+    private record IntAndBoolean(int value, boolean bool) {
     }
 }

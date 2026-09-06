@@ -319,7 +319,7 @@ boxes span these stages rather than matching them one-to-one.
 ### H — The birth flow *(needs G; the only stage that needs the UI)*
 
 - [x] Point-buy: `recalculate_stats` (`[C] player-birth.c:681`),
-- [ ] `reset_stats` (`:705`),
+- [X] `reset_stats` (`:705`),
 - [ ] `buy_stat` (`:732`),
 - [ ] `sell_stat` (`:770`),
 - [ ] `generate_stats` (`:816`),

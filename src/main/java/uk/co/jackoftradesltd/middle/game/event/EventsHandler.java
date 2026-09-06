@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.middle.objects.ItemObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * The event bus abstraction: the interface through which game logic broadcasts
@@ -239,8 +240,8 @@ public interface EventsHandler {
      * @param remaining The remaining number of points to spend
      */
     default void eventSignalBirthpoints(GameEventType eventType,
-                                        HashMap<Stats, Integer> stats,
-                                        HashMap<Stats, Integer> incPoints,
+                                        Map<Stats, Integer> stats,
+                                        Map<Stats, Integer> incPoints,
                                         int remaining) {
         gameEventDispatch(eventType, new EventDataBirthPoints(stats, incPoints, remaining));
     }

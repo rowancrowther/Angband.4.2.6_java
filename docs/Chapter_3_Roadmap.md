@@ -323,7 +323,7 @@ boxes span these stages rather than matching them one-to-one.
 - [ ] `buy_stat` (`:732`),
 - [ ] `sell_stat` (`:770`),
 - [ ] `generate_stats` (`:816`),
-- [ ] and the `birth_stat_costs[]` table (`:676`)
+- [X] and the `birth_stat_costs[]` table (`:676`)
 - [ ] Quickstart: `save_roller_data` /
 - [ ] `load_roller_data` (`[C] player-birth.c:146, 179`),
 - [ ] `do_birth_reset` (`:1034`)

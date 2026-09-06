@@ -84,10 +84,10 @@ Roll a character; see their stats. C: `player-birth.c`, `player-calcs.c`, `playe
 `player-util.c`, `player-history.c`. *(Map before detail — a pre-map inventory of the existing
 `middle/player` scaffold is in `docs/Chapter_3_Roadmap.md`.)*
 
-- [ ] Map: the player subsystem
-- [ ] Character creation (birth)
-- [ ] Derived stats (`player-calcs` — the big one)
-- [ ] Player state & timed effects (`player-timed`)
+- [X] Map: the player subsystem
+- [X] Character creation (birth)
+- [X] Derived stats (`player-calcs` — the big one)
+- [X] Player state & timed effects (`player-timed`)
 
 ## Chapter 4 — A level exists
 

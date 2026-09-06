@@ -320,8 +320,8 @@ boxes span these stages rather than matching them one-to-one.
 
 - [x] Point-buy: `recalculate_stats` (`[C] player-birth.c:681`),
 - [X] `reset_stats` (`:705`),
-- [ ] `buy_stat` (`:732`),
-- [ ] `sell_stat` (`:770`),
+- [X] `buy_stat` (`:732`),
+- [X] `sell_stat` (`:770`),
 - [ ] `generate_stats` (`:816`),
 - [X] and the `birth_stat_costs[]` table (`:676`)
 - [ ] Quickstart: `save_roller_data` /

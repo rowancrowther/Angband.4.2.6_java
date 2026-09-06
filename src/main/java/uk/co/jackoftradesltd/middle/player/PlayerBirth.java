@@ -1193,6 +1193,82 @@ public class PlayerBirth {
     }
 
     /**
+     * Spends one point-buy point lowering a single stat by one, refunding the point it cost to
+     * raise it - the port of C's {@code sell_stat} ({@code player-birth.c:777-807}).
+     *
+     * <p>Unlike {@link #buyStat}, {@code choice} arrives as the enum constant directly rather than
+     * C's raw {@code STAT_*} index, so there is no shift to apply before the validity check:
+     * {@code choice == STAT_MAX || choice == STAT_NONE} excludes the same two sentinels C's
+     * {@code choice >= STAT_MAX || choice < 0} does, at the enum's own bounds rather than an
+     * incremented one.
+     *
+     * <p><b>The floor guard is strict.</b> {@code statsLocal.get(choice) <= 10} refuses the sale,
+     * matching C's {@code stats_local[choice] > 10} test for proceeding: the point-buy screen
+     * starts every stat at 10 and a stat sitting there has nothing left to sell back, so selling at
+     * exactly 10 is a no-op returning {@code false}, not a drop to 9.
+     *
+     * <p>The point-cost lookup, the decrement and the refund are C's clauses in C's order: the cost
+     * is read from {@link #birthStatCosts} at the stat's <em>current</em> value before anything
+     * changes, the stat is then decremented, and only after that is {@code pointsIncLocal}
+     * refreshed - reading the array at the now-lower value plus one, which is arithmetically the
+     * value the stat held a line earlier and so always answers the same figure as the cost just
+     * refunded. Reading {@code pointsIncLocal} before the decrement, as {@link #buyStat} reads its
+     * own cost, would land one index higher and - at the top of the range - one past
+     * {@link #birthStatCosts}'s last entry.
+     *
+     * <p>This is the point-buy birth screen and stays out of the model's scope (see the class
+     * Javadoc), so this method has no caller yet.
+     *
+     * <p>Function sellStat coded on 260906, commented in full on 260906.
+     *
+     * @param choice           the stat to lower; {@code STAT_NONE} or {@code STAT_MAX} leaves the
+     *                         stats untouched
+     * @param statsLocal       the point-buy stat values, one entry per real stat; the chosen stat's
+     *                         entry is decremented on success
+     * @param pointsSpentLocal the points spent per stat so far; the chosen stat's entry shrinks by
+     *                         the cost refunded on success
+     * @param pointsIncLocal   the cost of the next point per stat; refreshed for the chosen stat on
+     *                         success
+     * @param pointsLeftLocal  the caller's running point total before this sale
+     * @param updateDisplay    whether to recompute derived stats and signal the UI on a successful
+     *                         sale
+     * @return the new points-left total paired with whether the sale succeeded; the points-left
+     * figure is unchanged from {@code pointsLeftLocal} whenever the flag is {@code false}
+     */
+    public static IntAndBoolean sellStat(Stats choice, Map<Stats, Integer> statsLocal,
+                                         Map<Stats, Integer> pointsSpentLocal,
+                                         Map<Stats, Integer> pointsIncLocal,
+                                         int pointsLeftLocal, boolean updateDisplay) {
+        // Must be a valid stat and cwe can't sell stats below the base of 10
+        if (choice == Stats.STAT_MAX || choice == Stats.STAT_NONE) {
+            return new IntAndBoolean(pointsLeftLocal, false);
+        }
+
+        if (statsLocal.get(choice) <= 10) {
+            return new IntAndBoolean(pointsLeftLocal, false);
+        }
+
+        int statCost = birthStatCosts[statsLocal.get(choice)];
+
+        statsLocal.put(choice, statsLocal.get(choice) - 1);
+        pointsSpentLocal.put(choice, pointsSpentLocal.get(choice) - statCost);
+        pointsIncLocal.put(choice, birthStatCosts[statsLocal.get(choice) + 1]);
+        pointsLeftLocal += statCost;
+
+        if (updateDisplay) {
+            // Tell the UI the new points situation
+            GameEngine.getEventsBusHandler().eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS, pointsSpentLocal,
+                    pointsIncLocal, pointsLeftLocal);
+
+            // Recalculate everything that's changed because the stat has
+            // changed and inform the UI
+            recalculateStats(statsLocal, pointsLeftLocal);
+        }
+
+        return new IntAndBoolean(pointsLeftLocal, true);
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else
@@ -1203,6 +1279,6 @@ public class PlayerBirth {
      * @param value the points-left total after the call
      * @param bool  whether the purchase succeeded
      */
-    private record IntAndBoolean(int value, boolean bool) {
+    public record IntAndBoolean(int value, boolean bool) {
     }
 }

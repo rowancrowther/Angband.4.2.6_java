@@ -893,4 +893,13 @@ public class PlayerState {
     public boolean oFlagOff(ObjectFlag objFlag) {
         return flags.off(objFlag);
     }
+
+    /**
+     * @return the player's blows per turn, multiplied by 100 — C's {@code state.num_blows}
+     *
+     * <p>Function getNumBlows commented in full on 260906.
+     */
+    public int getNumBlows() {
+        return numBlows;
+    }
 }

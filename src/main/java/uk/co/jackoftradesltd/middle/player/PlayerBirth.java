@@ -1141,36 +1141,32 @@ public class PlayerBirth {
      * @return the new points-left total paired with whether the purchase succeeded; the points-left
      * figure is unchanged from {@code pointsLeftLocal} whenever the flag is {@code false}
      */
-    public static IntAndBoolean buyStat(int choice, Map<Stats, Integer> statsLocal,
+    public static IntAndBoolean buyStat(Stats choice, Map<Stats, Integer> statsLocal,
                                         Map<Stats, Integer> pointsSpentLocal,
                                         Map<Stats, Integer> pointsIncLocal,
                                         int pointsLeftLocal, boolean updateDisplay) {
-        // Increment to handle Stats.STAT_NONE
-        choice++;
-        if (choice < 0 || choice >= Stats.values().length) {
+        if (choice == Stats.STAT_NONE || choice == Stats.STAT_MAX) {
             return new IntAndBoolean(pointsLeftLocal, false);
         }
 
-        Stats stat = Stats.values()[choice];
-
         // Increment to max value to handle Stats.STAT_NONE
-        if (!(choice >= Stats.STAT_MAX.getValue() + 1 || choice <= 0) && (statsLocal.get(stat) < 18)) {
+        if ((choice != Stats.STAT_MAX && choice != Stats.STAT_NONE) && (statsLocal.get(choice) < 18)) {
             // Get the cost of buying the extra point (beyond what it has already cost
             // to get this far            
-            int statCost = birthStatCosts[statsLocal.get(stat) + 1];
+            int statCost = birthStatCosts[statsLocal.get(choice) + 1];
 
-            if (statCost != pointsIncLocal.get(stat)) {
+            if (statCost != pointsIncLocal.get(choice)) {
                 String msg = "Invalid point buy cost";
                 logger.error(msg);
                 throw new RuntimeException(msg);
             }
             if (statCost <= pointsLeftLocal) {
-                statsLocal.compute(stat, (k, statLocal) -> statLocal + 1);
-                pointsSpentLocal.compute(stat, (k, statLocal) -> statLocal + statCost);
+                statsLocal.compute(choice, (k, statLocal) -> statLocal + 1);
+                pointsSpentLocal.compute(choice, (k, statLocal) -> statLocal + statCost);
 
-                int index = statsLocal.get(stat) + 1;
+                int index = statsLocal.get(choice) + 1;
                 if (index >= 0 && index < birthStatCosts.length) {
-                    pointsIncLocal.put(stat, birthStatCosts[statsLocal.get(stat) + 1]);
+                    pointsIncLocal.put(choice, birthStatCosts[statsLocal.get(choice) + 1]);
                 }
                 pointsLeftLocal -= statCost;
 
@@ -1266,6 +1262,202 @@ public class PlayerBirth {
         }
 
         return new IntAndBoolean(pointsLeftLocal, true);
+    }
+
+    /**
+     * Picks reasonable starting stats for the current race/class combination by driving
+     * {@link #buyStat} and {@link #sellStat} through a five-step heuristic - the port of C's
+     * {@code generate_stats} ({@code player-birth.c:824-981}). {@code st}, {@code spent} and
+     * {@code inc} are mutated in place across the run, the same as C's arrays passed by pointer;
+     * there is no by-reference {@code left}, so the running total is threaded back out through
+     * the return value the way {@link #buyStat} and {@link #sellStat} thread theirs through
+     * {@link IntAndBoolean}.
+     *
+     * <p>The five steps run in a {@code while (left != 0 && step >= 0)} loop, each advancing
+     * {@code step} once its own work is done, exactly mirroring C's {@code switch} inside the
+     * same {@code while}:
+     * <ol>
+     *   <li>buy base {@code STAT_STR} up to 17; a pure caster class skips straight to step 3;</li>
+     *   <li>buy base {@code STAT_DEX} up to 17, recording the highest-{@code STAT_DEX} breakpoint
+     *   that still increases {@link uk.co.jackoftradesltd.middle.player.PlayerState#getNumBlows}
+     *   by a whole blow;</li>
+     *   <li>sell back any {@code STAT_DEX} bought past that breakpoint, since it bought no extra
+     *   blows;</li>
+     *   <li>spend up to half of what's left on each of {@code spellStat} and {@code STAT_CON} - or
+     *   all of what's left, for a warrior class, which has no {@code spellStat} to split against -
+     *   capped at a base of 16/18 unless the class is a pure caster or warrior;</li>
+     *   <li>spend whatever remains maximising {@code STAT_DEX}, then {@code STAT_INT} and
+     *   {@code STAT_WIS} in turn, skipping whichever of those two is {@code spellStat}.</li>
+     * </ol>
+     *
+     * <p>{@code spellStat} is read once, from the realm of the class's first spellbook, matching
+     * C's {@code player->class->magic.books[0].realm->stat}. A class with no spells falls back to
+     * {@code STAT_STR}, matching C's own fallback of the literal {@code 0} - {@code STAT_STR} is
+     * index 0 in both the C enum and {@link Stats} - not a "no stat" sentinel; step 3's spell-stat
+     * loop is only reachable this way for a non-warrior, non-caster class with no spellbook, and
+     * every such class shipped with the game (Paladin, Rogue, Ranger, Blackguard) carries one, so
+     * the fallback is currently unexercised.
+     *
+     * <p>Outstanding: this is the point-buy birth screen's auto-generate step and stays out of the
+     * model's scope (see the class Javadoc), so this method has no caller yet.
+     *
+     * <p>Function generateStats coded on 260906, commented in full on 260906.
+     *
+     * @param st    the point-buy stat values, one entry per real stat; mutated in place by the
+     *              {@link #buyStat}/{@link #sellStat} calls made along the way
+     * @param spent the points spent per stat so far; mutated in place alongside {@code st}
+     * @param inc   the cost of the next point per stat; mutated in place alongside {@code st}
+     * @param left  the caller's running point total before this run
+     * @return the points-left total once every step has either maxed out or run out of points
+     */
+    private int generateStats(Map<Stats, Integer> st, Map<Stats, Integer> spent,
+                              Map<Stats, Integer> inc, int left) {
+        int step = 0;
+        Map<Stats, Boolean> maxed = new HashMap<>();
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            maxed.put(stat, false);
+        }
+        // Hack - just use start of first book
+        Player player = GameState.getPlayer();
+        Stats spellStat = player.getPlayerClass().getMagic().getTotalSpells() != 0
+                ? player.getPlayerClass().getMagic().getMagicBooks().getFirst().getRealm().getStat()
+                : Stats.STAT_STR; // possibly change this to STAT_NONE in future
+        boolean caster = player.getPlayerClass().getMaxAttacks() < 5;
+        boolean warrior = player.getPlayerClass().getMaxAttacks() > 5;
+        int blows = 10;
+        int dexBreak = 10;
+
+        while (left != 0 && step >= 0) {
+            switch (step) {
+                // Buy base STR 17
+                case 0 -> {
+                    if (!maxed.get(Stats.STAT_STR) && st.get(Stats.STAT_STR) < 17) {
+                        IntAndBoolean result = buyStat(Stats.STAT_STR, st, spent, inc, left, false);
+                        left = result.value();
+                        if (!result.bool) {
+                            maxed.put(Stats.STAT_STR, true);
+                        }
+                    } else {
+                        step++;
+
+                        // Pure casters skip to step 3
+                        if (caster) step = 3;
+                    }
+                }
+
+                // Buy base DEX of 17, record best break point
+                case 1 -> {
+                    if (!maxed.get(Stats.STAT_DEX) && st.get(Stats.STAT_DEX) < 17) {
+                        IntAndBoolean result = buyStat(Stats.STAT_DEX, st, spent, inc, left, true);
+                        left = result.value();
+                        if (!result.bool) {
+                            maxed.put(Stats.STAT_DEX, true);
+                        }
+                        if (player.getPlayerState().getNumBlows() / 10 > blows) {
+                            blows = player.getPlayerState().getNumBlows() / 10;
+                            dexBreak = st.get(Stats.STAT_DEX);
+                        }
+                    } else {
+                        step++;
+                    }
+                }
+
+                // Sell back DEX that isn't getting us an extra blow
+                case 2 -> {
+                    while (st.get(Stats.STAT_DEX) > dexBreak) {
+                        IntAndBoolean result = sellStat(Stats.STAT_DEX, st, spent, inc, left, false);
+                        left = result.value();
+                        maxed.put(Stats.STAT_DEX, false);
+                    }
+                    step++;
+                }
+
+                // Spend up to half the remaining points on each of the spell stat and con, but only
+                // up to a max base of 16 unless a pure class [caster or warrior]
+                case 3 -> {
+                    int pointsTrigger = left / 2;
+
+                    if (warrior) {
+                        pointsTrigger = left;
+                    } else {
+                        while (!maxed.get(spellStat)
+                                && (caster || st.get(spellStat) < 18)
+                                && spent.get(spellStat) < pointsTrigger) {
+
+                            IntAndBoolean result = buyStat(spellStat, st, spent, inc, left, false);
+                            left = result.value();
+                            if (!result.bool) {
+                                maxed.put(spellStat, true);
+                            }
+
+                            if (spent.get(spellStat) > pointsTrigger) {
+                                result = sellStat(spellStat, st, spent, inc, left, false);
+                                left = result.value();
+                                maxed.put(spellStat, true);
+                            }
+                        }
+                    }
+
+                    while (!maxed.get(Stats.STAT_CON)
+                            && st.get(Stats.STAT_CON) < 16
+                            && spent.get(Stats.STAT_CON) < pointsTrigger) {
+
+                        IntAndBoolean result = buyStat(Stats.STAT_CON, st, spent, inc, left, false);
+                        left = result.value();
+                        if (!result.bool) {
+                            maxed.put(Stats.STAT_CON, true);
+                        }
+
+                        if (spent.get(Stats.STAT_CON) > pointsTrigger) {
+                            result = sellStat(Stats.STAT_CON, st, spent, inc, left, false);
+                            left = result.value();
+                            maxed.put(Stats.STAT_CON, true);
+                        }
+                    }
+
+                    step++;
+                }
+
+                // If there aer any points left, spend as much as possible in order on DEX and the non
+                // spell stat
+                case 4 -> {
+                    Stats nextStat = Stats.STAT_NONE;
+
+                    if (!maxed.get(Stats.STAT_DEX)) {
+                        nextStat = Stats.STAT_DEX;
+                    } else if (!maxed.get(Stats.STAT_INT) && spellStat != Stats.STAT_INT) {
+                        nextStat = Stats.STAT_INT;
+                    } else if (!maxed.get(Stats.STAT_WIS) && spellStat != Stats.STAT_WIS) {
+                        nextStat = Stats.STAT_WIS;
+                    } else {
+                        step++;
+                    }
+
+                    if (nextStat != Stats.STAT_NONE) {
+                        // Buy until we can't buy anymore
+                        IntAndBoolean result = buyStat(nextStat, st, spent, inc, left, false);
+                        left = result.value();
+                        while (result.bool) {
+                            result = buyStat(nextStat, st, spent, inc, left, false);
+                            left = result.value();
+                        }
+                        maxed.put(nextStat, true);
+                    }
+                }
+
+                default -> step = -1;
+            }
+        }
+
+        // Tell the UI the new points situation
+        GameEngine.getEventsBusHandler().eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS, spent, inc, left);
+
+        // recalculate everything that's changed because the stat
+        // has changed, and inform the UI
+        recalculateStats(st, left);
+
+        return left;
     }
 
     /**

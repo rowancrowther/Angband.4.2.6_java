@@ -290,7 +290,7 @@ class PlayerStateTest {
                     () -> assertEquals(original.isHeavyShoot(), duplicate.isHeavyShoot()),
                     () -> assertEquals(original.isBlessWield(), duplicate.isBlessWield()),
                     () -> assertEquals(original.isCumberArmour(), duplicate.isCumberArmour()),
-                    () -> assertEquals(read(original, "numBlows"), read(duplicate, "numBlows")),
+                    () -> assertEquals(original.getNumBlows(), duplicate.getNumBlows()),
                     () -> assertEquals(read(original, "seeInfra"), read(duplicate, "seeInfra")),
                     () -> assertEquals(read(original, "toH"), read(duplicate, "toH")),
                     () -> assertEquals(read(original, "toD"), read(duplicate, "toD")),
@@ -325,7 +325,7 @@ class PlayerStateTest {
             PlayerState duplicate = original.copy();
 
             assertAll(
-                    () -> assertEquals(300, read(duplicate, "numBlows")),
+                    () -> assertEquals(300, duplicate.getNumBlows()),
                     () -> assertEquals(2, read(duplicate, "numMoves")));
         }
 
@@ -897,6 +897,7 @@ class PlayerStateTest {
         void settersRoundTrip() {
             PlayerState state = new PlayerState();
             state.setSpeed(121);
+            state.setNumBlows(350);
             state.setNumShots(22);
             state.setAmmoMult(3);
             state.setBaseAc(44);
@@ -906,12 +907,26 @@ class PlayerStateTest {
 
             assertAll(
                     () -> assertEquals(121, state.getSpeed()),
+                    () -> assertEquals(350, state.getNumBlows()),
                     () -> assertEquals(22, state.getNumShots()),
                     () -> assertEquals(3, state.getAmmoMult()),
                     () -> assertEquals(44, state.getBaseAc()),
                     () -> assertEquals(5, state.getDamRed()),
                     () -> assertEquals(6, state.getCurLight()),
                     () -> assertEquals(7, state.getStatInd(Stats.STAT_WIS)));
+        }
+
+        /**
+         * A freshly constructed state reports zero blows, matching C's {@code memset}-based reset —
+         * {@link Wipe#everyFieldZeroed()} covers the same guarantee after a wipe, this covers it
+         * before any calculation has run at all.
+         */
+        @Test
+        @DisplayName("a new state starts with zero blows")
+        void startsAtZeroBlows() {
+            PlayerState state = new PlayerState();
+
+            assertEquals(0, state.getNumBlows());
         }
 
         /**

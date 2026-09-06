@@ -52,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link PlayerBirth#buyStat(int, Map, Map, Map, int, boolean)}, the port of C's
+ * Tests {@link PlayerBirth#buyStat(Stats, Map, Map, Map, int, boolean)}, the port of C's
  * {@code buy_stat} ({@code player-birth.c:738-773}).
  *
  * <p>The C:
@@ -76,17 +76,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * return false;
  * }</pre>
  *
- * <p><b>Three things this suite exists to pin down, because all three were wrong at some point
- * during the port.</b> First, {@code choice} is shifted by one before it indexes
- * {@link Stats#values()} (to skip the {@code STAT_NONE} sentinel at ordinal 0), and that shifted
- * value was, for a while, used to index the enum array <em>before</em> any bounds check ran; a
- * {@code choice} outside C's own valid domain then threw {@code ArrayIndexOutOfBoundsException}
- * instead of the {@code false} C answers. {@link InvalidChoice} pins the fixed behaviour down across
- * every kind of out-of-range value - negative, {@code STAT_MAX}'s own value, and further out still -
- * so a regression back to indexing before checking shows up as a thrown exception rather than a
- * silently-passing test. Second, {@link Boundary18} pins down the one place the port deliberately
+ * <p>C's {@code choice} is a raw index that {@code stat_local[]} subscripts directly, so
+ * {@code buy_stat} itself has to bounds-check it. The port's {@code choice} is the {@link Stats}
+ * constant itself rather than that raw index, so the enum's own type rules out the
+ * out-of-{@code STAT_MAX} values C's guard exists to catch - the only two inputs {@link
+ * InvalidChoice} can still hand it are the sentinels, {@code STAT_NONE} and {@code STAT_MAX}.
+ *
+ * <p><b>Two other things this suite exists to pin down, because both were wrong at some point
+ * during the port.</b> First, {@link Boundary18} pins down the one place the port deliberately
  * does <em>not</em> match C: raising a stat to 18 has C read one entry past the end of
- * {@code birth_stat_costs}, which the port guards against rather than reproduces. Third,
+ * {@code birth_stat_costs}, which the port guards against rather than reproduces. Second,
  * {@link UpdateDisplayGuard} checks the port calls the birthpoints signal and
  * {@link PlayerBirth#recalculateStats} in C's order - birthpoints first, then the recalculation -
  * which is the <em>opposite</em> order {@link PlayerBirthResetStatsTest} pins down for
@@ -135,9 +134,9 @@ class PlayerBirthBuyStatTest {
     private static final int COST_AT_EIGHTEEN = 4;
 
     /**
-     * C's raw {@code STAT_STR} index, the {@code choice} that selects strength.
+     * The {@code choice} that selects strength.
      */
-    private static final int CHOICE_STR = Stats.STAT_STR.getValue();
+    private static final Stats CHOICE_STR = Stats.STAT_STR;
 
     /**
      * The port under test.
@@ -254,7 +253,7 @@ class PlayerBirthBuyStatTest {
      * Calls {@link PlayerBirth#buyStat}, catching the private {@code IntAndBoolean} result as a
      * bare {@code Object} since the record's name is not accessible from this class.
      *
-     * @param choice           the raw stat index to pass through
+     * @param choice           the stat to pass through
      * @param statsLocal       the stat values map
      * @param pointsSpentLocal the points-spent map
      * @param pointsIncLocal   the increment-cost map
@@ -262,7 +261,7 @@ class PlayerBirthBuyStatTest {
      * @param updateDisplay    whether to signal the UI
      * @return the private result object
      */
-    private Object call(int choice, Map<Stats, Integer> statsLocal, Map<Stats, Integer> pointsSpentLocal,
+    private Object call(Stats choice, Map<Stats, Integer> statsLocal, Map<Stats, Integer> pointsSpentLocal,
                         Map<Stats, Integer> pointsIncLocal, int pointsLeftLocal, boolean updateDisplay) {
         return playerBirth.buyStat(choice, statsLocal, pointsSpentLocal, pointsIncLocal, pointsLeftLocal,
                 updateDisplay);
@@ -399,7 +398,7 @@ class PlayerBirthBuyStatTest {
             Map<Stats, Integer> spent = statsMap(0, 0, 0, 0, 0);
             Map<Stats, Integer> inc = statsMap(COST_FLAT, COST_FLAT, COST_FLAT, COST_FLAT, COST_AT_SEVENTEEN);
 
-            call(Stats.STAT_CON.getValue(), stats, spent, inc, MAX_BIRTH_POINTS, false);
+            call(Stats.STAT_CON, stats, spent, inc, MAX_BIRTH_POINTS, false);
 
             assertEquals(17, stats.get(Stats.STAT_CON));
             assertEquals(10, stats.get(Stats.STAT_DEX), "STAT_DEX (the neighbour one index down) must be untouched");
@@ -407,23 +406,24 @@ class PlayerBirthBuyStatTest {
     }
 
     /**
-     * {@code choice} values C's own {@code !(choice >= STAT_MAX || choice < 0)} rejects. Before the
-     * fix, a value outside {@link Stats#values()}'s own bounds threw
-     * {@code ArrayIndexOutOfBoundsException} because the port indexed the enum before checking it;
-     * every case here must instead answer {@code false} without throwing, matching C exactly.
+     * The two sentinels are the only {@code choice} values the enum's own type still lets through -
+     * every raw index C's {@code !(choice >= STAT_MAX || choice < 0)} would have rejected is now
+     * ruled out at compile time instead, since {@code choice} is a {@link Stats} constant rather
+     * than C's raw array subscript. Both sentinels must still answer {@code false} without
+     * throwing, matching what C's guard would have done had it been asked about them.
      */
     @Nested
-    @DisplayName("an out-of-range choice")
+    @DisplayName("a sentinel choice")
     class InvalidChoice {
 
         /**
          * Asserts a {@code choice} value is rejected without an exception, leaving every map
          * untouched and returning the incoming points-left figure unchanged.
          *
-         * @param choice the raw {@code choice} to try
+         * @param choice the sentinel to try
          * @throws ReflectiveOperationException if the private result cannot be read
          */
-        private void assertRejectedCleanly(int choice) throws ReflectiveOperationException {
+        private void assertRejectedCleanly(Stats choice) throws ReflectiveOperationException {
             Map<Stats, Integer> stats = statsMap(14, 14, 14, 14, 14);
             Map<Stats, Integer> spent = statsMap(3, 3, 3, 3, 3);
             Map<Stats, Integer> inc = statsMap(9, 9, 9, 9, 9);
@@ -431,77 +431,37 @@ class PlayerBirthBuyStatTest {
             Object[] result = new Object[1];
             assertDoesNotThrow(() -> result[0] = call(choice, stats, spent, inc, 17, true));
 
-            assertFalse(succeededOf(result[0]), "an out-of-range choice must never succeed");
-            assertEquals(17, pointsLeftOf(result[0]), "an out-of-range choice must not spend anything");
+            assertFalse(succeededOf(result[0]), "a sentinel choice must never succeed");
+            assertEquals(17, pointsLeftOf(result[0]), "a sentinel choice must not spend anything");
             for (Stats stat : List.of(Stats.STAT_STR, Stats.STAT_INT, Stats.STAT_WIS, Stats.STAT_DEX,
                     Stats.STAT_CON)) {
                 assertEquals(14, stats.get(stat), "stat map must be untouched");
                 assertEquals(3, spent.get(stat), "spend map must be untouched");
                 assertEquals(9, inc.get(stat), "increment map must be untouched");
             }
-            assertTrue(bus.events.isEmpty(), "an out-of-range choice must not signal the UI even when requested");
+            assertTrue(bus.events.isEmpty(), "a sentinel choice must not signal the UI even when requested");
         }
 
         /**
-         * One below C's own lower bound - the same value that, unshifted, is {@code choice < 0}
-         * in C.
+         * The same sentinel C's own {@code choice < 0} test excludes.
          *
          * @throws ReflectiveOperationException if the private result cannot be read
          */
         @Test
-        @DisplayName("choice -2 (shifts to -1, before the enum's own start) is rejected, not thrown")
-        void rejectsBelowTheEnum() throws ReflectiveOperationException {
-            assertRejectedCleanly(-2);
-        }
-
-        /**
-         * One past {@code STAT_MAX}'s own value - the same value that, unshifted, fails C's
-         * {@code choice >= STAT_MAX}.
-         *
-         * @throws ReflectiveOperationException if the private result cannot be read
-         */
-        @Test
-        @DisplayName("choice 6 (shifts past the last enum ordinal) is rejected, not thrown")
-        void rejectsPastTheEnum() throws ReflectiveOperationException {
-            assertRejectedCleanly(6);
-        }
-
-        /**
-         * Further out still, to confirm the fix is a real bounds check and not a boundary-specific
-         * patch.
-         *
-         * @throws ReflectiveOperationException if the private result cannot be read
-         */
-        @Test
-        @DisplayName("choice -100 and choice 100 are both rejected, not thrown")
-        void rejectsFarOutOfRange() throws ReflectiveOperationException {
-            assertRejectedCleanly(-100);
-            assertRejectedCleanly(100);
-        }
-
-        /**
-         * {@code choice -1} shifts to {@code STAT_NONE}'s own ordinal - inside
-         * {@link Stats#values()}'s bounds, so this exercises the inner {@code choice <= 0} guard
-         * rather than the outer array-bounds guard, but must answer just as cleanly.
-         *
-         * @throws ReflectiveOperationException if the private result cannot be read
-         */
-        @Test
-        @DisplayName("choice -1 (STAT_NONE after the shift) is rejected, not thrown")
+        @DisplayName("STAT_NONE is rejected, not thrown")
         void rejectsStatNone() throws ReflectiveOperationException {
-            assertRejectedCleanly(-1);
+            assertRejectedCleanly(Stats.STAT_NONE);
         }
 
         /**
-         * {@code choice 5} shifts to {@code STAT_MAX}'s own ordinal - likewise inside the enum's
-         * bounds, exercising the inner {@code choice >= STAT_MAX.getValue() + 1} guard.
+         * The same sentinel C's own {@code choice >= STAT_MAX} test excludes.
          *
          * @throws ReflectiveOperationException if the private result cannot be read
          */
         @Test
-        @DisplayName("choice 5 (STAT_MAX after the shift) is rejected, not thrown")
+        @DisplayName("STAT_MAX is rejected, not thrown")
         void rejectsStatMax() throws ReflectiveOperationException {
-            assertRejectedCleanly(5);
+            assertRejectedCleanly(Stats.STAT_MAX);
         }
     }
 

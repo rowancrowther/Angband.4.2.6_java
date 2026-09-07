@@ -2381,6 +2381,41 @@ public class PlayerBirth {
     }
 
     /**
+     * The port of C's {@code do_cmd_choose_history} ({@code player-birth.c:1244}) - reads the
+     * {@code "history"} command argument and sets it as the current player's background text.
+     *
+     * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "history", &str)} but never
+     * checks its return value ({@code player-birth.c:1253}): if the argument were absent, {@code str}
+     * would be left uninitialised and the following {@code string_make(str)} ({@code
+     * player-birth.c:1254}) would read through a garbage pointer - undefined behaviour, not a
+     * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
+     * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
+     * history - a deliberate divergence from C's unchecked read, not an oversight, and the same shape
+     * used by the sibling command {@link #doCmdChooseName}. There is no known Java caller yet: C's own
+     * dispatch runs through the {@code CMD_HISTORY_CHOICE} table entry ({@code cmd-core.c:71}), pushed
+     * from the UI layer ({@code ui-birth.c:753}, {@code ui-birth.c:1552}), which this port has not
+     * reached.
+     *
+     * <p>C also guards the write itself, freeing the old string first with
+     * {@code if (player->history) string_free(player->history)} ({@code player-birth.c:1249-1250})
+     * before {@code string_make(str)} allocates the replacement. {@link Player#setHistoryBirth} already
+     * documents absorbing that guard - the port just replaces the field and leaves the old reference
+     * for the garbage collector - so this method does no freeing of its own. Unlike
+     * {@link #doCmdChooseName}'s target field, {@code player->history} is a heap pointer rather than a
+     * fixed-size buffer, so neither C's {@code string_make} nor the port truncates the text.
+     *
+     * <p>Function doCmdChooseHistory coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the history-choice command, expected to carry a {@code "history"} string argument
+     */
+    public static void doCmdChooseHistory(Command cmd) {
+        Optional<String> history = cmd.getArgString("history");
+
+        if (history.isEmpty()) return;
+        GameState.getPlayer().setHistoryBirth(history.get());
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

@@ -40,6 +40,7 @@ import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 
 /**
@@ -186,7 +187,7 @@ public class GridData {
 
         // Traps
         if (playerCave.squareIsTrap(grid) && cave.isKnown(grid)) {
-            ArrayList<Trap> traps = playerCave.getSquare(grid).getTraps();
+            List<Trap> traps = playerCave.getSquare(grid).getTraps();
             for (Trap trap : traps) {
                 if (trap.hasTrap(TrapEnum.TRF_TRAP) || trap.hasTrap(TrapEnum.TRF_GLYPH) || trap.hasTrap(TrapEnum.TRF_WEB)) {
                     if (trap.getTimeout() == 0) {

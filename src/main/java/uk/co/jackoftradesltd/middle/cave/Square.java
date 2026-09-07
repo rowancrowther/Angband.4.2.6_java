@@ -31,6 +31,7 @@ import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * A single dungeon grid's contents: its terrain {@link Feature}, the per-grid
@@ -67,7 +68,7 @@ public class Square {
     /**
      * The traps present on this grid.
      */
-    private ArrayList<Trap> traps;
+    private List<Trap> traps;
 
     /**
      * Build a square with the given feature, light level and occupant, starting
@@ -150,7 +151,7 @@ public class Square {
      * whether something like it is. Two Flasks of Oil on the floor are distinct objects and the test
      * distinguishes them, which is what makes it usable as a location check — C uses it to decide
      * whether a known object is still attached to the pile it thinks it is on, and
-     * {@link PlayerKnowledge#knowObject} uses it to tell an object under the
+     * {@code PlayerKnowledge.knowObject} uses it to tell an object under the
      * player's feet from one elsewhere on the level.
      *
      * <p>Function holdsObject coded on 260816, commented in full on 260816.
@@ -673,7 +674,7 @@ public class Square {
      */
     @CheckReturnValue
     @Contract(pure = true)
-    public ArrayList<Trap> getTraps() {
+    public List<Trap> getTraps() {
         return traps;
     }
 

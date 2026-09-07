@@ -193,10 +193,10 @@ class PlayerBirthRecalculateStatsTest {
      * @return the stored birth gold
      * @throws ReflectiveOperationException if the field cannot be reached
      */
-    private int auBirth() throws ReflectiveOperationException {
+    private long auBirth() throws ReflectiveOperationException {
         Field field = Player.class.getDeclaredField("auBirth");
         field.setAccessible(true);
-        return field.getInt(player);
+        return field.getLong(player);
     }
 
     /**

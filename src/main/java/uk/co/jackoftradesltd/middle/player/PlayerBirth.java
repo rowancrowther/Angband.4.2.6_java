@@ -242,7 +242,7 @@ public class PlayerBirth {
      * {@code player_outfit} ({@code player-birth.c:1298}) buys the starting kit and spends the
      * working total back down - so this is the gross sum, not what the character reaches the
      * dungeon with. It also overwrites whatever the point-based roller had put in the birth copy
-     * (see {@link Player#setAUBirth(int)}).
+     * (see {@link Player#setAUBirth(long)}).
      *
      * <p>C holds the constant as {@code uint16_t} and both fields as {@code int32_t}, so no
      * starting figure the data file can express is capable of overflowing either.
@@ -1310,7 +1310,7 @@ public class PlayerBirth {
      * @param left  the caller's running point total before this run
      * @return the points-left total once every step has either maxed out or run out of points
      */
-    private int generateStats(Map<Stats, Integer> st, Map<Stats, Integer> spent,
+    private static int generateStats(Map<Stats, Integer> st, Map<Stats, Integer> spent,
                               Map<Stats, Integer> inc, int left) {
         int step = 0;
         Map<Stats, Boolean> maxed = new HashMap<>();
@@ -1486,7 +1486,7 @@ public class PlayerBirth {
      * @param toSave the birther record to fill in
      * @return {@code toSave}, for the caller's convenience
      */
-    private Birther saveRollerData(Birther toSave) {
+    private static Birther saveRollerData(Birther toSave) {
         Player player = GameState.getPlayer();
 
         // save the data
@@ -1509,6 +1509,107 @@ public class PlayerBirth {
         toSave.setName(player.getFullName());
 
         return toSave;
+    }
+
+    /**
+     * Restores a previously-saved snapshot as the currently-rolled character, optionally handing
+     * the caller back what was displaced - the port of C's {@code load_roller_data}
+     * ({@code player-birth.c:181-225}). Paired with {@link #saveRollerData}, this is the "flick
+     * between two rolls" undo and the quickstart restore reading from the other direction: where
+     * {@code saveRollerData} pulls the live player into a {@link Birther}, this pushes a
+     * {@link Birther} back onto the live player.
+     *
+     * <p>{@code saved} is read in full before anything is written - race, class, age, the birth
+     * copies of weight/height (each also written back to the live field, matching C's chained
+     * {@code p->wt = p->wt_birth = saved->wt}), the birth gold, all five real stats (written to the
+     * max/current/birth trio and the identity scramble map, matching C's own triple chain), the
+     * history and the name - so a caller passing the same {@link Birther} for both {@code saved}
+     * and {@code prevPlayer} (C's own documented case, {@code player-birth.c:177-178}, and its one
+     * real caller at {@code player-birth.c:1211}) sees the read finish before the write below
+     * touches that same object. The live gold itself, rather than the birth copy, is reset to
+     * {@link GameConstants#getPlayerStartGold()} - matching C's
+     * {@code player->au = z_info->start_gold} - not carried over from {@code saved} at all.
+     *
+     * <p>When {@code prevPlayer} is non-{@code null}, the live player's <em>previous</em> state is
+     * captured into a local {@code temp} via {@link #saveRollerData} before the load above
+     * overwrites it, then written field-by-field onto {@code prevPlayer} afterwards - matching C's
+     * {@code *prev_player = temp;} ({@code player-birth.c:223}), a raw struct assignment that
+     * overwrites every field of the caller's own struct in place. The port reproduces that in-place
+     * effect with individual setters rather than {@link Birther#copy()}, so the object the caller
+     * passed in is the very one left holding {@code temp}'s values, with no need for the caller to
+     * reassign anything from the return value the way {@link #saveRollerData} requires. The leading
+     * {@code prevPlayer.setHistoryBirth(null)} stands in for C's guarded
+     * {@code if (prev_player->history) string_free(prev_player->history);}; the port has nothing to
+     * free, and the assignment two lines later overwrites it regardless, so the call is a harmless
+     * no-op rather than a load-bearing step.
+     *
+     * <p>C returns {@code void} and communicates entirely through the two pointers; the port has
+     * nothing to return {@code prevPlayer} to when it is {@code null}, so it returns
+     * {@code prevPlayer} unchanged (itself {@code null}) for exactly that case, and the same,
+     * now-updated object otherwise.
+     *
+     * <p>Function LoadRollerData coded on 260906, commented in full on 260907.
+     *
+     * @param saved      the snapshot to restore onto the live player; must not be {@code null}
+     * @param prevPlayer the snapshot to overwrite with the live player's state before the restore,
+     *                   or {@code null} to skip that step; may be the same object as {@code saved}
+     * @return {@code prevPlayer}, now holding the state displaced from the live player, or
+     * {@code null} if {@code prevPlayer} was {@code null}
+     */
+    private static Birther LoadRollerData(Birther saved, Birther prevPlayer) {
+        Player player = GameState.getPlayer();
+
+        Birther temp = new Birther();
+
+        // Save the previous data if we'll need it later
+        if (prevPlayer != null) {
+            temp = saveRollerData(temp);
+        }
+
+        // Load the previous data
+        player.setRace(saved.getRace());
+        player.setClass(saved.getPlayerClass());
+        player.setAge(saved.getAge());
+        player.setWeight(saved.getWeight());
+        player.setWeightBirth(saved.getWeight());
+        player.setHeightBirth(saved.getHeight());
+        player.setHeight(saved.getHeight());
+        player.setAUBirth(saved.getAu());
+        player.setAU(GameConstants.getPlayerStartGold());
+
+        // load previous stats
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+            player.setStatMax(stat, saved.getStat().get(stat));
+            player.setCurrStatValue(stat, saved.getStat().get(stat));
+            player.setStatBirth(stat, saved.getStat().get(stat));
+            player.setCurrStatMap(stat, stat);
+        }
+
+        // load previous history
+        player.setHistoryBirth(saved.getHistory());
+        player.setFullName(saved.getName());
+
+        // Save the current data if the caller is interested in it
+        if (prevPlayer != null) {
+            prevPlayer.setHistoryBirth(null);
+
+            prevPlayer.setHistoryBirth(temp.getHistory());
+            prevPlayer.setName(temp.getName());
+            prevPlayer.setRace(temp.getRace());
+            prevPlayer.setPlayerClass(temp.getPlayerClass());
+            prevPlayer.setAge(temp.getAge());
+            prevPlayer.setWeight(temp.getWeight());
+            prevPlayer.setHeight(temp.getHeight());
+            prevPlayer.setSc(temp.getSc());
+            prevPlayer.setAu(temp.getAu());
+            prevPlayer.getStat().clear();
+            for (Stats stat : temp.getStat().keySet()) {
+                prevPlayer.setStat(stat, temp.getStat().get(stat));
+            }
+        }
+
+        return prevPlayer;
     }
 
     /**

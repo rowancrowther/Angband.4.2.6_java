@@ -138,10 +138,10 @@ class PlayerBirthGetMoneyTest {
      * @return the stored birth gold
      * @throws Exception if the field cannot be reached
      */
-    private int auBirth() throws Exception {
+    private long auBirth() throws Exception {
         Field field = Player.class.getDeclaredField("auBirth");
         field.setAccessible(true);
-        return field.getInt(player);
+        return field.getLong(player);
     }
 
     /**
@@ -477,7 +477,7 @@ class PlayerBirthGetMoneyTest {
         @DisplayName("quickstart restores the birth copy but re-reads the working purse")
         void quickstartRestoresBirthCopyOnly() throws Exception {
             player.setAUBirth(1200);
-            int saved = auBirth();
+            long saved = auBirth();
 
             Player next = new Player();
             next.setAUBirth(saved);
@@ -488,7 +488,7 @@ class PlayerBirthGetMoneyTest {
 
             Field field = Player.class.getDeclaredField("auBirth");
             field.setAccessible(true);
-            assertEquals(1200, field.getInt(next));
+            assertEquals(1200, field.getLong(next));
         }
 
         /**

@@ -32,6 +32,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -326,6 +327,119 @@ class BirtherTest {
             String name = "A".repeat(40);
             birther.setName(name);
             assertEquals(name, birther.getName());
+        }
+    }
+
+    /**
+     * {@link Birther#copy()} - the port of what C's raw struct assignment
+     * {@code *prev_player = temp;} ({@code player-birth.c:223}) does to a whole {@code birther}. C
+     * has no named function for this; the comparison is against what a plain struct assignment's
+     * memberwise copy does to each field, not a single C function.
+     */
+    @Nested
+    @DisplayName("copy")
+    class Copy {
+
+        /**
+         * {@code tosave->race = player->race} is a pointer copy elsewhere in this class
+         * ({@link RaceAndClass}), and the raw struct assignment {@code copy()} stands in for is no
+         * different - the result shares the very same race and class records as the source rather
+         * than owning independent ones.
+         */
+        @Test
+        @DisplayName("shares race and class by reference, like the source")
+        void sharesRaceAndClassByReference() {
+            PlayerRace race = SeededPlayerRegistry.plainRace(SeededPlayerRegistry.humanoidBody());
+            PlayerClass playerClass = plainClass();
+            birther.setRace(race);
+            birther.setPlayerClass(playerClass);
+
+            Birther result = birther.copy();
+
+            assertSame(race, result.getRace());
+            assertSame(playerClass, result.getPlayerClass());
+        }
+
+        /**
+         * {@code birther.stat[STAT_MAX]} is an embedded array, so the struct assignment copies its
+         * contents into an independent array rather than sharing it, unlike race and class. A write
+         * to the result's stats after copying must not reach the source.
+         */
+        @Test
+        @DisplayName("copies the stat map independently, not by reference")
+        void copiesStatMapIndependently() {
+            birther.setStat(Stats.STAT_STR, 18);
+
+            Birther result = birther.copy();
+            result.setStat(Stats.STAT_STR, 3);
+
+            assertEquals(18, birther.getStat().get(Stats.STAT_STR));
+            assertEquals(3, result.getStat().get(Stats.STAT_STR));
+        }
+
+        /**
+         * The reverse direction of the same point: a write to the source after copying must not
+         * reach the result either.
+         */
+        @Test
+        @DisplayName("a write to the source after copying does not reach the result")
+        void writeToSourceAfterCopyDoesNotReachResult() {
+            birther.setStat(Stats.STAT_CON, 12);
+
+            Birther result = birther.copy();
+            birther.setStat(Stats.STAT_CON, 99);
+
+            assertEquals(99, birther.getStat().get(Stats.STAT_CON));
+            assertEquals(12, result.getStat().get(Stats.STAT_CON));
+        }
+
+        /**
+         * The scalar fields, copied by value either side of the port, same as every other plain
+         * struct member.
+         */
+        @Test
+        @DisplayName("copies the scalar fields by value")
+        void copiesScalarFieldsByValue() {
+            birther.setAge(42);
+            birther.setWeight(150);
+            birther.setHeight(70);
+            birther.setSc(7);
+            birther.setAu(600L);
+
+            Birther result = birther.copy();
+
+            assertEquals(42, result.getAge());
+            assertEquals(150, result.getWeight());
+            assertEquals(70, result.getHeight());
+            assertEquals(7, result.getSc());
+            assertEquals(600L, result.getAu());
+        }
+
+        /**
+         * {@code history} and {@code name} carry across too - by reference, but since {@link String}
+         * is immutable that is indistinguishable from C's byte-copied buffer.
+         */
+        @Test
+        @DisplayName("copies history and name")
+        void copiesHistoryAndName() {
+            birther.setHistoryBirth("A rolled background.");
+            birther.setName("Bilbo");
+
+            Birther result = birther.copy();
+
+            assertEquals("A rolled background.", result.getHistory());
+            assertEquals("Bilbo", result.getName());
+        }
+
+        /**
+         * The result is always a new object, matching C writing into a distinct destination struct
+         * rather than aliasing the source itself.
+         */
+        @Test
+        @DisplayName("returns a different instance from the source")
+        void returnsADifferentInstance() {
+            Birther result = birther.copy();
+            assertNotSame(birther, result);
         }
     }
 }

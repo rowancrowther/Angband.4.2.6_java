@@ -114,7 +114,7 @@ public class Player {
     /**
      * Current gold - the port of C's {@code p->au}.
      */
-    private int au;
+    private long au;
 
     /**
      * Deepest dungeon level yet reached - the port of C's {@code p->max_depth}.
@@ -292,7 +292,7 @@ public class Player {
     /**
      * Saved birth gold, used by quickstart when {@code birth_money} is off - the port of C's {@code p->au_birth}.
      */
-    private int auBirth;
+    private long auBirth;
 
     /**
      * Saved birth "natural" stat values, for quickstart - the port of C's {@code p->stat_birth}.
@@ -1959,7 +1959,7 @@ public class Player {
      *
      * @return the current gold, never negative once birth has finished
      */
-    public int getAU() {
+    public long getAU() {
         return au;
     }
 
@@ -1976,7 +1976,7 @@ public class Player {
      *
      * @param currentAU the gold total to hold
      */
-    public void setAU(int currentAU) {
+    public void setAU(long currentAU) {
         this.au = currentAU;
     }
 
@@ -2011,7 +2011,7 @@ public class Player {
      *
      * @param birthAU the birth gold in gold pieces
      */
-    public void setAUBirth(int birthAU) {
+    public void setAUBirth(long birthAU) {
         this.auBirth = birthAU;
     }
 
@@ -2592,19 +2592,24 @@ public class Player {
      * {@code my_strcpy} at each of its several sites - birth naming ({@code ui-birth.c:712},
      * {@code ui-birth.c:1305}), the in-play rename command ({@code ui-player.c:1254}), quickstart's
      * roller restore ({@code player-birth.c:214}) and the save-file loader
-     * ({@code load.c:661}). The port's {@code String} field needs no length cap to stand in for the
-     * fixed buffer.
+     * ({@code load.c:661}). The port's {@code String} field has no fixed size of its own, so
+     * {@link #setFullName} reproduces {@code my_strcpy}'s effective 31-character cap by truncating
+     * on write instead.
      *
      * <p>{@code save_roller_data} is the read this class has a ported counterpart for -
      * {@code my_strcpy(tosave->name, player->full_name, ...)} ({@code player-birth.c:167}), ported as
      * {@code toSave.setName(player.getFullName())} in
-     * {@code PlayerBirth.saveRollerData}. No write path onto
-     * {@link #fullName} exists yet in the port - there is no {@code setFullName} - so this accessor
-     * currently only ever returns the constructor's {@code null}.
+     * {@code PlayerBirth.saveRollerData}. Of the four C write sites, only quickstart's roller
+     * restore ({@code player-birth.c:214-215}) has a ported counterpart so far -
+     * {@code player.setFullName(saved.getName())} in {@code PlayerBirth.LoadRollerData}
+     * ({@code PlayerBirth.java:1546}); birth naming, the in-play rename command and the save-file
+     * loader have no write path onto {@link #fullName} yet.
      *
-     * <p>Function getFullName commented in full on 260906.
+     * <p>Function getFullName commented in full on 260906, updated on 260907 when
+     * {@link #setFullName} gained a write path.
      *
-     * @return the character's full name, or {@code null} until a write path exists
+     * @return the character's full name, truncated to 31 characters by {@link #setFullName}, or
+     *         {@code null} before it has been set
      */
     public String getFullName() {
         return fullName;
@@ -2653,5 +2658,35 @@ public class Player {
      */
     public void setHistoryBirth(String historyBirth) {
         this.historyBirth = historyBirth;
+    }
+
+    /**
+     * Sets the character's full name - the port of writing C's {@code p->full_name}
+     * ({@code player.h:571}), truncating the way C's {@code my_strcpy} does when it copies into the
+     * fixed {@code char[PLAYER_NAME_LEN]} buffer.
+     *
+     * <p>C's {@code my_strcpy(buf, src, bufsize)} ({@code z-util.c:480}) only shortens {@code src}
+     * when its length reaches {@code bufsize}, in which case it keeps the first {@code bufsize - 1}
+     * characters and terminates the buffer; a shorter {@code src} is copied unchanged. With
+     * {@code PLAYER_NAME_LEN} at 32 ({@code option.h:23}), that means names up to 31 characters pass
+     * through untouched and anything from 32 characters up is cut to the first 31. The port's
+     * {@code String} has no buffer to terminate, so {@code Math.min(31, name.length())} picks out
+     * the same cutover directly: the full length below it, 31 at and above it.
+     *
+     * <p>Called so far from {@code PlayerBirth.LoadRollerData} ({@code PlayerBirth.java:1546}),
+     * {@code player.setFullName(saved.getName())}, the port of quickstart's roller restore -
+     * {@code my_strcpy(player->full_name, saved->name, sizeof(player->full_name))}
+     * ({@code player-birth.c:215}). C's other three write sites - birth naming
+     * ({@code ui-birth.c:712}, {@code ui-birth.c:1305}) and the in-play rename command
+     * ({@code ui-player.c:1254}) - have no caller here yet.
+     *
+     * <p>Function setFullName coded on 260907, commented in full on 260907.
+     *
+     * @param name the character's full name; lengths of 31 characters or fewer are stored as given,
+     *             longer ones are truncated to the first 31 characters
+     */
+    public void setFullName(String name) {
+        int length = Math.min(31, name.length());
+        this.fullName = name.substring(0, length);
     }
 }

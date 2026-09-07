@@ -308,7 +308,7 @@ class PlayerBirthPlayerInitTest {
     void wipeClearsStaleFields() throws Exception {
         assertEquals(0, player.getLevel(), "level not zeroed");
         assertEquals(0, player.getCurrentHP(), "currentHP not zeroed");
-        assertEquals(0, (int) readInstance(player, "au"), "au not zeroed");
+        assertEquals(0L, (long) readInstance(player, "au"), "au not zeroed");
         assertEquals(null, readInstance(player, "fullName"), "fullName not cleared");
     }
 

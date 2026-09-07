@@ -216,10 +216,10 @@ class PlayerBirthResetStatsTest {
      * @return the stored birth gold
      * @throws ReflectiveOperationException if the field cannot be reached
      */
-    private int auBirth() throws ReflectiveOperationException {
+    private long auBirth() throws ReflectiveOperationException {
         Field field = Player.class.getDeclaredField("auBirth");
         field.setAccessible(true);
-        return field.getInt(player);
+        return field.getLong(player);
     }
 
     /**
@@ -454,7 +454,7 @@ class PlayerBirthResetStatsTest {
         @Test
         @DisplayName("false calls neither recalculateStats nor the birthpoints signal")
         void doesNeitherWhenClear() throws ReflectiveOperationException {
-            int before = auBirth();
+            long before = auBirth();
             Map<Stats, Integer> stats = statsMap(17, 13, 9, 18, 11);
             Map<Stats, Integer> spent = statsMap(5, 2, 0, 8, 3);
             Map<Stats, Integer> inc = statsMap(42, 42, 42, 42, 42);

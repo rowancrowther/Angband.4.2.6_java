@@ -424,7 +424,7 @@ public class Birther {
      * {@code birther.name[PLAYER_NAME_LEN]} buffer ({@code player-birth.c:108}) as a plain
      * {@link String}, with no length cap to stand in for the fixed buffer.
      *
-     * <p>{@link PlayerBirth#saveRollerData} is the one write site so far, and copies
+     * <p>{@code PlayerBirth.saveRollerData} is the one write site so far, and copies
      * {@link Player#getFullName()} straight across, matching C's
      * {@code my_strcpy(tosave->name, player->full_name, sizeof(tosave->name))}
      * ({@code player-birth.c:168}).
@@ -448,5 +448,57 @@ public class Birther {
      */
     public void setName(String name) {
         this.name = name;
+    }
+
+    /**
+     * Produces an independent snapshot holding this one's values - the port of what C's raw struct
+     * assignment {@code *prev_player = temp;} does to a whole {@code birther}
+     * ({@code player-birth.c:223}). C has no named function for this; a plain struct assignment's
+     * compiler-generated memberwise copy is the closest thing to compare against, and this method
+     * follows what that memberwise copy actually does to each field rather than applying one copy
+     * rule throughout.
+     *
+     * <p>{@link #race} and {@link #playerClass} are pointer fields in C, so the struct assignment
+     * copies the pointer rather than what it points to - the result shares the very same race and
+     * class records as the source, exactly as {@link #setRace} and {@link #setPlayerClass} already
+     * do elsewhere in this class. {@link #stat}, by contrast, is C's <em>embedded</em>
+     * {@code int16_t stat[STAT_MAX]} array, so the struct assignment copies its contents element by
+     * element into an independent array; the port copies the map's entries into a fresh
+     * {@link HashMap} for the same reason - sharing the reference the way {@link #race} is handled
+     * would leave the two snapshots aliasing one mutable map. {@link #age}, {@link #weight},
+     * {@link #height}, {@link #sc} and {@link #au} are plain scalar fields, copied by value either
+     * side. {@link #history} and {@link #name} are a pointer and a fixed buffer in C, copied by
+     * pointer and by byte respectively; the port copies both by reference, which comes out the same
+     * as C's byte copy since {@link String} is immutable and neither snapshot can mutate the other's
+     * text out from under it afterwards.
+     *
+     * <p>Outstanding: nothing calls this yet. It exists for the same reason C's raw struct
+     * assignment does - to hand a caller's own snapshot the values just displaced from the live
+     * player - but the one place that pattern is needed so far,
+     * {@link PlayerBirth#LoadRollerData(Birther, Birther)}, copies the individual fields across
+     * itself rather than calling this method.
+     *
+     * <p>Function copy coded on 260906, commented in full on 260907.
+     *
+     * @return a new snapshot holding this one's values; independent of it except for {@link #race}
+     * and {@link #playerClass}, which remain the very references this snapshot held
+     */
+    public Birther copy() {
+        Birther result = new Birther();
+
+        result.race = race;
+        result.playerClass = playerClass;
+        result.age = age;
+        result.weight = weight;
+        result.height = height;
+        result.sc = sc;
+        result.au = au;
+        Map<Stats, Integer> temp = new HashMap<>(stat);
+        for (Stats statIndex : stat.keySet()) {
+            result.stat.put(statIndex, temp.get(statIndex));
+        }
+        result.history = history;
+        result.name = name;
+        return result;
     }
 }

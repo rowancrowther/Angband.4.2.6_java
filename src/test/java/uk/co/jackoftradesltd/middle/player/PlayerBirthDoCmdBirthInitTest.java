@@ -152,12 +152,14 @@ class PlayerBirthDoCmdBirthInitTest {
     private CapturingBus bus;
 
     /**
-     * Whatever {@code quickstartPrev} held before the test, restored afterwards.
+     * Whatever {@link PlayerBirthStateRegistry#getQuickstartPrev()} held before the test, restored
+     * afterwards.
      */
     private Birther previousQuickstartPrev;
 
     /**
-     * Whatever {@code quickstartAllowed} held before the test, restored afterwards.
+     * Whatever {@link PlayerBirthStateRegistry#isQuickstartAllowed()} held before the test, restored
+     * afterwards.
      */
     private boolean previousQuickstartAllowed;
 
@@ -175,18 +177,6 @@ class PlayerBirthDoCmdBirthInitTest {
 
     private static Field playerClassesField() throws Exception {
         Field field = PlayerRegistry.class.getDeclaredField("playerClasses");
-        field.setAccessible(true);
-        return field;
-    }
-
-    private static Field quickstartPrevField() throws Exception {
-        Field field = PlayerBirth.class.getDeclaredField("quickstartPrev");
-        field.setAccessible(true);
-        return field;
-    }
-
-    private static Field quickstartAllowedField() throws Exception {
-        Field field = PlayerBirth.class.getDeclaredField("quickstartAllowed");
         field.setAccessible(true);
         return field;
     }
@@ -290,10 +280,10 @@ class PlayerBirthDoCmdBirthInitTest {
         bus = new CapturingBus();
         GameEngine.setEventsBusHandler(bus);
 
-        previousQuickstartPrev = (Birther) quickstartPrevField().get(null);
-        previousQuickstartAllowed = (boolean) quickstartAllowedField().get(null);
-        quickstartPrevField().set(null, new Birther());
-        quickstartAllowedField().set(null, false);
+        previousQuickstartPrev = PlayerBirthStateRegistry.getQuickstartPrev();
+        previousQuickstartAllowed = PlayerBirthStateRegistry.isQuickstartAllowed();
+        PlayerBirthStateRegistry.setQuickstartPrev(new Birther());
+        PlayerBirthStateRegistry.setQuickstartAllowed(false);
 
         GameWorld.setCharacterDungeon(true);
     }
@@ -305,8 +295,8 @@ class PlayerBirthDoCmdBirthInitTest {
         playerRacesField().set(null, previousRaces);
         playerClassesField().set(null, previousClasses);
         GameEngine.setEventsBusHandler(realBus);
-        quickstartPrevField().set(null, previousQuickstartPrev);
-        quickstartAllowedField().set(null, previousQuickstartAllowed);
+        PlayerBirthStateRegistry.setQuickstartPrev(previousQuickstartPrev);
+        PlayerBirthStateRegistry.setQuickstartAllowed(previousQuickstartAllowed);
     }
 
     /**
@@ -383,15 +373,15 @@ class PlayerBirthDoCmdBirthInitTest {
          */
         @Test
         @DisplayName("a name with no suffix is left untouched, and the roller data is still saved")
-        void nameWithNoSuffixIsUntouched() throws Exception {
+        void nameWithNoSuffixIsUntouched() {
             player.setHeightBirth(70);
             player.setFullName("Bilbo");
 
             PlayerBirth.doCmdBirthInit(null);
 
             assertEquals("Bilbo", player.getFullName());
-            assertTrue((boolean) quickstartAllowedField().get(null));
-            Birther saved = (Birther) quickstartPrevField().get(null);
+            assertTrue(PlayerBirthStateRegistry.isQuickstartAllowed());
+            Birther saved = PlayerBirthStateRegistry.getQuickstartPrev();
             assertEquals("Bilbo", saved.getName(), "save_roller_data still ran unconditionally");
             assertFalse(bus.hasDispatch(GameEventType.EVENT_MESSAGE), "no failure, so no message");
         }
@@ -405,7 +395,7 @@ class PlayerBirthDoCmdBirthInitTest {
          */
         @Test
         @DisplayName("a valid Roman suffix is incremented and written back onto the player")
-        void validSuffixIsIncremented() throws Exception {
+        void validSuffixIsIncremented() {
             player.setHeightBirth(70);
             player.setFullName("Bob IV");
 
@@ -413,7 +403,7 @@ class PlayerBirthDoCmdBirthInitTest {
 
             assertEquals("Bob V", player.getFullName());
             assertFalse(bus.hasDispatch(GameEventType.EVENT_MESSAGE), "a successful build shows no message");
-            Birther saved = (Birther) quickstartPrevField().get(null);
+            Birther saved = PlayerBirthStateRegistry.getQuickstartPrev();
             assertEquals("Bob V", saved.getName(),
                     "save_roller_data reads full_name after the rename, matching C's call order");
         }
@@ -427,7 +417,7 @@ class PlayerBirthDoCmdBirthInitTest {
          */
         @Test
         @DisplayName("a trailing-space empty suffix fails to build and shows the sorry message")
-        void emptySuffixFailsAndShowsMessage() throws Exception {
+        void emptySuffixFailsAndShowsMessage() {
             player.setHeightBirth(70);
             player.setFullName("Bob ");
 
@@ -438,7 +428,7 @@ class PlayerBirthDoCmdBirthInitTest {
             EventDataMessage message = bus.lastOfType(EventDataMessage.class);
             assertEquals(MessageType.MSG_GENERIC, message.type());
             assertEquals("Sorry, couldn't deal with suffix.", message.message());
-            assertTrue((boolean) quickstartAllowedField().get(null),
+            assertTrue(PlayerBirthStateRegistry.isQuickstartAllowed(),
                     "quickstart_allowed is still set true regardless of the rename outcome");
         }
 
@@ -481,25 +471,25 @@ class PlayerBirthDoCmdBirthInitTest {
 
         @Test
         @DisplayName("clears quickstartAllowed and signals EVENT_ENTER_BIRTH false")
-        void clearsQuickstartAllowed() throws Exception {
+        void clearsQuickstartAllowed() {
             player.setHeightBirth(0);
 
             PlayerBirth.doCmdBirthInit(null);
 
-            assertFalse((boolean) quickstartAllowedField().get(null));
+            assertFalse(PlayerBirthStateRegistry.isQuickstartAllowed());
             assertEquals(new EventDataBoolean(false), bus.lastOfType(EventDataBoolean.class));
             assertEquals(GameEventType.EVENT_ENTER_BIRTH, bus.lastType());
         }
 
         @Test
         @DisplayName("never touches the roller-data snapshot")
-        void neverSavesRollerData() throws Exception {
-            Birther before = (Birther) quickstartPrevField().get(null);
+        void neverSavesRollerData() {
+            Birther before = PlayerBirthStateRegistry.getQuickstartPrev();
             player.setHeightBirth(0);
 
             PlayerBirth.doCmdBirthInit(null);
 
-            assertEquals(before, (Birther) quickstartPrevField().get(null));
+            assertEquals(before, PlayerBirthStateRegistry.getQuickstartPrev());
         }
     }
 }

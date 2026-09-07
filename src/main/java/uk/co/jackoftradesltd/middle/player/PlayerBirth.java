@@ -74,9 +74,6 @@ public class PlayerBirth {
 
     private static final int MAX_BIRTH_POINTS = 20;
 
-    private static Birther quickstartPrev;
-    private static boolean quickstartAllowed; 
-
     /**
      * The point-buy price of a stat, indexed by <em>stat value + 1</em> - the port of C's
      * {@code birth_stat_costs} ({@code player-birth.c:679}).
@@ -1677,17 +1674,20 @@ public class PlayerBirth {
      * {@code result} onto whatever preceded the old suffix. Only a genuine build failure - an
      * empty {@code result}, the same signal C's {@code int_to_roman} gives by returning 0 and
      * clearing its buffer - reaches the user, via the message C itself shows on that path. {@link
-     * #saveRollerData} is then called and {@link #quickstartAllowed} set, both unconditionally on
+     * #saveRollerData} is then called and {@link PlayerBirthStateRegistry#isQuickstartAllowed()}
+     * set, both unconditionally on
      * this branch, matching C's own {@code save_roller_data(&quickstart_prev)} and
      * {@code quickstart_allowed = true}.
      *
      * <p>Without quickstart data, {@link #playerGenerate} builds a fresh character from the
-     * first race and class by index and {@link #quickstartAllowed} is cleared, matching C's
+     * first race and class by index and {@link PlayerBirthStateRegistry#isQuickstartAllowed()}
+     * is cleared, matching C's
      * {@code player_generate(player, player_id2race(0), player_id2class(0), false)} and
      * {@code quickstart_allowed = false}.
      *
      * <p>Either way, the method finishes by raising {@code EVENT_ENTER_BIRTH} with the now-current
-     * {@link #quickstartAllowed}, matching C's trailing {@code event_signal_flag} call.
+     * {@link PlayerBirthStateRegistry#isQuickstartAllowed()}, matching C's trailing 
+     * {@code event_signal_flag} call.
      *
      * <p>Function doCmdBirthInit coded on 260907, commented in full on 260907.
      *
@@ -1695,6 +1695,7 @@ public class PlayerBirth {
      */
     public static void doCmdBirthInit(Command cmd) {
         GameWorld.setCharacterDungeon(false);
+        PlayerBirthStateRegistry.initPlayerBirthStateRegistry();
         Player player = GameState.getPlayer();
 
         // If there is a quickstart character, store it for later use, 
@@ -1715,17 +1716,17 @@ public class PlayerBirth {
                     player.setFullName(newName);
                 }
             }
-
-            quickstartPrev = saveRollerData(quickstartPrev);
-            quickstartAllowed = true;
+            PlayerBirthStateRegistry.setQuickstartPrev(saveRollerData(PlayerBirthStateRegistry.getQuickstartPrev()));
+            PlayerBirthStateRegistry.setQuickstartAllowed(true);
         } else {
             playerGenerate(player, PlayerRace.getRaceFromIndex(0),
                     PlayerClass.getClassFromIndex(0), false);
-            quickstartAllowed = false;
+            PlayerBirthStateRegistry.setQuickstartAllowed(false);
         }
 
         // We're ready to start the birth process
-        GameEngine.getEventsBusHandler().eventSignalFlag(GameEventType.EVENT_ENTER_BIRTH, quickstartAllowed);
+        GameEngine.getEventsBusHandler().eventSignalFlag(GameEventType.EVENT_ENTER_BIRTH,
+                PlayerBirthStateRegistry.isQuickstartAllowed());
     }
 
     /**
@@ -1912,6 +1913,42 @@ public class PlayerBirth {
         }
 
         return result;
+    }
+
+    /**
+     * Handler for {@code CMD_BIRTH_RESET}, putting the character and its point-buy state back to
+     * how they'd be on entering the birth screen fresh - the port of C's {@code do_cmd_birth_reset}
+     * ({@code player-birth.c:1101-1106}).
+     *
+     * <p>C's four statements run in the same order here: {@link #playerInit} rebuilds the player
+     * from scratch, {@link #resetStats} puts every stat back to 10 with zero spent and the base
+     * next-point cost, {@link #doBirthReset} restores quickstart data (if any is allowed) and
+     * regenerates the derived character fields, and {@link PlayerBirthStateRegistry#setRolledStats}
+     * clears the rolled-stats flag, matching C's trailing {@code rolled_stats = false}.
+     *
+     * <p>C threads {@code points_left} through {@code reset_stats} by pointer, so the write to
+     * {@code MAX_BIRTH_POINTS} lands straight in the shared global. {@link #resetStats} has no such
+     * pointer - it takes the current total by value and returns the new one instead - so this
+     * method captures that return and writes it back explicitly via
+     * {@link PlayerBirthStateRegistry#setPointsLeft}, reproducing the same by-reference update C
+     * gets for free. The three per-stat maps need no such round trip: {@link
+     * PlayerBirthStateRegistry#getStats()}, {@link PlayerBirthStateRegistry#getPointsSpent()} and
+     * {@link PlayerBirthStateRegistry#getPointsInc()} hand {@link #resetStats} the same {@code Map}
+     * instances it mutates in place, the same way C's array arguments decay to pointers into the
+     * shared arrays.
+     *
+     * <p>Function doCmdBirthReset coded on 260906, commented in full on 260907.
+     *
+     * @param cmd the birth-reset command; unused, matching C's own unused {@code cmd} parameter
+     */
+    public static void doCmdBirthReset(Command cmd) {
+        Player player = GameState.getPlayer();
+        playerInit(player);
+        int pointsLeft = resetStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft(), false);
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+        doBirthReset(PlayerBirthStateRegistry.isQuickstartAllowed(), PlayerBirthStateRegistry.getQuickstartPrev());
+        PlayerBirthStateRegistry.setRolledStats(false);
     }
 
     /**

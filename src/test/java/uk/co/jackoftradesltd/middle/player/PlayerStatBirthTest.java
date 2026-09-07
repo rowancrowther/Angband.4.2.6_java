@@ -50,11 +50,14 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
  * player->stat_cur[i] = player->stat_max[i] = player->stat_birth[i] = stats_local_local[i];   // player-birth.c:274, recalculate_stats
  * }</pre>
  *
- * <p>The value uses the same 3-to-18-then-percentile encoding as {@link Player#getMaxStatValue},
- * and as with that accessor's {@code HashMap} lookup, reading a stat that was never written throws
- * {@code NullPointerException} on the auto-unboxing rather than returning a sentinel — the same
- * failure mode {@link Player#getStatMax} and {@link Player#getCurStatValue} already have, so this
- * getter matches its siblings rather than inventing a default.
+ * <p>The value uses the same 3-to-18-then-percentile encoding as {@link Player#getMaxStatValue}. A
+ * fresh {@link Player} reads every real stat back as {@code 0} rather than throwing: {@link
+ * Player#wipe} and the constructor both zero-fill {@code statsBirth} for the five real stats,
+ * matching C's blanket {@code memset(p, 0, sizeof(struct player))} ({@code player-birth.c:406}),
+ * which zeroes {@code stat_birth[]} along with every other field in the struct. The two sentinels,
+ * {@code STAT_NONE} and {@code STAT_MAX}, are outside that fill and still throw on the auto-unboxing
+ * — the same failure mode {@link Player#getStatMax} and {@link Player#getCurStatValue} give for
+ * those same two, so this getter still matches its siblings there.
  *
  * <p>Class PlayerStatBirthTest coded on 260906, commented in full on 260906.
  *
@@ -170,14 +173,25 @@ class PlayerStatBirthTest {
         }
 
         /**
-         * A stat never written throws on the read, the same {@code NullPointerException} an unset
-         * entry in {@link Player#getStatMax}'s map produces — an unboxing failure, not a sentinel
-         * value, because the underlying {@code HashMap} has no entry to return.
+         * A stat never written reads back {@code 0}, matching C's {@code memset}-zeroed
+         * {@code stat_birth[]} ({@code player-birth.c:406}) rather than throwing on a missing map
+         * entry.
          */
         @Test
-        @DisplayName("an unset stat throws rather than returning a default")
-        void unsetStatThrows() {
-            assertThrows(NullPointerException.class, () -> player.getStatBirth(Stats.STAT_STR));
+        @DisplayName("an unset stat reads back 0, matching C's zeroed struct")
+        void unsetStatReadsZero() {
+            assertEquals(0, player.getStatBirth(Stats.STAT_STR));
+        }
+
+        /**
+         * The two sentinels sit outside the zero-fill loop, the same as every other real-stats-only
+         * map on {@link Player}, so they still throw on the auto-unboxing rather than reading 0.
+         */
+        @Test
+        @DisplayName("the sentinels have no slot to read")
+        void sentinelsThrow() {
+            assertThrows(NullPointerException.class, () -> player.getStatBirth(Stats.STAT_NONE));
+            assertThrows(NullPointerException.class, () -> player.getStatBirth(Stats.STAT_MAX));
         }
     }
 }

@@ -381,6 +381,13 @@ public class Player {
         statMax = new HashMap<>();
         statMap = new HashMap<>();
         statsBirth = new HashMap<>();
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            statsBirth.put(stat, 0);
+            statMax.put(stat, 0);
+            statCur.put(stat, 0);
+            statMap.put(stat, stat);
+        }
         state = null;
         playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
     }
@@ -455,6 +462,13 @@ public class Player {
         statMax = new HashMap<>();
         statMap = new HashMap<>();
         statsBirth = new HashMap<>();
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
+            statsBirth.put(stat, 0);
+            statMax.put(stat, 0);
+            statCur.put(stat, 0);
+            statMap.put(stat, stat);
+        }
         state = null;
         playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
 

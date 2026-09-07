@@ -336,7 +336,7 @@ boxes span these stages rather than matching them one-to-one.
   - [X] `do_cmd_buy_stat`
   - [X] `do_cmd_sell_stat`
   - [X] `do_cmd_reset_stats`
-  - [ ] `do_cmd_refresh_stats`
+  - [X] `do_cmd_refresh_stats`
   - [ ] `do_cmd_roll_stats`
   - [ ] `do_cmd_prev_stats`
   - [ ] `do_cmd_choose_name`

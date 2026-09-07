@@ -2195,6 +2195,32 @@ public class PlayerBirth {
     }
 
     /**
+     * Re-fires the birth-points UI event without changing any state - the port of C's {@code
+     * do_cmd_refresh_stats} ({@code player-birth.c:1173-1178}).
+     *
+     * <p>When {@link PlayerBirthStateRegistry#isRolledStats()} is {@code true} the method returns
+     * immediately, matching C's {@code if (rolled_stats) return;} - refreshing is a no-op once the
+     * character is using rolled stats rather than point-buy ones. Otherwise it re-signals {@code
+     * EVENT_BIRTHPOINTS} with the current {@link PlayerBirthStateRegistry#getPointsSpent()}, {@link
+     * PlayerBirthStateRegistry#getPointsInc()} and {@link PlayerBirthStateRegistry#getPointsLeft()},
+     * the same three values C's own call passes through by reference - nothing is recalculated or
+     * written back.
+     *
+     * <p>The {@code cmd} parameter is unused here, just as in C - {@code do_cmd_refresh_stats} never
+     * reads {@code cmd} either, so there is no {@code choice} arg to fetch.
+     *
+     * <p>Function doCmdRefreshStats coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the refresh-stats command; unused, kept only to match the {@code cmd_fn} signature
+     */
+    public static void doCmdRefreshStats(Command cmd) {
+        if (PlayerBirthStateRegistry.isRolledStats()) return;
+        GameEngine.getEventsBusHandler().eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS,
+                PlayerBirthStateRegistry.getPointsSpent(), PlayerBirthStateRegistry.getPointsInc(),
+                PlayerBirthStateRegistry.getPointsLeft());
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

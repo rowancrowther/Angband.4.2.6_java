@@ -1998,6 +1998,55 @@ public class PlayerBirth {
     }
 
     /**
+     * Handler for {@code CMD_CHOOSE_CLASS}, applying the player's class choice from the birth
+     * screen and re-running the point-buy pipeline against it - the port of C's {@code
+     * do_cmd_choose_class} ({@code player-birth.c:1122-1131}).
+     *
+     * <p>Like {@link #doCmdChooseRace}, C reads the {@code choice} arg into a stack {@code int}
+     * with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and never checks the return value,
+     * so on the (currently unreachable) path where the arg is missing it falls through and calls
+     * {@code player_id2class} on whatever garbage was left on the stack. Every producer of {@code
+     * CMD_CHOOSE_CLASS} in the C tree - the birth-screen class menu, its {@code '*'} random-class
+     * key, the {@code -p} random-character path, and the scripted-birth path - sets the arg on
+     * the same command it just pushed, so that fallthrough is never exercised in practice; it is
+     * dead-but-present behaviour in C, not a real caller this port needs to reproduce. This
+     * method chooses safety over exact replication and returns early via {@code
+     * chosen.isPresent()} when the arg is absent, deliberately diverging from C here.
+     *
+     * <p>The rest of the body follows C step for step: {@link #playerGenerate} rebuilds the
+     * player for the new class, {@link #resetStats} recomputes the point-buy totals from scratch,
+     * and {@link #generateStats} runs the auto-buy pass on top of that. C threads {@code
+     * points_left} through both {@code reset_stats} and {@code generate_stats} by pointer; {@link
+     * #resetStats} and {@link #generateStats} instead return the new total by value, so each call
+     * here is followed by an explicit {@link PlayerBirthStateRegistry#setPointsLeft} to land the
+     * result back in the shared registry, reproducing the same by-reference update C gets for
+     * free. The trailing {@link PlayerBirthStateRegistry#setRolledStats} matches C's closing
+     * {@code rolled_stats = false}.
+     *
+     * <p>Function doCmdChooseClass coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the choose-class command; carries the chosen class's index in its {@code
+     *            "choice"} arg
+     */
+    public static void doCmdChooseClass(Command cmd) {
+        Player player = GameState.getPlayer();
+        Optional<Integer> chosen = cmd.getArgChoice("choice");
+
+        if (!chosen.isPresent()) return;
+
+        int choice = chosen.get();
+        playerGenerate(player, null, PlayerClass.getClassFromIndex(choice), false);
+
+        int pointsLeft = resetStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft(), false);
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+        pointsLeft = generateStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft());
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+        PlayerBirthStateRegistry.setRolledStats(false);
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

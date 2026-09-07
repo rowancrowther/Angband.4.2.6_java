@@ -331,8 +331,8 @@ boxes span these stages rather than matching them one-to-one.
   the existing `UIBirth` / `BirthEvents` plumbing
   - [X] `do_cmd_birth_init`
   - [X] `do_cmd_birth_reset`
-  - [ ] `do_cmd_choose_race`
-  - [ ] `do_cmd_choose_class`
+  - [X] `do_cmd_choose_race`
+  - [X] `do_cmd_choose_class`
   - [ ] `do_cmd_buy_stat`
   - [ ] `do_cmd_sell_stat`
   - [ ] `do_cmd_reset_stats`

@@ -2047,6 +2047,56 @@ public class PlayerBirth {
     }
 
     /**
+     * Handler for {@code CMD_BUY_STAT}, spending one point-buy point to raise a single birth stat
+     * from the stat-purchase screen - the port of C's {@code do_cmd_buy_stat} ({@code
+     * player-birth.c:1134-1143}).
+     *
+     * <p>Skipped entirely once {@link PlayerBirthStateRegistry#isRolledStats()}, matching C's own
+     * {@code if (!rolled_stats)} boundary: a rolled character has no point-buy total left to spend
+     * against.
+     *
+     * <p>Like {@link #doCmdChooseRace} and {@link #doCmdChooseClass}, C reads the {@code choice}
+     * arg into a stack {@code int} with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and
+     * never checks the return value; every producer of {@code CMD_BUY_STAT} in the C tree - the
+     * birth-screen points menu - asserts the stat index in range before pushing the command
+     * ({@code ui-birth.c:1258-1261}), so the missing-arg path is dead-but-present in C, not a real
+     * caller this port needs to reproduce. This method chooses safety over exact replication and
+     * returns early via {@code chosen.isPresent()} when the arg is absent, deliberately diverging
+     * from C here.
+     *
+     * <p>C hands its raw {@code int} straight to {@code buy_stat}, whose own bounds check ({@code
+     * choice >= STAT_MAX || choice < 0}) absorbs every out-of-range value as a silent no-op. This
+     * method instead converts the arg to a {@link Stats} with {@link Stats#getStats} first, and
+     * that conversion only recognises the two sentinels {@link Stats#STAT_NONE} and
+     * {@link Stats#STAT_MAX} - anything further out of range comes back {@code null}, which {@link
+     * #buyStat}'s own sentinel check does not catch. The explicit {@code chosenStat == null} guard
+     * below stands in for the missing half of C's range test, so an invalid index still falls
+     * through to a no-op here instead of the {@code NullPointerException} a bare map lookup on a
+     * {@code null} key would otherwise throw.
+     *
+     * <p>{@link #buyStat}'s {@code bool} half of its return is discarded, matching C discarding
+     * {@code buy_stat}'s return value; only the points-left total is threaded back into the
+     * registry, reproducing the by-reference update C gets for free through {@code
+     * &points_left}.
+     *
+     * <p>Function doCmdBuyStat coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the buy-stat command; carries the stat to raise in its {@code "choice"} arg
+     */
+    public static void doCmdBuyStat(Command cmd) {
+        if (!PlayerBirthStateRegistry.isRolledStats()) {
+            Optional<Integer> chosen = cmd.getArgChoice("choice");
+            if (!chosen.isPresent()) return;
+            Stats chosenStat = Stats.getStats(chosen.get());
+            if (chosenStat == null) return;
+            IntAndBoolean result = buyStat(chosenStat, PlayerBirthStateRegistry.getStats(),
+                    PlayerBirthStateRegistry.getPointsSpent(), PlayerBirthStateRegistry.getPointsInc(),
+                    PlayerBirthStateRegistry.getPointsLeft(), true);
+            PlayerBirthStateRegistry.setPointsLeft(result.value());
+        }
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

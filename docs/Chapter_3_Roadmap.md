@@ -325,13 +325,26 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `generate_stats` (`:816`),
 - [X] and the `birth_stat_costs[]` table (`:676`)
 - [X] Quickstart: `save_roller_data` /
-- [ ] `load_roller_data` (`[C] player-birth.c:146, 179`),
-- [ ] `do_birth_reset` (`:1034`)
+- [X] `load_roller_data` (`[C] player-birth.c:146, 179`),
+- [X] `do_birth_reset` (`:1034`)
 - [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
   the existing `UIBirth` / `BirthEvents` plumbing
+  - [ ] `do_cmd_birth_init`
+  - [ ] `do_cmd_birth_reset`
+  - [ ] `do_cmd_choose_race`
+  - [ ] `do_cmd_choose_class`
+  - [ ] `do_cmd_buy_stat`
+  - [ ] `do_cmd_sell_stat`
+  - [ ] `do_cmd_reset_stats`
+  - [ ] `do_cmd_refresh_stats`
+  - [ ] `do_cmd_roll_stats`
+  - [ ] `do_cmd_prev_stats`
+  - [ ] `do_cmd_choose_name`
+  - [ ] `do_cmd_choose_history`
+  - [ ] `do_cmd_accept_character`
 - [X] Roman-numeral suffixes: `find_roman_suffix_start`,
-- [X] `int_to_roman`,
-- [X] `roman_to_int`
+- [ ] `int_to_roman`,
+- [ ] `roman_to_int`
   (`[C] player-birth.c:1334, 1366, 1426`)
 - [ ] `PlayerHistory` — only enough for birth's opening entry; the rest is Chapter 8
 

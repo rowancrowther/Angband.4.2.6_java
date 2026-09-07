@@ -1613,6 +1613,46 @@ public class PlayerBirth {
     }
 
     /**
+     * Puts the character back to the state it would be in on entering the birth screen fresh - the
+     * port of C's {@code do_birth_reset} ({@code player-birth.c:1045-1058}).
+     *
+     * <p>Quickstart data is restored first, but only when both {@code useQuickstart} is set
+     * <em>and</em> {@code quickstartPrevLevel} is non-{@code null} - mirroring C's
+     * {@code use_quickstart && quickstart_prev_local}, where a null pointer reads as false. The same
+     * compound condition is passed straight through as {@link #playerGenerate}'s {@code oldHistory}
+     * argument, so a quickstart reset keeps the restored history rather than rerolling it. The
+     * {@link Birther} that {@link #LoadRollerData} hands back is discarded here, matching the C
+     * caller's own disregard for {@code load_roller_data}'s return value.
+     *
+     * <p>{@link #playerGenerate} is called with a {@code null} race and class, so it leaves whatever
+     * race and class the player already has and only rebuilds the derived fields - the level,
+     * experience factor, hit dice, age/height/weight and (conditionally) history. Depth is then reset
+     * to town, and {@link #getBonuses} recalculates everything that depends on the now-current stats,
+     * matching C's own trailing {@code get_bonuses()} call.
+     *
+     * <p>Function doBirthReset coded on 260906, commented in full on 260907.
+     *
+     * @param useQuickstart       whether quickstart data should be used at all
+     * @param quickstartPrevLevel the previously saved quickstart character, or {@code null} if there
+     *                            is none
+     */
+    private static void doBirthReset(boolean useQuickstart, Birther quickstartPrevLevel) {
+        // Use quickstart data to set default character choices if it exists
+        if (useQuickstart && quickstartPrevLevel != null) {
+            LoadRollerData(quickstartPrevLevel, null);
+        }
+
+        Player player = GameState.getPlayer();
+        playerGenerate(player, null, null,
+                useQuickstart && quickstartPrevLevel != null);
+
+        player.setDepth(0);
+
+        // Update stats with bonuses, etc.
+        getBonuses(player);
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

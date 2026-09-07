@@ -45,10 +45,7 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static uk.co.jackoftradesltd.middle.player.PlayerUtils.modifyStatValue;
 
@@ -1948,6 +1945,55 @@ public class PlayerBirth {
                 PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft(), false);
         PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
         doBirthReset(PlayerBirthStateRegistry.isQuickstartAllowed(), PlayerBirthStateRegistry.getQuickstartPrev());
+        PlayerBirthStateRegistry.setRolledStats(false);
+    }
+
+    /**
+     * Handler for {@code CMD_CHOOSE_RACE}, applying the player's race choice from the birth
+     * screen and re-running the point-buy pipeline against it - the port of C's {@code
+     * do_cmd_choose_race} ({@code player-birth.c:1110-1119}).
+     *
+     * <p>C reads the {@code choice} arg into a stack {@code int} with {@code
+     * cmd_get_arg_choice(cmd, "choice", &choice)} and never checks the return value, so on the
+     * (currently unreachable) path where the arg is missing it falls through and calls {@code
+     * player_id2race} on whatever garbage was left on the stack. Every producer of {@code
+     * CMD_CHOOSE_RACE} in the C tree - the birth-screen race menu, its {@code '*'} random-race
+     * key, the {@code -p} random-character path, and the scripted-birth path - sets the arg on
+     * the same command it just pushed, so that fallthrough is never exercised in practice; it is
+     * dead-but-present behaviour in C, not a real caller this port needs to reproduce. This
+     * method chooses safety over exact replication and returns early via {@code
+     * chosen.isPresent()} when the arg is absent, deliberately diverging from C here.
+     *
+     * <p>The rest of the body follows C step for step: {@link #playerGenerate} rebuilds the
+     * player for the new race, {@link #resetStats} recomputes the point-buy totals from scratch,
+     * and {@link #generateStats} runs the auto-buy pass on top of that. C threads {@code
+     * points_left} through both {@code reset_stats} and {@code generate_stats} by pointer; {@link
+     * #resetStats} and {@link #generateStats} instead return the new total by value, so each call
+     * here is followed by an explicit {@link PlayerBirthStateRegistry#setPointsLeft} to land the
+     * result back in the shared registry, reproducing the same by-reference update C gets for
+     * free. The trailing {@link PlayerBirthStateRegistry#setRolledStats} matches C's closing
+     * {@code rolled_stats = false}.
+     *
+     * <p>Function doCmdChooseRace coded on 260906, commented in full on 260907.
+     *
+     * @param cmd the choose-race command; carries the chosen race's index in its {@code "choice"}
+     *            arg
+     */
+    public static void doCmdChooseRace(Command cmd) {
+        Player player = GameState.getPlayer();
+        Optional<Integer> chosen = cmd.getArgChoice("choice");
+
+        if (!chosen.isPresent()) return;
+
+        int choice = chosen.get();
+        playerGenerate(player, PlayerRace.getRaceFromIndex(choice), null, false);
+
+        int pointsLeft = resetStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft(), false);
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+        pointsLeft = generateStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft());
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
         PlayerBirthStateRegistry.setRolledStats(false);
     }
 

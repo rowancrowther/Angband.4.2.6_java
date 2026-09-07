@@ -2293,6 +2293,62 @@ public class PlayerBirth {
     }
 
     /**
+     * Handler for {@code CMD_PREV_STATS}, flicking the character back to whatever was rolled
+     * before the current one - the port of C's {@code do_cmd_prev_stats}
+     * ({@code player-birth.c:1218-1231}).
+     *
+     * <p>The guard mirrors C's {@code if (prev.age)} exactly: {@link Birther#getAge()} returns
+     * {@code int}, so {@code != 0} is the same truthy check C gets for free on a raw {@code int}
+     * field. When there is nothing stored - a zero age, meaning no previous roll has ever been
+     * saved - the swap is skipped entirely and only the four event signals below fire, matching
+     * C's fall-through to the unconditional {@code event_signal} calls.
+     *
+     * <p>Inside the guard, {@link #LoadRollerData} is called with the same {@link Birther} for
+     * both {@code saved} and {@code prevPlayer}, exactly as C calls {@code load_roller_data(&prev,
+     * &prev)} with the same address twice. That aliasing is documented at {@link #LoadRollerData}
+     * itself - the previous snapshot is read out before the caller's own object is overwritten
+     * with what the live player held going in - so this call is a straight swap: the stored
+     * previous character becomes live, and what was live a moment ago becomes the new "previous".
+     * {@link #LoadRollerData} mutates {@code prevPlayer} in place and hands the same reference
+     * back; the {@code prev = LoadRollerData(prev, prev)} reassignment and the
+     * {@link PlayerBirthStateRegistry#setPrev} that follows are both redundant with that in-place
+     * mutation, but harmless - the registry ends up holding the exact object it already held.
+     *
+     * <p>{@link #getBonuses} is called only inside the guard, matching C's own placement of
+     * {@code get_bonuses()} - it recalculates bonuses from the newly-loaded stats, so there is
+     * nothing to recompute when the swap did not happen.
+     *
+     * <p>The four {@code EVENT_GOLD}/{@code EVENT_AC}/{@code EVENT_HP}/{@code EVENT_STATS}
+     * signals fire unconditionally and in the same order as C's own four calls, whether or not
+     * the guard above ran - the UI is told to refresh regardless, since the guard's failure path
+     * is itself a meaningful "nothing changed" state worth redrawing.
+     *
+     * <p>{@code cmd} is unused, the same unread-parameter pattern as {@link #doCmdRefreshStats}
+     * and {@link #doCmdRollStats} - C's {@code do_cmd_prev_stats} never reads {@code cmd} either.
+     *
+     * <p>Function doCmdPrevStats coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the prev-stats command; unused, kept only to match the {@code cmd_fn} signature
+     */
+    public static void doCmdPrevStats(Command cmd) {
+        // Only switch to the stored previous character if we've
+        // actually got one to load
+        if (PlayerBirthStateRegistry.getPrev().getAge() != 0) {
+            Birther prev = PlayerBirthStateRegistry.getPrev();
+            prev = LoadRollerData(prev, prev);
+            PlayerBirthStateRegistry.setPrev(prev);
+            getBonuses(GameState.getPlayer());
+        }
+        
+        EventsHandler handler = GameEngine.getEventsBusHandler();
+
+        handler.eventSignal(GameEventType.EVENT_GOLD);
+        handler.eventSignal(GameEventType.EVENT_AC);
+        handler.eventSignal(GameEventType.EVENT_HP);
+        handler.eventSignal(GameEventType.EVENT_STATS);
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

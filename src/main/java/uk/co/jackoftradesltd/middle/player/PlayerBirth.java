@@ -2349,6 +2349,38 @@ public class PlayerBirth {
     }
 
     /**
+     * The port of C's {@code do_cmd_choose_name} ({@code player-birth.c:1234}) - reads the
+     * {@code "name"} command argument and sets it as the current player's full name.
+     *
+     * <p>C fetches the argument with {@code cmd_get_arg_string(cmd, "name", &str)} but never checks
+     * its return value ({@code player-birth.c:1237}): if the argument were absent, {@code str} would
+     * be left uninitialised and the following {@code my_strcpy(player->full_name, str, ...)}
+     * ({@code player-birth.c:1240}) would read through a garbage pointer - undefined behaviour, not a
+     * designed fallback. The port's {@link Command#getArgString} returns an {@link Optional} instead,
+     * and this method guards on {@link Optional#isEmpty()} to return without touching the player's
+     * name - a deliberate divergence from C's unchecked read, not an oversight. On the one known
+     * caller, {@link #playerMakeSimple}, the argument is always set before the command runs
+     * ({@code PlayerBirth.java:748}), matching C's own only caller ({@code ui-birth.c:1321}), so the
+     * guard never fires in current use; it exists for the day some other caller dispatches
+     * {@code CMD_NAME_CHOICE} without pre-setting {@code "name"}.
+     *
+     * <p>When the argument is present, the name is handed straight to {@link Player#setFullName},
+     * which already reproduces {@code my_strcpy}'s 31-character truncation
+     * ({@code player-birth.c:1240}, {@code PLAYER_NAME_LEN} = 32) - this method does no truncation
+     * of its own.
+     *
+     * <p>Function doCmdChooseName coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the name-choice command, expected to carry a {@code "name"} string argument
+     */
+    public static void doCmdChooseName(Command cmd) {
+        Optional<String> name = cmd.getArgString("name");
+
+        if (name.isEmpty()) return;
+        GameState.getPlayer().setFullName(name.get());
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

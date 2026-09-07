@@ -335,7 +335,7 @@ boxes span these stages rather than matching them one-to-one.
   - [X] `do_cmd_choose_class`
   - [X] `do_cmd_buy_stat`
   - [X] `do_cmd_sell_stat`
-  - [ ] `do_cmd_reset_stats`
+  - [X] `do_cmd_reset_stats`
   - [ ] `do_cmd_refresh_stats`
   - [ ] `do_cmd_roll_stats`
   - [ ] `do_cmd_prev_stats`
@@ -343,8 +343,8 @@ boxes span these stages rather than matching them one-to-one.
   - [ ] `do_cmd_choose_history`
   - [ ] `do_cmd_accept_character`
 - [X] Roman-numeral suffixes: `find_roman_suffix_start`,
-- [ ] `int_to_roman`,
-- [ ] `roman_to_int`
+- [X] `int_to_roman`,
+- [X] `roman_to_int`
   (`[C] player-birth.c:1334, 1366, 1426`)
 - [ ] `PlayerHistory` — only enough for birth's opening entry; the rest is Chapter 8
 

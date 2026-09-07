@@ -2135,7 +2135,7 @@ public class PlayerBirth {
     public static void doCmdSellStat(Command cmd) {
         if (!PlayerBirthStateRegistry.isRolledStats()) {
             Optional<Integer> chosen = cmd.getArgChoice("choice");
-            if (!chosen.isPresent()) return;
+            if (chosen.isEmpty()) return;
             Stats chosenStat = Stats.getStats(chosen.get());
             if (chosenStat == null) return;
             IntAndBoolean result = sellStat(chosenStat, PlayerBirthStateRegistry.getStats(),
@@ -2143,6 +2143,55 @@ public class PlayerBirth {
                     PlayerBirthStateRegistry.getPointsLeft(), true);
             PlayerBirthStateRegistry.setPointsLeft(result.value());
         }
+    }
+
+    /**
+     * Handler for {@code CMD_RESET_STATS}, putting the point-buy stats back to their starting
+     * values and, if asked, immediately running the auto-buy pass on top of that reset - the port
+     * of C's {@code do_cmd_reset_stats} ({@code player-birth.c:1157-1169}).
+     *
+     * <p>{@link #resetStats} always runs first, with {@code updateDisplay} {@code true}, matching
+     * C's unconditional {@code reset_stats(stats, points_spent, points_inc, &points_left, true);} -
+     * this fires no matter what the {@code choice} arg turns out to hold.
+     *
+     * <p>Like {@link #doCmdBuyStat} and {@link #doCmdSellStat}, C reads the {@code choice} arg into
+     * a stack {@code int} with {@code cmd_get_arg_choice(cmd, "choice", &choice)} and never checks
+     * the return value; both producers of {@code CMD_RESET_STATS} in the C tree ({@code
+     * ui-birth.c:824} and {@code ui-birth.c:1270}) always set the arg before pushing the command,
+     * so the missing-arg path is dead-but-present in C here too.
+     *
+     * <p>Unlike those two siblings, though, an absent {@code chosen} does not return early here -
+     * it only skips the {@link #generateStats} call, nested inside {@code chosen.isPresent()}
+     * alongside the {@code chosen.get() != 0} check that stands in for C's {@code if (choice)}
+     * truthiness test. {@link PlayerBirthStateRegistry#setRolledStats} still runs afterwards
+     * regardless, matching C's own trailing {@code rolled_stats = false;}, which sits outside and
+     * after the {@code if (choice)} block and so always executes - clearing the flag is not
+     * conditional on the arg being readable at all.
+     *
+     * <p>{@link #resetStats} and {@link #generateStats} each return their own new points-left total
+     * in place of C's by-reference {@code int}, so each call here is followed by an explicit
+     * {@link PlayerBirthStateRegistry#setPointsLeft} to land the update, the same pattern used by
+     * {@link #doCmdBirthReset}, {@link #doCmdChooseRace} and {@link #doCmdChooseClass}.
+     *
+     * <p>Function doCmdResetStats coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the reset-stats command; carries whether to auto-generate stats in its
+     *            {@code "choice"} arg
+     */
+    public static void doCmdResetStats(Command cmd) {
+        int pointsLeft = resetStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft(), true);
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+
+        Optional<Integer> chosen = cmd.getArgChoice("choice");
+        if (chosen.isPresent()) {
+            if (chosen.get() != 0) {
+                pointsLeft = generateStats(PlayerBirthStateRegistry.getStats(), PlayerBirthStateRegistry.getPointsSpent(),
+                        PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft());
+                PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+            }
+        }
+        PlayerBirthStateRegistry.setRolledStats(false);
     }
 
     /**

@@ -734,7 +734,7 @@ public class PlayerCalcs {
      * ({@code total_spells > 0}); for a warrior the flag is still cleared, matching C.
      *
      * <p>Two early returns then split the model half from the map half. Nothing below them runs
-     * until the character exists ({@link GameWorld#characterGenerated}) and the map is actually on
+     * until the character exists ({@link GameState#getCharacterGenerated()}) and the map is actually on
      * screen ({@link uk.co.jackoftradesltd.middle.gameinput.GameInput#mapIsVisible()}); the flags for
      * those clauses are deliberately left raised, so the work happens on the first pass after the
      * map appears rather than being lost.
@@ -793,7 +793,7 @@ public class PlayerCalcs {
         }
 
         // Character is not ready yet - no map updates
-        if (!GameWorld.characterGenerated) return;
+        if (!GameState.getCharacterGenerated()) return;
 
         // Map is not shown, no map updates
         if (!GameInputHolder.getInstance().mapIsVisible()) return;
@@ -842,7 +842,7 @@ public class PlayerCalcs {
      * <p>Three guards sit in front of the work, in C's order:
      * <ul>
      *   <li>an empty snapshot returns at once — the common case;</li>
-     *   <li>no character yet ({@link GameWorld#characterGenerated}) returns, leaving every flag
+     *   <li>no character yet ({@link GameState#getCharacterGenerated()}) returns, leaving every flag
      *       raised for the first pass after birth;</li>
      *   <li>the map not being on screen
      *       ({@link uk.co.jackoftradesltd.middle.gameinput.GameInput#mapIsVisible()}) does not return;
@@ -884,7 +884,7 @@ public class PlayerCalcs {
         if (redraw.isEmpty()) return;
 
         // Do we have a character?
-        if (!GameWorld.characterGenerated) return;
+        if (!GameState.getCharacterGenerated()) return;
 
         // Map is not shown - subwindow updates only
         if (!GameInputHolder.getInstance().mapIsVisible()) {

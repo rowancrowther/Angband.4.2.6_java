@@ -26,10 +26,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
 import uk.co.jackoftradesltd.middle.monsters.MonsterUtils;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
@@ -79,7 +79,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * either, so that the update half ran at all is read from {@link RecordingUpkeep#cleared} - the
  * clause clears its flag before calling, and only a clause that was reached can clear.
  *
- * <p>Globals are involved once the real halves run ({@link GameWorld#characterGenerated}, the
+ * <p>Globals are involved once the real halves run ({@link GameState#getCharacterGenerated()}, the
  * {@code GameInput} boundary and the events bus), so all three are set explicitly here and put back
  * afterwards.
  *
@@ -133,6 +133,19 @@ class PlayerHandleStuffTest {
     private boolean realCharacterGenerated;
 
     /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * A generated character, a visible map and a capturing bus - the ordinary mid-game conditions
      * under which both halves are reachable.
      *
@@ -154,18 +167,20 @@ class PlayerHandleStuffTest {
         realBus = GameEngine.getEventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = true;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(true);
         GameInputHolder.resetInstance();
     }
 
     /**
      * Puts the globals back, so nothing here decides another class's outcome.
+     *
+     * @throws ReflectiveOperationException if the field cannot be reached
      */
     @AfterEach
-    void restoreGlobals() {
+    void restoreGlobals() throws ReflectiveOperationException {
         GameEngine.setEventsBusHandler(realBus);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        setCharacterGenerated(realCharacterGenerated);
         GameInputHolder.resetInstance();
     }
 
@@ -392,8 +407,8 @@ class PlayerHandleStuffTest {
          */
         @Test
         @DisplayName("handleStuff clears no flags of its own")
-        void clearsNothingItself() {
-            GameWorld.characterGenerated = false;
+        void clearsNothingItself() throws ReflectiveOperationException {
+            setCharacterGenerated(false);
             player.getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_PANEL);
             player.getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_GOLD);
 

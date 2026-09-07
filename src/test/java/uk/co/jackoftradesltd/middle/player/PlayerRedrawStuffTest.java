@@ -27,10 +27,10 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
@@ -71,7 +71,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the snapshot and the hack always returns - a case worth its own test because it is easy to port in
  * the wrong order and hard to notice.
  *
- * <p>Globals are involved ({@link GameWorld#characterGenerated}, the {@code GameInput} boundary and
+ * <p>Globals are involved ({@link GameState#getCharacterGenerated()}, the {@code GameInput} boundary and
  * the events bus), so all three are set explicitly here and put back afterwards.
  *
  * <p>Class PlayerRedrawStuffTest coded on 260828, commented in full on 260828.
@@ -142,29 +142,44 @@ class PlayerRedrawStuffTest {
     private boolean realCharacterGenerated;
 
     /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * A generated character, a visible map and a capturing bus - the ordinary mid-game conditions
      * under which every clause is reachable.
      */
     @BeforeEach
-    void newPlayer() {
+    void newPlayer() throws ReflectiveOperationException {
         player = new Player();
 
         bus = new CapturingBus();
         realBus = GameEngine.getEventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = true;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(true);
         GameInputHolder.resetInstance();
     }
 
     /**
      * Puts the globals back, so nothing here decides another class's outcome.
+     *
+     * @throws ReflectiveOperationException if the field cannot be reached
      */
     @AfterEach
-    void restoreGlobals() {
+    void restoreGlobals() throws ReflectiveOperationException {
         GameEngine.setEventsBusHandler(realBus);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        setCharacterGenerated(realCharacterGenerated);
         GameInputHolder.resetInstance();
     }
 
@@ -408,8 +423,8 @@ class PlayerRedrawStuffTest {
          */
         @Test
         @DisplayName("no character means nothing signalled and nothing cleared")
-        void ungeneratedCharacterDoesNothing() {
-            GameWorld.characterGenerated = false;
+        void ungeneratedCharacterDoesNothing() throws ReflectiveOperationException {
+            setCharacterGenerated(false);
             raise(PlayerRedraw.PR_HP, PlayerRedraw.PR_MAP);
 
             PlayerCalcs.redrawStuff(player);

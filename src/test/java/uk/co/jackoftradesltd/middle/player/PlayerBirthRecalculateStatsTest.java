@@ -26,7 +26,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
@@ -226,6 +225,19 @@ class PlayerBirthRecalculateStatsTest {
     }
 
     /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * A plain character partway through birth, installed as the current player, with the shipped
      * starting gold published and a capturing event bus in place.
      *
@@ -246,8 +258,8 @@ class PlayerBirthRecalculateStatsTest {
         realBus = GameEngine.getEventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = false;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(false);
     }
 
     /**
@@ -259,7 +271,7 @@ class PlayerBirthRecalculateStatsTest {
     void restoreGlobals() throws ReflectiveOperationException {
         GameState.setPlayer(realPlayer);
         GameEngine.setEventsBusHandler(realBus);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        setCharacterGenerated(realCharacterGenerated);
         constantsField().set(null, savedConstants);
     }
 

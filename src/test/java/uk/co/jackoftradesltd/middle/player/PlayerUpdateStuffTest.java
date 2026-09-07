@@ -28,7 +28,6 @@ import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
@@ -99,7 +98,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * alongside its own flag, so a {@code cleared} list of both flags <em>is</em> the full pass and a
  * list of {@code PU_MONSTERS} alone is the partial one.
  *
- * <p>The two early returns read global state ({@link GameWorld#characterGenerated} and the
+ * <p>The two early returns read global state ({@link GameState#getCharacterGenerated()} and the
  * {@code GameInput} boundary), so both are set explicitly here and put back afterwards; a test that
  * left either changed would silently decide the outcome of another class.
  *
@@ -168,6 +167,19 @@ class PlayerUpdateStuffTest {
     private Chunk realCave;
 
     /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * A plain character with a level, a visible map and a generated character - the ordinary
      * mid-game conditions under which every clause is reachable.
      *
@@ -199,18 +211,20 @@ class PlayerUpdateStuffTest {
         realBus = GameEngine.getEventsBusHandler();
         GameEngine.setEventsBusHandler(bus);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = true;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(true);
         GameInputHolder.resetInstance();
     }
 
     /**
      * Puts the globals back, so nothing here decides another class's outcome.
+     *
+     * @throws ReflectiveOperationException if the field cannot be reached
      */
     @AfterEach
-    void restoreGlobals() {
+    void restoreGlobals() throws ReflectiveOperationException {
         GameEngine.setEventsBusHandler(realBus);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        setCharacterGenerated(realCharacterGenerated);
         GameState.setCave(realCave);
         GameInputHolder.resetInstance();
     }
@@ -569,8 +583,8 @@ class PlayerUpdateStuffTest {
          */
         @Test
         @DisplayName("an ungenerated character gets the model half only")
-        void ungeneratedCharacterStopsAtTheMap() {
-            GameWorld.characterGenerated = false;
+        void ungeneratedCharacterStopsAtTheMap() throws ReflectiveOperationException {
+            setCharacterGenerated(false);
             raise(PlayerUpdateEnum.PU_HP, PlayerUpdateEnum.PU_UPDATE_VIEW,
                     PlayerUpdateEnum.PU_PANEL);
 

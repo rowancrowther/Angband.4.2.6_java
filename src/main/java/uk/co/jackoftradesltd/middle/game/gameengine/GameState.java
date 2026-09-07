@@ -196,4 +196,22 @@ public class GameState {
         // TODO: Stub function
         return true;
     }
+
+    /**
+     * Reports whether a character currently exists — the port of reading C's
+     * {@code character_generated} global ({@code game-world.h:36}). C has no accessor function for
+     * it; every call site reads the global directly (e.g. {@code player-calcs.c:2620}), and this
+     * getter stands in for those bare reads at the boundary.
+     *
+     * <p>{@code false} until birth completes ({@code player-birth.c:1315}) or a save loads
+     * ({@code savefile.c:653}), and reset to {@code false} again ahead of a fresh birth after death
+     * or a new game ({@code ui-game.c:721}).
+     *
+     * <p>Function getCharacterGenerated commented in full on 260907.
+     *
+     * @return {@code true} once a character has been generated
+     */
+    public static boolean getCharacterGenerated() {
+        return characterGenerated;
+    }
 }

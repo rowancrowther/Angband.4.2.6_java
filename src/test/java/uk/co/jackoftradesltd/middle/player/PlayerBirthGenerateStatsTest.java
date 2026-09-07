@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
@@ -231,15 +230,15 @@ class PlayerBirthGenerateStatsTest {
         realBus = GameEngine.getEventsBusHandler();
         GameEngine.setEventsBusHandler(new NoOpBus());
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = false;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        accessibleField(GameState.class, "characterGenerated").set(null, false);
     }
 
     @AfterEach
     void restoreGlobals() throws Exception {
         GameState.setPlayer(realPlayer);
         GameEngine.setEventsBusHandler(realBus);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        accessibleField(GameState.class, "characterGenerated").set(null, realCharacterGenerated);
         constantsField().set(null, savedConstants);
     }
 

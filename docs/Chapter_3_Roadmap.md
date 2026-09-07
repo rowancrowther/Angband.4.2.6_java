@@ -329,7 +329,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `do_birth_reset` (`:1034`)
 - [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
   the existing `UIBirth` / `BirthEvents` plumbing
-  - [ ] `do_cmd_birth_init`
+  - [X] `do_cmd_birth_init`
   - [ ] `do_cmd_birth_reset`
   - [ ] `do_cmd_choose_race`
   - [ ] `do_cmd_choose_class`

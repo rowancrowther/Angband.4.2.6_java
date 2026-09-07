@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
+import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.magic.MagicBook;
@@ -88,7 +88,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * the update pass here runs with no generated character, so the map-side clauses are never reached
  * and cannot clear it.
  *
- * <p>{@link GameWorld#characterGenerated} is set false for the duration, which is both what makes
+ * <p>{@link GameState#getCharacterGenerated()} is set false for the duration, which is both what makes
  * the pass stop after the six calculation clauses and what is actually true at birth; it is put back
  * afterwards so no other suite inherits it.
  *
@@ -168,6 +168,19 @@ class PlayerBirthGetBonusesTest {
     }
 
     /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * A plain character partway through birth: a rolled hit point table, wrong maxima, low current
      * totals, and no generated character.
      *
@@ -187,16 +200,18 @@ class PlayerBirthGetBonusesTest {
         set("maxSP", STALE_MAX);
         set("curSp", STARTING_CURRENT);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = false;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(false);
     }
 
     /**
      * Puts the generated-character flag back.
+     *
+     * @throws ReflectiveOperationException if the field cannot be reached
      */
     @AfterEach
-    void restoreGlobals() {
-        GameWorld.characterGenerated = realCharacterGenerated;
+    void restoreGlobals() throws ReflectiveOperationException {
+        setCharacterGenerated(realCharacterGenerated);
     }
 
     /**

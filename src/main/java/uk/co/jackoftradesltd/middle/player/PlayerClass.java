@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.magic.ClassMagic;
 import uk.co.jackoftradesltd.middle.magic.MagicBook;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
@@ -413,5 +414,38 @@ public class PlayerClass {
      */
     public List<StartItem> getStartItems() {
         return this.startItems;
+    }
+
+    /**
+     * Look up a player class by its position in load order — the port of C's
+     * {@code player_id2class} ({@code player-class.c:22}).
+     *
+     * <p>C walks the {@code classes} linked list comparing each node's {@code cidx} — an
+     * unsigned {@code guid} — against the requested id, and returns the first match or
+     * {@code NULL} if the list runs out. The parser assigns {@code cidx} by prepending each
+     * class as it is read, then counting down from the list head once parsing finishes; because
+     * the list is built by prepending, that count-down lands the data file's first class at
+     * {@code cidx} 0 and its last at {@code cidx count - 1} ({@code init.c:4128-4139}) — ascending
+     * file order. {@link PlayerRegistry#getPlayerClasses()} keeps its list in that same file
+     * order, so indexing straight into it reaches the class C's linked-list search would have
+     * found, without needing to walk anything.
+     *
+     * <p>An index at or past the loaded class count returns {@code null}, matching the C loop
+     * falling off the list tail. A negative index also returns {@code null}: C's {@code guid} is
+     * unsigned, so a caller's negative intent arrives as a value no {@code cidx} can equal and
+     * the C search still misses; the port guards for that explicitly rather than letting
+     * {@link List#get} throw where C would have degraded to {@code NULL}.
+     *
+     * <p>Function getClassFromIndex coded before 260907, commented in full on 260907; guarded
+     * against negative indices on 260907.
+     *
+     * @param classIndex the class's position in load order, C's {@code cidx}
+     * @return the matching {@link PlayerClass}, or {@code null} if no loaded class has that index
+     */
+    public static PlayerClass getClassFromIndex(int classIndex) {
+        List<PlayerClass> classes = PlayerRegistry.getPlayerClasses();
+        if (classIndex >= classes.size() || classIndex < 0)
+            return null;
+        return classes.get(classIndex);
     }
 }

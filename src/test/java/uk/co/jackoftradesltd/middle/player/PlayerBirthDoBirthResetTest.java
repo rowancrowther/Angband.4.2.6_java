@@ -25,7 +25,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.enums.Stats;
-import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.data.CarryCapData;
@@ -134,6 +133,19 @@ class PlayerBirthDoBirthResetTest {
         Field field = GameConstants.class.getDeclaredField("data");
         field.setAccessible(true);
         return field;
+    }
+
+    /**
+     * Writes {@link GameState}'s private {@code characterGenerated} field directly, since
+     * {@link GameState} exposes no setter for it.
+     *
+     * @param value the value to force the field to
+     * @throws ReflectiveOperationException if the field cannot be reached
+     */
+    private static void setCharacterGenerated(boolean value) throws ReflectiveOperationException {
+        Field field = GameState.class.getDeclaredField("characterGenerated");
+        field.setAccessible(true);
+        field.set(null, value);
     }
 
     /**
@@ -268,8 +280,8 @@ class PlayerBirthDoBirthResetTest {
         realPlayer = GameState.getPlayer();
         GameState.setPlayer(player);
 
-        realCharacterGenerated = GameWorld.characterGenerated;
-        GameWorld.characterGenerated = false;
+        realCharacterGenerated = GameState.getCharacterGenerated();
+        setCharacterGenerated(false);
     }
 
     /**
@@ -281,7 +293,7 @@ class PlayerBirthDoBirthResetTest {
     void restore() throws Exception {
         GameState.setPlayer(realPlayer);
         constantsField().set(null, savedConstants);
-        GameWorld.characterGenerated = realCharacterGenerated;
+        setCharacterGenerated(realCharacterGenerated);
     }
 
     /**

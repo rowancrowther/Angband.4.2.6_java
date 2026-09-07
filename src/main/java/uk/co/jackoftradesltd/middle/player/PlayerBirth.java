@@ -20,8 +20,10 @@ package uk.co.jackoftradesltd.middle.player;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
 import uk.co.jackoftradesltd.middle.game.enums.CommandContext;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
@@ -71,6 +73,9 @@ public class PlayerBirth {
     private static final Logger logger = LogManager.getLogger(PlayerBirth.class);
 
     private static final int MAX_BIRTH_POINTS = 20;
+
+    private static Birther quickstartPrev;
+    private static boolean quickstartAllowed; 
 
     /**
      * The point-buy price of a stat, indexed by <em>stat value + 1</em> - the port of C's
@@ -1650,6 +1655,263 @@ public class PlayerBirth {
 
         // Update stats with bonuses, etc.
         getBonuses(player);
+    }
+
+    /**
+     * Handler for {@code CMD_BIRTH_INIT}, starting the birth process - the port of C's
+     * {@code do_cmd_birth_init} ({@code player-birth.c:1061-1096}).
+     *
+     * <p>The dungeon is marked not ready first, matching C's own leading
+     * {@code character_dungeon = false}. What happens next hinges on whether the player already
+     * carries quickstart data, tested the same way C does - by the birth height being non-zero
+     * rather than by any explicit flag.
+     *
+     * <p>With quickstart data present, a reused character's name is bumped to the next dynastic
+     * numeral before the roller state is saved. {@link PlayerName#findRomanSuffixStart} finds the
+     * trailing Roman numeral (if the name has one); {@link #romanToInt} reads its current value,
+     * one is added unconditionally - mirroring C's own unconditional
+     * {@code roman_to_int(buf) + 1}, with no guard against a failed lookup - and {@link
+     * #intToRoman} builds the incremented numeral back into text. C writes that text straight
+     * into the {@code full_name} buffer through the same pointer {@code roman_to_int} read from;
+     * the port reproduces that in-place rename with {@link Player#setFullName}, splicing
+     * {@code result} onto whatever preceded the old suffix. Only a genuine build failure - an
+     * empty {@code result}, the same signal C's {@code int_to_roman} gives by returning 0 and
+     * clearing its buffer - reaches the user, via the message C itself shows on that path. {@link
+     * #saveRollerData} is then called and {@link #quickstartAllowed} set, both unconditionally on
+     * this branch, matching C's own {@code save_roller_data(&quickstart_prev)} and
+     * {@code quickstart_allowed = true}.
+     *
+     * <p>Without quickstart data, {@link #playerGenerate} builds a fresh character from the
+     * first race and class by index and {@link #quickstartAllowed} is cleared, matching C's
+     * {@code player_generate(player, player_id2race(0), player_id2class(0), false)} and
+     * {@code quickstart_allowed = false}.
+     *
+     * <p>Either way, the method finishes by raising {@code EVENT_ENTER_BIRTH} with the now-current
+     * {@link #quickstartAllowed}, matching C's trailing {@code event_signal_flag} call.
+     *
+     * <p>Function doCmdBirthInit coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the birth-init command; unused, matching C's own unused {@code cmd} parameter
+     */
+    public static void doCmdBirthInit(Command cmd) {
+        GameWorld.setCharacterDungeon(false);
+        Player player = GameState.getPlayer();
+
+        // If there is a quickstart character, store it for later use, 
+        // otherwise default to whatever the first of the choices is
+        if (player.getHeightBirth() != 0) {
+            // handle incrementing name suffix
+            String suffix = PlayerName.findRomanSuffixStart(player.getFullName());
+            if (suffix != null) {
+                // Try to increment the roman suffix
+                int newSuffix = romanToInt(suffix);
+                newSuffix++;
+                String result = intToRoman(newSuffix);
+                if (result.isEmpty())
+                    Message.message("Sorry, couldn't deal with suffix.");
+                else {
+                    String newName = player.getFullName();
+                    newName = newName.substring(0, newName.length() - suffix.length()) + result;
+                    player.setFullName(newName);
+                }
+            }
+
+            quickstartPrev = saveRollerData(quickstartPrev);
+            quickstartAllowed = true;
+        } else {
+            playerGenerate(player, PlayerRace.getRaceFromIndex(0),
+                    PlayerClass.getClassFromIndex(0), false);
+            quickstartAllowed = false;
+        }
+
+        // We're ready to start the birth process
+        GameEngine.getEventsBusHandler().eventSignalFlag(GameEventType.EVENT_ENTER_BIRTH, quickstartAllowed);
+    }
+
+    /**
+     * Converts an arabic integer to its upper-case Roman numeral - the port of C's
+     * {@code int_to_roman} ({@code player-birth.c:1379-1424}). The only caller is
+     * {@link #doCmdBirthInit}, building the incremented numeral suffix for a reused
+     * character name.
+     *
+     * <p>Roman numerals have no representation for zero or negative numbers, so any
+     * {@code value} below 1 answers the empty string immediately, matching C's own
+     * {@code n < 1} guard.
+     *
+     * <p>The greedy symbol-table walk mirrors C's {@code int_to_roman} symbol for symbol: both
+     * treat a symbol as usable once {@code value} is no smaller than it. C's inner loop
+     * advances {@code i} {@code while (n < roman_symbol_values[i])}, so it stops - and
+     * appends - the moment {@code n >= roman_symbol_values[i]}; the port matches this with
+     * an inclusive {@code value >= romanSymbolValues[index]} test, not a strict {@code >}.
+     * Without that inclusive bound, an exact match would never be consumed, and since the
+     * smallest symbol is {@code I} = 1, the remainder could never reach zero.
+     *
+     * <p>C bounds the write against a caller-supplied {@code bufsize} and signals failure
+     * by returning 0 with an empty buffer; the port has no fixed buffer to overflow, so the
+     * only failure path left is the one C also falls back to when its own table runs out -
+     * answered here with an empty string, matching the empty-string failure convention
+     * {@link #romanToInt} already uses.
+     *
+     * <p>Function intToRoman coded on 260907, commented in full on 260907.
+     *
+     * @param value the arabic value to convert; values below 1 have no Roman representation
+     * @return the upper-case Roman numeral for {@code value}, or the empty string if
+     * {@code value} is less than 1
+     */
+    private static String intToRoman(int value) {
+        String result = "";
+        StringBuilder romanBuilder = new StringBuilder();
+
+        // Roman numerals have no zero or negative numbers
+        if (value < 1) return result;
+
+        int[] romanSymbolValues = {1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1};
+        String[] romanSymbols = {"M", "CM", "D", "CD", "C", "XC", "L", "XL", "X", "IX", "V", "IV", "I"};
+
+        int index = 0;
+
+        // Build the roman numeral i the buffer
+        while (value > 0) {
+            if (value >= romanSymbolValues[index]) {
+                romanBuilder.append(romanSymbols[index]);
+                value -= romanSymbolValues[index];
+                index = 0;
+            } else {
+                index++;
+
+                if (index >= romanSymbolValues.length) {
+                    return "";
+                }
+            }
+        }
+
+        return romanBuilder.toString();
+    }
+
+    /**
+     * Looks up the value of a single Roman-numeral letter - the port of the single-letter
+     * entries C keeps in {@code roman_token_vals[*][0]}, read via
+     * {@code roman_token_chr1 = "MDCLXVI"} ({@code player-birth.c:1445-1454}). C never factors
+     * this lookup out into a function of its own; the port does, since {@link #romanToInt}
+     * needs the same lookup at both the leading and the lookahead character of every position
+     * it examines.
+     *
+     * <p>Only the seven canonical letters answer a value; anything else, including a lowercase
+     * letter, answers {@code -1} - matching a failed {@code strchr(roman_token_chr1, c1)}
+     * against C's uppercase-only table.
+     *
+     * <p>Function value coded on 260907, commented in full on 260907.
+     *
+     * @param roman the letter to look up
+     * @return the letter's Roman-numeral value, or {@code -1} if it is not one of
+     * {@code I V X L C D M}
+     */
+    private static int value(char roman) {
+        return switch (roman) {
+            case 'I' -> 1;
+            case 'V' -> 5;
+            case 'X' -> 10;
+            case 'L' -> 50;
+            case 'C' -> 100;
+            case 'D' -> 500;
+            case 'M' -> 1000;
+            default -> -1;
+        };
+    }
+
+    /**
+     * Converts a Roman numeral to its arabic value - the port of C's {@code roman_to_int}
+     * ({@code player-birth.c:1439-1492}). The only caller is {@link #doCmdBirthInit}, incrementing
+     * the numeral suffix on a reused character name.
+     *
+     * <p>Walks the string left to right. Each position's letter is looked up with {@link #value};
+     * an unrecognised letter - including a lowercase one, since neither version does case-folding
+     * - answers {@code -1} immediately, matching a failed {@code strchr} in C. An empty string
+     * likewise answers {@code -1} outright, matching C's own {@code strlen(roman) == 0} check.
+     *
+     * <p><b>The subtraction is a fixed set of six pairs, not a general rule.</b> A letter's value
+     * is only subtracted from its neighbour's when the pair is exactly one of
+     * {@code IV IX XL XC CD CM} - the same six two-character tokens C's {@code roman_token_chr2}
+     * restricts {@code I}, {@code X} and {@code C} to. {@code M}, {@code D}, {@code L} and
+     * {@code V} never lead a pair in either version, matching C's {@code null} entries for those
+     * four letters; a letter that could lead a pair but isn't followed by its specific partner -
+     * or has no next letter at all, being the last in the string - simply adds its own value
+     * instead, the same fallback C reaches when its {@code chr2} lookup fails or the next
+     * character is the string's null terminator. This is deliberately narrower than the common
+     * "any smaller value before a larger one subtracts" rule: {@code "VX"} totals 15 in both
+     * versions, not 5, because {@code V} is never on C's list of pair-leading letters.
+     *
+     * <p>When a pair does match, both letters are consumed together - the loop index is advanced
+     * an extra step inside the match, on top of the {@code for} loop's own increment - mirroring
+     * C's manual {@code i++} alongside its own {@code for} loop's increment at the same spot.
+     *
+     * <p>Like C, this will parse some nonsense strings as if they were Roman numerals (C's own
+     * comment names {@code "IVXCCCVIII"}), since neither version checks that the letters are in
+     * descending order overall - only the six-pair restriction above is enforced.
+     *
+     * <p>Function romanToInt coded on 260907, commented in full on 260907.
+     *
+     * @param roman the Roman numeral to convert; only the uppercase letters {@code I V X L C D M}
+     *              are recognised
+     * @return the numeral's arabic value, or {@code -1} if {@code roman} is empty or contains a
+     * letter that is not a recognised Roman numeral
+     */
+    private static int romanToInt(String roman) {
+        int result = 0;
+        int currValue;
+        char currChar = '\0';
+        char nextChar = '\0';
+        String toCheck = roman;
+
+        if (toCheck.isEmpty()) return -1;
+
+        for (int i = 0; i < toCheck.length(); i++) {
+            currChar = toCheck.charAt(i);
+            currValue = value(currChar);
+            if (currValue == -1) return -1;
+
+            if (i < (toCheck.length() - 1)) {
+                nextChar = toCheck.charAt(i + 1);
+
+                if (currChar == 'I') {
+                    if (nextChar == 'V') {
+                        result += 4;
+                        i++;
+                    } else if (nextChar == 'X') {
+                        result += 9;
+                        i++;
+                    } else {
+                        result += 1;
+                    }
+                } else if (currChar == 'X') {
+                    if (nextChar == 'L') {
+                        result += 40;
+                        i++;
+                    } else if (nextChar == 'C') {
+                        result += 90;
+                        i++;
+                    } else {
+                        result += 10;
+                    }
+                } else if (currChar == 'C') {
+                    if (nextChar == 'D') {
+                        result += 400;
+                        i++;
+                    } else if (nextChar == 'M') {
+                        result += 900;
+                        i++;
+                    } else {
+                        result += 100;
+                    }
+                } else {
+                    result += currValue;
+                }
+            } else {
+                result += currValue;
+            }
+        }
+
+        return result;
     }
 
     /**

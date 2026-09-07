@@ -283,7 +283,7 @@ public class PlayerName {
      * @return the numerals following the last space, empty if the name ends in a space, or
      * {@code null} if there is no space or the trailing word is not all numerals
      */
-    private String findRomanSuffixStart(String name) {
+    public static String findRomanSuffixStart(String name) {
         if (name.contains(" ")) {
             String suffix = "";
 

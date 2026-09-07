@@ -22,13 +22,16 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.enums.Stats;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
 import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -557,5 +560,39 @@ public class PlayerRace {
      */
     public PlayerHistoryChart getHistory() {
         return history;
+    }
+
+    /**
+     * Look up a player race by its position in load order — the port of C's
+     * {@code player_id2race} ({@code player-race.c:21}).
+     *
+     * <p>C walks the {@code races} linked list comparing each node's {@code ridx} — an unsigned
+     * {@code guid} — against the requested id, and returns the first match or {@code NULL} if the
+     * list runs out. The parser assigns {@code ridx} by prepending each race as it is read, then
+     * counting down from the list head once parsing finishes; because the list is built by
+     * prepending, that count-down lands the data file's first race at {@code ridx} 0 and its last
+     * at {@code ridx count - 1} ({@code init.c:2821-2832}) — ascending file order.
+     * {@link PlayerRegistry#getPlayerRaces()} keeps its list in that same file order (see
+     * {@link PlayerRegistry#getFirstPlayerRace()}), so indexing straight into it reaches the race
+     * C's linked-list search would have found, without needing to walk anything.
+     *
+     * <p>An index at or past the loaded race count returns {@code null}, matching the C loop
+     * falling off the list tail. A negative index also returns {@code null}: C's {@code guid} is
+     * unsigned, so a caller's negative intent arrives as a value no {@code ridx} can equal and
+     * the C search still misses; the port guards for that explicitly rather than letting
+     * {@link List#get} throw where C would have degraded to {@code NULL}.
+     *
+     * <p>Function getRaceFromIndex coded before 260907, commented in full on 260907; guarded
+     * against negative indices on 260907.
+     *
+     * @param raceIndex the race's position in load order, C's {@code ridx}
+     * @return the matching {@link PlayerRace}, or {@code null} if no loaded race has that index
+     */
+    public static PlayerRace getRaceFromIndex(int raceIndex) {
+        List<PlayerRace> races = PlayerRegistry.getPlayerRaces();
+        if (raceIndex >= races.size() || raceIndex < 0)
+            return null;
+        else
+            return races.get(raceIndex);
     }
 }

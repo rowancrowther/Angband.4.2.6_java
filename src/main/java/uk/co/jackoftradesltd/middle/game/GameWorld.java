@@ -89,8 +89,6 @@ public class GameWorld {
      * {@code game-world.c} function dereferences.
      */
     private Player player;
-
-    public static boolean characterGenerated = false;
     
     /**
      * The level the player currently occupies, cached from {@link GameState#getCave()} at
@@ -187,6 +185,26 @@ public class GameWorld {
         player = GameState.getPlayer();
         currentCave = GameState.getCave();
         dayCount = 0;
+    }
+
+    /**
+     * Records whether a dungeon level currently exists for the character — the port of the
+     * various direct assignments to C's {@code character_dungeon} global (there is no C setter
+     * function; C writes the global in place wherever it changes, e.g. {@code true} on level
+     * generation at {@code generate.c:1549} and on save load at {@code load.c:1541}, {@code false}
+     * on birth reset at {@code player-birth.c:1066} and on level teardown at {@code generate.c:1123}).
+     *
+     * <p>The setter counterpart to {@link #hasCharacterDungeon()}; both wrap the same
+     * {@link #characterDungeon} field that C reaches for as a bare global.
+     *
+     * <p>Method setCharacterDungeon coded before 260907, commented in full on 260907.
+     *
+     * @param dungeonExists {@code true} once a level has been generated for the character,
+     *                      {@code false} in the gaps either side of one (birth, save load,
+     *                      between levels)
+     */
+    public static void setCharacterDungeon(boolean dungeonExists) {
+        characterDungeon = dungeonExists;
     }
 
     /**

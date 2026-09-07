@@ -28,15 +28,15 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#setAge}, {@link PlayerRace#getBaseAge} and {@link PlayerRace#getModAge} — the
- * three pieces C's {@code get_ahw} needs to roll a starting age.
+ * Tests {@link Player#setAge}, {@link Player#getAge}, {@link PlayerRace#getBaseAge} and
+ * {@link PlayerRace#getModAge} — the pieces C's {@code get_ahw} needs to roll a starting age, plus
+ * the accessor pair around the stored value.
  *
  * <p>All three are storage, so nothing is proved by reading a value back on its own. What is worth
  * pinning is the arithmetic they exist to serve, and the expected numbers here come from the C, not
@@ -96,15 +96,13 @@ class PlayerAgeTest {
     }
 
     /**
-     * Reads the player's private {@code age} field, which has no getter yet.
+     * Reads the player's age through {@link Player#getAge}, exercising the same accessor every test
+     * in this class relies on to observe what {@link Player#setAge} stored.
      *
      * @return the stored age in years
-     * @throws Exception if the field cannot be reached
      */
-    private int age() throws Exception {
-        Field field = Player.class.getDeclaredField("age");
-        field.setAccessible(true);
-        return field.getInt(player);
+    private int age() {
+        return player.getAge();
     }
 
     /**
@@ -117,24 +115,20 @@ class PlayerAgeTest {
         /**
          * A new player is age zero: C zeroes the whole player struct before birth, and the port's
          * default {@code int} agrees.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a new player is age zero")
-        void newPlayerIsZero() throws Exception {
+        void newPlayerIsZero() {
             assertEquals(0, age());
         }
 
         /**
          * The ordinary path: an age rolled at birth is stored as given. Fourteen plus a roll of one
          * is the youngest a Human can be under {@code player-birth.c:356}.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("stores the value it is given")
-        void storesTheValue() throws Exception {
+        void storesTheValue() {
             player.setAge(15);
             assertEquals(15, age());
         }
@@ -143,12 +137,10 @@ class PlayerAgeTest {
          * Writing twice keeps the second value. C's birth code overwrites a rolled age whenever the
          * player rerolls, and {@code load_roller_data} ({@code player-birth.c:196}) restores a saved
          * one over whatever is there.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("the last write wins")
-        void lastWriteWins() throws Exception {
+        void lastWriteWins() {
             player.setAge(130);
             player.setAge(1);
             assertEquals(1, age());
@@ -158,12 +150,10 @@ class PlayerAgeTest {
          * No clamping in either direction. C applies none, and the port must not invent any: the
          * debug build's {@code player->age = 1} would be silently corrected by a lower bound, and a
          * value above the shipped maximum of 130 would be corrected by an upper one.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("does not clamp")
-        void doesNotClamp() throws Exception {
+        void doesNotClamp() {
             player.setAge(0);
             assertEquals(0, age());
             player.setAge(-5);
@@ -215,12 +205,10 @@ class PlayerAgeTest {
          * {@code b_age + 1 .. b_age + m_age} inclusive at both ends. Every roll {@code randint1} can
          * return is walked here for the Half-Orc ({@code 11:4}), giving 12, 13, 14 and 15 — the base
          * of 11 is itself unreachable, because {@code randint1} never returns zero.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("feeds the birth roll's inclusive range")
-        void feedsBirthRollRange() throws Exception {
+        void feedsBirthRollRange() {
             PlayerRace halfOrc = race("Half-Orc", 11, 4);
 
             for (int roll = 1; roll <= halfOrc.getModAge(); roll++) {

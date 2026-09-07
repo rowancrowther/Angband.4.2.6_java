@@ -247,15 +247,12 @@ class PlayerBirthPlayerGenerateTest {
     }
 
     /**
-     * Reads the character's background text, which has a writer but no reader.
+     * Reads the character's background text.
      *
      * @return the background text
-     * @throws Exception if the field cannot be reached
      */
-    private String history() throws Exception {
-        Field field = Player.class.getDeclaredField("history");
-        field.setAccessible(true);
-        return (String) field.get(player);
+    private String history() {
+        return player.getHistoryBirth();
     }
 
     /**
@@ -545,7 +542,7 @@ class PlayerBirthPlayerGenerateTest {
         @Test
         @DisplayName("keeps the background already there")
         void keepsTheBackground() throws Exception {
-            player.setPlayerHistory("a background worth keeping");
+            player.setHistoryBirth("a background worth keeping");
             PlayerBirth.playerGenerate(player, human(), warrior(), true);
 
             assertEquals("a background worth keeping", history());
@@ -560,7 +557,7 @@ class PlayerBirthPlayerGenerateTest {
         @Test
         @DisplayName("replaces the background when clear")
         void replacesTheBackground() throws Exception {
-            player.setPlayerHistory("a background worth keeping");
+            player.setHistoryBirth("a background worth keeping");
             PlayerBirth.playerGenerate(player, human(), warrior(), false);
 
             assertEquals("You are the first child of a Serf.  ", history());

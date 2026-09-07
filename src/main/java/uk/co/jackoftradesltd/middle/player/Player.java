@@ -257,7 +257,7 @@ public class Player {
     /**
      * The character's background history text - the port of C's {@code p->history}.
      */
-    private String history;
+    private String historyBirth;
 
     /**
      * The character's quest history - the port of C's {@code p->quests}.
@@ -461,7 +461,7 @@ public class Player {
         // other members
         fullName = null;
         diedFrom = null;
-        history = null;
+        historyBirth = null;
         level = 0;
         maxLevel = 0;
         exp = 0L;
@@ -2348,8 +2348,8 @@ public class Player {
      *
      * @param history the generated background text
      */
-    public void setPlayerHistory(String history) {
-        this.history = history;
+    public void setPlayerHistory(PlayerHistory history) {
+        this.playerHistory = history;
     }
 
     /**
@@ -2490,5 +2490,168 @@ public class Player {
      */
     public KnownObject getItemKnowledge() {
         return this.itemKnowledge;
+    }
+
+    /**
+     * Returns the character's age in years - the port of reading C's {@code p->age}
+     * ({@code player.h:518}). C has no equivalent accessor function; every C site reads the struct
+     * field directly. The write path, including how the value is rolled at birth, is
+     * {@link #setAge}.
+     *
+     * <p>Function getAge commented in full on 260906.
+     *
+     * @return the character's age in years
+     */
+    public int getAge() {
+        return age;
+    }
+
+    /**
+     * Returns the saved birth gold, the quickstart copy - the port of reading C's
+     * {@code p->au_birth} ({@code player.h:586}), and the counterpart of {@link #setAUBirth}. See
+     * that method for who writes it and when.
+     *
+     * <p>C reads the field directly at every call site; {@code save_roller_data} is the one that
+     * matters here, copying it into the birther record the roller keeps for undo and quickstart
+     * ({@code player-birth.c:156}). {@code PlayerBirth.saveRollerData}
+     * is that method's port, and it is the reason this accessor returns {@code long} rather than the
+     * {@code int} the field and {@link #setAUBirth} use: {@link Birther#setAu} takes a {@code long},
+     * so the widening happens here rather than at every call site.
+     *
+     * <p>Function getAUBirth commented in full on 260906.
+     *
+     * @return the birth gold in gold pieces
+     */
+    public long getAUBirth() {
+        return auBirth;
+    }
+
+    /**
+     * Returns the saved birth weight, the quickstart copy - the port of reading C's
+     * {@code p->wt_birth}, and the counterpart of {@link #setWeightBirth}. See that method for who
+     * writes it, when, and why the port's {@code int} is interchangeable with C's {@code int16_t}.
+     *
+     * <p>C reads the field directly at every call site; {@code save_roller_data} is the one that
+     * matters here, copying it into the birther record kept for undo and quickstart
+     * ({@code player-birth.c:154}). {@code PlayerBirth.saveRollerData}
+     * is that method's port.
+     *
+     * <p>Function getWeightBirth commented in full on 260906.
+     *
+     * @return the birth weight in pounds
+     */
+    public int getWeightBirth() {
+        return wtBirth;
+    }
+
+    /**
+     * Returns the saved birth height, the quickstart copy - the port of reading C's
+     * {@code p->ht_birth}, and the counterpart of {@link #setHeightBirth}. See that method for who
+     * writes it, when, and why the port's {@code int} is interchangeable with C's {@code int16_t}.
+     *
+     * <p>C reads the field directly at every call site; {@code save_roller_data} is the one that
+     * matters here, copying it into the birther record kept for undo and quickstart
+     * ({@code player-birth.c:155}). {@code PlayerBirth.saveRollerData}
+     * is that method's port.
+     *
+     * <p>Function getHeightBirth commented in full on 260906.
+     *
+     * @return the birth height in inches
+     */
+    public int getHeightBirth() {
+        return htBirth;
+    }
+
+    /**
+     * Returns one of the values a stat was born with - the port of reading C's
+     * {@code p->stat_birth[stat]}, and the counterpart of {@link #setStatBirth}. See that method for
+     * who writes it and when.
+     *
+     * <p>Identical in behaviour to {@link #getStatMax}: the same 3-to-18-then-percentile encoding,
+     * the same unchecked {@code HashMap} lookup, and the same C-side loop reading each of the five
+     * real stats in turn. {@code save_roller_data} is where the port has verified the loop -
+     * {@code tosave->stat[i] = player->stat_birth[i]} ({@code player-birth.c:159-160}), ported as the
+     * {@code Stats}-keyed loop in
+     * {@code PlayerBirth.saveRollerData}.
+     *
+     * <p>Function getStatBirth commented in full on 260906.
+     *
+     * @param stat the stat to read; one of the five real stats, not {@code STAT_NONE} or
+     *             {@code STAT_MAX}
+     * @return the value that stat was born with, in the 3-to-18-then-percentile scale
+     */
+    public int getStatBirth(Stats stat) {
+        return statsBirth.get(stat);
+    }
+
+    /**
+     * Returns the character's full name - the port of reading C's {@code p->full_name}
+     * ({@code player.h:571}).
+     *
+     * <p>C holds the name as a fixed {@code char[PLAYER_NAME_LEN]} and writes it with
+     * {@code my_strcpy} at each of its several sites - birth naming ({@code ui-birth.c:712},
+     * {@code ui-birth.c:1305}), the in-play rename command ({@code ui-player.c:1254}), quickstart's
+     * roller restore ({@code player-birth.c:214}) and the save-file loader
+     * ({@code load.c:661}). The port's {@code String} field needs no length cap to stand in for the
+     * fixed buffer.
+     *
+     * <p>{@code save_roller_data} is the read this class has a ported counterpart for -
+     * {@code my_strcpy(tosave->name, player->full_name, ...)} ({@code player-birth.c:167}), ported as
+     * {@code toSave.setName(player.getFullName())} in
+     * {@code PlayerBirth.saveRollerData}. No write path onto
+     * {@link #fullName} exists yet in the port - there is no {@code setFullName} - so this accessor
+     * currently only ever returns the constructor's {@code null}.
+     *
+     * <p>Function getFullName commented in full on 260906.
+     *
+     * @return the character's full name, or {@code null} until a write path exists
+     */
+    public String getFullName() {
+        return fullName;
+    }
+
+    /**
+     * Returns the character's background history text - the port of reading C's {@code p->history}
+     * ({@code player.h:573}), and the counterpart of {@link #setHistoryBirth}. See that method for
+     * who writes it and when.
+     *
+     * <p>Unlike {@link #getWeightBirth}, {@link #getHeightBirth} and {@link #getAUBirth}, there is no
+     * plain {@code getHistory} alongside this accessor - C's {@code p->history} has no working/birth
+     * pair the way {@code wt}/{@code wt_birth} does, so despite the name this is the only place the
+     * background text lives: read directly by the character screen ({@code ui-player.c:871}) and
+     * written to the save file ({@code save.c:426}), read back from it ({@code load.c:663-664}).
+     *
+     * <p>Function getHistoryBirth commented in full on 260906.
+     *
+     * @return the character's background history text, or {@code null} before one has been rolled
+     */
+    public String getHistoryBirth() {
+        return this.historyBirth;
+    }
+
+    /**
+     * Sets the character's background history text - the port of writing C's {@code p->history}
+     * ({@code player.h:573}).
+     *
+     * <p>Written from two places so far. {@code PlayerBirth.playerGenerate} rolls a fresh one from the
+     * race's history chart whenever the caller has not asked to keep the existing text -
+     * {@code player.setHistoryBirth(getHistory(player.getRace().getHistory()))}
+     * ({@code PlayerBirth.java:557}), matching C's {@code p->history = get_history(p->race->history)}
+     * ({@code player-birth.c:1036}). {@code PlayerBirth.saveRollerData} hands the current text to the
+     * birther snapshot and then nulls this field, {@code player.setHistoryBirth(null)}
+     * ({@code PlayerBirth.java:1508}), matching C's {@code player->history = NULL;}
+     * ({@code player-birth.c:167}).
+     *
+     * <p>C frees the string it is about to overwrite first, guarding the write with
+     * {@code if (p->history) string_free(p->history)} ({@code player-birth.c:1033-1034}); the port
+     * needs no equivalent guard, since the old reference is simply replaced and left for the garbage
+     * collector rather than leaked.
+     *
+     * <p>Function setHistoryBirth commented in full on 260906.
+     *
+     * @param historyBirth the background history text, or {@code null} to clear it
+     */
+    public void setHistoryBirth(String historyBirth) {
+        this.historyBirth = historyBirth;
     }
 }

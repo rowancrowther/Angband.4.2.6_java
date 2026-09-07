@@ -554,7 +554,7 @@ public class PlayerBirth {
         player.putTimed(TimedEffect.TMD_FOOD, PlayerRegistry.getPyFoodFull() - 1);
 
         if (!oldHistory) {
-            player.setPlayerHistory(getHistory(player.getRace().getHistory()));
+            player.setHistoryBirth(getHistory(player.getRace().getHistory()));
         }
     }
 
@@ -1458,6 +1458,57 @@ public class PlayerBirth {
         recalculateStats(st, left);
 
         return left;
+    }
+
+    /**
+     * Copies the currently-rolled character into {@code toSave}, the port of C's
+     * {@code save_roller_data} ({@code player-birth.c:146}). This is the snapshot the birth process
+     * keeps for undo and quickstart - {@code prev} and {@code quickstart_prev} in C - so a step back
+     * through the birth screens, or a quickstart restart, has something to restore from.
+     *
+     * <p>Every field read here is the birth-time copy, not the live one - {@link Player#getWeightBirth},
+     * {@link Player#getHeightBirth} and {@link Player#getAUBirth} over {@code getWeight}/{@code getHeight}/
+     * {@code getAu} - matching C's {@code wt_birth}/{@code ht_birth}/{@code au_birth} over {@code wt}/
+     * {@code ht}/{@code au}. The stat loop walks {@link Stats#values()} and skips the two sentinels,
+     * {@code STAT_NONE} and {@code STAT_MAX}, leaving the five real stats C's {@code for (i = 0; i <
+     * STAT_MAX; i++)} covers ({@code player-birth.c:159-160}).
+     *
+     * <p>The background-text handoff - {@code toSave.setHistoryBirth(player.getHistoryBirth())} then
+     * {@code player.setHistoryBirth(null)} - reads and nulls the same field, matching C's
+     * {@code tosave->history = player->history; player->history = NULL;} ({@code player-birth.c:165-166}),
+     * which hands the rolled background-text pointer to {@code toSave} and leaves the player without
+     * one. C also frees {@code tosave->history} first if it already held a string
+     * ({@code player-birth.c:162-164}); the port has nothing to do there, since the old value is simply
+     * unreferenced rather than leaked.
+     *
+     * <p>Function saveRollerData coded on 260906, commented in full on 260906.
+     *
+     * @param toSave the birther record to fill in
+     * @return {@code toSave}, for the caller's convenience
+     */
+    private Birther saveRollerData(Birther toSave) {
+        Player player = GameState.getPlayer();
+
+        // save the data
+        toSave.setRace(player.getRace());
+        toSave.setPlayerClass(player.getPlayerClass());
+        toSave.setAge(player.getAge());
+        toSave.setWeight(player.getWeightBirth());
+        toSave.setHeight(player.getHeightBirth());
+        toSave.setAu(player.getAUBirth());
+
+        // Save the stats
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+
+            toSave.setStat(stat, player.getStatBirth(stat));
+        }
+
+        toSave.setHistoryBirth(player.getHistoryBirth());
+        player.setHistoryBirth(null);
+        toSave.setName(player.getFullName());
+
+        return toSave;
     }
 
     /**

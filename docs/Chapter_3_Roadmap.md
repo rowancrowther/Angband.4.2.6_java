@@ -324,7 +324,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] `sell_stat` (`:770`),
 - [X] `generate_stats` (`:816`),
 - [X] and the `birth_stat_costs[]` table (`:676`)
-- [ ] Quickstart: `save_roller_data` /
+- [X] Quickstart: `save_roller_data` /
 - [ ] `load_roller_data` (`[C] player-birth.c:146, 179`),
 - [ ] `do_birth_reset` (`:1034`)
 - [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over

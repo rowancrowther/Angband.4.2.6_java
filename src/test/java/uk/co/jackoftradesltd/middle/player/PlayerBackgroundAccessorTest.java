@@ -32,7 +32,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerSkill;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
@@ -46,7 +45,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 /**
  * Tests the two ends of a character's background: {@link PlayerRace#getHistory()}, the chart the
  * text is generated from ({@code p->race->history}, {@code player.h:200}), and
- * {@link Player#setPlayerHistory(String)}, the finished text ({@code p->history}). C joins them in
+ * {@link Player#setHistoryBirth(String)}, the finished text ({@code p->history}). C joins them in
  * one line — {@code p->history = get_history(p->race->history)} ({@code player-birth.c:1027}) — and
  * that line is what these two accessors have to make possible.
  *
@@ -118,16 +117,13 @@ class PlayerBackgroundAccessorTest {
     }
 
     /**
-     * Reads the private {@code history} field, which has a writer but no reader — C's
+     * Reads the character's background text through {@link Player#getHistoryBirth()}. C's
      * {@code p->history} is read by the character sheet, which the port has not reached.
      *
      * @return the character's background text
-     * @throws Exception if the field cannot be reached
      */
-    private String history() throws Exception {
-        Field field = Player.class.getDeclaredField("history");
-        field.setAccessible(true);
-        return (String) field.get(player);
+    private String history() {
+        return player.getHistoryBirth();
     }
 
     /**
@@ -183,12 +179,10 @@ class PlayerBackgroundAccessorTest {
         /**
          * A fresh character has no background, so a test that finds text has found text that was
          * written.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("starts unset")
-        void startsUnset() throws Exception {
+        void startsUnset() {
             assertNull(history());
         }
 
@@ -196,13 +190,11 @@ class PlayerBackgroundAccessorTest {
          * The text is stored as given. Nothing is trimmed, capitalised or appended — C's
          * {@code p->history} is the string {@code get_history} built and the character sheet
          * prints.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("is stored verbatim")
-        void storedVerbatim() throws Exception {
-            player.setPlayerHistory("You are one of several children of a Serf.  ");
+        void storedVerbatim() {
+            player.setHistoryBirth("You are one of several children of a Serf.  ");
             assertEquals("You are one of several children of a Serf.  ", history());
         }
 
@@ -211,14 +203,12 @@ class PlayerBackgroundAccessorTest {
          * ({@code player-birth.c:1024}), which is a statement that the old value is gone rather
          * than kept alongside the new one — and {@code player_generate} does exactly this whenever
          * a different race is chosen on the birth screen.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a second write replaces the first")
-        void secondWriteReplaces() throws Exception {
-            player.setPlayerHistory("of a Serf.  ");
-            player.setPlayerHistory("of a Royal Blood Line.  ");
+        void secondWriteReplaces() {
+            player.setHistoryBirth("of a Serf.  ");
+            player.setHistoryBirth("of a Royal Blood Line.  ");
             assertEquals("of a Royal Blood Line.  ", history());
         }
     }
@@ -234,17 +224,15 @@ class PlayerBackgroundAccessorTest {
          * The line C writes, run end to end. The chart is a chain of two single-entry charts, so
          * the roll has nothing to choose between and the expected string is the two phrases of
          * {@code history.txt} concatenated in chart order.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("generates the race's background into the character")
-        void generatesIntoTheCharacter() throws Exception {
+        void generatesIntoTheCharacter() {
             PlayerHistoryChart first = chart(1, 2, 100, "You are the first child ");
             first.setSuccessor(chart(2, 0, 100, "of a Serf.  "));
             PlayerRace race = race("Human", first);
 
-            player.setPlayerHistory(PlayerBirth.getHistory(race.getHistory()));
+            player.setHistoryBirth(PlayerBirth.getHistory(race.getHistory()));
 
             assertEquals("You are the first child of a Serf.  ", history());
         }
@@ -252,13 +240,11 @@ class PlayerBackgroundAccessorTest {
         /**
          * A race with no chart produces an empty biography, not a null one and not a crash: the
          * walk in {@code get_history} never enters its loop.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a race with no chart yields an empty background")
-        void noChartYieldsEmpty() throws Exception {
-            player.setPlayerHistory(PlayerBirth.getHistory(race("Human", null).getHistory()));
+        void noChartYieldsEmpty() {
+            player.setHistoryBirth(PlayerBirth.getHistory(race("Human", null).getHistory()));
 
             assertNotNull(history());
             assertEquals("", history());

@@ -28,7 +28,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -36,9 +35,9 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests {@link Player#setHeight}, {@link Player#setHeightBirth}, {@link PlayerRace#getBaseHeight}
- * and {@link PlayerRace#getModHeight} — the four pieces C's {@code get_ahw} needs to roll a
- * starting height.
+ * Tests {@link Player#setHeight}, {@link Player#setHeightBirth}, {@link Player#getHeightBirth},
+ * {@link PlayerRace#getBaseHeight} and {@link PlayerRace#getModHeight} — the pieces C's
+ * {@code get_ahw} needs to roll a starting height.
  *
  * <p>All four are storage, so reading a value back proves nothing on its own. What is worth pinning
  * is the arithmetic they exist to serve, and every expected number below is derived from the C
@@ -106,15 +105,12 @@ class PlayerHeightTest {
     }
 
     /**
-     * Reads the player's private {@code htBirth} field, which has no getter yet.
+     * Reads the player's birth height through {@link Player#getHeightBirth}.
      *
      * @return the stored birth height in inches
-     * @throws Exception if the field cannot be reached
      */
-    private int htBirth() throws Exception {
-        Field field = Player.class.getDeclaredField("htBirth");
-        field.setAccessible(true);
-        return field.getInt(player);
+    private int htBirth() {
+        return player.getHeightBirth();
     }
 
     /**
@@ -207,24 +203,20 @@ class PlayerHeightTest {
          * A new player has a birth height of zero, and C leans on that: a zero {@code ht_birth} is
          * how it decides no previous character exists to quickstart from
          * ({@code player-birth.c:1061}).
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a new player has a birth height of zero")
-        void newPlayerIsZero() throws Exception {
+        void newPlayerIsZero() {
             assertEquals(0, htBirth());
         }
 
         /**
          * The two heights are separate storage. Writing the birth copy must leave the working height
          * alone, or the quickstart record and the live value would be one field wearing two names.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("does not touch the working height")
-        void doesNotTouchWorkingHeight() throws Exception {
+        void doesNotTouchWorkingHeight() {
             player.setHeight(69);
             player.setHeightBirth(90);
             assertEquals(69, player.getHeight());
@@ -236,12 +228,10 @@ class PlayerHeightTest {
          * The reverse direction: writing the working height leaves the birth copy where it was. This
          * is the case that matters in play — the birth height is the height the character was born
          * with, however the working value is later reloaded.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("survives a later write to the working height")
-        void survivesLaterWorkingWrite() throws Exception {
+        void survivesLaterWorkingWrite() {
             player.setHeightBirth(69);
             player.setHeight(34);
             assertEquals(69, htBirth());
@@ -252,12 +242,10 @@ class PlayerHeightTest {
          * The birth idiom itself: C's chained assignment puts one roll into both fields
          * ({@code player-birth.c:359}), which the port spells as two calls sharing a single rolled
          * value. Both must end up holding it.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("the birth assignment leaves both fields equal")
-        void birthAssignmentSetsBoth() throws Exception {
+        void birthAssignmentSetsBoth() {
             int rolled = 87;
             player.setHeight(rolled);
             player.setHeightBirth(player.getHeight());
@@ -268,12 +256,10 @@ class PlayerHeightTest {
         /**
          * No clamping here either — the same reasoning as the working height, and a zero has to
          * stay a zero because C reads it as a flag.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("does not clamp")
-        void doesNotClamp() throws Exception {
+        void doesNotClamp() {
             player.setHeightBirth(0);
             assertEquals(0, htBirth());
             player.setHeightBirth(-5);

@@ -28,7 +28,6 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
-import java.lang.reflect.Field;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,8 +36,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests {@link Player#setWeight}, {@link Player#getWeight}, {@link Player#setWeightBirth},
- * {@link PlayerRace#getBaseWeight} and {@link PlayerRace#getModWeight} — the pieces C's
- * {@code get_ahw} needs to roll a starting weight, and the getter play reads it back through.
+ * {@link Player#getWeightBirth}, {@link PlayerRace#getBaseWeight} and
+ * {@link PlayerRace#getModWeight} — the pieces C's {@code get_ahw} needs to roll a starting
+ * weight, and the getter play reads it back through.
  *
  * <p>All of them are storage, so a read-back proves nothing on its own. What is worth pinning is
  * the arithmetic they exist to serve, and every expected number below is derived from the C rather
@@ -110,15 +110,12 @@ class PlayerWeightTest {
     }
 
     /**
-     * Reads the player's private {@code wtBirth} field, which has no getter yet.
+     * Reads the player's birth weight through {@link Player#getWeightBirth}.
      *
      * @return the stored birth weight in pounds
-     * @throws Exception if the field cannot be reached
      */
-    private int wtBirth() throws Exception {
-        Field field = Player.class.getDeclaredField("wtBirth");
-        field.setAccessible(true);
-        return field.getInt(player);
+    private int wtBirth() {
+        return player.getWeightBirth();
     }
 
     /**
@@ -234,12 +231,10 @@ class PlayerWeightTest {
 
         /**
          * A new player has a birth weight of zero, matching the zeroed struct C starts from.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("a new player has a birth weight of zero")
-        void newPlayerIsZero() throws Exception {
+        void newPlayerIsZero() {
             assertEquals(0, wtBirth());
         }
 
@@ -247,12 +242,10 @@ class PlayerWeightTest {
          * The two weights are separate storage. Writing the birth copy must leave the working weight
          * alone, or the quickstart record and the live value would be one field wearing two names —
          * which is exactly what the port did before this was checked.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("does not touch the working weight")
-        void doesNotTouchWorkingWeight() throws Exception {
+        void doesNotTouchWorkingWeight() {
             player.setWeight(165);
             player.setWeightBirth(240);
             assertEquals(165, player.getWeight());
@@ -264,12 +257,10 @@ class PlayerWeightTest {
          * The reverse direction: writing the working weight leaves the birth copy where it was. This
          * is the case quickstart depends on — it reads {@code player->wt_birth} out to the saved
          * character ({@code player-birth.c:154}) after a whole game has been played.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("survives a later write to the working weight")
-        void survivesLaterWorkingWrite() throws Exception {
+        void survivesLaterWorkingWrite() {
             player.setWeightBirth(165);
             player.setWeight(55);
             assertEquals(165, wtBirth());
@@ -280,12 +271,10 @@ class PlayerWeightTest {
          * The birth idiom itself: C's chained assignment puts one roll into both fields
          * ({@code player-birth.c:360}), which the port spells as two calls sharing a single rolled
          * value. Both must end up holding it.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("the birth assignment leaves both fields equal")
-        void birthAssignmentSetsBoth() throws Exception {
+        void birthAssignmentSetsBoth() {
             int rolled = 143;
             player.setWeight(rolled);
             player.setWeightBirth(player.getWeight());
@@ -298,12 +287,10 @@ class PlayerWeightTest {
          * character and then written back over both fields —
          * {@code player->wt = player->wt_birth = saved->wt} ({@code player-birth.c:197}) — after the
          * working weight has moved on.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("survives the quickstart round trip")
-        void survivesQuickstartRoundTrip() throws Exception {
+        void survivesQuickstartRoundTrip() {
             player.setWeight(165);
             player.setWeightBirth(player.getWeight());
 
@@ -318,12 +305,10 @@ class PlayerWeightTest {
 
         /**
          * No clamping here either — the same reasoning as the working weight.
-         *
-         * @throws Exception if the field cannot be reached
          */
         @Test
         @DisplayName("does not clamp")
-        void doesNotClamp() throws Exception {
+        void doesNotClamp() {
             player.setWeightBirth(0);
             assertEquals(0, wtBirth());
             player.setWeightBirth(-5);

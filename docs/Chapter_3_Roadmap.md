@@ -334,7 +334,7 @@ boxes span these stages rather than matching them one-to-one.
   - [X] `do_cmd_choose_race`
   - [X] `do_cmd_choose_class`
   - [X] `do_cmd_buy_stat`
-  - [ ] `do_cmd_sell_stat`
+  - [X] `do_cmd_sell_stat`
   - [ ] `do_cmd_reset_stats`
   - [ ] `do_cmd_refresh_stats`
   - [ ] `do_cmd_roll_stats`

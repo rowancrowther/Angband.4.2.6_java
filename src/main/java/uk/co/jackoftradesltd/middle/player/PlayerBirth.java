@@ -2221,6 +2221,78 @@ public class PlayerBirth {
     }
 
     /**
+     * Handler for {@code CMD_ROLL_STATS}, throwing away the point-buy total in favour of a freshly
+     * rolled character - the port of C's {@code do_cmd_roll_stats} ({@code
+     * player-birth.c:1181-1215}).
+     *
+     * <p>Unconditional and linear in both languages: no branch, no early return, and {@code cmd} is
+     * never read, the same unused-parameter pattern as {@link #doCmdRefreshStats}. The snapshot,
+     * roll, bonuses, appearance and history all fire in the same order C's own calls do -
+     * {@link #saveRollerData}, {@link #getStats}, {@link #getBonuses}, {@link #getAHW}, then
+     * {@link #getHistory} - before the four {@code EVENT_GOLD}/{@code EVENT_AC}/{@code EVENT_HP}/
+     * {@code EVENT_STATS} signals C fires in that same sequence.
+     *
+     * <p>{@link #saveRollerData}'s return replaces C's by-reference {@code save_roller_data(&prev)};
+     * the result is threaded straight back through {@link PlayerBirthStateRegistry#setPrev}, the
+     * same pattern used everywhere else in this class.
+     *
+     * <p>C guards {@code player->history} with {@code if (player->history) string_free(...)} before
+     * overwriting it - manual memory management the port has nothing to do, since the old {@link
+     * String} is simply unreferenced rather than leaked, the same reasoning documented on
+     * {@link #saveRollerData} for its own history handling.
+     *
+     * <p>The points-left reset that follows the event signals - {@code points_left = 0} and a loop
+     * zeroing {@code points_spent[i]}/{@code points_inc[i]} for every real stat - is dummy data for
+     * the UI rather than anything meaningful once rolled, matching C's own comment to that effect.
+     * The loop walks {@link Stats#values()} and skips {@link Stats#STAT_NONE} and
+     * {@link Stats#STAT_MAX}, landing on exactly the five real stats C's {@code i < STAT_MAX} bound
+     * covers. {@link PlayerBirthStateRegistry#setRolledStats} lands {@code true} last in both,
+     * locking {@link #doCmdBuyStat} and {@link #doCmdSellStat} out until the next reset.
+     *
+     * <p>Function doCmdRollStats coded on 260907, commented in full on 260907.
+     *
+     * @param cmd the roll-stats command; unused, kept only to match the {@code cmd_fn} signature
+     */
+    public static void doCmdRollStats(Command cmd) {
+        Birther prev = null;
+        prev = saveRollerData(PlayerBirthStateRegistry.getPrev());
+        PlayerBirthStateRegistry.setPrev(prev);
+
+        Player player = GameState.getPlayer();
+
+        // Get a new character
+        getStats(player, PlayerBirthStateRegistry.getStats());
+
+        // Update stats
+        getBonuses(player);
+
+        // There's no real need to do this here, apart from upholding tradition
+        getAHW(player);
+        player.setHistoryBirth(getHistory(player.getRace().getHistory()));
+
+        EventsHandler handler = GameEngine.getEventsBusHandler();
+        handler.eventSignal(GameEventType.EVENT_GOLD);
+        handler.eventSignal(GameEventType.EVENT_AC);
+        handler.eventSignal(GameEventType.EVENT_HP);
+        handler.eventSignal(GameEventType.EVENT_STATS);
+
+        // Give the UI some dummy info about the points situation
+        int pointsLeft = 0;
+        PlayerBirthStateRegistry.setPointsLeft(pointsLeft);
+        for (Stats stat : Stats.values()) {
+            if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+            PlayerBirthStateRegistry.setPointsSpent(stat, 0);
+            PlayerBirthStateRegistry.setPointsInc(stat, 0);
+        }
+
+        handler.eventSignalBirthpoints(GameEventType.EVENT_BIRTHPOINTS, PlayerBirthStateRegistry.getPointsSpent(),
+                PlayerBirthStateRegistry.getPointsInc(), PlayerBirthStateRegistry.getPointsLeft());
+
+        // Lock out buying and selling of stats based on rolled stats
+        PlayerBirthStateRegistry.setRolledStats(true);
+    }
+
+    /**
      * The pair {@link #buyStat} hands back in place of C's by-reference {@code int} and {@code bool}
      * return - {@code value} stands in for what C writes through {@code points_left_local} and
      * {@code bool} for C's own return value. Private, and scoped to {@link #buyStat}: nothing else

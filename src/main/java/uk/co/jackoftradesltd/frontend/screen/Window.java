@@ -143,11 +143,30 @@ public class Window extends JFrame {
         AngbandDisplayCharacter[][] clearedDisplay = new AngbandDisplayCharacter[24][80];
         for (int x = 0; x < clearedDisplay.length; x++) {
             for (int y = 0; y < clearedDisplay[x].length; y++) {
-                clearedDisplay[x][y] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_DARK);
+                clearedDisplay[x][y] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
             }
         }
 
         area.setChars(clearedDisplay);
+        area.repaint();
+    }
+
+    /**
+     * Blank {@code n} cells of row {@code y} starting at column {@code x}, and repaint. The
+     * erase itself is {@link SwingUI.JPanelArea#erase}'s port of {@code Term_erase}
+     * ({@code [C] src/ui-term.c}); this method is the same hop into a repaint that
+     * {@link #clear()} makes, so the change is visible rather than sitting unseen in the
+     * buffer until the next unrelated repaint.
+     *
+     * <p>Function erase coded on 260909, commented in full on 260909.
+     *
+     * @param x the starting column
+     * @param y the row to erase within
+     * @param n the number of cells to blank, shortened if it would run past the row's last
+     *          column
+     */
+    public void erase(int x, int y, int n) {
+        area.erase(x, y, n);
         area.repaint();
     }
 }

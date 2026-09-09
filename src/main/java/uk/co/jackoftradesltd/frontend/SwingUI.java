@@ -405,8 +405,41 @@ public class SwingUI {
             super();
             for (int i = 0; i < display.length; i++) {
                 for (int j = 0; j < display[i].length; j++) {
-                    display[i][j] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_DARK);
+                    display[i][j] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
                 }
+            }
+        }
+
+        /**
+         * Blank {@code n} cells of one row, starting at column {@code x}. The port of
+         * {@code Term_erase} ({@code [C] src/ui-term.c}), minus the cursor placement and
+         * dirty-region bookkeeping {@code Term_gotoxy} and {@code Term_fresh} do around it -
+         * this panel always repaints in full, so there is no dirty region to maintain.
+         *
+         * <p><b>An out-of-range {@code x} or {@code y} is a no-op</b>, the same as C's guard:
+         * {@code Term_gotoxy} rejects a coordinate outside the terminal and returns before
+         * {@code Term_erase} touches anything, rather than erasing what it can reach. {@code x}
+         * is the column, checked against {@link #display}'s row width; {@code y} is the row,
+         * checked against its row count.
+         *
+         * <p>A run that would overrun the row is shortened rather than rejected, matching C's
+         * {@code if (x + n > w) n = w - x;} - the loop's own {@code col < display[y].length}
+         * bound does that clamping without a separate calculation.
+         *
+         * <p>Function erase coded on 260909, commented in full on 260909.
+         *
+         * @param x the starting column
+         * @param y the row to erase within
+         * @param n the number of cells to blank, shortened if it would run past the row's last
+         *          column
+         */
+        public void erase(int x, int y, int n) {
+            if (x < 0 || y < 0 || y >= display.length || x >= display[0].length) {
+                return;
+            }
+
+            for (int col = x; col < x + n && col < display[y].length; col++) {
+                display[y][col] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
             }
         }
 

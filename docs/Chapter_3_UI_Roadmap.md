@@ -333,9 +333,15 @@ Six stages, none of which reads a key. Every one is exercisable by sending event
 The `ui-output.c` calls the birth screens actually make, and no more. Everything here outlives this chapter — any screen
 the game draws needs the same handful.
 
-- [ ] `Term_clear`, `Term_erase`, `Term_gotoxy`
-- [ ] `put_str`, `prt`, `clear_from`
-- [ ] `text_out` / `text_out_e` with `text_out_indent` — the colour-markup writer the race and class help panels are
+- [X] `Term_clear`
+- [X] `Term_erase`
+- [ ] `Term_gotoxy`
+- [ ] `put_str`
+- [ ] `prt`
+- [ ] `clear_from`
+- [ ] `text_out`
+- [ ] `text_out_e` with
+- [ ] `text_out_indent` — the colour-markup writer the race and class help panels are
   written in (`[C] ui-birth.c:263, 647`)
 
 ## D3 — The character sheet *(needs D2)*

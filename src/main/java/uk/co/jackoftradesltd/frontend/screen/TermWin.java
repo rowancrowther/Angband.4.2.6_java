@@ -96,4 +96,44 @@ public class TermWin {
             vta.add(new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE));
         }
     }
+
+    /**
+     * Set the cursor's column. The port of writing C's {@code scr->cx} directly
+     * ({@code [C] src/z-term.h}); there is no dedicated C setter, since the original
+     * assigns the struct field in place wherever it moves the cursor - see
+     * {@code Term_gotoxy} ({@code [C] src/ui-term.c}) for the caller this exists for.
+     *
+     * <p>Function setCx coded on 260909, commented in full on 260909.
+     *
+     * @param x the new cursor column
+     */
+    public void setCx(int x) {
+        this.cx = x;
+    }
+
+    /**
+     * Set the cursor's row. The port of writing C's {@code scr->cy} directly
+     * ({@code [C] src/z-term.h}); as with {@link #setCx}, the original has no dedicated
+     * setter function.
+     *
+     * <p>Function setCy coded on 260909, commented in full on 260909.
+     *
+     * @param y the new cursor row
+     */
+    public void setCy(int y) {
+        this.cy = y;
+    }
+
+    /**
+     * Set the cursor's "unused"/off-screen flag. The port of writing C's {@code scr->cu}
+     * directly ({@code [C] src/z-term.h}), where it is an {@code int} used as a boolean
+     * (0/1); as with {@link #setCx}, the original has no dedicated setter function.
+     *
+     * <p>Function setCu coded on 260909, commented in full on 260909.
+     *
+     * @param cu {@code true} to mark the cursor unused, {@code false} to mark it live
+     */
+    public void setCu(boolean cu) {
+        this.cu = cu;
+    }
 }

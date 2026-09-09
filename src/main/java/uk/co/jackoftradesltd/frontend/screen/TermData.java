@@ -21,11 +21,13 @@ import uk.co.jackoftradesltd.frontend.screen.hooks.TermEventHook;
 import uk.co.jackoftradesltd.frontend.screen.hooks.TermXtraWin;
 
 /**
- * Per-window front-end state for one terminal, pairing a logical {@link Term}
- * with the on-screen that draws it and all the platform geometry
- * (position, size, fonts, tile sizes) needed to lay it out. This is the Java
- * port of the C original's {@code term_data} struct ({@code src/main-win.c}),
- * which the Windows front end used to track each game window.
+ * Per-window front-end state for one terminal, pairing a logical {@link Term} with the
+ * {@link Window} that draws it and all the platform geometry (position, size, fonts, tile
+ * sizes) needed to lay it out. This is the Java port of the C original's {@code term_data}
+ * struct ({@code [C] src/win/win-term.h}, {@code struct _term_data}), which the Windows front
+ * end used to track each game window as a {@code term t} and an {@code HWND w} side by side -
+ * exactly what {@link #t} and {@link #window} are here. Neither {@link Term} nor {@link Window}
+ * refers to the other; this class is the one place they meet.
  *
  * @author Rowan Crowther
  */
@@ -35,6 +37,14 @@ public class TermData {
      * The logical terminal this window backs.
      */
     private Term t;
+
+    /**
+     * The platform window this terminal draws into - the Java counterpart of the C original's
+     * {@code HWND w} ({@code [C] src/win/win-term.h}), or a curses front end's
+     * {@code WINDOW *win} ({@code [C] src/main-gcu.c}). Paired with {@link #t} here rather than
+     * held by it, or holding it in turn.
+     */
+    private Window window;
 
     /**
      * The window's name/title.
@@ -215,7 +225,7 @@ public class TermData {
             t = term;
         }
 
-        t.termInit(cols, rows, keys);
+        t.termInit(cols, rows, keys, this);
 
         t.setSoftCursor(true);
         t.setComplexInput(true);
@@ -237,10 +247,76 @@ public class TermData {
     }
 
     /**
+     * The logical {@link Term} bound to this window. No dedicated C function backs this -
+     * the original reaches the same value with the direct struct access {@code td->t},
+     * since {@code term_data.t} ({@code [C] src/win/win-term.h}) is an embedded
+     * {@code term}, not a pointer.
+     *
+     * <p>Function getTerm coded on 260909, commented in full on 260909.
+     *
      * @return the logical {@link Term} bound to this window
      */
     public Term getTerm() {
-
         return t;
+    }
+
+    /**
+     * Blank this window's whole screen, by handing off to {@link Window#clear()} - the
+     * port of {@code Term_clear} ({@code [C] src/ui-term.c}). No C function of its own:
+     * the original has no {@code term_data}-level wrapper around {@code Term_clear}, so
+     * this exists only as the Java-side convenience of reaching the window through the
+     * {@link TermData} that owns it.
+     *
+     * <p>Function clear coded on 260909, commented in full on 260909.
+     */
+    public void clear() {
+        window.clear();
+    }
+
+    /**
+     * The platform {@link Window} this terminal draws into. The port of reading C's
+     * {@code td->w} ({@code [C] src/win/win-term.h}) directly; there is no dedicated
+     * getter function in the original.
+     *
+     * <p>Function getWindow coded on 260909, commented in full on 260909.
+     *
+     * @return the window this terminal draws into
+     */
+    public Window getWindow() {
+        return window;
+    }
+
+    /**
+     * Attach the platform {@link Window} this terminal draws into. The port of assigning
+     * C's {@code td->w} ({@code [C] src/win/win-term.h}) directly; there is no dedicated
+     * setter function in the original, since C code writes the struct field in place.
+     *
+     * <p>Function setWindow coded on 260909, commented in full on 260909.
+     *
+     * @param window the window to attach
+     */
+    public void setWindow(Window window) {
+        this.window = window;
+    }
+
+    /**
+     * Release this terminal's platform window, by handing off to
+     * {@link java.awt.Window#dispose()} - {@link Window} inherits it through
+     * {@code JFrame}, and never overrides it. The Java-side extraction of one
+     * per-window step from C's shutdown loop - {@code DestroyWindow(data[i].w)}
+     * ({@code [C] src/main-win.c}) - into a method {@link SwingUI#closeDown()} can
+     * call once per {@link TermData}, rather than walking a separate array of raw
+     * windows of its own.
+     *
+     * <p>Deliberately narrower than that C loop's full per-window teardown, matching
+     * the scope {@link SwingUI#closeDown()} already documents for itself: nothing
+     * here nils {@link #window} afterwards, frees fonts, or calls {@code term_nuke}
+     * on {@link #t} - the way C's loop does all three - because this object and
+     * everything it holds go away with the process shortly after.
+     *
+     * <p>Function dispose coded on 260909, commented in full on 260909.
+     */
+    public void dispose() {
+        window.dispose();
     }
 }

@@ -25,14 +25,17 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * One game window: a frame wrapped around a single character grid. This is the port of C's
- * {@code term} as a platform object - the window a {@code main-*.c} module creates and hands to the
- * core ({@code [C] src/main-win.c} and friends).
+ * One game window: a frame wrapped around a single character grid. This is the Java counterpart
+ * of the native window handle a C front end's {@code term_data} holds beside its {@code term} -
+ * {@code HWND w} for the Windows front end ({@code [C] src/win/win-term.h}), or
+ * {@code WINDOW *win} for curses ({@code [C] src/main-gcu.c}). {@link TermData} is where a
+ * {@code Window} and a {@link Term} meet, each in its own field; this class is not a stand-in
+ * for {@link Term} and holds no reference back to one.
  *
  * <p>The frame holds exactly one {@code JPanelArea}, captured by {@link #add} as it goes in so the
- * rest of the front end can reach the grid without walking the component tree. C's terms are a
- * fixed array of eight - a main one plus subwindows - so more of these are expected; nothing here
- * assumes it is the only one.
+ * rest of the front end can reach the grid without walking the component tree. C's
+ * {@code term_data} array is a fixed eight ({@code ANGBAND_TERM_MAX}) - a main window plus
+ * subwindows - so more of these are expected; nothing here assumes it is the only one.
  *
  * <p>Everything on this class is Swing, so every method belongs on the event dispatch thread.
  * {@link #clear()} in particular is currently reached from the game thread through
@@ -129,7 +132,7 @@ public class Window extends JFrame {
 
     /**
      * Blank the whole screen: fill the grid with dark spaces and repaint. The port of
-     * {@code Term_clear} ({@code [C] src/z-term.c}).
+     * {@code Term_clear} ({@code [C] src/ui-term.c}).
      *
      * <p>Goes through the grid rather than painting, which is the important part. An earlier
      * version cleared by fetching a {@link Graphics} from the panel and calling
@@ -168,5 +171,35 @@ public class Window extends JFrame {
     public void erase(int x, int y, int n) {
         area.erase(x, y, n);
         area.repaint();
+    }
+
+    /**
+     * This window's character grid width, in columns - a pass-through to
+     * {@link SwingUI.JPanelArea#getDisplayWidth()}, which is itself the port of half of
+     * {@code Term_get_size} ({@code [C] src/ui-term.c}).
+     *
+     * <p>Not the same source as a terminal's own {@link Term#gotoXY} bounds check, which
+     * reads the {@link Term} fields set by {@link Term#termInit} rather than asking the
+     * window. Currently has no caller of its own.
+     *
+     * <p>Function getCharacterWidth coded on 260909, commented in full on 260909.
+     *
+     * @return the number of character columns in this window's grid
+     */
+    public int getCharacterWidth() {
+        return area.getDisplayWidth();
+    }
+
+    /**
+     * This window's character grid height, in rows - the counterpart
+     * {@link #getCharacterWidth()} describes, delegating to
+     * {@link SwingUI.JPanelArea#getDisplayHeight()}.
+     *
+     * <p>Function getCharacterHeight coded on 260909, commented in full on 260909.
+     *
+     * @return the number of character rows in this window's grid
+     */
+    public int getCharacterHeight() {
+        return area.getDisplayHeight();
     }
 }

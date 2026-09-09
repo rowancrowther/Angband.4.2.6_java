@@ -25,13 +25,19 @@ import java.util.ArrayList;
 
 /**
  * The abstract terminal: a platform-independent model of a text display, ported
- * from the C original's {@code term} struct ({@code src/z-term.h}). It holds the
+ * from the C original's {@code term} struct ({@code [C] src/ui-term.h}). It holds the
  * display contents (as {@link TermWin} buffers), the region of the screen that
  * has changed since the last refresh, an input key queue, behaviour flags, and a
  * set of {@link TermEventHook} callbacks the front end installs to actually draw
  * text/pictures/cursors. The core game talks only to this abstraction; concrete
  * front ends (here {@link uk.co.jackoftradesltd.frontend.screen.hooks.TermXtraWin TermXtraWin}
  * and its siblings) supply the hooks.
+ *
+ * <p>Deliberately holds no reference to a platform window. C's {@code term.data} is a
+ * {@code void*} the owning front end fills in with its own struct - for the Windows front end,
+ * {@code term_data} ({@code [C] src/win/win-term.h}, {@code struct _term_data}), which pairs
+ * the {@code term} with an {@code HWND}. {@link #data}, typed {@link TermData}, is the port of
+ * that pointer; a {@link Window} belongs on {@link TermData}, not here.
  *
  * @author Rowan Crowther
  */
@@ -243,9 +249,9 @@ public class Term {
      * @param height terminal height in rows
      * @param keys   key-queue capacity
      */
-    public void termInit(int width, int height, int keys) {
+    public void termInit(int width, int height, int keys, TermData owner) {
         user = null;
-        data = null;
+        data = owner;
 
         userFlag = false;
         dataFlag = false;
@@ -278,20 +284,16 @@ public class Term {
         scr = new TermWin();
         scr.init(width, height);
 
-        if (x1.isEmpty()) {
-            initArrays(height);
-        } else {
-            for (int index = 0; index < height; index++) {
-                x1.set(index, 0);
-                x2.set(index, width - 1);
-            }
-
-            y1 = 0;
-            y2 = height - 1;
-
-            totalErase = true;
-            saved = 0;
+        for (int index = 0; index < height; index++) {
+            x1.add(0);
+            x2.add(width - 1);
         }
+
+        y1 = 0;
+        y2 = height - 1;
+
+        totalErase = true;
+        saved = 0;
 
         initHook = null;
         nukeHook = null;
@@ -303,19 +305,6 @@ public class Term {
         cursHook = null;
         bigcursHook = null;
         wipeHook = null;
-    }
-
-    /**
-     * Seed the per-row change-bound arrays ({@link #x1}/{@link #x2}) with one
-     * zero entry per row.
-     *
-     * @param height number of rows to initialise
-     */
-    private void initArrays(int height) {
-        for (int y = 0; y < height; y++) {
-            x1.add(0);
-            x2.add(0);
-        }
     }
 
     /**
@@ -431,5 +420,38 @@ public class Term {
      */
     public TermData getTermData() {
         return data;
+    }
+
+    /**
+     * Move the cursor to a given cell, the Java port of the C original's
+     * {@code Term_gotoxy} ({@code [C] src/ui-term.c}). An out-of-range {@code x} or
+     * {@code y} leaves the cursor exactly where it was and returns {@code -1}; C's own
+     * comment on {@code Term_gotoxy} - "illegal requests do not move the cursor" - is
+     * exactly this behaviour, not a Java addition.
+     *
+     * <p>Bounds are checked against {@link #wid}/{@link #hgt}, this terminal's own stored
+     * dimensions from {@link #termInit}, matching C's {@code Term->wid}/{@code Term->hgt} -
+     * not the front end's live window size, which can differ from what this terminal was
+     * initialised to.
+     *
+     * <p>On success, writes the new column and row into {@link #scr} via
+     * {@link TermWin#setCx}/{@link TermWin#setCy}, then clears the cursor's "unused" flag
+     * with {@link TermWin#setCu}, matching {@code Term->scr->cx}/{@code cy}/{@code cu} in
+     * that order.
+     *
+     * <p>Function gotoXY coded on 260909, commented in full on 260909.
+     *
+     * @param x the target column
+     * @param y the target row
+     * @return {@code 0} on success, {@code -1} if the coordinate is outside the terminal
+     */
+    public int gotoXY(int x, int y) {
+        if (x < 0 || y < 0 || x >= this.wid || y >= this.hgt) return -1;
+
+        scr.setCx(x);
+        scr.setCy(y);
+        scr.setCu(false);
+
+        return 0;
     }
 }

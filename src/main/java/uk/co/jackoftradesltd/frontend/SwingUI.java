@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.colour.Colour;
 import uk.co.jackoftradesltd.frontend.inputfromuser.UILoop;
+import uk.co.jackoftradesltd.frontend.screen.TermData;
 import uk.co.jackoftradesltd.frontend.screen.Window;
 
 import javax.swing.*;
@@ -89,15 +90,25 @@ public class SwingUI {
     private EDTChannel edtChannel;
 
     /**
-     * Every window this front end has opened, so shutdown can dispose them all. Holds exactly one
-     * for now; C's terms are a fixed array of eight.
+     * Every {@link TermData} this front end has built, one per game window. The port of
+     * C's {@code static term_data data[MAX_TERM_DATA]} ({@code [C] src/main-win.c}) - a
+     * growable list standing in for a fixed array of eight ({@code MAX_TERM_DATA}). Holds
+     * exactly one entry today, built alongside {@link #activeTermData} in the constructor;
+     * nothing here yet corresponds to C building the rest of {@code data[]} in
+     * {@code init_windows}.
      */
-    private List<Window> windows;
+    private List<TermData> terms;
+
     /**
-     * The window currently being drawn to and configured - C's {@code Term}, the term that
-     * display calls implicitly act on.
+     * The {@link TermData} whose window the front end currently draws into and sizes - see
+     * {@link #getActiveWindow()}. Stands in for the role of C's global {@code term *Term}
+     * ({@code [C] src/ui-term.c}, reassigned by {@code Term_activate}), except that it
+     * tracks the whole {@link TermData} rather than a bare
+     * {@link uk.co.jackoftradesltd.frontend.screen.Term Term}, and nothing here yet plays
+     * the part of {@code Term_activate}: it is set once, in the constructor, and never
+     * reassigned.
      */
-    private Window activeWindow;
+    private TermData activeTermData;
 
     /**
      * The consumer half: the loop that reads this half's inbox and paints what the core sent.
@@ -149,10 +160,12 @@ public class SwingUI {
 
         uiLoop = new UILoop(uiChannel, this);
 
-        windows = new ArrayList<>();
-        Window main = new Window();
-        windows.add(main);
-        activeWindow = main;
+        terms = new ArrayList<>();
+        TermData mainTermData = new TermData();
+        mainTermData.setWindow(new Window() {
+        });
+        terms.add(mainTermData);
+        activeTermData = mainTermData;
     }
 
     /**
@@ -309,8 +322,8 @@ public class SwingUI {
      * end's cleanup hook - has no equivalent here yet.
      */
     public void closeDown() {
-        for (Window window : windows) {
-            window.dispose();
+        for (TermData termData : terms) {
+            termData.dispose();
         }
     }
     
@@ -344,23 +357,134 @@ public class SwingUI {
     }
 
     /**
-     * The window display calls currently act on - C's {@code Term}.
+     * The window display calls currently act on, playing the role of C's global {@code Term}
+     * pointer without being one - see {@code activeTerm.getWindow()}.
      *
      * @return the active window
      */
     public Window getActiveWindow() {
-        return activeWindow;
+        return activeTermData.getWindow();
     }
 
     /**
-     * The character grid: the component the game is actually drawn on, and the port's {@code Term}
-     * surface. Holds one {@link AngbandDisplayCharacter} per cell of an 80x24 terminal, and paints
-     * the whole of it on every repaint.
+     * The {@link TermData} {@link #activeTermData} currently names. No single C function
+     * matches this getter; the closest analogue is dereferencing the global {@code Term}
+     * pointer ({@code [C] src/ui-term.c}) after a {@code Term_activate} call.
+     *
+     * <p>Function getActiveTermData coded on 260909, commented in full on 260909.
+     *
+     * @return the active terminal's window data
+     */
+    public TermData getActiveTermData() {
+        return activeTermData;
+    }
+
+    /**
+     * Bring the front end up: size the window from the chosen font, wire the close handler, show
+     * it, and tell the core to begin. The port of a {@code main-*.c} module's {@code init_*}
+     * function, which C calls before {@code init_angband()} so the display exists to report
+     * loading errors on.
+     *
+     * <p><b>Runs on the EDT.</b> {@code main()} queues it there with {@code invokeLater} rather
+     * than calling it on the UI thread, because every line below touches a Swing component and the
+     * window is realised part-way through.
+     *
+     * <p>The metrics drive everything. Angband is written against a character grid, so the window
+     * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
+     * of C asking a terminal how big it is. {@code TerminalVector} is preferred and the platform
+     * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
+     *
+     * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
+     * can never arrive before there is something to handle it, and {@link #sendStartToCore} comes
+     * last, so the core cannot begin reporting progress before there is a window for it to be
+     * reported into. An exception before {@code setVisible} leaves the JVM alive with no window on
+     * screen, because {@code pack()} has already made the frame displayable and so kept the EDT
+     * running.
+     *
+     * <p><b>The last line is the whole of the channel wiring left here.</b> It used to be four:
+     * this method also built a core-side status display and pushed it into the core's holder, and
+     * started a separate {@code angband-display} thread for the inbox loop. Stage 4 took both away
+     * - the core installs its own display now, and the loop runs on the UI thread that queued this
+     * method rather than on one of its own.
+     *
+     * <p><b>This method returns as soon as the window is up; it waits for nothing.</b> The session
+     * carries on in two other places: {@link #startLoop()} on the UI thread, and the core on its.
+     * The program ends when both of those finish and {@code main()}'s two joins return.
+     */
+    public void init() {
+        Colour.init();
+
+        List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
+        Font font;
+        int fontSize = 24;
+        if (fontNames.contains("TerminalVector"))
+            font = new Font("TerminalVector", Font.PLAIN, fontSize);
+        else
+            font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
+
+        JPanelArea.font = font;
+        Window activeWindow = activeTermData.getWindow();
+
+        FontMetrics metrics = activeWindow.getFontMetrics(font);
+        int charWidth = metrics.charWidth('M');
+        int charHeight = metrics.getHeight();
+
+        JPanelArea.charAscent = metrics.getAscent();
+        JPanelArea.charHeight = charHeight;
+        JPanelArea.charWidth = charWidth;
+
+        JFrame.setDefaultLookAndFeelDecorated(true);
+        activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
+        activeWindow.setSize(80 * charWidth, 24 * charHeight);
+        activeWindow.setTitle(Angband.buildId);
+        activeWindow.addWindowListener(windowListener);
+
+        JPanelArea mainPanel = new JPanelArea();
+        mainPanel.setToolTipText("Main Panel");
+        mainPanel.setPreferredSize(new Dimension(80 * charWidth, 24 * charHeight));
+        activeWindow.add(mainPanel);
+        activeWindow.pack();
+        activeWindow.setLocationRelativeTo(null);
+
+        activeWindow.setVisible(true);
+
+        // The display is up, so the core may begin. Installing the core's display object used to
+        // happen here too; the core's own handlers now send on the sender they are constructed
+        // with, so this side has nothing to register.
+        sendStartToCore();
+    }
+
+    /**
+     * Hand the calling thread to the inbox loop. One line, and the line that makes a thread the UI
+     * thread.
+     *
+     * <p><b>This does not return until the session ends.</b> {@code main()} calls it as the last
+     * statement of the UI thread's body, so the thread spends its life inside
+     * {@code UILoop.loop()}, blocked on the queue; when the core's {@code STOPPED} arrives the loop
+     * returns, this returns, and that thread finishes - which is one of the two events that let the
+     * JVM exit.
+     *
+     * <p>Called after {@link #init()} has been queued but without waiting for it. Safe because the
+     * core sends nothing before the {@code START} that {@code init} ends with, so this loop cannot
+     * be handed anything to paint before there is a window to paint it into.
+     */
+    public void startLoop() {
+        uiLoop.loop();
+    }
+
+    /**
+     * The character grid: the component the game is actually drawn on. Holds one
+     * {@link AngbandDisplayCharacter} per cell of an 80x24 terminal, and paints the whole of it
+     * on every repaint. Not a port of {@code term} or {@code term_win} - see
+     * {@link uk.co.jackoftradesltd.frontend.screen.Term Term} and
+     * {@link uk.co.jackoftradesltd.frontend.screen.TermWin TermWin} for those - but the thing a
+     * {@code text_hook} would draw into, playing the part of the destination C's hooks are
+     * handed a platform-specific pointer to.
      *
      * <p>Repainting everything is deliberate, and is what makes "change one cell and show the
      * screen with only that changed" fall out for free: callers write into the buffer and call
      * {@code repaint()}, and the unchanged cells come back identical because they come from the
-     * same array. C has to work harder - {@code Term_fresh} ({@code [C] src/z-term.c}) diffs the
+     * same array. C has to work harder - {@code Term_fresh} ({@code [C] src/ui-term.c}) diffs the
      * working grid against the displayed one and emits only the runs that differ - because a real
      * terminal charges per character written. Swing does not, so the diffing can wait until there
      * is a measured reason for it.
@@ -396,6 +520,36 @@ public class SwingUI {
          * callers of {@link #setChars}, and C's {@code term_win} grids.
          */
         private AngbandDisplayCharacter[][] display = new AngbandDisplayCharacter[24][80];
+
+        /**
+         * The number of columns in {@link #display}. The port of half of {@code Term_get_size}
+         * ({@code [C] src/ui-term.c}), which writes both dimensions through out-parameters in one
+         * call - split here into two getters since Java has no equivalent of writing through a
+         * pointer. C falls back to {@code 80} when its global {@code Term} pointer is unset;
+         * {@link #display} has no such unset state; it is populated in the constructor and never
+         * emptied, so this always returns that same {@code 80} regardless of which path produces
+         * it.
+         *
+         * <p>Function getDisplayWidth coded on 260909, commented in full on 260909.
+         *
+         * @return the number of columns, 80 for the current fixed grid
+         */
+        public int getDisplayWidth() {
+            return display[0].length;
+        }
+
+        /**
+         * The number of rows in {@link #display}, the counterpart {@link #getDisplayWidth}
+         * describes - the other half of {@code Term_get_size}'s {@code *h} out-parameter
+         * ({@code [C] src/ui-term.c}).
+         *
+         * <p>Function getDisplayHeight coded on 260909, commented in full on 260909.
+         *
+         * @return the number of rows, 24 for the current fixed grid
+         */
+        public int getDisplayHeight() {
+            return display.length;
+        }
 
         /**
          * Build a panel over a blank screen: every cell a dark space, so the grid is fully
@@ -468,7 +622,7 @@ public class SwingUI {
         /**
          * Repaint the whole screen from {@link #display}: black the panel out, then draw every
          * cell's glyph in its own colour. The port of the {@code text_hook} a {@code main-*.c}
-         * module installs ({@code [C] src/z-term.c} calls it), except that C is handed only the
+         * module installs ({@code [C] src/ui-term.c} calls it), except that C is handed only the
          * runs that changed and this redraws everything.
          *
          * <p>One {@code drawString} per cell - 1,920 of them - which is more calls than needed but
@@ -527,7 +681,7 @@ public class SwingUI {
 
         /**
          * Write one coloured character into a cell, overwriting whatever was there. The port of
-         * {@code Term_putch} ({@code [C] src/z-term.c}).
+         * {@code Term_putch} ({@code [C] src/ui-term.c}).
          *
          * <p>Changes the buffer only - the caller repaints when it has finished writing, so a run
          * of writes costs one repaint rather than one each.
@@ -550,7 +704,7 @@ public class SwingUI {
 
         /**
          * Write a string along a row, one character per cell, starting at a column. The port of
-         * {@code Term_putstr} ({@code [C] src/z-term.c}).
+         * {@code Term_putstr} ({@code [C] src/ui-term.c}).
          *
          * <p>Clipped at the right-hand edge rather than wrapped, which is what C does and what the
          * grid demands: a terminal has no row below the last one to continue onto, and wrapping
@@ -568,97 +722,5 @@ public class SwingUI {
                 put(row, i, s.charAt(i - col), colour);
             }
         }
-    }
-
-    /**
-     * Hand the calling thread to the inbox loop. One line, and the line that makes a thread the UI
-     * thread.
-     *
-     * <p><b>This does not return until the session ends.</b> {@code main()} calls it as the last
-     * statement of the UI thread's body, so the thread spends its life inside
-     * {@code UILoop.loop()}, blocked on the queue; when the core's {@code STOPPED} arrives the loop
-     * returns, this returns, and that thread finishes - which is one of the two events that let the
-     * JVM exit.
-     *
-     * <p>Called after {@link #init()} has been queued but without waiting for it. Safe because the
-     * core sends nothing before the {@code START} that {@code init} ends with, so this loop cannot
-     * be handed anything to paint before there is a window to paint it into.
-     */
-    public void startLoop() {
-        uiLoop.loop();
-    }
-
-    /**
-     * Bring the front end up: size the window from the chosen font, wire the close handler, show
-     * it, and tell the core to begin. The port of a {@code main-*.c} module's {@code init_*}
-     * function, which C calls before {@code init_angband()} so the display exists to report
-     * loading errors on.
-     *
-     * <p><b>Runs on the EDT.</b> {@code main()} queues it there with {@code invokeLater} rather
-     * than calling it on the UI thread, because every line below touches a Swing component and the
-     * window is realised part-way through.
-     *
-     * <p>The metrics drive everything. Angband is written against a character grid, so the window
-     * is sized as 80x24 cells of whatever the font's {@code 'M'} measures - the port's equivalent
-     * of C asking a terminal how big it is. {@code TerminalVector} is preferred and the platform
-     * monospace is the fallback, so the grid stays square-ish on a machine without the game font.
-     *
-     * <p>Ordering worth keeping: the listener is attached before the window is shown, so a close
-     * can never arrive before there is something to handle it, and {@link #sendStartToCore} comes
-     * last, so the core cannot begin reporting progress before there is a window for it to be
-     * reported into. An exception before {@code setVisible} leaves the JVM alive with no window on
-     * screen, because {@code pack()} has already made the frame displayable and so kept the EDT
-     * running.
-     *
-     * <p><b>The last line is the whole of the channel wiring left here.</b> It used to be four:
-     * this method also built a core-side status display and pushed it into the core's holder, and
-     * started a separate {@code angband-display} thread for the inbox loop. Stage 4 took both away
-     * - the core installs its own display now, and the loop runs on the UI thread that queued this
-     * method rather than on one of its own.
-     *
-     * <p><b>This method returns as soon as the window is up; it waits for nothing.</b> The session
-     * carries on in two other places: {@link #startLoop()} on the UI thread, and the core on its.
-     * The program ends when both of those finish and {@code main()}'s two joins return.
-     */
-    public void init() {
-        Colour.init();
-
-        List<String> fontNames = Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames());
-        Font font;
-        int fontSize = 24;
-        if (fontNames.contains("TerminalVector"))
-            font = new Font("TerminalVector", Font.PLAIN, fontSize);
-        else
-            font = new Font(Font.MONOSPACED, Font.PLAIN, fontSize);
-
-        JPanelArea.font = font;
-
-        FontMetrics metrics = activeWindow.getFontMetrics(font);
-        int charWidth = metrics.charWidth('M');
-        int charHeight = metrics.getHeight();
-
-        JPanelArea.charAscent = metrics.getAscent();
-        JPanelArea.charHeight = charHeight;
-        JPanelArea.charWidth = charWidth;
-
-        JFrame.setDefaultLookAndFeelDecorated(true);
-        activeWindow.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        activeWindow.setSize(80 * charWidth, 24 * charHeight);
-        activeWindow.setTitle(Angband.buildId);
-        activeWindow.addWindowListener(windowListener);
-
-        JPanelArea mainPanel = new JPanelArea();
-        mainPanel.setToolTipText("Main Panel");
-        mainPanel.setPreferredSize(new Dimension(80 * charWidth, 24 * charHeight));
-        activeWindow.add(mainPanel);
-        activeWindow.pack();
-        activeWindow.setLocationRelativeTo(null);
-
-        activeWindow.setVisible(true);
-
-        // The display is up, so the core may begin. Installing the core's display object used to
-        // happen here too; the core's own handlers now send on the sender they are constructed
-        // with, so this side has nothing to register.
-        sendStartToCore();
     }
 }

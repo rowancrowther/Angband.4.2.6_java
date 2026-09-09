@@ -26,6 +26,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.frontend.inputfromuser.UILoop;
 
 import java.util.List;
@@ -113,12 +114,19 @@ class PhaseEventRoutingTest {
     }
 
     /**
-     * Puts a phase event on the core channel, the way {@code InitHandlers} does.
+     * Puts a phase event on the core channel, the way {@code InitHandlers} does - except for
+     * {@code EVENT_ENTER_BIRTH}, which {@code UIBirth.uiEnterBirthscreen} sends as a
+     * {@code GameEventCoreMessage} because it carries the quickstart flag; every other event here
+     * carries nothing and travels as a {@code SimpleCoreMessage}.
      *
      * @param event the transition the core is reporting
      */
     private void coreReports(GameEventType event) {
-        channels.coreChannel().coreSender().send(new CoreMessage.SimpleCoreMessage(event));
+        CoreMessage message = event == GameEventType.EVENT_ENTER_BIRTH
+                ? new CoreMessage.GameEventCoreMessage(event, new EventDataBoolean(false))
+                : new CoreMessage.SimpleCoreMessage(event);
+
+        channels.coreChannel().coreSender().send(message);
     }
 
     /**
@@ -204,7 +212,8 @@ class PhaseEventRoutingTest {
                 "the phase transitions should arrive in the order the core sent them");
 
         assertEquals(List.of(
-                        "Executing " + GameEventType.EVENT_ENTER_BIRTH,
+                        "Executing " + GameEventType.EVENT_ENTER_BIRTH + "\nEvent data: "
+                                + new EventDataBoolean(false),
                         "Executing " + GameEventType.EVENT_LEAVE_BIRTH),
                 birthLog.lines(),
                 "the birth transitions should arrive in order, and only on the birth receiver");

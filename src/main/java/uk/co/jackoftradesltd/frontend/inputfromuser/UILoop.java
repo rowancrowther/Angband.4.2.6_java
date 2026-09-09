@@ -182,6 +182,18 @@ public class UILoop {
                 ChannelMessage message = uiChannel.uiReceiver().receive();
 
                 switch (message) {
+                    case CoreMessage.GameEventCoreMessage gameEventCoreMessage -> {
+
+                        logger.info("Received game event: " + gameEventCoreMessage.type() + ": "
+                                + gameEventCoreMessage.data());
+
+                        switch (gameEventCoreMessage.type()) {
+                            case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth(gameEventCoreMessage.data());
+                            default -> {
+                            }
+                        }
+                    }
+                    
                     // Protocol rather than gameplay: the core reporting on its own lifecycle.
                     case CoreMessage.LifecycleCoreMessage lifecycleCoreMessage -> {
                         CoreLifecycleEvent event = lifecycleCoreMessage.event();
@@ -244,7 +256,6 @@ public class UILoop {
                             case EVENT_LEAVE_GAME -> new MainEvents().leaveGame();
                             case EVENT_ENTER_WORLD -> new MainEvents().enterWorld();
                             case EVENT_LEAVE_WORLD -> new MainEvents().leaveWorld();
-                            case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth();
                             case EVENT_LEAVE_BIRTH -> new BirthEvents().leaveBirth();
                             default -> {
                             }

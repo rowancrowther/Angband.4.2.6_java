@@ -154,9 +154,12 @@ class InitHandlersTest {
      * cannot draw, so silence is the bug and the send is the requirement. Recorded here rather than
      * quietly rewritten, because a test flipping direction is worth noticing.
      *
-     * <p>Each is asserted as a {@code SimpleCoreMessage}: these events carry no payload, so the
-     * shape is the plain one, and a handler that started sending text would be sending something
-     * the protocol says it has no reason to have.
+     * <p>Each is asserted as a {@code SimpleCoreMessage}, except {@code EVENT_ENTER_BIRTH}: that one
+     * is {@code UIBirth.uiEnterBirthscreen}'s to forward, and it carries whatever payload the signal
+     * arrived with - here {@code null}, since {@link uk.co.jackoftradesltd.middle.game.event.EventsHandler#eventSignal}
+     * is the bare, payload-free form - as a {@code GameEventCoreMessage}. The other six carry no
+     * payload at all, so the plain shape is the one to expect, and a handler that started sending
+     * text would be sending something the protocol says it has no reason to have.
      */
     @Test
     void everyPhaseTransitionIsForwarded() {
@@ -172,7 +175,9 @@ class InitHandlersTest {
         transitions.forEach(bus::eventSignal);
 
         assertEquals(transitions.stream()
-                        .map(event -> (CoreMessage) new CoreMessage.SimpleCoreMessage(event))
+                        .<CoreMessage>map(event -> event == GameEventType.EVENT_ENTER_BIRTH
+                                ? new CoreMessage.GameEventCoreMessage(event, null)
+                                : new CoreMessage.SimpleCoreMessage(event))
                         .toList(),
                 sender.sent,
                 "every phase transition should cross the channel, in order, as a bare message");

@@ -320,13 +320,13 @@ Six stages, none of which reads a key. Every one is exercisable by sending event
 
 ## D1 — The channel's missing message shape *(no dependencies)*
 
-- [ ] The fourth `CoreMessage` record pairing a `GameEventType` with a `GameEventData` — shared with the `PR_*` drain,
+- [X] The fourth `CoreMessage` record pairing a `GameEventType` with a `GameEventData` — shared with the `PR_*` drain,
   which identified the same gap (`docs/implementation/260820_redraw_drain.md:157`)
-- [ ] `UIBirth.uiEnterBirthscreen` (`UIBirth.java:106`) to send the quickstart flag rather than a bare
+- [X] `UIBirth.uiEnterBirthscreen` (`UIBirth.java:106`) to send the quickstart flag rather than a bare
   `SimpleCoreMessage`
-- [ ] `BirthEvents.enterBirth` (`BirthEvents.java:71`) to take it and hold it — nothing reads it until Part 2, and that
+- [X] `BirthEvents.enterBirth` (`BirthEvents.java:71`) to take it and hold it — nothing reads it until Part 2, and that
   is fine; it is one boolean
-- [ ] Decide whether `EventDataBirthStage` is kept, given it ports an unused C struct
+- [X] Decide whether `EventDataBirthStage` is kept, given it ports an unused C struct
 
 ## D2 — Screen primitives *(no dependencies)*
 

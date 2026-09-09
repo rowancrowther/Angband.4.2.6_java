@@ -15,7 +15,9 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.channel.messages.data;
+package uk.co.jackoftradesltd.unused;
+
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 
 import java.util.ArrayList;
 

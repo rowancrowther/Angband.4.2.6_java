@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 
 import java.util.List;
 
@@ -64,9 +65,11 @@ class BirthEventsTest {
      */
     @Test
     void enteringAnnouncesEnterBirth() {
-        birthEvents.enterBirth();
+        EventDataBoolean data = new EventDataBoolean(false);
+        birthEvents.enterBirth(data);
 
-        assertEquals(List.of("Executing " + GameEventType.EVENT_ENTER_BIRTH), log.lines());
+        assertEquals(List.of("Executing " + GameEventType.EVENT_ENTER_BIRTH + "\nEvent data: " + data),
+                log.lines());
     }
 
     /**
@@ -87,11 +90,12 @@ class BirthEventsTest {
      */
     @Test
     void theTwoEndsAreDistinct() {
-        birthEvents.enterBirth();
+        EventDataBoolean data = new EventDataBoolean(false);
+        birthEvents.enterBirth(data);
         birthEvents.leaveBirth();
 
         assertEquals(List.of(
-                        "Executing " + GameEventType.EVENT_ENTER_BIRTH,
+                        "Executing " + GameEventType.EVENT_ENTER_BIRTH + "\nEvent data: " + data,
                         "Executing " + GameEventType.EVENT_LEAVE_BIRTH),
                 log.lines(),
                 "the birth screen's two ends should announce themselves differently, in order");

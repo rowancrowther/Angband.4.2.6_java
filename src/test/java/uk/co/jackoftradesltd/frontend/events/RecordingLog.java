@@ -128,22 +128,37 @@ final class RecordingLog extends AbstractAppender {
     }
 
     /**
-     * Waits for a line to appear, for the tests that drive another thread.
+     * Waits for a line starting with the given text to appear, for the tests that drive another
+     * thread. A prefix rather than an exact match, so a caller can wait on the fixed opening of a
+     * message that goes on to carry data the test does not otherwise pin down.
      *
-     * @param expected the exact message to wait for
-     * @param millis   how long to wait before giving up
-     * @return whether it arrived
+     * @param expectedPrefix the text the message should start with
+     * @param millis         how long to wait before giving up
+     * @return whether a matching line arrived
      */
-    boolean await(String expected, long millis) throws InterruptedException {
+    boolean await(String expectedPrefix, long millis) throws InterruptedException {
         long deadline = System.currentTimeMillis() + millis;
 
         while (System.currentTimeMillis() < deadline) {
-            if (lines.contains(expected)) {
+            if (startsWithPrefix(expectedPrefix)) {
                 return true;
             }
             Thread.sleep(10);
         }
 
-        return lines.contains(expected);
+        return startsWithPrefix(expectedPrefix);
+    }
+
+    /**
+     * @param prefix the text a recorded line should start with
+     * @return whether any line recorded so far starts with it
+     */
+    private boolean startsWithPrefix(String prefix) {
+        for (String line : lines) {
+            if (line.startsWith(prefix)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

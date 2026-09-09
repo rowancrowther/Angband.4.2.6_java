@@ -22,6 +22,8 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -215,6 +217,41 @@ class ChannelMessageTest {
         void theLifecycleMessageIsComparableByValue() {
             assertEquals(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED),
                     new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+        }
+
+        @Test
+        void aGameEventMessageCarriesItsEventTypeAndPolymorphicData() {
+            CoreMessage.GameEventCoreMessage message =
+                    new CoreMessage.GameEventCoreMessage(GameEventType.EVENT_MAP, new EventDataGrid(3, 4));
+
+            assertEquals(GameEventType.EVENT_MAP, message.type());
+            assertEquals(new EventDataGrid(3, 4), message.data());
+        }
+
+        /**
+         * C tags the union's live member by which {@code type} the handler registered for; here
+         * there is no tag, so two messages sharing an event type but carrying data of different
+         * runtime types must not collapse into one value — a receiver switching on
+         * {@code data()}'s type has to see them apart.
+         */
+        @Test
+        void gameEventMessagesWithTheSameTypeButDifferentDataAreNotEqual() {
+            CoreMessage.GameEventCoreMessage asGrid =
+                    new CoreMessage.GameEventCoreMessage(GameEventType.EVENT_GEN_ROOM_END, new EventDataGrid(0, 0));
+            CoreMessage.GameEventCoreMessage asFlag = new CoreMessage.GameEventCoreMessage(
+                    GameEventType.EVENT_GEN_ROOM_END, new EventDataBoolean(true));
+
+            assertNotEquals(asGrid, asFlag);
+        }
+
+        @Test
+        void gameEventMessagesWithTheSameTypeAndEqualDataAreEqual() {
+            CoreMessage.GameEventCoreMessage first =
+                    new CoreMessage.GameEventCoreMessage(GameEventType.EVENT_GEN_LEVEL_END, new EventDataBoolean(true));
+            CoreMessage.GameEventCoreMessage second =
+                    new CoreMessage.GameEventCoreMessage(GameEventType.EVENT_GEN_LEVEL_END, new EventDataBoolean(true));
+
+            assertEquals(first, second);
         }
     }
 

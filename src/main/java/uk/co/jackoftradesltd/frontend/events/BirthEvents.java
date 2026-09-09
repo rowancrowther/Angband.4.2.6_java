@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.frontend.events;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 
 /**
  * The front end's half of character creation's two ends: putting the birth screen up, and taking it
@@ -68,8 +69,8 @@ public class BirthEvents {
      * payload type that already exists to hold one. Nothing reads it yet because nothing draws the
      * menus yet, so the wire stays simple until the menus need it.
      */
-    public void enterBirth() {
-        logger.info("Executing EVENT_ENTER_BIRTH");
+    public void enterBirth(GameEventData data) {
+        logger.info("Executing EVENT_ENTER_BIRTH\nEvent data: " + data.toString());
     }
 
     /**

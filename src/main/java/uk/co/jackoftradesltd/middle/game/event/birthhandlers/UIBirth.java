@@ -105,7 +105,7 @@ public class UIBirth {
      */
     private void uiEnterBirthscreen(GameEventType eventType, GameEventData data) {
         logger.info("Entering birthscreen");
-        coreSender.send(new CoreMessage.SimpleCoreMessage(eventType));
+        coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, data));
     }
 
     /**

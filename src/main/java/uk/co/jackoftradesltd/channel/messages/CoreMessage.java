@@ -19,6 +19,8 @@ package uk.co.jackoftradesltd.channel.messages;
 
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+import uk.co.jackoftradesltd.middle.utils.ControlUtils;
 
 /**
  * Everything the core can say to the front end.
@@ -45,7 +47,7 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
  * @see UIMessage the traffic going the other way
  */
 public sealed interface CoreMessage extends ChannelMessage permits CoreMessage.SimpleCoreMessage,
-        CoreMessage.TextCoreMessage, CoreMessage.LifecycleCoreMessage {
+        CoreMessage.TextCoreMessage, CoreMessage.LifecycleCoreMessage, CoreMessage.GameEventCoreMessage {
 
     /**
      * A game event with no data beyond the fact that it happened — the port of C's
@@ -80,5 +82,30 @@ public sealed interface CoreMessage extends ChannelMessage permits CoreMessage.S
      * @param event what the core is reporting
      */
     record LifecycleCoreMessage(CoreLifecycleEvent event) implements CoreMessage {
+    }
+
+    /**
+     * A game event whose payload is richer than a bare occurrence, a flag, or a single string —
+     * the port of C's pairing of a {@code game_event_type} with a {@code game_event_data} union in
+     * the {@code game_event_handler} callback ({@code game-event.h}). The {@code void *user}
+     * context pointer that callback also carries has no counterpart here: that parameter exists so
+     * one handler function can serve several registrations, and a channel message has no such
+     * fan-out to thread state through.
+     * <p>
+     * C tags the union's live member by which {@code type} the handler registered for; there is no
+     * tag to switch on in Java, so {@link GameEventData} takes its place as a marker interface and
+     * the concrete implementation <em>is</em> the tag — one class per union member, for example
+     * {@code EventDataGrid} for {@link GameEventType#EVENT_MAP}'s {@code point} or {@code
+     * EventDataExplosion} for {@link GameEventType#EVENT_EXPLOSION}'s {@code explosion} struct.
+     * {@link GameEventType#EVENT_MISSILE} carries no implementation yet, so a message for it cannot
+     * currently be constructed; see that constant's own note.
+     * <p>
+     * Record GameEventCoreMessage coded before 260909, commented in full on 260909.
+     *
+     * @param type which event occurred
+     * @param data the event's payload; the runtime type of this value, not {@code type}, is what a
+     *             receiver must switch on to read it
+     */
+    record GameEventCoreMessage(GameEventType type, GameEventData data) implements CoreMessage {
     }
 }

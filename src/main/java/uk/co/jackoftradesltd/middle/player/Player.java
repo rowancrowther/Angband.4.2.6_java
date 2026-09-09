@@ -237,12 +237,12 @@ public class Player {
     /**
      * Per-spell knowledge/learning flags - the port of C's {@code p->spell_flags}.
      */
-    private int spellFlags; // TODO: Change this once we know what we are dealing with
+    private List<Integer> spellFlags; // TODO: Change this once we know what we are dealing with
 
     /**
      * Order in which spells were learned - the port of C's {@code p->spell_order}.
      */
-    private int spellOrder; // TODO: Change this once we know what we are dealing with
+    private List<Integer> spellOrder; // TODO: Change this once we know what we are dealing with
 
     /**
      * The character's full name - the port of C's {@code p->full_name}.
@@ -390,6 +390,8 @@ public class Player {
         }
         state = null;
         playerHP = new int[PlayerRegistry.PY_MAX_LEVEL + 1];
+        spellFlags = new ArrayList<>();
+        spellOrder = new ArrayList<>();
     }
 
     /**
@@ -509,8 +511,8 @@ public class Player {
         food = 0;
         unignoring = 0;
         skipCmdCoercion = 0;
-        spellFlags = 0;
-        spellOrder = 0;
+        spellFlags = new ArrayList<>();
+        spellOrder = new ArrayList<>();
         totalWinner = 0;
         noScore = 0;
 
@@ -2702,5 +2704,49 @@ public class Player {
     public void setFullName(String name) {
         int length = Math.min(31, name.length());
         this.fullName = name.substring(0, length);
+    }
+
+    /**
+     * Resets both spell-tracking lists and refills each to {@code numSpells} entries - the
+     * port of C's paired {@code mem_zalloc} calls for {@code p->spell_flags} and
+     * {@code p->spell_order} in {@code player_spells_init} ({@code player-spell.c:147-152}).
+     * Both lists are cleared before refilling, so a repeat call reproduces C's fresh,
+     * freshly-zeroed allocation rather than appending onto whatever was left from a previous
+     * call. {@code spellFlags} is refilled with {@code 0} (no spell yet learned in that
+     * slot); {@code spellOrder} is refilled with {@code value}, which the sole caller,
+     * {@link PlayerMagic#playerSpellsInit(Player)}, always passes as {@code 99} - C's
+     * sentinel for "no learned spell occupies this order slot".
+     *
+     * <p>Function initSpellOrder coded on 260908, commented in full on 260908.
+     *
+     * @param numSpells the number of spell slots to allocate, taken from the player's
+     *                  class's total spell count
+     * @param value     the sentinel value written into every {@code spellOrder} slot; the
+     *                  only current caller always passes {@code 99}
+     */
+    public void initSpellOrder(int numSpells, int value) {
+        spellOrder.clear();
+        spellFlags.clear();
+
+        for (int i = 0; i < numSpells; i++) {
+            spellOrder.add(value);
+            spellFlags.add(0);
+        }
+    }
+
+    /**
+     * Sets whether the player has died - the port of C's direct assignments to
+     * {@code p->is_dead}, made at each place the game needs to mark death or revive the
+     * player (for example {@code player_death} in {@code player-util.c}, the suicide
+     * command in {@code cmd-misc.c}, and the cheat-death revive path in
+     * {@code savefile.c}). C has no dedicated setter for the field; this method is the
+     * single Java choke point those call sites port onto.
+     *
+     * <p>Function setIsDead coded on 260908, commented in full on 260908.
+     *
+     * @param isDead {@code true} to mark the player dead, {@code false} to revive them
+     */
+    public void setIsDead(boolean isDead) {
+        this.isDead = isDead;
     }
 }

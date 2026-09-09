@@ -222,6 +222,22 @@ class PlayerScalarStateTest {
         }
 
         /**
+         * {@code setIsDead} is the one method that flips the flag, matching both directions C takes
+         * on the field directly: {@code player_death} setting {@code p->is_dead = true}
+         * ({@code player-util.c:260}), and the cheat-death revive setting it back to {@code false}
+         * ({@code savefile.c:647}).
+         */
+        @Test
+        @DisplayName("setIsDead marks and revives the player")
+        void setIsDeadMarksAndRevives() {
+            player.setIsDead(true);
+            assertTrue(player.isDead());
+
+            player.setIsDead(false);
+            assertFalse(player.isDead(), "the cheat-death revive path sets it back to false");
+        }
+
+        /**
          * The shape test is not a null check: a player in the "normal" shape has one, and is not
          * changed. That is why the method compares the name rather than the reference.
          *

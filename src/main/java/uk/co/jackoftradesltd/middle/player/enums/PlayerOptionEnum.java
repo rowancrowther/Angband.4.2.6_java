@@ -161,4 +161,8 @@ public enum PlayerOptionEnum {
     public boolean isNormal() {
         return normal;
     }
+
+    public boolean isCheat() {
+        return playerOptionType == PlayerOptionTypes.CHEAT;
+    }
 }

@@ -341,7 +341,7 @@ boxes span these stages rather than matching them one-to-one.
   - [X] `do_cmd_prev_stats`
   - [X] `do_cmd_choose_name`
   - [X] `do_cmd_choose_history`
-  - [ ] `do_cmd_accept_character`
+  - [X] `do_cmd_accept_character`
 - [X] Roman-numeral suffixes: `find_roman_suffix_start`,
 - [X] `int_to_roman`,
 - [X] `roman_to_int`

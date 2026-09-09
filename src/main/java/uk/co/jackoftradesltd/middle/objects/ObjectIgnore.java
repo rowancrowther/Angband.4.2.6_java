@@ -34,7 +34,9 @@ import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.utils.StringUtils;
 
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 /**
  * The decision half of the ignore subsystem - the port of the questions C's {@code obj-ignore.c}
@@ -520,6 +522,48 @@ public class ObjectIgnore {
 
         while (it.hasNext()) {
             applyAutoinscription(player, it.next());
+        }
+    }
+
+    /**
+     * Resets every ignore setting to its birth-time default - the port of C's
+     * {@code ignore_birth_init} ({@code obj-ignore.c:143-159}).
+     *
+     * <p>Three sweeps, in C's order: {@link ObjectKind#wipeIgnoreFlags} clears both ignore bits on
+     * every kind in {@link ObjectRegistry#getObjectKinds}, matching C's {@code k_info[i].ignore =
+     * false} over {@code z_info->k_max}; every non-sentinel {@link IgnoreType} in
+     * {@link ObjectInfo#ignoreLevel} is put back to {@link QualityValueEnum#IGNORE_NONE}, matching
+     * C's loop from {@code ITYPE_NONE} to (but not including) {@code ITYPE_MAX}; and
+     * {@link EgoItem#clearIgnoreType} does the same for every ego in
+     * {@link ObjectRegistry#getEgoItems}, matching C's nested loop over {@code ego_ignore_types}.
+     * {@code ITYPE_MAX} is a size sentinel rather than a real ignore type in both versions, which is
+     * why each of the last two sweeps skips it explicitly rather than trying to clear a slot that
+     * does not describe an object.
+     *
+     * <p>Its one caller is {@code PlayerBirth}, at the same point in birth as C's
+     * {@code player-birth.c} calls {@code ignore_birth_init} - the borg's own call to the C function
+     * has no equivalent here, since the borg is not part of this port.
+     *
+     * <p>Function ignoreBirthInit coded on 260907, commented in full on 260908.
+     */
+    public static void ignoreBirthInit() {
+        // Reset ignore bits
+        for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+            kind.wipeIgnoreFlags();
+        }
+
+        // clear the ignore bytes
+        for (IgnoreType type : IgnoreType.values()) {
+            if (type == IgnoreType.ITYPE_MAX) continue;
+            ObjectInfo.ignoreLevel.put(type, QualityValueEnum.IGNORE_NONE);
+        }
+
+        // clear ego ignore
+        for (EgoItem ego : ObjectRegistry.getEgoItems()) {
+            for (IgnoreType type : IgnoreType.values()) {
+                if (type == IgnoreType.ITYPE_MAX) continue;
+                ego.clearIgnoreType(type);
+            }
         }
     }
 }

@@ -116,6 +116,28 @@ public class PlayerOptions {
         hitpointWarn = 3;
     }
 
+    /**
+     * Resets every option of the given page to the player's saved customized defaults — the port of
+     * C's {@code options_restore_custom} ({@code option.c:225-333}). If no customized-options file
+     * exists yet, this falls back to {@link #restoreMaintainer(PlayerOptionTypes)} instead, matching
+     * C's {@code options_restore_maintainer} call at {@code option.c:236}.
+     *
+     * <p>Each line of the file is {@code option:<name>:<yes|no>}, written by the (not yet ported)
+     * save side of this pair. "yes" turns the option on, "no" turns it off; either way, an option
+     * named in the file overrides whatever the flag set already held for it, exactly as C's
+     * {@code (*opts).opt[opt] = true} / {@code = false} do.
+     *
+     * <p>The return value follows C's own contract for it: {@code true} means "successful", which
+     * includes the missing-file case, and {@code false} only for a customized-options file that
+     * exists but could not be parsed cleanly (an unreadable line, an unknown option name, or an
+     * I/O error).
+     *
+     * <p>Function restoreCustom coded before 260907, commented in full on 260907.
+     *
+     * @param type the option page to restore
+     * @return {@code true} if the page was restored without error (including when no customized
+     * file exists), {@code false} if the file exists but could not be fully parsed
+     */
     private boolean restoreCustom(PlayerOptionTypes type) {
         String optionTag = "option:";
         boolean loadedNoErrors = true;
@@ -126,7 +148,7 @@ public class PlayerOptions {
         if (!Files.exists(path)) {
             logger.info("Customized options file " + filename + " does not exist.");
             restoreMaintainer(type);
-            return false;
+            return true;
         }
 
         try (BufferedReader reader = Files.newBufferedReader(path)) {
@@ -164,7 +186,7 @@ public class PlayerOptions {
                     if (optionStringSplit[1].equalsIgnoreCase("yes")) {
                         options.on(poEnum);
                     } else {
-                        options.on(poEnum);
+                        options.off(poEnum);
                     }
                 } catch (IllegalArgumentException e) {
                     logger.warn("Line read in from file " + filename + " has an unknown option: " + line);
@@ -179,6 +201,20 @@ public class PlayerOptions {
         return loadedNoErrors;
     }
 
+    /**
+     * Resets every option of the given page to the maintainer's built-in defaults — the port of C's
+     * {@code options_restore_maintainer} ({@code option.c:338-345}). Each option on the page is set
+     * on if {@link PlayerOptionEnum#isNormal()} reports it as normally-on, off otherwise; options on
+     * other pages are untouched.
+     *
+     * <p>This is the fallback {@link #restoreCustom(PlayerOptionTypes)} reaches for when there is no
+     * customized-options file to read, and is also how C's {@code options_init_cheat} clears the
+     * cheat page directly.
+     *
+     * <p>Function restoreMaintainer coded before 260907, commented in full on 260907.
+     *
+     * @param type the option page to reset
+     */
     private void restoreMaintainer(PlayerOptionTypes type) {
         for (PlayerOptionEnum option : PlayerOptionEnum.values()) {
             if (option.getPlayerOptionType().equals(type)) {
@@ -190,6 +226,19 @@ public class PlayerOptions {
         }
     }
 
+    /**
+     * Makes a field-by-field copy of this player's options — the port of the plain struct
+     * assignment C uses to save and restore {@code player->opts} around birth
+     * ({@code opts_save = p->opts}, {@code player-birth.c:403}). C gets a real copy for free because
+     * {@code struct player_options} holds nothing but value fields; here that has to be done by
+     * hand, one field at a time, including a deep copy of the option flag set via
+     * {@link Flag#copyFrom(uk.co.jackoftradesltd.channel.utils.FlagView)} so the copy shares nothing
+     * with the original.
+     *
+     * <p>Function copy coded before 260907, commented in full on 260907.
+     *
+     * @return a new {@link PlayerOptions} with the same flags and numeric settings as this one
+     */
     public PlayerOptions copy() {
         Flag<PlayerOptionEnum> copyOptions = new Flag<>(PlayerOptionEnum.class);
         copyOptions.copyFrom(options);
@@ -201,5 +250,33 @@ public class PlayerOptions {
         copy.delayFactor = delayFactor;
         copy.nameSuffix = nameSuffix;
         return copy;
+    }
+
+    /**
+     * Clears every cheat option and its paired score option — the port of C's
+     * {@code options_init_cheat} ({@code option.c:133-143}).
+     *
+     * <p>{@code list-options.h} documents that "cheat options need to be followed by
+     * corresponding score options" ({@code list-options.h:7}), and C leans on that ordering
+     * directly: for each cheat-type index {@code i} it clears {@code opt[i]} and
+     * {@code opt[i + 1]} by raw array arithmetic. The port has no index to add one to, so
+     * it walks {@link PlayerOptionEnum#values()} in the same declared order — which mirrors
+     * {@code list-options.h} exactly — and carries a {@code prevIsCheat} flag forward instead:
+     * an option is switched off if it is itself a cheat option, or if the option immediately
+     * before it was one. That reproduces C's {@code opt[i + 1]} clear without needing an index.
+     *
+     * <p>Function optionsInitCheat coded before 260907, commented in full on 260907.
+     */
+    public void optionsInitCheat() {
+        boolean prevIsCheat = false;
+        for (PlayerOptionEnum option : PlayerOptionEnum.values()) {
+            if (option.isCheat()) {
+                options.off(option);
+                prevIsCheat = true;
+            } else if (prevIsCheat) {
+                options.off(option);
+                prevIsCheat = false;
+            }
+        }
     }
 }

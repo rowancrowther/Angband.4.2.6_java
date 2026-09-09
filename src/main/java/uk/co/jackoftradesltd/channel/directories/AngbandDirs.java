@@ -66,22 +66,22 @@ public class AngbandDirs {
      * lib/user/ what a player accumulates.
      */
 
-    private static final String libPath = File.separator + "lib" + File.separator;
-    private static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
-    private static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
-    private static final String ANGBAND_DIR_TILES = BASE_DIR + libPath + "tiles" + File.separator;
-    private static final String ANGBAND_DIR_FONTS = BASE_DIR + libPath + "fonts" + File.separator;
-    private static final String ANGBAND_DIR_SCREENS = BASE_DIR + libPath + "screens" + File.separator;
-    private static final String ANGBAND_DIR_HELP = BASE_DIR + libPath + "help" + File.separator;
-    private static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
-    private static final String configPath = libPath + "config" + File.separator;
-    private static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + configPath + "customize" + File.separator;
-    private static final String userPath = libPath + "user" + File.separator;
-    private static final String ANGBAND_DIR_USER = BASE_DIR + userPath;
-    private static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
-    private static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
-    private static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
-    private static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
+    public static final String libPath = File.separator + "lib" + File.separator;
+    public static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
+    public static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
+    public static final String ANGBAND_DIR_TILES = BASE_DIR + libPath + "tiles" + File.separator;
+    public static final String ANGBAND_DIR_FONTS = BASE_DIR + libPath + "fonts" + File.separator;
+    public static final String ANGBAND_DIR_SCREENS = BASE_DIR + libPath + "screens" + File.separator;
+    public static final String ANGBAND_DIR_HELP = BASE_DIR + libPath + "help" + File.separator;
+    public static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
+    public static final String configPath = libPath + "config" + File.separator;
+    public static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + configPath + "customize" + File.separator;
+    public static final String userPath = libPath + "user" + File.separator;
+    public static final String ANGBAND_DIR_USER = BASE_DIR + userPath;
+    public static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
+    public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
+    public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
+    public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
 
     /**
      * Point a directory somewhere else for the rest of the run - the {@code -d<dir>=<path>}

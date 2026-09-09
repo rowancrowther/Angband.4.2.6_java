@@ -303,4 +303,78 @@ class PlayerHistoryLedgerTest {
             assertTrue(other.entries.isEmpty(), "the second ledger should still be empty");
         }
     }
+
+    /**
+     * C's {@code history_clear} ({@code src/player-history.c:57}) frees {@code h->entries}, nulls
+     * the pointer and zeroes {@code next} and {@code length}. The port has no pointer or counters to
+     * reset, only the list itself, so what is checked here is that the ledger reads as freshly
+     * initialised afterwards — nothing readable, and ready to write to again from the front.
+     */
+    @Nested
+    @DisplayName("clear empties the ledger")
+    class ClearEmptiesTheLedger {
+
+        /**
+         * C's {@code h->entries} is already {@code NULL} when nothing has been logged, so clearing
+         * it is a no-op observably: still nothing readable.
+         */
+        @Test
+        @DisplayName("clearing an already-empty ledger leaves it empty")
+        void clearingAnAlreadyEmptyLedgerLeavesItEmpty() {
+            ledger.clear();
+
+            assertNotNull(ledger.entries, "the ledger should never be absent");
+            assertTrue(ledger.entries.isEmpty());
+        }
+
+        /**
+         * C frees the array holding every logged event, so nothing written before the clear survives
+         * it.
+         */
+        @Test
+        @DisplayName("clearing removes every entry previously logged")
+        void clearingRemovesEveryEntryPreviouslyLogged() {
+            ledger.addEntry(entry("first"));
+            ledger.addEntry(entry("second"));
+
+            ledger.clear();
+
+            assertTrue(ledger.entries.isEmpty());
+        }
+
+        /**
+         * After {@code history_clear}, C's {@code next} is zero again, so the next write in C would
+         * land at index zero exactly as it did for a brand new ledger.
+         */
+        @Test
+        @DisplayName("the next entry logged after a clear lands at the front")
+        void theNextEntryLoggedAfterAClearLandsAtTheFront() {
+            ledger.addEntry(entry("Began the quest to destroy Morgoth."));
+            ledger.clear();
+
+            HistoryInfo newBeginning = entry("Began again after the first attempt failed.");
+            ledger.addEntry(newBeginning);
+
+            assertEquals(1, ledger.entries.size());
+            assertSame(newBeginning, ledger.entries.getFirst());
+        }
+
+        /**
+         * C frees the old block outright rather than emptying it in place, so anyone still holding a
+         * reference to the array from before the clear would find it untouched, just orphaned. The
+         * port's equivalent is replacing the field with a new list rather than calling
+         * {@code List.clear()} on the old one; this distinguishes the two by checking that a
+         * reference taken before the clear still shows the entries it held.
+         */
+        @Test
+        @DisplayName("a previously held reference to the entries is not itself emptied")
+        void aPreviouslyHeldReferenceToTheEntriesIsNotItselfEmptied() {
+            ledger.addEntry(entry("Killed Grip, Farmer Maggot's dog"));
+            List<HistoryInfo> before = ledger.entries;
+
+            ledger.clear();
+
+            assertEquals(1, before.size(), "the old list should be orphaned, not mutated");
+        }
+    }
 }

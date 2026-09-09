@@ -19,9 +19,13 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.backend.io.Datafile;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.Message;
+import uk.co.jackoftradesltd.middle.cave.GenChunk;
+import uk.co.jackoftradesltd.middle.cave.store.Store;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
+import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.GameWorld;
 import uk.co.jackoftradesltd.middle.game.enums.CommandCode;
@@ -32,6 +36,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.loaders.ObjectDataLoader;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
@@ -41,6 +46,7 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
+import uk.co.jackoftradesltd.middle.player.enums.PlayerHistoryType;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
@@ -2413,6 +2419,141 @@ public class PlayerBirth {
 
         if (history.isEmpty()) return;
         GameState.getPlayer().setHistoryBirth(history.get());
+    }
+
+    /**
+     * The port of C's {@code do_cmd_accept_character} ({@code player-birth.c:1258}) - the final step
+     * of character creation, run once the player has finished rolling or buying stats and choosing a
+     * name and history. It rolls hit points, opens the message log with the "began the quest" line,
+     * embodies and outfits the player, initialises spells and known runes, restores the standard
+     * artifact table, seeds flavours, then flips the game to "playing" and fires
+     * {@link GameEventType#EVENT_LEAVE_BIRTH}.
+     *
+     * <p>Like its C original, {@code cmd} is accepted only to match the command-dispatch shape - the
+     * body never reads it, the same as {@code do_cmd_accept_character} itself never touches its own
+     * {@code cmd}.
+     *
+     * <p>The three {@code birth_*} option guards - {@link PlayerOptionEnum#OP_birth_know_runes},
+     * {@link PlayerOptionEnum#OP_birth_randarts} and {@link PlayerOptionEnum#OP_birth_know_flavors} -
+     * mirror C's {@code OPT(player, ...)} checks in the same order, each gating the same call
+     * ({@link PlayerKnowledge#learnAllRunes}, {@link ObjectRandart#doRandart} and
+     * {@link ObjectUtils#flavourSetAllAware} respectively).
+     *
+     * <p>The artifact restore keeps C's call order: {@link Datafile#deactivateRandartFile()} runs
+     * before {@link ObjectDataLoader#loadArtifacts()}, matching {@code deactivate_randart_file()}
+     * ahead of {@code run_parser(&artifact_parser)} ({@code player-birth.c:1304-1305}) - archiving any
+     * randart export left over from a previous birth before the standard artifact table reloads over
+     * it. The same {@link Datafile#deactivateRandartFile()} call recurs inside the
+     * {@code birth_randarts} branch, matching C's second call after {@code do_randart}
+     * ({@code player-birth.c:1311}). {@link Datafile#deactivateRandartFile()} is currently an empty
+     * stub, so neither call has an observable effect yet - a gap in {@link Datafile}, not in this
+     * method, whose own call order already matches C's.
+     *
+     * <p>The closing history clear - {@code prev.setHistoryBirth("")} and
+     * {@code quickstartPrev.setHistoryBirth("")} - is the port of C's {@code prev.history = NULL;}
+     * and {@code quickstart_prev.history = NULL;} ({@code player-birth.c:1336-1339}), releasing the
+     * two cached roller snapshots' background text now that birth is done. The port answers with
+     * {@code ""} rather than {@code null}, unlike the {@code null} this same field is cleared to
+     * elsewhere in this class ({@link #saveRollerData}, {@link #LoadRollerData}); the difference has
+     * no observable effect today, since {@code prev} and {@code quickstartPrev} are only ever written
+     * wholesale by {@link #saveRollerData}/{@link #LoadRollerData} afterwards and never read with a
+     * null check first, but a future caller that does null-check {@link Birther#getHistory()} would
+     * see the two representations differently.
+     *
+     * <p>The "know all combat runes" hack sets {@link KnownObject#setToA}, {@link
+     * KnownObject#setToD} and {@link KnownObject#setToH} in a different order to C's own
+     * {@code to_a}/{@code to_h}/{@code to_d} ({@code player-birth.c:1291-1293}); the three
+     * assignments have no side effects on one another, so the reorder changes nothing observable.
+     *
+     * <p>Function doCmdAcceptCharacter coded on 260908, commented in full on 260908.
+     *
+     * @param cmd the accept-character command; unused, kept only to match the {@code cmd_fn} signature
+     */
+    public static void doCmdAcceptCharacter(Command cmd) {
+        Player player = GameState.getPlayer();
+        player.getPlayerOptions().optionsInitCheat();
+        rollHP(player);
+
+        ObjectIgnore.ignoreBirthInit();
+
+        // Clear old messages, add new starting message
+        player.getPlayerHistory().clear();
+        PlayerHistory.historyAdd(player, "Began the quest to destroy Morgoth.",
+                PlayerHistoryType.HIST_PLAYER_BIRTH);
+
+        // Note player birth in the message recall
+        Message.messageAdd(" ", MessageType.MSG_GENERIC);
+        Message.messageAdd("  ", MessageType.MSG_GENERIC);
+        Message.messageAdd("====================", MessageType.MSG_GENERIC);
+        Message.messageAdd("  ", MessageType.MSG_GENERIC);
+        Message.messageAdd(" ", MessageType.MSG_GENERIC);
+
+        // Embody
+        embody(player);
+
+        // Give the player some money
+        getMoney(player);
+
+        // Initialise the spells
+        PlayerMagic.playerSpellsInit(player);
+
+        // Know all runes for ID on walkover
+        if (player.opt(PlayerOptionEnum.OP_birth_know_runes))
+            PlayerKnowledge.learnAllRunes(player);
+
+        // Hack - player knows all combat runes <NPM> Maybe not make them runes?
+        player.getItemKnowledge().setToA(1);
+        player.getItemKnowledge().setToD(1);
+        player.getItemKnowledge().setToH(1);
+
+        // Initialise the stores & dungeon
+        Store.storeReset();
+        GenChunk.setChunkListMax(0);
+
+        // Player learns innate runes
+        PlayerKnowledge.learnInnate(player);
+
+        // Restore the standard artifacts
+        // Randarts may have been loaded
+        Datafile.deactivateRandartFile();
+        ObjectDataLoader.loadArtifacts();
+        
+        if (player.opt(PlayerOptionEnum.OP_birth_randarts)) {
+            long seedRandart = (long) RandomValueUtils.randInt0(0x10000000);
+            ObjectRandart.doRandart(seedRandart, true);
+            Datafile.deactivateRandartFile();
+        }
+
+        // Seed for flavours
+        GameState.setSeedFlavour(RandomValueUtils.randInt0(0x10000000));
+
+        ObjectUtils.flavourInit();
+
+        // Know all flavours for auto-id of consumables
+        if (player.opt(PlayerOptionEnum.OP_birth_know_flavors))
+            ObjectUtils.flavourSetAllAware();
+
+        // Outfit the player, if they can sell the stuff
+        playerOutfit(player);
+
+        // Stop the player being quite so dead
+        player.setIsDead(false);
+
+        // Character is now complete
+        GameState.setCharacterGenerated(true);
+        player.getPlayerUpkeep().setPlaying(true);
+
+        // Disable repeat command so we don't try and be bjorn again
+        GameState.getCommandQueue().disableRepeat();
+
+        // No longer need the cached history
+        Birther prev = PlayerBirthStateRegistry.getPrev();
+        prev.setHistoryBirth("");
+        Birther quickstartPrev = PlayerBirthStateRegistry.getQuickstartPrev();
+        quickstartPrev.setHistoryBirth("");
+
+        // Now we are really done
+        GameEngine.getEventsBusHandler().eventSignal(GameEventType.EVENT_LEAVE_BIRTH);
     }
 
     /**

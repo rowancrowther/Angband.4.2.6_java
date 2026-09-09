@@ -24,16 +24,21 @@ import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.enums.DamageAspect;
 import uk.co.jackoftradesltd.middle.enums.ElementInfoEnum;
+import uk.co.jackoftradesltd.middle.game.NameCreator;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.loaders.MiscDataLoader;
+import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerCalcs;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
+import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
 
 import java.util.*;
 
@@ -66,6 +71,15 @@ import java.util.*;
  */
 public class ObjectUtils {
     private final static Logger logger = LogManager.getLogger(ObjectUtils.class);
+
+    private static final int MAX_TITLES = 50;
+    private static final int maxTitleLength = 18;
+
+    private static String[] scrollAdj;
+
+    static {
+        scrollAdj = new String[MAX_TITLES];
+    }
     
     /**
      * Handle "pack overflow" — the port of C's {@code pack_overflow} ({@code obj-gear.c}). When the
@@ -917,7 +931,7 @@ public class ObjectUtils {
      * {@code obj} and {@code kind} end up sharing the same list, matching C's shared
      * {@code obj->effect = k->effect} pointer.
      *
-     * <p>The flag copy takes only {@link #getFlags() kind.getFlags()}, not the kind's base's. C
+     * <p>The flag copy takes only {@code #getFlags() kind.getFlags()}, not the kind's base's. C
      * copies both — {@code of_copy(obj->flags, k->base->flags)} then
      * {@code of_copy(obj->flags, k->flags)} — but {@code of_copy} is C's {@code flag_copy}, a
      * {@code memcpy} that overwrites rather than unions; the second call therefore erases the first
@@ -1202,6 +1216,278 @@ public class ObjectUtils {
 
         destSlays.clear();
         destSlays.addAll(destList);
+    }
+
+    /**
+     * Rebuilds every {@link ObjectKind}'s flavour for the current game, then assigns
+     * flavours - fixed ones first, then random ones - across every flavoured item type,
+     * generates this game's scroll titles, and marks every kind left unflavoured as identified.
+     * This is the Java port of C's {@code flavor_init} ({@code obj-util.c}), called once at
+     * birth and once on every load.
+     *
+     * <p>C seeds a "simple" RNG ({@code Rand_quick}/{@code Rand_value = seed_flavor}) before
+     * this run and restores the "complex" one afterwards, so a given save's flavours and scroll
+     * titles come out the same across loads. This port has no simple-RNG mode and skips that
+     * step entirely, so flavours here are not reproducible per-seed the way C's are.
+     *
+     * <p>On turn 1 (a fresh game), every kind's flavour is cleared and
+     * {@link MiscDataLoader#loadFlavours()} re-parses {@code flavor.txt} from scratch - this
+     * port's equivalent of C's {@code cleanup_parser}/{@code run_parser} pair, which also frees
+     * and rebuilds the whole {@code flavor} list, making the explicit
+     * {@code f->sval = SV_UNKNOWN} loop C runs just before that redundant there (and so it has
+     * no port equivalent either).
+     *
+     * <p>{@link #flavourResetFixed()} runs only for randarts births, then
+     * {@link #flavourAssignFixed()} binds every fixed flavour unconditionally, then
+     * {@link #flavourAssignRandom} runs once per random-flavour tval in the same order C calls
+     * it - rings, amulets, staffs, wands, rods, mushrooms, potions.
+     *
+     * <p>Scroll titles are built next, one word at a time via {@link NameCreator#randnameMake},
+     * each 2 to 8 letters. A word is kept only once accepting it would still leave the title
+     * under {@code maxTitleLength - 3} letters, quotes included; the first word that would push
+     * it over is generated and then discarded rather than committed, matching C's
+     * {@code flavor_init}, which writes a candidate word into its buffer speculatively and then
+     * truncates the string back to the last word that fit instead of rejecting the whole title.
+     * A title that collides with one already generated this pass is retried by decrementing the
+     * loop index, matching C's {@code i--}. {@link #flavourAssignRandom} then runs once more for
+     * {@code TV_SCROLL}, binding each title's text onto its flavour.
+     *
+     * <p>Finally, every named {@link ObjectKind} that still has no flavour bound - and is not a
+     * special artifact kind, the one case an unflavoured kind is expected - is marked
+     * {@link ObjectKind#setAware(boolean) aware}, matching C's
+     * {@code kind->kidx < z_info->ordinary_kind_max} check via
+     * {@link ObjectKind#isSpecialArtifactKind()}.
+     *
+     * <p>Function flavourInit coded on 260908, commented in full on 260908.
+     */
+    public static void flavourInit() {
+        // Ignore the random stuff - we are never using simple RNG
+
+        // Scrub all flavours and re-parse for new players
+        if (GameState.getTurn() == 1) {
+            for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+                kind.setFlavour(null);
+            }
+            MiscDataLoader.loadFlavours();
+        }
+
+        if (GameState.getPlayer().opt(PlayerOptionEnum.OP_birth_randarts))
+            flavourResetFixed();
+
+        flavourAssignFixed();
+
+        flavourAssignRandom(TValue.TV_RING);
+        flavourAssignRandom(TValue.TV_AMULET);
+        flavourAssignRandom(TValue.TV_STAFF);
+        flavourAssignRandom(TValue.TV_WAND);
+        flavourAssignRandom(TValue.TV_ROD);
+        flavourAssignRandom(TValue.TV_MUSHROOM);
+        flavourAssignRandom(TValue.TV_POTION);
+
+        // Scrolls (random titles, always white)
+        for (int index = 0; index < MAX_TITLES; index++) {
+            int titleLen = 0;
+            boolean ok = true;
+            StringBuilder buffer = new StringBuilder();
+
+            buffer.append('"');
+            String wordDetails = NameCreator.randnameMake(RandnameType.RANDNAME_SCROLL, 2, 8);
+            int wordLen = wordDetails.length();
+            while (titleLen + wordLen < maxTitleLength - 3) {
+                buffer.append(wordDetails);
+                buffer.append(" ");
+                titleLen += wordLen + 1;
+                wordDetails = NameCreator.randnameMake(RandnameType.RANDNAME_SCROLL, 2, 8);
+                wordLen = wordDetails.length();
+            }
+
+            buffer.append('"');
+
+            // Check to see if hte scroll name has already been generated
+            for (int j = 0; j < index; j++) {
+                if (buffer.toString().equals(scrollAdj[j])) {
+                    ok = false;
+                    break;
+                }
+            }
+
+            if (ok) {
+                scrollAdj[index] = buffer.toString();
+            } else { // try again
+                index--;
+            }
+        }
+        flavourAssignRandom(TValue.TV_SCROLL);
+
+        // analyse every object
+        for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+            // skip empty objects
+            if (kind.getName() == null) continue;
+
+            // No flavour, no kind that has only one instance
+            // an artifact, yields aware
+            if (kind.getFlavour() == null && !kind.isSpecialArtifactKind()) {
+                kind.setAware(true);
+            }
+        }
+    }
+
+    /**
+     * Clears the resolved sval on every fixed flavour, undoing what
+     * {@link #flavourInit()}'s later fixed-assignment pass has bound so far this game. Called only
+     * for randarts births, so that fixed flavours for standard items (rings, amulets, and the like)
+     * aren't predictable from one randart game to the next.
+     *
+     * <p>The One Ring keeps its flavour regardless — it lives through randarts, exactly as in C's
+     * {@code flavor_reset_fixed} ({@code obj-util.c}). The boundary is a ring whose flavour text is
+     * exactly {@code "Plain Gold"}: C matches with {@code strstr} (substring), the port with
+     * {@link String#equals}, but the two agree because that text is unique to the One Ring's entry
+     * in {@code flavor.txt}.
+     *
+     * <p>Resetting a flavour means calling {@link Flavour#setsVal} with {@code 0}, which is this
+     * port's {@code SV_UNKNOWN} (see {@link Flavour#getsVal()}).
+     *
+     * <p>Function flavourResetFixed coded on 260908, commented in full on 260908.
+     */
+    private static void flavourResetFixed() {
+        for (FlavourKind kind : MiscRegistry.getFlavours()) {
+            for (Flavour flavour : kind.getFlavours()) {
+                // The one ring is fixed
+                if (kind.getValue().isRing() && flavour.getText().equals("Plain Gold")) continue;
+
+                flavour.setsVal(0);
+            }
+        }
+    }
+
+    /**
+     * Binds every fixed flavour to the object kind it names, by sub-type. Called
+     * unconditionally from {@link #flavourInit()}, after {@link #flavourResetFixed()} has run
+     * for randarts births — so a fixed flavour's resolved sval, once cleared there, is rebuilt
+     * here on every {@link #flavourInit()} pass regardless of birth options.
+     *
+     * <p>This is the Java port of C's {@code flavor_assign_fixed} ({@code obj-util.c}). C walks a
+     * flat linked list of {@code struct flavor}, each carrying its own {@code tval} copied in from
+     * its {@code kind:} block at parse time; the port instead groups flavours under
+     * {@link FlavourKind}, which holds the shared tval once, so the outer loop here walks
+     * {@link FlavourKind}s and the inner one walks each kind's {@link Flavour}s. The match test
+     * itself is unchanged: a flavour whose resolved sval is still {@code SV_UNKNOWN} (0, meaning
+     * random rather than fixed) is skipped, and every other flavour is bound onto every object
+     * kind sharing its tval and sval.
+     *
+     * <p>Function flavourAssignFixed coded before 260908, commented in full on 260908.
+     */
+    private static void flavourAssignFixed() {
+        for (FlavourKind fKind : MiscRegistry.getFlavours()) {
+            for (Flavour flavour : fKind.getFlavours()) {
+                if (flavour.getsVal() == 0) continue;
+
+                for (ObjectKind oKind : ObjectRegistry.getObjectKinds()) {
+                    if (oKind.gettValue() == fKind.getValue() && oKind.getsVal() == flavour.getsVal()) {
+                        oKind.setFlavour(flavour);
+                    }
+                }
+            }
+        }
+    }
+
+    /**
+     * Gives every unflavoured {@link ObjectKind} of the given type a random flavour drawn from
+     * that type's still-unbound pool. Called once per random-flavour tval (rings, amulets,
+     * staffs, wands, rods, mushrooms, potions) and once more for scrolls, by {@link #flavourInit()},
+     * mirroring the sequence of calls C's {@code flavor_init} makes.
+     *
+     * <p>This is the Java port of C's {@code flavor_assign_random} ({@code obj-util.c}). As with
+     * {@link #flavourAssignFixed()}, C walks a flat linked list of {@code struct flavor} each
+     * carrying its own tval; the port instead walks {@link FlavourKind}'s per-tval blocks. The
+     * count of flavours on offer only considers those still unbound
+     * ({@link Flavour#getsVal()} still 0, C's {@code SV_UNKNOWN}) — a {@code kind:} block in
+     * {@code flavor.txt} can mix {@code fixed:} and {@code flavor:} entries (rings do), and a
+     * {@code fixed:} one has already been resolved to a real sval by
+     * {@link #flavourAssignFixed()} before this runs, so it must not be offered as a random
+     * choice.
+     *
+     * <p>Each unflavoured kind of the given type draws a random index into that remaining pool,
+     * walks the pool in file order to find it, binds the two together, resolves the flavour's
+     * sval to the kind's, and shrinks the pool by one — the same shrinking-without-removing trick
+     * C's loop performs by decrementing {@code flavor_count} as each candidate is claimed. Running
+     * out of flavours partway through is a data-file error, not a recoverable one: C exits via
+     * {@code quit_fmt}, the port logs and calls {@link System#exit}.
+     *
+     * <p>Scrolls are the one type carrying flavour text: the chosen flavour's text is overwritten
+     * with the random title generated earlier into {@link #scrollAdj}, keyed by the kind's
+     * resolved sval, matching C's {@code f->text = scroll_adj[k_info[i].sval]}.
+     *
+     * <p>Function flavourAssignRandom coded before 260908, commented in full on 260908.
+     *
+     * @param tValue the object type to assign random flavours to
+     */
+    private static void flavourAssignRandom(TValue tValue) {
+        int flavourCount = 0;
+
+        // Get the number of flavours for the given tValue
+        for (FlavourKind fKind : MiscRegistry.getFlavours()) {
+            if (fKind.getValue() == tValue) {
+                flavourCount = (int) fKind.getFlavours().stream().filter(f -> f.getsVal() == 0).count();
+            }
+        }
+        for (ObjectKind oKind : ObjectRegistry.getObjectKinds()) {
+            if (oKind.gettValue() != tValue || oKind.getFlavour() != null)
+                continue;
+
+            if (flavourCount == 0) {
+                logger.fatal("Not enough flavours for tvalue: " + tValue);
+                // Do we need to send a close command to the UI and if so
+                // should it be in a specific function as opposed to here?
+                System.exit(-1);
+            }
+
+            int choice = RandomValueUtils.randInt0(flavourCount);
+
+            for (FlavourKind fKind : MiscRegistry.getFlavours()) {
+                for (Flavour flavour : fKind.getFlavours()) {
+                    if (fKind.getValue() != tValue || flavour.getsVal() != 0)
+                        continue;
+
+                    if (choice == 0) {
+                        oKind.setFlavour(flavour);
+                        flavour.setsVal(oKind.getsVal());
+                        if (tValue == TValue.TV_SCROLL)
+                            flavour.setText(scrollAdj[oKind.getsVal()]);
+                        flavourCount--;
+                        break;
+                    }
+
+                    choice--;
+                }
+            }
+        }
+    }
+
+    /**
+     * Marks every flavoured {@link ObjectKind} as aware, leaving unflavoured kinds untouched.
+     * Used by the wizard/spoiler-file tooling ({@code main-spoil.c}) and by birth when the
+     * "know flavors" option is set ({@code player-birth.c}), both wanting the player to already
+     * know what every potion, scroll, ring and so on looks like without having to identify one.
+     *
+     * <p>This is the Java port of C's {@code flavor_set_all_aware} ({@code obj-util.c}). It walks
+     * every {@link ObjectKind}, skips the empty slots (no name), and for the rest sets
+     * {@link ObjectKind#setAware(boolean)} true only where a {@link Flavour} is bound
+     * ({@link ObjectKind#getFlavour()} non-null, C's {@code kind->flavor} truthy) — matching C's
+     * {@code if (kind->flavor) kind->aware = true} exactly, with no other side effects.
+     *
+     * <p>Function flavourSetAllAware coded before 260908, commented in full on 260908.
+     */
+    public static void flavourSetAllAware() {
+        // Analyse every object
+        for (ObjectKind kind : ObjectRegistry.getObjectKinds()) {
+            // Skip empty objects
+            if (kind.getName() == null) continue;
+
+            // Flavour yields aware
+            if (kind.getFlavour() != null)
+                kind.setAware(true);
+        }
     }
 
     /**

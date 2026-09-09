@@ -637,4 +637,51 @@ public class KnownObject {
     public void setAC(int ac) {
         this.ac = ac;
     }
+
+    /**
+     * Sets the to-hit knowledge bit - the port of writing C's {@code p->obj_k->to_h}
+     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
+     * ({@code player-birth.c:1292}) under a comment calling it a hack, on the grounds that it
+     * shouldn't really be a rune at all; {@code player_learn_rune}'s {@code COMBAT_RUNE_TO_H} arm
+     * ({@link #learnToH()}) is the other writer. Assignment itself does no validation in either
+     * language.
+     *
+     * <p>Function setToH commented in full on 260908.
+     *
+     * @param toH 1 if the player can read to-hit bonuses, 0 if not
+     * @see #getToH()
+     */
+    public void setToH(int toH) {
+        this.toH = toH;
+    }
+
+    /**
+     * Sets the to-damage knowledge bit - the port of writing C's {@code p->obj_k->to_d}
+     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
+     * ({@code player-birth.c:1293}); see {@link #setToH} for the rest of that boundary, which the
+     * same statement group shares.
+     *
+     * <p>Function setToD commented in full on 260908.
+     *
+     * @param toD 1 if the player can read to-damage bonuses, 0 if not
+     * @see #getToD()
+     */
+    public void setToD(int toD) {
+        this.toD = toD;
+    }
+
+    /**
+     * Sets the to-armour knowledge bit - the port of writing C's {@code p->obj_k->to_a}
+     * ({@code obj-knowledge.c}, {@code player-birth.c}). Birth sets it to 1 outright
+     * ({@code player-birth.c:1291}); see {@link #setToH} for the rest of that boundary, which the
+     * same statement group shares.
+     *
+     * <p>Function setToA commented in full on 260908.
+     *
+     * @param toA 1 if the player can read to-armour bonuses, 0 if not
+     * @see #getToA()
+     */
+    public void setToA(int toA) {
+        this.toA = toA;
+    }
 }

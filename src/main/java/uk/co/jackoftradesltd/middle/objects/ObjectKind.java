@@ -1281,4 +1281,43 @@ public class ObjectKind {
     public void setIgnoreFlag(IgnoreFlag ignoreFlag) {
         this.ignore.on(ignoreFlag);
     }
+
+    /**
+     * Clears every ignore flag held on this kind - the port of the {@code kind->ignore = 0} line
+     * that appears twice in C: once in {@code kind_ignore_clear} ({@code obj-ignore.c:523-527}), and
+     * once, unrolled into a loop over every kind, in {@code ignore_birth_init}
+     * ({@code obj-ignore.c:143-149}). Both zero the same packed byte; this method zeroes the same
+     * two bits by clearing the underlying {@link Flag}'s {@code EnumSet}.
+     *
+     * <p>C's {@code kind_ignore_clear} also raises {@code player->upkeep->notice |= PN_IGNORE}
+     * straight after the clear, the same side effect {@link #setIgnoreFlag} leaves to its caller.
+     * This method carries none of it either, which matches its one caller,
+     * {@link ObjectIgnore#ignoreBirthInit}, exactly: that method is the port of
+     * {@code ignore_birth_init}, and C's birth-time reset does not raise the notice flag at all.
+     *
+     * <p>Function wipeIgnoreFlags coded on 260907, commented in full on 260907.
+     */
+    public void wipeIgnoreFlags() {
+        this.ignore.wipe();
+    }
+
+    /**
+     * Sets the flavour this kind is disguised behind, the port of C's direct {@code kind->flavor}
+     * field write — there is no dedicated C setter; every call site assigns the struct field inline.
+     * C uses that same write for two opposite purposes, and this setter carries both unchanged: a
+     * real {@link Flavour} in {@code flavor_assign_fixed} ({@code obj-util.c:70}) and
+     * {@code flavor_assign_random} ({@code obj-util.c:102}), and {@code NULL} to scrub it back off in
+     * {@code flavor_init}'s new-player reset ({@code obj-util.c:169}).
+     *
+     * <p>No validation either side — C overwrites the pointer unconditionally, and this setter
+     * overwrites {@link #flavour} unconditionally, {@code null} included. See {@link #getFlavour()}
+     * for why that null is load-bearing rather than incidental.
+     *
+     * <p>Function setFlavour coded before 260908, commented in full on 260908.
+     *
+     * @param flavour the flavour to disguise this kind behind, or {@code null} to clear it
+     */
+    public void setFlavour(Flavour flavour) {
+        this.flavour = flavour;
+    }
 }

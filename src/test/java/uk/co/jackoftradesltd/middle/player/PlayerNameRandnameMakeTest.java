@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import uk.co.jackoftradesltd.middle.game.Name;
+import uk.co.jackoftradesltd.middle.game.NameCreator;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
@@ -134,7 +135,7 @@ public class PlayerNameRandnameMakeTest {
             load("elrond");
 
             for (int i = 0; i < 50; i++) {
-                assertEquals("elrond", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+                assertEquals("elrond", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
             }
         }
 
@@ -148,7 +149,7 @@ public class PlayerNameRandnameMakeTest {
         void oneLetterWord() {
             load("a");
 
-            assertEquals("a", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+            assertEquals("a", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
         }
 
         /**
@@ -161,7 +162,7 @@ public class PlayerNameRandnameMakeTest {
         void doubledLetter() {
             load("aa");
 
-            assertEquals("aa", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+            assertEquals("aa", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
         }
     }
 
@@ -181,7 +182,7 @@ public class PlayerNameRandnameMakeTest {
             load("br", "ba");
 
             for (int i = 0; i < 200; i++) {
-                assertEquals("ba", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+                assertEquals("ba", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
             }
         }
 
@@ -197,7 +198,7 @@ public class PlayerNameRandnameMakeTest {
             load("ba", "bab");
 
             for (int i = 0; i < 200; i++) {
-                assertEquals("bab", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 3, 8));
+                assertEquals("bab", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 3, 8));
             }
         }
 
@@ -213,7 +214,7 @@ public class PlayerNameRandnameMakeTest {
             Set<String> seen = new HashSet<>();
 
             for (int i = 0; i < MANY; i++) {
-                seen.add(playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+                seen.add(NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
             }
 
             assertEquals(Set.of("ba", "bab"), seen);
@@ -238,7 +239,7 @@ public class PlayerNameRandnameMakeTest {
             load("ba", "ba", "ba", "ba", "ba", "ba", "ba", "ba", "ba", "bab");
 
             for (int i = 0; i < MANY; i++) {
-                assertEquals("bab", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 3, 8));
+                assertEquals("bab", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 3, 8));
             }
         }
 
@@ -257,7 +258,7 @@ public class PlayerNameRandnameMakeTest {
             load("ba", "bab", "bab", "bab");
 
             for (int i = 0; i < MANY; i++) {
-                assertEquals("ba", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 2, 2));
+                assertEquals("ba", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 2, 2));
             }
         }
     }
@@ -277,7 +278,7 @@ public class PlayerNameRandnameMakeTest {
             load(tolkienish());
 
             for (int i = 0; i < MANY; i++) {
-                String word = playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
+                String word = NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
 
                 assertTrue(word.length() >= 4, "shorter than min: '" + word + "'");
                 assertTrue(word.length() <= 8, "longer than max: '" + word + "'");
@@ -295,7 +296,7 @@ public class PlayerNameRandnameMakeTest {
             load(tolkienish());
 
             for (int i = 0; i < 500; i++) {
-                assertEquals(5, playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 5, 5).length());
+                assertEquals(5, NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 5, 5).length());
             }
         }
 
@@ -310,7 +311,7 @@ public class PlayerNameRandnameMakeTest {
         void wordOfExactlyMaxLetters() {
             load("elrond");
 
-            assertEquals("elrond", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 6));
+            assertEquals("elrond", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 6));
         }
     }
 
@@ -329,7 +330,7 @@ public class PlayerNameRandnameMakeTest {
             load(tolkienish());
 
             for (int i = 0; i < 200; i++) {
-                assertTrue(!playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8).isEmpty());
+                assertTrue(!NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8).isEmpty());
             }
         }
 
@@ -344,7 +345,7 @@ public class PlayerNameRandnameMakeTest {
             load("Elrond", "Aragorn", "Frodo", "Galadriel", "Thranduil", "Denethor");
 
             for (int i = 0; i < MANY; i++) {
-                String word = playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
+                String word = NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
 
                 for (char ch : word.toCharArray()) {
                     assertTrue(ch >= 'a' && ch <= 'z', "not a lower-case letter: '" + word + "'");
@@ -363,7 +364,7 @@ public class PlayerNameRandnameMakeTest {
             load(tolkienish());
 
             for (int i = 0; i < MANY; i++) {
-                String word = playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
+                String word = NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8);
 
                 assertTrue(word.chars().anyMatch(ch -> VOWELS.indexOf(ch) >= 0),
                         "no vowel in '" + word + "'");
@@ -385,7 +386,7 @@ public class PlayerNameRandnameMakeTest {
 
             for (int i = 0; i < MANY && !sawSomethingNew; i++) {
                 sawSomethingNew = !source.contains(
-                        playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8));
+                        NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 4, 8));
             }
 
             assertTrue(sawSomethingNew, "every generated word was already in the list");
@@ -412,8 +413,8 @@ public class PlayerNameRandnameMakeTest {
                     new Name(RandnameType.RANDNAME_SCROLL.ordinal() + 1, new ArrayList<>(List.of("mub")))));
 
             for (int i = 0; i < 50; i++) {
-                assertEquals("elrond", playerName.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
-                assertEquals("mub", playerName.randnameMake(RandnameType.RANDNAME_SCROLL, 1, 8));
+                assertEquals("elrond", NameCreator.randnameMake(RandnameType.RANDNAME_TOLKIEN, 1, 8));
+                assertEquals("mub", NameCreator.randnameMake(RandnameType.RANDNAME_SCROLL, 1, 8));
             }
         }
     }

@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import uk.co.jackoftradesltd.middle.game.Name;
+import uk.co.jackoftradesltd.middle.game.NameCreator;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
@@ -125,7 +126,7 @@ public class PlayerNamePlayerRandomNameTest {
             load("elrond");
 
             for (int i = 0; i < 50; i++) {
-                assertEquals("Elrond", playerName.playerRandomName());
+                assertEquals("Elrond", NameCreator.playerRandomName());
             }
         }
 
@@ -141,7 +142,7 @@ public class PlayerNamePlayerRandomNameTest {
             load(tolkienish());
 
             for (int i = 0; i < MANY; i++) {
-                String name = playerName.playerRandomName();
+                String name = NameCreator.playerRandomName();
 
                 assertTrue(Character.isUpperCase(name.charAt(0)),
                         "first letter not capitalised: '" + name + "'");
@@ -166,7 +167,7 @@ public class PlayerNamePlayerRandomNameTest {
             load(tolkienish());
 
             for (int i = 0; i < MANY; i++) {
-                String name = playerName.playerRandomName();
+                String name = NameCreator.playerRandomName();
 
                 assertTrue(name.length() >= 4, "shorter than min: '" + name + "'");
                 assertTrue(name.length() <= 8, "longer than max: '" + name + "'");
@@ -187,7 +188,7 @@ public class PlayerNamePlayerRandomNameTest {
             Set<String> seen = new HashSet<>();
 
             for (int i = 0; i < MANY; i++) {
-                seen.add(playerName.playerRandomName());
+                seen.add(NameCreator.playerRandomName());
             }
 
             assertEquals(Set.of("Obey", "Midflank"), seen);
@@ -216,7 +217,7 @@ public class PlayerNamePlayerRandomNameTest {
                             new ArrayList<>(List.of("mub")))));
 
             for (int i = 0; i < 50; i++) {
-                assertEquals("Elrond", playerName.playerRandomName());
+                assertEquals("Elrond", NameCreator.playerRandomName());
             }
         }
     }
@@ -236,7 +237,7 @@ public class PlayerNamePlayerRandomNameTest {
             Set<String> seen = new HashSet<>();
 
             for (int i = 0; i < MANY; i++) {
-                seen.add(playerName.playerRandomName());
+                seen.add(NameCreator.playerRandomName());
             }
 
             assertTrue(seen.size() > 1, "every call returned the same name: " + seen);
@@ -253,7 +254,7 @@ public class PlayerNamePlayerRandomNameTest {
             load(tolkienish());
 
             for (int i = 0; i < MANY; i++) {
-                String name = playerName.playerRandomName().toLowerCase();
+                String name = NameCreator.playerRandomName().toLowerCase();
 
                 assertTrue(name.chars().anyMatch(ch -> "aeiou".indexOf(ch) >= 0),
                         "no vowel in '" + name + "'");

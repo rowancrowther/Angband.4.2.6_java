@@ -272,6 +272,54 @@ class KnownObjectTest {
     }
 
     /**
+     * The three combat bonus setters — not runes learned through {@code learnX}, but the birth
+     * code's direct writes ({@code player->obj_k->to_a/to_h/to_d = 1}, marked a "hack" at
+     * {@code player-birth.c:1291-1293}). Each setter is a bare field write in C with no validation,
+     * so these pin the round-trip rather than any novelty behaviour.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("combat bonus setters")
+    class CombatSetters {
+
+        @Test
+        @DisplayName("setToH round-trips and matches C's birth value of 1")
+        void setToHRoundTrips() {
+            knowledge.setToH(1);
+            assertEquals(1, knowledge.getToH());
+        }
+
+        @Test
+        @DisplayName("setToD round-trips and matches C's birth value of 1")
+        void setToDRoundTrips() {
+            knowledge.setToD(1);
+            assertEquals(1, knowledge.getToD());
+        }
+
+        @Test
+        @DisplayName("setToA round-trips and matches C's birth value of 1")
+        void setToARoundTrips() {
+            knowledge.setToA(1);
+            assertEquals(1, knowledge.getToA());
+        }
+
+        /**
+         * The three are separate fields, the same independence the birth statement group's three
+         * lines rely on — setting one must not touch the other two.
+         */
+        @Test
+        @DisplayName("the three are independent of each other")
+        void areIndependent() {
+            knowledge.setToH(1);
+
+            assertEquals(1, knowledge.getToH());
+            assertEquals(0, knowledge.getToD());
+            assertEquals(0, knowledge.getToA());
+        }
+    }
+
+    /**
      * The three combat bonuses, C's {@code RUNE_VAR_COMBAT} arm.
      *
      * @author Rowan Crowther

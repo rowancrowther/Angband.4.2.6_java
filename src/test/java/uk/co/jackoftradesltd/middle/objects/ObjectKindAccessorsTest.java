@@ -306,6 +306,37 @@ class ObjectKindAccessorsTest {
         }
 
         /**
+         * {@code setFlavour} is the port of C's direct {@code kind->flavor = f} field write — the
+         * assignment {@code flavor_assign_fixed} and {@code flavor_assign_random} both perform inline,
+         * with no dedicated C setter. The flavour given is stored exactly, unmodified.
+         */
+        @Test
+        @DisplayName("setFlavour stores the flavour given")
+        void setFlavourStoresGiven() {
+            Flavour flavour = new Flavour("murky", ColourEnum.COLOUR_WHITE, 0);
+
+            kind.setFlavour(flavour);
+
+            assertSame(flavour, kind.getFlavour());
+        }
+
+        /**
+         * The same field write also does the opposite job: {@code flavor_init}'s new-player reset
+         * scrubs every kind's flavour back to {@code NULL} ({@code obj-util.c:169}). Passing
+         * {@code null} to the setter must clear a previously-attached flavour, not merely leave it
+         * unset.
+         */
+        @Test
+        @DisplayName("setFlavour(null) clears a previously-attached flavour")
+        void setFlavourNullClears() {
+            kind.setFlavour(new Flavour("murky", ColourEnum.COLOUR_WHITE, 0));
+
+            kind.setFlavour(null);
+
+            assertNull(kind.getFlavour());
+        }
+
+        /**
          * Whether the player has ever seen this kind starts false and is knowledge, not data: it
          * belongs to the save file rather than to {@code object.txt}.
          */
@@ -700,6 +731,59 @@ class ObjectKindAccessorsTest {
 
             assertSame(curses, kind.getCurses());
             assertSame(data, kind.getCurses().get(curse));
+        }
+    }
+
+    /**
+     * {@link ObjectKind#wipeIgnoreFlags}, the port of the {@code kind->ignore = 0} line shared by
+     * C's {@code kind_ignore_clear} and {@code ignore_birth_init}.
+     */
+    @Nested
+    @DisplayName("wipeIgnoreFlags")
+    class WipeIgnoreFlags {
+
+        /**
+         * A kind with neither ignore flag set clearing to no-op, matching {@code 0 = 0} in C.
+         */
+        @Test
+        @DisplayName("wiping a kind with no flags set leaves both flags off")
+        void wipingWithNoFlagsSetLeavesBothOff() {
+            kind.wipeIgnoreFlags();
+
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE));
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE));
+        }
+
+        /**
+         * Only {@code IGNORE_IF_AWARE} set beforehand still comes back off, not just unchanged -
+         * this is the branch that would catch a wipe implemented as "off the flags I know are on"
+         * rather than a true clear.
+         */
+        @Test
+        @DisplayName("wiping clears a lone IGNORE_IF_AWARE flag")
+        void wipingClearsLoneAwareFlag() {
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE);
+
+            kind.wipeIgnoreFlags();
+
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE));
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE));
+        }
+
+        /**
+         * Both flags set beforehand, mirroring C's {@code kind->ignore == IGNORE_IF_AWARE |
+         * IGNORE_IF_UNAWARE} (0x03) going to 0 in one assignment rather than bit by bit.
+         */
+        @Test
+        @DisplayName("wiping clears both flags at once")
+        void wipingClearsBothFlags() {
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE);
+            kind.setIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE);
+
+            kind.wipeIgnoreFlags();
+
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_AWARE));
+            assertFalse(kind.hasIgnoreFlag(IgnoreFlag.IGNORE_IF_UNAWARE));
         }
     }
 }

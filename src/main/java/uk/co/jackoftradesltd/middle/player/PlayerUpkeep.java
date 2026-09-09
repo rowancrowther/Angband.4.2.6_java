@@ -943,4 +943,21 @@ public class PlayerUpkeep {
     public void setEquipCount(int equipmentCount) {
         this.equipmentCount = equipmentCount;
     }
+
+    /**
+     * Sets (or clears) whether a game is actually in progress - the port of writing C's
+     * {@code upkeep->playing}. C has no setter function for it either; every call site assigns it
+     * directly, {@code true} once birth completes ({@code player-birth.c:1330}) or a save loads
+     * ({@code savefile.c:654}), and {@code false} again on death or quitting
+     * ({@code ui-command.c:230}, {@code ui-signals.c:155}). The turn loop in {@code game-world.c}
+     * reads it as its master condition ({@code game-world.c:1107}), stopping the moment it goes
+     * false.
+     *
+     * <p>Function setPlaying commented in full on 260908.
+     *
+     * @param playing {@code true} while a game is actually in progress
+     */
+    public void setPlaying(boolean playing) {
+        this.playing = playing;
+    }
 }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.middle.game.Name;
+import uk.co.jackoftradesltd.middle.game.NameCreator;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
 
@@ -35,7 +36,7 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * Tests {@code PlayerName.buildProbs} — the port of C's {@code build_prob}
+ * Tests {@link NameCreator#buildProbs} — the port of C's {@code build_prob}
  * ({@code src/randname.c:44}), which turns a list of words into the Markov counts that
  * {@code randname_make} later draws letters from.
  *
@@ -60,7 +61,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  *
  * <p>Class PlayerNameBuildProbsTest coded on 260831, commented in full on 260831.
  */
-@DisplayName("PlayerName.buildProbs — C build_prob")
+@DisplayName("NameCreator.buildProbs — C build_prob")
 public class PlayerNameBuildProbsTest {
     /**
      * C's {@code S_WORD}: the start-of-word marker, and the pair a word is seeded with.
@@ -136,10 +137,11 @@ public class PlayerNameBuildProbsTest {
         List<String> list = new ArrayList<>(Arrays.asList(words));
         MiscRegistry.setNames(List.of(new Name(RandnameType.RANDNAME_TOLKIEN.ordinal() + 1, list)));
 
-        Method method = PlayerName.class.getDeclaredMethod("buildProbs", RandnameType.class);
+        Method method = NameCreator.class.getDeclaredMethod("buildProbs",
+                int.class, int.class, int.class, RandnameType.class);
         method.setAccessible(true);
         try {
-            return (int[][][]) method.invoke(new PlayerName(), RandnameType.RANDNAME_TOLKIEN);
+            return (int[][][]) method.invoke(null, E_WORD, S_WORD, TOTAL, RandnameType.RANDNAME_TOLKIEN);
         } catch (InvocationTargetException e) {
             if (e.getCause() instanceof Exception cause) throw cause;
             throw e;

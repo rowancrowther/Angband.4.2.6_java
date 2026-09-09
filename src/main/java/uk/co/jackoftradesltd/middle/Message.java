@@ -174,6 +174,42 @@ public class Message {
     }
 
     /**
+     * Records a message in the log without announcing it — the port of C's {@code message_add}
+     * ({@code src/message.c}), the half of {@code msgt} that {@link #messageType} calls before it
+     * signals the {@link GameEventType#EVENT_MESSAGE} event. Callers that only need the log entry
+     * (nothing on the boundary listening yet) can reach this directly instead of going through
+     * {@link #messageType}.
+     *
+     * <p>Same repeat-coalescing rule as {@link #messageType}: a message whose text and type both
+     * match the newest entry bumps that entry's count in place rather than taking a slot of its
+     * own. C additionally guards the increment against wrapping its 16-bit counter
+     * ({@code count != (uint16_t)-1}); that guard is not ported here, for the same reason it is
+     * not ported in {@link #messageType} — a Java {@code int} has room to spare.
+     *
+     * <p>The log is capped at {@link #queueSize} entries, C's {@code messages->max}: once a
+     * genuinely new entry would push the log over the cap, the oldest entry is dropped first.
+     *
+     * <p>Method messageAdd coded on 260908, commented in full on 260908.
+     *
+     * @param message the message text, stored exactly as given, without any repeat-count decoration
+     * @param type    the category the message was raised under
+     */
+    public static void messageAdd(String message, MessageType type) {
+        MessageT first = messageLog.peekFirst();
+        if (first != null && first.type == type && first.getText().equals(message)) {
+            first.incrementCount();
+            return;
+        }
+
+        MessageT messageT = new MessageT(1, message, type);
+
+        if (messageLog.size() >= queueSize) {
+            messageLog.removeLast();
+        }
+        messageLog.offerFirst(messageT);
+    }
+
+    /**
      * One entry in the message log - the port of C's {@code message_t} ({@code src/message.c}),
      * minus the {@code older}/{@code newer} pointers that {@link #messageLog} provides for free.
      *

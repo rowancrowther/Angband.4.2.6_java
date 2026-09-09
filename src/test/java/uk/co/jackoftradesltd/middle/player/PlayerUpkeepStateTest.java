@@ -243,6 +243,25 @@ class PlayerUpkeepStateTest {
         }
 
         /**
+         * The turn loop's master condition, C's {@code upkeep->playing} — set true at birth
+         * ({@code player-birth.c:1330}) or on loading a save ({@code savefile.c:654}), and false
+         * again on death or quitting ({@code ui-command.c:230}, {@code ui-signals.c:155}). The
+         * setter itself does no more than write the field, exactly as those C call sites do.
+         */
+        @Test
+        @DisplayName("playing round-trips and leaves the other flags alone")
+        void playingRoundTrips() {
+            assertFalse(upkeep.isPlaying(), "a fresh upkeep is not yet playing");
+
+            upkeep.setPlaying(true);
+            assertTrue(upkeep.isPlaying());
+            assertFalse(upkeep.getDropping(), "setting playing left this one alone");
+
+            upkeep.setPlaying(false);
+            assertFalse(upkeep.isPlaying(), "death or quitting turns it off again");
+        }
+
+        /**
          * The counters the inventory rebuild writes.
          */
         @Test

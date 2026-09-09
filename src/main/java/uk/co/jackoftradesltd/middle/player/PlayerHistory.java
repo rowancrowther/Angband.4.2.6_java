@@ -94,7 +94,7 @@ public class PlayerHistory {
      * @param flag   the single history type the entry carries
      * @return {@code true} always, following C
      */
-    static boolean historyAdd(Player player, String buf, PlayerHistoryType flag) {
+    public static boolean historyAdd(Player player, String buf, PlayerHistoryType flag) {
         Flag<PlayerHistoryType> flags = new Flag<>(PlayerHistoryType.class, flag);
 
         return historyAddWithFlags(player, buf, flags, null);
@@ -182,5 +182,17 @@ public class PlayerHistory {
      */
     public void addEntry(HistoryInfo entry) {
         entries.add(entry);
+    }
+
+    /**
+     * Empties the ledger, the port of C's {@code history_clear} ({@code player-history.c}). C frees
+     * {@code h->entries}, nulls the pointer and zeroes {@code next} and {@code length}; replacing the
+     * list with a fresh, empty one reaches the same state, since the list's size stands in for
+     * {@code next} and {@code length} has no counterpart here.
+     *
+     * <p>Method clear coded on 260908, commented in full on 260908.
+     */
+    public void clear() {
+        entries = new ArrayList<>();
     }
 }

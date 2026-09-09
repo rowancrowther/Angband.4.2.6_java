@@ -214,4 +214,51 @@ public class GameState {
     public static boolean getCharacterGenerated() {
         return characterGenerated;
     }
+
+    /**
+     * Reads the RNG seed used to give this game a consistent object-flavour (colour)
+     * assignment — the port of reading C's {@code seed_flavor} global ({@code game-world.c:44}).
+     * C has no accessor function for it; every call site reads the global directly, for example
+     * to re-seed the "simple" RNG before parsing flavours ({@code obj-util.c:162}), and this
+     * getter stands in for those bare reads at the boundary.
+     *
+     * <p>Function getSeedFlavour commented in full on 260908.
+     *
+     * @return the object-flavour RNG seed
+     */
+    public static long getSeedFlavour() {
+        return seedFlavour;
+    }
+
+    /**
+     * Sets the RNG seed used to give this game a consistent object-flavour (colour)
+     * assignment — the port of writing C's {@code seed_flavor} global ({@code game-world.c:44}).
+     * C has no setter function for it either; every call site assigns it directly, typically once
+     * at birth ({@code seed_flavor = randint0(0x10000000)}, {@code player-birth.c:1315}) or when
+     * restoring it from a save ({@code load.c:960}), and this setter stands in for those direct
+     * assignments at the boundary.
+     *
+     * <p>Function setSeedFlavour commented in full on 260908.
+     *
+     * @param seedFlavour the object-flavour RNG seed
+     */
+    public static void setSeedFlavour(long seedFlavour) {
+        GameState.seedFlavour = seedFlavour;
+    }
+
+    /**
+     * Sets whether a character currently exists — the port of writing C's
+     * {@code character_generated} global ({@code game-world.h:36}). C has no setter function for
+     * it either; every call site assigns it directly, {@code true} once birth completes
+     * ({@code player-birth.c:1329}) or a save loads ({@code savefile.c:653}), and {@code false}
+     * again ahead of a fresh birth after death or a new game ({@code ui-game.c:721}), and this
+     * setter stands in for those direct assignments at the boundary.
+     *
+     * <p>Function setCharacterGenerated commented in full on 260908.
+     *
+     * @param characterGenerated {@code true} once a character has been generated
+     */
+    public static void setCharacterGenerated(boolean characterGenerated) {
+        GameState.characterGenerated = characterGenerated;
+    }
 }

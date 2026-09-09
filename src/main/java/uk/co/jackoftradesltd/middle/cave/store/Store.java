@@ -21,8 +21,8 @@ package uk.co.jackoftradesltd.middle.cave.store;
  * The town stores and their periodic restocking. The Java port of the C original's store
  * subsystem ({@code store.c}).
  *
- * <p><b>Status:</b> currently a stub — only the restock entry point is stubbed in while the store
- * subsystem is being ported.
+ * <p><b>Status:</b> currently a stub — the restock and reset entry points are both stubbed in while
+ * the store subsystem is being ported.
  *
  * @author Rowan Crowther
  */
@@ -34,6 +34,20 @@ public class Store {
      * <p><b>Stub:</b> not yet implemented.
      */
     public static void storeUpdate() {
+        // Stub function : TODO: implement this
+    }
+
+    /**
+     * Wipes and reseeds every town store's stock — the port of C's {@code store_reset}
+     * ({@code store.c}), run once at birth to clear each store's stock pile, reshuffle its owner,
+     * and (for every store but the home) run maintenance ten times over to build up an opening
+     * inventory.
+     *
+     * <p><b>Stub:</b> not yet implemented.
+     *
+     * <p>Function storeReset coded on 260908, commented in full on 260908.
+     */
+    public static void storeReset() {
         // Stub function : TODO: implement this
     }
 }

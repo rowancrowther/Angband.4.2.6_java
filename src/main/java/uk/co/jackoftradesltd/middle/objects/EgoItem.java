@@ -398,6 +398,10 @@ public class EgoItem {
         ignoreTypes.put(ignoreType, true);
     }
 
+    public void clearIgnoreType(IgnoreType ignoreType) {
+        ignoreTypes.put(ignoreType, false);
+    }
+
     /**
      * Returns an independent copy of this ego template.
      *

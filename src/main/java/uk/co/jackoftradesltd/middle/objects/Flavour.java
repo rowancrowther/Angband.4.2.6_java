@@ -171,4 +171,18 @@ public class Flavour {
         copy.isFixed = this.isFixed;
         return copy;
     }
+
+    /**
+     * Sets the flavour text. This is the Java equivalent of the direct C struct-field
+     * write {@code f->text = ...} in {@code flavor_assign_random} ({@code obj-util.c}),
+     * used when a random scroll flavour is assigned its title from the {@code scroll_adj}
+     * table.
+     *
+     * <p>coded on 260907 / commented in full on 260908.
+     *
+     * @param text the new flavour text
+     */
+    public void setText(String text) {
+        this.text = text;
+    }
 }

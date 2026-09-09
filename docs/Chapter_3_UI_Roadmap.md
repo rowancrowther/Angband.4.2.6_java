@@ -488,3 +488,9 @@ the same thing, and no other core work exists to do while a character is being r
 `point_based_command`), `arg_force_name` and the `-n` command-line path, and the full
 `display_player` character sheet beyond the reduced form D3 calls for — `ui-player.c` is 1,327 lines and deserves its
 own scoping decision.
+
+Also out: `ui-history.c` (152 lines — `history_display`, `dump_history`, static `print_history_header`), the
+display/dump side of `player-history.c`'s artifact-known/lost/unmask entries. `Chapter_3_Roadmap.md`'s "Not Chapter 3"
+note already defers that core file to Chapter 8 beyond the struct — birth's opening entry via `history_add` is the only
+piece this chapter needs — and `ui-history.c` is that same deferral's UI half, since it consumes `history_get_list`,
+which does not exist yet either.

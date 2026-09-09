@@ -39,6 +39,7 @@ import uk.co.jackoftradesltd.middle.player.PlayerCalcs;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
+import uk.co.jackoftradesltd.middle.utils.ControlUtils;
 
 import java.util.*;
 
@@ -1436,10 +1437,9 @@ public class ObjectUtils {
                 continue;
 
             if (flavourCount == 0) {
-                logger.fatal("Not enough flavours for tvalue: " + tValue);
-                // Do we need to send a close command to the UI and if so
-                // should it be in a specific function as opposed to here?
-                System.exit(-1);
+                String message = "Not enough flavours for tvalue: " + tValue;
+                logger.fatal(message);
+                ControlUtils.quitFmt(message);
             }
 
             int choice = RandomValueUtils.randInt0(flavourCount);

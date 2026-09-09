@@ -23,6 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.TestOnly;
+import uk.co.jackoftradesltd.middle.utils.ControlUtils;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -184,15 +185,17 @@ public class Pile {
         }
 
         if (failObjectIndex >= failPile.size()) {
-            logger.fatal("Object {} not found in pile despite causing a pile integrity error.", item.getKind().getName());
-            System.exit(-1);
+            String message = "Object " + item.getKind().getName() +
+                    " not found in pile despite causing a pile integrity error.";
+            logger.fatal(message);
+            ControlUtils.quit(message);
         }
 
         failFile = fileName;
         failLine = line;
 
         writePile();
-        System.exit(-1);
+        ControlUtils.quit("Fail found in " + failFile + " on line " + failLine);
     }
 
 

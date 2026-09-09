@@ -107,7 +107,9 @@ public class AngbandDirs {
         ANGBAND_DIRS dir = ANGBAND_DIRS.getDirectory(name);
 
         if (dir == null) {
-            logger.error("Invalid directory name: {}", name);
+            String message = "Invalid directory name: " + name;
+            logger.error(message);
+            // Doesn't go through ControlUtils.quit as the UI side isn't yet created
             System.exit(-1);
         } else dir.setPath(directory);
     }

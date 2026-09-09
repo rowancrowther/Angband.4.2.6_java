@@ -327,7 +327,7 @@ boxes span these stages rather than matching them one-to-one.
 - [X] Quickstart: `save_roller_data` /
 - [X] `load_roller_data` (`[C] player-birth.c:146, 179`),
 - [X] `do_birth_reset` (`:1034`)
-- [ ] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
+- [X] The 13 command handlers, `do_cmd_birth_init` … `do_cmd_accept_character` (`[C] player-birth.c:1049–1332`), over
   the existing `UIBirth` / `BirthEvents` plumbing
   - [X] `do_cmd_birth_init`
   - [X] `do_cmd_birth_reset`

@@ -48,7 +48,6 @@ import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
-
 import java.util.List;
 import java.util.Iterator;
 import java.util.ArrayList;
@@ -1372,104 +1371,6 @@ public class LoreGrammar extends Parser {
         }
     }
 
-    public final FriendsContext friends() throws RecognitionException {
-        FriendsContext _localctx = new FriendsContext(_ctx, getState());
-        enterRule(_localctx, 16, RULE_friends);
-
-        String friendsName = "";
-        MonsterGroupRole friendsRole = MonsterGroupRole.MON_GROUP_NONE;
-        int percentChance = 0;
-        String diceString = "";
-        int numberOfDice = 0;
-        int sidesOfDice = 0;
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(98);
-                match(FRIENDS);
-                setState(99);
-                ((FriendsContext) _localctx).chance = match(INTEGER);
-                setState(100);
-                match(COLON);
-                setState(101);
-                ((FriendsContext) _localctx).number = match(DICE_STRING);
-                setState(102);
-                match(COLON);
-                setState(103);
-                ((FriendsContext) _localctx).fName = match(FRIENDS_NAME);
-
-                percentChance = Integer.parseInt(((FriendsContext) _localctx).chance.getText());
-                diceString = ((FriendsContext) _localctx).number.getText();
-                Random temp = Random.parseStr(diceString);
-                numberOfDice = temp.getDice();
-                sidesOfDice = temp.getSides();
-                friendsName = ((FriendsContext) _localctx).fName.getText();
-
-                setState(108);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == COLON) {
-                    {
-                        setState(105);
-                        match(COLON);
-                        setState(106);
-                        ((FriendsContext) _localctx).role = match(FRIENDS_NAME);
-
-                        String raw = ((FriendsContext) _localctx).role.getText().toUpperCase();
-                        friendsRole = MonsterGroupRole.valueOf("MON_GROUP_" + raw);
-
-                    }
-                }
-
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((FriendsContext) _localctx).monsterFriends = new MonsterFriends(friendsName, friendsRole, percentChance,
-                    numberOfDice, sidesOfDice);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    public final MimicContext mimic() throws RecognitionException {
-        MimicContext _localctx = new MimicContext(_ctx, getState());
-        enterRule(_localctx, 20, RULE_mimic);
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(122);
-                match(MIMIC);
-                setState(123);
-                ((MimicContext) _localctx).TVAL = match(TVAL);
-                setState(124);
-                match(COLON);
-                setState(125);
-                ((MimicContext) _localctx).STRING = match(STRING);
-
-                TValue tval = TValue.valueOf(((MimicContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_")
-                        .replace("ARMOUR", "ARMOR"));
-                String sval = ((MimicContext) _localctx).STRING.getText();
-                ((MimicContext) _localctx).kind = ObjectRegistry.lookupObjectKind(tval, sval);
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
     public final MonsterLoreContext monsterLore() throws RecognitionException {
         MonsterLoreContext _localctx = new MonsterLoreContext(_ctx, getState());
         enterRule(_localctx, 22, RULE_monsterLore);
@@ -1623,6 +1524,73 @@ public class LoreGrammar extends Parser {
         return _localctx;
     }
 
+    public final FriendsContext friends() throws RecognitionException {
+        FriendsContext _localctx = new FriendsContext(_ctx, getState());
+        enterRule(_localctx, 16, RULE_friends);
+
+        String friendsName = "";
+        MonsterGroupRole friendsRole = MonsterGroupRole.MON_GROUP_NONE;
+        int percentChance = 0;
+        String diceString = "";
+        int numberOfDice = 0;
+        int sidesOfDice = 0;
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(98);
+                match(FRIENDS);
+                setState(99);
+                ((FriendsContext) _localctx).chance = match(INTEGER);
+                setState(100);
+                match(COLON);
+                setState(101);
+                ((FriendsContext) _localctx).number = match(DICE_STRING);
+                setState(102);
+                match(COLON);
+                setState(103);
+                ((FriendsContext) _localctx).fName = match(FRIENDS_NAME);
+
+                percentChance = Integer.parseInt(((FriendsContext) _localctx).chance.getText());
+                diceString = ((FriendsContext) _localctx).number.getText();
+                Random temp = Random.parseStr(diceString);
+                numberOfDice = temp.getDice();
+                sidesOfDice = temp.getSides();
+                friendsName = ((FriendsContext) _localctx).fName.getText();
+
+                setState(108);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == COLON) {
+                    {
+                        setState(105);
+                        match(COLON);
+                        setState(106);
+                        ((FriendsContext) _localctx).role = match(FRIENDS_NAME);
+
+                        String raw = ((FriendsContext) _localctx).role.getText().toUpperCase();
+                        friendsRole = MonsterGroupRole.valueOf("MON_GROUP_" + raw);
+
+                    }
+                }
+
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((FriendsContext) _localctx).monsterFriends = new MonsterFriends(friendsName, friendsRole, percentChance,
+                    numberOfDice, sidesOfDice);
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     public final FileContext file() throws RecognitionException {
         FileContext _localctx = new FileContext(_ctx, getState());
         enterRule(_localctx, 24, RULE_file);
@@ -1660,6 +1628,37 @@ public class LoreGrammar extends Parser {
         }
         return _localctx;
     }
+
+    public final MimicContext mimic() throws RecognitionException {
+        MimicContext _localctx = new MimicContext(_ctx, getState());
+        enterRule(_localctx, 20, RULE_mimic);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(122);
+                match(MIMIC);
+                setState(123);
+                ((MimicContext) _localctx).TVAL = match(TVAL);
+                setState(124);
+                match(COLON);
+                setState(125);
+                ((MimicContext) _localctx).STRING = match(STRING);
+
+                TValue tval = TValue.valueOf(((MimicContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_")
+                        .replace("ARMOUR", "ARMOR"));
+                String sval = ((MimicContext) _localctx).STRING.getText();
+                ((MimicContext) _localctx).kind = ObjectRegistry.lookupObjectKind(tval, sval);
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
@@ -1667,6 +1666,10 @@ public class LoreGrammar extends Parser {
     public static class FileContext extends ParserRuleContext {
         public List<MonsterLore> loreEntries;
         public MonsterLoreContext monsterLore;
+
+        public FileContext(ParserRuleContext parent, int invokingState) {
+            super(parent, invokingState);
+        }
 
         public TerminalNode EOF() {
             return getToken(LoreGrammar.EOF, 0);
@@ -1678,10 +1681,6 @@ public class LoreGrammar extends Parser {
 
         public MonsterLoreContext monsterLore(int i) {
             return getRuleContext(MonsterLoreContext.class, i);
-        }
-
-        public FileContext(ParserRuleContext parent, int invokingState) {
-            super(parent, invokingState);
         }
 
         @Override

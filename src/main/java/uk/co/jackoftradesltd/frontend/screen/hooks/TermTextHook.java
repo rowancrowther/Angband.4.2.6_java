@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.frontend.screen.hooks;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 
 public interface TermTextHook {
-
     void putStr(int x, int y, int n, ColourEnum colour, String string);
+
+    void cPrt(ColourEnum colour, String str, int row, int col);
 }

@@ -343,9 +343,9 @@ the game draws needs the same handful.
 
 - [X] `Term_clear` - replaced by Region.clear ()
 - [X] `Term_erase` - replaced by Region.erase ()
-- [ ] `Term_gotoxy`
-- [ ] `put_str`
-- [ ] `prt`
+- [X] `Term_gotoxy`
+- [X] `put_str`
+- [X] `prt`
 - [ ] `clear_from`
 - [ ] `text_out`
 - [ ] `text_out_e` with

@@ -259,7 +259,7 @@ public class Term {
      */
     public void termInit(int width, int height, int keys, TermData owner, Screen screen) {
         user = null;
-        data = owner;
+        this.owner = owner;
 
         userFlag = false;
         dataFlag = false;
@@ -509,5 +509,141 @@ public class Term {
      */
     public int putStr(String str, int row, int col) {
         return cPutStr(ColourEnum.COLOUR_WHITE, str, row, col);
+    }
+
+    /**
+     * Move the cursor to a cell and write a coloured string there, clearing the rest of
+     * that row first, the Java port of the C original's {@code prt} ({@code [C] src/ui-output.c}).
+     * Delegates entirely to {@link #cPrt} in {@link ColourEnum#COLOUR_WHITE}, matching
+     * {@code prt}'s own delegation to {@code c_prt}.
+     *
+     * <p>Function prt coded on 260910, commented in full on 260910.
+     *
+     * @param str the string to write
+     * @param row the row to write it on
+     * @param col the column to start at
+     */
+    public void prt(String str, int row, int col) {
+        cPrt(ColourEnum.COLOUR_WHITE, str, row, col);
+    }
+
+    /**
+     * Write a coloured string at a cell, first clearing the rest of that row, the Java
+     * port of the C original's {@code c_prt} ({@code [C] src/ui-output.c}). C does this in
+     * two steps - {@code Term_erase(col, row, 255)} (which itself repositions the cursor
+     * via {@code Term_gotoxy}) then {@code Term_addstr(-1, attr, str)} - and the Java port
+     * keeps that as one call into {@link #outputHook}'s {@code cPrt}, since the
+     * erase-then-draw boundary sits inside the hook rather than being composed here from
+     * {@link #gotoXY} and {@link #addstr} the way {@link #cPutStr} composes {@link #gotoXY}
+     * with the text-hook write.
+     *
+     * <p>Unlike {@link #cPutStr}, this has no out-of-range coordinate to report: C's
+     * {@code c_prt} is {@code void}, and nothing along this path returns a failure code
+     * to surface.
+     *
+     * <p>Function cPrt coded on 260910, commented in full on 260910.
+     *
+     * @param colour the colour to draw the string in
+     * @param str    the string to write
+     * @param row    the row to write it on
+     * @param col    the column to start at
+     */
+    public void cPrt(ColourEnum colour, String str, int row, int col) {
+        outputHook.cPrt(colour, str, row, col);
+    }
+
+    /**
+     * Move to a cell and add a string there with an explicit maximum length, the Java
+     * port of the C original's {@code Term_putstr} ({@code [C] src/ui-term.c}). Delegates
+     * the move to {@link #gotoXY} and the write to {@link #addstr}, matching C's own two
+     * internal steps ({@code Term_gotoxy} then {@code Term_addstr}); C additionally guards
+     * on a null {@code Term} pointer before either step, which has no equivalent here
+     * since this method can only run on an already-constructed {@code Term}.
+     *
+     * <p>Propagates whichever step returns non-zero first, exactly as given.
+     * {@link #gotoXY} only ever returns {@code 0} or {@code -1}, so checking it against
+     * {@code -1} and returning {@code -1} are equivalent; {@link #addstr}'s result is
+     * returned unchanged - {@code -1} for an already-unusable cursor, or the positive
+     * count of characters actually written when the write was truncated at the right
+     * edge - matching C's {@code if ((res = ...) != 0) return (res);} pattern used for
+     * both steps.
+     *
+     * <p>Function putstr coded on 260910, commented in full on 260910.
+     *
+     * @param x      the column to start at
+     * @param y      the row to write on
+     * @param n      the maximum number of characters to write; negative means "as many
+     *               as fit"
+     * @param colour the colour to draw the string in
+     * @param str    the string to write
+     * @return {@code 0} on success, {@code -1} if the coordinate is out of range or the
+     * cursor is already unusable, or a positive count of characters actually written if
+     * the string was truncated at the terminal's right edge
+     */
+    public int putstr(int x, int y, int n, ColourEnum colour, String str) {
+        int output = gotoXY(x, y);
+        if (output == -1) return -1;
+
+        output = addstr(n, colour, str);
+        if (output != 0) return output;
+
+        return 0;
+    }
+
+    /**
+     * At the cursor's current position, write up to {@code length} characters of a
+     * string and advance the cursor, the Java port of the C original's
+     * {@code Term_addstr} ({@code [C] src/ui-term.c}). A negative {@code length} means
+     * "as many as fit", ported as {@code wid + 1} - deliberately one past the terminal
+     * width, since the usable length is still capped below by both the string's own
+     * length and, if needed, the distance remaining to the right edge.
+     *
+     * <p>Width is read from {@link #wid}, this terminal's own stored width from
+     * {@link #termInit} - matching C's {@code Term->wid} - not any front end's live
+     * window size, for the same reason given on {@link #gotoXY}.
+     *
+     * <p>A cursor already marked unusable ({@link TermWin#getCu}) writes nothing and
+     * returns {@code -1} immediately, before anything else is computed - matching C's
+     * {@code if (Term->scr->cu) return (-1);} guard. Otherwise, if the requested run
+     * would reach or pass {@link #wid}, it is clipped to the columns actually remaining
+     * ({@code wid - cx}), that clipped count becomes both the number of characters
+     * written and the returned value, and the cursor is marked unusable via
+     * {@link TermWin#setCu} for next time - matching C's
+     * {@code if (cx + n >= w) res = n = w - cx;} followed by {@code if (res) cu = 1;}.
+     *
+     * <p>Function addstr coded on 260910, commented in full on 260910.
+     *
+     * @param length the maximum number of characters to write; negative means "as many
+     *               as fit"
+     * @param colour the colour to draw the string in
+     * @param str    the string to write
+     * @return {@code 0} on success, {@code -1} if the cursor was already unusable, or a
+     * positive count of characters actually written if the string was truncated at the
+     * terminal's right edge
+     */
+    public int addstr(int length, ColourEnum colour, String str) {
+        // Is the curser useable
+        if (scr.getCu()) return -1;
+
+        // Get the maximal length
+        int k = (length < 0) ? wid + 1 : length;
+
+        // Get the useable string length
+        int n = Math.min(k, str.length());
+
+        int res = 0;
+        // Check we don't overrun the screen
+        if (scr.getCx() + n >= wid) {
+            n = wid - scr.getCx();
+            res = n;
+        }
+
+        outputHook.putStr(scr.getCx(), scr.getCy(), n, colour, str);
+
+        scr.setCx(scr.getCx() + n);
+
+        if (res != 0) scr.setCu(true);
+
+        return res;
     }
 }

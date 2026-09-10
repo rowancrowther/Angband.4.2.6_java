@@ -136,4 +136,43 @@ public class TermWin {
     public void setCu(boolean cu) {
         this.cu = cu;
     }
+
+    /**
+     * Get the cursor's "unused"/off-screen flag. The port of reading C's {@code scr->cu}
+     * directly ({@code [C] src/z-term.h}); as with {@link #setCu}, the original has no
+     * dedicated getter function.
+     *
+     * <p>Function getCu coded on 260910, commented in full on 260910.
+     *
+     * @return {@code true} if the cursor is marked unused, {@code false} if it is live
+     */
+    public boolean getCu() {
+        return cu;
+    }
+
+    /**
+     * Get the cursor's column. The port of reading C's {@code scr->cx} directly
+     * ({@code [C] src/z-term.h}); as with {@link #setCx}, the original has no dedicated
+     * getter function.
+     *
+     * <p>Function getCx coded on 260910, commented in full on 260910.
+     *
+     * @return the current cursor column
+     */
+    public int getCx() {
+        return cx;
+    }
+
+    /**
+     * Get the cursor's row. The port of reading C's {@code scr->cy} directly
+     * ({@code [C] src/z-term.h}); as with {@link #setCy}, the original has no dedicated
+     * getter function.
+     *
+     * <p>Function getCy coded on 260910, commented in full on 260910.
+     *
+     * @return the current cursor row
+     */
+    public int getCy() {
+        return cy;
+    }
 }

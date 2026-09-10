@@ -17,7 +17,6 @@
 
 // Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreLexer.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.lore;
-
 import org.antlr.v4.runtime.Lexer;
 import org.antlr.v4.runtime.CharStream;
 import org.antlr.v4.runtime.Token;
@@ -368,6 +367,6 @@ public class LoreLexer extends Lexer {
         _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
         for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
             _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
-        }
+		}
 	}
 }

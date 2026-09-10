@@ -259,4 +259,63 @@ class CellGridTest {
             assertEquals(B, copy.get(3, 4));
         }
     }
+
+    @Nested
+    @DisplayName("getCells()")
+    class GetCells {
+
+        @Test
+        @DisplayName("returns every cell, matching get(row, col)")
+        void returnsEveryCell() {
+            CellGrid grid = new CellGrid(ROWS, COLS);
+            grid.set(0, 0, A);
+            grid.set(ROWS - 1, COLS - 1, B);
+
+            AngbandDisplayCharacter[][] cells = grid.getCells();
+
+            assertEquals(ROWS, cells.length);
+            assertEquals(COLS, cells[0].length);
+            for (int row = 0; row < ROWS; row++) {
+                for (int col = 0; col < COLS; col++) {
+                    assertEquals(grid.get(row, col), cells[row][col], "cell (" + row + ", " + col + ")");
+                }
+            }
+        }
+
+        /**
+         * The outer array is a fresh {@code clone()}, so replacing an entry in it is invisible to
+         * the grid - unlike the row-sharing case below, this level is independent.
+         */
+        @Test
+        @DisplayName("replacing a row in the returned array does not change the grid")
+        void replacingReturnedRowDoesNotChangeGrid() {
+            CellGrid grid = new CellGrid(ROWS, COLS);
+            grid.set(0, 0, A);
+
+            AngbandDisplayCharacter[][] cells = grid.getCells();
+            cells[0] = new AngbandDisplayCharacter[COLS];
+
+            assertEquals(A, grid.get(0, 0));
+        }
+
+        /**
+         * Pins down the shallow-clone caveat recorded on {@link CellGrid#getCells()}: unlike
+         * {@link CellGrid#copy()}, the rows in the returned array are the same row-array
+         * instances the grid holds internally, so a {@code set(...)} on the grid after
+         * {@code getCells()} was called is visible through the array already handed out. A
+         * caller that called {@link CellGrid#copy()} instead of {@link CellGrid#getCells()}
+         * would not see this - see {@code Copy.writingToOriginalAfterCopyingDoesNotChangeCopy}.
+         */
+        @Test
+        @DisplayName("a later set(...) on the grid is visible through the already-returned array")
+        void laterSetIsVisibleThroughReturnedArray() {
+            CellGrid grid = new CellGrid(ROWS, COLS);
+            grid.set(2, 3, A);
+
+            AngbandDisplayCharacter[][] cells = grid.getCells();
+            grid.set(2, 3, B);
+
+            assertEquals(B, cells[2][3]);
+        }
+    }
 }

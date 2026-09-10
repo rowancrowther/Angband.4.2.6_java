@@ -411,4 +411,30 @@ class RegionTest {
             assertRectangleBlankedRestMarked(TOP, LEFT, REGION_ROWS, REGION_COLS);
         }
     }
+
+    @Nested
+    @DisplayName("cols(), rows()")
+    class Dimensions {
+
+        /**
+         * Guards against a getter returning {@link #grid}'s own size instead of the region's -
+         * {@code region} here is deliberately smaller than {@code grid} in both dimensions, so
+         * a mix-up would fail this rather than pass by coincidence.
+         */
+        @Test
+        @DisplayName("report the region's own size, not the grid's")
+        void reportTheRegionsOwnSize() {
+            assertEquals(REGION_COLS, region.cols());
+            assertEquals(REGION_ROWS, region.rows());
+        }
+
+        @Test
+        @DisplayName("cols() and rows() are not swapped with each other")
+        void colsAndRowsAreNotSwapped() {
+            Region unevenRegion = new Region(grid, 0, 0, 2, 6);
+
+            assertEquals(6, unevenRegion.cols());
+            assertEquals(2, unevenRegion.rows());
+        }
+    }
 }

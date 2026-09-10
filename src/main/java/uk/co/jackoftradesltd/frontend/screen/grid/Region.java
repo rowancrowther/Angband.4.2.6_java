@@ -207,10 +207,26 @@ public final class Region {
         }
     }
 
+    /**
+     * This region's own width, in columns - the extent every clip check in this class is
+     * measured against, not {@link #grid}'s.
+     *
+     * <p>Function cols coded on 260909, commented in full on 260910.
+     *
+     * @return this region's width, in columns
+     */
     public int cols() {
         return cols;
     }
 
+    /**
+     * This region's own height, in rows - the extent every clip check in this class is
+     * measured against, not {@link #grid}'s.
+     *
+     * <p>Function rows coded on 260909, commented in full on 260910.
+     *
+     * @return this region's height, in rows
+     */
     public int rows() {
         return rows;
     }

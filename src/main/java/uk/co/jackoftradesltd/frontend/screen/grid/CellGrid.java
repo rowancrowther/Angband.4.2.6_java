@@ -167,6 +167,32 @@ public class CellGrid {
         return copy;
     }
 
+    /**
+     * This grid's cells as a plain array, for a caller on the far side of the Swing boundary
+     * that needs a raw {@code [row][col]} array rather than a {@code CellGrid} — {@code Window}
+     * is the one caller today, handing the result straight to
+     * {@code SwingUI.JPanelArea#setChars}.
+     *
+     * <p>Shallower than {@link #copy}. {@link Object#clone()} on a two-dimensional array
+     * duplicates only the outer array — the rows in the returned array are the same row-array
+     * instances this grid holds internally, not independent copies the way {@link #copy}
+     * produces. That is safe today only because the one caller, {@code Window#show}, always
+     * reads it off a {@link Frame}'s grid, and a {@code Frame}'s grid is built by
+     * {@code Screen#frame()} with {@link #copy} and never written to again once published — so
+     * the rows this method hands out are never live rows some other thread might still be
+     * writing through {@link #set}. That safety is the caller's discipline, not a guarantee this
+     * method makes itself.
+     *
+     * <p><b>Outstanding:</b> nothing here stops a future caller from calling this on a grid still
+     * being written to. Because the rows are shared, a later {@link #set} on this grid would
+     * write into the very array the caller is holding, mid-repaint — the exact hazard {@link
+     * #copy} and {@link Frame}'s defensive-copy contract exist to rule out.
+     *
+     * <p>Method getCells coded on 260909, commented in full on 260910.
+     *
+     * @return this grid's cells as a plain array; the outer array is independent of this grid's
+     * own, but each row is shared, not copied
+     */
     public AngbandDisplayCharacter[][] getCells() {
         return cells.clone();
     }

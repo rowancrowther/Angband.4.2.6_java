@@ -333,16 +333,16 @@ Six stages, none of which reads a key. Every one is exercisable by sending event
 Create a new architecture for displaying the data on the window. This is not the sane as the C architecture, and is
 split into different classes
 
-- [ ] CellGrid
-- [ ] Region
-- [ ] Frame
-- [ ] Screen
+- [X] CellGrid
+- [X] Region
+- [X] Frame
+- [X] Screen
 
 The `ui-output.c` calls the birth screens actually make, and no more. Everything here outlives this chapter — any screen
 the game draws needs the same handful.
 
-- [ ] `Term_clear`
-- [ ] `Term_erase`
+- [X] `Term_clear` - replaced by Region.clear ()
+- [X] `Term_erase` - replaced by Region.erase ()
 - [ ] `Term_gotoxy`
 - [ ] `put_str`
 - [ ] `prt`

@@ -270,7 +270,6 @@ public class SplashScreen {
      *
      * @param message the progress note to show, unbracketed; the brackets are added here
      */
-
     public void splashScreenNote(@NotNull String message) {
         int row = 23;
 
@@ -285,28 +284,6 @@ public class SplashScreen {
             display[row][index + col] = new AngbandDisplayCharacter(toWrite.charAt(index), ColourEnum.COLOUR_WHITE);
         }
     }
-
-//    /**
-//     * Report that the {@code lib} directory is unusable and give up. The port of
-//     * {@code init_angband_aux()} ({@code [C] src/ui-init.c}), which prints the same four lines.
-//     *
-//     * <p>C can put this on the terminal it started from; the port has no terminal, so it logs and
-//     * throws. Nothing catches the exception meaningfully - it surfaces inside
-//     * {@code GameConstants.init()}'s handler and is re-reported as a data-load failure - so the
-//     * message the player would most want is the one they are least likely to see.
-//     *
-//     * @param why what could not be read, used as the first line of the message
-//     * @throws RuntimeException always; this method does not return
-//     * @author Rowan Crowther
-//     */
-//    private void initAngbandAux(String why) {
-//        String message = why + "\n" +
-//                "The 'lib' directory is probably missing or broken.\n" +
-//                "Perhaps the archive was not extracted correctly.\n" +
-//                "See the 'readme.txt' file for more information.";
-//        logger.fatal(message);
-//        throw new RuntimeException(message);
-//    }
 
     /**
      * Show a character-creation note, stacking down the screen from row 2. The port of

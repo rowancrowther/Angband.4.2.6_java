@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.frontend.screen;
 
+import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.frontend.events.Event;
 import uk.co.jackoftradesltd.frontend.screen.enums.Sidebar;
 import uk.co.jackoftradesltd.frontend.screen.hooks.TermEventHook;
@@ -453,5 +454,13 @@ public class Term {
         scr.setCu(false);
 
         return 0;
+    }
+
+    public void cPutStr(ColourEnum colour, String str, int row, int col) {
+
+    }
+
+    public void putStr(String str, int row, int col) {
+        cPutStr(ColourEnum.COLOUR_WHITE, str, row, col);
     }
 }

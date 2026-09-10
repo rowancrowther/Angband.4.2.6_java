@@ -27,7 +27,7 @@ import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 /**
  * Class to hold a single character of a particular colour
  */
-public class AngbandDisplayCharacter {
+public final class AngbandDisplayCharacter {
     private static final Logger logger = LogManager.getLogger();
     /**
      * The glyph to display.

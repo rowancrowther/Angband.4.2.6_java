@@ -31,6 +31,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.frontend.events.BirthEvents;
 import uk.co.jackoftradesltd.frontend.events.MainEvents;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.splash.SplashScreen;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 
@@ -38,6 +40,7 @@ import javax.swing.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 
 /**
  * The UI half's body: the loop that drains this half's inbox and turns each message the core sent
@@ -100,6 +103,8 @@ public class UILoop {
      */
     private SwingUI swingUI;
 
+    private Screen screen;
+
     /**
      * Build the loop around the channel ends it reads and the front end it paints through.
      *
@@ -113,6 +118,9 @@ public class UILoop {
     public UILoop(UIChannel uiChannel, SwingUI swingUI) {
         this.uiChannel = uiChannel;
         this.swingUI = swingUI;
+
+        CellGrid mainGrid = new CellGrid(24, 80);
+        screen = new Screen(mainGrid, new ArrayList<>());
     }
 
     /**
@@ -248,8 +256,9 @@ public class UILoop {
                                 }
 
                                 splashScreen = new SplashScreen(swingUI);
-                                AngbandDisplayCharacter[][] display = splashScreen.readAndParse(path);
-                                swingUI.getActiveWindow().display(display);
+                                splashScreen.readAndParse(path, screen);
+
+                                swingUI.getActiveWindow().show(screen.frame());
                             }
                             case EVENT_LEAVE_INIT -> new MainEvents().leaveInit();
                             case EVENT_ENTER_GAME -> new MainEvents().enterGame();
@@ -276,7 +285,9 @@ public class UILoop {
                                 if (splashScreen == null)
                                     logger.warn("CoreMessage.EVENT_INITSTATUS received before CoreMessage.EVENT_ENTER_INIT");
                                 else {
-                                    splashScreen.splashScreenNote(eventMessage);
+                                    screen.splashScreenNote(eventMessage);
+
+                                    swingUI.getActiveWindow().show(screen.frame());
                                 }
                             }
                         }
@@ -300,5 +311,8 @@ public class UILoop {
                 break;
             }
         }
+    }
+
+    private void onEventDispatchThread(Runnable runnable) {
     }
 }

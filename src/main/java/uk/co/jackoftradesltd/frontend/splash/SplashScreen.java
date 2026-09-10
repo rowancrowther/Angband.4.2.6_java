@@ -25,10 +25,14 @@ import uk.co.jackoftradesltd.channel.globals.Angband;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.frontend.screen.Window;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Region;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.*;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Scanner;
 
 /**
@@ -131,9 +135,10 @@ public class SplashScreen {
      * catches that.
      *
      * @param path the news file to read, resolved by the caller so a {@code -d} override is honoured
-     * @return this splash screen's character grid, filled in
      */
-    public AngbandDisplayCharacter[][] readAndParse(Path path) {
+    public void readAndParse(Path path, Screen screen) {
+        Region root = screen.root();
+        
         int row = 0;
         try (Scanner newsScanner = new Scanner(path)) {
             ColourEnum colour;
@@ -170,29 +175,30 @@ public class SplashScreen {
                         colourName.append(character);
                     } else if (character == '$') {
                         if (line.substring(col).startsWith("$VERSION")) {
-                            String version = String.format("%-8s", Angband.versionString);
                             col += 7;
-                            if (printCol + 8 > display[row].length) {
+                            if (printCol + 8 > root.cols()) {
                                 logger.error("Version tag exceeds line length");
                             } else {
                                 for (int index = 0; index < 8; index++) {
-                                    display[row][printCol] = new AngbandDisplayCharacter(version.charAt(index), colour);
+                                    char c = String.format("%-8s", Angband.versionString).charAt(index);
+                                    root.put(row, printCol, new AngbandDisplayCharacter(c, colour));
                                     printCol++;
                                 }
                             }
                         } else {
                             if (state == SplashScreenState.IN_NORMAL_TEXT) {
-                                if (printCol < display[row].length)
-                                    display[row][printCol] = new AngbandDisplayCharacter(character, colour);
+                                if (printCol < root.cols())
+                                    root.put(row, printCol, new AngbandDisplayCharacter(character, colour));
+                                // display[row][printCol] = new AngbandDisplayCharacter(character, colour);
                                 printCol++;
                             } else {
                                 logger.error("'$' character found outside normal text.");
-                                col = display[row].length;
+                                col = root.cols();
                             }
                         }
                     } else if (state == SplashScreenState.IN_NORMAL_TEXT) {
-                        if (printCol < display[row].length)
-                            display[row][printCol] = new AngbandDisplayCharacter(character, colour);
+                        if (printCol < root.cols())
+                            root.put(row, printCol, new AngbandDisplayCharacter(character, colour));
                         printCol++;
                     }
                 }
@@ -201,45 +207,12 @@ public class SplashScreen {
                 if (row == 24)
                     break;
             }
+
+            System.out.println("SplashScreen read complete");
         } catch (IOException e) {
             String message = "Trying to read news.txt when error occurred.\n";
             logger.error(message, e);
         }
-
-        return display;
-    }
-
-    /**
-     * Put the grid on screen: paint whatever {@link #readAndParse} left in it.
-     *
-     * <p><b>Reduced to the painting half.</b> This used to find {@code news.txt}, check it existed,
-     * treat its absence as fatal and then parse it. All of that moved to {@code UILoop}, which now
-     * does the locating and the existence check before building a splash screen at all - so this
-     * method assumes the grid is already filled and does nothing but hand it over. The commented-out
-     * lines below are what moved, kept while the move is still recent.
-     *
-     * <p>No caller today, and that is the loose end: {@code UILoop} paints the grid
-     * {@code readAndParse} returns by handing it to {@code Window.display}, which does the same job
-     * through a different route. One of the two routes should win - either this method is how a
-     * splash screen paints itself, or {@code Window.display} is how anything paints and this method
-     * goes. Worth settling before stage 5 adds more painting to the loop.
-     */
-    public void showSplashScreen() {
-//        String filename = AngbandDirs.ANGBAND_DIRS.SCREENS.getPath() + "news.txt";
-//        Path path = Paths.get(filename);
-//        if (!Files.exists(path)) {
-//            initAngbandAux("Cannot access the " + filename + " file.");
-//        }
-
-        SwingUI.JPanelArea panel = activeWindow.getArea();
-        
-            onEventDispatchThread(new Runnable() {
-                @Override
-                public void run() {
-                    panel.setChars(display);
-                    panel.repaint();
-                }
-            });
     }
 
     /**
@@ -311,15 +284,6 @@ public class SplashScreen {
         for (int index = 0; index < toWrite.length(); index++) {
             display[row][index + col] = new AngbandDisplayCharacter(toWrite.charAt(index), ColourEnum.COLOUR_WHITE);
         }
-
-        onEventDispatchThread(new Runnable() {
-            @Override
-            public void run() {
-                activeWindow.clear();
-                activeWindow.getArea().setChars(display);
-                activeWindow.getArea().repaint();
-            }
-        });
     }
 
 //    /**

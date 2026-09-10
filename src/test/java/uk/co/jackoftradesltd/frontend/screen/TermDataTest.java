@@ -20,16 +20,12 @@ package uk.co.jackoftradesltd.frontend.screen;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
-import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 
 import javax.swing.SwingUtilities;
 import java.awt.GraphicsEnvironment;
-import java.lang.reflect.Field;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
@@ -37,33 +33,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 
 /**
- * {@link TermData#getTerm}, {@link TermData#clear}, {@link TermData#setWindow},
- * {@link TermData#getWindow} and {@link TermData#dispose} - all straight field access in C
- * ({@code td->t}, {@code td->w}, {@code [C] src/win/win-term.h}) except {@link TermData#clear}
- * and {@link TermData#dispose}, neither of which has a C counterpart of its own:
- * {@code clear} hands off to {@link Window#clear()}'s port of {@code Term_clear}
- * ({@code [C] src/ui-term.c}), and {@code dispose} extracts the one per-window step -
- * {@code DestroyWindow(data[i].w)} - from the shutdown loop in C's {@code hook_quit}
- * ({@code [C] src/main-win.c}).
+ * {@link TermData#getTerm}, {@link TermData#setWindow}, {@link TermData#getWindow} and
+ * {@link TermData#dispose} - all straight field access in C ({@code td->t}, {@code td->w},
+ * {@code [C] src/win/win-term.h}) except {@link TermData#dispose}, which has no C counterpart
+ * of its own: it extracts the one per-window step - {@code DestroyWindow(data[i].w)} - from
+ * the shutdown loop in C's {@code hook_quit} ({@code [C] src/main-win.c}).
  *
  * @author Rowan Crowther
  */
 @Timeout(value = 30, unit = TimeUnit.SECONDS)
 class TermDataTest {
 
-    private static final int ROWS = 24;
-    private static final int COLS = 80;
-
-    private static final AngbandDisplayCharacter MARKER =
-            new AngbandDisplayCharacter('#', ColourEnum.COLOUR_RED);
-
-    private static final AngbandDisplayCharacter BLANK =
-            new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
-
     @BeforeEach
     void requireADisplay() {
         assumeFalse(GraphicsEnvironment.isHeadless(),
-                "needs a display: clear() reaches a Window, which is a JFrame");
+                "needs a display: Window is a JFrame");
     }
 
     /**
@@ -107,46 +91,6 @@ class TermDataTest {
         termData.setWindow(window);
 
         assertSame(window, termData.getWindow());
-    }
-
-    /**
-     * {@link TermData#clear} reaches the attached window's real grid: a screen marked full of
-     * one character comes back entirely blank, matching {@link Window#clear()}'s own contract.
-     *
-     * <p>{@link Window#clear()} installs a brand new array via {@code setChars} rather than
-     * writing into the one already there, so the panel's grid is re-read by reflection after
-     * the call rather than trusting the array handed in beforehand.
-     */
-    @Test
-    void clearBlanksTheAttachedWindowsGrid() throws Exception {
-        SwingUI swingUi = new SwingUI(null, null, null);
-        Window window = swingUi.getActiveWindow();
-        window.add(swingUi.new JPanelArea());
-
-        AngbandDisplayCharacter[][] markedGrid = new AngbandDisplayCharacter[ROWS][COLS];
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                markedGrid[row][col] = MARKER;
-            }
-        }
-        window.getArea().setChars(markedGrid);
-
-        TermData termData = new TermData();
-        termData.setWindow(window);
-
-        termData.clear();
-
-        Field displayField = SwingUI.JPanelArea.class.getDeclaredField("display");
-        displayField.setAccessible(true);
-        AngbandDisplayCharacter[][] clearedGrid =
-                (AngbandDisplayCharacter[][]) displayField.get(window.getArea());
-
-        for (int row = 0; row < ROWS; row++) {
-            for (int col = 0; col < COLS; col++) {
-                assertEquals(BLANK, clearedGrid[row][col],
-                        "row " + row + ", column " + col + " should be blanked");
-            }
-        }
     }
 
     /**

@@ -261,19 +261,6 @@ public class TermData {
     }
 
     /**
-     * Blank this window's whole screen, by handing off to {@link Window#clear()} - the
-     * port of {@code Term_clear} ({@code [C] src/ui-term.c}). No C function of its own:
-     * the original has no {@code term_data}-level wrapper around {@code Term_clear}, so
-     * this exists only as the Java-side convenience of reaching the window through the
-     * {@link TermData} that owns it.
-     *
-     * <p>Function clear coded on 260909, commented in full on 260909.
-     */
-    public void clear() {
-        window.clear();
-    }
-
-    /**
      * The platform {@link Window} this terminal draws into. The port of reading C's
      * {@code td->w} ({@code [C] src/win/win-term.h}) directly; there is no dedicated
      * getter function in the original.

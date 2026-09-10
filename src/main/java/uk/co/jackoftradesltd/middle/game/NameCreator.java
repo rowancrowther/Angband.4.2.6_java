@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MiscRegistry;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.player.enums.RandnameType;
-import uk.co.jackoftradesltd.middle.utils.StringUtils;
+import uk.co.jackoftradesltd.channel.utils.StringUtils;
 
 import java.util.List;
 

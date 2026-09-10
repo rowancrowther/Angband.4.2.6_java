@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.middle.utils.StringUtils;
+import uk.co.jackoftradesltd.channel.utils.StringUtils;
 
 public class PlayerName {
     private static final Logger logger = LogManager.getLogger(PlayerName.class);

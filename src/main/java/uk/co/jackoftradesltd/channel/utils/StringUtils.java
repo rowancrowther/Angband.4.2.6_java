@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.middle.utils;
+package uk.co.jackoftradesltd.channel.utils;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -72,7 +72,11 @@ public abstract class StringUtils {
     @Contract(pure = true)
     @CheckReturnValue
     public static @NotNull String vstrnfmt(int max, @NotNull String format, Object... objects) {
-        return String.format(format, objects).substring(0, max - 1);
+        String string = String.format(format, objects);
+
+        int length = Math.min(string.length(), max - 1);
+
+        return string.substring(0, length);
     }
 
     /**

@@ -32,11 +32,8 @@ import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerNotice;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerUpdateEnum;
-import uk.co.jackoftradesltd.middle.utils.StringUtils;
 
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
 
 /**
  * The decision half of the ignore subsystem - the port of the questions C's {@code obj-ignore.c}

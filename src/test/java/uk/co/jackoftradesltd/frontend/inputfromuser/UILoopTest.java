@@ -29,9 +29,12 @@ import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.frontend.SwingUI;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.SwingUtilities;
 import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -129,7 +132,8 @@ class UILoopTest {
      * @return the running thread
      */
     private Thread startLoop(SwingUI swingUI) {
-        UILoop loop = new UILoop(channels.uiChannel(), swingUI);
+        Screen screen = new Screen(new CellGrid(24, 80), new ArrayList<>());
+        UILoop loop = new UILoop(channels.uiChannel(), swingUI, screen);
 
         uiThread = new Thread(loop::loop, "angband-display-under-test");
         uiThread.setUncaughtExceptionHandler((thread, thrown) -> uiFailure.set(thrown));

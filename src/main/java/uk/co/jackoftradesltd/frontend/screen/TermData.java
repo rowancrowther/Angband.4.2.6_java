@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.frontend.screen;
 
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.screen.hooks.TermEventHook;
 import uk.co.jackoftradesltd.frontend.screen.hooks.TermXtraWin;
 
@@ -45,6 +46,8 @@ public class TermData {
      * held by it, or holding it in turn.
      */
     private Window window;
+
+    private Screen screen;
 
     /**
      * The window's name/title.
@@ -155,8 +158,9 @@ public class TermData {
     /**
      * Create an empty terminal-window descriptor with a blank title.
      */
-    public TermData() {
+    public TermData(Screen screen) {
         s = "";
+        this.screen = screen;
     }
 
     /**
@@ -225,7 +229,7 @@ public class TermData {
             t = term;
         }
 
-        t.termInit(cols, rows, keys, this);
+        t.termInit(cols, rows, keys, this, screen);
 
         t.setSoftCursor(true);
         t.setComplexInput(true);

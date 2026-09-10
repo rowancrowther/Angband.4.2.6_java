@@ -28,7 +28,10 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.frontend.inputfromuser.UILoop;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -91,7 +94,8 @@ class PhaseEventRoutingTest {
         mainLog = RecordingLog.attachedTo(MainEvents.class);
         birthLog = RecordingLog.attachedTo(BirthEvents.class);
 
-        UILoop loop = new UILoop(channels.uiChannel(), null);
+        Screen screen = new Screen(new CellGrid(24, 80), new ArrayList<>());
+        UILoop loop = new UILoop(channels.uiChannel(), null, screen);
 
         uiThread = new Thread(loop::loop, "angband-ui-under-test");
         uiThread.setUncaughtExceptionHandler((thread, thrown) -> uiFailure.set(thrown));

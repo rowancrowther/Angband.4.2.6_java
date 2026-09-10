@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.frontend.screen;
+package uk.co.jackoftradesltd.unused;
 
 /**
  * An immutable axis-aligned rectangle described by its four edge coordinates,

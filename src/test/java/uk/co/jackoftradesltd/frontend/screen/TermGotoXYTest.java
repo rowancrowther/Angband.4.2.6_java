@@ -20,8 +20,11 @@ package uk.co.jackoftradesltd.frontend.screen;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -57,7 +60,7 @@ class TermGotoXYTest {
     @BeforeEach
     void buildAnEightyByTwentyFourTerm() throws Exception {
         term = new Term();
-        term.termInit(WIDTH, HEIGHT, 1024, null);
+        term.termInit(WIDTH, HEIGHT, 1024, null, new Screen(new CellGrid(HEIGHT, WIDTH), new ArrayList<>()));
         scr = (TermWin) field(term, "scr").get(term);
     }
 

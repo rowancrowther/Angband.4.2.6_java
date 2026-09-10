@@ -21,9 +21,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import uk.co.jackoftradesltd.frontend.SwingUI;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.SwingUtilities;
 import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -51,6 +54,15 @@ class TermDataTest {
     }
 
     /**
+     * A fresh 80x24 {@link Screen}, matching {@link SwingUI}'s own grid size - the fixture
+     * {@link TermData}'s constructor now requires, since {@link TermData#termDataLink} builds
+     * a {@code TermScreenHook} from it.
+     */
+    private static Screen newScreen() {
+        return new Screen(new CellGrid(24, 80), new ArrayList<>());
+    }
+
+    /**
      * {@link TermData#getTerm} returns exactly the {@link Term} it was linked to, the same
      * identity C keeps by embedding {@code term t;} in {@code term_data} rather than pointing
      * to a copy.
@@ -58,7 +70,7 @@ class TermDataTest {
     @Test
     void getTermReturnsTheLinkedTerm() {
         Term term = new Term();
-        TermData termData = new TermData();
+        TermData termData = new TermData(newScreen());
 
         termData.termDataLink(term);
 
@@ -71,7 +83,7 @@ class TermDataTest {
      */
     @Test
     void getTermReturnsTheSelfBuiltTermWhenLinkedWithNull() {
-        TermData termData = new TermData();
+        TermData termData = new TermData(newScreen());
 
         termData.termDataLink(null);
 
@@ -84,7 +96,7 @@ class TermDataTest {
      */
     @Test
     void getWindowReturnsWhatWasSet() {
-        TermData termData = new TermData();
+        TermData termData = new TermData(newScreen());
         Window window = new Window() {
         };
 
@@ -104,7 +116,7 @@ class TermDataTest {
         Window window = swingUi.getActiveWindow();
         SwingUtilities.invokeAndWait(window::pack);
 
-        TermData termData = new TermData();
+        TermData termData = new TermData(newScreen());
         termData.setWindow(window);
 
         assertTrue(window.isDisplayable(), "the fixture should start with a realised window");

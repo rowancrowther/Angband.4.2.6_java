@@ -15,34 +15,43 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreGrammar.g4 by ANTLR 4.13.2
+// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.lore;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.combat.BlowMethod;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.monsters.*;
+import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
+import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
+import uk.co.jackoftradesltd.middle.monsters.MonsterBlow;
+import uk.co.jackoftradesltd.middle.monsters.MonsterDrop;
+import uk.co.jackoftradesltd.middle.monsters.MonsterFriends;
+import uk.co.jackoftradesltd.middle.monsters.MonsterFriendsBase;
+import uk.co.jackoftradesltd.middle.monsters.MonsterLore;
+import uk.co.jackoftradesltd.middle.monsters.MonsterMimic;
+import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
-import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
+
+import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class LoreGrammar extends Parser {
@@ -738,60 +747,107 @@ public class LoreGrammar extends Parser {
         }
     }
 
-    public final DropContext drop() throws RecognitionException {
-        DropContext _localctx = new DropContext(_ctx, getState());
-        enterRule(_localctx, 12, RULE_drop);
-
-        TValue tval = TValue.TV_NONE;
-        ObjectKind sval = null;
-        int chance = 0;
-        int min = 0;
-        int max = 0;
-
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(76);
-                match(DROP);
-                setState(77);
-                ((DropContext) _localctx).TVAL = match(TVAL);
-                setState(78);
-                match(COLON);
-                setState(79);
-                ((DropContext) _localctx).STRING = match(STRING);
-                setState(80);
-                match(COLON);
-                setState(81);
-                ((DropContext) _localctx).ch = match(INTEGER);
-                setState(82);
-                match(COLON);
-                setState(83);
-                ((DropContext) _localctx).mn = match(INTEGER);
-                setState(84);
-                match(COLON);
-                setState(85);
-                ((DropContext) _localctx).mx = match(INTEGER);
-
-                tval = TValue.valueOf("TV_" + ((DropContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
-                sval = ObjectRegistry.lookupObjectKind(tval, ((DropContext) _localctx).STRING.getText());
-                chance = Integer.parseInt(((DropContext) _localctx).ch.getText());
-                min = Integer.parseInt(((DropContext) _localctx).mn.getText());
-                max = Integer.parseInt(((DropContext) _localctx).mx.getText());
-
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((DropContext) _localctx).monsterDrop = new MonsterDrop(tval, sval, chance, min, max);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
+    public static final String _serializedATN =
+            "\u0004\u0001\u001c\u00ab\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001" +
+                    "\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004" +
+                    "\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007" +
+                    "\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b" +
+                    "\u0002\f\u0007\f\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
+                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
+                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
+                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001" +
+                    "\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001" +
+                    "\u0003\u0001\u0003\u0005\u00039\b\u0003\n\u0003\f\u0003<\t\u0003\u0001" +
+                    "\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0005" +
+                    "\u0004D\b\u0004\n\u0004\f\u0004G\t\u0004\u0001\u0005\u0001\u0005\u0001" +
+                    "\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001" +
+                    "\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001" +
+                    "\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001" +
+                    "\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001" +
+                    "\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001" +
+                    "\b\u0003\bm\b\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001" +
+                    "\t\u0001\t\u0001\t\u0001\t\u0003\ty\b\t\u0001\n\u0001\n\u0001\n\u0001" +
+                    "\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
+                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
+                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
+                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
+                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
+                    "\u000b\u0004\u000b\u009e\b\u000b\u000b\u000b\f\u000b\u009f\u0001\f\u0001" +
+                    "\f\u0001\f\u0004\f\u00a5\b\f\u000b\f\f\f\u00a6\u0001\f\u0001\f\u0001\f" +
+                    "\u0000\u0000\r\u0000\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016" +
+                    "\u0018\u0000\u0000\u00ab\u0000\u001a\u0001\u0000\u0000\u0000\u0002\u001e" +
+                    "\u0001\u0000\u0000\u0000\u0004.\u0001\u0000\u0000\u0000\u00062\u0001\u0000" +
+                    "\u0000\u0000\b=\u0001\u0000\u0000\u0000\nH\u0001\u0000\u0000\u0000\fL" +
+                    "\u0001\u0000\u0000\u0000\u000eX\u0001\u0000\u0000\u0000\u0010b\u0001\u0000" +
+                    "\u0000\u0000\u0012n\u0001\u0000\u0000\u0000\u0014z\u0001\u0000\u0000\u0000" +
+                    "\u0016\u0080\u0001\u0000\u0000\u0000\u0018\u00a4\u0001\u0000\u0000\u0000" +
+                    "\u001a\u001b\u0005\u0002\u0000\u0000\u001b\u001c\u0005\u0014\u0000\u0000" +
+                    "\u001c\u001d\u0006\u0000\uffff\uffff\u0000\u001d\u0001\u0001\u0000\u0000" +
+                    "\u0000\u001e\u001f\u0005\u0003\u0000\u0000\u001f \u0005\r\u0000\u0000" +
+                    " !\u0005\u000e\u0000\u0000!\"\u0005\r\u0000\u0000\"#\u0005\u000e\u0000" +
+                    "\u0000#$\u0005\r\u0000\u0000$%\u0005\u000e\u0000\u0000%&\u0005\r\u0000" +
+                    "\u0000&\'\u0005\u000e\u0000\u0000\'(\u0005\r\u0000\u0000()\u0005\u000e" +
+                    "\u0000\u0000)*\u0005\r\u0000\u0000*+\u0005\u000e\u0000\u0000+,\u0005\r" +
+                    "\u0000\u0000,-\u0006\u0001\uffff\uffff\u0000-\u0003\u0001\u0000\u0000" +
+                    "\u0000./\u0005\u0004\u0000\u0000/0\u0005\u001b\u0000\u000001\u0006\u0002" +
+                    "\uffff\uffff\u00001\u0005\u0001\u0000\u0000\u000023\u0005\u0005\u0000" +
+                    "\u000034\u0005\u0015\u0000\u00004:\u0006\u0003\uffff\uffff\u000056\u0005" +
+                    "\u0016\u0000\u000067\u0005\u0015\u0000\u000079\u0006\u0003\uffff\uffff" +
+                    "\u000085\u0001\u0000\u0000\u00009<\u0001\u0000\u0000\u0000:8\u0001\u0000" +
+                    "\u0000\u0000:;\u0001\u0000\u0000\u0000;\u0007\u0001\u0000\u0000\u0000" +
+                    "<:\u0001\u0000\u0000\u0000=>\u0005\u0006\u0000\u0000>?\u0005\u0015\u0000" +
+                    "\u0000?E\u0006\u0004\uffff\uffff\u0000@A\u0005\u001a\u0000\u0000AB\u0005" +
+                    "\u0015\u0000\u0000BD\u0006\u0004\uffff\uffff\u0000C@\u0001\u0000\u0000" +
+                    "\u0000DG\u0001\u0000\u0000\u0000EC\u0001\u0000\u0000\u0000EF\u0001\u0000" +
+                    "\u0000\u0000F\t\u0001\u0000\u0000\u0000GE\u0001\u0000\u0000\u0000HI\u0005" +
+                    "\u0007\u0000\u0000IJ\u0005\u0014\u0000\u0000JK\u0006\u0005\uffff\uffff" +
+                    "\u0000K\u000b\u0001\u0000\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\u0010" +
+                    "\u0000\u0000NO\u0005\u000e\u0000\u0000OP\u0005\u000f\u0000\u0000PQ\u0005" +
+                    "\u000e\u0000\u0000QR\u0005\r\u0000\u0000RS\u0005\u000e\u0000\u0000ST\u0005" +
+                    "\r\u0000\u0000TU\u0005\u000e\u0000\u0000UV\u0005\r\u0000\u0000VW\u0006" +
+                    "\u0006\uffff\uffff\u0000W\r\u0001\u0000\u0000\u0000XY\u0005\t\u0000\u0000" +
+                    "YZ\u0005\u0010\u0000\u0000Z[\u0005\u000e\u0000\u0000[\\\u0005\r\u0000" +
+                    "\u0000\\]\u0005\u000e\u0000\u0000]^\u0005\r\u0000\u0000^_\u0005\u000e" +
+                    "\u0000\u0000_`\u0005\r\u0000\u0000`a\u0006\u0007\uffff\uffff\u0000a\u000f" +
+                    "\u0001\u0000\u0000\u0000bc\u0005\n\u0000\u0000cd\u0005\r\u0000\u0000d" +
+                    "e\u0005\u000e\u0000\u0000ef\u0005\u0013\u0000\u0000fg\u0005\u000e\u0000" +
+                    "\u0000gh\u0005\u0011\u0000\u0000hl\u0006\b\uffff\uffff\u0000ij\u0005\u000e" +
+                    "\u0000\u0000jk\u0005\u0011\u0000\u0000km\u0006\b\uffff\uffff\u0000li\u0001" +
+                    "\u0000\u0000\u0000lm\u0001\u0000\u0000\u0000m\u0011\u0001\u0000\u0000" +
+                    "\u0000no\u0005\u000b\u0000\u0000op\u0005\r\u0000\u0000pq\u0005\u000e\u0000" +
+                    "\u0000qr\u0005\u0013\u0000\u0000rs\u0005\u000e\u0000\u0000st\u0005\u0012" +
+                    "\u0000\u0000tx\u0006\t\uffff\uffff\u0000uv\u0005\u000e\u0000\u0000vw\u0005" +
+                    "\u0011\u0000\u0000wy\u0006\t\uffff\uffff\u0000xu\u0001\u0000\u0000\u0000" +
+                    "xy\u0001\u0000\u0000\u0000y\u0013\u0001\u0000\u0000\u0000z{\u0005\f\u0000" +
+                    "\u0000{|\u0005\u0010\u0000\u0000|}\u0005\u000e\u0000\u0000}~\u0005\u000f" +
+                    "\u0000\u0000~\u007f\u0006\n\uffff\uffff\u0000\u007f\u0015\u0001\u0000" +
+                    "\u0000\u0000\u0080\u0081\u0003\u0000\u0000\u0000\u0081\u009d\u0006\u000b" +
+                    "\uffff\uffff\u0000\u0082\u0083\u0003\u0002\u0001\u0000\u0083\u0084\u0006" +
+                    "\u000b\uffff\uffff\u0000\u0084\u009e\u0001\u0000\u0000\u0000\u0085\u0086" +
+                    "\u0003\n\u0005\u0000\u0086\u0087\u0006\u000b\uffff\uffff\u0000\u0087\u009e" +
+                    "\u0001\u0000\u0000\u0000\u0088\u0089\u0003\u0004\u0002\u0000\u0089\u008a" +
+                    "\u0006\u000b\uffff\uffff\u0000\u008a\u009e\u0001\u0000\u0000\u0000\u008b" +
+                    "\u008c\u0003\u0006\u0003\u0000\u008c\u008d\u0006\u000b\uffff\uffff\u0000" +
+                    "\u008d\u009e\u0001\u0000\u0000\u0000\u008e\u008f\u0003\b\u0004\u0000\u008f" +
+                    "\u0090\u0006\u000b\uffff\uffff\u0000\u0090\u009e\u0001\u0000\u0000\u0000" +
+                    "\u0091\u0092\u0003\f\u0006\u0000\u0092\u0093\u0006\u000b\uffff\uffff\u0000" +
+                    "\u0093\u009e\u0001\u0000\u0000\u0000\u0094\u0095\u0003\u0010\b\u0000\u0095" +
+                    "\u0096\u0006\u000b\uffff\uffff\u0000\u0096\u009e\u0001\u0000\u0000\u0000" +
+                    "\u0097\u0098\u0003\u0012\t\u0000\u0098\u0099\u0006\u000b\uffff\uffff\u0000" +
+                    "\u0099\u009e\u0001\u0000\u0000\u0000\u009a\u009b\u0003\u0014\n\u0000\u009b" +
+                    "\u009c\u0006\u000b\uffff\uffff\u0000\u009c\u009e\u0001\u0000\u0000\u0000" +
+                    "\u009d\u0082\u0001\u0000\u0000\u0000\u009d\u0085\u0001\u0000\u0000\u0000" +
+                    "\u009d\u0088\u0001\u0000\u0000\u0000\u009d\u008b\u0001\u0000\u0000\u0000" +
+                    "\u009d\u008e\u0001\u0000\u0000\u0000\u009d\u0091\u0001\u0000\u0000\u0000" +
+                    "\u009d\u0094\u0001\u0000\u0000\u0000\u009d\u0097\u0001\u0000\u0000\u0000" +
+                    "\u009d\u009a\u0001\u0000\u0000\u0000\u009e\u009f\u0001\u0000\u0000\u0000" +
+                    "\u009f\u009d\u0001\u0000\u0000\u0000\u009f\u00a0\u0001\u0000\u0000\u0000" +
+                    "\u00a0\u0017\u0001\u0000\u0000\u0000\u00a1\u00a2\u0003\u0016\u000b\u0000" +
+                    "\u00a2\u00a3\u0006\f\uffff\uffff\u0000\u00a3\u00a5\u0001\u0000\u0000\u0000" +
+                    "\u00a4\u00a1\u0001\u0000\u0000\u0000\u00a5\u00a6\u0001\u0000\u0000\u0000" +
+                    "\u00a6\u00a4\u0001\u0000\u0000\u0000\u00a6\u00a7\u0001\u0000\u0000\u0000" +
+                    "\u00a7\u00a8\u0001\u0000\u0000\u0000\u00a8\u00a9\u0005\u0000\u0000\u0001" +
+                    "\u00a9\u0019\u0001\u0000\u0000\u0000\u0007:Elx\u009d\u009f\u00a6";
 
     @SuppressWarnings("CheckReturnValue")
     public static class DropBaseContext extends ParserRuleContext {
@@ -852,51 +908,12 @@ public class LoreGrammar extends Parser {
         }
     }
 
-    public final DropBaseContext dropBase() throws RecognitionException {
-        DropBaseContext _localctx = new DropBaseContext(_ctx, getState());
-        enterRule(_localctx, 14, RULE_dropBase);
-
-        TValue tval = TValue.TV_NONE;
-        String sval = "";
-        int chance = 0;
-        int min = 0;
-        int max = 0;
-
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(88);
-                match(DROP_BASE);
-                setState(89);
-                ((DropBaseContext) _localctx).TVAL = match(TVAL);
-                setState(90);
-                match(COLON);
-                setState(91);
-                ((DropBaseContext) _localctx).ch = match(INTEGER);
-                setState(92);
-                match(COLON);
-                setState(93);
-                ((DropBaseContext) _localctx).mn = match(INTEGER);
-                setState(94);
-                match(COLON);
-                setState(95);
-                ((DropBaseContext) _localctx).mx = match(INTEGER);
-
-                tval = TValue.valueOf("TV_" + ((DropBaseContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
-                chance = Integer.parseInt(((DropBaseContext) _localctx).ch.getText());
-                min = Integer.parseInt(((DropBaseContext) _localctx).mn.getText());
-                max = Integer.parseInt(((DropBaseContext) _localctx).mx.getText());
-
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
+    static {
+        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
-        return _localctx;
-    }
+	}
 
     @SuppressWarnings("CheckReturnValue")
     public static class FriendsContext extends ParserRuleContext {
@@ -961,62 +978,50 @@ public class LoreGrammar extends Parser {
         }
     }
 
-    public final FriendsContext friends() throws RecognitionException {
-        FriendsContext _localctx = new FriendsContext(_ctx, getState());
-        enterRule(_localctx, 16, RULE_friends);
+    public final DropContext drop() throws RecognitionException {
+        DropContext _localctx = new DropContext(_ctx, getState());
+        enterRule(_localctx, 12, RULE_drop);
 
-        String friendsName = "";
-        MonsterGroupRole friendsRole = MonsterGroupRole.MON_GROUP_NONE;
-        int percentChance = 0;
-        String diceString = "";
-        int numberOfDice = 0;
-        int sidesOfDice = 0;
+        TValue tval = TValue.TV_NONE;
+        ObjectKind sval = null;
+        int chance = 0;
+        int min = 0;
+        int max = 0;
 
-        int _la;
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(98);
-                match(FRIENDS);
-                setState(99);
-                ((FriendsContext) _localctx).chance = match(INTEGER);
-                setState(100);
+                setState(76);
+                match(DROP);
+                setState(77);
+                ((DropContext) _localctx).TVAL = match(TVAL);
+                setState(78);
                 match(COLON);
-                setState(101);
-                ((FriendsContext) _localctx).number = match(DICE_STRING);
-                setState(102);
+                setState(79);
+                ((DropContext) _localctx).STRING = match(STRING);
+                setState(80);
                 match(COLON);
-                setState(103);
-                ((FriendsContext) _localctx).fName = match(FRIENDS_NAME);
+                setState(81);
+                ((DropContext) _localctx).ch = match(INTEGER);
+                setState(82);
+                match(COLON);
+                setState(83);
+                ((DropContext) _localctx).mn = match(INTEGER);
+                setState(84);
+                match(COLON);
+                setState(85);
+                ((DropContext) _localctx).mx = match(INTEGER);
 
-                percentChance = Integer.parseInt(((FriendsContext) _localctx).chance.getText());
-                diceString = ((FriendsContext) _localctx).number.getText();
-                Random temp = Random.parseStr(diceString);
-                numberOfDice = temp.getDice();
-                sidesOfDice = temp.getSides();
-                friendsName = ((FriendsContext) _localctx).fName.getText();
-
-                setState(108);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == COLON) {
-                    {
-                        setState(105);
-                        match(COLON);
-                        setState(106);
-                        ((FriendsContext) _localctx).role = match(FRIENDS_NAME);
-
-                        String raw = ((FriendsContext) _localctx).role.getText();
-                        friendsRole = MonsterGroupRole.valueOf("MON_GROUP_" + raw);
-
-                    }
-                }
+                tval = TValue.valueOf(((DropContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
+                sval = ObjectRegistry.lookupObjectKind(tval, ((DropContext) _localctx).STRING.getText());
+                chance = Integer.parseInt(((DropContext) _localctx).ch.getText());
+                min = Integer.parseInt(((DropContext) _localctx).mn.getText());
+                max = Integer.parseInt(((DropContext) _localctx).mx.getText());
 
             }
             _ctx.stop = _input.LT(-1);
 
-            ((FriendsContext) _localctx).monsterFriends = new MonsterFriends(friendsName, friendsRole, percentChance,
-                    numberOfDice, sidesOfDice);
+            ((DropContext) _localctx).monsterDrop = new MonsterDrop(tval, sval, chance, min, max);
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1204,25 +1209,40 @@ public class LoreGrammar extends Parser {
         }
     }
 
-    public final MimicContext mimic() throws RecognitionException {
-        MimicContext _localctx = new MimicContext(_ctx, getState());
-        enterRule(_localctx, 20, RULE_mimic);
+    public final DropBaseContext dropBase() throws RecognitionException {
+        DropBaseContext _localctx = new DropBaseContext(_ctx, getState());
+        enterRule(_localctx, 14, RULE_dropBase);
+
+        TValue tval = TValue.TV_NONE;
+        String sval = "";
+        int chance = 0;
+        int min = 0;
+        int max = 0;
+
         try {
             enterOuterAlt(_localctx, 1);
             {
-                setState(122);
-                match(MIMIC);
-                setState(123);
-                ((MimicContext) _localctx).TVAL = match(TVAL);
-                setState(124);
+                setState(88);
+                match(DROP_BASE);
+                setState(89);
+                ((DropBaseContext) _localctx).TVAL = match(TVAL);
+                setState(90);
                 match(COLON);
-                setState(125);
-                ((MimicContext) _localctx).STRING = match(STRING);
+                setState(91);
+                ((DropBaseContext) _localctx).ch = match(INTEGER);
+                setState(92);
+                match(COLON);
+                setState(93);
+                ((DropBaseContext) _localctx).mn = match(INTEGER);
+                setState(94);
+                match(COLON);
+                setState(95);
+                ((DropBaseContext) _localctx).mx = match(INTEGER);
 
-                TValue tval = TValue.valueOf("TV_" + ((MimicContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_")
-                        .replace("ARMOUR", "ARMOR"));
-                String sval = ((MimicContext) _localctx).STRING.getText();
-                ((MimicContext) _localctx).kind = ObjectRegistry.lookupObjectKind(tval, sval);
+                tval = TValue.valueOf(((DropBaseContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
+                chance = Integer.parseInt(((DropBaseContext) _localctx).ch.getText());
+                min = Integer.parseInt(((DropBaseContext) _localctx).mn.getText());
+                max = Integer.parseInt(((DropBaseContext) _localctx).mx.getText());
 
             }
         } catch (RecognitionException re) {
@@ -1237,7 +1257,6 @@ public class LoreGrammar extends Parser {
 
     @SuppressWarnings("CheckReturnValue")
     public static class MonsterLoreContext extends ParserRuleContext {
-        public MonsterRace race;
         public MonsterLore lore;
         public NameContext name;
         public CountsContext counts;
@@ -1353,6 +1372,104 @@ public class LoreGrammar extends Parser {
         }
     }
 
+    public final FriendsContext friends() throws RecognitionException {
+        FriendsContext _localctx = new FriendsContext(_ctx, getState());
+        enterRule(_localctx, 16, RULE_friends);
+
+        String friendsName = "";
+        MonsterGroupRole friendsRole = MonsterGroupRole.MON_GROUP_NONE;
+        int percentChance = 0;
+        String diceString = "";
+        int numberOfDice = 0;
+        int sidesOfDice = 0;
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(98);
+                match(FRIENDS);
+                setState(99);
+                ((FriendsContext) _localctx).chance = match(INTEGER);
+                setState(100);
+                match(COLON);
+                setState(101);
+                ((FriendsContext) _localctx).number = match(DICE_STRING);
+                setState(102);
+                match(COLON);
+                setState(103);
+                ((FriendsContext) _localctx).fName = match(FRIENDS_NAME);
+
+                percentChance = Integer.parseInt(((FriendsContext) _localctx).chance.getText());
+                diceString = ((FriendsContext) _localctx).number.getText();
+                Random temp = Random.parseStr(diceString);
+                numberOfDice = temp.getDice();
+                sidesOfDice = temp.getSides();
+                friendsName = ((FriendsContext) _localctx).fName.getText();
+
+                setState(108);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == COLON) {
+                    {
+                        setState(105);
+                        match(COLON);
+                        setState(106);
+                        ((FriendsContext) _localctx).role = match(FRIENDS_NAME);
+
+                        String raw = ((FriendsContext) _localctx).role.getText().toUpperCase();
+                        friendsRole = MonsterGroupRole.valueOf("MON_GROUP_" + raw);
+
+                    }
+                }
+
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((FriendsContext) _localctx).monsterFriends = new MonsterFriends(friendsName, friendsRole, percentChance,
+                    numberOfDice, sidesOfDice);
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
+    public final MimicContext mimic() throws RecognitionException {
+        MimicContext _localctx = new MimicContext(_ctx, getState());
+        enterRule(_localctx, 20, RULE_mimic);
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(122);
+                match(MIMIC);
+                setState(123);
+                ((MimicContext) _localctx).TVAL = match(TVAL);
+                setState(124);
+                match(COLON);
+                setState(125);
+                ((MimicContext) _localctx).STRING = match(STRING);
+
+                TValue tval = TValue.valueOf(((MimicContext) _localctx).TVAL.getText().toUpperCase().replace(" ", "_")
+                        .replace("ARMOUR", "ARMOR"));
+                String sval = ((MimicContext) _localctx).STRING.getText();
+                ((MimicContext) _localctx).kind = ObjectRegistry.lookupObjectKind(tval, sval);
+
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+
     public final MonsterLoreContext monsterLore() throws RecognitionException {
         MonsterLoreContext _localctx = new MonsterLoreContext(_ctx, getState());
         enterRule(_localctx, 22, RULE_monsterLore);
@@ -1378,6 +1495,7 @@ public class LoreGrammar extends Parser {
         List<MonsterFriendsBase> baseFriends = new ArrayList<>();
         List<ObjectKind> mimics = new ArrayList<>();
         MonsterBase monsterBase = null;
+        MonsterRace race = null;
 
         int _la;
         try {
@@ -1385,7 +1503,7 @@ public class LoreGrammar extends Parser {
             {
                 setState(128);
                 ((MonsterLoreContext) _localctx).name = name();
-                ((MonsterLoreContext) _localctx).race = MonsterRegistry.lookupMonsterRace(((MonsterLoreContext) _localctx).name.nameString);
+                race = MonsterRegistry.lookupMonsterRace(((MonsterLoreContext) _localctx).name.nameString);
                 setState(157);
                 _errHandler.sync(this);
                 _la = _input.LA(1);
@@ -1492,6 +1610,8 @@ public class LoreGrammar extends Parser {
                     flags, spells, drops,
                     friends, baseFriends, mm,
                     blows, monsterBase);
+            if (race != null)
+                race.setLore(_localctx.lore);
 
         } catch (RecognitionException re) {
             _localctx.exception = re;
@@ -1503,9 +1623,50 @@ public class LoreGrammar extends Parser {
         return _localctx;
     }
 
+    public final FileContext file() throws RecognitionException {
+        FileContext _localctx = new FileContext(_ctx, getState());
+        enterRule(_localctx, 24, RULE_file);
+
+        ((FileContext) _localctx).loreEntries = new ArrayList<>();
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(164);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                do {
+                    {
+                        {
+                            setState(161);
+                            ((FileContext) _localctx).monsterLore = monsterLore();
+                            _localctx.loreEntries.add(((FileContext) _localctx).monsterLore.lore);
+                        }
+                    }
+                    setState(166);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                } while (_la == NAME);
+                setState(168);
+                match(EOF);
+            }
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
+        }
+        return _localctx;
+    }
+    public static final ATN _ATN =
+            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
+
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
         public List<MonsterLore> loreEntries;
+        public MonsterLoreContext monsterLore;
 
         public TerminalNode EOF() {
             return getToken(LoreGrammar.EOF, 0);
@@ -1543,150 +1704,6 @@ public class LoreGrammar extends Parser {
             if (visitor instanceof LoreGrammarVisitor)
                 return ((LoreGrammarVisitor<? extends T>) visitor).visitFile(this);
             else return visitor.visitChildren(this);
-        }
-    }
-
-    public final FileContext file() throws RecognitionException {
-        FileContext _localctx = new FileContext(_ctx, getState());
-        enterRule(_localctx, 24, RULE_file);
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(162);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                do {
-                    {
-                        {
-                            setState(161);
-                            monsterLore();
-                        }
-                    }
-                    setState(164);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                } while (_la == NAME);
-                setState(166);
-                match(EOF);
-            }
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
-
-    public static final String _serializedATN =
-            "\u0004\u0001\u001c\u00a9\u0002\u0000\u0007\u0000\u0002\u0001\u0007\u0001" +
-                    "\u0002\u0002\u0007\u0002\u0002\u0003\u0007\u0003\u0002\u0004\u0007\u0004" +
-                    "\u0002\u0005\u0007\u0005\u0002\u0006\u0007\u0006\u0002\u0007\u0007\u0007" +
-                    "\u0002\b\u0007\b\u0002\t\u0007\t\u0002\n\u0007\n\u0002\u000b\u0007\u000b" +
-                    "\u0002\f\u0007\f\u0001\u0000\u0001\u0000\u0001\u0000\u0001\u0000\u0001" +
-                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
-                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001" +
-                    "\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0001\u0002\u0001\u0002\u0001" +
-                    "\u0002\u0001\u0002\u0001\u0003\u0001\u0003\u0001\u0003\u0001\u0003\u0001" +
-                    "\u0003\u0001\u0003\u0005\u00039\b\u0003\n\u0003\f\u0003<\t\u0003\u0001" +
-                    "\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0001\u0004\u0005" +
-                    "\u0004D\b\u0004\n\u0004\f\u0004G\t\u0004\u0001\u0005\u0001\u0005\u0001" +
-                    "\u0005\u0001\u0005\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001" +
-                    "\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001\u0006\u0001" +
-                    "\u0006\u0001\u0006\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001" +
-                    "\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001\u0007\u0001" +
-                    "\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001\b\u0001" +
-                    "\b\u0003\bm\b\b\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001\t\u0001" +
-                    "\t\u0001\t\u0001\t\u0001\t\u0003\ty\b\t\u0001\n\u0001\n\u0001\n\u0001" +
-                    "\n\u0001\n\u0001\n\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
-                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
-                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
-                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
-                    "\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001\u000b\u0001" +
-                    "\u000b\u0004\u000b\u009e\b\u000b\u000b\u000b\f\u000b\u009f\u0001\f\u0004" +
-                    "\f\u00a3\b\f\u000b\f\f\f\u00a4\u0001\f\u0001\f\u0001\f\u0000\u0000\r\u0000" +
-                    "\u0002\u0004\u0006\b\n\f\u000e\u0010\u0012\u0014\u0016\u0018\u0000\u0000" +
-                    "\u00a9\u0000\u001a\u0001\u0000\u0000\u0000\u0002\u001e\u0001\u0000\u0000" +
-                    "\u0000\u0004.\u0001\u0000\u0000\u0000\u00062\u0001\u0000\u0000\u0000\b" +
-                    "=\u0001\u0000\u0000\u0000\nH\u0001\u0000\u0000\u0000\fL\u0001\u0000\u0000" +
-                    "\u0000\u000eX\u0001\u0000\u0000\u0000\u0010b\u0001\u0000\u0000\u0000\u0012" +
-                    "n\u0001\u0000\u0000\u0000\u0014z\u0001\u0000\u0000\u0000\u0016\u0080\u0001" +
-                    "\u0000\u0000\u0000\u0018\u00a2\u0001\u0000\u0000\u0000\u001a\u001b\u0005" +
-                    "\u0002\u0000\u0000\u001b\u001c\u0005\u0014\u0000\u0000\u001c\u001d\u0006" +
-                    "\u0000\uffff\uffff\u0000\u001d\u0001\u0001\u0000\u0000\u0000\u001e\u001f" +
-                    "\u0005\u0003\u0000\u0000\u001f \u0005\r\u0000\u0000 !\u0005\u000e\u0000" +
-                    "\u0000!\"\u0005\r\u0000\u0000\"#\u0005\u000e\u0000\u0000#$\u0005\r\u0000" +
-                    "\u0000$%\u0005\u000e\u0000\u0000%&\u0005\r\u0000\u0000&\'\u0005\u000e" +
-                    "\u0000\u0000\'(\u0005\r\u0000\u0000()\u0005\u000e\u0000\u0000)*\u0005" +
-                    "\r\u0000\u0000*+\u0005\u000e\u0000\u0000+,\u0005\r\u0000\u0000,-\u0006" +
-                    "\u0001\uffff\uffff\u0000-\u0003\u0001\u0000\u0000\u0000./\u0005\u0004" +
-                    "\u0000\u0000/0\u0005\u001b\u0000\u000001\u0006\u0002\uffff\uffff\u0000" +
-                    "1\u0005\u0001\u0000\u0000\u000023\u0005\u0005\u0000\u000034\u0005\u0015" +
-                    "\u0000\u00004:\u0006\u0003\uffff\uffff\u000056\u0005\u0016\u0000\u0000" +
-                    "67\u0005\u0015\u0000\u000079\u0006\u0003\uffff\uffff\u000085\u0001\u0000" +
-                    "\u0000\u00009<\u0001\u0000\u0000\u0000:8\u0001\u0000\u0000\u0000:;\u0001" +
-                    "\u0000\u0000\u0000;\u0007\u0001\u0000\u0000\u0000<:\u0001\u0000\u0000" +
-                    "\u0000=>\u0005\u0006\u0000\u0000>?\u0005\u0015\u0000\u0000?E\u0006\u0004" +
-                    "\uffff\uffff\u0000@A\u0005\u001a\u0000\u0000AB\u0005\u0015\u0000\u0000" +
-                    "BD\u0006\u0004\uffff\uffff\u0000C@\u0001\u0000\u0000\u0000DG\u0001\u0000" +
-                    "\u0000\u0000EC\u0001\u0000\u0000\u0000EF\u0001\u0000\u0000\u0000F\t\u0001" +
-                    "\u0000\u0000\u0000GE\u0001\u0000\u0000\u0000HI\u0005\u0007\u0000\u0000" +
-                    "IJ\u0005\u0014\u0000\u0000JK\u0006\u0005\uffff\uffff\u0000K\u000b\u0001" +
-                    "\u0000\u0000\u0000LM\u0005\b\u0000\u0000MN\u0005\u0010\u0000\u0000NO\u0005" +
-                    "\u000e\u0000\u0000OP\u0005\u000f\u0000\u0000PQ\u0005\u000e\u0000\u0000" +
-                    "QR\u0005\r\u0000\u0000RS\u0005\u000e\u0000\u0000ST\u0005\r\u0000\u0000" +
-                    "TU\u0005\u000e\u0000\u0000UV\u0005\r\u0000\u0000VW\u0006\u0006\uffff\uffff" +
-                    "\u0000W\r\u0001\u0000\u0000\u0000XY\u0005\t\u0000\u0000YZ\u0005\u0010" +
-                    "\u0000\u0000Z[\u0005\u000e\u0000\u0000[\\\u0005\r\u0000\u0000\\]\u0005" +
-                    "\u000e\u0000\u0000]^\u0005\r\u0000\u0000^_\u0005\u000e\u0000\u0000_`\u0005" +
-                    "\r\u0000\u0000`a\u0006\u0007\uffff\uffff\u0000a\u000f\u0001\u0000\u0000" +
-                    "\u0000bc\u0005\n\u0000\u0000cd\u0005\r\u0000\u0000de\u0005\u000e\u0000" +
-                    "\u0000ef\u0005\u0013\u0000\u0000fg\u0005\u000e\u0000\u0000gh\u0005\u0011" +
-                    "\u0000\u0000hl\u0006\b\uffff\uffff\u0000ij\u0005\u000e\u0000\u0000jk\u0005" +
-                    "\u0011\u0000\u0000km\u0006\b\uffff\uffff\u0000li\u0001\u0000\u0000\u0000" +
-                    "lm\u0001\u0000\u0000\u0000m\u0011\u0001\u0000\u0000\u0000no\u0005\u000b" +
-                    "\u0000\u0000op\u0005\r\u0000\u0000pq\u0005\u000e\u0000\u0000qr\u0005\u0013" +
-                    "\u0000\u0000rs\u0005\u000e\u0000\u0000st\u0005\u0012\u0000\u0000tx\u0006" +
-                    "\t\uffff\uffff\u0000uv\u0005\u000e\u0000\u0000vw\u0005\u0011\u0000\u0000" +
-                    "wy\u0006\t\uffff\uffff\u0000xu\u0001\u0000\u0000\u0000xy\u0001\u0000\u0000" +
-                    "\u0000y\u0013\u0001\u0000\u0000\u0000z{\u0005\f\u0000\u0000{|\u0005\u0010" +
-                    "\u0000\u0000|}\u0005\u000e\u0000\u0000}~\u0005\u000f\u0000\u0000~\u007f" +
-                    "\u0006\n\uffff\uffff\u0000\u007f\u0015\u0001\u0000\u0000\u0000\u0080\u0081" +
-                    "\u0003\u0000\u0000\u0000\u0081\u009d\u0006\u000b\uffff\uffff\u0000\u0082" +
-                    "\u0083\u0003\u0002\u0001\u0000\u0083\u0084\u0006\u000b\uffff\uffff\u0000" +
-                    "\u0084\u009e\u0001\u0000\u0000\u0000\u0085\u0086\u0003\n\u0005\u0000\u0086" +
-                    "\u0087\u0006\u000b\uffff\uffff\u0000\u0087\u009e\u0001\u0000\u0000\u0000" +
-                    "\u0088\u0089\u0003\u0004\u0002\u0000\u0089\u008a\u0006\u000b\uffff\uffff" +
-                    "\u0000\u008a\u009e\u0001\u0000\u0000\u0000\u008b\u008c\u0003\u0006\u0003" +
-                    "\u0000\u008c\u008d\u0006\u000b\uffff\uffff\u0000\u008d\u009e\u0001\u0000" +
-                    "\u0000\u0000\u008e\u008f\u0003\b\u0004\u0000\u008f\u0090\u0006\u000b\uffff" +
-                    "\uffff\u0000\u0090\u009e\u0001\u0000\u0000\u0000\u0091\u0092\u0003\f\u0006" +
-                    "\u0000\u0092\u0093\u0006\u000b\uffff\uffff\u0000\u0093\u009e\u0001\u0000" +
-                    "\u0000\u0000\u0094\u0095\u0003\u0010\b\u0000\u0095\u0096\u0006\u000b\uffff" +
-                    "\uffff\u0000\u0096\u009e\u0001\u0000\u0000\u0000\u0097\u0098\u0003\u0012" +
-                    "\t\u0000\u0098\u0099\u0006\u000b\uffff\uffff\u0000\u0099\u009e\u0001\u0000" +
-                    "\u0000\u0000\u009a\u009b\u0003\u0014\n\u0000\u009b\u009c\u0006\u000b\uffff" +
-                    "\uffff\u0000\u009c\u009e\u0001\u0000\u0000\u0000\u009d\u0082\u0001\u0000" +
-                    "\u0000\u0000\u009d\u0085\u0001\u0000\u0000\u0000\u009d\u0088\u0001\u0000" +
-                    "\u0000\u0000\u009d\u008b\u0001\u0000\u0000\u0000\u009d\u008e\u0001\u0000" +
-                    "\u0000\u0000\u009d\u0091\u0001\u0000\u0000\u0000\u009d\u0094\u0001\u0000" +
-                    "\u0000\u0000\u009d\u0097\u0001\u0000\u0000\u0000\u009d\u009a\u0001\u0000" +
-                    "\u0000\u0000\u009e\u009f\u0001\u0000\u0000\u0000\u009f\u009d\u0001\u0000" +
-                    "\u0000\u0000\u009f\u00a0\u0001\u0000\u0000\u0000\u00a0\u0017\u0001\u0000" +
-                    "\u0000\u0000\u00a1\u00a3\u0003\u0016\u000b\u0000\u00a2\u00a1\u0001\u0000" +
-                    "\u0000\u0000\u00a3\u00a4\u0001\u0000\u0000\u0000\u00a4\u00a2\u0001\u0000" +
-                    "\u0000\u0000\u00a4\u00a5\u0001\u0000\u0000\u0000\u00a5\u00a6\u0001\u0000" +
-                    "\u0000\u0000\u00a6\u00a7\u0005\u0000\u0000\u0001\u00a7\u0019\u0001\u0000" +
-                    "\u0000\u0000\u0007:Elx\u009d\u009f\u00a4";
-    public static final ATN _ATN =
-            new ATNDeserializer().deserialize(_serializedATN.toCharArray());
-
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
         }
     }
 }

@@ -30,7 +30,8 @@ options { tokenVocab = LoreLexer; }
     import uk.co.jackoftradesltd.middle.numerics.Random;
     import uk.co.jackoftradesltd.channel.utils.Flag;
     import uk.co.jackoftradesltd.middle.combat.BlowMethod;
-    import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+    import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
+    import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
     import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
     import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
     import uk.co.jackoftradesltd.middle.monsters.MonsterBlow;
@@ -83,8 +84,8 @@ blow
         :   BLOW BLOW_MODE_VALUES {
                 String raw = $BLOW_MODE_VALUES.getText();
                 String [] parts = raw.split(":");
-                BlowMethod blowMethod = GameConstants.lookupBlowMethod(parts[0]);
-                BlowEffect blowEffect = GameConstants.lookupBlowEffect(parts[1]);
+                BlowMethod blowMethod = MonsterRegistry.lookupBlowMethod(parts[0]);
+                BlowEffect blowEffect = MonsterRegistry.lookupBlowEffect(parts[1]);
                 Random dice = Random.parseStr(parts[2]);
                 $timesSeen = Integer.parseInt(parts[3]);
 
@@ -129,7 +130,7 @@ base
         returns[MonsterBase baseObj]
         :   BASE MONSTER_NAME {
                 String raw = $MONSTER_NAME.getText();
-                $baseObj = GameConstants.getBaseFromName(raw);
+                $baseObj = MonsterRegistry.getBaseFromName(raw);
             }
         ;
 
@@ -150,7 +151,7 @@ drop
         :   DROP TVAL COLON STRING COLON ch=INTEGER COLON mn=INTEGER COLON mx=INTEGER
             {
                 tval = TValue.valueOf($TVAL.getText().toUpperCase().replace(" ", "_").replace("ARMOUR", "ARMOR"));
-                sval = GameConstants.lookupObjectKind(tval, $STRING.getText());
+                sval = ObjectRegistry.lookupObjectKind(tval, $STRING.getText());
                 chance = Integer.parseInt($ch.getText());
                 min = Integer.parseInt($mn.getText());
                 max = Integer.parseInt($mx.getText());
@@ -226,7 +227,7 @@ friendsBase
                 Random temp = Random.parseStr($dice.getText());
                 numberOfDice = temp.getDice();
                 numberOfSides = temp.getSides();
-                base = GameConstants.lookupMonsterBase($fName.getText());
+                base = MonsterRegistry.lookupMonsterBase($fName.getText());
             } (COLON fRole=FRIENDS_NAME {
                 role = MonsterGroupRole.valueOf("MON_GROUP_" + $fRole.getText().toUpperCase());
             })?
@@ -241,7 +242,7 @@ mimic
                 TValue tval = TValue.valueOf($TVAL.getText().toUpperCase().replace(" ", "_")
                                     .replace("ARMOUR", "ARMOR"));
                 String sval = $STRING.getText();
-                $kind = GameConstants.lookupObjectKind(tval, sval);
+                $kind = ObjectRegistry.lookupObjectKind(tval, sval);
             }
         ;
 
@@ -283,9 +284,10 @@ monsterLore
                                     flags, spells, drops,
                                     friends, baseFriends, mm,
                                     blows, monsterBase);
-            race.setLore($Lore);
+            if (race != null)
+                race.setLore($lore);
         }
-        :   name { race = GameConstants.lookupMonsterRace($name.nameString); }
+        :   name { race = MonsterRegistry.lookupMonsterRace($name.nameString); }
         (   counts {
                 sights = $counts.sightings;
                 deaths = $counts.deaths;
@@ -321,11 +323,8 @@ monsterLore
             }
         )+;
 
-// Top-level rule: the whole file is one or more lore records.
-//
-// BUG: no @init initializes loreEntries and no action adds each
-// monsterLore match to it - see top-of-file problem #1. $loreEntries is
-// always null.
+// Top-level rule: the whole file is one or more lore records, collected
+// into $loreEntries as each monsterLore match completes.
 file
         returns[List<MonsterLore> loreEntries]
         @init {

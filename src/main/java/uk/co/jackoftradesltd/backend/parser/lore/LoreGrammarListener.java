@@ -15,8 +15,33 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-// Generated from C:/Users/rowan/Documents/IntelliJProjects/Angband.4.2.6/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreGrammar.g4 by ANTLR 4.13.2
+// Generated from src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.backend.parser.lore;
+
+import uk.co.jackoftradesltd.middle.numerics.Random;
+import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.middle.combat.BlowMethod;
+import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
+import uk.co.jackoftradesltd.middle.monsters.BlowEffect;
+import uk.co.jackoftradesltd.middle.monsters.MonsterBase;
+import uk.co.jackoftradesltd.middle.monsters.MonsterBlow;
+import uk.co.jackoftradesltd.middle.monsters.MonsterDrop;
+import uk.co.jackoftradesltd.middle.monsters.MonsterFriends;
+import uk.co.jackoftradesltd.middle.monsters.MonsterFriendsBase;
+import uk.co.jackoftradesltd.middle.monsters.MonsterLore;
+import uk.co.jackoftradesltd.middle.monsters.MonsterMimic;
+import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterGroupRole;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
+import uk.co.jackoftradesltd.middle.monsters.enums.MonsterSpell;
+import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.objects.ObjectKind;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import org.antlr.v4.runtime.tree.ParseTreeListener;
 

@@ -4,7 +4,7 @@
     <option name="perGrammarGenerationSettings">
       <list>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/io/parsers/grammars/RandomFormatter.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/Random.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="" />
@@ -14,27 +14,7 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/SummonFormatter.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/parsers" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/ConstantsFormatter.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/parsers/constantformatter" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/ObjectBaseFormatter.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SlayGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="" />
@@ -44,147 +24,226 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/WorldReader.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryBaseLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/ProjectionReader.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryRenderer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/background/io/parsers/antlr/grammars/UIEntryBase.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/UIEntryGram.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/PlayerProperty.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SlayGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/BrandReader.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/Pain.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/MonsterBaseReader.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/SummonFormatter.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/io/parsers/antlr/grammars/PlayerShapeAntlr.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="Java" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBaseLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />
           <option name="generateListener" value="false" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBaseGrammar.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryBaseGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryBase.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports/EffectBlockLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ActivationsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports/AngbandDisplayCharacter.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/GameConstantsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryRendererLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ProjectionLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateListener" value="false" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerPropertyLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TerrainFeatureLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectBaseLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterBaseLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SlayLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BrandLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/CurseLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/curse" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="uk.co.jackoftradesltd.backend.parser.grammars.curse" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/CurseGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/curse" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="uk.co.jackoftradesltd.backend.parser.grammars.curse" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ShapeLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ShapeGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="" />
@@ -194,599 +253,640 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/TerrainFeature.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ItemObjectLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ItemObjectGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/EgoItemsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HistoryLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerRaceLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RealmLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerClassLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerClassGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ArtifactLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerTimedLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowMethodLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterSpellLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterSpellGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/VisualsLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PitLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TrapGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/QuestLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/FlavourLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/FlavourGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/DungeonProfileGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/DungeonProfileLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RoomProfileLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/VaultLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ChestTrapLexer.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ChestTrapGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ActivationsGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ArtifactGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowEffectGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BlowMethodGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BodyGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/BrandGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/EgoItemsGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/GameConstantsGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HintGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/HistoryGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterBaseGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/MonsterGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/NamesGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectBaseGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ObjectPropertyGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PainGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PitGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerPropertyGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerRaceGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/PlayerTimedGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/ProjectionGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/QuestGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RealmGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/RoomProfileGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/SummonGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/TerrainFeatureGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryRendererGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/VaultGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/VisualsGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/WorldGrammar.g4" />
+          <option name="autoGen" value="true" />
+          <option name="outputDir" value="" />
+          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
+          <option name="encoding" value="" />
+          <option name="pkg" value="" />
+          <option name="language" value="" />
+          <option name="generateVisitor" value="true" />
+        </PerGrammarGenerationSettings>
+        <PerGrammarGenerationSettings>
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/LoreLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/TrapLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports/EffectBlockLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Activations.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ActivationsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports/AngbandDisplayCharacter.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/GameConstantsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/WorldLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/World.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/WorldsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateListener" value="false" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/Worlds.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateListener" value="false" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ProjectionsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateListener" value="false" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryRendererLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ProjectionLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/UIEntryLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateListener" value="false" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerPropertyLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/TerrainFeatureLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectBaseLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PainLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterBaseLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SlayLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BrandLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/SummonLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/CurseLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/curse" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="uk.co.jackoftrades.backend.parser.grammars.curse" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/CurseGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/curse" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="uk.co.jackoftrades.backend.parser.grammars.curse" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ShapeLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ShapeGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ItemObjectLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ItemObjectGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/EgoItemsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/HistoryLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BodyLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerRaceLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/RealmLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerClassLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerClassGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/world/ArtifactLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ArtifactLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ObjectPropertyLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PlayerTimedLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BlowMethodLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/BlowEffectLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterSpellLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterSpellGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/VisualsLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/MonsterLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/PitLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/TrapGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/QuestLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/HintLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/NamesLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/FlavourLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/FlavourGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/DungeonProfileGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/DungeonProfile.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/DungeonProfileLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/RoomProfileLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/VaultLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ChestTrapLexer.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
-          <option name="encoding" value="" />
-          <option name="pkg" value="" />
-          <option name="language" value="" />
-          <option name="generateVisitor" value="true" />
-        </PerGrammarGenerationSettings>
-        <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/ChestTrapGrammar.g4" />
-          <option name="autoGen" value="true" />
-          <option name="outputDir" value="" />
-          <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftrades/backend/parser/grammars/imports" />
           <option name="encoding" value="" />
           <option name="pkg" value="" />
           <option name="language" value="" />

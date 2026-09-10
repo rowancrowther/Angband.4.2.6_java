@@ -29,9 +29,12 @@ import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.colour.Colour;
 import uk.co.jackoftradesltd.frontend.inputfromuser.UILoop;
+import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
 import uk.co.jackoftradesltd.frontend.screen.Window;
+import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Frame;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.*;
 import javax.swing.plaf.basic.BasicGraphicsUtils;
@@ -137,6 +140,8 @@ public class SwingUI {
      */
     private StartupOptions startupOptions;
 
+    private Screen screen;
+
     /**
      * Build the front end around the channel ends {@code main()} gives it, and make its first
      * window.
@@ -159,13 +164,17 @@ public class SwingUI {
         this.edtChannel = edtChannel;
         this.startupOptions = startupOptions;
 
-        uiLoop = new UILoop(uiChannel, this);
+        CellGrid mainGrid = new CellGrid(24, 80);
+        screen = new Screen(mainGrid, new ArrayList<>());
+
+        uiLoop = new UILoop(uiChannel, this, screen);
 
         terms = new ArrayList<>();
-        TermData mainTermData = new TermData();
-        mainTermData.setWindow(new Window() {
-        });
+        TermData mainTermData = new TermData(screen);
+        Term mainTerm = new Term();
+        mainTermData.termDataLink(mainTerm);
         terms.add(mainTermData);
+        mainTermData.setWindow(new Window());
         activeTermData = mainTermData;
     }
 

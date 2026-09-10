@@ -35,39 +35,31 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Stub tests for {@link LoreReader}, which reads {@code lib/user/lore.txt} — the player's
- * per-save monster-knowledge record, not a {@code lib/gamedata} file. The port of C's
+ * Tests for {@link LoreReader}, which reads {@code lib/user/lore.txt} — the player's per-save
+ * monster-knowledge record, not a {@code lib/gamedata} file. The port of C's
  * {@code lore_parser} ({@code [C] src/mon-init.c:2646}).
  *
- * <p><strong>Why these are stubs.</strong> The reader cannot be tested for what it is meant to do
- * yet, because two things are broken upstream of it and both have to be fixed together:
+ * <p>{@code LoreGrammar.g4}'s {@code monsterLore} rule used to write {@code race.setLore($Lore)}
+ * with a capital L against a {@code $lore} return value, which ANTLR rejected outright
+ * ({@code error(63): unknown attribute reference Lore in $Lore}), so the grammar never generated
+ * and the committed {@code backend/parser/lore/LoreGrammar.java} predated it — its {@code file}
+ * rule declared {@code loreEntries} but never built it, so {@link LoreReader#parse} always handed
+ * back {@code null}. Both are fixed now: the typo is gone, {@code file} collects each
+ * {@code monsterLore} match, and the {@code @after} block guards {@code race.setLore(...)} against
+ * an unresolved monster name — so the specs below run for real.
  *
- * <ol>
- *   <li>{@code LoreGrammar.g4} does not generate. ANTLR rejects it with
- *       {@code error(63): unknown attribute reference Lore in $Lore} — the {@code monsterLore}
- *       rule's {@code @after} block writes {@code race.setLore($Lore)} with a capital L, where the
- *       rule's return value is {@code $lore}.</li>
- *   <li>The committed {@code backend/parser/lore/LoreGrammar.java} therefore predates the current
- *       grammar. Its {@code file} rule declares {@code loreEntries} but has no {@code @init} and no
- *       action adding each {@code monsterLore} match to it, so the list is never built and
- *       {@link LoreReader#parse} hands back {@code null} — in defiance of its {@code @NotNull}.</li>
- * </ol>
+ * <p>Two things still want attention, both flagged in the grammar's own comments:
+ * {@link LoreReader} still hand-rolls the ANTLR plumbing instead of delegating to
+ * {@link GrammarDriver} (so it has no {@code parseWithResults} and no soft-error channel — see
+ * {@link #unknownFlagsAreReportedAsSoftErrorsRatherThanThrown()}), and {@code GameConstants} keeps
+ * its {@code loadMonsterLore()} commented out, so nothing calls the reader at start-up yet and
+ * {@link #eachRecordIsAttachedToItsMonsterRace()} still needs a {@code GameConstants.init()}
+ * bootstrap this class does not provide.
  *
- * <p>{@link #parseCurrentlyReturnsNull()} pins that state deliberately, so fixing the grammar makes
- * this class fail rather than pass quietly; at that point the {@link Disabled} tests below are the
- * spec to enable, and the {@code @Disabled} annotations come off.
- *
- * <p>Two further things will want attention at the same time, both flagged in the grammar's own
- * comments: {@link LoreReader} still hand-rolls the ANTLR plumbing instead of delegating to
- * {@link GrammarDriver} (so it has no {@code parseWithResults} and no soft-error channel), and
- * {@code GameConstants} keeps its {@code loadMonsterLore()} commented out, so nothing calls the
- * reader at start-up yet.
- *
- * <p>The active tests below are the ones that hold regardless: the IO contract, and the fact that
- * the grammar resolves monster names against {@link uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry}
- * mid-parse. They seed the registry themselves rather than running
+ * <p>The tests seed {@link uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry}
+ * themselves rather than running
  * {@link uk.co.jackoftradesltd.middle.game.globals.GameConstants#init()}, so they stay hermetic and
- * order-independent.
+ * order-independent — bar the two still-disabled ones below, which need the real registries.
  *
  * @author Rowan Crowther
  */
@@ -100,6 +92,8 @@ class LoreReaderTest {
     private Object savedRaces;
     private Field blowMethods;
     private Object savedBlowMethods;
+    private Field blowEffects;
+    private Object savedBlowEffects;
 
     @SuppressWarnings("unchecked")
     private static <T> T field(MonsterLore target, String name) throws Exception {
@@ -112,11 +106,13 @@ class LoreReaderTest {
      * The grammar calls {@code MonsterRegistry.lookupMonsterRace} from inside its {@code name}
      * action, and that throws outright when the registry has never been loaded. Seeding an empty
      * list is enough to get past it — the lookup then simply finds nothing and returns null, which
-     * the (stale) generated parser does not dereference.
+     * the grammar's actions do not dereference.
      *
-     * <p>{@code blowMethods} is pushed the other way, back to its unloaded {@code null}, so that
-     * {@link #theRealFileAlsoNeedsTheCombatTablesLoaded()} does not depend on whether some earlier
-     * test class in the same JVM happened to leave the combat tables populated.
+     * <p>{@code blowMethods} and {@code blowEffects} are pushed the other way, back to their
+     * unloaded {@code null}, so that {@link #theRealFileAlsoNeedsTheCombatTablesLoaded()} does not
+     * depend on whether some earlier test class in the same JVM happened to leave the combat tables
+     * populated. Tests that need a {@code blow:} line to parse without throwing re-seed both via
+     * {@link #seedCombatTables()}.
      */
     @BeforeEach
     void seedTheRegistriesTheGrammarReachesInto() throws Exception {
@@ -129,12 +125,31 @@ class LoreReaderTest {
         blowMethods.setAccessible(true);
         savedBlowMethods = blowMethods.get(null);
         blowMethods.set(null, null);
+
+        blowEffects = RegistrySeeding.resolve("blowEffects");
+        blowEffects.setAccessible(true);
+        savedBlowEffects = blowEffects.get(null);
+        blowEffects.set(null, null);
     }
 
     @AfterEach
     void restoreTheRegistries() throws Exception {
         monsterRaces.set(null, savedRaces);
         blowMethods.set(null, savedBlowMethods);
+        blowEffects.set(null, savedBlowEffects);
+    }
+
+    /**
+     * Seeds {@code blowMethods} and {@code blowEffects} with empty lists, so the grammar's
+     * {@code blow} rule can resolve (and simply not find) a method/effect name instead of
+     * throwing. For tests that parse a real {@code blow:} line but don't care which method/effect
+     * it resolves to — {@link uk.co.jackoftradesltd.middle.monsters.MonsterBlow} has no
+     * {@code equals}/{@code hashCode}, so a {@code null} method/effect doesn't collapse distinct
+     * blows together in a map.
+     */
+    private void seedCombatTables() throws Exception {
+        blowMethods.set(null, List.of());
+        blowEffects.set(null, List.of());
     }
 
     /**
@@ -147,23 +162,6 @@ class LoreReaderTest {
     }
 
     // ---- Active: what holds today ----------------------------------------
-
-    /**
-     * The tripwire for defect (2) in this class's notes. {@link LoreReader#parse} is annotated
-     * {@code @NotNull} and returns {@code null}, because the committed parser's {@code file} rule
-     * never collects the records it matches.
-     *
-     * <p>When {@code LoreGrammar.g4} is fixed and regenerated this assertion will fail. That is the
-     * point: the failure is the signal to delete this test and enable the disabled ones below.
-     */
-    @Test
-    void parseCurrentlyReturnsNull() throws IOException {
-        String path = tempFile("one-record.txt", ONE_RECORD);
-
-        assertNull(new LoreReader().parse(path),
-                "LoreGrammar's file rule now collects its records - enable the disabled tests below "
-                        + "and delete this one");
-    }
 
     /**
      * The real file goes further than the fixture and needs more than the monster races: its
@@ -202,11 +200,11 @@ class LoreReaderTest {
                 () -> new LoreReader().parse(tempDir.resolve("absent.txt").toString()));
     }
 
-    // ---- Disabled: the spec, once the grammar generates --------------------
+    // ---- The spec, now the grammar generates --------------------------
 
     @Test
-    @Disabled("LoreGrammar.g4 does not generate: $Lore should be $lore in monsterLore's @after")
-    void theRealFileLoadsEveryRecord() throws IOException {
+    void theRealFileLoadsEveryRecord() throws Exception {
+        seedCombatTables();
         List<MonsterLore> lore = new LoreReader().parse(REAL_FILE);
 
         assertNotNull(lore);
@@ -214,12 +212,12 @@ class LoreReaderTest {
     }
 
     @Test
-    @Disabled("LoreGrammar.g4 does not generate: $Lore should be $lore in monsterLore's @after")
     void countsAreReadAcrossInFieldOrder() throws Exception {
         // name:singing, happy drunk / counts:6:0:1:0:0:0:0 - the first record in the file.
         // The grammar names the third field "kills" and stores it as tkills (total kills), leaving
         // pkills (player kills) at 0; the last two fields are read but currently dropped on the
         // floor, since MonsterLore's constructor takes castInnate/castSpell from elsewhere.
+        seedCombatTables();
         MonsterLore first = new LoreReader().parse(REAL_FILE).getFirst();
 
         assertEquals(6, (int) field(first, "sightings"));
@@ -230,10 +228,10 @@ class LoreReaderTest {
     }
 
     @Test
-    @Disabled("LoreGrammar.g4 does not generate: $Lore should be $lore in monsterLore's @after")
     void repeatedFlagsLinesAccumulateIntoOneFlagSet() throws Exception {
         // The first record spreads its flags over three flags: lines; the grammar unions each line's
         // set into the record's, so a flag from the last line is set alongside one from the first.
+        seedCombatTables();
         MonsterLore first = new LoreReader().parse(REAL_FILE).getFirst();
 
         Flag<MonsterRaceFlag> flags = field(first, "flags");
@@ -243,18 +241,20 @@ class LoreReaderTest {
     }
 
     @Test
-    @Disabled("LoreGrammar.g4 does not generate: $Lore should be $lore in monsterLore's @after")
     void aBlowIsRecordedWithTheNumberOfTimesItWasSeen() throws Exception {
         // blow:BEG:NONE:0+0d0M0:2:0 on the first record. The fifth field is C's blow index, which
         // the port has no use for - it holds the instantiated BlowMethod/BlowEffect instead.
+        seedCombatTables();
         MonsterLore first = new LoreReader().parse(REAL_FILE).getFirst();
 
         assertEquals(1, ((java.util.Map<?, ?>) field(first, "timeBlowsSeen")).size());
         assertTrue(((java.util.Map<?, ?>) field(first, "timeBlowsSeen")).containsValue(2));
     }
 
+    // ---- Still disabled: waiting on further work --------------------------
+
     @Test
-    @Disabled("LoreGrammar.g4 does not generate: $Lore should be $lore in monsterLore's @after")
+    @Disabled("needs a GameConstants.init() bootstrap - this class seeds an empty registry")
     void eachRecordIsAttachedToItsMonsterRace() {
         // The monsterLore rule's @after calls race.setLore(...), so a parsed record is reachable
         // from the race as well as from the returned list. Needs the real monster races loaded

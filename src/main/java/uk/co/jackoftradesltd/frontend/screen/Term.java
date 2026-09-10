@@ -20,7 +20,10 @@ package uk.co.jackoftradesltd.frontend.screen;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.frontend.events.Event;
 import uk.co.jackoftradesltd.frontend.screen.enums.Sidebar;
+import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.screen.hooks.TermEventHook;
+import uk.co.jackoftradesltd.frontend.screen.hooks.TermScreenHook;
+import uk.co.jackoftradesltd.frontend.screen.hooks.TermTextHook;
 
 import java.util.ArrayList;
 
@@ -240,6 +243,10 @@ public class Term {
      */
     private TermEventHook dblhHook;
 
+    private TermTextHook outputHook;
+
+    private TermData owner;
+
     /**
      * Initialise this terminal to the given size and key-queue capacity: reset
      * all behaviour flags, allocate the {@link #old}/{@link #scr} content buffers
@@ -250,7 +257,7 @@ public class Term {
      * @param height terminal height in rows
      * @param keys   key-queue capacity
      */
-    public void termInit(int width, int height, int keys, TermData owner) {
+    public void termInit(int width, int height, int keys, TermData owner, Screen screen) {
         user = null;
         data = owner;
 
@@ -306,6 +313,7 @@ public class Term {
         cursHook = null;
         bigcursHook = null;
         wipeHook = null;
+        outputHook = new TermScreenHook(screen);
     }
 
     /**
@@ -456,11 +464,50 @@ public class Term {
         return 0;
     }
 
-    public void cPutStr(ColourEnum colour, String str, int row, int col) {
+    /**
+     * Move the cursor to a cell and write a coloured string there, the Java port of the
+     * C original's {@code c_put_str} ({@code [C] src/ui-output.c}). Delegates the move to
+     * {@link #gotoXY} and the write to {@link #outputHook}, matching {@code c_put_str}'s
+     * own delegation to {@code Term_putstr}, which does the same two steps internally
+     * ({@code Term_gotoxy} then {@code Term_addstr}).
+     *
+     * <p>An out-of-range {@code row}/{@code col} leaves the screen untouched and returns
+     * {@code -1}, mirroring {@code Term_putstr} returning early - without reaching
+     * {@code Term_addstr} - when {@code Term_gotoxy} fails. C's {@code c_put_str} is
+     * {@code void} and discards this outcome; the Java port keeps it because
+     * {@link #gotoXY} already produces it.
+     *
+     * <p>The string is always written with C's {@code n = -1} ("no explicit length"),
+     * matching the fixed {@code -1} that {@code c_put_str} passes to {@code Term_putstr}.
+     *
+     * <p>Function cPutStr coded on 260910, commented in full on 260910.
+     *
+     * @param colour the colour to draw the string in
+     * @param str    the string to write
+     * @param row    the row to write it on
+     * @param col    the column to start at
+     * @return {@code 0} on success, {@code -1} if the coordinate is outside the terminal
+     */
+    public int cPutStr(ColourEnum colour, String str, int row, int col) {
+        int result = gotoXY(col, row);
+        if (result == -1) return -1;
 
+        outputHook.putStr(col, row, -1, colour, str);
+        return 0;
     }
 
-    public void putStr(String str, int row, int col) {
-        cPutStr(ColourEnum.COLOUR_WHITE, str, row, col);
+    /**
+     * As {@link #cPutStr}, but always in {@link ColourEnum#COLOUR_WHITE}, the Java port
+     * of the C original's {@code put_str} ({@code [C] src/ui-output.c}).
+     *
+     * <p>Function putStr coded on 260910, commented in full on 260910.
+     *
+     * @param str the string to write
+     * @param row the row to write it on
+     * @param col the column to start at
+     * @return {@code 0} on success, {@code -1} if the coordinate is outside the terminal
+     */
+    public int putStr(String str, int row, int col) {
+        return cPutStr(ColourEnum.COLOUR_WHITE, str, row, col);
     }
 }

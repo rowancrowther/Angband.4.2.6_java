@@ -115,12 +115,10 @@ public class UILoop {
      * @param uiChannel this half's pair of channel ends
      * @param swingUI   the front end whose active window the messages are painted into
      */
-    public UILoop(UIChannel uiChannel, SwingUI swingUI) {
+    public UILoop(UIChannel uiChannel, SwingUI swingUI, Screen screen) {
         this.uiChannel = uiChannel;
         this.swingUI = swingUI;
-
-        CellGrid mainGrid = new CellGrid(24, 80);
-        screen = new Screen(mainGrid, new ArrayList<>());
+        this.screen = screen;
     }
 
     /**

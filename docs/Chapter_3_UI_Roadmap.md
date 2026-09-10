@@ -346,7 +346,7 @@ the game draws needs the same handful.
 - [X] `Term_gotoxy`
 - [X] `put_str`
 - [X] `prt`
-- [ ] `clear_from`
+- [X] `clear_from`
 - [ ] `text_out`
 - [ ] `text_out_e` with
 - [ ] `text_out_indent` — the colour-markup writer the race and class help panels are

@@ -77,4 +77,29 @@ public class TermScreenHook implements TermTextHook {
 
         screen.root().put(row, col, str, colour);
     }
+
+    /**
+     * Blank {@code n} columns of a row, the boundary this hook implements for
+     * {@link uk.co.jackoftradesltd.frontend.screen.Term#clearFrom}, standing in for C's
+     * {@code Term_erase} call inside {@code clear_from} ({@code [C] src/ui-input.c}). The
+     * {@code 255} that {@code clearFrom} passes as {@code n} is, as in C, deliberately larger
+     * than any real row width -
+     * {@link uk.co.jackoftradesltd.frontend.screen.grid.Region#erase} clips it to the row's
+     * remaining columns rather than needing the exact count.
+     *
+     * <p>This method's own parameter order is {@code (col, row, n)}, matching the rest of
+     * {@link TermTextHook}, but {@link uk.co.jackoftradesltd.frontend.screen.grid.Region#erase}
+     * takes {@code (row, col, n)} - the call below swaps them rather than passing straight
+     * through.
+     *
+     * <p>Function erase coded on 260910, commented in full on 260910.
+     *
+     * @param col the column the blanked run starts at
+     * @param row the row to blank
+     * @param n   how many columns to blank
+     */
+    @Override
+    public void erase(int col, int row, int n) {
+        screen.root().erase(row, col, n);
+    }
 }

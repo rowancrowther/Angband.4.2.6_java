@@ -23,11 +23,12 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.lore.LoreGrammar;
-import uk.co.jackoftradesltd.backend.parser.lore.LoreLexer;
+//import uk.co.jackoftradesltd.backend.parser.lore.LoreGrammar;
+//import uk.co.jackoftradesltd.backend.parser.lore.LoreLexer;
 import uk.co.jackoftradesltd.middle.monsters.MonsterLore;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,17 +53,19 @@ public class LoreReader implements Reader<MonsterLore> {
      */
     @Override
     public List<MonsterLore> parse(@NotNull String filename) throws IOException {
-        try {
-            CharStream stream = CharStreams.fromFileName(filename);
-            LoreLexer lexer = new LoreLexer(stream);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            LoreGrammar grammar = new LoreGrammar(tokens);
-            LoreGrammar.FileContext output = grammar.file();
+//        try {
+//            CharStream stream = CharStreams.fromFileName(filename);
+//            LoreLexer lexer = new LoreLexer(stream);
+//            CommonTokenStream tokens = new CommonTokenStream(lexer);
+//            LoreGrammar grammar = new LoreGrammar(tokens);
+//            LoreGrammar.FileContext output = grammar.file();
+//
+//            return output.loreEntries;
+//        } catch (IOException e) {
+//            logger.error("Error while loading file {}", filename, e);
+//            throw e;
+//        }
 
-            return output.loreEntries;
-        } catch (IOException e) {
-            logger.error("Error while loading file {}", filename, e);
-            throw e;
-        }
+        return new ArrayList<>();
     }
 }

@@ -646,4 +646,27 @@ public class Term {
 
         return res;
     }
+
+    /**
+     * Blanks every row from {@code row} to the bottom of the terminal, the Java port of C's
+     * {@code clear_from} ({@code [C] src/ui-input.c}). Height is read from {@link #hgt}, this
+     * terminal's own stored height from {@link #termInit} - matching C's {@code Term->hgt} -
+     * not any front end's live window size, for the same reason given on {@link #gotoXY}.
+     *
+     * <p>Each row from {@code row} up to but not including {@link #hgt} is erased through
+     * {@link TermTextHook#erase}, called with a column count of {@code 255} - deliberately
+     * larger than any real row width, as in C, since the boundary this hook implements clips
+     * it to the row's remaining columns rather than needing the exact count - matching C's
+     * {@code for (y = row; y < Term->hgt; y++) Term_erase(0, y, 255);}. A {@code row} already
+     * at or past {@link #hgt} clears nothing.
+     *
+     * <p>Function clearFrom coded on 260910, commented in full on 260910.
+     *
+     * @param row the first row to clear; rows above it are left untouched
+     */
+    public void clearFrom(int row) {
+        for (int index = row; index < hgt; index++) {
+            outputHook.erase(0, index, 255);
+        }
+    }
 }

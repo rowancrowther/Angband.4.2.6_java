@@ -23,4 +23,6 @@ public interface TermTextHook {
     void putStr(int x, int y, int n, ColourEnum colour, String string);
 
     void cPrt(ColourEnum colour, String str, int row, int col);
+
+    void erase(int col, int row, int n);
 }

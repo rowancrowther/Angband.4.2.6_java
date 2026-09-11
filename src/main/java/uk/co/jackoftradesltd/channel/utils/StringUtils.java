@@ -532,4 +532,32 @@ public abstract class StringUtils {
     public static boolean isDigit(char ch) {
         return (ch >= '0' && ch <= '9');
     }
+
+    /**
+     * Determine whether a character is ASCII whitespace, standing in for C's {@code isspace}
+     * from {@code <ctype.h>}. Called at the tag-scanning boundary in {@code next_section}
+     * ({@code [C] src/z-textblock.c:591-593}), which this class does not yet port.
+     *
+     * <p>As with {@link #isAlpha} and {@link #isDigit}, the explicit characters are the point.
+     * In the {@code "C"} locale the game runs in, {@code isspace} is fixed to exactly six:
+     * space, {@code \t}, {@code \n}, {@code \r}, {@code \f}, and the vertical tab control
+     * character (code point 0x0B). {@link Character#isWhitespace} is not used because it is
+     * wider than that set — it also treats the four ASCII separator controls (0x1C-0x1F) and
+     * the Unicode line and paragraph separators as whitespace, none of which C's {@code isspace}
+     * recognises. (The vertical tab is spelled here as a code point rather than a Java escape,
+     * because Unicode escapes are resolved everywhere in a source file, comments included,
+     * before javac even recognises what is a comment — writing the escape literally in this
+     * prose would leave a raw control byte here instead of the six visible characters.)
+     *
+     * <p>Method isSpace coded on 260910, commented in full on 260910.
+     *
+     * @param ch The character to test
+     * @return true if ch is one of space, {@code \t}, {@code \n}, {@code \r}, {@code \f}, or
+     * the vertical tab control character (0x0B), false otherwise
+     */
+    @CheckReturnValue
+    @Contract(pure = true)
+    public static boolean isSpace(char ch) {
+        return (ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '\f' || ch == '\u000B');
+    }
 }

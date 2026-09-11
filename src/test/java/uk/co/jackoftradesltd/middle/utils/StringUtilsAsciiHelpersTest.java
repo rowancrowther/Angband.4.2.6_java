@@ -29,17 +29,18 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * Tests the four ASCII helpers ported from C's {@code h-basic.h} and {@code <ctype.h>}:
+ * Tests the five ASCII helpers ported from C's {@code h-basic.h} and {@code <ctype.h>}:
  * {@code C2I} and {@code I2C} for the macros {@code A2I} ({@code src/h-basic.h:189}) and
- * {@code I2A} ({@code src/h-basic.h:190}), and {@code isAlpha} and {@code isDigit} for the C
- * library's {@code isalpha} and {@code isdigit} as they behave in the {@code "C"} locale the
- * game runs in.
+ * {@code I2A} ({@code src/h-basic.h:190}), and {@code isAlpha}, {@code isDigit} and
+ * {@code isSpace} for the C library's {@code isalpha}, {@code isdigit} and {@code isspace} as
+ * they behave in the {@code "C"} locale the game runs in.
  *
  * <p>Expected values come from the C definitions rather than from the Java: the macros are
  * plain addition and subtraction of {@code 'a'} with no range check, so the out-of-contract
  * cases below assert the arithmetic C would perform, not an error. The classification cases
  * assert the ASCII-only answer C's {@code "C"} locale gives, which is what separates these
- * methods from {@link Character#isLetter} and {@link Character#isDigit}.
+ * methods from {@link Character#isLetter}, {@link Character#isDigit} and
+ * {@link Character#isWhitespace}.
  *
  * @author Rowan Crowther
  */
@@ -181,6 +182,54 @@ class StringUtilsAsciiHelpersTest {
             // in the "C" locale says no to both; Character.isDigit would say yes.
             assertFalse(StringUtils.isDigit((char) 0x0660));
             assertFalse(StringUtils.isDigit((char) 0x0966));
+        }
+    }
+
+    /**
+     * C's {@code isspace} in the {@code "C"} locale.
+     */
+    @Nested
+    class IsSpace {
+
+        @ParameterizedTest
+        @ValueSource(chars = {' ', '\t', '\n', '\r', '\f', ''})
+        @DisplayName("the six characters isspace recognises in the \"C\" locale are whitespace")
+        void theSixCCharactersAreWhitespace(char ch) {
+            assertTrue(StringUtils.isSpace(ch));
+        }
+
+        @ParameterizedTest
+        @ValueSource(chars = {'a', 'A', '0', '_', '.', '-', '\0'})
+        @DisplayName("ordinary letters, digits and punctuation are not whitespace")
+        void ordinaryCharactersAreRejected(char notSpace) {
+            assertFalse(StringUtils.isSpace(notSpace));
+        }
+
+        @Test
+        @DisplayName("the characters bracketing the two whitespace runs are excluded")
+        void theBracketingCharactersAreExcluded() {
+            // 0x08 (backspace) and 0x0E (shift-out) sit either side of the \t-\r run
+            // (0x09-0x0D), which is contiguous and includes the vertical tab.
+            assertFalse(StringUtils.isSpace((char) 0x08));
+            assertTrue(StringUtils.isSpace('\t'));
+            assertTrue(StringUtils.isSpace('\r'));
+            assertFalse(StringUtils.isSpace((char) 0x0E));
+            // 0x1F (unit separator) and '!' sit either side of space, which stands on its own.
+            assertFalse(StringUtils.isSpace((char) 0x1F));
+            assertTrue(StringUtils.isSpace(' '));
+            assertFalse(StringUtils.isSpace('!'));
+        }
+
+        @Test
+        @DisplayName("the ASCII separator controls are not whitespace, unlike Character.isWhitespace")
+        void asciiSeparatorControlsAreRejected() {
+            // 0x1C-0x1F are the file/group/record/unit separator controls. C's isspace in the
+            // "C" locale says no to all four; Character.isWhitespace would say yes to all four,
+            // which is why it is not used.
+            assertFalse(StringUtils.isSpace((char) 0x1C));
+            assertFalse(StringUtils.isSpace((char) 0x1D));
+            assertFalse(StringUtils.isSpace((char) 0x1E));
+            assertFalse(StringUtils.isSpace((char) 0x1F));
         }
     }
 }

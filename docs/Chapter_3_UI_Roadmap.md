@@ -347,8 +347,8 @@ the game draws needs the same handful.
 - [X] `put_str`
 - [X] `prt`
 - [X] `clear_from`
-- [ ] `text_out`
-- [ ] `text_out_e` with
+- [X] `text_out`
+- [X] `text_out_e` with
 - [ ] `text_out_indent` — the colour-markup writer the race and class help panels are
   written in (`[C] ui-birth.c:263, 647`)
 

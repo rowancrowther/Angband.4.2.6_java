@@ -349,7 +349,7 @@ the game draws needs the same handful.
 - [X] `clear_from`
 - [X] `text_out`
 - [X] `text_out_e` with
-- [ ] `text_out_indent` — the colour-markup writer the race and class help panels are
+- [X] `text_out_indent` — the colour-markup writer the race and class help panels are
   written in (`[C] ui-birth.c:263, 647`)
 
 ## D3 — The character sheet *(needs D2)*

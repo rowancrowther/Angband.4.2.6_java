@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.curse.CurseAssembler;
 import uk.co.jackoftradesltd.backend.parser.curse.CurseParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.curse.CurseGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.curse.CurseLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.Curse;
 
 import java.io.IOException;

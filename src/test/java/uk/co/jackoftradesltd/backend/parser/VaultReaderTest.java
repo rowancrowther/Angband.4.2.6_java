@@ -21,9 +21,16 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.StartupOptions;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
 import uk.co.jackoftradesltd.middle.cave.roombuilders.RoomType;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 
@@ -97,12 +104,23 @@ class VaultReaderTest {
      * assembler needs the game constants loaded.
      */
     @BeforeAll
-    static void bootstrap() {
-        GameConstants.init();
+    static void bootstrap() throws IOException {
+        // Mirrors UILoop's EVENT_ENTER_INIT handler: the real init chain now blocks partway
+        // through GameConstants.init() for this ack, so the front end's UIEntry load has to
+        // actually happen before it is sent, or the assemblers below find an empty UIRegistry.
+        UIDataLoader.loadUIEntryRenderers();
+        UIDataLoader.loadUIEntryBases();
+        UIDataLoader.loadUIEntries();
+
+        Channels channels = Channels.create();
+        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        Core core = new Core(channels.coreChannel(),
+                new StartupOptions(false, false, false, false, "", "", List.of()));
+        GameConstants.init(core);
     }
 
     /**
-     * {@link GameConstants#init()} populates the shared object-kind registries in place; reset them
+     * {@code GameConstants.init(CoreChannel)} populates the shared object-kind registries in place; reset them
      * to the empty baseline so this heavy load does not leak into order-sensitive suites (matching
      * {@code PitReaderTest}'s and {@code MonsterReaderTest}'s cleanup).
      */

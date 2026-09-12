@@ -19,7 +19,8 @@ package uk.co.jackoftradesltd.middle.game.globals.loaders;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.backend.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.backend.parser.TerrainReader;
 import uk.co.jackoftradesltd.backend.parser.TrapReader;
 import uk.co.jackoftradesltd.middle.cave.Feature;

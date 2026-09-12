@@ -48,7 +48,7 @@ import uk.co.jackoftradesltd.middle.objects.Rune;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjPropertyType;
 import uk.co.jackoftradesltd.middle.objects.Slay;
 import uk.co.jackoftradesltd.middle.objects.enums.CombatRunes;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.RuneVariety;

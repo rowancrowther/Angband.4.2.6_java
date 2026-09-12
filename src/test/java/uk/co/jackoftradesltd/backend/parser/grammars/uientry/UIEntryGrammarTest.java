@@ -20,8 +20,10 @@ package uk.co.jackoftradesltd.backend.parser.grammars.uientry;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.misc.ParseCancellationException;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.parser.ParseErrors;
-import uk.co.jackoftradesltd.backend.parser.uientry.UIEntryParseRecord;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry.UIEntryGrammar;
+import uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry.UIEntryLexer;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
 
 import java.util.ArrayList;
 import java.util.List;

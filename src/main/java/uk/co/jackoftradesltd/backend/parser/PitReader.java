@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.pit.PitGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.pit.PitLexer;
 import uk.co.jackoftradesltd.backend.parser.pit.PitAssembler;
 import uk.co.jackoftradesltd.backend.parser.pit.PitParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.PitProfile;
 
 import java.io.IOException;

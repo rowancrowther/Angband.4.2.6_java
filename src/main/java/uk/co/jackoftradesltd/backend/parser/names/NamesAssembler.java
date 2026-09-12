@@ -18,7 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.names;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.game.Name;
 
 import java.util.ArrayList;

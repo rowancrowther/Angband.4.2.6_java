@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.realm.RealmGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.realm.RealmLexer;
 import uk.co.jackoftradesltd.backend.parser.realm.RealmAssembler;
 import uk.co.jackoftradesltd.backend.parser.realm.RealmParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 
 import java.io.IOException;

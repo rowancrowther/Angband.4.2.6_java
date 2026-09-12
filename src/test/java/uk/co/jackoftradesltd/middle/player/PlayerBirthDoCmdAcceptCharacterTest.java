@@ -24,13 +24,18 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.middle.cave.GenChunk;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.CommandQueue;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
@@ -39,11 +44,12 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.objects.KnownObject;
 import uk.co.jackoftradesltd.middle.objects.ObjectKind;
 import uk.co.jackoftradesltd.middle.objects.Rune;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerHistoryType;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerOptionEnum;
 import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 
+import java.io.IOException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +64,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>A real bootstrap, but a wiring-scoped fixture.</b> Unlike
  * {@code PlayerBirthDoCmdBirthInitTest}, which fakes out everything {@code doCmdBirthInit} touches,
- * this suite calls {@link GameConstants#init()} once and lets {@code doCmdAcceptCharacter} run
+ * this suite calls {@code GameConstants.init(CoreChannel)} once and lets {@code doCmdAcceptCharacter} run
  * against the real shipped data - a real "Human" {@link PlayerRace}, the real
  * {@code artifact.txt}/{@code flavour.txt}/{@code object_property.txt} tables - for every part of the
  * method this suite actually asserts on. {@link Store#storeReset()},
@@ -99,8 +105,19 @@ class PlayerBirthDoCmdAcceptCharacterTest {
     private Birther previousQuickstartPrev;
 
     @BeforeAll
-    static void bootstrap() {
-        GameConstants.init();
+    static void bootstrap() throws IOException {
+        // Mirrors UILoop's EVENT_ENTER_INIT handler: the real init chain now blocks partway
+        // through GameConstants.init() for this ack, so the front end's UIEntry load has to
+        // actually happen before it is sent, or the assemblers below find an empty UIRegistry.
+        UIDataLoader.loadUIEntryRenderers();
+        UIDataLoader.loadUIEntryBases();
+        UIDataLoader.loadUIEntries();
+
+        Channels channels = Channels.create();
+        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        Core core = new Core(channels.coreChannel(),
+                new StartupOptions(false, false, false, false, "", "", List.of()));
+        GameConstants.init(core);
 
         // Rune.initRunes() is public but, like PlayerBirth#playerInit, nothing in the port's
         // bootstrap calls it yet - GameConstants.init() never builds ObjectRegistry's rune list, so
@@ -111,7 +128,7 @@ class PlayerBirthDoCmdAcceptCharacterTest {
 
     /**
      * Matches {@code QuestReaderTest}/{@code PitReaderTest}'s own cleanup after a full
-     * {@link GameConstants#init()}: resets the object-kind tables so this heavy load does not leak
+     * {@code GameConstants.init(CoreChannel)}: resets the object-kind tables so this heavy load does not leak
      * into order-sensitive suites running later in the same JVM.
      *
      * <p>{@link Rune#initRunes()} needs its own undo that those two do not: nothing else in the suite

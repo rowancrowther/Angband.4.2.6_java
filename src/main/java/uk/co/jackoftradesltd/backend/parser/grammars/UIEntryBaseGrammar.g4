@@ -34,7 +34,7 @@ parser grammar UIEntryBaseGrammar;
 options { tokenVocab = UIEntryBaseLexer; }
 
 @header {
-    import uk.co.jackoftradesltd.backend.parser.uientrybase.UIEntryBaseParseRecord;
+    import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
 
     import java.util.List;
     import java.util.ArrayList;

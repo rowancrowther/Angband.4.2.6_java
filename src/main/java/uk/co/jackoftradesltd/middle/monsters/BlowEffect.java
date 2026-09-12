@@ -20,7 +20,7 @@ package uk.co.jackoftradesltd.middle.monsters;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.monsters.enums.BlowEffectType;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 
 /**

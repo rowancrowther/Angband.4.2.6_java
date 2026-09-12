@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.summon.SummonGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.summon.SummonLexer;
 import uk.co.jackoftradesltd.backend.parser.summon.SummonAssembler;
 import uk.co.jackoftradesltd.backend.parser.summon.SummonParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.monsters.Summon;
 
 import java.io.IOException;

@@ -25,6 +25,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.playerproperty.PlayerProper
 import uk.co.jackoftradesltd.backend.parser.grammars.playerproperty.PlayerPropertyLexer;
 import uk.co.jackoftradesltd.backend.parser.playerproperty.PlayerPropertyAssembler;
 import uk.co.jackoftradesltd.backend.parser.playerproperty.PlayerPropertyParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 
 import java.io.IOException;

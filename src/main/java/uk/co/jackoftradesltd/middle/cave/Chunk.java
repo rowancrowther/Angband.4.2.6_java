@@ -23,6 +23,7 @@ import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.middle.cave.enums.TerrainFlags;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
@@ -2591,5 +2592,13 @@ public class Chunk {
 
     public int getMonCurrent() {
         return monCurrent;
+    }
+
+    public void setFeeling(int feeling) {
+        this.feeling = feeling;
+
+        // Update cached value
+        // TODO: Update with correct feeling string
+        PlayerEventStatusUpdate.updatePlayerStatusLevelFeeling("Feeling string goes here");
     }
 }

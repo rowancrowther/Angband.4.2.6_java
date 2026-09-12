@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.roomprofiler.RoomProfileGra
 import uk.co.jackoftradesltd.backend.parser.grammars.roomprofiler.RoomProfileLexer;
 import uk.co.jackoftradesltd.backend.parser.roomprofile.RoomProfileAssembler;
 import uk.co.jackoftradesltd.backend.parser.roomprofile.RoomProfileParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;
 
 import java.io.IOException;

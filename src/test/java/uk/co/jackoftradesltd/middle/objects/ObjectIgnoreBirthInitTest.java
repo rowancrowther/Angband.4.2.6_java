@@ -82,6 +82,29 @@ class ObjectIgnoreBirthInitTest {
     }
 
     /**
+     * Reads {@code ObjectRegistry.objectKinds} directly, since {@link ObjectRegistry#getObjectKinds}
+     * wraps it in an unmodifiable view — feeding that view back through {@link
+     * ObjectRegistry#setObjectKinds} would leave the shared field permanently unmodifiable for every
+     * test that runs after this class.
+     */
+    @SuppressWarnings("unchecked")
+    private static List<ObjectKind> rawObjectKinds() throws Exception {
+        Field field = ObjectRegistry.class.getDeclaredField("objectKinds");
+        field.setAccessible(true);
+        return (List<ObjectKind>) field.get(null);
+    }
+
+    /**
+     * Writes {@code ObjectRegistry.objectKinds} back exactly as it was found, bypassing {@link
+     * ObjectRegistry#setObjectKinds} for the same reason as {@link #restoreRawEgoItems}.
+     */
+    private static void restoreRawObjectKinds(List<ObjectKind> value) throws Exception {
+        Field field = ObjectRegistry.class.getDeclaredField("objectKinds");
+        field.setAccessible(true);
+        field.set(null, value);
+    }
+
+    /**
      * An ego with nothing on it, for the cases that only read the ignore-type map.
      */
     private static EgoItem bareEgo() {
@@ -95,7 +118,7 @@ class ObjectIgnoreBirthInitTest {
 
     @BeforeEach
     void saveState() throws Exception {
-        savedKinds = ObjectRegistry.getObjectKinds();
+        savedKinds = rawObjectKinds();
         savedEgos = rawEgoItems();
         savedIgnoreLevels = ObjectInfo.ignoreLevel;
         ObjectInfo.ignoreLevel = new HashMap<>(savedIgnoreLevels);
@@ -107,7 +130,7 @@ class ObjectIgnoreBirthInitTest {
 
     @AfterEach
     void restoreState() throws Exception {
-        ObjectRegistry.setObjectKinds(savedKinds);
+        restoreRawObjectKinds(savedKinds);
         restoreRawEgoItems(savedEgos);
         ObjectInfo.ignoreLevel = savedIgnoreLevels;
     }

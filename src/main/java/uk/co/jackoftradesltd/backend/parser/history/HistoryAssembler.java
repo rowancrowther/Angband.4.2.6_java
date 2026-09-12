@@ -18,7 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.history;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryEntry;
 

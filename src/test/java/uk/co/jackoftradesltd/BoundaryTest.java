@@ -158,7 +158,6 @@ class BoundaryTest {
      * until something renders it. {@code getParameter()} has no caller in {@code src/main} today.
      */
     private static final Set<String> FRONTEND_BASELINE = Set.of(
-            "frontend/entries/UIEntry.java -> uk.co.jackoftradesltd.middle.objects.enums.ElementEnum",
             "frontend/inputfromuser/TextUIHook.java -> uk.co.jackoftradesltd.middle.cave.enums.DirectionEnum",
             "frontend/inputfromuser/TextUIHook.java -> uk.co.jackoftradesltd.middle.game.enums.CommandCode",
             "frontend/inputfromuser/TextUIHook.java -> uk.co.jackoftradesltd.middle.game.gameengine.GameEngine",
@@ -184,14 +183,8 @@ class BoundaryTest {
     private static final Set<String> MIDDLE_BASELINE = Set.of(
             "middle/game/globals/loaders/MonsterDataLoader.java -> uk.co.jackoftradesltd.frontend.colour.FlickerTable",
             "middle/game/globals/loaders/MonsterDataLoader.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
-            "middle/game/globals/loaders/UIDataLoader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "middle/game/globals/loaders/UIDataLoader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryBase",
-            "middle/game/globals/loaders/UIDataLoader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
             "middle/game/globals/registry/MonsterRegistry.java -> uk.co.jackoftradesltd.frontend.colour.FlickerTable",
             "middle/game/globals/registry/MonsterRegistry.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
-            "middle/game/globals/registry/UIRegistry.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "middle/game/globals/registry/UIRegistry.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryBase",
-            "middle/game/globals/registry/UIRegistry.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
             "middle/monsters/MonsterRace.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
             "middle/objects/ObjectProperty.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
             "middle/player/PlayerProperty.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry"
@@ -205,25 +198,13 @@ class BoundaryTest {
      * together or not at all, so treat the two baselines as one job.
      */
     private static final Set<String> BACKEND_BASELINE = Set.of(
-            "backend/parser/UIEntryBaseReader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryBase",
-            "backend/parser/UIEntryReader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "backend/parser/UIEntryRendererReader.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
             "backend/parser/VisualsReader.java -> uk.co.jackoftradesltd.frontend.colour.FlickerTable",
             "backend/parser/VisualsReader.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
             "backend/parser/monster/MonsterAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
             "backend/parser/objectproperty/ObjectPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
+            "backend/parser/objectproperty/ObjectPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry",
             "backend/parser/playerproperty/PlayerPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "backend/parser/uientry/UIEntryAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "backend/parser/uientry/UIEntryAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryBase",
-            "backend/parser/uientry/UIEntryAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
-            "backend/parser/uientry/UIEntryAssembler.java -> uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag",
-            "backend/parser/uientry/UIEntryAssembler.java -> uk.co.jackoftradesltd.frontend.screen.enums.CombinerName",
-            "backend/parser/uientrybase/UIEntryBaseAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryBase",
-            "backend/parser/uientrybase/UIEntryBaseAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
-            "backend/parser/uientrybase/UIEntryBaseAssembler.java -> uk.co.jackoftradesltd.frontend.screen.enums.CombinerName",
-            "backend/parser/uientryrenderer/UIEntryRendererAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer",
-            "backend/parser/uientryrenderer/UIEntryRendererAssembler.java -> uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum",
-            "backend/parser/uientryrenderer/UIEntryRendererAssembler.java -> uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum",
+            "backend/parser/playerproperty/PlayerPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry",
             "backend/parser/visuals/VisualsCycleAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
             "backend/parser/visuals/VisualsCycleAssembler.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
             "backend/parser/visuals/VisualsFlickerAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",

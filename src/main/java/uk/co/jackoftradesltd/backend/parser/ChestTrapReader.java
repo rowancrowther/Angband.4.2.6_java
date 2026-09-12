@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapAssembler;
 import uk.co.jackoftradesltd.backend.parser.chesttrap.ChestTrapParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.chesttrap.ChestTrapGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.chesttrap.ChestTrapLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.ChestTrap;
 
 import java.io.IOException;

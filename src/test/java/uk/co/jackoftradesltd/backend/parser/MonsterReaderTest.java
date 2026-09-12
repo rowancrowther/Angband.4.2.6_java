@@ -21,8 +21,15 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.StartupOptions;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -47,7 +54,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The monster assembler resolves five lookups across {@link MonsterRegistry} and {@link ObjectRegistry} — monster bases,
  * blow methods, blow effects, object kinds (for drops and mimics) and the visuals cycler table — so
- * rather than seed each by reflection, {@link #bootstrap()} runs the whole {@link GameConstants#init()}
+ * rather than seed each by reflection, {@link #bootstrap()} runs the whole {@code GameConstants.init(CoreChannel)}
  * chain (the same order the game loads them), which every other registry-dependent reader test in this
  * package does too. That leaves every lookup the assembler makes populated exactly as at runtime.
  *
@@ -104,12 +111,23 @@ class MonsterReaderTest {
      */
     @BeforeAll
     static void bootstrap() throws IOException {
-        GameConstants.init();
+        // Mirrors UILoop's EVENT_ENTER_INIT handler: the real init chain now blocks partway
+        // through GameConstants.init() for this ack, so the front end's UIEntry load has to
+        // actually happen before it is sent, or the assemblers below find an empty UIRegistry.
+        UIDataLoader.loadUIEntryRenderers();
+        UIDataLoader.loadUIEntryBases();
+        UIDataLoader.loadUIEntries();
+
+        Channels channels = Channels.create();
+        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        Core core = new Core(channels.coreChannel(),
+                new StartupOptions(false, false, false, false, "", "", List.of()));
+        GameConstants.init(core);
         real = new MonsterReader().parseWithResults(MONSTER_FILE);
     }
 
     /**
-     * {@link GameConstants#init()} populates the shared object-kind registries ({@code objectKinds}
+     * {@code GameConstants.init(CoreChannel)} populates the shared object-kind registries ({@code objectKinds}
      * and its {@code kindsByTvalSval} index) in place. Reset them to the empty baseline init() itself
      * assumes at its start, so this heavy load does not leak into order-sensitive suites — notably
      * {@code EgoItemReaderTest}'s numeric-sval test, which needs {@code kindsByTvalSval} empty for a

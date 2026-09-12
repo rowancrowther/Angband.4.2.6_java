@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.quest.QuestGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.quest.QuestLexer;
 import uk.co.jackoftradesltd.backend.parser.quest.QuestAssembler;
 import uk.co.jackoftradesltd.backend.parser.quest.QuestParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.player.Quest;
 
 import java.io.IOException;

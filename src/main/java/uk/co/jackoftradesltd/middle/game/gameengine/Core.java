@@ -23,6 +23,7 @@ import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.CoreChannel;
 import uk.co.jackoftradesltd.channel.corechannel.CoreSender;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.middle.game.event.eventhandlers.InitHandlers;
@@ -203,40 +204,13 @@ public class Core {
         InitHandlers initHandlers = new InitHandlers(coreSender);
         initHandlers.initHandlers();
 
-        gameEngine.loadGameConstants();
+        if (gameEngine.loadGameConstants(this)) return;
 
         while (true) {
             try {
                 UIMessage uiMessage = coreChannel.coreReceiver().receive();
-
-                // Exhaustive over the sealed UIMessage, so a new record added to the protocol
-                // breaks this switch at compile time rather than being silently ignored at run
-                // time. The inner switch over UILifecycleEvent is exhaustive for the same reason.
-                switch (uiMessage) {
-                    case UIMessage.LifecycleUIMessage lifecycleUIMessage -> {
-
-                        logger.info("Received {}" + lifecycleUIMessage.event());
-                        
-                        switch (lifecycleUIMessage.event()) {
-                            // Reply first, then leave: the STOPPED must be on the queue before
-                            // this thread ends, because it is what releases the front end to
-                            // dispose the windows. The save goes above the send, in Chapter 8.
-                            case SAVE_AND_STOP -> {
-                                coreChannel.coreSender()
-                                        .send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
-                                return;
-                            }
-                            // Nothing to do with it yet - the window is up and the data is
-                            // already loaded by the time it arrives. This is where character
-                            // birth goes in Chapter 3.
-                            case START -> logger.debug("Start message received");
-                        }
-                    }
-                    // Not ours: the EDT posts these to the UI thread's inbox, not to this one.
-                    // The arm exists to make the switch exhaustive, and ignores rather than
-                    // failing because a raw window event means nothing to the core in any case.
-                    case UIMessage.WindowCloseRequested ignored -> {
-                    }
+                if (handleChannelOutput(uiMessage)) {
+                    return;
                 }
             } catch (InterruptedException e) {
                 // Nothing interrupts this thread, so reaching here means something unexpected
@@ -245,5 +219,49 @@ public class Core {
                 return;
             }
         }
+    }
+
+    public boolean handleChannelOutput(UIMessage uiMessage) {
+        // Exhaustive over the sealed UIMessage, so a new record added to the protocol
+        // breaks this switch at compile time rather than being silently ignored at run
+        // time. The inner switch over UILifecycleEvent is exhaustive for the same reason.
+        switch (uiMessage) {
+            case UIMessage.LifecycleUIMessage lifecycleUIMessage -> {
+                logger.info("Received {}", lifecycleUIMessage.event());
+
+                switch (lifecycleUIMessage.event()) {
+                    // Reply first, then leave: the STOPPED must be on the queue before
+                    // this thread ends, because it is what releases the front end to
+                    // dispose the windows. The save goes above the send, in Chapter 8.
+                    case SAVE_AND_STOP -> {
+                        coreChannel.coreSender()
+                                .send(new CoreMessage.LifecycleCoreMessage(CoreLifecycleEvent.STOPPED));
+                        return true;
+                    }
+                    // Nothing to do with it yet - the window is up and the data is
+                    // already loaded by the time it arrives. This is where character
+                    // birth goes in Chapter 3.
+                    case START -> logger.debug("Start message received");
+                }
+            }
+            // Not ours: the EDT posts these to the UI thread's inbox, not to this one.
+            // The arm exists to make the switch exhaustive, and ignores rather than
+            // failing because a raw window event means nothing to the core in any case.
+            case UIMessage.WindowCloseRequested ignored -> {
+            }
+
+            case UIMessage.SimpleUIMessage simpleUIMessage -> {
+                if (simpleUIMessage.type().equals(GameEventType.EVENT_ENTER_INIT)) {
+                    // Ignore, we are not handling this - it is there for the loaders
+                    // of the UI Entry classes.
+                }
+            }
+        }
+
+        return false;
+    }
+
+    public CoreChannel getCoreChannel() {
+        return coreChannel;
     }
 }

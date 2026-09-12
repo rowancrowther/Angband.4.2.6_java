@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.egoitem.EgoItemAssembler;
 import uk.co.jackoftradesltd.backend.parser.egoitem.EgoItemParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.egoitems.EgoItemsGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.egoitems.EgoItemsLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.EgoItem;
 
 import java.io.IOException;

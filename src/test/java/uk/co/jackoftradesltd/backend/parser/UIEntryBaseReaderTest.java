@@ -20,9 +20,13 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.middle.game.globals.registry.UIRegistry;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -35,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * End-to-end tests for the migrated UIEntryBase pipeline: text file → ANTLR lexer/parser →
  * {@link UIEntryBaseReader} →
- * {@link uk.co.jackoftradesltd.backend.parser.uientrybase.UIEntryBaseAssembler} → resolved
+ * {@link UIEntryBaseAssembler} → resolved
  * {@link UIEntryBase} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>These drive real fixtures through the whole chain and exercise both error channels:

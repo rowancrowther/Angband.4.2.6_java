@@ -24,7 +24,7 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
 import uk.co.jackoftradesltd.middle.game.globals.registry.TerrainRegistry;
-import uk.co.jackoftradesltd.middle.game.globals.registry.UIRegistry;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 
 import java.lang.reflect.Field;

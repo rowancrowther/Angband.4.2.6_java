@@ -21,10 +21,17 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.middle.cave.PitProfile;
 import uk.co.jackoftradesltd.middle.cave.enums.PitRoomType;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -49,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>The pit assembler resolves {@code mon-base:} names against the loaded monster bases,
  * {@code mon-ban:} names against the loaded monster races, and {@code spell-*}/{@code flags-*}/
  * {@code color:} tokens against their enums/colour table. Those registries come from the full
- * {@link GameConstants#init()} chain (which loads both {@code monster_base.txt} and
+ * {@code GameConstants.init(CoreChannel)} chain (which loads both {@code monster_base.txt} and
  * {@code monster.txt}), mirroring {@code MonsterReaderTest}'s bootstrap.
  *
  * <p>{@link PitProfile} exposes no getters, so field-level assertions read its private fields
@@ -89,12 +96,23 @@ class PitReaderTest {
     Path tempDir;
 
     @BeforeAll
-    static void bootstrap() {
-        GameConstants.init();
+    static void bootstrap() throws IOException {
+        // Mirrors UILoop's EVENT_ENTER_INIT handler: the real init chain now blocks partway
+        // through GameConstants.init() for this ack, so the front end's UIEntry load has to
+        // actually happen before it is sent, or the assemblers below find an empty UIRegistry.
+        UIDataLoader.loadUIEntryRenderers();
+        UIDataLoader.loadUIEntryBases();
+        UIDataLoader.loadUIEntries();
+
+        Channels channels = Channels.create();
+        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        Core core = new Core(channels.coreChannel(),
+                new StartupOptions(false, false, false, false, "", "", List.of()));
+        GameConstants.init(core);
     }
 
     /**
-     * {@link GameConstants#init()} populates the shared object-kind registries in place; reset them
+     * {@code GameConstants.init(CoreChannel)} populates the shared object-kind registries in place; reset them
      * to the empty baseline so this heavy load does not leak into order-sensitive suites (matching
      * {@code MonsterReaderTest}'s cleanup).
      */
@@ -158,7 +176,7 @@ class PitReaderTest {
     }
 
     /**
-     * The genuine startup path: {@link GameConstants#init()} (run in {@link #bootstrap()}) calls
+     * The genuine startup path: {@code GameConstants.init(CoreChannel)} (run in {@link #bootstrap()}) calls
      * {@code loadPitProfiles()}, which only stores into {@code monsterPitProfiles} when the parse is
      * error-free — otherwise it logs fatal and leaves the field {@code null}. So a non-null registry
      * of the expected size proves pit.txt loaded cleanly as part of the real init chain.

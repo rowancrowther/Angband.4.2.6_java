@@ -17,7 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 
 /**

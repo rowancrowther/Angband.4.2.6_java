@@ -20,7 +20,7 @@ package uk.co.jackoftradesltd.middle.objects;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;

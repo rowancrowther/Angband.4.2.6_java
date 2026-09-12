@@ -89,7 +89,7 @@ public class GameWorld {
      * {@code game-world.c} function dereferences.
      */
     private Player player;
-    
+
     /**
      * The level the player currently occupies, cached from {@link GameState#getCave()} at
      * construction — the port of C's file-scope {@code cave} global.

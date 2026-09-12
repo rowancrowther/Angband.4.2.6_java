@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.middle.game.gameengine;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
+import uk.co.jackoftradesltd.channel.CoreChannel;
 import uk.co.jackoftradesltd.middle.cave.Chunk;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.game.event.EventsBusHandler;
@@ -82,18 +83,18 @@ public class GameEngine {
     /**
      * Initialise the middle end far enough that events can be signalled: reset the game state, then
      * install a fresh event bus. The data load itself is deliberately <em>not</em> here - it waits
-     * in {@link #loadGameConstants()} so the caller gets a window to register handlers first.
+     * in {@link #loadGameConstants(Core)} so the caller gets a window to register handlers first.
      *
      * <p><b>Known duplication:</b> {@link GameState#initGameState()} still builds a player, level
      * and command queue of its own, and this runs before the data load - so every engine creates
-     * that set twice, and the pre-load set is thrown away unread by {@link #loadGameConstants()}.
+     * that set twice, and the pre-load set is thrown away unread by {@link #loadGameConstants(Core)}.
      * Only the second set is the port of {@code player_module.init}; the first is left over from
      * when this was the only place they were made.
      *
      * <p>The bus assignment here <em>replaces</em> the one installed at class load, giving each
      * newly built engine a bus with no handlers left over from before.
      *
-     * <p>The bus is created <em>before</em> {@link GameConstants#init()} deliberately.
+     * <p>The bus is created <em>before</em> {@link GameConstants#init(Core)} deliberately.
      * {@code GameConstants.init()} is this port's {@code init_angband()} ({@code [C] src/init.c}),
      * the step C signals {@code EVENT_ENTER_INIT} from - so any bus created after it would miss
      * every event raised during loading, exactly as C requires {@code init_display()} to precede
@@ -118,7 +119,7 @@ public class GameEngine {
      * before the load raises {@code EVENT_ENTER_INIT} from inside it.
      *
      * <p>The two halves below mirror C's own two halves of {@code init_angband()}:
-     * {@link GameConstants#init()} covers both {@code init_game_constants()} and the data-file
+     * {@link GameConstants#init(Core)} covers both {@code init_game_constants()} and the data-file
      * parsing C does in its {@code arrays_module}, and the player creation that follows is
      * {@code player_module.init} - that is, {@code init_player()} ({@code [C] src/player.c:476}),
      * which C's module table runs immediately after {@code arrays_module}
@@ -140,8 +141,8 @@ public class GameEngine {
      * <p>Every call replaces the player, level and command queue held in {@link GameState}, so
      * calling this twice on one engine discards the first set entirely.
      */
-    public void loadGameConstants() {
-        GameConstants.init();
+    public boolean loadGameConstants(Core core) {
+        if (GameConstants.init(core)) return true;
 
         // The port of init_player() ([C] src/player.c:476): allocate the player and its sub-structs.
         // Everything C mem_zallocs there - upkeep, the timed-effect table, obj_k, the default
@@ -179,6 +180,8 @@ public class GameEngine {
         // in cmd-core.c that reaches the player through the global instead.
         CommandQueue commandQueue = new CommandQueue(mainPlayer);
         GameState.setCommandQueue(commandQueue);
+
+        return false;
     }
 
     /**

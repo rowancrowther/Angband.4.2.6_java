@@ -18,7 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.body;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum;
 import uk.co.jackoftradesltd.middle.player.EquipSlot;
 import uk.co.jackoftradesltd.middle.player.PlayerBody;

@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.trap.TrapGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.trap.TrapLexer;
 import uk.co.jackoftradesltd.backend.parser.trap.TrapAssembler;
 import uk.co.jackoftradesltd.backend.parser.trap.TrapParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.TrapKind;
 
 import java.io.IOException;

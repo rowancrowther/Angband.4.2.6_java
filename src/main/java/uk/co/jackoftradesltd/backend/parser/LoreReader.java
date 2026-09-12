@@ -17,14 +17,12 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
-import org.antlr.v4.runtime.CharStream;
-import org.antlr.v4.runtime.CharStreams;
-import org.antlr.v4.runtime.CommonTokenStream;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.NotNull;
 //import uk.co.jackoftradesltd.backend.parser.lore.LoreGrammar;
 //import uk.co.jackoftradesltd.backend.parser.lore.LoreLexer;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.monsters.MonsterLore;
 
 import java.io.IOException;

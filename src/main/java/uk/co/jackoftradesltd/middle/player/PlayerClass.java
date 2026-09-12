@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.enums.Stats;
@@ -447,5 +448,24 @@ public class PlayerClass {
         if (classIndex >= classes.size() || classIndex < 0)
             return null;
         return classes.get(classIndex);
+    }
+
+    public String getTitle(int level) {
+        if (titles.isEmpty())
+            return "";
+
+        int index = (level - 1) / 5;
+
+        if (index >= titles.size())
+            index = titles.size() - 1;
+
+        if (index < 0)
+            index = 0;
+
+        return titles.get(index);
+    }
+
+    public int getNoTitles() {
+        return titles.size();
     }
 }

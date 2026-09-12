@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.channel.messages;
 
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 
 /**
@@ -49,7 +50,7 @@ import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
  * @see CoreMessage the traffic going the other way
  */
 public sealed interface UIMessage extends ChannelMessage permits UIMessage.LifecycleUIMessage,
-        UIMessage.WindowCloseRequested {
+        UIMessage.WindowCloseRequested, UIMessage.SimpleUIMessage {
 
     /**
      * Protocol rather than gameplay: the front end telling the core to begin, or to save and shut
@@ -85,5 +86,9 @@ public sealed interface UIMessage extends ChannelMessage permits UIMessage.Lifec
      * frame itself.
      */
     record WindowCloseRequested() implements UIMessage {
+    }
+
+    record SimpleUIMessage(GameEventType type) implements UIMessage {
+
     }
 }

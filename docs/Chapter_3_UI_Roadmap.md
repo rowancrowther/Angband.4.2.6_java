@@ -356,6 +356,10 @@ the game draws needs the same handful.
 
 The largest single item in this roadmap and arguably its own chapter: `ui-player.c` is 1,327 lines.
 
+- [ ] Implement a system whereby `ObjectPropertyAssembler` and `PlayerPropertyAssembler` store only a raw entery name (a
+  String) to be passed through to the UI when required to be used to lookup the relevant UI entry instance via the
+  `UIRegistryLoader`. Once this has been done remove the baseline crossing marker, and do another full test suite run
+  ensure it is working correctly.
 - [ ] `display_player(0)` (`[C] ui-player.c`) — a **reduced form** showing the header, stats and gold is enough to
   unblock everything below, and the scoping of the rest is a decision to take when you are inside the file
 - [ ] `display_player_stat_info` (`[C] ui-birth.c:1036` calls it) — the stat block on its own

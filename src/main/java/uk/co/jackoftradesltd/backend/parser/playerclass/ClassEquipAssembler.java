@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.backend.parser.playerclass;
 
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.StartItem;
 import uk.co.jackoftradesltd.middle.player.StartOptionExclusion;

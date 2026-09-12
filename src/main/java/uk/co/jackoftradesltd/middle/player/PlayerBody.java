@@ -19,6 +19,7 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
 import java.util.ArrayList;
@@ -74,6 +75,7 @@ public class PlayerBody {
             throw new IllegalArgumentException("Invalid slot list. Slot list is null or empty.");
         } else {
             this.slots.addAll(slots);
+            PlayerEventStatusUpdate.updatePlayerStatusBodyCount(slots.size());
         }
     }
 

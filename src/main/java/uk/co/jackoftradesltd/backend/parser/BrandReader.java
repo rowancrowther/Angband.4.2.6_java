@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.brand.BrandAssembler;
 import uk.co.jackoftradesltd.backend.parser.brand.BrandParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.brand.BrandGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.brand.BrandLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 
 import java.io.IOException;

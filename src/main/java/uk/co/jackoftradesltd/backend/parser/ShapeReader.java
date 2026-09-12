@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.shape.ShapeGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.shape.ShapeLexer;
 import uk.co.jackoftradesltd.backend.parser.shape.ShapeAssembler;
 import uk.co.jackoftradesltd.backend.parser.shape.ShapeParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.player.PlayerShape;
 
 import java.io.IOException;

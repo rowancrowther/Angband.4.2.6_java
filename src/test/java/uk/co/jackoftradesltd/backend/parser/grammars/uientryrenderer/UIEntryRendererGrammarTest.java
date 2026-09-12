@@ -19,6 +19,8 @@ package uk.co.jackoftradesltd.backend.parser.grammars.uientryrenderer;
 
 import org.antlr.v4.runtime.*;
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.antlr4.uientryrenderer.UIEntryRendererGrammar;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.antlr4.uientryrenderer.UIEntryRendererLexer;
 
 import java.util.ArrayList;
 import java.util.List;

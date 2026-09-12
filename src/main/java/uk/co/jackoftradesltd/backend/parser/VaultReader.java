@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.vault.VaultGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.vault.VaultLexer;
 import uk.co.jackoftradesltd.backend.parser.vault.VaultAssembler;
 import uk.co.jackoftradesltd.backend.parser.vault.VaultParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.cave.profiles.vault.Vault;
 
 import java.io.IOException;
@@ -42,7 +46,7 @@ import java.util.List;
  *
  * @author Rowan Crowther
  */
-public class VaultReader implements Reader <Vault> {
+public class VaultReader implements Reader<Vault> {
     private final static Logger logger = LogManager.getLogger(VaultReader.class);
 
     /**

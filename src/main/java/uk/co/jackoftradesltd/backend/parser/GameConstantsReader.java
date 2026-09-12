@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsAssembler
 import uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.gameconstants.GameConstantsGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.gameconstants.GameConstantsLexer;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 
 import java.io.IOException;

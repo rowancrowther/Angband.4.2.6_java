@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.hint.HintGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.hint.HintLexer;
 import uk.co.jackoftradesltd.backend.parser.hint.HintAssembler;
 import uk.co.jackoftradesltd.backend.parser.hint.HintParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.game.Hint;
 
 import java.io.IOException;

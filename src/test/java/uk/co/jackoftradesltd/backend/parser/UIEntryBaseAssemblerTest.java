@@ -19,11 +19,12 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.parser.uientrybase.UIEntryBaseAssembler;
-import uk.co.jackoftradesltd.backend.parser.uientrybase.UIEntryBaseParseRecord;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.middle.game.globals.registry.UIRegistry;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;

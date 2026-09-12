@@ -19,9 +19,12 @@ package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -32,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end tests for the migrated UIEntryRenderer pipeline: text file → ANTLR lexer/parser →
- * {@link UIEntryRendererReader} → {@link uk.co.jackoftradesltd.backend.parser.uientryrenderer.UIEntryRendererAssembler}
+ * {@link UIEntryRendererReader} → {@link UIEntryRendererAssembler}
  * → resolved {@link UIEntryRenderer} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>These drive real fixtures through the whole chain, so they exercise both of the reader's error

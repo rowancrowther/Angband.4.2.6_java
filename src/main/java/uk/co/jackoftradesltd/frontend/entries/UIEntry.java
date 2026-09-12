@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.frontend.entries;
 
 import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.util.Arrays;
 import java.util.List;

@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects.enums;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.objects.Brand;
 import uk.co.jackoftradesltd.middle.objects.Curse;

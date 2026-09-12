@@ -21,6 +21,13 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.StartupOptions;
+import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -41,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The quest assembler resolves each {@code race:} name against the loaded monster races via
  * {@link MonsterRegistry#lookupMonsterRace}, so the registry must be populated first. Rather than
- * hand-seed it, the suite runs the full {@link GameConstants#init()} chain in {@link #bootstrap()}
+ * hand-seed it, the suite runs the full {@code GameConstants.init(CoreChannel)} chain in {@link #bootstrap()}
  * (which loads {@code monster.txt} and then, late in the order, {@code quest.txt} itself) - the same
  * bootstrap {@code PitReaderTest} uses for the other monster-dependent reader.
  *
@@ -63,12 +70,23 @@ class QuestReaderTest {
     Path tempDir;
 
     @BeforeAll
-    static void bootstrap() {
-        GameConstants.init();
+    static void bootstrap() throws IOException {
+        // Mirrors UILoop's EVENT_ENTER_INIT handler: the real init chain now blocks partway
+        // through GameConstants.init() for this ack, so the front end's UIEntry load has to
+        // actually happen before it is sent, or the assemblers below find an empty UIRegistry.
+        UIDataLoader.loadUIEntryRenderers();
+        UIDataLoader.loadUIEntryBases();
+        UIDataLoader.loadUIEntries();
+
+        Channels channels = Channels.create();
+        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        Core core = new Core(channels.coreChannel(),
+                new StartupOptions(false, false, false, false, "", "", List.of()));
+        GameConstants.init(core);
     }
 
     /**
-     * {@link GameConstants#init()} populates the shared registries in place; reset the object-kind
+     * {@code GameConstants.init(CoreChannel)} populates the shared registries in place; reset the object-kind
      * ones to the empty baseline so this heavy load does not leak into order-sensitive suites
      * (matching {@code PitReaderTest}'s cleanup).
      */
@@ -145,7 +163,7 @@ class QuestReaderTest {
     }
 
     /**
-     * The genuine startup path: {@link GameConstants#init()} (run in {@link #bootstrap()}) calls
+     * The genuine startup path: {@code GameConstants.init(CoreChannel)} (run in {@link #bootstrap()}) calls
      * {@code loadQuests()}, which only stores into {@code quests} when the parse is error-free.
      * A non-null registry of the expected size proves quest.txt loaded cleanly as part of real init,
      * i.e. that {@code loadQuests()} is actually wired into the chain.

@@ -22,7 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.Message;
 import uk.co.jackoftradesltd.middle.effect.EffectSubTypeWrapper;
@@ -350,7 +350,7 @@ public class Player {
         playerUpkeep = new PlayerUpkeep();
         timed = new HashMap<>();
         for (TimedEffect effect : TimedEffect.values()) {
-            timed.put(effect, 0);
+            putTimed(effect, 0);
         }
         itemKnowledge = null;
         options = new PlayerOptions();
@@ -384,8 +384,8 @@ public class Player {
         for (Stats stat : Stats.values()) {
             if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
             statsBirth.put(stat, 0);
-            statMax.put(stat, 0);
-            statCur.put(stat, 0);
+            setStatMax(stat, 0);
+            setCurrStatValue(stat, 0);
             statMap.put(stat, stat);
         }
         state = null;
@@ -433,7 +433,7 @@ public class Player {
         playerUpkeep = new PlayerUpkeep();
         timed = new HashMap<>();
         for (TimedEffect effect : TimedEffect.values()) {
-            timed.put(effect, 0);
+            putTimed(effect, 0);
         }
         itemKnowledge = null;
         options = new PlayerOptions();
@@ -467,8 +467,8 @@ public class Player {
         for (Stats stat : Stats.values()) {
             if (stat == Stats.STAT_MAX || stat == Stats.STAT_NONE) continue;
             statsBirth.put(stat, 0);
-            statMax.put(stat, 0);
-            statCur.put(stat, 0);
+            setStatMax(stat, 0);
+            setCurrStatValue(stat, 0);
             statMap.put(stat, stat);
         }
         state = null;
@@ -480,15 +480,15 @@ public class Player {
         historyBirth = null;
         level = 0;
         maxLevel = 0;
-        exp = 0L;
-        maxExp = 0L;
+        this.setExp(0L);
+        this.setMaxLevel(0);
         expFrac = 0;
 
-        currentHP = 0;
-        maxHP = 0;
+        setCurrentHP(0);
+        setPlayerMaxHP(0);
         chpFrac = 0;
-        curSp = 0;
-        maxSP = 0;
+        setCurSp(0);
+        setMaxSP(0);
         cspFrac = 0;
         hitDie = 0;
         expFact = 0;
@@ -496,14 +496,14 @@ public class Player {
         age = 0;
         height = 0;
         weight = 0;
-        au = 0;
+        setAU(0L);
         auBirth = 0;
         htBirth = 0;
         wtBirth = 0;
 
         maxDepth = 0;
         recallDepth = 0;
-        depth = 0;
+        setDepth(0);
 
         wordRecall = 0;
         deepDescent = 0;
@@ -580,6 +580,9 @@ public class Player {
      */
     public void setCurSp(int curSp) {
         this.curSp = curSp;
+
+        // Cache the value
+        PlayerEventStatusUpdate.updatePlayerStatusCurrentSP(this.curSp);
     }
 
     /**
@@ -809,6 +812,10 @@ public class Player {
      */
     public void putTimed(@NotNull TimedEffect timedEffect, int value) {
         timed.put(timedEffect, value);
+
+        // cache hallucination value if TMD_IMAGE
+        if (timedEffect == TimedEffect.TMD_IMAGE)
+            PlayerEventStatusUpdate.updatePlayerStatusPlayerHallucinating(value != 0);
     }
 
     /**
@@ -912,6 +919,9 @@ public class Player {
      */
     public void setMaxSP(int maxSP) {
         this.maxSP = maxSP;
+
+        // Cache the value
+        PlayerEventStatusUpdate.updatePlayerStatusMaxSP(this.maxSP);
     }
 
     /**
@@ -1091,8 +1101,8 @@ public class Player {
         }
         
         if (res) {
-            statCur.put(stat, cur);
-            statMax.put(stat, max);
+            setCurrStatValue(stat, cur);
+            setStatMax(stat, max);
             getPlayerUpkeep().updateOn(PlayerUpdateEnum.PU_BONUS);
             getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_STATS);
         }
@@ -1141,27 +1151,27 @@ public class Player {
      * @param verbose whether a level gain is announced to the player and written to their history
      */
     private void adjustLevel(boolean verbose) {
-        if (exp < 0) exp = 0;
+        if (getExp() < 0) setExp(0);
 
-        if (maxExp < 0) maxExp = 0;
+        if (getMaxExp() < 0) setMaxExp(0L);
 
-        if (exp > PlayerRegistry.PY_MAX_EXP) exp = PlayerRegistry.PY_MAX_EXP;
+        if (getExp() > PlayerRegistry.PY_MAX_EXP) setExp(PlayerRegistry.PY_MAX_EXP);
 
-        if (maxExp > PlayerRegistry.PY_MAX_EXP) maxExp = PlayerRegistry.PY_MAX_EXP;
+        if (getMaxExp() > PlayerRegistry.PY_MAX_EXP) maxExp = PlayerRegistry.PY_MAX_EXP;
 
-        if (exp > maxExp) maxExp = exp;
+        if (getExp() > getMaxExp()) setMaxExp(getExp());
 
         getPlayerUpkeep().setRedrawFlagsOn(PlayerRedraw.PR_EXP);
 
         PlayerCalcs.handleStuff(this);
 
         while ((level > 1)
-                && exp < PlayerRegistry.playerExperience.getOrDefault(level - 2, 0L) * expFact / 100L) {
+                && getExp() < PlayerRegistry.playerExperience.getOrDefault(level - 2, 0L) * expFact / 100L) {
             level--;
         }
 
         while (level < PlayerRegistry.PY_MAX_LEVEL
-                && exp >= PlayerRegistry.playerExperience.getOrDefault(level - 1, 0L) * expFact / 100L) {
+                && getExp() >= PlayerRegistry.playerExperience.getOrDefault(level - 1, 0L) * expFact / 100L) {
             level++;
 
             // Save the highest level
@@ -1195,7 +1205,7 @@ public class Player {
         }
 
         while ((maxLevel < PlayerRegistry.PY_MAX_LEVEL)
-                && (maxExp >= PlayerRegistry.playerExperience.getOrDefault(maxLevel - 1, 0L) * expFact / 100L)) {
+                && (getMaxExp() >= PlayerRegistry.playerExperience.getOrDefault(maxLevel - 1, 0L) * expFact / 100L)) {
             maxLevel++;
         }
 
@@ -1300,6 +1310,9 @@ public class Player {
      */
     public void setDepth(int depth) {
         this.depth = depth;
+
+        // Update cached value
+        PlayerEventStatusUpdate.updatePlayerStatusDepth(depth);
     }
 
     /**
@@ -1516,6 +1529,9 @@ public class Player {
      */
     public void setPlayerMaxHP(int maxHP) {
         this.maxHP = maxHP;
+
+        // Cache the value
+        PlayerEventStatusUpdate.updatePlayerStatusMaxHP(this.maxHP);
     }
 
     /**
@@ -1531,6 +1547,9 @@ public class Player {
      */
     public void setCurrentHP(int currentHP) {
         this.currentHP = currentHP;
+
+        // Cache value
+        PlayerEventStatusUpdate.updatePlayerStatusCurrentHP(this.currentHP);
     }
 
     /**
@@ -1563,6 +1582,10 @@ public class Player {
      */
     public void setState(PlayerState state) {
         this.state = state;
+
+        // Update light level cached value
+        // TODO: Insert correct light level string
+        PlayerEventStatusUpdate.updatePlayerStatusLightLevel("Light level string goes here");
     }
 
     /**
@@ -1594,6 +1617,15 @@ public class Player {
      */
     public void setKnownState(PlayerState knownState) {
         this.knownState = knownState;
+
+        // Update the cached values for AC
+        if (this.knownState != null) {
+            PlayerEventStatusUpdate.updatePlayerStatusArmourClass(this.knownState.getBaseAc() + this.knownState.getToAc());
+            PlayerEventStatusUpdate.updatePlayerStatusSpeed(this.knownState.getSpeed());
+        } else {
+            PlayerEventStatusUpdate.updatePlayerStatusArmourClass(0);
+            PlayerEventStatusUpdate.updatePlayerStatusSpeed(0);
+        }
     }
 
     /**
@@ -1708,18 +1740,18 @@ public class Player {
         if (amount >= 18 + 100)
             return false;
         if (amount < 18) {
-            statCur.put(stat, amount + 1);
+            setCurrStatValue(stat, amount + 1);
         } else if (amount < 18 + 90) {
             int gain = (((18 + 100) - amount) / 2 + 3) / 2;
             if (gain < 1) gain = 1;
-            statCur.put(stat, amount + RandomValueUtils.randInt1(gain) + gain / 2);
+            setCurrStatValue(stat, amount + RandomValueUtils.randInt1(gain) + gain / 2);
             if (statCur.get(stat) > 18 + 99)
-                statCur.put(stat, 18 + 99);
+                setCurrStatValue(stat, 18 + 99);
         } else {
-            statCur.put(stat, 18 + 100);
+            setCurrStatValue(stat, 18 + 100);
         }
         if (statCur.get(stat) > statMax.get(stat)) {
-            statMax.put(stat, statCur.get(stat));
+            setStatMax(stat, statCur.get(stat));
         }
 
         getPlayerUpkeep().setUpdateFlagOn(PlayerUpdateEnum.PU_BONUS);
@@ -1759,9 +1791,9 @@ public class Player {
      * @param amount the experience to award
      */
     public void playerExpGain(long amount) {
-        exp += amount;
-        if (exp < maxExp)
-            maxExp += amount / 10;
+        setExp(exp + amount);
+        if (getExp() < getMaxExp())
+            setMaxExp(getMaxExp() + amount / 10);
         adjustLevel(true);
     }
 
@@ -1799,9 +1831,9 @@ public class Player {
      * @param permanent whether the loss also reduces the maximum, putting it beyond earning back
      */
     public void playerExpLose(long amount, boolean permanent) {
-        if (exp < amount) amount = exp;
-        exp -= amount;
-        if (permanent) maxExp -= amount;
+        if (getExp() < amount) amount = getExp();
+        setExp(getExp() - amount);
+        if (permanent) setMaxExp(getMaxExp() - amount);
         adjustLevel(true);
     }
 
@@ -1994,6 +2026,9 @@ public class Player {
      */
     public void setAU(long currentAU) {
         this.au = currentAU;
+
+        // Cache the value
+        PlayerEventStatusUpdate.updatePlayerStatusGold(this.au);
     }
 
     /**
@@ -2118,6 +2153,20 @@ public class Player {
      */
     public void setStatMax(Stats stat, int maxValue) {
         statMax.put(stat, maxValue);
+
+        // Only cache the value if we have a full set of stats
+        if (statMax.size() < Stats.STAT_MAX.getValue())
+            return;
+
+        // Cache the value
+        int[] cachedValues = new int[Stats.STAT_MAX.getValue()];
+        for (Stats statIndex : Stats.values()) {
+            if (statIndex == Stats.STAT_MAX || statIndex == Stats.STAT_NONE) continue;
+
+            cachedValues[statIndex.getValue()] = getStatMax(statIndex);
+        }
+
+        PlayerEventStatusUpdate.updatePlayerStatusMaxStats(cachedValues);
     }
 
     /**
@@ -2142,6 +2191,21 @@ public class Player {
      */
     public void setCurrStatValue(Stats stat, int curStatValue) {
         statCur.put(stat, curStatValue);
+
+        // Only cache the value if we have a full set of stats
+        if (statMax.size() < Stats.STAT_MAX.getValue())
+            return;
+
+        // Update the cached value
+        int[] statValues = new int[Stats.STAT_MAX.getValue()];
+        for (Stats statIndex : Stats.values()) {
+            if (statIndex == Stats.STAT_NONE || statIndex == Stats.STAT_MAX)
+                continue;
+
+            statValues[statIndex.getValue()] = getCurStatValue(statIndex);
+        }
+
+        PlayerEventStatusUpdate.updatePlayerStatusCurrentStats(statValues);        
     }
 
     /**
@@ -2236,6 +2300,9 @@ public class Player {
      */
     public void setClass(PlayerClass playerClass) {
         this.playerClass = playerClass;
+
+        // Cache the player class name
+        PlayerEventStatusUpdate.updatePlayerStatusClassName(this.playerClass.getName());
     }
 
     /**
@@ -2256,6 +2323,10 @@ public class Player {
      */
     public void setRace(PlayerRace race) {
         this.race = race;
+
+        // Cache the player race name and body count
+        PlayerEventStatusUpdate.updatePlayerStatusRaceName(this.race.getName());
+        PlayerEventStatusUpdate.updatePlayerStatusBodyCount(this.race.getBody().getCount());
     }
 
     /**
@@ -2297,6 +2368,13 @@ public class Player {
      */
     public void setLevel(int level) {
         this.level = level;
+
+        // Cache the new player title
+        if (playerClass != null)
+            PlayerEventStatusUpdate.updatePlayerStatusPlayerTitle(playerClass.getTitle(this.level));
+
+        // Now cache the player level
+        PlayerEventStatusUpdate.updatePlayerStatusLevel(this.level);
     }
 
     /**
@@ -2427,6 +2505,10 @@ public class Player {
      */
     public void setTimed(Map<TimedEffect, Integer> timed) {
         this.timed = timed;
+
+        // Update cached hallucination value
+        if (timed.containsKey(TimedEffect.TMD_IMAGE))
+            PlayerEventStatusUpdate.updatePlayerStatusPlayerHallucinating(timed.get(TimedEffect.TMD_IMAGE) != 0);
     }
 
     /**
@@ -2704,6 +2786,7 @@ public class Player {
     public void setFullName(String name) {
         int length = Math.min(31, name.length());
         this.fullName = name.substring(0, length);
+        PlayerEventStatusUpdate.updatePlayerStatusPlayerName(this.fullName);
     }
 
     /**
@@ -2749,4 +2832,22 @@ public class Player {
     public void setIsDead(boolean isDead) {
         this.isDead = isDead;
     }
+
+    public void setExp(long exp) {
+        this.exp = exp;
+
+        // Cache the player experience
+        PlayerEventStatusUpdate.updatePlayerStatusExperience(this.exp);
+    }
+
+    public long getMaxExp() {
+        return maxExp;
+    }
+
+    public void setMaxExp(long maxExp) {
+        this.maxExp = maxExp;
+
+        // Cache the player max experience
+        PlayerEventStatusUpdate.updatePlayerStatusMaxExperience(this.maxExp);
+    }   
 }

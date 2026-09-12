@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectProper
 import uk.co.jackoftradesltd.backend.parser.grammars.objectproperty.ObjectPropertyLexer;
 import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyAssembler;
 import uk.co.jackoftradesltd.backend.parser.objectproperty.ObjectPropertyParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 
 import java.io.IOException;

@@ -18,6 +18,7 @@
 package uk.co.jackoftradesltd.middle.monsters;
 
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.Heatmap;
 import uk.co.jackoftradesltd.middle.cave.Loc;
@@ -28,7 +29,7 @@ import uk.co.jackoftradesltd.middle.monsters.enums.MonsterFlag;
 import uk.co.jackoftradesltd.middle.monsters.enums.MonsterRaceFlag;
 import uk.co.jackoftradesltd.middle.numerics.RandomValueUtils;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.Player;
 import uk.co.jackoftradesltd.middle.player.PlayerKnowledge;
@@ -168,13 +169,15 @@ public class Monster {
         this.monsterRace = monsterRace;
         this.originalRace = originalRace;
         this.grid = grid;
-        this.hp = hp;
-        this.maxHp = maxHp;
+        setHp(hp);
+        setMaxHp(maxHp);
         this.mTimed = mTimed;
         this.mSpeed = mSpeed;
         this.energy = energy;
         this.cDistance = cDistance;
         this.monsterFlag = monsterFlag;
+        if (this.monsterFlag != null && this.monsterFlag.has(MonsterFlag.MFLAG_VISIBLE))
+            updateCached(null);
         this.mimickedObject = mimickedObject;
         this.heldObject = heldObject;
         this.colourAttr = colourAttr;
@@ -211,6 +214,9 @@ public class Monster {
      */
     public void monsterFlagOff(MonsterFlag flag) {
         monsterFlag.off(flag);
+
+        if (flag == MonsterFlag.MFLAG_VISIBLE)
+            updateCached(null);
     }
 
     /**
@@ -275,6 +281,23 @@ public class Monster {
      */
     public boolean setTimed(MonTimed timed, int timer, Flag<MonTimedFlags> flag) {
         // Stub class: TODO: implement
+
+        // Update cached values
+        if (timed == MonTimed.MON_TMD_FEAR)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdFear(timer != 0);
+        if (timed == MonTimed.MON_TMD_DISEN)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdDisen(timer != 0);
+        if (timed == MonTimed.MON_TMD_COMMAND)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdCommand(timer != 0);
+        if (timed == MonTimed.MON_TMD_CONF)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdConf(timer != 0);
+        if (timed == MonTimed.MON_TMD_STUN)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdStun(timer != 0);
+        if (timed == MonTimed.MON_TMD_SLEEP)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdSleep(timer != 0);
+        if (timed == MonTimed.MON_TMD_HOLD)
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdHold(timer != 0);
+        
         return false;
     }
 
@@ -474,5 +497,54 @@ public class Monster {
      */
     private boolean monsterIsStupid() {
         return monsterRace.hasMonsterRaceFlag(MonsterRaceFlag.RF_STUPID);
+    }
+
+    public int getHp() {
+        return hp;
+    }
+
+    public void setHp(int hp) {
+        this.hp = hp;
+
+        // Update cached copy
+        PlayerEventStatusUpdate.updatePlayerStatusMonsterHealth(this.hp);
+    }
+
+    public int getMaxHp() {
+        return maxHp;
+    }
+
+    public void setMaxHp(int maxHp) {
+        this.maxHp = maxHp;
+
+        // Update cached copy
+        PlayerEventStatusUpdate.updatePlayerStatusMaxMonsterHealth(this.maxHp);
+    }
+
+    public void monsterFlagOn(MonsterFlag flag) {
+        monsterFlag.on(flag);
+
+        if (flag == MonsterFlag.MFLAG_VISIBLE)
+            updateCached(null);
+    }
+
+    public void setMonsterTracked(boolean monsterTracked) {
+        updateCached(monsterTracked);
+    }
+
+    private void updateCached(Boolean monTracked) {
+        if (monsterFlag != null)
+            PlayerEventStatusUpdate.updatePlayerStatusMonsterVisible(monsterFlag.has(MonsterFlag.MFLAG_VISIBLE));
+        if (monTracked != null)
+            PlayerEventStatusUpdate.updatePlayerStatusMonsterTracked(monTracked);
+        if (mTimed != null) {
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdFear(getMonTimed(MonTimed.MON_TMD_FEAR) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdDisen(getMonTimed(MonTimed.MON_TMD_DISEN) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdCommand(getMonTimed(MonTimed.MON_TMD_COMMAND) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdConf(getMonTimed(MonTimed.MON_TMD_CONF) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdStun(getMonTimed(MonTimed.MON_TMD_STUN) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdSleep(getMonTimed(MonTimed.MON_TMD_SLEEP) != 0);
+            PlayerEventStatusUpdate.updatePlayerStatusMonTmdHold(getMonTimed(MonTimed.MON_TMD_HOLD) != 0);
+        }
     }
 }

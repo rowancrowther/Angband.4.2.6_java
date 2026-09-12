@@ -28,7 +28,9 @@ import uk.co.jackoftradesltd.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
+import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.loaders.*;
@@ -37,7 +39,7 @@ import uk.co.jackoftradesltd.middle.objects.Archery;
 import uk.co.jackoftradesltd.middle.objects.ElementPowers;
 import uk.co.jackoftradesltd.middle.objects.ElementSet;
 import uk.co.jackoftradesltd.middle.objects.FlagSet;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
@@ -58,7 +60,7 @@ import java.util.HashMap;
  *       {@code world}, {@code carry-cap}, {@code melee}/{@code ranged-critical}, and so on), which
  *       mirror one-to-one the per-value documentation in the {@code backend.utils.globalvalues}
  *       classes;</li>
- *   <li>the {@link #init()} pipeline, which calls each domain's {@code *DataLoader} in dependency
+ *   <li>the {@link #init(Core)} pipeline, which calls each domain's {@code *DataLoader} in dependency
  *       order to populate the per-domain registries.</li>
  * </ul>
  *
@@ -68,7 +70,7 @@ import java.util.HashMap;
  * domain, leaving this class as the constants holder plus the init orchestrator.
  *
  * <p>It is a static-only holder (private constructor). The scalar {@code get*} accessors read
- * {@link #data}, so they must not be called before {@link #init()} has loaded {@code constants.txt}.
+ * {@link #data}, so they must not be called before {@link #init(Core)} has loaded {@code constants.txt}.
  *
  * @author Rowan Crowther
  */
@@ -164,7 +166,7 @@ public class GameConstants {
     /**
      * Load the scalar tunables from {@code constants.txt} into {@link #data}, which the {@code get*}
      * accessors read. A file with parse errors is logged and skipped, leaving {@code data} unset
-     * (soft failure); an IO error is logged and rethrown. Called first in {@link #init()} because
+     * (soft failure); an IO error is logged and rethrown. Called first in {@link #init(Core)} because
      * nothing else here depends on it, but the running game reads these values throughout.
      *
      * @throws IOException if the file cannot be read
@@ -197,7 +199,8 @@ public class GameConstants {
      * not double-register kinds. Any failure is logged and rethrown wrapped in a
      * {@link RuntimeException}, since the game cannot run with partially-loaded data.
      */
-    public static void init() {
+    public static boolean init(Core core) {
+        String file = "";
         try {
             // Signal EVENT_ENTER_INIT
             EventsHandler bus = GameEngine.getEventsBusHandler();
@@ -208,83 +211,127 @@ public class GameConstants {
             // does not double-register kinds or keep incrementing svals.
             ObjectRegistry.reset();
 
+            file = "constants.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game constants...");
             loadGameConstants();
+            file = "world.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising world...");
             WorldDataLoader.loadWorld();                // world arraylist size determines maxRandDepth
+            file = "projection.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising game projections...");
             WorldDataLoader.loadProjections();          // projections arrayList size determines projectionTypeMax
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entry Renderers...");
-            UIDataLoader.loadUIEntryRenderers();
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entry Bases...");
-            UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
-            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising UI Entries...");
-            UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+
+            file = "ui_entry files";
+            // Wait for UIEntry loaders to finish and message to be sent from UI frontend            
+            UIMessage message = core.getCoreChannel().coreReceiver().receive();
+            while (true) {
+                if (message instanceof UIMessage.SimpleUIMessage simpleUIMessage
+                        && simpleUIMessage.type().equals(GameEventType.EVENT_ENTER_INIT)) {
+                    break;
+                } else {
+                    // Pass the message through to the GameLoop for it to handle
+                    if (core.handleChannelOutput(message)) return true;
+                }
+                message = core.getCoreChannel().coreReceiver().receive();
+            }
+
+            file = "player_property.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player properties...");
             PlayerDataLoader.loadPlayerProperties();     // Dependent on UIEntry
+            file = "terrain.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising terrain features...");
             TerrainDataLoader.loadTerrainFeatures();
+            file = "object_base.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object bases...");
             ObjectDataLoader.loadObjectBases();
+            file = "pain.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pain messages...");
             MonsterDataLoader.loadPain();
+            file = "monster_base.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster bases...");
             MonsterDataLoader.loadMonsterBases();         // Dependent on MonsterPain
+            file = "slay.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object slays...");
             ObjectDataLoader.loadSlays();                // Dependent on MonsterBases
+            file = "brand.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object brands...");
             ObjectDataLoader.loadBrands();
+            file = "summon.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster summons...");
             MonsterDataLoader.loadSummons();              // Dependent on MonsterBases
+            file = "curse.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising curses...");
             ObjectDataLoader.loadCurses();               // Dependent on ObjectBases, & Summons
+            file = "shape.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player shapes...");
             PlayerDataLoader.loadPlayerShapes();
+            file = "object.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising objects...");
             ObjectDataLoader.loadItemObjects();          // Dependent on Summons, Curse, Brand, Slay & ObjectBase
+            file = "activation.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising activations...");
             ObjectDataLoader.loadActivations();
+            file = "ego_item.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising ego items...");
             ObjectDataLoader.loadEgoItems();             // Dependent on Activations, Brand, Slay & Curse
+            file = "history.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player histories...");
             PlayerDataLoader.loadPlayerHistories();
+            file = "body.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player bodies...");
             PlayerDataLoader.loadBodies();
+            file = "p_race.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player races...");
             PlayerDataLoader.loadPlayerRaces();          // Dependent on PlayerBodies & PlayerHistories
+            file = "realm.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising magic...");
             PlayerDataLoader.loadMagicRealms();
+            file = "class.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player classes...");
             PlayerDataLoader.loadPlayerClasses();        // Dependent on ItemObjects, Summons, MagicRealms
+            file = "artifact.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising artifacts...");
             ObjectDataLoader.loadArtifacts();            // Dependent on Activations, ObjectKind, Brand, Slay & Curse
+            file = "object_property.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object properties...");
             ObjectDataLoader.loadObjectProperties();     // Dependent on UIEntry
+            file = "player_timed.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player times properties...");
             PlayerDataLoader.loadPlayerTimedProperties();
+            file = "blow_methods.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow methods...");
             MonsterDataLoader.loadBlowMethods();
+            file = "blow_effects.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising blow effects...");
             MonsterDataLoader.loadBlowEffects();          // Dependent on Projections
+            file = "monster_spell.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monster spell types...");
             MonsterDataLoader.loadMonsterSpellTypes();
+            file = "visuals.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising colour tables...");
             MonsterDataLoader.loadVisualTables();
+            file = "monster.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising monsters...");
             MonsterDataLoader.loadMonsters();             // Dependent on MonsterBase, VisualsCyclerTable, BlowMethods & VisualColours
+            file = "pit.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising pit profiles...");
             MonsterDataLoader.loadPitProfiles();          // Dependent on Monsters, MonsterBase & MonsterSpellTypes
             // TODO: Add in lore parsing and uncomment below two lines
             //bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising lore...");
 //            loadMonsterLore();          // Dependent on MonsterKind, MonsterBase & ObjectKind (amongst others)
+            file = "trap.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising traps...");
             TerrainDataLoader.loadTraps();
+            file = "quest.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising quests...");
             WorldDataLoader.loadQuests();               // Dependent on Monster
+            file = "hints.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising hints...");
             MiscDataLoader.loadHints();
+            file = "names.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising names...");
             MiscDataLoader.loadNames();
+            file = "flavor.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising flavours...");
             MiscDataLoader.loadFlavours();
             // TODO: Add chest traps
@@ -292,7 +339,8 @@ public class GameConstants {
             // Load global tables
             PlayerDataLoader.initialiseExpLevel();
         } catch (Exception e) {
-            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + " error message: " + e.getMessage();
+            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "/" + file
+                    + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);
         }
@@ -351,6 +399,8 @@ public class GameConstants {
         ObjectRegistry.elementPowers.add(elementPower);
         elementPower = new ElementPowers(ElementEnum.ELEM_DISEN, "disenchantment", ResType.T_HRES, 0, 0, 20, 0);
         ObjectRegistry.elementPowers.add(elementPower);
+
+        return false;
     }
 
     /**

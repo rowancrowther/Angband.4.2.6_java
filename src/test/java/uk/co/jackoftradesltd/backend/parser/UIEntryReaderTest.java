@@ -20,10 +20,15 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
+import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -35,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end tests for the UIEntry pipeline: text file → ANTLR lexer/parser →
- * {@link UIEntryReader} → {@link uk.co.jackoftradesltd.backend.parser.uientry.UIEntryAssembler} →
+ * {@link UIEntryReader} → {@link UIEntryAssembler} →
  * resolved {@link UIEntry} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>The happy-path test runs against the real shipped {@code lib/gamedata/ui_entry.txt}; a clean

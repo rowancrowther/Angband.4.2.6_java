@@ -18,7 +18,7 @@
 package uk.co.jackoftradesltd.backend.parser.roomprofile;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.cave.enums.RoomFlags;
 import uk.co.jackoftradesltd.middle.cave.profiles.room.RoomTemplate;

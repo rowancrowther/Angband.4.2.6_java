@@ -35,6 +35,7 @@ import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.splash.SplashScreen;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 
 import javax.swing.*;
 import java.nio.file.Files;
@@ -257,6 +258,20 @@ public class UILoop {
                                 splashScreen.readAndParse(path, screen);
 
                                 swingUI.getActiveWindow().show(screen.frame());
+
+                                try {
+                                    writeInitString("Initialising UI Entry Renderers...");
+                                    UIDataLoader.loadUIEntryRenderers();
+                                    writeInitString("Initialising UI Entry Bases...");
+                                    UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
+                                    writeInitString("Initialising UI Entries...");
+                                    UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
+
+                                    UIMessage.SimpleUIMessage loadingFinishedMessage = new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT);
+                                    uiChannel.uiSender().send(loadingFinishedMessage);
+                                } catch (Exception e) {
+                                    throw new RuntimeException(e);
+                                }
                             }
                             case EVENT_LEAVE_INIT -> new MainEvents().leaveInit();
                             case EVENT_ENTER_GAME -> new MainEvents().enterGame();
@@ -283,9 +298,7 @@ public class UILoop {
                                 if (splashScreen == null)
                                     logger.warn("CoreMessage.EVENT_INITSTATUS received before CoreMessage.EVENT_ENTER_INIT");
                                 else {
-                                    screen.splashScreenNote(eventMessage);
-
-                                    swingUI.getActiveWindow().show(screen.frame());
+                                    writeInitString(eventMessage);
                                 }
                             }
                         }
@@ -309,6 +322,12 @@ public class UILoop {
                 break;
             }
         }
+    }
+
+    private void writeInitString(String string) {
+        screen.splashScreenNote(string);
+
+        swingUI.getActiveWindow().show(screen.frame());
     }
 
     private void onEventDispatchThread(Runnable runnable) {

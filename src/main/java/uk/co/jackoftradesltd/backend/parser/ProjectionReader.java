@@ -25,6 +25,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.projection.ProjectionGramma
 import uk.co.jackoftradesltd.backend.parser.grammars.projection.ProjectionLexer;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionAssembler;
 import uk.co.jackoftradesltd.backend.parser.projection.ProjectionParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 
 import java.io.IOException;

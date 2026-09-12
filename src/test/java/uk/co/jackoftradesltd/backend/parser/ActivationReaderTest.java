@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.parser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.Activation;
 
 import java.io.IOException;

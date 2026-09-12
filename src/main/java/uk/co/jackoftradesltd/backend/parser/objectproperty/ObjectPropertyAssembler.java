@@ -18,9 +18,10 @@
 package uk.co.jackoftradesltd.backend.parser.objectproperty;
 
 import org.jetbrains.annotations.NotNull;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.middle.game.globals.registry.UIRegistry;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;

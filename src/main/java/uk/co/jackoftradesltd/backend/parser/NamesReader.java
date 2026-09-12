@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.names.NamesGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.names.NamesLexer;
 import uk.co.jackoftradesltd.backend.parser.names.NamesAssembler;
 import uk.co.jackoftradesltd.backend.parser.names.NamesParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.game.Name;
 
 import java.io.IOException;

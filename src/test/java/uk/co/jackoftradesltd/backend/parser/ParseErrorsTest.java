@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsLexer;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
 
 import java.util.List;
 

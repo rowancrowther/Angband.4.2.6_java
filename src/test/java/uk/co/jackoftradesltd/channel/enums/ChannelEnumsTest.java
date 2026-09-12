@@ -19,7 +19,6 @@ package uk.co.jackoftradesltd.channel.enums;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
 
 import java.util.Arrays;
 import java.util.List;

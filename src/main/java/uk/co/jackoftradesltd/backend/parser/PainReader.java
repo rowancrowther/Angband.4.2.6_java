@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.pain.PainGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.pain.PainLexer;
 import uk.co.jackoftradesltd.backend.parser.pain.PainAssembler;
 import uk.co.jackoftradesltd.backend.parser.pain.PainParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.monsters.MonsterPain;
 
 import java.io.IOException;

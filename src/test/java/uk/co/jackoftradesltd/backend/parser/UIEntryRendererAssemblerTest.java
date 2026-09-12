@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.backend.parser.uientryrenderer.UIEntryRendererAssembler;
-import uk.co.jackoftradesltd.backend.parser.uientryrenderer.UIEntryRendererParseRecord;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererAssembler;
+import uk.co.jackoftradesltd.frontend.ui.entryrenderer.assembler.UIEntryRendererParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryEnum;
 import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;

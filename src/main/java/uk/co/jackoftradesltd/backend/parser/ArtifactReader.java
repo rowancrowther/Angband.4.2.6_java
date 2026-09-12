@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler;
 import uk.co.jackoftradesltd.backend.parser.artifact.ArtifactParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.artifact.ArtifactGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.artifact.ArtifactLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.objects.Artifact;
 
 import java.io.IOException;

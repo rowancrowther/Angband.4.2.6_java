@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.monster.MonsterGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.monster.MonsterLexer;
 import uk.co.jackoftradesltd.backend.parser.monster.MonsterAssembler;
 import uk.co.jackoftradesltd.backend.parser.monster.MonsterParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.monsters.MonsterRace;
 
 import java.io.IOException;

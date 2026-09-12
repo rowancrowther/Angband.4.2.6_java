@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.objects;
 
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.numerics.Random;
 import uk.co.jackoftradesltd.channel.utils.Flag;

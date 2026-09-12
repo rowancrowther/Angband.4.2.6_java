@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.activation.ActivationAssembler;
 import uk.co.jackoftradesltd.backend.parser.activation.ActivationParseRecord;
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.activations.ActivationsLexer;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.Activation;
 
 import java.io.IOException;

@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.backend.parser.monsterspell;
 
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.backend.parser.Assembler;
+import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.middle.monsters.MonsterSpellLevel;
 
 import java.util.ArrayList;

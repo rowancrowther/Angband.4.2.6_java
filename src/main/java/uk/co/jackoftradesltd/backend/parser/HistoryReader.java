@@ -24,6 +24,10 @@ import uk.co.jackoftradesltd.backend.parser.grammars.history.HistoryGrammar;
 import uk.co.jackoftradesltd.backend.parser.grammars.history.HistoryLexer;
 import uk.co.jackoftradesltd.backend.parser.history.HistoryAssembler;
 import uk.co.jackoftradesltd.backend.parser.history.HistoryParseRecord;
+import uk.co.jackoftradesltd.channel.parser.GrammarDriver;
+import uk.co.jackoftradesltd.channel.parser.ParseErrors;
+import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.parser.Reader;
 import uk.co.jackoftradesltd.middle.player.PlayerHistoryChart;
 
 import java.io.IOException;

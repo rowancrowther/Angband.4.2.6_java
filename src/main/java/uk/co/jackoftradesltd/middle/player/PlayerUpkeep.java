@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.middle.player;
 
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.cave.Loc;
@@ -253,7 +254,7 @@ public class PlayerUpkeep {
         quiverObjects = new ItemObject[GameConstants.getCarryCapQuiverSize()];
 
         // C's mem_zalloc, written out by hand
-        healthWho = null;
+        setHealthWho(null);
         monsterRace = null;
         object = null;
         objectKind = null;
@@ -562,7 +563,7 @@ public class PlayerUpkeep {
      * @param monster the monster to track, or {@code null} to stop tracking
      */
     public void healthTrack(Monster monster) {
-        healthWho = monster;
+        setHealthWho(monster);
         setRedrawFlagsOn(PlayerRedraw.PR_HEALTH);
     }
 
@@ -959,5 +960,22 @@ public class PlayerUpkeep {
      */
     public void setPlaying(boolean playing) {
         this.playing = playing;
+    }
+
+    public void setHealthWho(Monster healthWho) {
+        this.healthWho = healthWho;
+
+        // Update cached value
+        PlayerEventStatusUpdate.updatePlayerStatusMonsterTracked(healthWho != null);
+    }
+
+    public void setRestingCounter(int restingCounter) {
+        this.restingCounter = restingCounter;
+
+        // update cached value
+        if (this.restingCounter != 0) {
+            // TODO: Update resting string with correct value
+            PlayerEventStatusUpdate.updatePlayerStatusRestingRepeatStatus("Resting string goes here");
+        }
     }
 }

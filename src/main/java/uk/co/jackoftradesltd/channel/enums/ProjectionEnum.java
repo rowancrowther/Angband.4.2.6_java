@@ -17,8 +17,6 @@
 
 package uk.co.jackoftradesltd.channel.enums;
 
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
-
 /**
  * The complete set of projection ("GF") types — every kind of bolt, ball, beam
  * or area effect the game can resolve, from elemental damage (acid, fire, …)

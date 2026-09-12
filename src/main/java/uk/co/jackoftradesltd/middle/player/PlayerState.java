@@ -20,12 +20,13 @@ package uk.co.jackoftradesltd.middle.player;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 import uk.co.jackoftradesltd.middle.game.globals.registry.StatTables;
 import uk.co.jackoftradesltd.middle.objects.ElementInfo;
-import uk.co.jackoftradesltd.middle.objects.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
@@ -198,7 +199,7 @@ public class PlayerState {
         toH = 0;
         toD = 0;
         seeInfra = 0;
-        curLight = 0;
+        setCurLight(0);
         heavyWield = false;
         heavyShoot = false;
         blessWield = false;
@@ -457,6 +458,7 @@ public class PlayerState {
      */
     public void setCurLight(int i) {
         curLight = i;
+        updateLightLevel();
     }
 
     /**
@@ -838,7 +840,7 @@ public class PlayerState {
         result.toH = this.toH;
         result.toD = this.toD;
         result.seeInfra = this.seeInfra;
-        result.curLight = this.curLight;
+        result.setCurLight(this.curLight);
         result.heavyWield = this.heavyWield;
         result.heavyShoot = this.heavyShoot;
         result.blessWield = this.blessWield;
@@ -901,5 +903,11 @@ public class PlayerState {
      */
     public int getNumBlows() {
         return numBlows;
+    }
+
+    public void updateLightLevel() {
+        // Update light level cached value
+        // TODO: Insert correct light level string
+        PlayerEventStatusUpdate.updatePlayerStatusLightLevel("Light level string goes here");
     }
 }

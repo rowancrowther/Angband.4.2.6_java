@@ -19,7 +19,6 @@ package uk.co.jackoftradesltd.middle.player;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
@@ -38,7 +37,7 @@ import java.util.List;
  * carrier is meaningful, per the discriminator.
  *
  * <p>Beyond the C struct the port also holds {@link #entries}: the resolved bindings from this
- * property to the {@link UIEntry} slots that display it (the {@code bindui:} lines), which is how a
+ * property to the {@code UIEntry} slots that display it (the {@code bindui:} lines), which is how a
  * property surfaces on the character screen.
  *
  * @author Rowan Crowther
@@ -58,7 +57,7 @@ public class PlayerProperty {
      * @param aux     whether this is an auxiliary binding variant
      * @author Rowan Crowther
      */
-    public record BindUI(UIEntry uiEntry, int value, boolean special, boolean aux) {
+    public record BindUI(String uiEntry, int value, boolean special, boolean aux) {
     }
 
     /**

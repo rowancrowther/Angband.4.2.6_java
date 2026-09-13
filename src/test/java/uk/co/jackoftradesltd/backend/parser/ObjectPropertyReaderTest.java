@@ -17,17 +17,10 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
-import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.middle.objects.ObjectProperty;
 import uk.co.jackoftradesltd.middle.objects.ObjectPropertyTypeWrapper;
 import uk.co.jackoftradesltd.middle.objects.enums.*;
@@ -65,11 +58,10 @@ import static org.junit.jupiter.api.Assertions.*;
  * {@code record-count}) and soft (record-count mismatch) error channels.
  *
  * <p>{@link ObjectProperty} exposes no getters, so field reads go through the
- * {@link #field(ObjectProperty, String)} reflection helper. The assembler resolves
- * {@code bindui} targets against the {@code UIRegistry} UI-entry registry, so
- * {@link #seedRegistries()} loads the real renderer, base and entry files and
- * injects them into {@code UIRegistry}' private static fields via reflection,
- * independent of full-game init order.
+ * {@link #field(ObjectProperty, String)} reflection helper. The assembler no longer resolves
+ * {@code bindui} targets against a UI-entry registry: it stores the raw {@code name + tag}
+ * string verbatim, leaving the look-up to the UI layer (via {@code UIRegistryLoader}) at the
+ * point the entry is actually needed.
  *
  * @author Rowan Crowther
  */
@@ -79,28 +71,6 @@ class ObjectPropertyReaderTest {
 
     @TempDir
     Path tempDir;
-
-    @BeforeAll
-    static void seedRegistries() throws Exception {
-        // The UI-entry pipeline resolves bottom-up: renderers, then bases (which
-        // resolve renderers), then entries (which resolve both). The object-property
-        // assembler's bindui look-ups need the finished entry list seeded.
-        List<UIEntryRenderer> renderers = new UIEntryRendererReader()
-                .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
-        setStatic("uiEntryRenderers", renderers);
-        List<UIEntryBase> bases = new UIEntryBaseReader()
-                .parseWithResults("lib/gamedata/ui_entry_base.txt").items();
-        setStatic("uiEntryBases", bases);
-        List<UIEntry> entries = new UIEntryReader()
-                .parseWithResults("lib/gamedata/ui_entry.txt").items();
-        setStatic("uiEntries", entries);
-    }
-
-    private static void setStatic(String fieldName, Object value) throws Exception {
-        Field f = RegistrySeeding.resolve(fieldName);
-        f.setAccessible(true);
-        f.set(null, value);
-    }
 
     private String tempFile(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -157,10 +127,11 @@ class ObjectPropertyReaderTest {
         long unbound = items.stream().filter(p -> bindings(p).isEmpty()).count();
         assertEquals(13, unbound, "the 13 records with no bindui line should have no bindings");
 
-        // No surviving binding should point at a null UI entry: an unresolvable (or absent)
-        // bindui must drop the binding, never keep a binding to nothing.
-        assertTrue(items.stream().flatMap(p -> bindings(p).stream()).allMatch(b -> b.entry() != null),
-                "every retained binding should resolve to a real UI entry");
+        // No surviving binding should carry a blank entry name: an absent bindui line must
+        // produce no binding at all, never a binding to nothing.
+        assertTrue(items.stream().flatMap(p -> bindings(p).stream())
+                        .allMatch(b -> b.entry() != null && !b.entry().isEmpty()),
+                "every retained binding should carry a non-empty raw entry name");
     }
 
     // ---- element-relation type strings (resistance/vulnerability/immunity/ignore) -----------
@@ -242,13 +213,13 @@ class ObjectPropertyReaderTest {
 
     /**
      * A {@code <TAG>} is part of the target entry's <em>name</em> in {@code ui_entry.txt}
-     * (e.g. {@code stat_mod_ui_compact_0<STR>}), not a separate parameter, so the lookup key is
-     * {@code bindui + "<" + tag + ">"}. This pins that the decorated key resolves and the aux
-     * flag is read: {@code stat_mod_ui_compact_0<STR>:1} is the "sustain STR" shape — aux true,
-     * no explicit value (so the natural value is used).
+     * (e.g. {@code stat_mod_ui_compact_0<STR>}), not a separate parameter, so the stored key is
+     * {@code bindui + "<" + tag + ">"}. This pins that the decorated key is captured verbatim and
+     * the aux flag is read: {@code stat_mod_ui_compact_0<STR>:1} is the "sustain STR" shape — aux
+     * true, no explicit value (so the natural value is used).
      */
     @Test
-    void taggedBinduiResolvesAndAuxIsRead() throws IOException {
+    void taggedBinduiCapturesTagAndAuxIsRead() throws IOException {
         String path = tempFile("tagged.txt", """
                 record-count:1
                 name:sustain strength
@@ -266,8 +237,7 @@ class ObjectPropertyReaderTest {
         List<ObjectProperty.UIBinding> binds = bindings(byName(result.items(), "sustain strength"));
         assertEquals(1, binds.size());
         ObjectProperty.UIBinding bind = binds.get(0);
-        assertNotNull(bind.entry(), "the <STR>-decorated entry should resolve");
-        assertEquals("stat_mod_ui_compact_0<STR>", bind.entry().getName());
+        assertEquals("stat_mod_ui_compact_0<STR>", bind.entry(), "the <STR>-decorated name should be captured verbatim");
         assertTrue(bind.aux(), "aux param is 1 -> auxiliary");
         assertNull(bind.value(), "no third param -> use the natural value (null), not 0");
     }
@@ -295,7 +265,7 @@ class ObjectPropertyReaderTest {
 
         assertEquals(List.of(), result.errors(), result.errors()::toString);
         ObjectProperty.UIBinding bind = bindings(byName(result.items(), "power 1 digging")).get(0);
-        assertNotNull(bind.entry());
+        assertEquals("tunneling_ui_compact_0", bind.entry());
         assertFalse(bind.aux(), "aux param is 0");
         assertEquals(1, bind.value(), "third param present -> explicit value 1");
     }

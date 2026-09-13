@@ -185,9 +185,7 @@ class BoundaryTest {
             "middle/game/globals/loaders/MonsterDataLoader.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
             "middle/game/globals/registry/MonsterRegistry.java -> uk.co.jackoftradesltd.frontend.colour.FlickerTable",
             "middle/game/globals/registry/MonsterRegistry.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
-            "middle/monsters/MonsterRace.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
-            "middle/objects/ObjectProperty.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "middle/player/PlayerProperty.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry"
+            "middle/monsters/MonsterRace.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle"
     );
 
     /**
@@ -201,10 +199,6 @@ class BoundaryTest {
             "backend/parser/VisualsReader.java -> uk.co.jackoftradesltd.frontend.colour.FlickerTable",
             "backend/parser/VisualsReader.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
             "backend/parser/monster/MonsterAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
-            "backend/parser/objectproperty/ObjectPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "backend/parser/objectproperty/ObjectPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry",
-            "backend/parser/playerproperty/PlayerPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.entries.UIEntry",
-            "backend/parser/playerproperty/PlayerPropertyAssembler.java -> uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry",
             "backend/parser/visuals/VisualsCycleAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",
             "backend/parser/visuals/VisualsCycleAssembler.java -> uk.co.jackoftradesltd.frontend.colour.VisualsCycler",
             "backend/parser/visuals/VisualsFlickerAssembler.java -> uk.co.jackoftradesltd.frontend.colour.ColourCycle",

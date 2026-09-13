@@ -17,22 +17,14 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
-import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
-import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
-import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -57,16 +49,16 @@ import static org.junit.jupiter.api.Assertions.*;
  *
  * <p>The remaining tests inject one defect each to exercise both error channels:
  * a hard grammar error (missing {@code record-count}) fails closed with an empty
- * list; the soft errors (record-count mismatch, an unresolvable {@code code},
- * an unresolvable {@code bindui} target) are reported while the offending record
- * still survives, per the assembler's best-effort contract. A final test puts
- * two <em>different</em> soft-error types in a single record and confirms both
- * are reported together.
+ * list; the soft errors (record-count mismatch, an unresolvable {@code code})
+ * are reported while the offending record still survives, per the assembler's
+ * best-effort contract. A final test puts two <em>different</em> soft-error
+ * types in a single load and confirms both are reported together.
  *
- * <p>The assembler resolves {@code bindui} targets against the {@code UIRegistry}
- * UI-entry registry, so {@link #seedRegistries()} loads the real renderer, base
- * and entry files and injects them into {@code UIRegistry}' private static
- * fields via reflection, independent of full-game init order.
+ * <p>The assembler no longer resolves {@code bindui} targets against a UI-entry
+ * registry: it stores the raw {@code name + tag} string verbatim, leaving the
+ * look-up to the UI layer (via {@code UIRegistryLoader}) at the point the entry
+ * is actually needed. A {@code bindui} naming a UI entry that does not exist is
+ * therefore no longer an error at this stage.
  *
  * @author Rowan Crowther
  */
@@ -76,28 +68,6 @@ class PlayerPropertyReaderTest {
 
     @TempDir
     Path tempDir;
-
-    @BeforeAll
-    static void seedRegistries() throws Exception {
-        // The UI-entry pipeline resolves bottom-up: renderers, then bases (which
-        // resolve renderers), then entries (which resolve both). The player-property
-        // assembler's bindui look-ups need the finished entry list seeded.
-        List<UIEntryRenderer> renderers = new UIEntryRendererReader()
-                .parseWithResults("lib/gamedata/ui_entry_renderer.txt").items();
-        setStatic("uiEntryRenderers", renderers);
-        List<UIEntryBase> bases = new UIEntryBaseReader()
-                .parseWithResults("lib/gamedata/ui_entry_base.txt").items();
-        setStatic("uiEntryBases", bases);
-        List<UIEntry> entries = new UIEntryReader()
-                .parseWithResults("lib/gamedata/ui_entry.txt").items();
-        setStatic("uiEntries", entries);
-    }
-
-    private static void setStatic(String field, Object value) throws Exception {
-        Field f = RegistrySeeding.resolve(field);
-        f.setAccessible(true);
-        f.set(null, value);
-    }
 
     private String tempFile(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -148,34 +118,31 @@ class PlayerPropertyReaderTest {
         assertEquals("You become immune to fear at level 30.", relentless.getDescription());
         assertTrue(relentless.getEntries().isEmpty());
 
-        // Object flag with a resolvable bindui: "pfear_ui_compact_0:0:1" -> not aux, value 1,
-        // target resolves to a real UI entry from the seeded registry.
+        // Object flag with a bindui: "pfear_ui_compact_0:0:1" -> not aux, value 1, name+tag
+        // captured verbatim (no tag here, so just the bare name).
         PlayerProperty fear = byName(result.items(), "Fear Immunity");
         assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT, fear.getPlayerPropertyType());
         assertEquals(ObjectFlag.OF_PROT_FEAR, fear.getoCode());
         assertEquals(1, fear.getEntries().size());
         PlayerProperty.BindUI bind = fear.getEntries().get(0);
-        assertNotNull(bind.uiEntry(), "bindui target should resolve to a real UI entry");
+        assertEquals("pfear_ui_compact_0", bind.uiEntry());
         assertFalse(bind.aux());
         assertFalse(bind.special());
         assertEquals(1, bind.value());
 
-        // Element record: value:1 -> RESISTANCE, no code, generic bindui resolves.
+        // Element record: value:1 -> RESISTANCE, no code, generic bindui name captured verbatim.
         PlayerProperty resistance = byName(result.items(), "Resistance");
         assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, resistance.getPlayerPropertyType());
         assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, resistance.getValue());
-        assertNotNull(resistance.getEntries().get(0).uiEntry());
+        assertEquals("resist_ui_compact_0", resistance.getEntries().get(0).uiEntry());
     }
 
     /**
      * The real {@code player_property.txt} loads cleanly: all 44 records resolve with no soft
      * errors. In particular the five {@code type:object} stat-sustain records bind to
-     * {@code stat_mod_ui_compact_0<STR..CON>}, which now resolve because {@code UIEntryAssembler}
-     * expands the single {@code stat_mod_ui_compact_0} + {@code parameter:stat} entry into one
-     * tagged entry per stat ({@code <STR>}..{@code <CON>}), mirroring the C loader's
-     * parameter expansion in {@code ui-entry.c}. (Previously only the generic tagless entry
-     * existed, so these five failed the exact-name lookup and were reported as soft errors -
-     * the gap this test used to pin.)
+     * {@code stat_mod_ui_compact_0<STR..CON>}: since the assembler no longer looks the name up
+     * against a registry, the {@code <TAG>}-decorated name is captured verbatim regardless of
+     * whether a matching UI entry exists.
      */
     @Test
     void realFileLoadsAll44RecordsWithNoErrors() throws IOException {
@@ -184,11 +151,9 @@ class PlayerPropertyReaderTest {
         assertEquals(44, result.items().size());
         assertEquals(List.of(), result.errors(), () -> "expected a clean load but got: " + result.errors());
 
-        // The stat-sustain bindui now resolves to the expansion-generated per-stat entry.
+        // The stat-sustain bindui's name+tag is captured verbatim.
         PlayerProperty sustStr = byName(result.items(), "Sustain Strength");
-        UIEntry statEntry = sustStr.getEntries().get(0).uiEntry();
-        assertNotNull(statEntry, "SUST_STR bindui should resolve to a UIEntry");
-        assertEquals("stat_mod_ui_compact_0<STR>", statEntry.getName());
+        assertEquals("stat_mod_ui_compact_0<STR>", sustStr.getEntries().get(0).uiEntry());
     }
 
     // ---- hard error (fail-closed: empty list) -----------------------------------------------
@@ -236,40 +201,38 @@ class PlayerPropertyReaderTest {
     }
 
     @Test
-    void unresolvableBinduiTargetIsLoggedButRecordSurvives() throws IOException {
-        // The bindui names a UI entry that isn't in the seeded registry -> illegal UIEntry. Unlike a
-        // bad code, a bad bindui is not the property's identity: the offending binding is dropped
-        // (mirroring C's silent discard of a failed bind) while the record itself still loads.
-        String path = tempFile("bad-bindui.txt",
+    void binduiIsCapturedVerbatimEvenWhenNoMatchingUiEntryExists() throws IOException {
+        // The assembler no longer validates a bindui's target against a UI-entry registry - it
+        // just stores the raw name+tag string for the UI layer to resolve later via
+        // UIRegistryLoader. A name with no corresponding UI entry is not an error at this stage.
+        String path = tempFile("no-such-entry.txt",
                 "record-count:1\ntype:player\ncode:ROCK\nbindui:no_such_ui_entry:0:1\nname:Rock\n");
 
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
         assertEquals(1, result.items().size());
-        assertTrue(result.items().get(0).getEntries().isEmpty(),
-                "the unresolvable binding should be dropped, leaving no bindings");
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal UIEntry")),
-                result.errors()::toString);
+        assertFalse(result.hasErrors(), result.errors()::toString);
+        assertEquals(1, result.items().get(0).getEntries().size());
+        assertEquals("no_such_ui_entry", result.items().get(0).getEntries().get(0).uiEntry());
     }
 
-    // ---- two different error types in one record --------------------------------------------
+    // ---- two different error types in one load -----------------------------------------------
 
     @Test
     void twoDifferentSoftErrorsAreBothReported() throws IOException {
-        // One record with two bad bindui lines: the first names a UI entry that isn't seeded
-        // (illegal UIEntry), the second has a non-numeric value (illegal integer value). Both
-        // bindui validations are per-binding skips, so both fire and the record still survives
-        // (with no bindings). A valid code (ROCK) is used so the record is not skipped earlier.
+        // Two independent soft errors: a record-count mismatch (reader-level) and a malformed
+        // bindui integer value (assembler-level, per-binding). Both are reported and the record
+        // still survives, minus the dropped binding.
         String path = tempFile("two-errors.txt",
-                "record-count:1\ntype:player\ncode:ROCK\n"
-                        + "bindui:no_such_ui_entry:0:1\nbindui:also_bad:0:notanumber\nname:Rock\n");
+                "record-count:5\ntype:player\ncode:ROCK\nbindui:also_bad:0:notanumber\nname:Rock\n");
 
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
         assertEquals(1, result.items().size());
         assertTrue(result.items().get(0).getEntries().isEmpty(),
-                "both unresolvable bindings should be dropped");
-        assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal UIEntry")),
+                "the malformed binding should be dropped");
+        assertTrue(result.errors().stream()
+                        .anyMatch(e -> e.contains("declares 5") && e.contains("contains 1")),
                 result.errors()::toString);
         assertTrue(result.errors().stream().anyMatch(e -> e.contains("illegal integer value")),
                 result.errors()::toString);

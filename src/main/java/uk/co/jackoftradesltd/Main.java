@@ -33,6 +33,7 @@ import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
@@ -236,14 +237,38 @@ public class Main {
         for (String arg : args) {
             if (arg.length() < 2 || arg.charAt(0) != '-') arg = "-h";
             switch (arg.charAt(1)) {
-                case 'c' -> selectSavefile = true;
-                case 'n' -> startNewCharacter = true;
+                case 'c' -> {
+                    if (arg.length() != 2) {
+                        printUsage();
+                        return;
+                    }
+                    selectSavefile = true;
+                }
+                case 'n' -> {
+                    if (arg.length() != 2) {
+                        printUsage();
+                        return;
+                    }
+                    startNewCharacter = true;
+                }
                 case 'l' -> {
                     listSaves();
                     return;
                 }
-                case 'w' -> resurrectDeadCharacter = true;
-                case 'g' -> requestGraphicsMode = true;
+                case 'w' -> {
+                    if (arg.length() != 2) {
+                        printUsage();
+                        return;
+                    }
+                    resurrectDeadCharacter = true;
+                }
+                case 'g' -> {
+                    if (arg.length() != 2) {
+                        printUsage();
+                        return;
+                    }
+                    requestGraphicsMode = true;
+                }
                 case 'u' -> {
                     useSpecificCharacter = arg.substring(2);
                     if (useSpecificCharacter.isEmpty()) {
@@ -298,6 +323,31 @@ public class Main {
         }
     }
 
+    /**
+     * Validate a {@code -d<dir>=<path>} argument and make its target directory ready - the port
+     * of C's {@code change_path()} ({@code [C] src/main.c}). Returns {@code null} on success; any
+     * other value is a message the caller should report and exit on.
+     *
+     * <p>Three checks run in order, each ending the method the moment it fails: {@code arg} must
+     * split into exactly a name and a path, the path half must not be empty, and the name half
+     * must be one {@link AngbandDirs.ANGBAND_DIRS} already knows - matched case-insensitively,
+     * the same as C's {@code my_stricmp} comparison in {@code change_path()}
+     * ({@code [C] src/z-util.c}), so {@code -dSAVE=...} is accepted and {@code -dSAVEE=...} is
+     * not. Only once all three pass does this create {@code path} if it is not already there,
+     * mirroring C's {@code dir_create(dirpath)} - which also creates rather than requires, so a
+     * merely-missing path is not a failure.
+     *
+     * <p>Reports by returning a string rather than throwing or exiting itself, so
+     * {@link #main(String[])} decides how the error is surfaced; that separation is also what
+     * makes the three rejection branches reachable by test, which {@code MainTest} depends on -
+     * the check used to live inline in {@code main} and would otherwise take the test worker down
+     * with it via {@code System.exit}.
+     *
+     * <p>coded on 2026-09-14 / commented in full on 2026-09-14
+     *
+     * @param arg the raw {@code -d<dir>=<path>} argument, unsplit
+     * @return {@code null} on success, or a message describing what is wrong with {@code arg}
+     */
     @VisibleForTesting
     static String checkDirectoryOption(String arg) {
         String[] dirs = arg.substring(2).split("=", 2);
@@ -305,12 +355,18 @@ public class Main {
             return "Error: invalid directory path '" + arg + "'. Should be '-d<dir>=<path>'.";
         if (dirs[1].isEmpty())
             return "Error: empty directory path, expected '-d<dir>=<path>', received '-d<dir>='";
-        if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0]))
-            return "Error: invalid directory path unknown directory name: " + dirs[0];
-        if (!Paths.get(dirs[1]).toFile().isDirectory())
-            return "Error: invalid directory path " + dirs[1] + " is not a directory.";
-        // No errors - return null to signal this, as opposed to an empty string which would signal an error
-        return null;
+        try {
+            if (!AngbandDirs.ANGBAND_DIRS.contains(dirs[0])) {
+                return "Error: unrecognised -d parameter: " + dirs[0];
+            }
+            if (!Paths.get(dirs[1]).toFile().isDirectory())
+                // Create the new directory
+                Files.createDirectory(Paths.get(dirs[1]));
+            // No errors - return null to signal this, as opposed to an empty string which would signal an error
+            return null;
+        } catch (Exception e) {
+            return "Error: failure to create directory '" + dirs[0] + "': " + e.getMessage();
+        }
     }
 
     /**
@@ -345,7 +401,7 @@ public class Main {
         //      printSoundHelp();
         //      System.out.println("  -m<sys>        Use module <sys>, where <sys> can be:");
 
-        displayText(output);
+        displayText(output, false);
     }
 
     /**
@@ -361,7 +417,11 @@ public class Main {
     private static void listSaves() throws IOException {
         List<String> saves = new ArrayList<>();
 
-        AngDir saveDirectory = new AngDir(AngbandDirs.ANGBAND_DIRS.SAVE.getPath());
+        AngDir saveDirectory = AngDir.angDirFactory(AngbandDirs.ANGBAND_DIRS.SAVE.getPath());
+        if (saveDirectory == null) {
+            displayText(new ArrayList<>(), true);
+            return;
+        }
 
         String nextFile = saveDirectory.read();
         while (!nextFile.isEmpty()) {
@@ -369,7 +429,7 @@ public class Main {
             nextFile = saveDirectory.read();
         }
 
-        displayText(saves);
+        displayText(saves, true);
     }
 
     /**
@@ -379,6 +439,13 @@ public class Main {
      *
      * <p>Monospaced and unwrapped because the usage text is column-aligned and would be nonsense
      * reflowed; both scrollbars appear as needed so long directory paths stay readable.
+     *
+     * <p>{@code isSaves} switches on the framing C prints around the list itself in
+     * {@code list_saves()} ({@code [C] src/main.c}) - a {@code "Savefiles you can use are:"}
+     * header and a {@code "Use angband -u<name>..."} footer around a non-empty list, or
+     * {@code "There are no savefiles you can use."} alone when {@code messages} is empty.
+     * {@link #printUsage()} passes {@code false}, since C's {@code usage()} never prints any of
+     * that text; {@link #listSaves()} passes {@code true}.
      *
      * <p>{@code EXIT_ON_CLOSE} is doing real work here, not just tidying up. Both callers
      * {@code return} straight after this, so nothing else will ever end the process: closing this
@@ -390,9 +457,14 @@ public class Main {
      * other thread ever touches these components, and nothing here is read again after
      * {@code setVisible}.
      *
+     * <p>coded on 2026-09-14 / commented in full on 2026-09-14
+     *
      * @param messages the lines to show, in order
+     * @param isSaves  {@code true} to frame {@code messages} as a savefile list, per C's
+     *                 {@code list_saves()}; {@code false} to show them exactly as given, per C's
+     *                 {@code usage()}
      */
-    private static void displayText(List<String> messages) {
+    private static void displayText(List<String> messages, boolean isSaves) {
         OutputWindow window = new OutputWindow();
 
         // create the window stats
@@ -407,9 +479,22 @@ public class Main {
         textArea.setEditable(false);
         textArea.setLineWrap(false);
         StringBuilder text = new StringBuilder();
+        String before = "";
+        String after = "";
+        if (isSaves) {
+            if (messages.isEmpty()) {
+                before = "There are no savefiles you can use.\n";
+                after = "";
+            } else {
+                before = "Savefiles you can use are:\n";
+                after = "\nUse angband -u<name> to use savefile <name>.";
+            }
+        }
+        text.append(before);
         for (String message : messages) {
             text.append(message).append("\n");
         }
+        text.append(after);
         textArea.setText(text.toString());
         window.setContentPane(scrollPane);
         window.setLocationRelativeTo(null);

@@ -6,7 +6,7 @@ merely *call* a C counterpart rather than reproduce it are deliberately absent.
 Each function listed here also carries a `/* Ported to Java <date> */` comment immediately above its definition in the
 reference C source at `/home/rowan/Desktop/Angband-4.2.6/src`, stamped with the date it was added to this list.
 
-**297 C functions across 44 files**, listed 2026-08-30, revised 2026-09-01 and 2026-09-14.
+**301 C functions across 45 files**, listed 2026-08-30, revised 2026-09-01 and 2026-09-14.
 
 Fourteen C functions are split across more than one Java method — `player_knows_brand`/`_slay`/`_curse`
 each answer from both `PlayerKnowledge` and `KnownObject`, `update_stuff` and `update_bonuses` straddle
@@ -58,6 +58,7 @@ C function. Annotations are stripped from the signatures; the return type has it
 - [`ui-term.c`](#ui-termc) — 4
 - [`z-bitflag.c`](#z-bitflagc) — 2
 - [`z-color.c`](#z-colorc) — 3
+- [`z-file.c`](#z-filec) — 4
 - [`z-rand.c`](#z-randc) — 1
 - [`z-type.c`](#z-typec) — 6
 - [`z-util.c`](#z-utilc) — 2
@@ -570,6 +571,15 @@ C function. Annotations are stripped from the signatures; the return type has it
 | `attr_to_text`       | `ColourEnum` | `attributeToString(ColourEnum colour)` | `String`     |
 | `color_char_to_attr` | `ColourEnum` | `fromCode(String code)`                | `ColourEnum` |
 | `color_text_to_attr` | `ColourEnum` | `fromCode(String code)`                | `ColourEnum` |
+
+## `z-file.c`
+
+| C function                 | Java class | Java signature                        | Returns   |
+|----------------------------|------------|---------------------------------------|-----------|
+| `alter_ang_dir_only_files` | `AngDir`   | `alterOnlyFiles(boolean newValue)`    | `boolean` |
+| `my_dclose`                | `AngDir`   | `close()`                             | `void`    |
+| `my_dopen`                 | `AngDir`   | `angDirFactory(String directoryName)` | `AngDir`  |
+| `my_dread`                 | `AngDir`   | `read()`                              | `String`  |
 
 ## `z-rand.c`
 

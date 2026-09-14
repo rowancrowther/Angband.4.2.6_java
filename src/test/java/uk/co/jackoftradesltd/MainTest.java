@@ -118,6 +118,20 @@ class MainTest {
     }
 
     /**
+     * A known directory's name is matched case-insensitively - the port of C's {@code my_stricmp}
+     * comparison in {@code change_path()} ({@code [C] src/main.c}), which upper-cases both sides
+     * before comparing ({@code [C] src/z-util.c}). {@code SAVE} is used rather than a made-up
+     * example because it is the mistake a player is most likely to make.
+     *
+     * @param tempDir a directory that certainly exists, supplied and removed by JUnit
+     */
+    @Test
+    void aKnownDirectoryNameIsMatchedCaseInsensitively(@TempDir Path tempDir) {
+        assertNull(Main.checkDirectoryOption("-dSAVE=" + tempDir),
+                "-d matches names case-insensitively, the same as C's my_stricmp");
+    }
+
+    /**
      * Checking an option does not apply it. The method reports and returns; {@code main} is what
      * acts on the answer.
      *
@@ -236,14 +250,14 @@ class MainTest {
     /**
      * A name that is not one of the game's directories is rejected, and the message names it.
      *
-     * <p>{@code SAVE} is here on purpose: the names are the data-file spellings and are matched
-     * case-sensitively, so the upper-case form of a real directory is not a real directory. That is
-     * worth pinning because it is the mistake a player is most likely to make.
+     * <p>{@code "archives"} and {@code "gamedata "} are here on purpose: matching is
+     * case-insensitive (see {@link #aKnownDirectoryNameIsMatchedCaseInsensitively}), not
+     * approximate, so neither the plural nor the trailing space is close enough to count.
      *
      * @param name the unknown directory name
      */
     @ParameterizedTest
-    @ValueSource(strings = {"nosuchdir", "SAVE", "archives", "gamedata "})
+    @ValueSource(strings = {"nosuchdir", "archives", "gamedata "})
     void anUnknownDirectoryNameIsRejectedAndNamed(String name) {
         String message = Main.checkDirectoryOption("-d" + name + "=/tmp");
 
@@ -273,8 +287,10 @@ class MainTest {
     // ---- rejected: missing path ------------------------------------------
 
     /**
-     * A known directory pointed at a path that does not exist is rejected, and the message quotes
-     * the path.
+     * A known directory pointed at a path that does not yet exist is accepted, and the path is
+     * created - the port of C's {@code dir_create(dirpath)} call in {@code change_path()}
+     * ({@code [C] src/main.c}), which creates the directory, and any missing parent segments,
+     * rather than requiring it to already be there.
      *
      * <p>The path is built under a temporary directory rather than hard-coded, so the test does not
      * depend on some absolute path being absent from the machine it runs on.
@@ -282,14 +298,13 @@ class MainTest {
      * @param tempDir a directory that certainly exists, supplied and removed by JUnit
      */
     @Test
-    void aPathThatDoesNotExistIsRejectedAndQuoted(@TempDir Path tempDir) {
-        String missing = tempDir.resolve("no-such-directory").toString();
+    void aPathThatDoesNotExistIsCreated(@TempDir Path tempDir) {
+        Path missing = tempDir.resolve("no-such-directory");
 
-        String message = Main.checkDirectoryOption("-dsave=" + missing);
-
-        assertNotNull(message, "the path does not exist, so the override cannot be applied");
-        assertTrue(message.contains(missing),
-                "the message must quote the path it could not find: " + message);
+        assertNull(Main.checkDirectoryOption("-dsave=" + missing),
+                "a missing path is created, not rejected, matching C's dir_create()");
+        assertTrue(Files.isDirectory(missing),
+                "checkDirectoryOption must actually create the directory it validated");
     }
 
     /**
@@ -339,6 +354,45 @@ class MainTest {
 
         assertNotNull(Main.checkDirectoryOption("-dsave=" + file),
                 "a regular file is not a directory: the check needs isDirectory(), not exists()");
+    }
+
+    // ---- arg parsing: trailing characters -----------------------------------
+
+    /**
+     * A single-letter switch with trailing characters after it is rejected exactly like an
+     * unknown switch - the port of C's post-switch {@code if (*arg) goto usage;}
+     * ({@code [C] src/main.c}), which every case reaching it (none of {@code c}/{@code n}/
+     * {@code w}/{@code g} {@code continue}s) shares. {@code -u} and {@code -d} are excluded
+     * because they consume what follows the letter rather than rejecting it.
+     *
+     * <p>Calling {@link Main#main} directly is safe for exactly these arguments: each ends the
+     * method inside the parsing loop, before {@code Channels.create()} and the two threads it
+     * feeds, so nothing here starts the game. The usage window it opens is detected the same way
+     * {@link TheUiHalfsCrashPath} detects the game window - through {@link Frame#getFrames()} -
+     * and disposed afterwards so it does not leak into another test.
+     *
+     * @param arg a well-formed switch letter with something appended after it
+     */
+    @ParameterizedTest
+    @ValueSource(strings = {"-cx", "-nx", "-wx", "-gx"})
+    void aTrailingCharacterAfterASingleLetterSwitchIsRejected(String arg) throws IOException {
+        assumeFalse(GraphicsEnvironment.isHeadless(), "needs a display: usage opens a JFrame");
+
+        Set<Frame> before = new HashSet<>(Arrays.asList(Frame.getFrames()));
+
+        Main.main(new String[]{arg});
+
+        List<Frame> opened = Arrays.stream(Frame.getFrames())
+                .filter(frame -> !before.contains(frame))
+                .toList();
+        try {
+            assertFalse(opened.isEmpty(),
+                    arg + " must fall through to usage, the same as an unknown switch");
+        } finally {
+            for (Frame frame : opened) {
+                SwingUtilities.invokeLater(frame::dispose);
+            }
+        }
     }
 
     /**

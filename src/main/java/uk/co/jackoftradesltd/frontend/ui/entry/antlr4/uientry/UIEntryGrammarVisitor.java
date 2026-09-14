@@ -14,13 +14,9 @@
  *
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
-// Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
+
+// Generated from /home/rowan/IdeaProjects/Angband.4.2.6_java/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
-
-import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
-
-import java.util.List;
-import java.util.ArrayList;
 
 import org.antlr.v4.runtime.tree.ParseTreeVisitor;
 
@@ -32,131 +28,131 @@ import org.antlr.v4.runtime.tree.ParseTreeVisitor;
  * operations with no return type.
  */
 public interface UIEntryGrammarVisitor<T> extends ParseTreeVisitor<T> {
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#recordCount}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRecordCount(UIEntryGrammar.RecordCountContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#recordCount}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRecordCount(UIEntryGrammar.RecordCountContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#tag}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTag(UIEntryGrammar.TagContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#tag}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTag(UIEntryGrammar.TagContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#name}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitName(UIEntryGrammar.NameContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#name}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitName(UIEntryGrammar.NameContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#parameter}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitParameter(UIEntryGrammar.ParameterContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#parameter}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitParameter(UIEntryGrammar.ParameterContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#renderer}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitRenderer(UIEntryGrammar.RendererContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#renderer}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitRenderer(UIEntryGrammar.RendererContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#combine}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitCombine(UIEntryGrammar.CombineContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#combine}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCombine(UIEntryGrammar.CombineContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#priority}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitPriority(UIEntryGrammar.PriorityContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#priority}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitPriority(UIEntryGrammar.PriorityContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#category}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitCategory(UIEntryGrammar.CategoryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#category}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitCategory(UIEntryGrammar.CategoryContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#flags}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFlags(UIEntryGrammar.FlagsContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#flags}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFlags(UIEntryGrammar.FlagsContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#desc}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitDesc(UIEntryGrammar.DescContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#desc}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitDesc(UIEntryGrammar.DescContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#label}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLabel(UIEntryGrammar.LabelContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#label}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLabel(UIEntryGrammar.LabelContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#label5}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLabel5(UIEntryGrammar.Label5Context ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#label5}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLabel5(UIEntryGrammar.Label5Context ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#label2}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitLabel2(UIEntryGrammar.Label2Context ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#label2}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitLabel2(UIEntryGrammar.Label2Context ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#template}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitTemplate(UIEntryGrammar.TemplateContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#template}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitTemplate(UIEntryGrammar.TemplateContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#uiEntry}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitUiEntry(UIEntryGrammar.UiEntryContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#uiEntry}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitUiEntry(UIEntryGrammar.UiEntryContext ctx);
 
-    /**
-     * Visit a parse tree produced by {@link UIEntryGrammar#file}.
-     *
-     * @param ctx the parse tree
-     * @return the visitor result
-     */
-    T visitFile(UIEntryGrammar.FileContext ctx);
+	/**
+	 * Visit a parse tree produced by {@link UIEntryGrammar#file}.
+	 *
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitFile(UIEntryGrammar.FileContext ctx);
 }

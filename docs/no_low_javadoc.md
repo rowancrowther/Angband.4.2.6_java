@@ -79,6 +79,8 @@ the existing doc comment for context.
 
 - L60: constructor `AngFile` - LOW - "Constructor"
 
+**COMPLETED 2026-09-14**
+
 ### `backend/io/Datafile.java`
 
 2 missing, 0 low

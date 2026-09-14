@@ -20,6 +20,7 @@ package uk.co.jackoftradesltd.backend.io;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.io.enums.FileModeEnum;
+import uk.co.jackoftradesltd.backend.io.enums.FileTypeEnum;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,7 @@ public class FileHandler {
     private FileOutputStream outputStream;
     /**
      * Default open option retained from construction. Largely vestigial now that
-     * the concrete mode is chosen per-{@link #open(FileModeEnum)} call.
+     * the concrete mode is chosen per-{@link #open(FileModeEnum, FileTypeEnum)} call.
      */
     private final StandardOpenOption option;
     /**
@@ -131,7 +132,7 @@ public class FileHandler {
      * @return true if the file now exists (created or already present),
      * false if creation failed with an {@link IOException}
      */
-    public boolean createFile() {
+    public boolean createFile(FileModeEnum fileModeEnum, FileTypeEnum fileTypeEnum) {
         if (!Files.exists(filePath)){
             try {
                 Files.createFile(filePath);
@@ -142,23 +143,6 @@ public class FileHandler {
 
         return true;
     }
-
-//    /**
-//     * Closes down any old file and reopens as a new one. This includes
-//     * closing down all open streams
-//     * Not used - use move instead
-//     * @param newFileName The new file name
-//     */
-//    public void setFileName(String newFileName) {
-//        try {
-//            if (inputStream != null) inputStream.close();
-//            if (outputStream != null) outputStream.close();
-//        } catch (Exception e) {
-//            logger.error("An exception has occured: " + e.getMessage(), e);
-//        } finally {
-//            this.filePath = Paths.get(newFileName);
-//        }
-//    }
 
     /**
      * Set filename to new filename based on an existing filename, using
@@ -244,29 +228,33 @@ public class FileHandler {
     /**
      * Open up a file for reading or writing. It will open up a Stream, either input
      * or output, and then close down the other stream if it exists.
+     *
      * @param mode The mode to open this file up
+     * @param type
      */
-    public void open(FileModeEnum mode) {
+    public boolean open(FileModeEnum mode, FileTypeEnum type) {
         try {
             switch (mode) {
                 case FileModeEnum.MODE_READ:
                     //option = StandardOpenOption.READ;
                     openInputStream();
-                    break;
+                    return true;
                 case FileModeEnum.MODE_WRITE:
                     //option = StandardOpenOption.WRITE;
                     openOutputStream(false);
                     if (inputStream != null) inputStream.close();
-                    break;
+                    return true;
                 case FileModeEnum.MODE_APPEND:
                     //option = StandardOpenOption.APPEND;
                     openOutputStream(true);
                     if (inputStream != null) inputStream.close();
-                    break;
+                    return true;
             }
         } catch (IOException e) {
             logger.error("An exception has occured: " + e.getMessage(), e);
         }
+
+        return false;
     }
 
     /**
@@ -276,7 +264,6 @@ public class FileHandler {
      */
     public boolean skipBytes(long bytesToSkip) {
         if (inputStream == null) return false;
-        if (bytesToSkip < 0) return false;
 
         try {
             long skipped = inputStream.skip(bytesToSkip);

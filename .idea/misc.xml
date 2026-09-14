@@ -123,7 +123,7 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryLexer.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryLexer.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />
@@ -833,7 +833,7 @@
           <option name="generateVisitor" value="true" />
         </PerGrammarGenerationSettings>
         <PerGrammarGenerationSettings>
-          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/UIEntryGrammar.g4" />
+          <option name="fileName" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/frontend/ui/entry/UIEntryGrammar.g4" />
           <option name="autoGen" value="true" />
           <option name="outputDir" value="" />
           <option name="libDir" value="$PROJECT_DIR$/src/main/java/uk/co/jackoftradesltd/backend/parser/grammars/imports" />

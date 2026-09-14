@@ -86,7 +86,7 @@ class UIEntryAssemblerTest {
      */
     private static UIEntryParseRecord rec(String name, String parameter, String nameTag,
                                           String renderer, String combine, String template) {
-        return new UIEntryParseRecord(name, template, "", "", "", parameter, renderer,
+        return new UIEntryParseRecord(name, template, "", "", "", List.of(), parameter, renderer,
                 combine, "", List.of(), List.of(), "", nameTag, 1);
     }
 

@@ -21,10 +21,12 @@ package uk.co.jackoftradesltd.frontend.ui.entry.assembler;
 import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
+import uk.co.jackoftradesltd.frontend.events.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
@@ -67,6 +69,13 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEntry>> {
+    private static List<UIEntryCategory> buildCategories(List<String> before, List<String> after, int priority) {
+        List<UIEntryCategory> categories = new ArrayList<>();
+        for (String category : before) categories.add(new UIEntryCategory(category, priority, true));
+        for (String category : after) categories.add(new UIEntryCategory(category, priority, true));
+        return categories;
+    }
+
     /**
      * Resolve each {@link UIEntryParseRecord} into one or more {@link UIEntry}
      * objects, skipping (never throwing on) any record whose present fields fail
@@ -130,11 +139,14 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             int priorityNum = 0;
             String priorityStr = "";
             if (!record.priority().isEmpty()) {
-                if (record.priority().equals("index") || record.priority().equals("negative_index")) {
+                if (record.priority().equals("index")) {
                     priorityStr = record.priority();
-                    priorityNum = 0;
+                    priorityNum = 1;
+                } else if (record.priority().equals("negative_index")) {
+                    priorityStr = record.priority();
+                    priorityNum = -1;
                 } else {
-                    priorityStr = "";
+                    priorityStr = null;
                     try {
                         priorityNum = Integer.parseInt(record.priority());
                     } catch (NumberFormatException e) {
@@ -144,21 +156,25 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                     }
                 }
             }
-            EntryFlag flag = null;
+            Flag<EntryFlag> flag = new Flag<>(EntryFlag.class);
             if (!record.flags().isEmpty()) {
-                try {
-                    flag = EntryFlag.valueOf("ENTRY_FLAG_" + record.flags().getFirst());
-                } catch (IllegalArgumentException e) {
-                    errors.add("Block starting on line: " + line +
-                            " has illegal entry flag value: " + record.flags().getFirst());
-                    continue;
+                for (String flagName : record.flags()) {
+                    try {
+                        EntryFlag flagType = EntryFlag.valueOf("ENTRY_FLAG_" + flagName);
+                        flag.on(flagType);
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Block starting on line: " + line +
+                                " has illegal entry flag value: " + record.flags().getFirst());
+                        continue;
+                    }
                 }
             }
             String desc = record.desc();
             String label = record.label();
             String label2 = record.label2();
             String label5 = record.label5();
-            List<String> categories = record.category();
+            List<String> categoriesNames1 = record.categoriesBeforePriority();
+            List<String> categoriesNames2 = record.categoriesAfterPriority();
             UIEntryBase template;
             if (record.template().isEmpty())
                 template = null;
@@ -170,23 +186,23 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                     continue;
                 }
             }
-
             if (statElemType != UIEntry.StatElemType.STAT) {
+                List<UIEntryCategory> categories = buildCategories(categoriesNames1, categoriesNames2, priorityNum);
                 results.add(new UIEntry(name, parameter, statElemType,
                         renderer, combinerName, categories,
                         priorityNum, flag,
                         desc, label, label2, label5, template));
             } else {
                 for (int i = 0; i < 5; i++) {
-                    int newPriorityNum = 0;
+                    int newPriorityNum;
                     if (!PlayerEventStatusUpdate.getPlayerStatusView().statString()[i].isEmpty()) {
-                        if (priorityStr.equals("negative_index"))
+                        if ("negative_index".equals(priorityStr))
                             newPriorityNum = -i;
-                        else if (priorityStr.equals("index"))
+                        else if ("index".equals(priorityStr))
                             newPriorityNum = i;
                         else
                             newPriorityNum = 0;
-
+                        List<UIEntryCategory> categories = buildCategories(categoriesNames1, categoriesNames2, newPriorityNum);
                         String statStr = PlayerEventStatusUpdate.getPlayerStatusView().statString()[i];
                         results.add(new UIEntry(name + "<" + statStr + ">", parameter, statElemType,
                                 renderer, combinerName, categories, newPriorityNum, flag,

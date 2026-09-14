@@ -17,19 +17,19 @@
 // Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
-import org.antlr.v4.runtime.*;
-import org.antlr.v4.runtime.atn.ATN;
-import org.antlr.v4.runtime.atn.ATNDeserializer;
-import org.antlr.v4.runtime.atn.ParserATNSimulator;
-import org.antlr.v4.runtime.atn.PredictionContextCache;
-import org.antlr.v4.runtime.dfa.DFA;
-import org.antlr.v4.runtime.tree.ParseTreeListener;
-import org.antlr.v4.runtime.tree.ParseTreeVisitor;
-import org.antlr.v4.runtime.tree.TerminalNode;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.ArrayList;
+
+import org.antlr.v4.runtime.atn.*;
+import org.antlr.v4.runtime.dfa.DFA;
+import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
+import org.antlr.v4.runtime.tree.*;
+import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast", "CheckReturnValue", "this-escape"})
 public class UIEntryGrammar extends Parser {
@@ -1228,186 +1228,12 @@ public class UIEntryGrammar extends Parser {
         }
     }
 
-    public final UiEntryContext uiEntry() throws RecognitionException {
-        UiEntryContext _localctx = new UiEntryContext(_ctx, getState());
-        enterRule(_localctx, 28, RULE_uiEntry);
-
-        int line = 0;
-        String nameInit = "";
-        String templateInit = "";
-        String labelInit = "";
-        String label5Init = "";
-        String label2Init = "";
-        List<String> categoryInit = new ArrayList<>();
-        String parameterInit = "";
-        String rendererInit = "";
-        String combinerInit = "";
-        String priorityInit = "";
-        List<String> flagInit = new ArrayList<>();
-        String descInit = "";
-        String nameTagInit = "";
-
-        int _la;
-        try {
-            enterOuterAlt(_localctx, 1);
-            {
-                setState(106);
-                ((UiEntryContext) _localctx).name = name();
-                nameInit = ((UiEntryContext) _localctx).name.nameStr;
-                if (((UiEntryContext) _localctx).name.elemOrStat != null)
-                    nameTagInit = ((UiEntryContext) _localctx).name.elemOrStat;
-                line = _localctx.start.getLine();
-                setState(111);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == TEMPLATE) {
-                    {
-                        setState(108);
-                        ((UiEntryContext) _localctx).template = template();
-                        templateInit = ((UiEntryContext) _localctx).template.uiEntryBase;
-                    }
-                }
-
-                setState(116);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == LABEL) {
-                    {
-                        setState(113);
-                        ((UiEntryContext) _localctx).label = label();
-                        labelInit = ((UiEntryContext) _localctx).label.labelStr;
-                    }
-                }
-
-                setState(121);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == LABEL5) {
-                    {
-                        setState(118);
-                        ((UiEntryContext) _localctx).label5 = label5();
-                        label5Init = ((UiEntryContext) _localctx).label5.label5Str;
-                    }
-                }
-
-                setState(126);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == LABEL2) {
-                    {
-                        setState(123);
-                        ((UiEntryContext) _localctx).label2 = label2();
-                        label2Init = ((UiEntryContext) _localctx).label2.label2Str;
-                    }
-                }
-
-                setState(131);
-                _errHandler.sync(this);
-                switch (getInterpreter().adaptivePredict(_input, 8, _ctx)) {
-                    case 1: {
-                        setState(128);
-                        ((UiEntryContext) _localctx).category = category();
-                        categoryInit.addAll(((UiEntryContext) _localctx).category.categoryStr);
-                    }
-                    break;
-                }
-                setState(136);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == PARAMETER) {
-                    {
-                        setState(133);
-                        ((UiEntryContext) _localctx).parameter = parameter();
-                        parameterInit = ((UiEntryContext) _localctx).parameter.isElement;
-                    }
-                }
-
-                setState(141);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == RENDERER) {
-                    {
-                        setState(138);
-                        ((UiEntryContext) _localctx).renderer = renderer();
-                        rendererInit = ((UiEntryContext) _localctx).renderer.uiEntryRenderer;
-                    }
-                }
-
-                setState(146);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == COMBINE) {
-                    {
-                        setState(143);
-                        ((UiEntryContext) _localctx).combine = combine();
-                        combinerInit = ((UiEntryContext) _localctx).combine.combiner;
-                    }
-                }
-
-                setState(153);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                while (_la == PRIORITY) {
-                    {
-                        {
-                            setState(148);
-                            ((UiEntryContext) _localctx).priority = priority();
-                            priorityInit = ((UiEntryContext) _localctx).priority.word;
-                        }
-                    }
-                    setState(155);
-                    _errHandler.sync(this);
-                    _la = _input.LA(1);
-                }
-                setState(159);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == CATEGORY) {
-                    {
-                        setState(156);
-                        ((UiEntryContext) _localctx).category = category();
-                        categoryInit.addAll(((UiEntryContext) _localctx).category.categoryStr);
-                    }
-                }
-
-                setState(164);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == FLAGS) {
-                    {
-                        setState(161);
-                        ((UiEntryContext) _localctx).flags = flags();
-                        flagInit = ((UiEntryContext) _localctx).flags.entryFlagEnum;
-                    }
-                }
-
-                setState(169);
-                _errHandler.sync(this);
-                _la = _input.LA(1);
-                if (_la == DESC) {
-                    {
-                        setState(166);
-                        ((UiEntryContext) _localctx).desc = desc();
-                        descInit = descInit + ((UiEntryContext) _localctx).desc.descStr;
-                    }
-                }
-
-            }
-            _ctx.stop = _input.LT(-1);
-
-            ((UiEntryContext) _localctx).entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
-                    label5Init, label2Init, parameterInit, rendererInit, combinerInit,
-                    priorityInit, categoryInit, flagInit, descInit, nameTagInit, line);
-
-        } catch (RecognitionException re) {
-            _localctx.exception = re;
-            _errHandler.reportError(this, re);
-            _errHandler.recover(this, re);
-        } finally {
-            exitRule();
-        }
-        return _localctx;
-    }
+    static {
+        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
+        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
+            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+		}
+	}
 
     @SuppressWarnings("CheckReturnValue")
     public static class FileContext extends ParserRuleContext {
@@ -1614,10 +1440,185 @@ public class UIEntryGrammar extends Parser {
     public static final ATN _ATN =
             new ATNDeserializer().deserialize(_serializedATN.toCharArray());
 
-    static {
-        _decisionToDFA = new DFA[_ATN.getNumberOfDecisions()];
-        for (int i = 0; i < _ATN.getNumberOfDecisions(); i++) {
-            _decisionToDFA[i] = new DFA(_ATN.getDecisionState(i), i);
+    public final UiEntryContext uiEntry() throws RecognitionException {
+        UiEntryContext _localctx = new UiEntryContext(_ctx, getState());
+        enterRule(_localctx, 28, RULE_uiEntry);
+
+        int line = 0;
+        String nameInit = "";
+        String templateInit = "";
+        String labelInit = "";
+        String label5Init = "";
+        String label2Init = "";
+        List<String> categoryInit1 = new ArrayList<>();
+        String parameterInit = "";
+        List<String> categoryInit2 = new ArrayList<>();
+        String rendererInit = "";
+        String combinerInit = "";
+        String priorityInit = "";
+        List<String> flagInit = new ArrayList<>();
+        String descInit = "";
+        String nameTagInit = "";
+
+        int _la;
+        try {
+            enterOuterAlt(_localctx, 1);
+            {
+                setState(106);
+                ((UiEntryContext) _localctx).name = name();
+                nameInit = ((UiEntryContext) _localctx).name.nameStr;
+                if (((UiEntryContext) _localctx).name.elemOrStat != null)
+                    nameTagInit = ((UiEntryContext) _localctx).name.elemOrStat;
+                line = _localctx.start.getLine();
+                setState(111);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == TEMPLATE) {
+                    {
+                        setState(108);
+                        ((UiEntryContext) _localctx).template = template();
+                        templateInit = ((UiEntryContext) _localctx).template.uiEntryBase;
+                    }
+                }
+
+                setState(116);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == LABEL) {
+                    {
+                        setState(113);
+                        ((UiEntryContext) _localctx).label = label();
+                        labelInit = ((UiEntryContext) _localctx).label.labelStr;
+                    }
+                }
+
+                setState(121);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == LABEL5) {
+                    {
+                        setState(118);
+                        ((UiEntryContext) _localctx).label5 = label5();
+                        label5Init = ((UiEntryContext) _localctx).label5.label5Str;
+                    }
+                }
+
+                setState(126);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == LABEL2) {
+                    {
+                        setState(123);
+                        ((UiEntryContext) _localctx).label2 = label2();
+                        label2Init = ((UiEntryContext) _localctx).label2.label2Str;
+                    }
+                }
+
+                setState(131);
+                _errHandler.sync(this);
+                switch (getInterpreter().adaptivePredict(_input, 8, _ctx)) {
+                    case 1: {
+                        setState(128);
+                        ((UiEntryContext) _localctx).category = category();
+                        categoryInit1.addAll(((UiEntryContext) _localctx).category.categoryStr);
+                    }
+                    break;
+                }
+                setState(136);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == PARAMETER) {
+                    {
+                        setState(133);
+                        ((UiEntryContext) _localctx).parameter = parameter();
+                        parameterInit = ((UiEntryContext) _localctx).parameter.isElement;
+                    }
+                }
+
+                setState(141);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == RENDERER) {
+                    {
+                        setState(138);
+                        ((UiEntryContext) _localctx).renderer = renderer();
+                        rendererInit = ((UiEntryContext) _localctx).renderer.uiEntryRenderer;
+                    }
+                }
+
+                setState(146);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == COMBINE) {
+                    {
+                        setState(143);
+                        ((UiEntryContext) _localctx).combine = combine();
+                        combinerInit = ((UiEntryContext) _localctx).combine.combiner;
+                    }
+                }
+
+                setState(153);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                while (_la == PRIORITY) {
+                    {
+                        {
+                            setState(148);
+                            ((UiEntryContext) _localctx).priority = priority();
+                            priorityInit = ((UiEntryContext) _localctx).priority.word;
+                        }
+                    }
+                    setState(155);
+                    _errHandler.sync(this);
+                    _la = _input.LA(1);
+                }
+                setState(159);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == CATEGORY) {
+                    {
+                        setState(156);
+                        ((UiEntryContext) _localctx).category = category();
+                        categoryInit2.addAll(((UiEntryContext) _localctx).category.categoryStr);
+                    }
+                }
+
+                setState(164);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == FLAGS) {
+                    {
+                        setState(161);
+                        ((UiEntryContext) _localctx).flags = flags();
+                        flagInit = ((UiEntryContext) _localctx).flags.entryFlagEnum;
+                    }
+                }
+
+                setState(169);
+                _errHandler.sync(this);
+                _la = _input.LA(1);
+                if (_la == DESC) {
+                    {
+                        setState(166);
+                        ((UiEntryContext) _localctx).desc = desc();
+                        descInit = descInit + ((UiEntryContext) _localctx).desc.descStr;
+                    }
+                }
+
+            }
+            _ctx.stop = _input.LT(-1);
+
+            ((UiEntryContext) _localctx).entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
+                    label5Init, label2Init, categoryInit1, parameterInit, rendererInit, combinerInit,
+                    priorityInit, categoryInit2, flagInit, descInit, nameTagInit, line);
+
+        } catch (RecognitionException re) {
+            _localctx.exception = re;
+            _errHandler.reportError(this, re);
+            _errHandler.recover(this, re);
+        } finally {
+            exitRule();
         }
-	}
+        return _localctx;
+    }
 }

@@ -18,8 +18,11 @@
 package uk.co.jackoftradesltd.frontend.ui;
 
 import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryIterator;
 import uk.co.jackoftradesltd.frontend.ui.player.CharSheetConfig;
+
+import java.util.Optional;
 
 public class UIPlayer {
     private CharSheetConfig cachedConfig = null;
@@ -30,12 +33,35 @@ public class UIPlayer {
         }
     }
 
+    private static boolean CheckForTwoCategories(String[] closure,
+                                                 UIEntry entry) {
+        if (entry == null) return false;
+
+        Optional<Integer> res1 = entry.uiEntryHasCategory(closure[0]);
+        Optional<Integer> res2 = entry.uiEntryHasCategory(closure[1]);
+
+        return (res1.isPresent() && res2.isPresent());
+    }
+
     private void configureCharSheet() {
         String[] regionCategories = {"resistances", "abilities", "hinderances", "modifiers"};
         cachedConfig = new CharSheetConfig();
 
         String[] testCategories = {"CHAR_SCREEN", "stat_modifiers"};
-        UIEntryIterator uiIter = UIEntryCode.initialiseUIEntryIterator();
+        UIEntryIterator uiIter = UIEntryCode.initialiseUIEntryIterator(UIPlayer::CheckForTwoCategories, testCategories,
+                testCategories[1]);
+        int num = Math.min(uiIter.getNum(), PlayerEventStatusUpdate.getPlayerStatusView().maxStats().length);
+
+        cachedConfig.setNStatModEntries(num);
+        cachedConfig.initStatModEntries(num);
+        for (int index = 0; index < num; index++) {
+            cachedConfig.setStatModEntry(index, uiIter.advance());
+        }
+
+        cachedConfig.setResNlabel(6);
+        cachedConfig.setResCols(cachedConfig.getResNLabel() + 1
+                + PlayerEventStatusUpdate.getPlayerStatusView().bodyCount());
+        cachedConfig.setResRows(0);
     }
 
     /**

@@ -50,6 +50,11 @@ import java.util.List;
  *                  unset.
  * @param label2    a 2-character abbreviated-label override, or {@code ""} if
  *                  unset.
+ * @param categoriesBeforePriority the category names from the grammar's first
+ *                  {@code category:} slot, the one before {@code parameter:}/
+ *                  {@code renderer:}/{@code combine:}/{@code priority:} - i.e.
+ *                  categories written with no priority yet in force for this
+ *                  record; empty when the record has none there.
  * @param parameter the element or stat this entry is bound to. For a
  *                  <em>specialized</em> entry it is the upper-case {@code <TAG>}
  *                  from the name (e.g. {@code ACID}); for a <em>generic</em>
@@ -63,21 +68,27 @@ import java.util.List;
  * @param priority  the raw priority text - {@code index}, {@code negative_index}
  *                  or a decimal integer - or {@code ""} if unset. Left
  *                  unvalidated here; the assembler decides its meaning.
- * @param category  the UI categories this entry belongs to, collected in source
- *                  order across both of the grammar's {@code category:} slots;
- *                  empty when the entry lists none.
+ * @param categoriesAfterPriority the category names from the grammar's second
+ *                  {@code category:} slot, the one after {@code priority:} -
+ *                  i.e. categories written once a priority is already in force
+ *                  for this record; empty when the record has none there.
  * @param flags     the entry-flag names from a {@code flags:} line (the
  *                  {@code |}-separated names, minus the {@code ENTRY_FLAG_}
  *                  prefix), in order; empty when the entry has no {@code flags:}
  *                  line.
  * @param desc      the description text, concatenated from any repeated
  *                  {@code desc:} continuation lines, or {@code ""} if unset.
+ * @param nameTag   the upper-case {@code <TAG>} suffix from the name (e.g.
+ *                  {@code ACID}), captured separately from {@code name} - the
+ *                  full tagged name is kept there so {@code bindui} look-ups by
+ *                  {@code name<TAG>} still match; {@code ""} when the name has
+ *                  no tag.
  * @param line      the 1-based source line of the {@code name:} line that opened
  *                  this record, used to anchor assembler error messages.
  * @author Rowan Crowther
  */
 public record UIEntryParseRecord(String name, String template, String label, String label5, String label2,
-                                 String parameter, String renderer,
-                                 String combine, String priority, List<String> category,
+                                 List<String> categoriesBeforePriority, String parameter, String renderer,
+                                 String combine, String priority, List<String> categoriesAfterPriority,
                                  List<String> flags, String desc, String nameTag, int line) {
 }

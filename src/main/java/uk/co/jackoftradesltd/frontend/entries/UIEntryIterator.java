@@ -17,22 +17,25 @@
 
 package uk.co.jackoftradesltd.frontend.entries;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class UIEntryIterator {
     private List<UIEntry> entries;
-    private int num;
     private int index;
 
     public UIEntryIterator(List<UIEntry> entries, int num, int index) {
         this.entries = entries;
-        this.num = num;
         this.index = index;
     }
 
     public UIEntryIterator(List<UIEntry> entries) {
         this.entries = entries;
-        this.num = 0;
+        this.index = 0;
+    }
+
+    public UIEntryIterator() {
+        this.entries = new ArrayList<>();
         this.index = 0;
     }
 
@@ -41,10 +44,20 @@ public class UIEntryIterator {
     }
 
     public int getNum() {
-        return num;
+        return entries.size();
     }
 
     public int getIndex() {
         return index;
+    }
+
+    public void addEntry(UIEntry entry) {
+        entries.add(entry);
+    }
+
+    public UIEntry advance() {
+        index++;
+        if (index >= entries.size()) return null;
+        return entries.get(index);
     }
 }

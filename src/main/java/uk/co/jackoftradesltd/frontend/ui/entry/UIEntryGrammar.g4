@@ -178,8 +178,9 @@ uiEntry
             String          labelInit       = "";
             String          label5Init      = "";
             String          label2Init      = "";
-            List<String>    categoryInit    = new ArrayList<>();
+            List<String>    categoryInit1   = new ArrayList<>();
             String          parameterInit   = "";
+            List<String>    categoryInit2   = new ArrayList<>();
             String          rendererInit    = "";
             String          combinerInit    = "";
             String          priorityInit    = "";
@@ -189,8 +190,8 @@ uiEntry
         }
         @after {
             $entry = new UIEntryParseRecord(nameInit, templateInit, labelInit,
-            label5Init, label2Init, parameterInit, rendererInit, combinerInit,
-            priorityInit, categoryInit, flagInit, descInit, nameTagInit, line);
+            label5Init, label2Init, categoryInit1, parameterInit, rendererInit, combinerInit,
+            priorityInit, categoryInit2, flagInit, descInit, nameTagInit, line);
         }
         :   name { nameInit = $name.nameStr;
                    if ($name.elemOrStat != null) nameTagInit = $name.elemOrStat;
@@ -199,12 +200,12 @@ uiEntry
             (label { labelInit = $label.labelStr; })?
             (label5 { label5Init = $label5.label5Str; })?
             (label2 { label2Init = $label2.label2Str; })?
-            (category { categoryInit.addAll($category.categoryStr); })?
+            (category { categoryInit1.addAll($category.categoryStr); })?
             (parameter { parameterInit = $parameter.isElement; })?
             (renderer { rendererInit = $renderer.uiEntryRenderer; })?
             (combine { combinerInit = $combine.combiner; })?
             (priority { priorityInit = $priority.word; })*
-            (category {categoryInit.addAll($category.categoryStr); })?
+            (category {categoryInit2.addAll($category.categoryStr); })?
             (flags { flagInit = $flags.entryFlagEnum; })?
             (desc { descInit = descInit + $desc.descStr; })?
         ;

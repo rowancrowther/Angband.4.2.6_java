@@ -27,7 +27,7 @@ public class SavefileGetterImpl {
     private boolean haveSaveDir;
 
     public SavefileGetterImpl() {
-        directory = new AngDir(AngbandDirs.ANGBAND_DIRS.SAVE.getPath());
+        directory = AngDir.angDirFactory(AngbandDirs.ANGBAND_DIRS.SAVE.getPath());
         haveSaveDir = true;
     }
 

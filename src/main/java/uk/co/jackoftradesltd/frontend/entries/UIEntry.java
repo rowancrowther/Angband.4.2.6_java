@@ -17,12 +17,15 @@
 
 package uk.co.jackoftradesltd.frontend.entries;
 
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
+import uk.co.jackoftradesltd.frontend.events.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * A single entry in the player status display (one stat or resistance line),
@@ -61,7 +64,7 @@ public class UIEntry {
     /**
      * Behavioural flag for this entry.
      */
-    private EntryFlag entryFlag;
+    private Flag<EntryFlag> entryFlag;
     /**
      * Human-readable description.
      */
@@ -81,7 +84,7 @@ public class UIEntry {
     /**
      * Categories this entry belongs to (used for grouping on screen).
      */
-    private List<String> categories;
+    private List<UIEntryCategory> categories;
     /**
      * The template this entry inherits defaults from, if any.
      */
@@ -111,9 +114,9 @@ public class UIEntry {
                    StatElemType parmType,
                    UIEntryRenderer renderer,
                    CombinerName combineType,
-                   List<String> categories,
+                   List<UIEntryCategory> categories,
                    int priorityNum,
-                   EntryFlag entryFlag,
+                   Flag<EntryFlag> entryFlag,
                    String description,
                    String label,
                    String label5,
@@ -139,6 +142,20 @@ public class UIEntry {
      */
     public String getName() {
         return name;
+    }
+
+    public Optional<Integer> uiEntryHasCategory(String name) {
+        return uiEntrySearchCategories(name);
+    }
+
+    private Optional<Integer> uiEntrySearchCategories(String name) {
+        for (UIEntryCategory category : categories) {
+            if (category.getName().equals(name)) {
+                return Optional.of(categories.indexOf(category));
+            }
+        }
+
+        return Optional.empty();
     }
 
     /**
@@ -211,8 +228,8 @@ public class UIEntry {
         return priorityNum;
     }
 
-    public EntryFlag getEntryFlag() {
-        return entryFlag;
+    public boolean entryFlagHas(EntryFlag flag) {
+        return entryFlag.has(flag);
     }
 
     public String getDescription() {
@@ -231,7 +248,7 @@ public class UIEntry {
         return label5;
     }
 
-    public List<String> getCategories() {
+    public List<UIEntryCategory> getCategories() {
         return categories;
     }
 

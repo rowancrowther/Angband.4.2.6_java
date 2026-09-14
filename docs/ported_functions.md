@@ -6,7 +6,7 @@ merely *call* a C counterpart rather than reproduce it are deliberately absent.
 Each function listed here also carries a `/* Ported to Java <date> */` comment immediately above its definition in the
 reference C source at `/home/rowan/Desktop/Angband-4.2.6/src`, stamped with the date it was added to this list.
 
-**295 C functions across 43 files**, listed 2026-08-30, revised 2026-09-01.
+**297 C functions across 44 files**, listed 2026-08-30, revised 2026-09-01 and 2026-09-14.
 
 Fourteen C functions are split across more than one Java method — `player_knows_brand`/`_slay`/`_curse`
 each answer from both `PlayerKnowledge` and `KnownObject`, `update_stuff` and `update_bonuses` straddle
@@ -27,6 +27,7 @@ C function. Annotations are stripped from the signatures; the return type has it
 - [`game-world.c`](#game-worldc) — 14
 - [`generate.c`](#generatec) — 3
 - [`main-win.c`](#main-winc) — 1
+- [`main.c`](#mainc) — 2
 - [`mon-make.c`](#mon-makec) — 2
 - [`mon-predicate.c`](#mon-predicatec) — 1
 - [`mon-timed.c`](#mon-timedc) — 2
@@ -192,6 +193,13 @@ C function. Annotations are stripped from the signatures; the return type has it
 | C function       | Java class | Java signature            | Returns |
 |------------------|------------|---------------------------|---------|
 | `term_data_link` | `TermData` | `termDataLink(Term term)` | `void`  |
+
+## `main.c`
+
+| C function    | Java class | Java signature                           | Returns  |
+|---------------|------------|------------------------------------------|----------|
+| `change_path` | `Main`     | `checkDirectoryOption(String arg)`       | `String` |
+| `main`        | `Main`     | `main(String[] args) throws IOException` | `void`   |
 
 ## `mon-make.c`
 

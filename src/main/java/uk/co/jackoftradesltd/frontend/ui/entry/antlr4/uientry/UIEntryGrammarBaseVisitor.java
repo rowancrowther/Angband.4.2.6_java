@@ -17,6 +17,11 @@
 // Generated from UIEntryGrammar.g4 by ANTLR 4.13.2
 package uk.co.jackoftradesltd.frontend.ui.entry.antlr4.uientry;
 
+import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
+
+import java.util.List;
+import java.util.ArrayList;
+
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

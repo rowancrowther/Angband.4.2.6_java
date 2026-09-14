@@ -21,7 +21,7 @@ import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.output.Region;
 
 public class CharSheetConfig {
-    UIEntry stat_mod_entries;
+    UIEntry[] stat_mod_entries;
     Region[] resRegions = new Region[4];
     CharSheetResist[] resistsByRegion = new CharSheetResist[4];
     int[] nResistsByRegion = new int[4];
@@ -40,5 +40,31 @@ public class CharSheetConfig {
 
     public int getResNLabel() {
         return resNLabel;
+    }
+
+    public void setNStatModEntries(int num) {
+        nStatModEntries = num;
+    }
+
+    public void initStatModEntries(int num) {
+        stat_mod_entries = new UIEntry[num];
+    }
+
+    public void setStatModEntry(int index, UIEntry advance) {
+        // fail politely
+        if (index >= stat_mod_entries.length) return;
+        stat_mod_entries[index] = advance;
+    }
+
+    public void setResNlabel(int i) {
+        this.resNLabel = i;
+    }
+
+    public void setResCols(int i) {
+        this.resCols = i;
+    }
+
+    public void setResRows(int i) {
+        this.resRows = i;
     }
 }

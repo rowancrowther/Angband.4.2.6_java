@@ -356,7 +356,7 @@ the game draws needs the same handful.
 
 The largest single item in this roadmap and arguably its own chapter: `ui-player.c` is 1,327 lines.
 
-- [ ] Implement a system whereby `ObjectPropertyAssembler` and `PlayerPropertyAssembler` store only a raw entery name (a
+- [X] Implement a system whereby `ObjectPropertyAssembler` and `PlayerPropertyAssembler` store only a raw entery name (a
   String) to be passed through to the UI when required to be used to lookup the relevant UI entry instance via the
   `UIRegistryLoader`. Once this has been done remove the baseline crossing marker, and do another full test suite run
   ensure it is working correctly.

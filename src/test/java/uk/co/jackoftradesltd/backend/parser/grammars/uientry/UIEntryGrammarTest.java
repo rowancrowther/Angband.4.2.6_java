@@ -48,8 +48,11 @@ import static org.junit.jupiter.api.Assertions.*;
  *       {@link #minimalRecordIsJustNameAndLeavesOptionalFieldsUnset()}); when both are present the
  *       {@code parameter:} line wins (see {@link #parameterLineOverridesTheNameTag()}).</li>
  *   <li><b>{@code category} appears in two slots.</b> Once before {@code parameter} and once after
- *       {@code priority}; both feed the same list, so categories from either position are collected
- *       in source order (see {@link #categoriesFromBothSlotsAreCollectedInOrder()}).</li>
+ *       {@code priority}; each slot feeds its own list on the record -
+ *       {@link UIEntryParseRecord#categoriesBeforePriority()} and
+ *       {@link UIEntryParseRecord#categoriesAfterPriority()} - so the assembler can tell which
+ *       categories had no priority in force yet from which came after one (see
+ *       {@link #categoriesAreKeptSeparateByPositionRelativeToPriority()}).</li>
  * </ul>
  *
  * <p>The failure tests confirm the collect-and-report contract: the parser does not stop on the first
@@ -117,7 +120,9 @@ class UIEntryGrammarTest {
         assertEquals("some_renderer", rec.renderer());
         assertEquals("RESIST_0", rec.combine());
         assertEquals("negative_index", rec.priority());
-        assertEquals(List.of("CHAR_SCREEN1", "EQUIPCMP_SCREEN"), rec.category());
+        // CHAR_SCREEN1 sits before parameter:, EQUIPCMP_SCREEN after priority: - the two slots.
+        assertEquals(List.of("CHAR_SCREEN1"), rec.categoriesBeforePriority());
+        assertEquals(List.of("EQUIPCMP_SCREEN"), rec.categoriesAfterPriority());
         assertEquals(List.of("TIMED_AS_AUX"), rec.flags());
         assertEquals("hello world", rec.desc());
         // name: is source line 2 (record-count: is line 1).
@@ -144,7 +149,8 @@ class UIEntryGrammarTest {
         assertEquals("", rec.combine());
         assertEquals("", rec.priority());
         assertEquals("", rec.desc());
-        assertTrue(rec.category().isEmpty());
+        assertTrue(rec.categoriesBeforePriority().isEmpty());
+        assertTrue(rec.categoriesAfterPriority().isEmpty());
         assertTrue(rec.flags().isEmpty());
     }
 
@@ -180,9 +186,10 @@ class UIEntryGrammarTest {
     }
 
     @Test
-    void categoriesFromBothSlotsAreCollectedInOrder() {
-        // A category before parameter: and a category after priority: both feed categoryInit; the
-        // grammar addAll()s each in turn, so they arrive in source order regardless of slot.
+    void categoriesAreKeptSeparateByPositionRelativeToPriority() {
+        // A category before parameter: has no priority in force yet when it's inserted; a category
+        // after priority: does. The grammar keeps the two slots on separate record fields rather than
+        // merging them, so the assembler can tell which is which.
         Errors errors = new Errors();
         UIEntryGrammar.FileContext ctx = parser(
                 "record-count:1\nname:foo\ncategory:CHAR_SCREEN1\nparameter:element\n"
@@ -190,7 +197,8 @@ class UIEntryGrammarTest {
                 errors).file();
 
         assertTrue(errors.messages.isEmpty(), () -> "unexpected errors: " + errors.messages);
-        assertEquals(List.of("CHAR_SCREEN1", "EQUIPCMP_SCREEN"), ctx.entries.get(0).category());
+        assertEquals(List.of("CHAR_SCREEN1"), ctx.entries.get(0).categoriesBeforePriority());
+        assertEquals(List.of("EQUIPCMP_SCREEN"), ctx.entries.get(0).categoriesAfterPriority());
     }
 
     @Test

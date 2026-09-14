@@ -197,7 +197,7 @@ public class AngbandDirs {
          */
         public static ANGBAND_DIRS getDirectory(@NotNull String name) {
             return Arrays.stream(ANGBAND_DIRS.values())
-                    .filter(a -> a.getName().equals(name)).findFirst().orElse(null);
+                    .filter(a -> a.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
         }
 
         /**
@@ -212,7 +212,7 @@ public class AngbandDirs {
          */
         public static boolean contains(String dirName) {
             for (ANGBAND_DIRS dir : ANGBAND_DIRS.values()) {
-                if (dir.getName().equals(dirName))
+                if (dir.getName().equalsIgnoreCase(dirName))
                     return true;
             }
 

@@ -627,6 +627,8 @@ the existing doc comment for context.
 
 - L20: record `PlayerStatusView` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/parser/Assembler.java`
 
 0 missing, 1 low

@@ -578,6 +578,8 @@ the existing doc comment for context.
 
 - L91: record `SimpleUIMessage` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/messages/data/EventDataBirthPoints.java`
 
 0 missing, 3 low

@@ -293,5 +293,43 @@ class ChannelMessageTest {
             assertTrue(java.util.Collections.disjoint(uiEvents, coreEvents),
                     "neither half should be able to send the other's lifecycle signals");
         }
+
+        /**
+         * The window-close report carries no fields at all, so every instance must compare equal
+         * to every other - that is what lets a receiver assert on it without holding the original
+         * reference the EDT posted.
+         */
+        @Test
+        void theWindowCloseRequestIsAnEmptyRecordComparableByValue() {
+            UIMessage.WindowCloseRequested first = new UIMessage.WindowCloseRequested();
+            UIMessage.WindowCloseRequested second = new UIMessage.WindowCloseRequested();
+
+            assertEquals(first, second);
+            assertInstanceOf(UIMessage.class, first);
+            assertInstanceOf(ChannelMessage.class, first);
+        }
+
+        /**
+         * {@link UIMessage.SimpleUIMessage} is {@link CoreMessage.SimpleCoreMessage}'s counterpart
+         * for the UI's own occasions - same shape, opposite sender - so it is held to the same
+         * "carries the event type and nothing else" contract.
+         */
+        @Test
+        void aSimpleUiMessageCarriesItsEventTypeAndNothingElse() {
+            UIMessage.SimpleUIMessage message = new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT);
+
+            assertEquals(GameEventType.EVENT_ENTER_INIT, message.type());
+            assertInstanceOf(UIMessage.class, message);
+            assertInstanceOf(ChannelMessage.class, message);
+        }
+
+        @Test
+        void simpleUiMessagesDifferOnlyByEventType() {
+            UIMessage.SimpleUIMessage enterInit = new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT);
+            UIMessage.SimpleUIMessage leaveInit = new UIMessage.SimpleUIMessage(GameEventType.EVENT_LEAVE_INIT);
+
+            assertEquals(enterInit, new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+            assertNotEquals(enterInit, leaveInit);
+        }
     }
 }

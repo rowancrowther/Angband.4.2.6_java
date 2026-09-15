@@ -69,8 +69,10 @@ public sealed interface UIMessage extends ChannelMessage permits UIMessage.Lifec
 
     /**
      * The player clicked the window's close button. Posted by the EDT onto the UI thread's inbox,
-     * and the port of the moment C's front end notices a quit request before
-     * {@code quit_aux} ({@code [C] src/ui-init.c}) is reached.
+     * and the port of the moment C's front end notices a quit request before {@code quit()} hands
+     * off to {@code quit_aux} ({@code [C] src/z-util.c}) - the {@code WM_CLOSE} case of the Windows
+     * front end's {@code WndProc} ({@code [C] src/main-win.c}), one of several platform front ends
+     * that each field the same moment in their own event loop.
      * <p>
      * <b>An event, not an instruction.</b> It says what happened, not what should follow: the
      * listener that sends it decides nothing, and the UI thread is where it becomes a
@@ -88,7 +90,25 @@ public sealed interface UIMessage extends ChannelMessage permits UIMessage.Lifec
     record WindowCloseRequested() implements UIMessage {
     }
 
+    /**
+     * A game event with no data beyond the fact that it happened, sent from the UI side rather than
+     * the core's - {@link CoreMessage.SimpleCoreMessage}'s counterpart, same shape, opposite
+     * direction.
+     * <p>
+     * Today's only sender is {@code UILoop} and its only occasion is
+     * {@link GameEventType#EVENT_ENTER_INIT}: the core signals that event to mean "loading has
+     * started", the UI thread answers with this one to mean "the UI-entry data I load in response
+     * to that is now ready", and {@code GameConstants.init} blocks on the core channel until it
+     * sees this exact message go by. C has nothing to port here - {@code init_angband}
+     * ({@code [C] src/init.c}) runs the UI-entry-renderer parser as just one more entry in its
+     * sequential {@code init_module} table, on the one thread there is. Splitting UI-entry loading
+     * onto its own thread is what turns that ordering into a race, and this message is the
+     * rendezvous that closes it.
+     * <p>
+     * Record SimpleUIMessage coded before 260915, commented in full on 260915.
+     *
+     * @param type which event occurred
+     */
     record SimpleUIMessage(GameEventType type) implements UIMessage {
-
     }
 }

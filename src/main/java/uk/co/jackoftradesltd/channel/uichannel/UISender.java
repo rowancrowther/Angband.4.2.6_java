@@ -29,6 +29,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Field and method agree on {@link UIMessage} here, unlike {@link
  * uk.co.jackoftradesltd.channel.corechannel.CoreSender}, because this queue has a single sender and
  * so needs no narrowing.
+ * <p>
+ * Class UISender commented in full before 260915, provenance stamp added on 260915.
  *
  * @see uk.co.jackoftradesltd.channel.corechannel.CoreReceiver the other end of this queue
  */
@@ -36,10 +38,14 @@ public class UISender implements Sender<UIMessage> {
 
     /**
      * The core's inbox. Shared with the {@code CoreReceiver} that reads it.
+     * <p>
+     * Field queue commented in full before 260915, provenance stamp added on 260915.
      */
     private final LinkedBlockingQueue<UIMessage> queue;
 
     /**
+     * Constructor UISender commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param queue the core's inbox, obtained from {@link uk.co.jackoftradesltd.channel.Channels}
      */
     public UISender(LinkedBlockingQueue<UIMessage> queue) {
@@ -51,6 +57,8 @@ public class UISender implements Sender<UIMessage> {
      * <p>
      * {@code offer} on an unbounded queue cannot fail, so the discarded {@code boolean} return
      * loses nothing.
+     * <p>
+     * Function send commented in full before 260915, provenance stamp added on 260915.
      */
     @Override
     public void send(UIMessage message) {

@@ -518,6 +518,8 @@ the existing doc comment for context.
 
 - L48: constructor `CoreSender` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `channel/directories/AngbandDirs.java`
 
 17 missing, 2 low

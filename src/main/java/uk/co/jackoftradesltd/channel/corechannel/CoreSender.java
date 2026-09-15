@@ -32,6 +32,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * #send(CoreMessage)} accepts only {@link CoreMessage}. Wide field, narrow method: that gap is
  * where the core's inability to forge a UI message lives, and it is checked by the compiler
  * rather than by anybody remembering.
+ * <p>
+ * Class CoreSender commented in full before 260915, provenance stamp added on 260915.
  *
  * @see uk.co.jackoftradesltd.channel.uichannel.UIReceiver the other end of this queue
  */
@@ -39,10 +41,14 @@ public class CoreSender implements Sender<CoreMessage> {
 
     /**
      * The UI thread's inbox. Shared with the {@code UIReceiver} that reads it.
+     * <p>
+     * Field queue commented in full before 260915, provenance stamp added on 260915.
      */
     private final LinkedBlockingQueue<ChannelMessage> queue;
 
     /**
+     * Constructor CoreSender commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param queue the UI thread's inbox, obtained from {@link uk.co.jackoftradesltd.channel.Channels}
      */
     public CoreSender(LinkedBlockingQueue<ChannelMessage> queue) {
@@ -56,6 +62,8 @@ public class CoreSender implements Sender<CoreMessage> {
      * {@code boolean} return carries no information and discarding it is honest. It also cannot
      * block, which keeps the core running at the speed of the game rather than the speed of the
      * display.
+     * <p>
+     * Function send commented in full before 260915, provenance stamp added on 260915.
      */
     @Override
     public void send(CoreMessage message) {

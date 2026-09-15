@@ -554,6 +554,8 @@ the existing doc comment for context.
 - L121: method `isBase` - LOW
 - L128: method `isHasResistRune` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `channel/enums/GameEventType.java`
 
 1 missing, 0 low

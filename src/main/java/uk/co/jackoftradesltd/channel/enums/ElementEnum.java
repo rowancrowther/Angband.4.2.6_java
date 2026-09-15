@@ -66,27 +66,26 @@ public enum ElementEnum {
 
     /**
      * Whether this is a "base" element — the four physical damage types (acid, electricity, fire,
-     * cold) that objects can ignore/be affected by as a group. Ports the {@code base} column of C's
-     * {@code list-elements.h}; used e.g. when a dungeon spellbook is set to ignore every base element.
+     * cold) that objects can ignore/be affected by as a group. Ports the ordinal range C fixes with
+     * {@code ELEM_BASE_MIN}/{@code ELEM_BASE_MAX} ({@code src/object.h}) into a per-constant flag;
+     * used e.g. when a dungeon spellbook is set to ignore every base element.
      */
     private final boolean isBase;
 
     /**
      * Whether this is a "high" element — one of the resistable elements beyond the four base
      * physical types, running from poison to disenchantment. Ports the stretch C delimits with
-     * {@code ELEM_HIGH_MIN} and {@code ELEM_HIGH_MAX} ({@code src/list-elements.h}), which it
-     * expresses as an ordinal range because the constants are ordered to make that work.
+     * {@code ELEM_HIGH_MIN} and {@code ELEM_HIGH_MAX} ({@code src/object.h}), which it expresses
+     * as an ordinal range because the constants are ordered to make that work.
      *
      * <p>Recorded per constant rather than derived from {@link #ordinal()} for the same reason as
      * {@link #hasResistRune}: it keeps the port from depending on declaration order. Note that
      * "high" and "resistable" are not the same question — {@link #hasResistRune} is true for the
      * base elements as well — which is why both are carried.
      *
-     * <p>Stored but not yet read: nothing in the port asks the question today, and the constructor
-     * is its only writer. It is here so the data from {@code list-elements.h} is complete when the
-     * code that needs it arrives.
+     * <p>Exposed via {@link #isHigh()}.
      *
-     * <p>Field isHigh coded before 260817, commented in full on 260817.
+     * <p>Field isHigh coded before 260817, commented in full on 260915.
      */
     private final boolean isHigh;
 
@@ -116,6 +115,15 @@ public enum ElementEnum {
     }
 
     /**
+     * Whether this is a "base" element — one of the four physical damage types (acid,
+     * electricity, fire, cold) that objects can ignore or be affected by as a group, such as a
+     * dungeon spellbook set to ignore every base element in one flag check. Ports the ordinal
+     * range C fixes with {@code ELEM_BASE_MIN}/{@code ELEM_BASE_MAX} ({@code src/object.h}) into
+     * a per-constant flag, so the port does not depend on {@link #ordinal()} to answer the
+     * question.
+     *
+     * <p>Method isBase coded before 260817, commented in full on 260915.
+     *
      * @return {@code true} if this is a base (physical) element
      */
     public boolean isBase() {
@@ -123,6 +131,37 @@ public enum ElementEnum {
     }
 
     /**
+     * Whether this is a "high" element — one of the resistable elements beyond the four base
+     * physical types, running from poison to disenchantment. Ports the stretch C delimits with
+     * {@code ELEM_HIGH_MIN} and {@code ELEM_HIGH_MAX} ({@code src/object.h}), which it expresses
+     * as an ordinal range because the constants are ordered to make that work.
+     *
+     * <p>"High" and "resistable" are not the same question — {@link #isHasResistRune()} is true
+     * for the base elements as well — which is why both are exposed.
+     *
+     * <p>Method isHigh coded on 260915, commented in full on 260915.
+     *
+     * @return {@code true} if this is one of the resistable elements above the base four
+     */
+    public boolean isHigh() {
+        return isHigh;
+    }
+
+    /**
+     * Whether objects can resist this element, and so whether it has a corresponding resistance
+     * rune. True for the four base elements and the "high" elements up to and including
+     * disenchantment ({@link #ELEM_ACID} through {@link #ELEM_DISEN}); false for the remainder,
+     * which are damage types used only by spells and monster attacks and which nothing in the
+     * game grants resistance to.
+     *
+     * <p>Ports C's {@code ELEM_HIGH_MAX} bound ({@code src/object.h}), which relies on the
+     * {@code ELEM_*} constants being ordered so that everything resistable comes first
+     * (the {@code for (i = 0; i < ELEM_HIGH_MAX; i++)} loops in {@code obj-knowledge.c}).
+     * Recording it as a per-constant flag rather than an ordinal comparison keeps this port
+     * independent of that ordering.
+     *
+     * <p>Method isHasResistRune coded before 260817, commented in full on 260915.
+     *
      * @return {@code true} if objects can resist this element, and so if it has a resistance rune
      */
     public boolean isHasResistRune() {

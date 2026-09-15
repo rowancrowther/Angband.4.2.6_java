@@ -37,6 +37,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * work as well as the delivery: {@link java.util.concurrent.LinkedBlockingQueue} publishes the
  * message safely, which is why a window event needs no synchronisation of its own on the way
  * across.
+ * <p>
+ * Class EDTSender commented in full before 260902, provenance stamp added on 260915.
  *
  * @see uk.co.jackoftradesltd.channel.uichannel.UIReceiver the end that reads what this writes
  */
@@ -45,10 +47,14 @@ public class EDTSender implements Sender<UIMessage> {
     /**
      * The UI thread's inbox. Shared with the {@code UIReceiver} that reads it, and with the
      * {@code CoreSender} that is its other writer.
+     * <p>
+     * Field queue commented in full before 260902, provenance stamp added on 260915.
      */
     private final LinkedBlockingQueue<ChannelMessage> queue;
 
     /**
+     * Constructor EDTSender commented in full before 260902, provenance stamp added on 260915.
+     *
      * @param queue the UI thread's inbox, obtained from {@link Channels}
      */
     public EDTSender(LinkedBlockingQueue<ChannelMessage> queue) {
@@ -61,6 +67,8 @@ public class EDTSender implements Sender<UIMessage> {
      * Never blocks, which matters more here than on the other senders: this runs on the EDT, and a
      * send that waited would freeze the window. The queue is unbounded, so {@code offer} cannot
      * fail and the discarded {@code boolean} return loses nothing.
+     * <p>
+     * Function send commented in full before 260902, provenance stamp added on 260915.
      */
     @Override
     public void send(UIMessage message) {

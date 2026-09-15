@@ -344,11 +344,15 @@ the existing doc comment for context.
 
 - L48: method `assemble` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/body/BodyParseRecord.java`
 
 1 missing, 0 low
 
 - L32: record `BodySlotRecord` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/chesttrap/ChestTrapAssembler.java`
 
@@ -357,17 +361,23 @@ the existing doc comment for context.
 - L30: class `ChestTrapAssembler` - MISSING
 - L32: method `assemble` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/egoitem/EgoItemAssembler.java`
 
 0 missing, 1 low
 
 - L47: method `assemble` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/egoitem/EgoItemParseRecord.java`
 
 1 missing, 0 low
 
 - L49: record `ItemRef` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/gameconstants/GameConstantsParseRecord.java`
 
@@ -377,6 +387,8 @@ the existing doc comment for context.
 - L86: method `getCategory` - MISSING
 - L95: method `getFields` - LOW - "Accessor"
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/grammars/EffectAssembler.java`
 
 3 missing, 0 low
@@ -384,6 +396,8 @@ the existing doc comment for context.
 - L90: method `assembleOne` - MISSING
 - L186: method `getExpressions` - MISSING
 - L231: method `getWrapperSubType` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/monster/MonsterParseRecord.java`
 
@@ -395,11 +409,15 @@ the existing doc comment for context.
 - L84: record `MonsterDropBaseParseRecord` - MISSING
 - L90: record `MonsterFriendsParseRecord` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/monsterbase/MonsterBaseAssembler.java`
 
 0 missing, 1 low
 
 - L45: method `assemble` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/names/NamesAssembler.java`
 
@@ -407,11 +425,15 @@ the existing doc comment for context.
 
 - L41: method `assemble` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/objectbase/ObjectBaseAssembler.java`
 
 0 missing, 1 low
 
 - L46: method `assemble` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/playerrace/PlayerRaceAssembler.java`
 
@@ -419,11 +441,15 @@ the existing doc comment for context.
 
 - L53: method `assemble` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/projection/ProjectionAssembler.java`
 
 1 missing, 0 low
 
 - L34: class `ProjectionAssembler` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/vault/VaultAssembler.java`
 
@@ -431,11 +457,15 @@ the existing doc comment for context.
 
 - L53: field `logger` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/world/WorldAssembler.java`
 
 1 missing, 0 low
 
 - L27: class `WorldAssembler` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/world/WorldParseRecord.java`
 
@@ -445,11 +475,15 @@ the existing doc comment for context.
 - L132: method `getUp` - LOW - "Accessor"
 - L141: method `getDown` - LOW - "Accessor"
 
+**COMPLETED 2026-09-15**
+
 ### `channel/EDTSender.java`
 
 0 missing, 1 low
 
 - L54: constructor `EDTSender` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `channel/colour/ColourEnum.java`
 
@@ -459,6 +493,8 @@ the existing doc comment for context.
 - L26: method `COLOUR_SHADE` - MISSING
 - L185: method `forTranslation` - MISSING
 - L192: method `translateColour` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `channel/colour/ColourTranslation.java`
 

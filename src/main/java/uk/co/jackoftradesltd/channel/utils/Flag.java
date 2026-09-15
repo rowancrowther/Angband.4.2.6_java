@@ -32,27 +32,42 @@ import java.util.*;
  * same operations over a Java enum so callers get the same semantics with
  * compile-time safety instead of raw bit indices.
  *
+ * <p>Class Flag coded before 260815, commented in full on 260915.
+ *
  * @param <E> the enum type whose constants are the individual flags
  * @author Rowan Crowther
  */
 public class Flag<E extends Enum<E>> implements FlagView<E> {
     /**
-     * The flags currently switched on.
+     * The flags currently switched on. Backs every instance method on this class; there is
+     * no separate size field because an {@link EnumSet} needs none — it is exactly the enum's
+     * constants, so there is no C-style padding beyond the last named flag.
+     *
+     * <p>Field flagSet coded before 260815, commented in full on 260915.
      */
     private final EnumSet<E> flagSet;
 
     /**
      * The full set of every possible flag, cached for full/negate/mask operations.
+     *
+     * <p>Field all coded before 260815, commented in full on 260915.
      */
     private final EnumSet<E> all;
     /**
      * The enum class, retained so new {@link EnumSet}s can be built generically
      * (e.g. in {@link #copyFrom} and {@link #mask}).
+     *
+     * <p>Field eClass coded before 260815, commented in full on 260915.
      */
     private final Class<E> eClass;
 
     /**
-     * Constructor, as this is a generic class, the type of flag set we are using has to be passed in
+     * Constructor, as this is a generic class, the type of flag set we are using has to be passed in.
+     * The set starts empty, equivalent to the C caller declaring a {@code bitflag} array and
+     * {@code memset}-ing it to zero (what {@link #wipe} does explicitly) rather than to
+     * {@code flag_setall}'s 255.
+     *
+     * <p>Function Flag(Class) coded before 260815, commented in full on 260915.
      *
      * @param eClass The class of the enum
      */
@@ -63,12 +78,38 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
         all = EnumSet.allOf(this.eClass);
     }
 
+    /**
+     * Constructor that starts the set with a single flag already switched on, equivalent to
+     * declaring a {@code bitflag} array and calling {@code flag_on} once. Has no single C
+     * counterpart of its own — C has no combined declare-and-set call — but is offered here
+     * alongside the empty and varargs constructors as a convenience for the common case of a
+     * set that begins with exactly one flag.
+     *
+     * <p>Function Flag(Class, Enum) coded before 260815, commented in full on 260915.
+     *
+     * @param eClass The class of the enum
+     * @param flag   The single flag the set should start with switched on
+     */
     public Flag(@NotNull Class<E> eClass, @NotNull E flag) {
         this.eClass = eClass;
         flagSet = EnumSet.of(flag);
         all = EnumSet.allOf(this.eClass);
     }
 
+    /**
+     * Constructor that starts the set with a number of flags already switched on, equivalent to
+     * {@code flags_init} ({@code z-bitflag.c}) called on a freshly declared, still-zeroed
+     * {@code bitflag} array. Note that {@link EnumSet#copyOf(Collection)} throws
+     * {@link IllegalArgumentException} if {@code flags} is empty, since it then has no element
+     * to infer the enum type from; C has no equivalent failure mode, as a zero-length
+     * {@code FLAG_END}-terminated varargs list to {@code flags_init} legally produces an
+     * all-clear array. Use {@link #Flag(Class)} for an empty set instead.
+     *
+     * <p>Function Flag(Class, Enum...) coded before 260815, commented in full on 260915.
+     *
+     * @param eClass The class of the enum
+     * @param flags  The flags the set should start with switched on; must not be empty
+     */
     public Flag(@NotNull Class<E> eClass, @NotNull E... flags) {
         this.eClass = eClass;
         flagSet = EnumSet.copyOf(Arrays.asList(flags));
@@ -76,7 +117,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Returns true if the incoming parameter is part of the flag set, and false otherwise
+     * Returns true if the incoming parameter is part of the flag set, and false otherwise.
+     * Ports {@code flag_has} ({@code z-bitflag.c}). C also special-cases {@code flag == FLAG_END},
+     * returning false without touching the array; that sentinel has no Java equivalent since
+     * {@code flag} is typed {@code E}, so no such case can be constructed here.
+     *
+     * <p>Function has coded before 260815, commented in full on 260915.
      *
      * @param flag The flag we are testing
      * @return true if flag is in set, false otherwise
@@ -103,6 +149,8 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * hit. The C idiom this existed to support, {@code for (f = flag_next(fs, sz, FLAG_START);
      * f != FLAG_END; f = flag_next(fs, sz, f + 1))} ({@code datafile.c}), is expressed in this
      * port by iterating the set directly.
+     *
+     * <p>Function next coded before 260815, commented in full on 260915.
      */
     @Contract(pure = true)
     @CheckReturnValue
@@ -126,6 +174,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * {@link #has(Enum)}. The backing set is wrapped read-only, so the returned
      * iterator cannot mutate this {@code Flag} (its {@code remove()} throws).
      *
+     * <p>Has no C counterpart — C's bit arrays are not iterable and every {@code flag_*} scan is
+     * hand-written per call site (as {@link #next} once had to emulate). This is a Java-side
+     * convenience that makes the enhanced-for loop possible.
+     *
+     * <p>Function iterator coded before 260815, commented in full on 260915.
+     *
      * @return a read-only iterator over the flags that are on
      */
     @Override
@@ -136,7 +190,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Counts the number of flags which are set in this flag set
+     * Counts the number of flags which are set in this flag set. Ports {@code flag_count}
+     * ({@code z-bitflag.c}), which loops every byte and every bit within it, tallying set bits
+     * one at a time; {@link EnumSet#size()} answers the same question in constant time because
+     * an {@link EnumSet} only ever holds the flags that are actually on.
+     *
+     * <p>Function count coded before 260815, commented in full on 260915.
      *
      * @return The size of the set of flags which are on
      */
@@ -148,7 +207,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
     /**
      * Returns true if the set is empty, i.e. no flags are set to on, and false if one or more flags are set to be on.
-     * Note, we do not set FLAG_MAX on all flag sets.
+     * Note, we do not set FLAG_MAX on all flag sets. Ports {@code flag_is_empty}
+     * ({@code z-bitflag.c}), which checks every byte of the array for a nonzero value;
+     * {@link EnumSet#isEmpty()} answers the same question directly since there is no padding
+     * byte here that could be nonzero while every named flag is off.
+     *
+     * <p>Function isEmpty coded before 260815, commented in full on 260915.
      *
      * @return True if there are no flags set on, false otherwise
      */
@@ -176,6 +240,8 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
      * themselves never invoked. It is carried here only so that the family is complete, and
      * so that a future caller has the sane semantics rather than the byte-padding one.
      *
+     * <p>Function isFull coded before 260815, commented in full on 260915.
+     *
      * @return true if all the flags in set are on, false otherwise
      */
     @Contract(pure = true)
@@ -185,7 +251,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Returns true if there is at least one element that exists in both this and other, and false otherwise
+     * Returns true if there is at least one element that exists in both this and other, and false otherwise.
+     * Ports {@code flag_is_inter} ({@code z-bitflag.c}), which ANDs each byte of the two arrays
+     * together and answers true on the first nonzero result; walking {@code other}'s set flags
+     * and testing membership in this set is the same check expressed over an {@link EnumSet}.
+     *
+     * <p>Function isInter coded before 260815, commented in full on 260915.
      *
      * @param other the set we are comparing against
      * @return true if at least one flag is set in both this.set and other.set
@@ -202,7 +273,14 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Compares to sets and returns true if the other is a subset of this
+     * Compares to sets and returns true if the other is a subset of this. Ports
+     * {@code flag_is_subset(flags1, flags2, size)} ({@code z-bitflag.c}) with this set standing
+     * in for {@code flags1} and {@code other} for {@code flags2}: C answers false as soon as a
+     * bit of {@code flags2} is set where the corresponding bit of {@code flags1} is clear
+     * ({@code ~flags1[i] & flags2[i]}), which is exactly "some flag of other is missing from
+     * this".
+     *
+     * <p>Function isSubset coded before 260815, commented in full on 260915.
      *
      * @param other the other set to compare
      * @return False if there exists one flag set in other which is not set in this, true otherwise
@@ -219,7 +297,15 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
     /**
      * Returns true if this and other have exactly the same flags set, and all flags which are not set in one is set in
-     * the other and vice versa. I.e. the sets are equal
+     * the other and vice versa. I.e. the sets are equal.
+     *
+     * <p>Ports {@code flag_is_equal} ({@code z-bitflag.c}), which is a raw {@code memcmp} of the
+     * two backing byte arrays, so it also compares any padding bits above the last named flag.
+     * As with {@link #isFull}, this port has no padding to compare, so mutual {@link #isSubset}
+     * is exactly the same check restricted to the named flags — the two agree on every state
+     * this port can actually represent.
+     *
+     * <p>Function isEqual coded before 260815, commented in full on 260915.
      *
      * @param other the set we are comparing
      * @return True if both this and other have exactly the same pattern of flags set.
@@ -231,7 +317,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Sets the flag in this flag set
+     * Sets the flag in this flag set. Ports {@code flag_on} ({@code z-bitflag.c}), the release-build
+     * path that every {@code _on} wrapper macro takes once {@code NDEBUG} is defined; see
+     * {@link #onDbg} for the debug-build path, {@code flag_on_dbg}, that those macros normally
+     * expand to.
+     *
+     * <p>Function on coded before 260815, commented in full on 260915.
      *
      * @param flag the flag to set
      * @return false if the flag was already set, true otherwise
@@ -246,7 +337,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Removes a flag (switches it off) from this set
+     * Removes a flag (switches it off) from this set. Ports {@code flag_off}
+     * ({@code z-bitflag.c}), which carries its own stage-5 "ported to Java" stamp dated
+     * 2026-08-30.
+     *
+     * <p>Function off coded on 260830, commented in full on 260915.
      *
      * @param flag the flag to remove
      * @return true if the flag was there before the remove, false otherwise
@@ -261,7 +356,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Sets all the flags in this set to off
+     * Sets all the flags in this set to off. Ports {@code flag_wipe} ({@code z-bitflag.c}), a
+     * {@code memset(flags, 0, ...)} over the whole array; {@link EnumSet#clear()} does the same
+     * with no padding to zero.
+     *
+     * <p>Function wipe coded before 260815, commented in full on 260915.
      */
     @Contract(mutates = "this")
     public void wipe() {
@@ -269,7 +368,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Set all the flags in this set to on
+     * Set all the flags in this set to on. Ports {@code flag_setall} ({@code z-bitflag.c}), a
+     * {@code memset(flags, 255, ...)} that also sets any padding bits above the last named
+     * flag; this port has none, so adding every member of {@link #all} covers exactly the
+     * named flags C's 255-fill covers plus that padding.
+     *
+     * <p>Function setAll coded before 260815, commented in full on 260915.
      */
     @Contract(mutates = "this")
     public void setAll() {
@@ -277,7 +381,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Toggle the state of all the flags in the set
+     * Toggle the state of all the flags in the set. Ports {@code flag_negate}
+     * ({@code z-bitflag.c}), which complements every byte of the array ({@code flags[i] = ~flags[i]});
+     * this walks {@link #all} instead of a byte array, flipping membership flag by flag, which
+     * reaches the same named flags without a padding byte to complement.
+     *
+     * <p>Function negate coded before 260815, commented in full on 260915.
      */
     @Contract(mutates = "this")
     public void negate() {
@@ -419,7 +528,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Tests to see if any of the flags in a variable number of flags is set
+     * Tests to see if any of the flags in a variable number of flags is set. Ports
+     * {@code flags_test} ({@code z-bitflag.c}), whose {@code ...} argument list is
+     * {@code FLAG_END}-terminated in C; the Java varargs array carries its own length, so no
+     * sentinel is needed here.
+     *
+     * <p>Function test(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags the list of flags to test this against
      * @return true if any one of the flags in the list is set in this, false otherwise
@@ -437,7 +551,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Tests to see if any of the flags in a list of flags is set
+     * Tests to see if any of the flags in a list of flags is set. Ports {@code flags_test}
+     * ({@code z-bitflag.c}) for callers that already hold their flags in a {@link List} rather
+     * than as individual arguments; see {@link #test(Enum[])} for the varargs form.
+     *
+     * <p>Function test(List) coded before 260815, commented in full on 260915.
      *
      * @param flags the list of flags to test this against
      * @return true if any one of the flags in the list is set in this, false otherwise
@@ -454,7 +572,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Test all the flags in a given variable argument list to see if they are set
+     * Test all the flags in a given variable argument list to see if they are set. Ports
+     * {@code flags_test_all} ({@code z-bitflag.c}); an empty {@code flags} array short-circuits
+     * to true here exactly as C's loop does when its {@code FLAG_END}-terminated {@code ...}
+     * list is empty, since {@code delta} starts true and nothing runs to falsify it.
+     *
+     * <p>Function testAll(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags The flags to test the value of
      * @return true if ALL the flags are set, false otherwise
@@ -472,7 +595,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Test all the flags in a given list to see if they are set
+     * Test all the flags in a given list to see if they are set. Ports {@code flags_test_all}
+     * ({@code z-bitflag.c}) for callers already holding a {@link List}; see
+     * {@link #testAll(Enum[])} for the varargs form.
+     *
+     * <p>Function testAll(List) coded before 260815, commented in full on 260915.
      *
      * @param flags The flags to test the value of
      * @return true if ALL the flags are set, false otherwise
@@ -489,7 +616,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Clears a number of flags from the set, and returns true if any changes were made
+     * Clears a number of flags from the set, and returns true if any changes were made. Ports
+     * {@code flags_clear} ({@code z-bitflag.c}), which unconditionally clears each flag in its
+     * {@code ...} list and separately tracks whether it was set beforehand; this walks the
+     * varargs array the same way.
+     *
+     * <p>Function clear(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
@@ -510,7 +642,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Clears a number of flags from the set, and returns true if any changes were made
+     * Clears a number of flags from the set, and returns true if any changes were made. Ports
+     * {@code flags_clear} ({@code z-bitflag.c}) for callers already holding a {@link List}; see
+     * {@link #clear(Enum[])} for the varargs form.
+     *
+     * <p>Function clear(List) coded before 260815, commented in full on 260915.
      *
      * @param flags the flags to clear from the set
      * @return true if any of the flags were set before this was called, false otherwise
@@ -530,7 +666,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Sets a number of different flags from a variable argument list
+     * Sets a number of different flags from a variable argument list. Ports {@code flags_set}
+     * ({@code z-bitflag.c}), which unconditionally sets each flag in its {@code ...} list and
+     * separately tracks whether it was already set; this walks the varargs array the same way.
+     *
+     * <p>Function set(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
@@ -551,7 +691,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Sets a number of different flags from a list
+     * Sets a number of different flags from a list. Ports {@code flags_set}
+     * ({@code z-bitflag.c}) for callers already holding a {@link List}; see
+     * {@link #set(Enum[])} for the varargs form.
+     *
+     * <p>Function set(List) coded before 260815, commented in full on 260915.
      *
      * @param flags the flags to add
      * @return true if changes were made, i.e. at least one of the flags was set to be off, false otherwise
@@ -571,7 +715,12 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Clear this set and then set a number of flags in a variable argument list to be on
+     * Clear this set and then set a number of flags in a variable argument list to be on. Ports
+     * {@code flags_init} ({@code z-bitflag.c}), which calls {@code flag_wipe} and then
+     * {@code flag_on} for each flag in its {@code ...} list; wiping {@link #flagSet} and adding
+     * the varargs array in one call does the same.
+     *
+     * <p>Function init(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags The set of flags to initialise the cleared Flag to
      */
@@ -584,7 +733,11 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
     }
 
     /**
-     * Clear this set and then set a number of flags in a list to be on
+     * Clear this set and then set a number of flags in a list to be on. Ports
+     * {@code flags_init} ({@code z-bitflag.c}) for callers already holding a {@link List}; see
+     * {@link #init(Enum[])} for the varargs form.
+     *
+     * <p>Function init(List) coded before 260815, commented in full on 260915.
      *
      * @param flags The set of flags to initialise the cleared Flag to
      */
@@ -597,7 +750,16 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
     /**
      * Computes the intersection of a set and multiple flags. The flags NOT specified are cleared in this, and true is
-     * returned if any changes were made, false otherwise
+     * returned if any changes were made, false otherwise.
+     *
+     * <p>Ports {@code flags_mask} ({@code z-bitflag.c}), which builds a zeroed scratch array,
+     * sets each of its {@code ...} flags on in it, then calls {@code flag_inter} between the
+     * scratch array and {@code flags}. This builds the scratch set with {@link #init} instead
+     * of a fresh byte array, then delegates to {@link #inter} — which already documents that it
+     * reports the tight "did this actually change" delta rather than {@code flag_inter}'s
+     * looser "did the two arrays differ" one, so that same divergence applies here too.
+     *
+     * <p>Function mask(Enum...) coded before 260815, commented in full on 260915.
      *
      * @param flags A set of flags where the compliment of them is checked against this to remove those which occur in
      *              the compliment and this
@@ -614,7 +776,13 @@ public class Flag<E extends Enum<E>> implements FlagView<E> {
 
     /**
      * Computes the intersection of a set and multiple flags. The flags NOT specified are cleared in this, and true is
-     * returned if any changes were made, false otherwise
+     * returned if any changes were made, false otherwise.
+     *
+     * <p>Ports {@code flags_mask} ({@code z-bitflag.c}) for callers already holding a
+     * {@link List}; see {@link #mask(Enum[])} for the varargs form and its notes on the
+     * {@link #inter} delta divergence this inherits.
+     *
+     * <p>Function mask(List) coded before 260815, commented in full on 260915.
      *
      * @param flags A set of flags where the compliment of them is checked against this to remove those which occur in
      *              the compliment and this

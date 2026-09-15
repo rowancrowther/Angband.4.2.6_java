@@ -701,6 +701,8 @@ the existing doc comment for context.
 - L66: constructor `Flag` - MISSING
 - L72: constructor `Flag` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/utils/UIEntryCombinerState.java`
 
 13 missing, 0 low

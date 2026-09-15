@@ -645,6 +645,73 @@ class FlagTest {
     }
 
     /**
+     * The constructors, including the divergence between the varargs form and an empty
+     * argument list - {@code flags_init} ({@code z-bitflag.c}) accepts a zero-length
+     * {@code FLAG_END}-terminated list and produces an all-clear array, while
+     * {@link EnumSet#copyOf} has no element to infer the enum type from and throws instead.
+     *
+     * <p>Class Constructors coded on 260915, commented in full on 260915.
+     */
+    @Nested
+    class Constructors {
+
+        @Test
+        void theSingleFlagConstructorStartsWithExactlyThatFlagSet() {
+            Flag<TestFlag> single = new Flag<>(TestFlag.class, TestFlag.BETA);
+
+            assertTrue(single.isEqual(flagsOf(TestFlag.BETA)));
+        }
+
+        @Test
+        void theVarargsConstructorStartsWithExactlyTheGivenFlags() {
+            Flag<TestFlag> several = new Flag<>(TestFlag.class, TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertTrue(several.isEqual(flagsOf(TestFlag.ALPHA, TestFlag.GAMMA)));
+        }
+
+        @Test
+        void theVarargsConstructorRejectsAnEmptyArgumentList() {
+            assertThrows(IllegalArgumentException.class,
+                    () -> new Flag<>(TestFlag.class, new TestFlag[0]));
+        }
+    }
+
+    /**
+     * {@link Flag#next}, deprecated because it cannot faithfully reproduce {@code flag_next}
+     * ({@code z-bitflag.c}): C starts scanning <em>at</em> the given flag and signals
+     * exhaustion with the {@code FLAG_END} sentinel, while this starts just after it and,
+     * having no sentinel of its own, signals exhaustion by returning the last declared enum
+     * constant - a value indistinguishable from a genuine hit. These tests pin the documented
+     * Java-side behaviour, not C's, since the two are known not to match.
+     *
+     * <p>Class DeprecatedNext coded on 260915, commented in full on 260915.
+     */
+    @Nested
+    class DeprecatedNext {
+
+        @Test
+        void nextReturnsTheFollowingSetFlag() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertEquals(TestFlag.GAMMA, flags.next(TestFlag.ALPHA));
+        }
+
+        @Test
+        void nextReturnsTheLastEnumConstantWhenThereIsNoFlagAfterCurrent() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertEquals(TestFlag.DELTA, flags.next(TestFlag.GAMMA));
+        }
+
+        @Test
+        void nextReturnsTheLastEnumConstantWhenCurrentFlagIsNotSet() {
+            flags.set(TestFlag.ALPHA, TestFlag.GAMMA);
+
+            assertEquals(TestFlag.DELTA, flags.next(TestFlag.BETA));
+        }
+    }
+
+    /**
      * Iteration, which is how ported code walks a flag set.
      */
     @Nested

@@ -74,17 +74,16 @@ public enum MonsterSpellTypeEnum {
      *
      * @param isDamage whether the type deals damage
      */
-    @Contract(mutates = "this")
     private MonsterSpellTypeEnum(boolean isDamage) {
         this.isDamage = isDamage;
     }
+
 
     /**
      * @return whether spells of this type deal damage
      */
     @Contract(pure = true)
     @CheckReturnValue
-    @NotNull
     public boolean isDamage() {
         return isDamage;
     }

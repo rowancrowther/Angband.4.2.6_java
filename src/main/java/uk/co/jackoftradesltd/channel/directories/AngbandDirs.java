@@ -43,46 +43,131 @@ import java.util.Arrays;
  * <p>Paths are absolute, built from the working directory, and every one ends in a separator so
  * callers can concatenate a file name directly.
  *
+ * <p>Class AngbandDirs commented in full before 260915, provenance stamp added on 260915.
+ *
  * @author Rowan Crowther
  */
 public class AngbandDirs {
     /**
-     * Logger for rejected directory names.
+     * The {@code lib/} path segment every default below not under {@link #userPath} is built on -
+     * C's {@code libpath} argument to {@code init_file_paths()} ({@code [C] src/init.c}), hard-coded
+     * here rather than taken from the command line.
+     *
+     * <p>Field libPath coded before 260915, commented in full on 260915.
      */
-    private static final Logger logger = LogManager.getLogger(AngbandDirs.class);
+    public static final String libPath = File.separator + "lib" + File.separator;
 
     // The directory structure of Angband - OS neutral.
     // Note, if the user wants to save on a custom area, then we will have to amend the function BASE_DIR
     // to return that value. That's a future issue
-
     /**
-     * The directory the game was launched from, which every default path is built on.
+     * The {@code lib/user/} path segment every player-accumulated default below is built on.
+     *
+     * <p>Field userPath coded before 260915, commented in full on 260915.
      */
-    public static String BASE_DIR = System.getProperty("user.dir");
+    public static final String userPath = libPath + "user" + File.separator;
     /*
      * Start-up defaults, and nothing more. Each is read exactly once - by the ANGBAND_DIRS
      * constant that names it - and is final because an override goes to the enum, never here.
      * The two-tier layout mirrors the tree on disk: lib/ holds what ships with the game,
      * lib/user/ what a player accumulates.
      */
-
-    public static final String libPath = File.separator + "lib" + File.separator;
+    /**
+     * Logger for rejected directory names.
+     *
+     * <p>Field logger commented in full before 260915, provenance stamp added on 260915.
+     */
+    private static final Logger logger = LogManager.getLogger(AngbandDirs.class);
+    /**
+     * The directory the game was launched from, which every default path is built on.
+     *
+     * <p>Field BASE_DIR commented in full before 260915, provenance stamp added on 260915.
+     */
+    public static String BASE_DIR = System.getProperty("user.dir");
+    /**
+     * Default location of the tile icon set - C's {@code ANGBAND_DIR_ICONS} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_ICONS coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_ICONS = BASE_DIR + libPath + "icons" + File.separator;
+    /**
+     * Default location of the sound files - C's {@code ANGBAND_DIR_SOUNDS} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_SOUNDS coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_SOUNDS = BASE_DIR + libPath + "sounds" + File.separator;
+    /**
+     * Default location of the tile sets - C's {@code ANGBAND_DIR_TILES} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_TILES coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_TILES = BASE_DIR + libPath + "tiles" + File.separator;
+    /**
+     * Default location of the bitmap fonts - C's {@code ANGBAND_DIR_FONTS} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_FONTS coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_FONTS = BASE_DIR + libPath + "fonts" + File.separator;
+    /**
+     * Default location of the screen/splash text files - C's {@code ANGBAND_DIR_SCREENS}
+     * ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_SCREENS coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_SCREENS = BASE_DIR + libPath + "screens" + File.separator;
+    /**
+     * Default location of the in-game help files - C's {@code ANGBAND_DIR_HELP} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_HELP coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_HELP = BASE_DIR + libPath + "help" + File.separator;
+    /**
+     * Default location of the game data - C's {@code ANGBAND_DIR_GAMEDATA} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_GAMEDATA coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_GAMEDATA = BASE_DIR + libPath + "gamedata" + File.separator;
-    public static final String configPath = libPath + "config" + File.separator;
-    public static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + configPath + "customize" + File.separator;
-    public static final String userPath = libPath + "user" + File.separator;
+    /**
+     * Default location of the user-editable customisation files (pref files and the like) - C's
+     * {@code ANGBAND_DIR_CUSTOMIZE} ({@code [C] src/init.c}), matched on the command line by
+     * {@link ANGBAND_DIRS#PREF}'s data-file name, {@code "pref"}.
+     *
+     * <p>Field ANGBAND_DIR_CUSTOMIZE coded before 260915, commented in full on 260915.
+     */
+    public static final String ANGBAND_DIR_CUSTOMIZE = BASE_DIR + libPath + "customize" + File.separator;
+    /**
+     * Default location of the player's own data - C's {@code ANGBAND_DIR_USER} ({@code [C] src/init.c}),
+     * the root the score, save, panic and archive directories sit under.
+     *
+     * <p>Field ANGBAND_DIR_USER coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_USER = BASE_DIR + userPath;
+    /**
+     * Default location of panic saves - C's {@code ANGBAND_DIR_PANIC} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_PANIC coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_PANIC = BASE_DIR + userPath + "panic" + File.separator;
+    /**
+     * Default location of save files - C's {@code ANGBAND_DIR_SAVE} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_SAVE coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_SAVE = BASE_DIR + userPath + "save" + File.separator;
+    /**
+     * Default location of the score file - C's {@code ANGBAND_DIR_SCORES} ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_SCORES coded before 260915, commented in full on 260915.
+     */
     public static final String ANGBAND_DIR_SCORES = BASE_DIR + userPath + "scores" + File.separator;
-    public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archives" + File.separator;
-
+    /**
+     * Default location archived data files are moved to - C's {@code ANGBAND_DIR_ARCHIVE}
+     * ({@code [C] src/init.c}).
+     *
+     * <p>Field ANGBAND_DIR_ARCHIVE coded before 260915, commented in full on 260915.
+     */
+    public static final String ANGBAND_DIR_ARCHIVE = BASE_DIR + userPath + "archive" + File.separator;
+    
     /**
      * Point a directory somewhere else for the rest of the run - the {@code -d<dir>=<path>}
      * switch, and the port of C rewriting an {@code ANGBAND_DIR_*} buffer in {@code main()}.
@@ -99,6 +184,8 @@ public class AngbandDirs {
      * caller already validates, so nothing reaches this in practice - see
      * {@code Main.main}, which checks {@link ANGBAND_DIRS#contains} first and reports its own
      * error.
+     *
+     * <p>Function setDirectory commented in full before 260915, provenance stamp added on 260915.
      *
      * @param name      the directory's data-file name, as it appears in {@link ANGBAND_DIRS}
      * @param directory the absolute path to use instead
@@ -128,6 +215,8 @@ public class AngbandDirs {
      * C's history left them differing - {@code PREF} is written {@code "pref"} but points at the
      * customise directory. Always match on {@link #getName()}, never {@link #name()}.
      *
+     * <p>Class ANGBAND_DIRS commented in full before 260915, provenance stamp added on 260915.
+     *
      * @author Rowan Crowther
      */
     public enum ANGBAND_DIRS {
@@ -147,15 +236,23 @@ public class AngbandDirs {
 
         /**
          * The name this directory goes by on the command line and in data files. Fixed.
+         *
+         * <p>Field name commented in full before 260915, provenance stamp added on 260915.
          */
         private final String name;
         /**
          * Where this directory currently points. Not final - {@code -d} replaces it during
          * argument parsing, and this field is the only copy anyone reads.
+         *
+         * <p>Field path commented in full before 260915, provenance stamp added on 260915.
          */
         private String path;
 
         /**
+         * Pair a directory with its data-file name and default path.
+         *
+         * <p>Constructor ANGBAND_DIRS commented in full before 260915, provenance stamp added on 260915.
+         *
          * @param name the data-file name for this directory
          * @param path the default path, taken from the enclosing class's constants
          */
@@ -165,32 +262,9 @@ public class AngbandDirs {
         }
 
         /**
-         * @return the data-file name for this directory, which is what the command line matches on
-         */
-        public String getName() {
-            return name;
-        }
-
-        /**
-         * @return the path in force now, with a trailing separator; overrides included
-         */
-        public String getPath() {
-            return path;
-        }
-
-        /**
-         * Repoint this directory. Called by {@link AngbandDirs#setDirectory} for {@code -d}, and
-         * by tests restoring what they changed - the constants are process-wide, so a test that
-         * moves one has to put it back.
-         *
-         * @param path the absolute path to use, which should end in a separator like the defaults
-         */
-        public void setPath(String path) {
-            this.path = path;
-        }
-
-        /**
          * Find the constant whose {@link #getName()} matches, or {@code null} if none does.
+         *
+         * <p>Function getDirectory commented in full before 260915, provenance stamp added on 260915.
          *
          * @param name the data-file name to look for
          * @return the matching constant, or {@code null} if the name is not one of these
@@ -207,6 +281,8 @@ public class AngbandDirs {
          * <p>Answers the same question as {@link #getDirectory}, by the same rule. Delegating to
          * it would keep a single implementation.
          *
+         * <p>Function contains commented in full before 260915, provenance stamp added on 260915.
+         *
          * @param dirName the data-file name to test
          * @return {@code true} if some constant uses that name
          */
@@ -217,6 +293,41 @@ public class AngbandDirs {
             }
 
             return false;
+        }
+
+        /**
+         * The data-file name for this directory.
+         *
+         * <p>Function getName commented in full before 260915, provenance stamp added on 260915.
+         *
+         * @return the data-file name for this directory, which is what the command line matches on
+         */
+        public String getName() {
+            return name;
+        }
+
+        /**
+         * The path this directory currently points at.
+         *
+         * <p>Function getPath commented in full before 260915, provenance stamp added on 260915.
+         *
+         * @return the path in force now, with a trailing separator; overrides included
+         */
+        public String getPath() {
+            return path;
+        }
+
+        /**
+         * Repoint this directory. Called by {@link AngbandDirs#setDirectory} for {@code -d}, and
+         * by tests restoring what they changed - the constants are process-wide, so a test that
+         * moves one has to put it back.
+         *
+         * <p>Function setPath commented in full before 260915, provenance stamp added on 260915.
+         *
+         * @param path the absolute path to use, which should end in a separator like the defaults
+         */
+        public void setPath(String path) {
+            this.path = path;
         }
     }
 }

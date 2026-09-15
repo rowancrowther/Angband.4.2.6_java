@@ -588,6 +588,8 @@ the existing doc comment for context.
 - L69: method `getIncPoints` - LOW
 - L76: method `getRemaining` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `channel/messages/data/EventDataExplosion.java`
 
 0 missing, 7 low
@@ -599,6 +601,8 @@ the existing doc comment for context.
 - L115: method `getPlayerSeesGrid` - LOW
 - L122: method `getBlastGrid` - LOW
 - L129: method `getCentre` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `channel/messages/data/EventDataStat.java`
 

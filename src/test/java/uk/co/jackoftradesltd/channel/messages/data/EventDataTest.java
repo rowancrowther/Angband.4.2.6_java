@@ -20,10 +20,13 @@ package uk.co.jackoftradesltd.channel.messages.data;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
+import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 import uk.co.jackoftradesltd.middle.enums.Stats;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -69,6 +72,8 @@ class EventDataTest {
         assertInstanceOf(GameEventData.class, new EventDataBolt(ProjectionEnum.PROJ_FIRE, true, true, true,
                 new EventDataGrid(1, 2), new EventDataGrid(3, 4)));
         assertInstanceOf(GameEventData.class, new EventDataBirthPoints(Map.of(), Map.of(), 20));
+        assertInstanceOf(GameEventData.class, new EventDataExplosion(1, 0, new ArrayList<>(), false,
+                new ArrayList<>(), new ArrayList<>(), Loc.zero));
     }
 
     /**
@@ -394,6 +399,100 @@ class EventDataTest {
             EventDataBirthPoints birthPoints = new EventDataBirthPoints(Map.of(), Map.of(), 0);
 
             assertEquals(0, birthPoints.getRemaining());
+        }
+    }
+
+    /**
+     * Tests for {@link EventDataExplosion}, the port of C's {@code explosion} struct
+     * ({@code game-event.h:141-150}).
+     *
+     * <p>{@code projType} and {@code numGrids} are both {@code int} and adjacent in the
+     * constructor, the same argument-order risk the class doc above calls out, so
+     * {@link #swappingProjTypeAndNumGridsIsADifferentPayload} pins the order against
+     * {@code event_signal_blast}'s parameter list ({@code game-event.c:206-213}), which
+     * takes {@code proj_type} before {@code num_grids}. The three per-grid lists are
+     * different generic types ({@code ArrayList<Integer>}, {@code ArrayList<Boolean>},
+     * {@code ArrayList<Loc>}), so a swap between any pair of them would not compile —
+     * that risk does not need a runtime guard.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class Explosions {
+
+        /**
+         * Every component read back by name, with the parallel lists holding values no
+         * uniform pattern would survive a shuffle of.
+         */
+        @Test
+        void anExplosionCarriesEveryComponentInOrder() {
+            ArrayList<Integer> distances = new ArrayList<>(List.of(0, 1, 1, 2));
+            ArrayList<Boolean> seen = new ArrayList<>(List.of(true, false, true, false));
+            ArrayList<Loc> grids = new ArrayList<>(List.of(
+                    Loc.row(5).col(5), Loc.row(4).col(5), Loc.row(5).col(6), Loc.row(6).col(5)));
+            Loc centre = Loc.row(5).col(5);
+
+            EventDataExplosion explosion = new EventDataExplosion(3, 4, distances, true, seen, grids, centre);
+
+            assertEquals(3, explosion.getProjType(), "first int is the projection type");
+            assertEquals(4, explosion.getNumGrids(), "second int is the grid count");
+            assertEquals(distances, explosion.getDistanceToGrid());
+            assertTrue(explosion.isDrawing());
+            assertEquals(seen, explosion.getPlayerSeesGrid());
+            assertEquals(grids, explosion.getBlastGrid());
+            assertEquals(centre, explosion.getCentre());
+        }
+
+        /**
+         * The transposition guard proper: the same two ints the other way round must not
+         * read back the same values.
+         */
+        @Test
+        void swappingProjTypeAndNumGridsIsADifferentPayload() {
+            EventDataExplosion explosion = new EventDataExplosion(3, 9, new ArrayList<>(), false,
+                    new ArrayList<>(), new ArrayList<>(), Loc.zero);
+
+            assertEquals(3, explosion.getProjType());
+            assertNotEquals(9, explosion.getProjType());
+            assertEquals(9, explosion.getNumGrids());
+        }
+
+        /**
+         * C's struct fields for the three per-grid arrays are bare pointers into the
+         * caller's own arrays — {@code event_signal_blast} never copies. The port's
+         * getters must be just as transparent: the very list instances handed to the
+         * constructor, not defensive copies of them.
+         */
+        @Test
+        void gettersReturnTheSameListInstancesGivenToTheConstructor() {
+            ArrayList<Integer> distances = new ArrayList<>();
+            ArrayList<Boolean> seen = new ArrayList<>();
+            ArrayList<Loc> grids = new ArrayList<>();
+
+            EventDataExplosion explosion = new EventDataExplosion(1, 0, distances, false, seen, grids, Loc.zero);
+
+            assertSame(distances, explosion.getDistanceToGrid());
+            assertSame(seen, explosion.getPlayerSeesGrid());
+            assertSame(grids, explosion.getBlastGrid());
+        }
+
+        /**
+         * {@code project.c:761-766}: when no grid has been recorded yet, the explosion
+         * centre itself is stored first, as {@code blast_grid[0]} at
+         * {@code distance_to_grid[0] == 0} — the one-grid case, and the real starting
+         * state every wider blast grows from.
+         */
+        @Test
+        void theCentreGridIsStoredAtDistanceZero() {
+            ArrayList<Integer> distances = new ArrayList<>(List.of(0));
+            ArrayList<Loc> grids = new ArrayList<>(List.of(Loc.row(10).col(10)));
+
+            EventDataExplosion explosion = new EventDataExplosion(1, 1, distances, true,
+                    new ArrayList<>(List.of(true)), grids, Loc.row(10).col(10));
+
+            assertEquals(1, explosion.getNumGrids());
+            assertEquals(0, explosion.getDistanceToGrid().get(0));
+            assertEquals(explosion.getCentre(), explosion.getBlastGrid().get(0));
         }
     }
 }

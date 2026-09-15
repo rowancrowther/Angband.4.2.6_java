@@ -46,6 +46,11 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class HintReader implements Reader<Hint> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * <p>Field logger commented in full on 260915.
+     */
     private static final Logger logger = LogManager.getLogger();
 
     /**

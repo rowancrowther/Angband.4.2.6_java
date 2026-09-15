@@ -46,6 +46,11 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class QuestReader implements Reader<Quest> {
+    /**
+     * Logger used to report file-loading failures.
+     *
+     * <p>Field logger commented in full on 260915.
+     */
     private final static Logger logger = LogManager.getLogger();
 
     /**

@@ -51,6 +51,8 @@ public class PainReader implements Reader<MonsterPain> {
     /**
      * Logger passed to {@link GrammarDriver#run} so an IO failure is reported under this reader's
      * name.
+     *
+     * <p>Field logger commented in full on 260915.
      */
     private static final Logger logger = LogManager.getLogger();
 

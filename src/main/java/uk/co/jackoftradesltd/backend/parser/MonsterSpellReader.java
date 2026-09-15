@@ -45,6 +45,8 @@ import java.util.List;
 public class MonsterSpellReader implements Reader<MonsterSpellType> {
     /**
      * Logger used to report file-loading failures.
+     *
+     * <p>Field logger commented in full on 260915.
      */
     private final static Logger logger = LogManager.getLogger();
 

@@ -47,6 +47,13 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class VaultReader implements Reader<Vault> {
+    /**
+     * Logger handed to {@link GrammarDriver#run}, explicitly scoped to {@code VaultReader.class}
+     * rather than inferred, so an I/O failure opening the data file is reported under this reader's
+     * name.
+     *
+     * <p>Field logger commented in full on 260915.
+     */
     private final static Logger logger = LogManager.getLogger(VaultReader.class);
 
     /**

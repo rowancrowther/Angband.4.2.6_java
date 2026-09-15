@@ -48,6 +48,8 @@ import java.util.List;
 public class SlayReader implements Reader<Slay> {
     /**
      * Logger used to report file-loading (IO) failures.
+     *
+     * <p>Field logger commented in full on 260915.
      */
     private static final Logger logger = LogManager.getLogger();
 

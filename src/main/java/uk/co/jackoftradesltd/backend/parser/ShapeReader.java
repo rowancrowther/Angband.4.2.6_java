@@ -45,6 +45,8 @@ import java.util.List;
 public class ShapeReader implements Reader<PlayerShape> {
     /**
      * Logger used to report file-loading failures.
+     *
+     * <p>Field logger commented in full on 260915.
      */
     private static final Logger logger = LogManager.getLogger();
 

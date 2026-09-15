@@ -45,6 +45,13 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class DungeonProfileReader implements Reader<CaveProfile> {
+    /**
+     * Logger handed to {@link GrammarDriver#run}, explicitly scoped to
+     * {@code DungeonProfileReader.class} rather than inferred, so an I/O failure opening the data
+     * file is reported under this reader's name.
+     *
+     * <p>Field logger commented in full on 260915.
+     */
     private static final Logger logger = LogManager.getLogger(DungeonProfileReader.class);
 
     /**

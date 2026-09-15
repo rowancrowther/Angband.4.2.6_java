@@ -60,6 +60,8 @@ public class TerrainReader implements Reader<Feature> {
     /**
      * Logger handed to {@link GrammarDriver} so I/O failures opening the data file are reported
      * (and rethrown) with the offending filename.
+     *
+     * <p>Field logger commented in full on 260915.
      */
     Logger logger = LogManager.getLogger();
 

@@ -57,45 +57,16 @@ import java.util.function.Function;
  * this at compile time.
  *
  * @author Rowan Crowther
+ *
+ * <p>Class GrammarDriver coded on 260911, commented in full on 260915.
  */
 public final class GrammarDriver {
     /**
-     * The one step {@link #run} cannot perform itself: turn a parsed file into
-     * a list of parse-records. An implementation runs the parser's entry rule
-     * ({@code parser.file()}), fires {@link ParseErrors#throwIfAny()}, validates
-     * the record-count header (see {@link #checkRecordCount}), and maps each raw
-     * row to a grammar-specific DTO of type {@code R}.
-     * <p>
-     * It receives the live {@link ParseErrors} handle - not just the parser -
-     * for two reasons the driver cannot work around:
-     * <ul>
-     *   <li><strong>Ordering:</strong> {@code throwIfAny()} must fire
-     *       <em>after</em> the parse but <em>before</em> the row-mapping, so the
-     *       fail-closed check has to live inside the extractor, not in
-     *       {@link #run}.</li>
-     *   <li><strong>No common supertype:</strong> each grammar's
-     *       {@code FileContext} names its record-list and count fields
-     *       differently (e.g. {@code .projections}/{@code .records} vs
-     *       {@code .renderers}/{@code .record}), so only grammar-specific code
-     *       can reach them.</li>
-     * </ul>
-     * Soft (recoverable) problems are appended to {@code errors}; hard
-     * grammar/lexer problems surface through the {@code errorCatcher}.
+     * Private, no-op constructor. {@code GrammarDriver} is a static-only
+     * utility class - every reader drives its file through {@link #run}
+     * rather than holding an instance, so construction is blocked entirely.
      *
-     * @param <P> the concrete generated parser type (e.g. {@code ProjectionGrammar})
-     * @param <R> the per-grammar parse-record (DTO) type
-     * @author Rowan Crowther
-     */
-    @FunctionalInterface
-    public interface Extractor<P extends Parser, R> {
-        @NotNull
-        List<R> extract(@NotNull P parser,
-                        @NotNull ParseErrors errorCatcher,
-                        @NotNull List<String> errors) throws IOException;
-    }
-
-    /**
-     * Static only - no instances
+     * <p>Constructor GrammarDriver coded on 260911, commented in full on 260915.
      */
     private GrammarDriver() {
         // No instances
@@ -139,6 +110,8 @@ public final class GrammarDriver {
      * @return a {@link ParseResult} of the assembled items and any soft errors;
      * empty items (with errors) if the parse was cancelled
      * @throws IOException if the file cannot be read
+     *
+     * <p>Method run coded on 260911, commented in full on 260915.
      */
     public static <L extends Lexer, P extends Parser, R, T> ParseResult<T> run(
             @NotNull String filename,
@@ -177,25 +150,94 @@ public final class GrammarDriver {
      * records that did parse still load, per the partial-results contract - so
      * this reports into {@code errors} rather than throwing.
      * <p>
+     * The {@code record-count} header is a Java-only addition to this port's
+     * data-file grammars; the original C parser (Angband 4.2.6's
+     * {@code datafile.c} / {@code parser.c}) has no declared-count check to
+     * cross-reference, so this method has no C original.
+     * <p>
      * Its purpose is the side effect on {@code errors}; there is no return
-     * value to consume (the parsed count is used only for the comparison here).
+     * value to consume (the parsed count is used only for the comparison
+     * here). On a non-numeric {@code declared} value the method reports the
+     * format error and returns immediately, without also attempting the
+     * numeric comparison.
      *
      * @param declared the header's declared-count text
      * @param actual   the number of records actually parsed
      * @param errors   the soft-error sink, mutated in place
+     *
+     * <p>Method checkRecordCount coded on 260911, commented in full on 260915;
+     * fixed a sentinel-value collision on 260915 where a declared count of
+     * {@code "-1"} was silently treated as "no count declared" and skipped
+     * the mismatch check.
      */
     public static void checkRecordCount(@NotNull String declared,
                                         int actual,
                                         @NotNull List<String> errors) {
-        int count = -1;
+        int count;
         try {
             count = Integer.parseInt(declared);
         } catch (NumberFormatException e) {
             errors.add("Invalid number format on declared record count: " + declared);
+            return;
         }
 
-        if (count != -1 && count != actual) {
+        if (count != actual) {
             errors.add("record-count header declares " + count + " records, but file contains " + actual);
         }
+    }
+
+    /**
+     * The one step {@link #run} cannot perform itself: turn a parsed file into
+     * a list of parse-records. An implementation runs the parser's entry rule
+     * ({@code parser.file()}), fires {@link ParseErrors#throwIfAny()}, validates
+     * the record-count header (see {@link #checkRecordCount}), and maps each raw
+     * row to a grammar-specific DTO of type {@code R}.
+     * <p>
+     * It receives the live {@link ParseErrors} handle - not just the parser -
+     * for two reasons the driver cannot work around:
+     * <ul>
+     *   <li><strong>Ordering:</strong> {@code throwIfAny()} must fire
+     *       <em>after</em> the parse but <em>before</em> the row-mapping, so the
+     *       fail-closed check has to live inside the extractor, not in
+     *       {@link #run}.</li>
+     *   <li><strong>No common supertype:</strong> each grammar's
+     *       {@code FileContext} names its record-list and count fields
+     *       differently (e.g. {@code .projections}/{@code .records} vs
+     *       {@code .renderers}/{@code .record}), so only grammar-specific code
+     *       can reach them.</li>
+     * </ul>
+     * Soft (recoverable) problems are appended to {@code errors}; hard
+     * grammar/lexer problems surface through the {@code errorCatcher}.
+     *
+     * @param <P> the concrete generated parser type (e.g. {@code ProjectionGrammar})
+     * @param <R> the per-grammar parse-record (DTO) type
+     * @author Rowan Crowther
+     *
+     * <p>Interface Extractor coded on 260911, commented in full on 260915.
+     */
+    @FunctionalInterface
+    public interface Extractor<P extends Parser, R> {
+        /**
+         * Runs the parser's entry rule, fail-closes on any hard grammar/lexer
+         * error via {@code errorCatcher.throwIfAny()}, then maps each parsed
+         * row into a grammar-specific record of type {@code R}. Soft problems
+         * (e.g. a {@link GrammarDriver#checkRecordCount} mismatch) are
+         * appended to {@code errors} rather than thrown.
+         *
+         * @param parser       the constructed grammar parser, not yet run
+         * @param errorCatcher the installed {@link ParseErrors} listener; call
+         *                     {@link ParseErrors#throwIfAny()} after parsing
+         *                     and before mapping rows, so hard errors fail
+         *                     closed
+         * @param errors       the soft-error sink, mutated in place
+         * @return the parsed records, one per row, in file order
+         * @throws IOException if the underlying read fails
+         *
+         *                     <p>Method extract coded on 260911, commented in full on 260915.
+         */
+        @NotNull
+        List<R> extract(@NotNull P parser,
+                        @NotNull ParseErrors errorCatcher,
+                        @NotNull List<String> errors) throws IOException;
     }
 }

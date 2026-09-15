@@ -562,11 +562,15 @@ the existing doc comment for context.
 
 - L260: enum-const `EVENT_ENTER_WORLD` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/globals/Angband.java`
 
 1 missing, 0 low
 
 - L20: class `Angband` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `channel/messages/UIMessage.java`
 

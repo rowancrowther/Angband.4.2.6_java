@@ -17,7 +17,38 @@
 
 package uk.co.jackoftradesltd.channel.messages.data;
 
+/**
+ * The UI thread's cached snapshot of the player-status sidebar — the two-channel migration's
+ * stand-in for C's live reads of the {@code player}/{@code cave} globals inside the
+ * {@code prt_*} family in {@code ui-display.c}. C has no cached copy at all: every sidebar line
+ * is repainted by reading the current global state directly at redraw time, so there is nothing
+ * there resembling {@link #cachedPlayerStatusView} to keep in sync. This class exists because
+ * the UI thread on this side of the boundary cannot reach across and read those globals itself;
+ * the core instead pushes each value across as it changes, through the
+ * {@code updatePlayerStatus*} field setters below, and the UI thread reads back the accumulated
+ * snapshot through {@link #getPlayerStatusView()}.
+ *
+ * <p>Two ways to update the cache: {@link #updatePlayerStatusView} replaces the whole
+ * {@link PlayerStatusView} wholesale, while every {@code updatePlayerStatus*} field setter below
+ * it rebuilds the snapshot from the current one with exactly one field changed —
+ * {@link PlayerStatusView} is an immutable record, so there is no in-place field write available,
+ * unlike C's direct mutation of the live {@code player} struct. The static initializer seeds an
+ * all-default snapshot at class load, before any {@code Player} exists to read values from; C
+ * needs no equivalent step, since its {@code player} global is zero-initialised static storage
+ * from program start.
+ *
+ * <p>Class PlayerEventStatusUpdate coded before 260912, commented in full on 260915.
+ */
 public class PlayerEventStatusUpdate {
+    /**
+     * The current player-status snapshot — replaced wholesale by {@link #updatePlayerStatusView}
+     * or rebuilt field-by-field by the {@code updatePlayerStatus*} setters below; see the class
+     * Javadoc above for why this cache exists in Java where C keeps none. Never observably
+     * {@code null}: the static initializer below seeds it before any other code can run, so
+     * every read through {@link #getPlayerStatusView()} sees at least the all-default snapshot.
+     *
+     * <p>Field cachedPlayerStatusView coded before 260912, commented in full on 260915.
+     */
     private static PlayerStatusView cachedPlayerStatusView;
 
     /*
@@ -887,14 +918,25 @@ public class PlayerEventStatusUpdate {
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new maximum stat values, leaving every other
-     * field untouched — the port of C's {@code prt_stat} ({@code ui-display.c:153}), which
-     * compares {@code player->stat_cur[stat]} against {@code player->stat_max[stat]} to decide
-     * whether a stat is shown injured (reduced name, yellow) or healthy (full name, green).
+     * Rebuilds {@link #cachedPlayerStatusView} with new stat-label strings, leaving every other
+     * field untouched — the port of C's {@code stat_names} array ({@code ui-display.c:99-102}),
+     * the abbreviation each stat row is printed under in {@code prt_stat}
+     * ({@code ui-display.c:153}). {@code stat_names} is fixed schema data, the same for every
+     * character ({@code "STR"}, {@code "INT"}, {@code "WIS"}, {@code "DEX"}, {@code "CON"}, as
+     * seeded by the static initializer above and mirrored in
+     * {@link uk.co.jackoftradesltd.middle.enums.Stats#getStatString()}), not a per-player value
+     * — unlike the numeric stat arrays this method sits beside.
      *
-     * <p>Method updatePlayerStatusMaxStats coded before 260912, commented in full on 260912.
+     * <p>C additionally holds {@code stat_names_reduced} ({@code ui-display.c:107-110}), the
+     * lowercase form {@code prt_stat} swaps in when a stat is injured
+     * ({@code stat_cur[stat] < stat_max[stat]}); this snapshot carries only the healthy-form
+     * labels, so choosing between the two forms (or colouring by injury) is left to whatever
+     * renders {@link #cachedPlayerStatusView}, from {@link cachedPlayerStatusView#currentStats()}
+     * and {@link cachedPlayerStatusView#maxStats()}.
      *
-     * @param value the maximum stat values to store in the rebuilt view
+     * <p>Method updatePlayerStatusStatsString coded before 260912, commented in full on 260915.
+     *
+     * @param value the stat-label strings to store in the rebuilt view
      */
     public static void updatePlayerStatusStatsString(String[] value) {
         cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
@@ -938,14 +980,23 @@ public class PlayerEventStatusUpdate {
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new maximum stat values, leaving every other
-     * field untouched — the port of C's {@code prt_stat} ({@code ui-display.c:153}), which
-     * compares {@code player->stat_cur[stat]} against {@code player->stat_max[stat]} to decide
-     * whether a stat is shown injured (reduced name, yellow) or healthy (full name, green).
+     * Rebuilds {@link #cachedPlayerStatusView} with a new body-part count, leaving every other
+     * field untouched — the port of C's {@code player->body.count}, as read by
+     * {@code configure_char_sheet}/{@code have_valid_char_sheet_config}
+     * ({@code ui-player.c:223-225, 152-153}) to size the character screen's resistance-panel
+     * column count ({@code res_nlabel + 1 + body.count}).
      *
-     * <p>Method updatePlayerStatusMaxStats coded before 260912, commented in full on 260912.
+     * <p>This is a separate cached field from
+     * {@link cachedPlayerStatusView#equipmentSlotCount()} even though both
+     * ultimately trace back to the same C value: that field mirrors {@code player->body.count}
+     * as read by {@code prt_equippy} ({@code ui-display.c:269}) for the sidebar's equippy-char
+     * loop, a different call site the C original reads live from the same global. This
+     * snapshot design has no single live global to read from, so each call site's reading is
+     * cached and updated independently.
      *
-     * @param value the maximum stat values to store in the rebuilt view
+     * <p>Method updatePlayerStatusBodyCount coded before 260912, commented in full on 260915.
+     *
+     * @param value the body-part count to store in the rebuilt view
      */
     public static void updatePlayerStatusBodyCount(int value) {
         cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),

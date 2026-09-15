@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * method must rebuild the whole thing from the current one, and the risk that matters is a
  * transcription slip: a field landing in the wrong constructor slot, silently overwriting a
  * neighbour instead of the field the method is named for. {@link #updatingOneFieldLeavesEveryOtherFieldUntouched}
- * sweeps every one of the 35 setters against every one of the 38 record components to rule that
+ * sweeps every one of the 38 setters against every one of the 38 record components to rule that
  * out.
  *
  * <p>{@code cachedPlayerStatusView} is a static field shared across the JVM, so each test saves it
@@ -183,6 +183,9 @@ class PlayerEventStatusUpdateTest {
                         new int[]{1, 2, 3, 4, 5}, "currentStats"),
                 Arguments.of("updatePlayerStatusMaxStats", int[].class,
                         new int[]{7, 8, 9, 10, 11}, "maxStats"),
+                Arguments.of("updatePlayerStatusStatsString", String[].class,
+                        new String[]{"New STR", "New INT", "New WIS", "New DEX", "New CON"}, "statString"),
+                Arguments.of("updatePlayerStatusBodyCount", int.class, 21, "bodyCount"),
                 Arguments.of("updatePlayerStatusMonsterHealth", int.class, 40, "monsterHealth"),
                 Arguments.of("updatePlayerStatusMaxMonsterHealth", int.class, 400, "maxMonsterHealth"),
                 Arguments.of("updatePlayerStatusMonsterVisible", boolean.class, true, "monsterVisible"),
@@ -227,7 +230,7 @@ class PlayerEventStatusUpdateTest {
     }
 
     /**
-     * The ordinary path for every field setter, all 35 in one sweep: calling it changes exactly
+     * The ordinary path for every field setter, all 38 in one sweep: calling it changes exactly
      * the {@link PlayerStatusView} component it is named for, and leaves the other 37 exactly as
      * {@link #baseline()} held them.
      */

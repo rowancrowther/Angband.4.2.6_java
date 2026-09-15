@@ -619,6 +619,8 @@ the existing doc comment for context.
 - L20: class `PlayerEventStatusUpdate` - MISSING
 - L21: field `cachedPlayerStatusView` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/messages/data/PlayerStatusView.java`
 
 1 missing, 0 low

@@ -56,6 +56,8 @@ public class QuestReader implements Reader<Quest> {
     /**
      * Parse the file and return just the assembled quests, discarding the error list.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the quest data file to read
      * @return the quests that assembled successfully
      * @throws IOException if the file cannot be read

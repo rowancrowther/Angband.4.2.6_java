@@ -49,6 +49,20 @@ public class GameConstantsReader {
      */
     private static final Logger logger = LogManager.getLogger();
 
+    /**
+     * Alias for {@link #parseWithResults}: unlike every other reader in this package, {@code parse}
+     * does not unwrap to an items-only view - {@link GameConstantsParseResult} is a single aggregate
+     * rather than a {@code List}, so there is nothing to discard and no soft-error channel to drop.
+     * The two methods are identical; this one exists only so the class carries the conventional
+     * {@code parse} entry point other readers expose.
+     *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
+     * @param filename the name of the file to parse
+     * @return the assembled game constants plus any soft errors, or a null-data result on a hard
+     * parse failure
+     * @throws IOException if the file cannot be read
+     */
     public GameConstantsParseResult parse(@NotNull String filename) throws IOException {
         return parseWithResults(filename);
     }

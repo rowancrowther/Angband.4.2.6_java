@@ -56,6 +56,8 @@ public class HintReader implements Reader<Hint> {
     /**
      * Parse the file and return just the assembled hints, discarding the error list.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the hint data file to read
      * @return the parsed hints
      * @throws IOException if the file cannot be read

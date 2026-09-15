@@ -52,10 +52,14 @@ public class TrapReader implements Reader<TrapKind> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Parses {@code filename} and returns just the assembled trap kinds, discarding the
+     * soft-error channel (use {@link #parseWithResults} to inspect errors).
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
+     * @param filename the data file to read
+     * @return the trap kinds read from the file
+     * @throws IOException if the file cannot be read
      */
     @Override
     public @NotNull List<TrapKind> parse(@NotNull String filename) throws IOException {

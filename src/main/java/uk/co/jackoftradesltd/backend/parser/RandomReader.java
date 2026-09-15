@@ -49,10 +49,17 @@ public class RandomReader implements Reader<Random> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Parses a dice-notation expression (for example {@code "2d6"}) and returns a single-element
+     * list holding the resulting {@link Random}. Unlike every other reader in this package,
+     * {@code filename} is not a path - it is read directly as the dice text via
+     * {@link CharStreams#fromString}, and there is no {@code parseWithResults}/soft-error channel
+     * to discard: any failure is a hard {@code IOException} straight out of the grammar.
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
+     * @param filename the dice-notation text to parse, despite the name (e.g. {@code "2d6"})
+     * @return a single-element list containing the parsed {@link Random}
+     * @throws IOException if the text cannot be parsed as a dice expression
      */
     @Override
     public @NotNull List<Random> parse(@NotNull String filename) throws IOException {

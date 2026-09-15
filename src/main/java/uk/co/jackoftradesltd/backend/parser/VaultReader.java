@@ -57,6 +57,11 @@ public class VaultReader implements Reader<Vault> {
     private final static Logger logger = LogManager.getLogger(VaultReader.class);
 
     /**
+     * Parse the file and return just the assembled vaults; soft errors are logged but not
+     * surfaced here (use {@link #parseWithResults} to inspect them).
+     *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the data file to parse
      * @return the successfully assembled vaults; soft errors are logged but not surfaced here
      */

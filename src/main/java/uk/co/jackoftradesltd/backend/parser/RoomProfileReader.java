@@ -53,6 +53,11 @@ public class RoomProfileReader implements Reader<RoomTemplate> {
     private static final Logger logger = LogManager.getLogger(RoomProfileReader.class);
 
     /**
+     * Parse the file and return just the assembled room templates; soft errors are logged but
+     * not surfaced here (use {@link #parseWithResults} to inspect them).
+     *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the data file to parse
      * @return the successfully assembled templates; soft errors are logged but not surfaced here
      */

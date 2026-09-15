@@ -61,6 +61,8 @@ public class PainReader implements Reader<MonsterPain> {
      * Convenience wrapper over {@link #parseWithResults} for callers that do not need the errors;
      * satisfies the {@link Reader} contract.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the data file to parse
      * @return the assembled {@link MonsterPain} list (empty if the parse failed closed)
      * @throws IOException if the file cannot be read

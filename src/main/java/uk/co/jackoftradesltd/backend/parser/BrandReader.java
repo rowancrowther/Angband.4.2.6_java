@@ -57,6 +57,8 @@ public class BrandReader implements Reader<Brand> {
      * Parse the file and return just the assembled brands, discarding the soft-
      * error channel (use {@link #parseWithResults} to inspect errors).
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the brand data file to read
      * @return the brands read from the file
      * @throws IOException if the file cannot be read

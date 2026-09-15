@@ -70,6 +70,8 @@ public class TerrainReader implements Reader<Feature> {
      * successfully assembled features. Callers that need to inspect soft (assembly) errors should
      * use {@link #parseWithResults} instead.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the terrain data file to load
      * @return the features that assembled cleanly (bad records are skipped, not thrown)
      * @throws IOException if the file cannot be opened/read

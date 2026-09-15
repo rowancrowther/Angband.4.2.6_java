@@ -46,10 +46,15 @@ public class LoreReader implements Reader<MonsterLore> {
     private static final Logger logger = LogManager.getLogger();
 
     /**
-     * Run the parser and generate the ArrayList from the file
+     * Stub: the {@code MonsterLore} grammar/lexer is not wired up yet (see the commented-out
+     * body below), so this always returns an empty list rather than reading {@code filename}.
+     * Parked deliberately until real game-generated lore data exists to parse against - not a
+     * port in progress, and not to be mistaken for one.
      *
-     * @param filename the name of the file
-     * @return an ArrayList of items read from the file
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
+     * @param filename the name of the file (currently unused - see above)
+     * @return always an empty list, until the grammar is wired up
      */
     @Override
     public List<MonsterLore> parse(@NotNull String filename) throws IOException {

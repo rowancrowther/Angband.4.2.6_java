@@ -57,6 +57,8 @@ public class PlayerPropertyReader implements Reader<PlayerProperty> {
      * the soft-error channel. Convenience form of {@link #parseWithResults(String)} for the
      * {@link Reader} contract; callers that need to inspect soft errors should use that method.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the {@code player_property.txt} file to load.
      * @return the assembled player properties, in file order (empty if a hard grammar/lexer
      * error aborted the parse).

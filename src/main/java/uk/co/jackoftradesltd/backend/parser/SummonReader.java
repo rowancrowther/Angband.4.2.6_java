@@ -55,6 +55,8 @@ public class SummonReader implements Reader<Summon> {
      * detail. Convenience wrapper over {@link #parseWithResults} for callers (such as
      * {@code GameConstants}) that only want the successfully loaded items.
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the data file to read
      * @return the summons read from the file (empty if the parse failed outright)
      * @throws IOException if the file cannot be read

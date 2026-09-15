@@ -57,6 +57,8 @@ public class SlayReader implements Reader<Slay> {
      * Parse the file and return just the assembled slays, discarding the soft-
      * error channel (use {@link #parseWithResults} to inspect errors).
      *
+     * <p>Function parse coded before 260915, commented in full on 260915.
+     *
      * @param filename the slay data file to read
      * @return the slays read from the file
      * @throws IOException if the file cannot be read

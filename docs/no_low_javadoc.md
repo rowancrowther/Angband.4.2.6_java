@@ -721,6 +721,8 @@ the existing doc comment for context.
 - L50: method `getAccumAux` - MISSING
 - L54: method `setAccumAux` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/utils/combiners/AddCombiner.java`
 
 1 missing, 0 low

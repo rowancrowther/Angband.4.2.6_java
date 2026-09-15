@@ -88,6 +88,8 @@ the existing doc comment for context.
 - L20: class `Datafile` - MISSING
 - L22: method `deactivateRandartFile` - MISSING
 
+**COMPLETED 2026-09-14**
+
 ### `backend/io/savefiles/SavefileDetails.java`
 
 11 missing, 0 low
@@ -104,6 +106,8 @@ the existing doc comment for context.
 - L47: method `setDescription` - MISSING
 - L51: method `setOffset` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/io/savefiles/SavefileGetterImpl.java`
 
 7 missing, 0 low
@@ -115,6 +119,8 @@ the existing doc comment for context.
 - L27: field `haveSaveDir` - MISSING
 - L29: constructor `SavefileGetterImpl` - MISSING
 - L34: method `gotSavefile` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/ActivationReader.java`
 

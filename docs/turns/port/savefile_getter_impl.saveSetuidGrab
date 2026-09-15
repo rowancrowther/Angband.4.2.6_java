@@ -1,0 +1,24 @@
+## Stage 1 — Verify
+
+**C original:** `got_savefile()`, `got_savefile_dir()`, `get_savefile_details()`, `cleanup_savefile_getter()` in `/home/rowan/Desktop/Angband-4.2.6/src/ui-game.c:1187-1294`, struct in `ui-game.c:68-76` and `ui-game.h:47-55`.
+
+### What matches
+- `SavefileGetterImpl.java:38-41` — "directory can't be opened → return false" agrees with C's `(*pg)->d == NULL → return false` path (`ui-game.c:1198-1200`), for the very first call only.
+
+### What doesn't match
+- `SavefileGetterImpl.java:34-48` — `gotSavefile()` never actually enumerates. C's `got_savefile()` loops (`ui-game.c:1218-1249`), calling `my_dread` for each entry, filtering by the player-ID prefix, and populating `fnam`/`desc`/`have_details` on the entry it keeps. The Java method does none of that: it reads no entries from `directory` at all, never calls `AngDir.read()`.
+- `SavefileGetterImpl.java:43-47` — once `directory != null`, the method unconditionally returns `true` and hands back a brand-new, empty `SavefileDetails` every single call. There is no terminating condition, so a caller looping `while (gotSavefile())` (the Java equivalent of `main.c:284-306`'s savefile listing loop) never terminates — infinite loop, unlike C which eventually hits "no more entries", closes the dir, and returns `false` (`ui-game.c:1251-1255`).
+- `SavefileGetterImpl.java:35` — `String filename = "";` is declared and never used; nothing is ever assigned to `SavefileDetails.fileName` or `.description` anywhere in the class.
+- `SavefileGetterImpl.java:26` — `haveDetails` is declared but never set to `true`; C's `have_details` (`ui-game.c:1247`) is the flag `get_savefile_details()` and `got_savefile()`'s re-entry assert depend on.
+- No Java equivalent exists for:
+  - `got_savefile_dir()` (`ui-game.c:1262-1265`) — reads `have_savedir`
+  - `get_savefile_details()` (`ui-game.c:1275-1278`) — returns details only if `have_details`
+  - `cleanup_savefile_getter()` (`ui-game.c:1284-1294`) — frees `desc`/`fnam`, closes `d`
+- No handling anywhere of the `SETGID` player-ID prefix logic (`ui-game.c:1205-1210`, `1234-1239`) that both filters entries and sets `details.foff`/`offset`. That may be a deliberate simplification for the JVM target, but nothing records the decision, and `SavefileGetterImpl.java:45` hardcodes `setOffset(0)` on every call rather than once at initialization the way C sets `foff` once per getter.
+- Constructor (`SavefileGetterImpl.java:29-32`) opens the directory eagerly, where C's `got_savefile()` opens it lazily on the first call (`*pg == NULL` branch, `ui-game.c:1191-1210`) — a legitimate reshape for object lifecycle, but it means the class has no way left to distinguish "first call" from "subsequent call," which is exactly the distinction the current `gotSavefile()` body is missing and needs to re-derive some other way.
+
+### Interesting inputs walked through
+- **Save dir missing:** C — first call returns `false` immediately. Java — `gotSavefile()` returns `false` immediately. Matches.
+- **Save dir has 3 files:** C — four calls: true, true, true, then false (dir closed, `have_details=false`). Java — every call returns `true` with an empty, freshly-allocated `SavefileDetails`; never reaches `false`. Diverges — infinite loop for any caller mirroring `main.c`'s list-savefiles pattern.
+
+This is a stub, not a completed port — most of the C behaviour (enumeration, filtering, three of the four public functions) isn't there yet. Per the port skill, that's a stop: not touching `src/main/**`. Implementation is Rowan's; re-run stage 1 against it whenever a check is wanted.

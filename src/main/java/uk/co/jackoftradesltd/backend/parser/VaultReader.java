@@ -59,25 +59,12 @@ public class VaultReader implements Reader<Vault> {
     }
 
     /**
-     * As {@link #parse}, but keeps the soft errors alongside the assembled vaults rather than
-     * discarding them.
-     *
-     * @param filename the data file to parse
-     * @return the assembled vaults plus any soft errors gathered along the way
-     */
-    public ParseResult<Vault> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                VaultLexer::new,
-                VaultGrammar::new,
-                VaultReader::extract,
-                new VaultAssembler(), logger);
-    }
-    
-    /**
      * Runs the grammar's entry rule, fails closed on hard parse errors, checks the file's declared
      * {@code record-count:} against how many records actually parsed (a soft error on mismatch —
      * note C's own parser never validates this header at all, so a mismatch here is stricter than
      * the original), and hands back the raw records for {@link VaultAssembler} to type-check.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the constructed parser, ready to run its entry rule
      * @param errorCatcher the installed error listener; {@link ParseErrors#throwIfAny()} must run
@@ -98,5 +85,22 @@ public class VaultReader implements Reader<Vault> {
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
         
         return new ArrayList<>(result);
+    }
+    
+    /**
+     * As {@link #parse}, but keeps the soft errors alongside the assembled vaults rather than
+     * discarding them.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the data file to parse
+     * @return the assembled vaults plus any soft errors gathered along the way
+     */
+    public ParseResult<Vault> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                VaultLexer::new,
+                VaultGrammar::new,
+                VaultReader::extract,
+                new VaultAssembler(), logger);
     }
 }

@@ -61,30 +61,14 @@ public class HintReader implements Reader<Hint> {
     }
 
     /**
-     * Parse the file and return the assembled hints together with any soft errors (in practice only
-     * a record-count mismatch, since hints never fail assembly). The entry point
-     * {@code GameConstants.loadHints()} uses so it can gate on {@link ParseResult#hasErrors()} before
-     * storing the result.
-     *
-     * @param filename the hint data file to read
-     * @return the parsed hints plus any soft errors
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<Hint> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                HintLexer::new,
-                HintGrammar::new,
-                HintReader::extract,
-                new HintAssembler(), logger);
-    }
-
-    /**
      * The one grammar-specific step {@link GrammarDriver} cannot perform itself: run the parser's
      * {@code file} rule and pull the raw records out of its result.
      *
      * <p>Ordering is deliberate - {@link ParseErrors#throwIfAny()} fires straight after the parse so
      * that a hard grammar error (e.g. a missing {@code record-count} header) fails closed before the
      * soft {@link GrammarDriver#checkRecordCount} check runs against whatever did parse.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the parser positioned at the start of the file
      * @param errorCatcher the shared collector for hard grammar/lexer errors
@@ -103,5 +87,25 @@ public class HintReader implements Reader<Hint> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parse the file and return the assembled hints together with any soft errors (in practice only
+     * a record-count mismatch, since hints never fail assembly). The entry point
+     * {@code GameConstants.loadHints()} uses so it can gate on {@link ParseResult#hasErrors()} before
+     * storing the result.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the hint data file to read
+     * @return the parsed hints plus any soft errors
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<Hint> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                HintLexer::new,
+                HintGrammar::new,
+                HintReader::extract,
+                new HintAssembler(), logger);
     }
 }

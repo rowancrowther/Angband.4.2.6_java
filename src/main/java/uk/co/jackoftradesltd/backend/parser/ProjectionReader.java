@@ -64,23 +64,24 @@ public class ProjectionReader implements Reader<Projection> {
     }
 
     /**
-     * Run the parser and generate the ArrayList from the file
-     * logging all errors that occur during the run. Once the parse
-     * has been complete, change the incoming values to values
-     * acceptable to the data format of the stored values
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()},
+     * soft-checks the declared {@code record-count:} header against the number of rows actually
+     * parsed, then builds a {@link ProjectionParseRecord} per row.
      *
-     * @param filename The name of the file to parse
-     * @return A {@link ParseResult} of type {@link Projection}
-     * @throws IOException when there is a problem finding or reading
-     *                     the file
+     * <p>Each row's trailing field is its declared line number, parsed here rather than left as a
+     * string; a row whose line number does not parse as an integer is not fatal - it is reported into
+     * {@code errors} and the record is built with {@code -1} in that field instead, so a single bad
+     * row does not lose the rest of the file.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the rows are used
+     * @param errors       the soft-error sink: a record-count mismatch and any per-row bad line number
+     *                     are both appended here
+     * @return the parsed projection records, one per row, in file order
      */
-    public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename, ProjectionLexer::new,
-                ProjectionGrammar::new,
-                ProjectionReader::extract,
-                new ProjectionAssembler(), logger);
-    }
-
     private static List<ProjectionParseRecord> extract(
             @NotNull ProjectionGrammar parser, @NotNull ParseErrors errorCatcher,
             @NotNull List<String> errors) {
@@ -111,5 +112,25 @@ public class ProjectionReader implements Reader<Projection> {
         }
 
         return records;
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link Projection}s - each row's trailing field resolved to an {@code int} line number by
+     * {@link #extract} - together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the name of the file to parse
+     * @return a {@link ParseResult} of type {@link Projection}
+     * @throws IOException when there is a problem finding or reading
+     *                     the file
+     */
+    public ParseResult<Projection> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename, ProjectionLexer::new,
+                ProjectionGrammar::new,
+                ProjectionReader::extract,
+                new ProjectionAssembler(), logger);
     }
 }

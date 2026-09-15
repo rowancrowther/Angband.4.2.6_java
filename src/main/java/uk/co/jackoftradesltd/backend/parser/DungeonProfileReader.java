@@ -59,24 +59,6 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
     }
 
     /**
-     * Parse the file and return the profiles together with any soft errors gathered on the way.
-     *
-     * <p>Prefer this over {@link #parse} where the caller wants to report data problems:
-     * {@code parse} keeps only the items and drops the messages.
-     *
-     * @param filename the data file to read
-     * @return the assembled profiles and any soft errors
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<CaveProfile> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                DungeonProfileLexer::new,
-                DungeonProfileGrammar::new,
-                DungeonProfileReader::extract,
-                new DungeonProfileAssembler(), logger);
-    }
-
-    /**
      * The one grammar-specific step {@link GrammarDriver} cannot perform for itself: run the
      * parser's entry rule and hand back the parse records.
      *
@@ -84,6 +66,8 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
      * {@link ParseErrors#throwIfAny()} fires after the parse but before the record count is
      * checked, so a file with hard syntax errors is abandoned rather than being reported as having
      * the wrong number of records.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the parser, positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; fails the parse if any were seen
@@ -102,5 +86,25 @@ public class DungeonProfileReader implements Reader<CaveProfile> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parse the file and return the profiles together with any soft errors gathered on the way.
+     *
+     * <p>Prefer this over {@link #parse} where the caller wants to report data problems:
+     * {@code parse} keeps only the items and drops the messages.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the data file to read
+     * @return the assembled profiles and any soft errors
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<CaveProfile> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                DungeonProfileLexer::new,
+                DungeonProfileGrammar::new,
+                DungeonProfileReader::extract,
+                new DungeonProfileAssembler(), logger);
     }
 }

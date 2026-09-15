@@ -88,43 +88,11 @@ public class VisualsReader {
     }
 
     /**
-     * Parse visuals.txt into its {@link VisualsCycler}, keeping the soft errors alongside. The
-     * aggregate is the sole element of the returned result's item list; a hard parse failure yields an
-     * empty list carrying the error messages instead.
-     *
-     * @param filename the visuals data file to read
-     * @return the parse result wrapping the cycler and any soft errors
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<VisualsCycler> parseCyclerWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                VisualsLexer::new,
-                VisualsGrammar::new,
-                VisualsReader::extractCycles,
-                new VisualsCycleAssembler(), logger);
-    }
-
-    /**
-     * Parse visuals.txt into its {@link FlickerTable}, keeping the soft errors alongside. The
-     * aggregate is the sole element of the returned result's item list; a hard parse failure yields an
-     * empty list carrying the error messages instead.
-     *
-     * @param filename the visuals data file to read
-     * @return the parse result wrapping the flicker table and any soft errors
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<FlickerTable> parseFlickerWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                VisualsLexer::new,
-                VisualsGrammar::new,
-                VisualsReader::extractFlickers,
-                new VisualsFlickerAssembler(), logger);
-    }
-
-    /**
      * {@link GrammarDriver.Extractor} for the cycler half: run the {@code file} rule, fail closed on
      * any hard parse error, and return only its {@code cycle:} records (the flicker half is ignored on
      * this pass).
+     *
+     * <p>Function extractCycles commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the shared hard-error catcher; {@link ParseErrors#throwIfAny()} fires after
@@ -150,6 +118,8 @@ public class VisualsReader {
      * any hard parse error, and return only its {@code flicker:} records (the cycle half is ignored on
      * this pass).
      *
+     * <p>Function extractFlickers commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param parser       the generated parser, positioned at the start of the file
      * @param errorCatcher the shared hard-error catcher; {@link ParseErrors#throwIfAny()} fires after
      *                     the parse to fail closed before the records are used
@@ -167,5 +137,45 @@ public class VisualsReader {
         errorCatcher.throwIfAny();
 
         return result;
+    }
+
+    /**
+     * Parse visuals.txt into its {@link VisualsCycler}, keeping the soft errors alongside. The
+     * aggregate is the sole element of the returned result's item list; a hard parse failure yields an
+     * empty list carrying the error messages instead.
+     *
+     * <p>Function parseCyclerWithResults commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
+     * @param filename the visuals data file to read
+     * @return the parse result wrapping the cycler and any soft errors
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<VisualsCycler> parseCyclerWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                VisualsLexer::new,
+                VisualsGrammar::new,
+                VisualsReader::extractCycles,
+                new VisualsCycleAssembler(), logger);
+    }
+
+    /**
+     * Parse visuals.txt into its {@link FlickerTable}, keeping the soft errors alongside. The
+     * aggregate is the sole element of the returned result's item list; a hard parse failure yields an
+     * empty list carrying the error messages instead.
+     *
+     * <p>Function parseFlickerWithResults commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
+     * @param filename the visuals data file to read
+     * @return the parse result wrapping the flicker table and any soft errors
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<FlickerTable> parseFlickerWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                VisualsLexer::new,
+                VisualsGrammar::new,
+                VisualsReader::extractFlickers,
+                new VisualsFlickerAssembler(), logger);
     }
 }

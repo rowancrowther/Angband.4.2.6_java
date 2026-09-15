@@ -60,23 +60,18 @@ public class PlayerClassReader implements Reader<PlayerClass> {
     }
 
     /**
-     * Parses {@code filename} and returns the full {@link ParseResult} — the assembled
-     * {@link PlayerClass}es together with any soft errors collected during parsing and assembly.
-     * Prefer this over {@link #parse} when the caller needs to see the errors (e.g. to reject a file
-     * that loaded with problems, as {@code GameConstants} does).
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
      *
-     * @param filename the class data file to read
-     * @return the parse result: the classes plus any error messages
-     * @throws IOException if the file cannot be read
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed player-class records for the assembler
      */
-    public ParseResult<PlayerClass> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                PlayerClassLexer::new,
-                PlayerClassGrammar::new,
-                PlayerClassReader::extract,
-                new PlayerClassAssembler(), logger);
-    }
-
     private static List<PlayerClassParseRecord> extract(
             @NotNull PlayerClassGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -89,5 +84,25 @@ public class PlayerClassReader implements Reader<PlayerClass> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult} — the assembled
+     * {@link PlayerClass}es together with any soft errors collected during parsing and assembly.
+     * Prefer this over {@link #parse} when the caller needs to see the errors (e.g. to reject a file
+     * that loaded with problems, as {@code GameConstants} does).
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the class data file to read
+     * @return the parse result: the classes plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<PlayerClass> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerClassLexer::new,
+                PlayerClassGrammar::new,
+                PlayerClassReader::extract,
+                new PlayerClassAssembler(), logger);
     }
 }

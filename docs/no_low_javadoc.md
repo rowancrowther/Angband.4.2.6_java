@@ -128,12 +128,16 @@ the existing doc comment for context.
 
 - L79: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/ArtifactReader.java`
 
 2 missing, 0 low
 
 - L61: method `parseWithResults` - MISSING
 - L69: method `extract` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/ChestTrapReader.java`
 

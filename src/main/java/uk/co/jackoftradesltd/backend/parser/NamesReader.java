@@ -55,14 +55,19 @@ public class NamesReader implements Reader<Name> {
         return parseWithResults(filename).items();
     }
 
-    public ParseResult<Name> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                NamesLexer::new,
-                NamesGrammar::new,
-                NamesReader::extract,
-                new NamesAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed name records for the assembler
+     */
     private static List<NamesParseRecord> extract(
             @NotNull NamesGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -75,5 +80,24 @@ public class NamesReader implements Reader<Name> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link Name}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the names data file to read
+     * @return the parse result: the names plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<Name> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                NamesLexer::new,
+                NamesGrammar::new,
+                NamesReader::extract,
+                new NamesAssembler(), logger);
     }
 }

@@ -59,14 +59,19 @@ public class EgoItemReader implements Reader<EgoItem> {
         return parseWithResults(filename).items();
     }
 
-    public ParseResult<EgoItem> parseWithResults(String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                EgoItemsLexer::new,
-                EgoItemsGrammar::new,
-                EgoItemReader::extract,
-                new EgoItemAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed ego-item records for the assembler
+     */
     private static List<EgoItemParseRecord> extract(
             @NotNull EgoItemsGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -80,5 +85,24 @@ public class EgoItemReader implements Reader<EgoItem> {
 
         return new ArrayList<>(result);
 
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link EgoItem}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the ego-item data file to read
+     * @return the parse result: the ego items plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<EgoItem> parseWithResults(String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                EgoItemsLexer::new,
+                EgoItemsGrammar::new,
+                EgoItemReader::extract,
+                new EgoItemAssembler(), logger);
     }
 }

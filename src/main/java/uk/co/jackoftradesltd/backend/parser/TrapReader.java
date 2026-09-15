@@ -58,26 +58,11 @@ public class TrapReader implements Reader<TrapKind> {
     }
 
     /**
-     * Parse {@code filename}, returning both the assembled {@link TrapKind}s and the error channels
-     * (soft assembly errors plus any hard grammar/lexer failure), so callers can gate on
-     * {@link ParseResult#hasErrors()}.
-     *
-     * @param filename path to the trap data file
-     * @return the parse result: the trap kinds and any errors collected
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<TrapKind> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                TrapLexer::new,
-                TrapGrammar::new,
-                TrapReader::extract,
-                new TrapAssembler(), logger);
-    }
-
-    /**
      * {@link GrammarDriver} extraction hook: runs the {@code file} rule, surfaces any hard parse
      * errors via {@code errorCatcher}, and soft-validates the declared {@code record-count:} header
      * against the number of records actually parsed.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the grammar positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
@@ -96,5 +81,24 @@ public class TrapReader implements Reader<TrapKind> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Parse {@code filename}, returning both the assembled {@link TrapKind}s and the error channels
+     * (soft assembly errors plus any hard grammar/lexer failure), so callers can gate on
+     * {@link ParseResult#hasErrors()}.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename path to the trap data file
+     * @return the parse result: the trap kinds and any errors collected
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<TrapKind> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                TrapLexer::new,
+                TrapGrammar::new,
+                TrapReader::extract,
+                new TrapAssembler(), logger);
     }
 }

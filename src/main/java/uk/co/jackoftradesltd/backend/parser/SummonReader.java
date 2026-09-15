@@ -63,28 +63,11 @@ public class SummonReader implements Reader<Summon> {
     }
 
     /**
-     * Parse {@code summon.txt} and return both the assembled summons and any collected errors.
-     * Delegates the whole lex -> parse -> extract -> assemble pipeline to the shared
-     * {@link GrammarDriver}, supplying the Summon-specific lexer, parser, record extractor and
-     * {@link SummonAssembler}.
-     *
-     * @param filename the data file to read
-     * @return the parse result carrying the assembled summons and any soft/hard errors
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<Summon> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                SummonLexer::new,
-                SummonGrammar::new,
-                SummonReader::extract,
-                new SummonAssembler(),
-                logger);
-    }
-
-    /**
      * Pull the raw parse records out of a parsed {@code summon.txt}. Runs the top-level rule, raises
      * any hard grammar/lexer errors, then validates the declared record count (a soft check) before
      * handing the records to the assembler.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the Summon parser positioned at the start of the file
      * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} aborts the parse
@@ -104,5 +87,26 @@ public class SummonReader implements Reader<Summon> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parse {@code summon.txt} and return both the assembled summons and any collected errors.
+     * Delegates the whole lex -> parse -> extract -> assemble pipeline to the shared
+     * {@link GrammarDriver}, supplying the Summon-specific lexer, parser, record extractor and
+     * {@link SummonAssembler}.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the data file to read
+     * @return the parse result carrying the assembled summons and any soft/hard errors
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Summon> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                SummonLexer::new,
+                SummonGrammar::new,
+                SummonReader::extract,
+                new SummonAssembler(),
+                logger);
     }
 }

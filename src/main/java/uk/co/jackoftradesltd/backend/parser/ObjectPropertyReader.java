@@ -58,14 +58,19 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
         return parseWithResults(filename).items();
     }
 
-    public @NotNull ParseResult<ObjectProperty> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                ObjectPropertyLexer::new,
-                ObjectPropertyGrammar::new,
-                ObjectPropertyReader::extract,
-                new ObjectPropertyAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return the parsed object-property records for the assembler
+     */
     private static List<ObjectPropertyParseRecord> extract(
             @NotNull ObjectPropertyGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -78,5 +83,24 @@ public class ObjectPropertyReader implements Reader<ObjectProperty> {
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return result;
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link ObjectProperty}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the object-property data file to read
+     * @return the parse result: the object properties plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<ObjectProperty> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ObjectPropertyLexer::new,
+                ObjectPropertyGrammar::new,
+                ObjectPropertyReader::extract,
+                new ObjectPropertyAssembler(), logger);
     }
 }

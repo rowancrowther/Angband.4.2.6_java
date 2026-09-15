@@ -58,14 +58,19 @@ public class ArtifactReader implements Reader {
         return parseWithResults(filename).items();
     }
 
-    public ParseResult<Artifact> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                ArtifactLexer::new,
-                ArtifactGrammar::new,
-                ArtifactReader::extract,
-                new ArtifactAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return the parsed artifact records for the assembler
+     */
     private static List<ArtifactParseRecord> extract(
             @NotNull ArtifactGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -78,5 +83,24 @@ public class ArtifactReader implements Reader {
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return result;
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link Artifact}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the artifact data file to read
+     * @return the parse result: the artifacts plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<Artifact> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ArtifactLexer::new,
+                ArtifactGrammar::new,
+                ArtifactReader::extract,
+                new ArtifactAssembler(), logger);
     }
 }

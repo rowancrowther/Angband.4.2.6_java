@@ -60,28 +60,13 @@ public class BlowEffectReader implements Reader<BlowEffect> {
     }
 
     /**
-     * Run the parser and return the assembled effects together with any soft errors, for
-     * callers that need to distinguish a clean load from a partial one.
-     *
-     * @param filename the name of the file
-     * @return the assembled blow effects plus the errors collected while assembling them
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                BlowEffectLexer::new,
-                BlowEffectGrammar::new,
-                BlowEffectReader::extract,
-                new BlowEffectAssembler(),
-                logger);
-    }
-
-    /**
      * Drive the {@code file} rule and hand back its records.
      * <p>
      * Syntax errors are fatal and are rethrown before anything is returned, so a caller
      * never sees a half-read file; the {@code record-count:} header, by contrast, is a
      * soft check that only adds to {@code errors}.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the parser, positioned at the start of the token stream
      * @param errorCatcher collector for the lexer/parser syntax errors
@@ -100,5 +85,24 @@ public class BlowEffectReader implements Reader<BlowEffect> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Run the parser and return the assembled effects together with any soft errors, for
+     * callers that need to distinguish a clean load from a partial one.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the name of the file
+     * @return the assembled blow effects plus the errors collected while assembling them
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<BlowEffect> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BlowEffectLexer::new,
+                BlowEffectGrammar::new,
+                BlowEffectReader::extract,
+                new BlowEffectAssembler(),
+                logger);
     }
 }

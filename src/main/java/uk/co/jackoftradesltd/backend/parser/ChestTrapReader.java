@@ -60,6 +60,8 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * {@code record-count} directive - so the check exists to catch a hand-edited file, not to
      * mirror the original.
      *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param parser       the grammar positioned at the start of the file
      * @param errorCatcher collects hard lexer/parser errors; {@code throwIfAny} aborts on failure
      * @param errors       the soft-error channel (e.g. a record-count mismatch)
@@ -99,6 +101,8 @@ public class ChestTrapReader implements Reader<ChestTrap> {
      * returns an <em>empty</em> list if the file breaks any of the structural rules
      * {@code chest_trap.txt} states in prose, so an empty result with errors reported means the file
      * was rejected outright rather than that it held no traps.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
      *
      * @param filename path to the chest trap data file
      * @return the parse result: the chest traps and any errors collected

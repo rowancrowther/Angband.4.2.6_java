@@ -59,14 +59,19 @@ public class CurseReader implements Reader<Curse> {
         return parseWithResults(filename).items();
     }
 
-    public @NotNull ParseResult<Curse> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                CurseLexer::new,
-                CurseGrammar::new,
-                CurseReader::extract,
-                new CurseAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed curse records for the assembler
+     */
     private static List<CurseParseRecord> extract(
             @NotNull CurseGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -79,5 +84,24 @@ public class CurseReader implements Reader<Curse> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link Curse}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the curse data file to read
+     * @return the parse result: the curses plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Curse> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                CurseLexer::new,
+                CurseGrammar::new,
+                CurseReader::extract,
+                new CurseAssembler(), logger);
     }
 }

@@ -58,26 +58,11 @@ public class FlavourReader implements Reader<FlavourKind> {
     }
 
     /**
-     * Parses the file and returns both the assembled flavour kinds and any soft
-     * errors collected along the way (unknown tval/colour, unresolvable sval,
-     * record-count mismatch).
-     *
-     * @param filename the file to read
-     * @return the parse result — items plus collected errors
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<FlavourKind> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                FlavourLexer::new,
-                FlavourGrammar::new,
-                FlavourReader::extract,
-                new FlavourKindAssembler(), logger);
-    }
-
-    /**
      * Drives the parse and pulls the raw kind blocks off the tree: runs the
      * {@code file} rule, surfaces any syntax errors, then soft-checks the
      * declared record-count against the number of kind blocks parsed.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the grammar to run
      * @param errorCatcher collects syntax errors raised during the parse
@@ -96,5 +81,24 @@ public class FlavourReader implements Reader<FlavourKind> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses the file and returns both the assembled flavour kinds and any soft
+     * errors collected along the way (unknown tval/colour, unresolvable sval,
+     * record-count mismatch).
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the file to read
+     * @return the parse result — items plus collected errors
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<FlavourKind> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                FlavourLexer::new,
+                FlavourGrammar::new,
+                FlavourReader::extract,
+                new FlavourKindAssembler(), logger);
     }
 }

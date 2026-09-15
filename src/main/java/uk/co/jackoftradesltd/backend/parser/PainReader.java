@@ -70,24 +70,6 @@ public class PainReader implements Reader<MonsterPain> {
     }
 
     /**
-     * Parse the given file, returning both the assembled {@link MonsterPain} list and any soft
-     * errors gathered along the way. Delegates the whole ritual to {@link GrammarDriver#run},
-     * handing it the two generated constructors, this class's {@link #extract} step and a fresh
-     * {@link PainAssembler}.
-     *
-     * @param filename the data file to parse
-     * @return a {@link ParseResult} of the assembled sets plus any soft errors
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<MonsterPain> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                PainLexer::new,
-                PainGrammar::new,
-                PainReader::extract,
-                new PainAssembler(), logger);
-    }
-
-    /**
      * The one grammar-specific step {@link GrammarDriver} cannot perform itself: run the parser's
      * {@code file} entry rule, fail closed on any hard lexer/parser error, validate the
      * {@code record-count} header, and hand back the raw parse records.
@@ -97,6 +79,8 @@ public class PainReader implements Reader<MonsterPain> {
      * assembler. The header check is soft - {@link GrammarDriver#checkRecordCount} only appends to
      * {@code errors}, so a miscount never discards the records that did parse. The returned list is
      * a defensive copy so downstream mutation cannot reach into the parse tree.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated parser for this file
      * @param errorCatcher the live hard-error collector installed by the driver
@@ -115,5 +99,25 @@ public class PainReader implements Reader<MonsterPain> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Parse the given file, returning both the assembled {@link MonsterPain} list and any soft
+     * errors gathered along the way. Delegates the whole ritual to {@link GrammarDriver#run},
+     * handing it the two generated constructors, this class's {@link #extract} step and a fresh
+     * {@link PainAssembler}.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the data file to parse
+     * @return a {@link ParseResult} of the assembled sets plus any soft errors
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<MonsterPain> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PainLexer::new,
+                PainGrammar::new,
+                PainReader::extract,
+                new PainAssembler(), logger);
     }
 }

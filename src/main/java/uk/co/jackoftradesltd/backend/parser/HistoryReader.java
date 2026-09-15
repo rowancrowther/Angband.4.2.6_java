@@ -60,28 +60,12 @@ public class HistoryReader implements Reader<PlayerHistoryChart> {
     }
 
     /**
-     * Parses the file and returns the full {@link ParseResult} — both the assembled history charts
-     * and the collected soft/hard error messages — by handing the standard pipeline to
-     * {@link GrammarDriver} (lex, parse, extract records, assemble). {@link #parse} is the
-     * items-only convenience over this.
-     *
-     * @param filename the history data file to load
-     * @return the assembled history charts plus any error messages
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<PlayerHistoryChart> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                HistoryLexer::new,
-                HistoryGrammar::new,
-                HistoryReader::extract,
-                new HistoryAssembler(), logger);
-    }
-
-    /**
      * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the top-level
      * {@code file} rule, surfaces any hard grammar/lexer errors, soft-checks the declared
      * {@code record-count:} header against the number of records read, and returns the raw parse
      * records for the assembler.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the constructed {@code HistoryGrammar} positioned at the token stream
      * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} aborts on a
@@ -102,5 +86,25 @@ public class HistoryReader implements Reader<PlayerHistoryChart> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses the file and returns the full {@link ParseResult} — both the assembled history charts
+     * and the collected soft/hard error messages — by handing the standard pipeline to
+     * {@link GrammarDriver} (lex, parse, extract records, assemble). {@link #parse} is the
+     * items-only convenience over this.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the history data file to load
+     * @return the assembled history charts plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<PlayerHistoryChart> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                HistoryLexer::new,
+                HistoryGrammar::new,
+                HistoryReader::extract,
+                new HistoryAssembler(), logger);
     }
 }

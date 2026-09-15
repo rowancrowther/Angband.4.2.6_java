@@ -60,24 +60,6 @@ public class PitReader implements Reader<PitProfile> {
     }
 
     /**
-     * Parse the file and return the assembled profiles together with any soft errors gathered along
-     * the way. All the shared plumbing lives in {@link GrammarDriver#run}; this method just supplies
-     * the four pit-specific knobs - the generated lexer/parser constructors, the {@link #extract}
-     * step, and the {@link PitAssembler} - so the reader itself stays a thin wiring layer.
-     *
-     * @param filename the data file to parse
-     * @return the parsed profiles plus any soft errors (empty items if the parse was cancelled)
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<PitProfile> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                PitLexer::new,
-                PitGrammar::new,
-                PitReader::extract,
-                new PitAssembler(), logger);
-    }
-
-    /**
      * The one grammar-specific step {@link GrammarDriver} cannot do itself: run the entry rule and
      * pull the parse-records out of the pit-shaped {@code FileContext}.
      *
@@ -86,6 +68,8 @@ public class PitReader implements Reader<PitProfile> {
      * rather than letting a half-parsed file be validated. The record-count check is soft: a
      * mismatched {@code record-count:} header is reported into {@code errors} but does not stop the
      * records that did parse from loading.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated parser, already wired to the token stream
      * @param errorCatcher the shared error listener, checked here for hard errors
@@ -103,5 +87,25 @@ public class PitReader implements Reader<PitProfile> {
         GrammarDriver.checkRecordCount(declaredRecordCount, pits.size(), errors);
 
         return new ArrayList<>(pits);
+    }
+
+    /**
+     * Parse the file and return the assembled profiles together with any soft errors gathered along
+     * the way. All the shared plumbing lives in {@link GrammarDriver#run}; this method just supplies
+     * the four pit-specific knobs - the generated lexer/parser constructors, the {@link #extract}
+     * step, and the {@link PitAssembler} - so the reader itself stays a thin wiring layer.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the data file to parse
+     * @return the parsed profiles plus any soft errors (empty items if the parse was cancelled)
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<PitProfile> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PitLexer::new,
+                PitGrammar::new,
+                PitReader::extract,
+                new PitAssembler(), logger);
     }
 }

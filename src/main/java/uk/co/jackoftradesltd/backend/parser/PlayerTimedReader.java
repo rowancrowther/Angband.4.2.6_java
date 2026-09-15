@@ -59,14 +59,20 @@ public class PlayerTimedReader implements Reader<PlayerTimedEffect> {
         return parseWithResults(filename).items();
     }
 
-    public ParseResult<PlayerTimedEffect> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                PlayerTimedLexer::new,
-                PlayerTimedGrammar::new,
-                PlayerTimedReader::extract,
-                new PlayerTimedAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed player-timed-effect records for the assembler
+     * @throws IOException never thrown here, but declared by the {@link GrammarDriver.Extractor} contract
+     */
     private static List<PlayerTimedParseRecord> extract(
             @NotNull PlayerTimedGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -79,5 +85,24 @@ public class PlayerTimedReader implements Reader<PlayerTimedEffect> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link PlayerTimedEffect}s together with any soft errors collected during parsing and
+     * assembly. {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the player-timed-effect data file to read
+     * @return the parse result: the player-timed effects plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<PlayerTimedEffect> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerTimedLexer::new,
+                PlayerTimedGrammar::new,
+                PlayerTimedReader::extract,
+                new PlayerTimedAssembler(), logger);
     }
 }

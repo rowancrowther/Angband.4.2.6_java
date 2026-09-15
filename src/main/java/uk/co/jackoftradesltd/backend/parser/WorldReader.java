@@ -62,24 +62,26 @@ public class WorldReader implements Reader<World> {
     }
 
     /**
-     * Run the parser and generate the ArrayList from the file
-     * logging all errors that occur during the run. Once the parse
-     * has been complete, change the incoming values to values
-     * acceptable to the data format of the stored values
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, then validates the parsed levels before building any {@link WorldParseRecord}.
      *
-     * @param filename The name of the file to parse
-     * @return A {@link ParseResult} of type {@link WorldParseRecord}
-     * @throws IOException when there is a problem finding or reading
-     *                     the file
+     * <p>Unlike the other readers in this package, both checks here are <em>hard</em> rather than
+     * soft: a level whose number does not parse as an integer, or a mismatch between the declared
+     * {@code record-count:} header and the number of levels actually parsed, is appended to
+     * {@code errorCatcher} rather than {@code errors}, and {@link ParseErrors#throwIfAny()} is called
+     * again after both checks so either failure aborts the parse. {@code world.txt} describes the
+     * whole cave-system map, so a broken or short map is treated the same as a grammar error - the
+     * file is rejected outright rather than loaded with gaps.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; both the per-level number check and the
+     *                     record-count check report into it, and {@code throwIfAny} aborts if either
+     *                     found a problem
+     * @param errors       unused; this extractor reports every problem as a hard error instead
+     * @return the parsed world-level records, in file order
      */
-    public ParseResult<World> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                WorldLexer::new,
-                WorldGrammar::new,
-                WorldReader::extract,
-                new WorldAssembler(), logger);
-    }
-
     private static List<WorldParseRecord> extract(
             @NotNull WorldGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -115,5 +117,29 @@ public class WorldReader implements Reader<World> {
                     result.getLast()));
         }
         return records;
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link World} levels together with any soft errors collected during assembly. Note that
+     * {@link #extract} itself never contributes to that soft-error list - a bad level number or a
+     * record-count mismatch is a hard error there, so this result's items are either complete or
+     * empty, never partial. {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915 (the
+     * {@code @return} previously named {@link WorldParseRecord}, the raw per-grammar record type,
+     * rather than {@link World}, the type this method actually returns).
+     *
+     * @param filename the name of the file to parse
+     * @return a {@link ParseResult} of type {@link World}
+     * @throws IOException when there is a problem finding or reading
+     *                     the file
+     */
+    public ParseResult<World> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                WorldLexer::new,
+                WorldGrammar::new,
+                WorldReader::extract,
+                new WorldAssembler(), logger);
     }
 }

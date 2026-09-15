@@ -60,22 +60,18 @@ public class ActivationReader implements Reader<Activation> {
     }
 
     /**
-     * Return an ArrayList of items read from the file, and handle any
-     * parse errors found during parsing
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
      *
-     * @param filename the name of the file we are parsing
-     * @return a ParseResult record, which pairs the list of items read
-     * (activations in this case) with the list of soft error messages
-     * @throws IOException when the file could not be found
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed activation records for the assembler
      */
-    public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                ActivationsLexer::new,
-                ActivationsGrammar::new,
-                ActivationReader::extract,
-                new ActivationAssembler(), logger);
-    }
-
     private static List<ActivationParseRecord> extract(
             @NotNull ActivationsGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -88,5 +84,25 @@ public class ActivationReader implements Reader<Activation> {
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return new ArrayList<>(result);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link Activation}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResult coded before 260915, commented in full on 260915.
+     *
+     * @param filename the name of the file we are parsing
+     * @return a {@link ParseResult} record, which pairs the list of items read
+     * (activations in this case) with the list of soft error messages
+     * @throws IOException when the file could not be found
+     */
+    public ParseResult<Activation> parseWithResult(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                ActivationsLexer::new,
+                ActivationsGrammar::new,
+                ActivationReader::extract,
+                new ActivationAssembler(), logger);
     }
 }

@@ -65,28 +65,13 @@ public class SlayReader implements Reader<Slay> {
     }
 
     /**
-     * Parse the file into a {@link ParseResult} carrying both the assembled slays
-     * and any soft (recoverable) errors, by handing the grammar-specific pieces
-     * to the shared {@link GrammarDriver}.
-     *
-     * @param filename the slay data file to read
-     * @return the assembled slays plus any soft errors gathered en route
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<Slay> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                SlayLexer::new,
-                SlayGrammar::new,
-                SlayReader::extract,
-                new SlayAssembler(), logger);
-    }
-
-    /**
      * The grammar-specific step for {@link GrammarDriver}: run the parser's
      * {@code file} rule, fail closed on any hard grammar/lexer error via
      * {@link ParseErrors#throwIfAny()}, check the declared {@code record-count}
      * against the number actually parsed (a soft error), and hand back the raw
      * records for the assembler.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated Slay parser
      * @param errorCatcher the shared hard-error channel
@@ -106,5 +91,24 @@ public class SlayReader implements Reader<Slay> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Parse the file into a {@link ParseResult} carrying both the assembled slays
+     * and any soft (recoverable) errors, by handing the grammar-specific pieces
+     * to the shared {@link GrammarDriver}.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the slay data file to read
+     * @return the assembled slays plus any soft errors gathered en route
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Slay> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                SlayLexer::new,
+                SlayGrammar::new,
+                SlayReader::extract,
+                new SlayAssembler(), logger);
     }
 }

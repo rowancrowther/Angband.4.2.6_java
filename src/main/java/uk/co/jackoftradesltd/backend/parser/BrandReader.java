@@ -65,28 +65,13 @@ public class BrandReader implements Reader<Brand> {
     }
 
     /**
-     * Parse the file into a {@link ParseResult} carrying both the assembled brands
-     * and any soft (recoverable) errors, by handing the grammar-specific pieces to
-     * the shared {@link GrammarDriver}.
-     *
-     * @param filename the brand data file to read
-     * @return the assembled brands plus any soft errors gathered en route
-     * @throws IOException if the file cannot be read
-     */
-    public @NotNull ParseResult<Brand> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                BrandLexer::new,
-                BrandGrammar::new,
-                BrandReader::extract,
-                new BrandAssembler(), logger);
-    }
-
-    /**
      * The grammar-specific step for {@link GrammarDriver}: run the parser's
      * {@code file} rule, fail closed on any hard grammar/lexer error via
      * {@link ParseErrors#throwIfAny()}, check the declared {@code record-count}
      * against the number actually parsed (a soft error), and hand back the raw
      * records for the assembler.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated Brand parser
      * @param errorCatcher the shared hard-error channel
@@ -105,5 +90,24 @@ public class BrandReader implements Reader<Brand> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Parse the file into a {@link ParseResult} carrying both the assembled brands
+     * and any soft (recoverable) errors, by handing the grammar-specific pieces to
+     * the shared {@link GrammarDriver}.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the brand data file to read
+     * @return the assembled brands plus any soft errors gathered en route
+     * @throws IOException if the file cannot be read
+     */
+    public @NotNull ParseResult<Brand> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                BrandLexer::new,
+                BrandGrammar::new,
+                BrandReader::extract,
+                new BrandAssembler(), logger);
     }
 }

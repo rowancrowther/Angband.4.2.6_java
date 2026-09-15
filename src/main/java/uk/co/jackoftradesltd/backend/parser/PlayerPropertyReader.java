@@ -68,32 +68,14 @@ public class PlayerPropertyReader implements Reader<PlayerProperty> {
     }
 
     /**
-     * Load the file into a {@link ParseResult} carrying both the resolved
-     * {@link PlayerProperty} objects and the collected soft errors. The invariant load
-     * skeleton (char stream, lex, parse, error wiring, assemble, cancellation handling)
-     * lives in {@link GrammarDriver#run}; this method only names the lexer, parser,
-     * {@link #extract} step and {@link PlayerPropertyAssembler} to use.
-     *
-     * @param filename the {@code player_property.txt} file to load.
-     * @return the parse result: assembled items plus any soft errors.
-     * @throws IOException if the file cannot be read.
-     */
-    public ParseResult<PlayerProperty> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                PlayerPropertyLexer::new,
-                PlayerPropertyGrammar::new,
-                PlayerPropertyReader::extract,
-                new PlayerPropertyAssembler(),
-                logger);
-    }
-
-    /**
      * Grammar-specific residue handed to {@link GrammarDriver#run}: run the top-level
      * {@code file} rule, surface any accumulated hard grammar/lexer errors, then verify the
      * declared {@code record-count:} header against the number of records actually parsed.
      * The ordering matters - {@link ParseErrors#throwIfAny()} must fire after {@code file()}
      * but before the (soft) record-count check, so a hard parse error aborts before the count
      * is even considered.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the grammar bound to the token stream, ready to run.
      * @param errorCatcher the hard-error channel; {@link ParseErrors#throwIfAny()} throws
@@ -113,5 +95,27 @@ public class PlayerPropertyReader implements Reader<PlayerProperty> {
         String declaredRecordCount = output.declaredRecords;
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
         return new ArrayList<>(result);
+    }
+
+    /**
+     * Load the file into a {@link ParseResult} carrying both the resolved
+     * {@link PlayerProperty} objects and the collected soft errors. The invariant load
+     * skeleton (char stream, lex, parse, error wiring, assemble, cancellation handling)
+     * lives in {@link GrammarDriver#run}; this method only names the lexer, parser,
+     * {@link #extract} step and {@link PlayerPropertyAssembler} to use.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the {@code player_property.txt} file to load.
+     * @return the parse result: assembled items plus any soft errors.
+     * @throws IOException if the file cannot be read.
+     */
+    public ParseResult<PlayerProperty> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                PlayerPropertyLexer::new,
+                PlayerPropertyGrammar::new,
+                PlayerPropertyReader::extract,
+                new PlayerPropertyAssembler(),
+                logger);
     }
 }

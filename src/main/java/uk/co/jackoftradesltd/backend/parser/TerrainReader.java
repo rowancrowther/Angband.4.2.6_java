@@ -79,26 +79,6 @@ public class TerrainReader implements Reader<Feature> {
     }
 
     /**
-     * Full-fidelity load: drives the grammar through {@link GrammarDriver} and returns both the
-     * assembled {@link Feature} list and the collected soft-error messages. A hard grammar/lexer
-     * error fails the whole file closed (empty items, errors carried); a soft error skips just the
-     * offending record. This two-channel result is what {@code GameConstants.loadTerrainFeatures}
-     * checks via {@link ParseResult#hasErrors()} before accepting the data.
-     *
-     * @param filename the terrain data file to load
-     * @return the assembled features paired with any soft-error messages
-     * @throws IOException if the file cannot be opened/read
-     */
-    public ParseResult<Feature> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                TerrainFeatureLexer::new,
-                TerrainFeatureGrammar::new,
-                TerrainReader::extract,
-                new TerrainFeatureAssembler(),
-                logger);
-    }
-
-    /**
      * The per-grammar residue the {@link GrammarDriver} cannot generalise: run the top-level
      * {@code file} rule and hand back the raw parse records. Ordering is load-bearing -
      * {@link ParseErrors#throwIfAny()} must fire <em>after</em> {@code file()} (so lexer/parser
@@ -106,6 +86,8 @@ public class TerrainReader implements Reader<Feature> {
      * cancellation catch, which is why it passes {@code errorCatcher} in rather than calling
      * {@code file()} itself. The record-count check is soft: a mismatch is appended to
      * {@code errors} but the valid records still load.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the grammar positioned at the start of the token stream
      * @param errorCatcher hard-error channel; {@link ParseErrors#throwIfAny()} aborts the file
@@ -124,6 +106,28 @@ public class TerrainReader implements Reader<Feature> {
         GrammarDriver.checkRecordCount(declaredRecordCount, results.size(), errors);
 
         return new ArrayList<>(results);
+    }
+
+    /**
+     * Full-fidelity load: drives the grammar through {@link GrammarDriver} and returns both the
+     * assembled {@link Feature} list and the collected soft-error messages. A hard grammar/lexer
+     * error fails the whole file closed (empty items, errors carried); a soft error skips just the
+     * offending record. This two-channel result is what {@code GameConstants.loadTerrainFeatures}
+     * checks via {@link ParseResult#hasErrors()} before accepting the data.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the terrain data file to load
+     * @return the assembled features paired with any soft-error messages
+     * @throws IOException if the file cannot be opened/read
+     */
+    public ParseResult<Feature> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                TerrainFeatureLexer::new,
+                TerrainFeatureGrammar::new,
+                TerrainReader::extract,
+                new TerrainFeatureAssembler(),
+                logger);
     }
 
 }

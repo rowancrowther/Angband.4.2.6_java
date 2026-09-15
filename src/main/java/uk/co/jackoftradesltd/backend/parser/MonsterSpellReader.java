@@ -59,14 +59,19 @@ public class MonsterSpellReader implements Reader<MonsterSpellType> {
         return parseWithResults(filename).items();
     }
 
-    public ParseResult<MonsterSpellType> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                MonsterSpellLexer::new,
-                MonsterSpellGrammar::new,
-                MonsterSpellReader::extract,
-                new MonsterSpellAssembler(), logger);
-    }
-
+    /**
+     * The grammar-specific extraction step handed to {@link GrammarDriver}: runs the {@code file}
+     * rule, fails closed on any hard grammar/lexer error via {@link ParseErrors#throwIfAny()}, then
+     * soft-checks the declared {@code record-count:} header against the number of records actually
+     * parsed.
+     *
+     * <p>Function extract coded before 260915, commented in full on 260915.
+     *
+     * @param parser       the generated parser, positioned at the start of the file
+     * @param errorCatcher the hard-error channel; {@code throwIfAny} aborts before the records are used
+     * @param errors       the soft-error sink, appended to on a record-count mismatch
+     * @return a defensive copy of the parsed monster-spell records for the assembler
+     */
     private static List<MonsterSpellParseRecord> extract(
             @NotNull MonsterSpellGrammar parser,
             @NotNull ParseErrors errorCatcher,
@@ -79,5 +84,24 @@ public class MonsterSpellReader implements Reader<MonsterSpellType> {
         GrammarDriver.checkRecordCount(declaredRecordCount, records.size(), errors);
 
         return new ArrayList<>(records);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult}: the assembled
+     * {@link MonsterSpellType}s together with any soft errors collected during parsing and assembly.
+     * {@link #parse} is the items-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the monster-spell data file to read
+     * @return the parse result: the monster spells plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<MonsterSpellType> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                MonsterSpellLexer::new,
+                MonsterSpellGrammar::new,
+                MonsterSpellReader::extract,
+                new MonsterSpellAssembler(), logger);
     }
 }

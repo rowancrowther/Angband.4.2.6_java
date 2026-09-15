@@ -60,25 +60,11 @@ public class RealmReader implements Reader<MagicRealm> {
     }
 
     /**
-     * Parses {@code filename} and returns the full {@link ParseResult} — the assembled
-     * {@link MagicRealm}s together with any soft errors collected during parsing and assembly.
-     *
-     * @param filename the realm data file to read
-     * @return the parse result: the realms plus any error messages
-     * @throws IOException if the file cannot be read
-     */
-    public ParseResult<MagicRealm> parseWithResults(@NotNull String filename) throws IOException {
-        return GrammarDriver.run(filename,
-                RealmLexer::new,
-                RealmGrammar::new,
-                RealmReader::extract,
-                new RealmAssembler(), logger);
-    }
-
-    /**
      * Bridges the generated parser to the assembler input: runs the {@code file} rule, throws on any
      * hard syntax error via {@code errorCatcher}, then softly checks the declared {@code record-count}
      * header against the number of records actually parsed.
+     *
+     * <p>Function extract commented in full before 260915, provenance stamp added on 260915.
      *
      * @param parser       the generated parser positioned at the start of the file
      * @param errorCatcher collects syntax errors raised during the parse (thrown if any occurred)
@@ -97,5 +83,23 @@ public class RealmReader implements Reader<MagicRealm> {
         GrammarDriver.checkRecordCount(declaredRecordCount, result.size(), errors);
 
         return new ArrayList<>(result);
+    }
+
+    /**
+     * Parses {@code filename} and returns the full {@link ParseResult} — the assembled
+     * {@link MagicRealm}s together with any soft errors collected during parsing and assembly.
+     *
+     * <p>Function parseWithResults commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @param filename the realm data file to read
+     * @return the parse result: the realms plus any error messages
+     * @throws IOException if the file cannot be read
+     */
+    public ParseResult<MagicRealm> parseWithResults(@NotNull String filename) throws IOException {
+        return GrammarDriver.run(filename,
+                RealmLexer::new,
+                RealmGrammar::new,
+                RealmReader::extract,
+                new RealmAssembler(), logger);
     }
 }

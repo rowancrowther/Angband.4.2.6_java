@@ -52,8 +52,22 @@ public class GameConstantsReader {
     }
 
     /**
-     * Dispatch a record to the builder passing through the current list of errors
-     * @param filename The name of the file to parse
+     * Parses {@code constants.txt} and returns the full {@link GameConstantsParseResult}: the
+     * assembled {@link GameConstantsData} together with any soft errors collected during assembly.
+     * Unlike the other readers in this package, this does not delegate to {@link GrammarDriver} -
+     * {@code GameConstantsAssembler} produces a single aggregate rather than a {@code List}, so the
+     * lex/parse/assemble ritual is inlined here instead.
+     *
+     * <p>A hard grammar/lexer failure (caught as {@code ParseCancellationException}) yields a result
+     * with {@code null} data and the {@link ParseErrors} messages; an {@link IOException} is logged
+     * and rethrown rather than wrapped. {@link #parse} is the data-only convenience over this.
+     *
+     * <p>Function parseWithResults coded before 260915, commented in full on 260915.
+     *
+     * @param filename the name of the file to parse
+     * @return the assembled game constants plus any soft errors, or a null-data result on a hard
+     * parse failure
+     * @throws IOException if the file cannot be read
      */
     @CheckReturnValue
     public GameConstantsParseResult parseWithResults(@NotNull String filename) throws IOException {

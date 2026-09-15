@@ -30,6 +30,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * the core, sending game events, and the EDT, forwarding the window messages the UI thread must
  * act on. The EDT writes here rather than to the core's inbox precisely because this is the only
  * queue the UI thread is waiting on, so it is the only place a message can reach it promptly.
+ * <p>
+ * Class UIReceiver commented in full before 260915, provenance stamp added on 260915.
  *
  * @see uk.co.jackoftradesltd.channel.corechannel.CoreSender the core's end of this queue
  */
@@ -37,10 +39,14 @@ public class UIReceiver implements Receiver<ChannelMessage> {
 
     /**
      * The UI thread's inbox. Shared with the {@code CoreSender} that writes to it.
+     * <p>
+     * Field queue commented in full before 260915, provenance stamp added on 260915.
      */
     private final LinkedBlockingQueue<ChannelMessage> queue;
 
     /**
+     * Constructor UIReceiver commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param queue the UI thread's inbox, obtained from {@link uk.co.jackoftradesltd.channel.Channels}
      */
     public UIReceiver(LinkedBlockingQueue<ChannelMessage> queue) {
@@ -52,6 +58,8 @@ public class UIReceiver implements Receiver<ChannelMessage> {
      * <p>
      * The returned message is worth switching over exhaustively: {@link ChannelMessage} is
      * sealed, so the compiler will point at this {@code switch} when a new message type is added.
+     * <p>
+     * Function receive commented in full before 260915, provenance stamp added on 260915.
      */
     @Override
     public ChannelMessage receive() throws InterruptedException {

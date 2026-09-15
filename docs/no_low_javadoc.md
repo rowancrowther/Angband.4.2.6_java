@@ -660,11 +660,15 @@ the existing doc comment for context.
 - L31: field `logger` - MISSING
 - L60: constructor `AngbandDisplayCharacter` - LOW - "Constructor"
 
+**COMPLETED 2026-09-15**
+
 ### `channel/uichannel/UIReceiver.java`
 
 0 missing, 1 low
 
 - L46: constructor `UIReceiver` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `channel/uichannel/UISender.java`
 

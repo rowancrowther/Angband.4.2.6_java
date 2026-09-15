@@ -161,6 +161,18 @@ class AngbandDisplayCharacterTest {
         }
 
         @Test
+        void anUnrecognisedColourHashesAndComparesConsistently() {
+            // equals() treats a null attributeColour as an ordinary value via ==, and
+            // hashCode() must agree rather than throwing, or such a glyph could never be
+            // used as a set/map key despite comparing equal to its twin.
+            AngbandDisplayCharacter glyph = new AngbandDisplayCharacter('k', 'q');
+            AngbandDisplayCharacter sameGlyph = new AngbandDisplayCharacter('k', 'q');
+
+            assertEquals(glyph, sameGlyph);
+            assertEquals(glyph.hashCode(), sameGlyph.hashCode());
+        }
+
+        @Test
         void everyColourOfOneGlyphIsADistinctValue() {
             // The character sheet and monster list distinguish creatures by colour alone, so
             // colour has to be a full participant in identity, not a decoration.

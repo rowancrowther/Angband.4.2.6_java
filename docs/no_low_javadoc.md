@@ -676,6 +676,8 @@ the existing doc comment for context.
 
 - L45: constructor `UISender` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `channel/utils/Combiner.java`
 
 9 missing, 0 low
@@ -689,6 +691,8 @@ the existing doc comment for context.
 - L31: method `finish` - MISSING
 - L33: method `vec` - MISSING
 - L35: method `clone` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `channel/utils/Flag.java`
 

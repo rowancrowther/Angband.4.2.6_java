@@ -643,11 +643,15 @@ the existing doc comment for context.
 
 - L91: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/parser/ParseResult.java`
 
 1 missing, 0 low
 
 - L32: method `hasErrors` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `channel/strings/AngbandDisplayCharacter.java`
 

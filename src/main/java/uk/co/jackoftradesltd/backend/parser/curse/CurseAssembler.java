@@ -84,6 +84,8 @@ public class CurseAssembler implements Assembler<CurseParseRecord, List<Curse>> 
      * the whole file; an unresolvable {@code conflict:} name is a soft error that
      * still leaves the curse loaded (with that one link omitted).
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records from the grammar
      * @param errors  accumulating list of soft (skip-and-continue) error messages
      * @return the assembled curses, with conflict links resolved

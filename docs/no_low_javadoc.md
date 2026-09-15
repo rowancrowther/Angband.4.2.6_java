@@ -197,11 +197,15 @@ the existing doc comment for context.
 
 - L50: method `parse` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/HintReader.java`
 
 1 missing, 0 low
 
 - L49: field `logger` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/MonsterBaseReader.java`
 
@@ -210,6 +214,8 @@ the existing doc comment for context.
 - L63: method `parseWithResults` - MISSING
 - L71: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/MonsterReader.java`
 
 2 missing, 0 low
@@ -217,12 +223,16 @@ the existing doc comment for context.
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/MonsterSpellReader.java`
 
 2 missing, 0 low
 
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/NamesReader.java`
 
@@ -232,12 +242,16 @@ the existing doc comment for context.
 - L58: method `parseWithResults` - MISSING
 - L66: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/ObjectBaseReader.java`
 
 2 missing, 0 low
 
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/ObjectPropertyReader.java`
 
@@ -246,11 +260,15 @@ the existing doc comment for context.
 - L61: method `parseWithResults` - MISSING
 - L69: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/PlayerClassReader.java`
 
 1 missing, 0 low
 
 - L80: method `extract` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/PlayerRaceReader.java`
 
@@ -259,6 +277,8 @@ the existing doc comment for context.
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/PlayerTimedReader.java`
 
 2 missing, 0 low
@@ -266,17 +286,23 @@ the existing doc comment for context.
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/ProjectionReader.java`
 
 1 missing, 0 low
 
 - L84: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/QuestReader.java`
 
 1 missing, 0 low
 
 - L49: field `logger` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/RoomProfileReader.java`
 
@@ -285,11 +311,15 @@ the existing doc comment for context.
 - L46: field `logger` - MISSING
 - L52: method `parse` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/TrapReader.java`
 
 1 missing, 0 low
 
 - L47: field `logger` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/VaultReader.java`
 
@@ -298,11 +328,15 @@ the existing doc comment for context.
 - L50: field `logger` - MISSING
 - L56: method `parse` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/WorldReader.java`
 
 1 missing, 0 low
 
 - L83: method `extract` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/artifact/ArtifactAssembler.java`
 

@@ -65,6 +65,8 @@ public class BlowMethodAssembler implements Assembler<BlowMethodParseRecord, Lis
      * {@link MessageType#valueOf} would silently look up {@code "MSG_null"} and drop the
      * record as unrecognised.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records, in file order
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled blow methods, excluding any record that was skipped

@@ -52,6 +52,8 @@ public class DungeonProfileAssembler implements Assembler<DungeonProfileParseRec
      * {@link Assembler} interface takes a list; the sub-assemblers reject anything else. Absent
      * ones stay {@code null} on the result, matching the file having no such line.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records the parsed profile records, in file order
      * @param errors  the soft-error sink, appended to for each unusable line
      * @return the assembled profiles, in file order, minus any that failed

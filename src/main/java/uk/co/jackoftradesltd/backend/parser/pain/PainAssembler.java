@@ -42,6 +42,8 @@ public class PainAssembler implements Assembler<PainParseRecord, List<MonsterPai
      * Assemble the parsed pain records into {@link MonsterPain} objects, peeling the serial number
      * off the front of each message list and skipping any record that fails to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw pain records from the grammar
      * @param errors  the soft-error sink, mutated in place with one message per skipped record
      * @return the successfully assembled {@link MonsterPain} sets

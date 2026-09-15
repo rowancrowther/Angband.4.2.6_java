@@ -66,6 +66,8 @@ public class TrapAssembler implements Assembler<TrapParseRecord, List<TrapKind>>
      * error) any record whose colour, flags, save flags, or numeric {@code appear:}/
      * {@code visibility:} fields fail to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw trap records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the offending
      *                record is dropped rather than aborting the whole file

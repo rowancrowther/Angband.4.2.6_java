@@ -68,6 +68,8 @@ public class ItemObjectAssembler implements Assembler<ItemObjectParseRecord, Lis
      * Assembles every parsed object record into an {@link ObjectKind}, skipping (with a logged
      * soft error) any record whose type, flags, values, brands, slays or curses fail to resolve.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records the raw object records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the
      *                offending record is dropped rather than aborting the whole file

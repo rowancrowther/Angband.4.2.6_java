@@ -54,6 +54,8 @@ public class PlayerClassAssembler implements Assembler<PlayerClassParseRecord, L
      * flags and scalars, and building its equipment and (for casters) magic through the nested
      * assemblers.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw class records, in file order
      * @param errors  the soft-error channel; every unknown name or malformed value is appended here
      * @return the resolved classes, minus any dropped for a resolution failure

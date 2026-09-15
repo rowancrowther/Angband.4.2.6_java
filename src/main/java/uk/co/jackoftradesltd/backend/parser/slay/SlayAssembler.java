@@ -55,6 +55,8 @@ public class SlayAssembler implements Assembler<SlayParseRecord, List<Slay>> {
      * any record whose race-flag/base choice is invalid or whose numeric fields
      * do not parse.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw slay records from the parser
      * @param errors  the soft-error sink, appended to in place; never thrown
      * @return the successfully assembled slays, in file order

@@ -62,6 +62,8 @@ public class PlayerTimedAssembler implements Assembler<PlayerTimedParseRecord, L
      * Resolve every parsed record into a {@link PlayerTimedEffect}, dropping (and logging) any that
      * fail to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the parsed timed-effect records, in file order
      * @param errors  the soft-error channel; one message is appended per dropped record
      * @return the successfully resolved effects, in order (records that failed are omitted)

@@ -58,6 +58,8 @@ public class HistoryAssembler implements Assembler<HistoryParseRecord, List<Play
     /**
      * Assembles the parsed records into the resolved chart graph.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records the raw {@link HistoryParseRecord}s in source order
      * @param errors  the soft-error sink; malformed numbers, non-uniform successors and dangling
      *                successor references are appended here rather than aborting the load

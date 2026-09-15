@@ -41,7 +41,12 @@ import java.util.List;
  */
 public class FlavourAssembler implements Assembler<FlavourParseRecord, List<Flavour>> {
     /**
-     * Assembles the flavours of one kind block.
+     * Assembles the flavours of one kind block. Dispatches per record on whether
+     * {@link FlavourParseRecord#sVal()} is {@code null}: a {@code null} sval is a plain
+     * {@code flavor:} line, a non-null one a {@code fixed:} line, and each leg parses its own
+     * index and resolves its own colour independently.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records the raw flavour/fixed records of a single {@code kind:} block
      * @param errors  the soft-error sink, appended to when a record is dropped

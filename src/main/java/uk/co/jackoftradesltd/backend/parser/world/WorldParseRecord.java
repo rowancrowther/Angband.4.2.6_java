@@ -42,16 +42,22 @@ package uk.co.jackoftradesltd.backend.parser.world;
 public class WorldParseRecord {
     /**
      * Holder for the line that any error occurred on
+     *
+     * <p>Field lineNumber commented in full on 260915.
      */
     private final String lineNumber;
 
     /**
      * Holder for the level number for this level, i.e. 0
+     *
+     * <p>Field levelNumber commented in full on 260915.
      */
     private final String levelNumber;
 
     /**
      * Holder for the level name for this level
+     *
+     * <p>Field levelName commented in full on 260915.
      */
     private final String levelName;
 
@@ -59,6 +65,8 @@ public class WorldParseRecord {
      * Holder for the name of the level one up from this
      * one, either a level name, or null for the town
      * level
+     *
+     * <p>Field up commented in full on 260915.
      */
     private final String up;
 
@@ -66,11 +74,15 @@ public class WorldParseRecord {
      * Holder for the name of the level one down from this
      * one, either a level name, or null for the bottom
      * level of the dungeon
+     *
+     * <p>Field down commented in full on 260915.
      */
     private final String down;
 
     /**
      * Constructor for a world level
+     *
+     * <p>Constructor WorldParseRecord commented in full on 260915.
      *
      * @param levelNumber The number of the level, the town is
      *                    always level 0
@@ -98,6 +110,8 @@ public class WorldParseRecord {
     /**
      * Accessor
      *
+     * <p>Function getLineNumber commented in full on 260915.
+     *
      * @return the line number of the line in the World.txt file this
      * world was found on
      */
@@ -107,6 +121,8 @@ public class WorldParseRecord {
 
     /**
      * Accessor
+     *
+     * <p>Function getLevelNumber commented in full on 260915.
      *
      * @return the number of this level, from 0 (town) to the maximum
      * number of levels in this dungeon - 1
@@ -118,6 +134,8 @@ public class WorldParseRecord {
     /**
      * Accessor
      *
+     * <p>Function getLevelName commented in full on 260915.
+     *
      * @return the name of this level
      */
     public String getLevelName() {
@@ -127,6 +145,8 @@ public class WorldParseRecord {
     /**
      * Accessor
      *
+     * <p>Function getUp commented in full on 260915.
+     *
      * @return the level one up from this level
      */
     public String getUp() {
@@ -135,6 +155,8 @@ public class WorldParseRecord {
 
     /**
      * Accessor
+     *
+     * <p>Function getDown commented in full on 260915.
      *
      * @return the level one down from this level
      */

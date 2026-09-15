@@ -23,6 +23,8 @@ import java.util.List;
  * Immutable extraction record for one {@code names.txt} section: a random-name fragment list,
  * later turned into the {@code Name} domain type by {@link NamesAssembler}.
  *
+ * @param section the section number as text, resolved to an {@code int} by the assembler
+ * @param word    the name fragments belonging to this section, in file order
  * @author Rowan Crowther
  */
 public record NamesParseRecord(String section,

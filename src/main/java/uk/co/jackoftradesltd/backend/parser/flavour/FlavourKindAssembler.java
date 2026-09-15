@@ -50,7 +50,11 @@ import java.util.List;
  */
 public class FlavourKindAssembler implements Assembler<FlavourKindParseRecord, List<FlavourKind>> {
     /**
-     * Assembles every kind block in the file.
+     * Assembles every kind block in the file: resolves the block's tval and glyph, delegates its
+     * flavours to {@link FlavourAssembler}, then resolves each {@code fixed:} flavour's sval
+     * against {@link ObjectRegistry#lookupObjectKind} now that the tval is known.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records the raw {@code kind:} blocks parsed from the file
      * @param errors  the soft-error sink, appended to when a block is dropped

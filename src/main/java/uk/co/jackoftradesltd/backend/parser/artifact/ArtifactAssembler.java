@@ -40,10 +40,32 @@ import java.util.*;
  */
 public class ArtifactAssembler implements Assembler<ArtifactParseRecord, List<Artifact>> {
     /**
+     * Resolves every raw {@link ArtifactParseRecord} field into its domain form and builds
+     * the {@link Artifact}: the base object tvalue, numeric to-hit/to-damage/AC/weight/cost/
+     * level/alloc-range fields, object flags, the {@code values:} map (fanned out into
+     * {@link uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier}s and element resist
+     * levels the same way {@link uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsAssembler}
+     * fans out its {@code RES_}-prefixed keys), brands, slays, curses (by registry lookup),
+     * and an optional activation/timeout pair.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Also resolves the artifact's backing {@link ObjectKind}: an artifact reuses an
+     * existing kind for its base type when one exists, or creates and registers a new one
+     * (this is the "special light source" case — {@code tVal == TV_LIGHT} with no existing
+     * kind — where the activation/timeout the record carries belongs to the newly created
+     * kind rather than the artifact instance, mirroring the split C's {@code parse_a_*}
+     * handlers make between {@code a_ptr} and {@code k_ptr} fields for that same case).
+     *
+     * <p>Any record with an unresolvable field (unknown tvalue, malformed integer, unknown
+     * flag/modifier/element/brand/slay/curse/activation, or an unknown base object type) is
+     * reported into {@code errors} and skipped entirely — the partial-results contract this
+     * suite's assemblers share.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw artifact records from the grammar, in file order
+     * @param errors  the soft-error sink; a record named here is dropped rather than
+     *                aborting the rest of the file
+     * @return the assembled artifacts, excluding any record reported in {@code errors}
      */
     @Override
     public List<Artifact> assemble(@NotNull List<ArtifactParseRecord> records, @NotNull List<String> errors) {

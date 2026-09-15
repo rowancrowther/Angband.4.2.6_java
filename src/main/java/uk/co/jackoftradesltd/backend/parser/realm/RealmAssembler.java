@@ -48,6 +48,8 @@ public class RealmAssembler implements Assembler<RealmParseRecord, List<MagicRea
      * Assembles every parsed realm record into a {@link MagicRealm}, dropping (with an error appended
      * to {@code errors}) any record whose stat or book-noun fails to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw per-realm parse records, in file order
      * @param errors  sink for human-readable messages describing each dropped record
      * @return the successfully assembled realms, in file order (dropped records omitted)

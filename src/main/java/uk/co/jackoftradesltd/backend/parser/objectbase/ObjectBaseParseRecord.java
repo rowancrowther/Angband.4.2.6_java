@@ -24,6 +24,14 @@ import java.util.List;
  * fields parsed by the grammar, later turned into the {@code ObjectBase} domain type by
  * {@link ObjectBaseAssembler}.
  *
+ * @param name        the base's display name ({@code name:})
+ * @param tVal        the object tval name as text, resolved to {@code TValue} by the assembler
+ * @param colour      the display colour code as text, resolved to {@code ColourEnum}
+ * @param flags       the flag codes ({@code flags:}), unresolved; a {@code HATES_}-prefixed
+ *                    entry resolves to an element rather than a kind flag
+ * @param breakChance the break-chance percentage as text
+ * @param maxStack    the maximum stack size as text
+ * @param line        the source line the block started on, for error messages
  * @author Rowan Crowther
  */
 public record ObjectBaseParseRecord(String name, String tVal, String colour,

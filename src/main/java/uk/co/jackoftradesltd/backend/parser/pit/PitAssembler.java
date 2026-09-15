@@ -53,6 +53,8 @@ public class PitAssembler implements Assembler<PitParseRecord, List<PitProfile>>
      * Assemble every parsed pit record into a {@link PitProfile}, dropping (with a soft error) any
      * record that carries an unresolvable field.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw pit records from the parser
      * @param errors  the soft-error sink; a message is appended for each unresolvable field and the
      *                offending record is skipped rather than aborting the whole load

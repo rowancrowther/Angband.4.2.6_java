@@ -27,8 +27,39 @@ import uk.co.jackoftradesltd.middle.objects.enums.ChestTrapCode;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Turns the raw {@link ChestTrapParseRecord}s produced by {@code ChestTrapGrammar} into
+ * domain {@link ChestTrap} objects.
+ * <p>
+ * Unlike most assemblers in this suite, {@code chest_trap.txt} is <b>all-or-nothing</b>
+ * rather than skip-and-continue: the file encodes a fixed, ordered set of trap codes (one
+ * record per {@link ChestTrapCode} constant, in declaration order — C's {@code chest_trap[]}
+ * table is indexed directly by that code), so a single malformed or out-of-order record
+ * leaves the whole table unusable. Any record failing its checks (an unresolvable code, a
+ * level lower than the previous record's, an effect block that fails to resolve, or a
+ * position/code mismatch against the expected sequence) sets a dropped flag; once set,
+ * {@link #assemble} still finishes the loop — so every problem in the file is reported, not
+ * just the first — but ultimately returns an empty list rather than a partial one. The same
+ * applies if the file simply does not carry as many records as {@link ChestTrapCode} has
+ * constants.
+ *
+ * @author Rowan Crowther
+ */
 public class ChestTrapAssembler implements Assembler<ChestTrapParseRecord, List<ChestTrap>> {
 
+    /**
+     * Assemble the parsed chest-trap records into domain objects, enforcing that they cover
+     * every {@link ChestTrapCode} constant, in order, with non-decreasing {@code level}s.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw chest-trap records from the grammar, expected in
+     *                {@link ChestTrapCode} declaration order
+     * @param errors  the soft-error sink; every problem found is reported here, but a
+     *                problem with any single record invalidates the whole result
+     * @return every assembled chest trap if the full set validated cleanly and matched
+     * {@link ChestTrapCode} exactly, otherwise an empty list
+     */
     @Override
     public List<ChestTrap> assemble(@NotNull List<ChestTrapParseRecord> records, @NotNull List<String> errors) {
         List<ChestTrap> chestTraps = new ArrayList<>();

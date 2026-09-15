@@ -24,6 +24,14 @@ import java.util.List;
  * fields parsed by the grammar, later turned into the {@code MonsterBase} domain type by
  * {@link MonsterBaseAssembler}.
  *
+ * @param codeName    the base's internal name ({@code name:}), used as its registry key
+ * @param inGameName  the base's displayed name ({@code plural:} in the data file)
+ * @param flags       the monster race flag codes ({@code flags:}), each without its {@code RF_}
+ *                    prefix, unresolved
+ * @param glyph       the display glyph as written, expected to be a single character
+ * @param pain        the pain-message serial number ({@code pain:}), as text
+ * @param description the base's descriptive text ({@code desc:})
+ * @param line        the source line the block started on, for error messages
  * @author Rowan Crowther
  */
 public record MonsterBaseParseRecord(String codeName, String inGameName, List<String> flags,

@@ -40,6 +40,8 @@ public class StreamerAssembler implements Assembler<DungeonProfileParseRecord.St
      * <p>Fails closed on any bad field, as the tunnel assembler does: a vein count or treasure
      * chance quietly defaulting to zero would change what the level contains.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records exactly one parsed streamer record
      * @param errors  the soft-error sink, appended to if the record is unusable
      * @return the assembled streamer profile, or {@code null} if any field would not convert

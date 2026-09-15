@@ -56,6 +56,8 @@ public class MonsterSpellAssembler implements Assembler<MonsterSpellParseRecord,
     /**
      * Assemble every parsed monster-spell record into its domain object.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records, in file order
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled monster spells, excluding any record that was skipped

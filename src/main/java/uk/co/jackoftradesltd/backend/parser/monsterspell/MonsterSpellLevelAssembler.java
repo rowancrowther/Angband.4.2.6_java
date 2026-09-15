@@ -51,6 +51,8 @@ public class MonsterSpellLevelAssembler implements Assembler<MonsterSpellParseRe
      * spell with a hole in its power tiers would silently show the wrong lore and messages at
      * that power. Callers must treat {@code null} as a reason to drop the entire owning spell.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the parsed level blocks for a single spell
      * @param errors  the soft-error sink, mutated in place
      * @return the assembled levels in file order, or {@code null} if any block failed

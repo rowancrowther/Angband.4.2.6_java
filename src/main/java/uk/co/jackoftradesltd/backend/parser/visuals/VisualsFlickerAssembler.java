@@ -55,6 +55,8 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
      * {@code COLOUR_CODE} characters, so this soft-error path is defensive - unreachable from a real,
      * grammar-checked file - but it keeps the assembler safe against a hand-built record.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the parsed {@code flicker:} blocks
      * @param errors  the soft-error sink; an unrecognised colour appends here and drops its record
      * @return a one-element list holding the assembled {@link FlickerTable}

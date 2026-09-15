@@ -37,10 +37,19 @@ import java.util.List;
  */
 public class MonsterBaseAssembler implements Assembler<MonsterBaseParseRecord, List<MonsterBase>> {
     /**
+     * Resolve every parsed {@code monster_base.txt} record into a {@link MonsterBase}: race
+     * flag codes to {@link MonsterRaceFlag} (via the {@code RF_} prefix), the glyph to a single
+     * {@code char}, and the pain-message serial to the matching {@link MonsterPain} already
+     * loaded into the {@link MonsterRegistry} (so {@code pain.txt} must be read first). Any
+     * unresolvable field appends a message to {@code errors} and drops the whole record, rather
+     * than assembling a half-built base.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw monster-base records from the grammar, in file order
+     * @param errors  the soft-error sink; a message is appended for each unresolvable field and
+     *                the offending record is skipped rather than aborting the whole load
+     * @return the successfully assembled monster bases, in file order
      */
     @Override
     public List<MonsterBase> assemble(@NotNull List<MonsterBaseParseRecord> records, @NotNull List<String> errors) {

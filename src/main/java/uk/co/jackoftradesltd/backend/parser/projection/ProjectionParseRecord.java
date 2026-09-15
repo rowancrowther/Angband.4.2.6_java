@@ -20,6 +20,10 @@ package uk.co.jackoftradesltd.backend.parser.projection;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 
 /**
+ * The raw, still-textual capture of one {@code projection.txt} record, produced by the grammar and
+ * resolved into a {@link uk.co.jackoftradesltd.middle.game.event.projection.Projection} by
+ * {@link ProjectionAssembler}.
+ *
  * @param code        Computer code for this projection used by the game. Must
  *                    match an {@link ProjectionEnum}
  * @param name        Human readable name for this projection.

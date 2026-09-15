@@ -78,6 +78,8 @@ public record DungeonProfileParseRecord(String profileName,
          * quote the offending line back in the form the reader will find it in the file, rather
          * than in component-name form.
          *
+         * <p>Function toString commented in full before 260915, provenance stamp added on 260915.
+         *
          * @return the record as it appears in {@code dungeon_profile.txt}
          */
         @Override

@@ -42,21 +42,30 @@ import java.util.List;
 public class GameConstantsParseRecord {
     /**
      * Holder for the line that any error occurred on
+     *
+     * <p>Field lineNumber commented in full on 260915.
      */
     private final int lineNumber;
 
     /**
      * The category for this group of fields, i.e. 'mon-gen'
+     *
+     * <p>Field category commented in full on 260915.
      */
     private final String category;
 
     /**
      * A list of string fields for this group, i.e. 'chance', '500'
+     *
+     * <p>Field fields commented in full on 260915.
      */
     private final List<String> fields;
 
     /**
      * Constructor - takes in the three parameters and assigns them to private members
+     *
+     * <p>Constructor GameConstantsParseRecord commented in full before 260915, provenance stamp
+     * added on 260915.
      *
      * @param category   the main category for this group of fields
      * @param fields     the remaining strings in this group of files
@@ -71,17 +80,22 @@ public class GameConstantsParseRecord {
     /**
      * Accessor
      *
+     * <p>Function getLineNumber commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
      * @return the line this group of fields was on in the datafile 'contants.txt'
      */
     public int getLineNumber() {
         return lineNumber;
     }
 
-    /*
+    /**
      * Accessor
-     * @return the main category for this group of fields, designated by the token at the start of the line.
      *
-     * @author Rowan Crowther
+     * <p>Function getCategory commented in full before 260915, provenance stamp added on 260915.
+     *
+     * @return the main category for this group of fields, designated by the token at the start
+     * of the line.
      */
     public String getCategory() {
         return category;
@@ -89,6 +103,8 @@ public class GameConstantsParseRecord {
 
     /**
      * Accessor
+     *
+     * <p>Function getFields commented in full before 260915, provenance stamp added on 260915.
      *
      * @return the fields of this line, separated into a List of Strings.
      */

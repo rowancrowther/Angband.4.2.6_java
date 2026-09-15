@@ -38,6 +38,8 @@ public class HintAssembler implements Assembler<HintParseRecord, List<Hint>> {
     /**
      * Copy every parsed record straight into a {@link Hint}, preserving file order.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw hint records in file order
      * @param errors  the soft-error sink (unused here - hints cannot fail assembly)
      * @return the hints, one per record, in file order

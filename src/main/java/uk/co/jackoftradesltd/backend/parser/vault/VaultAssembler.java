@@ -50,10 +50,19 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class VaultAssembler implements Assembler <VaultParseRecord, List<Vault>> {
+    /**
+     * Logger for this assembler, named explicitly against {@code VaultAssembler.class} rather than
+     * inferred. Currently unused below — every failure path here reports through the soft
+     * {@code errors} list instead — but kept for parity with the rest of the parser suite.
+     *
+     * <p>Field logger commented in full on 260915.
+     */
     private static final Logger logger = LogManager.getLogger(VaultAssembler.class);
 
     /**
      * Validate and convert every record, skipping (and reporting) any that don't resolve cleanly.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records the raw parse records to assemble
      * @param errors  soft-error sink; one message is appended per record that gets skipped

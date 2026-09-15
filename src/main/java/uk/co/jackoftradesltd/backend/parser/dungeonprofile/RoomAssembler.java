@@ -45,6 +45,8 @@ public class RoomAssembler implements Assembler<DungeonProfileParseRecord.Room, 
      * (generate.c:182), so it is compared rather than parsed and any value other than {@code "1"}
      * reads as false.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records the parsed room lines, in file order
      * @param errors  the soft-error sink, appended to for each unusable line
      * @return the assembled room profiles, in file order, minus any that failed

@@ -60,6 +60,8 @@ public class TerrainFeatureAssembler implements Assembler<TerrainFeatureParseRec
      * has resolved cleanly; the first failure in a record short-circuits it via {@code continue} so
      * a half-populated {@link Feature} is never produced.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw terrain parse records, in file order
      * @param errors  the soft-error channel; one message is appended per skipped record
      * @return the features that resolved cleanly (may be shorter than {@code records})

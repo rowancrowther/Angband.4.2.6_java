@@ -31,10 +31,26 @@ import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Turns the raw {@link ProjectionParseRecord}s from {@code projection.txt} into domain
+ * {@link Projection}s. Every enum-shaped field ({@code code}, {@code type}, {@code msgt},
+ * {@code colour}) is resolved by its own {@code resolveX} helper; the numeric fields are parsed
+ * inline, with {@code numerator}/{@code divisor}/{@code damageCap} falling back to {@code -1} on a
+ * parse failure (treated downstream as "unset") and {@code denominator} falling back to a
+ * {@link Random} dice expression when it is not a plain integer.
+ *
+ * <p>Per the shared soft-error contract, a record whose code, type or colour fails to resolve is
+ * reported and skipped; the other numeric fields fail soft to a sentinel rather than dropping the
+ * record.
+ *
+ * @author Rowan Crowther
+ */
 public class ProjectionAssembler implements Assembler<ProjectionParseRecord, List<Projection>> {
     /**
      * Assembles the data from the list of {@link ProjectionParseRecord} to create
      * a List of {@link Projection} objects
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
      *
      * @param records The list of records to create the {@link Projection} list from
      * @param errors  A list of errors which is returned to the builder
@@ -111,6 +127,8 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
     /**
      * Resolve an uppercase string tag into a {@link ProjectionEnum} value.
      *
+     * <p>Function resolveCode coded before 260915, commented in full on 260915.
+     *
      * @param line   the line that the projection block with this code in resides
      *               on in the lib/gamedata file.
      * @param code   the string tag to convert to a {@link ProjectionEnum} value.
@@ -135,6 +153,8 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
     /**
      * Resolve an uppercase string tag into a {@link ProjectionType} value.
+     *
+     * <p>Function resolveType coded before 260915, commented in full on 260915.
      *
      * @param line   the line that the projection block with this code in resides
      *               on in the lib/gamedata file.
@@ -162,6 +182,8 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
 
     /**
      * Resolve an uppercase string tag into a {@link MessageType} value.
+     *
+     * <p>Function resolveMsgt coded before 260915, commented in full on 260915.
      *
      * @param line   the line that the projection block with this code in resides
      *               on in the lib/gamedata file.
@@ -191,6 +213,8 @@ public class ProjectionAssembler implements Assembler<ProjectionParseRecord, Lis
     /**
      * Resolve a potentially mixed case string tag into a
      * {@link ColourEnum} value.
+     *
+     * <p>Function resolveColour coded before 260915, commented in full on 260915.
      *
      * @param line   the line that the projection block with this code in resides
      *               on in the lib/gamedata file.

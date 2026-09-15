@@ -45,10 +45,17 @@ import java.util.Map;
  */
 public class PlayerRaceAssembler implements Assembler<PlayerRaceParseRecord, List<PlayerRace>> {
     /**
+     * Assembles every parsed race record into a {@link PlayerRace}, parsing its scalar fields,
+     * resolving its stat/skill/flag names to their enums against a hard-coded {@code "OF_"}/{@code "PF_"}
+     * prefix, and looking up its {@link PlayerHistoryChart} and (currently always index-0)
+     * {@link PlayerBody} via {@link PlayerRegistry}. A malformed integer, unknown enum name, or
+     * failed registry lookup reports a soft error and skips that race.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw race records, in file order
+     * @param errors  the soft-error channel; every malformed value or failed lookup is appended here
+     * @return the resolved races, minus any dropped for a resolution failure
      */
     @Override
     public List<PlayerRace> assemble(@NotNull List<PlayerRaceParseRecord> records, @NotNull List<String> errors) {

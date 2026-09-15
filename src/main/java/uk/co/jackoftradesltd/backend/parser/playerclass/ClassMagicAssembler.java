@@ -42,6 +42,8 @@ public class ClassMagicAssembler implements Assembler<ClassMagicParseRecord, Lis
      * Assembles the (at most one) parsed {@code magic:} record into a {@link ClassMagic}, parsing
      * its scalars and building its books via {@link ClassSpellBookAssembler}.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw magic record(s) for one class
      * @param errors  the soft-error channel; malformed scalars and book failures are appended here
      * @return the resolved caster profile(s)

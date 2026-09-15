@@ -45,6 +45,8 @@ public class TunnelAssembler implements Assembler<DungeonProfileParseRecord.Tunn
      * profile, since a tunnel chance defaulting silently to zero would change level generation
      * without saying so.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records exactly one parsed tunnel record
      * @param errors  the soft-error sink, appended to if the record is unusable
      * @return the assembled tunnel profile, or {@code null} if any field would not convert

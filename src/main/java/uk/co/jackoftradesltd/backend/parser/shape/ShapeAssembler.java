@@ -60,6 +60,8 @@ public class ShapeAssembler implements Assembler<ShapeParseRecord, List<PlayerSh
      * Assembles every parsed shape record into a {@link PlayerShape}, skipping (with a logged
      * soft error) any record whose flags, modifiers or elements fail to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw shape records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the
      *                offending record is dropped rather than aborting the whole file

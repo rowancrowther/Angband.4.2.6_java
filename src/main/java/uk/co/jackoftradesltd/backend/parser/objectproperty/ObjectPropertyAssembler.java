@@ -54,6 +54,8 @@ public class ObjectPropertyAssembler implements Assembler<ObjectPropertyParseRec
      * Resolve every parsed record into an {@link ObjectProperty}, collecting any
      * soft errors rather than throwing.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw records extracted by the grammar
      * @param errors  out-parameter: one message is appended per unresolvable field
      * @return the resolved properties (records with an essential unresolvable field

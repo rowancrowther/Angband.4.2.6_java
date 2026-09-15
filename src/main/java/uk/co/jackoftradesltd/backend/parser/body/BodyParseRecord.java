@@ -24,11 +24,24 @@ import java.util.List;
  * (body name plus its ordered equip slots) parsed by the grammar, later turned into the
  * {@code PlayerBody} domain type by {@link BodyAssembler}.
  *
+ * @param bodyName the body's display name
+ * @param slots    the body's {@code slot:} lines, in declared order — order is significant,
+ *                 since a slot's index in this list becomes its identity in the assembled
+ *                 {@code PlayerBody}
+ * @param line     the source line the record begins on, for error reporting
  * @author Rowan Crowther
  */
 public record BodyParseRecord(String bodyName,
                               List<BodySlotRecord> slots,
                               int line) {
+    /**
+     * One raw {@code slot:} line within a body record: an equipment slot type paired with its
+     * display name, not yet resolved to an
+     * {@link uk.co.jackoftradesltd.middle.objects.enums.EquipmentSlotsEnum}.
+     *
+     * @param slotType the slot type name (bare, no {@code EQUIP_} prefix)
+     * @param slotName the slot's display name, e.g. {@code "on body"}
+     */
     public record BodySlotRecord(String slotType, String slotName) {
     }
 }

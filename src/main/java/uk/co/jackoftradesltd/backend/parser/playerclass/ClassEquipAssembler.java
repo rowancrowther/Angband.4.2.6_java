@@ -46,6 +46,8 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * parsing the quantity range and exclusion options; entries with an unknown tval or a malformed
      * integer are reported and dropped.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw equipment lines for one class, in file order
      * @param errors  the soft-error channel; per-entry failures are appended here
      * @return the resolved starting items, minus any that failed to resolve
@@ -98,6 +100,8 @@ public class ClassEquipAssembler implements Assembler<ClassEquipParseRecord, Lis
      * clause may separate options with spaces or {@code |}.
      * options are valid here, so a non-birth or unknown option is reported and skipped, mirroring
      * C's rejection of non-birth options in {@code init_equip}.
+     *
+     * <p>Function parseEopts coded before 260915, commented in full on 260915.
      *
      * @param eopts  the raw exclusion clause text
      * @param errors the soft-error channel; unknown/non-birth options are appended here

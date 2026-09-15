@@ -38,10 +38,20 @@ import java.util.List;
  */
 public class ObjectBaseAssembler implements Assembler<ObjectBaseParseRecord, List<ObjectBase>> {
     /**
+     * Resolve every parsed {@code object_base.txt} record into an {@link ObjectBase}: the tval
+     * name to {@link TValue}, the colour code to {@link ColourEnum}, each flag either to an
+     * {@link ElementEnum} (for a {@code HATES_}-prefixed flag) or an {@link ObjectKindFlag}, and
+     * the two numeric fields to {@code int}s. An unresolvable field is a soft error and drops the
+     * whole record. After every record is processed, a synthetic {@code TV_NONE} base is appended
+     * unconditionally as a sentinel "no base" entry - it is not driven by any parsed record.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw object-base records from the grammar, in file order
+     * @param errors  the soft-error sink; a message is appended for each unresolvable field and
+     *                the offending record is skipped rather than aborting the whole load
+     * @return the successfully assembled object bases, in file order, plus the trailing
+     * {@code TV_NONE} sentinel
      */
     @Override
     public List<ObjectBase> assemble(@NotNull List<ObjectBaseParseRecord> records, @NotNull List<String> errors) {

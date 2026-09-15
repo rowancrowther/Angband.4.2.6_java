@@ -59,6 +59,8 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
      * {@code catch (IllegalArgumentException)} is dead - {@code fromCode} signals a miss with
      * {@code null}, never an exception.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the parsed {@code cycle:} blocks
      * @param errors  the shared soft-error sink; a malformed colour appends here and drops its record
      * @return a one-element list holding the assembled {@link VisualsCycler}

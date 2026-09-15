@@ -63,6 +63,8 @@ public class BlowEffectAssembler implements Assembler<BlowEffectParseRecord, Lis
     /**
      * Assemble the parsed blow-effect records into domain objects.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the blow-effect records in file order, as produced by the grammar
      * @param errors  collector for soft failures; a record named here is skipped, and a
      *                non-empty list makes the caller treat the whole file as invalid

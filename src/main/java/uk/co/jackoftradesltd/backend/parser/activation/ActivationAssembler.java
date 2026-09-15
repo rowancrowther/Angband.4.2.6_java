@@ -45,6 +45,8 @@ public class ActivationAssembler implements Assembler<ActivationParseRecord, Lis
      * Assemble the parsed activation records into resolved {@link Activation}s, skipping
      * (with a logged soft error) any record whose integer fields or effects fail to resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw activation records captured by the grammar
      * @param errors  the soft-error channel; assembly failures are appended here and the
      *                offending record is dropped rather than aborting the whole file

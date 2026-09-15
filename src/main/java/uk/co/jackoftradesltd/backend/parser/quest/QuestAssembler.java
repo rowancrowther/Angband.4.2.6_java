@@ -65,6 +65,8 @@ public class QuestAssembler implements Assembler<QuestParseRecord, List<Quest>> 
      * {@code currentNumber} is seeded to 0 (C {@code cur_num}); only {@code maxNumber} comes from the
      * file.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw quest records in file order
      * @param errors  the soft-error sink, appended to in place for every dropped record
      * @return the assembled quests, in file order, minus any that were dropped

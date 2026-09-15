@@ -68,6 +68,8 @@ public class MonsterAssembler implements Assembler<MonsterParseRecord, List<Mons
      * resolve is reported to {@code errors} and skipped, so the returned list holds only the races
      * that assembled cleanly.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the parsed monster records, in file order
      * @param errors  collects one message per soft failure; the caller decides whether any is fatal
      * @return the successfully assembled races, in file order

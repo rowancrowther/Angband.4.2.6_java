@@ -22,6 +22,12 @@ package uk.co.jackoftradesltd.backend.parser.history;
  * fields of a background-history chart link, later turned into the {@code PlayerHistoryChart}
  * domain type by {@link HistoryAssembler}.
  *
+ * @param currentChart the chart number this entry belongs to, still as text
+ * @param nextChart    the successor chart number, still as text ({@code "0"} marks the end of a
+ *                     chain); every record for the same {@link #currentChart} must agree on this
+ * @param percentage   the entry's roll weight, still as text
+ * @param phrase       the background text this entry contributes when rolled
+ * @param line         the source line this record was parsed from, for error messages
  * @author Rowan Crowther
  */
 public record HistoryParseRecord(String currentChart,

@@ -47,6 +47,8 @@ public class BodyAssembler implements Assembler<BodyParseRecord, List<PlayerBody
     /**
      * Assembles the parsed body records into {@link PlayerBody} templates.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw {@link BodyParseRecord}s in source order
      * @param errors  the soft-error sink; a body with an unresolvable slot type is reported here and
      *                skipped rather than aborting the load

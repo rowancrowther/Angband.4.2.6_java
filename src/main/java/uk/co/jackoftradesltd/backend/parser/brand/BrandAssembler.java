@@ -56,6 +56,8 @@ public class BrandAssembler implements Assembler<BrandParseRecord, List<Brand>> 
      * Resolve each parse record into a {@link Brand}, skipping (with a soft
      * error) any record whose flags or numeric fields do not resolve.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw brand records from the parser
      * @param errors  the soft-error sink, appended to in place; never thrown
      * @return the successfully assembled brands, in file order

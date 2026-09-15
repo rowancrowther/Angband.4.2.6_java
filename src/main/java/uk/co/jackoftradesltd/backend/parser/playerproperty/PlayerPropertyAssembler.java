@@ -74,6 +74,8 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * resolved and dropping individual bindings whose value or target cannot be
      * resolved. See the class comment for the two-tier skip contract.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records, in file order, from the grammar.
      * @param errors  the soft-error sink; one message is appended, quoting the
      *                record's source line, for each dropped record or binding.

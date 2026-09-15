@@ -33,10 +33,16 @@ import java.util.List;
  */
 public class NamesAssembler implements Assembler<NamesParseRecord, List<Name>> {
     /**
+     * Resolve every parsed {@code names.txt} record into a {@link Name}: the only real work is
+     * parsing the section number to an {@code int}, since the word fragment list is copied
+     * through unchanged. A non-numeric section is a soft error and drops the record.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw names records from the grammar, in file order
+     * @param errors  the soft-error sink; a message is appended for each unresolvable section
+     *                number and the offending record is skipped
+     * @return the successfully assembled name sections, in file order
      */
     @Override
     public List<Name> assemble(@NotNull List<NamesParseRecord> records, @NotNull List<String> errors) {

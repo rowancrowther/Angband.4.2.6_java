@@ -46,6 +46,8 @@ public class SummonAssembler implements Assembler<SummonParseRecord, List<Summon
     /**
      * Assemble the parsed summon records into {@link Summon} objects.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records, in file order
      * @param errors  accumulator for soft (non-fatal) assembly errors; records that cannot be fully
      *                resolved are reported here and either skipped or kept per the class contract

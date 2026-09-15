@@ -69,6 +69,8 @@ public class ClassSpellBookAssembler implements Assembler<ClassSpellBookParseRec
      * realm and object base, building its spells, and registering the synthesised backing
      * {@link ObjectKind}.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw book records for one class, in file order
      * @param errors  the soft-error channel; unresolved realms/bases and malformed scalars are appended here
      * @return the resolved magic books, minus any dropped for a failed lookup

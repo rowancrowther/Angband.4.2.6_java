@@ -39,10 +39,27 @@ import java.util.*;
  */
 public class EgoItemAssembler implements Assembler<EgoItemParseRecord, List<EgoItem>> {
     /**
+     * Resolves every raw {@link EgoItemParseRecord} field into its domain form and builds the
+     * {@link EgoItem}: the base object types this ego can appear on (both the whole-tvalue
+     * {@code item:} lines, which pull in every {@link ObjectKind} of that tvalue, and the
+     * specific tvalue/svalue {@code item:} pairs), object/kind flags and flags-to-turn-off
+     * (including the {@code IGNORE_}-prefixed element-ignore flags, fanned out onto
+     * {@code elInfo} the same way {@link uk.co.jackoftradesltd.backend.parser.artifact.ArtifactAssembler}
+     * and {@link uk.co.jackoftradesltd.backend.parser.gameconstants.GameConstantsAssembler} fan
+     * out their own element-keyed maps), dice-valued modifiers and their minimum-value floor,
+     * brands, slays, curses, combat bonus dice, and an optional activation/timeout pair.
      *
-     * @param records List of R_ParseRecord objects
-     * @param errors  List of errors as string messages
-     * @return result of assembling list of R objects
+     * <p>Any record with an unresolvable field (unknown tvalue/svalue pair, malformed
+     * integer or dice string, unknown flag/modifier/element/brand/slay/curse/activation) is
+     * reported into {@code errors} and skipped entirely — the partial-results contract this
+     * suite's assemblers share.
+     *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
+     * @param records the raw ego-item records from the grammar, in file order
+     * @param errors  the soft-error sink; a record named here is dropped rather than
+     *                aborting the rest of the file
+     * @return the assembled ego items, excluding any record reported in {@code errors}
      */
     @Override
     public List<EgoItem> assemble(@NotNull List<EgoItemParseRecord> records, @NotNull List<String> errors) {

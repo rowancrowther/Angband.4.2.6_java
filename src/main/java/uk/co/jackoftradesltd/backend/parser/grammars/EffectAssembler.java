@@ -66,6 +66,8 @@ public class EffectAssembler {
      * far harder to diagnose than a reported, dropped record. Per-effect error messages are still
      * appended to {@code errors} so every failure in the block is surfaced, not just the first.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records the parsed effect blocks for one owning record
      * @param errors  the soft-error channel; per-effect failures are appended here
      * @return the resolved effects in order, or {@code null} if any effect failed to resolve
@@ -87,6 +89,22 @@ public class EffectAssembler {
         return failed ? null : effects;
     }
 
+    /**
+     * Resolves one {@link EffectParseRecord} into an {@link Effect}: the type name to an
+     * {@link EffectEnum}, the sub-type token to a payload-specific {@link EffectSubTypeWrapper}
+     * via {@link #getWrapperSubType}, the numeric fields from text, and the dice expression's
+     * bound variables to {@link Expression}s — while deliberately leaving {@link #diceString} and
+     * the effect's duration unrolled (see the note above {@link #assemble}). The
+     * {@code EST_TELEPORT}/{@code EST_TELEPORT_TO} carve-out mirrors C's {@code effect_subtype}
+     * treating an absent line as the flag's off state rather than an error.
+     *
+     * <p>Function assembleOne coded before 260915, commented in full on 260915.
+     *
+     * @param record the raw effect record to resolve
+     * @param errors the soft-error sink, appended to on the first field that fails to resolve
+     * @param line   the record's source line, for error messages
+     * @return the resolved effect, or {@code null} if any field failed to resolve
+     */
     private static Effect assembleOne(@NotNull EffectParseRecord record,
                                       @NotNull List<String> errors,
                                       int line) {
@@ -183,6 +201,25 @@ public class EffectAssembler {
                 wrapper, radius, otherParameter, time, expressions, msg);
     }
 
+    /**
+     * Splits the {@code ^}-delimited {@code chars}/{@code bases}/{@code operations} strings from
+     * an {@link EffectParseRecord} back into their positionally-paired {@link Expression}s,
+     * resolving each base-type token against {@code EffectBaseType} with an {@code EFB_} prefix.
+     * An empty {@code chars} string is not an error — it means the dice string bound no
+     * expressions — and returns an empty list.
+     *
+     * <p>Function getExpressions coded before 260915, commented in full on 260915.
+     *
+     * @param chars      the {@code ^}-delimited single-character expression codes
+     * @param bases      the {@code ^}-delimited base-type names, paired positionally with
+     *                   {@code chars}
+     * @param operations the {@code ^}-delimited raw operation strings, paired positionally with
+     *                   {@code chars}
+     * @param line       the owning record's source line, for error messages
+     * @param errors     the soft-error sink, appended to on a length mismatch, a non-single-
+     *                   character code, or an unknown base type
+     * @return the resolved expressions in order, or {@code null} if any field failed to resolve
+     */
     private static List<Expression> getExpressions(
             @NotNull String chars,
             @NotNull String bases,
@@ -228,6 +265,26 @@ public class EffectAssembler {
         return results;
     }
 
+    /**
+     * Resolves an effect's raw sub-type token into the payload-specific {@link EffectSubTypeWrapper}
+     * its {@link EffectSubTypeEnum} kind expects — an enum constant for most kinds (projection,
+     * timed effect, nourish, monster-timed, stat, enchant, earthquake, glyph, each resolved with
+     * its kind's constant prefix), a registry lookup for {@code EST_SHAPECHANGE} (case-insensitive,
+     * against {@link PlayerRegistry#lookupPlayerShape}) and {@code EST_SUMMON} (against
+     * {@link MonsterRegistry#lookupSummon}), and a flag for {@code EST_TELEPORT}/
+     * {@code EST_TELEPORT_TO} where only one specific non-empty token ({@code "AWAY"} /
+     * {@code "SELF"}) is valid besides an empty one. Ports {@code effect_subtype}
+     * ({@code effects.c}).
+     *
+     * <p>Function getWrapperSubType coded before 260915, commented in full on 260915.
+     *
+     * @param type   the effect's sub-type kind, which selects how {@code value} is resolved
+     * @param value  the raw sub-type token from the data file, or empty if the line gave none
+     * @param errors the soft-error sink, appended to if {@code value} does not resolve
+     * @param line   the owning record's source line, for error messages
+     * @return the resolved wrapper, or {@code null} if {@code value} did not resolve against
+     * {@code type}
+     */
     private static EffectSubTypeWrapper getWrapperSubType(EffectSubTypeEnum type, String value,
                                                           List<String> errors, int line) {
         switch (type) {

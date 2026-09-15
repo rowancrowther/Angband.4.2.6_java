@@ -38,6 +38,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * {@link GameConstantsData.GameConstantsBuilder}, returning a {@link GameConstantsData}
      * or a null value if an error occurred.
      *
+     * <p>Function assemble commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param records The list of records to create the {@link GameConstantsData} from
      * @param errors  A list of errors which is returned to the builder
      * @return the {@link GameConstantsData} containing the data - note, this can be null
@@ -56,6 +58,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Dispatch a record to the builder passing through the current list of errors
+     *
+     * <p>Function dispatch commented in full before 260915, provenance stamp added on 260915.
      *
      * @param rec    The record from the constants.txt file
      * @param b      The builder to build the records from
@@ -89,6 +93,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      * Parse a record from a list of 'o-ranged-critical-level' into the builder
      *
      * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
+     *
+     * <p>Function oRangedCriticalLevel commented in full before 260915, provenance stamp added on
+     * 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -126,6 +133,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'o-ranged-critical' into the builder
+     *
+     * <p>Function oRangedCritical commented in full before 260915, provenance stamp added on
+     * 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -196,6 +206,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
      *
+     * <p>Function oMeleeCriticalLevel commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -233,6 +246,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'o-melee-critical' into the builder
+     *
+     * <p>Function oMeleeCritical commented in full before 260915, provenance stamp added on
+     * 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -292,6 +308,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
      *
+     * <p>Function rangedCriticalLevel commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -328,6 +347,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'ranged-critical' into the builder
+     *
+     * <p>Function rangedCritical commented in full before 260915, provenance stamp added on
+     * 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -409,6 +431,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
      *
      * <p>The final value of the rec fields is resolved to a MessageTypeEnum here
      *
+     * <p>Function meleeCriticalLevel commented in full before 260915, provenance stamp added on
+     * 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -447,6 +472,9 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'melee-critical' into the builder
+     *
+     * <p>Function meleeCritical commented in full before 260915, provenance stamp added on
+     * 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -520,6 +548,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     /**
      * Parse an entry from a list of 'Player constants' into the builder
      *
+     * <p>Function player commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -566,6 +596,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'Object Generation' into the builder
+     *
+     * <p>Function objGen commented in full before 260915, provenance stamp added on 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -624,6 +656,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     /**
      * Parse an entry from a list of 'Store Parameters' into the builder
      *
+     * <p>Function store commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -666,6 +700,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'Carrying Capacity' into the builder
+     *
+     * <p>Function carryCap commented in full before 260915, provenance stamp added on 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -720,6 +756,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'World' into the builder
+     *
+     * <p>Function world commented in full before 260915, provenance stamp added on 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -798,6 +836,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     /**
      * Parse an entry from a list of 'Dungeon Generation' into the builder
      *
+     * <p>Function dunGen commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -859,6 +899,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     /**
      * Parse an entry from a list of 'Monster Gameplay' into the builder
      *
+     * <p>Function monPlay commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -907,6 +949,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Parse an entry from a list of 'Monster Generation' into the builder
+     *
+     * <p>Function monGen commented in full before 260915, provenance stamp added on 260915.
      *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
@@ -973,6 +1017,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
     /**
      * Parse an entry from a list of 'level maxima' into the builder
      *
+     * <p>Function levelMax commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param rec    The entry from the list
      * @param b      The builder responsible for building the game data
      * @param errors The list of current errors
@@ -1002,6 +1048,8 @@ public class GameConstantsAssembler implements Assembler<GameConstantsParseRecor
 
     /**
      * Coerces a string expression of an integer into an Integer. Logs an error if the coercion fails
+     *
+     * <p>Function coerceInt commented in full before 260915, provenance stamp added on 260915.
      *
      * @param raw    The string expression of the integer
      * @param line   The line this string was found on in the datafile

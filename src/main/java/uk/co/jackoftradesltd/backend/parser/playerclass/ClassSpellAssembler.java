@@ -41,6 +41,8 @@ public class ClassSpellAssembler implements Assembler<ClassSpellParseRecord, Lis
      * Assembles every parsed {@code spell:} block in a book into a {@link MagicSpell}, parsing its
      * scalar fields and resolving its effect blocks through {@link EffectAssembler}.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw spell blocks for one book, in file order
      * @param errors  the soft-error channel; malformed scalars and unresolved effects are appended here
      * @return the resolved spells, minus any dropped for a malformed scalar

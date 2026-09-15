@@ -45,6 +45,8 @@ public class RoomProfileAssembler implements Assembler<RoomProfileParseRecord, L
     /**
      * Validate and convert every record, skipping (and reporting) any that don't resolve cleanly.
      *
+     * <p>Function assemble coded before 260915, commented in full on 260915.
+     *
      * @param records the raw parse records to assemble
      * @param errors  soft-error sink; one message is appended per record that gets skipped
      * @return the successfully assembled templates, in file order

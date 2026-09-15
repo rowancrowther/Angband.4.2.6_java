@@ -610,6 +610,8 @@ the existing doc comment for context.
 
 - L20: record `EventDataStat` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/messages/data/PlayerEventStatusUpdate.java`
 
 2 missing, 0 low

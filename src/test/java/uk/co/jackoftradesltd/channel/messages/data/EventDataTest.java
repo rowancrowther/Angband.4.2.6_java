@@ -74,6 +74,7 @@ class EventDataTest {
         assertInstanceOf(GameEventData.class, new EventDataBirthPoints(Map.of(), Map.of(), 20));
         assertInstanceOf(GameEventData.class, new EventDataExplosion(1, 0, new ArrayList<>(), false,
                 new ArrayList<>(), new ArrayList<>(), Loc.zero));
+        assertInstanceOf(GameEventData.class, new EventDataStat(1, 2));
     }
 
     /**
@@ -184,6 +185,75 @@ class EventDataTest {
             assertFalse(new EventDataBoolean().value());
             assertEquals(new EventDataBoolean(false), new EventDataBoolean());
             assertNotEquals(new EventDataBoolean(true), new EventDataBoolean());
+        }
+    }
+
+    /**
+     * Tests for {@link EventDataStat}, reused for {@code EVENT_HP} ({@code chp}/{@code mhp}),
+     * {@code EVENT_MANA} ({@code csp}/{@code msp}) and {@code EVENT_PLAYERLEVEL} ({@code lev}/
+     * {@code max_lev}) — three C globals read directly by {@code prt_hp}, {@code prt_sp} and
+     * {@code prt_level} ({@code src/ui-display.c:207,314,332}), no struct behind any of them.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class StatPairs {
+
+        /**
+         * Current first, other second — asymmetric values, so a swap of the two would be visible.
+         */
+        @Test
+        void aStatPairCarriesCurrentThenOther() {
+            EventDataStat stat = new EventDataStat(30, 40);
+
+            assertEquals(30, stat.current(), "first component is current - C's chp/csp/lev");
+            assertEquals(40, stat.other(), "second component is other - C's mhp/msp/max_lev");
+        }
+
+        @Test
+        void aTransposedStatPairIsADifferentPayload() {
+            assertNotEquals(new EventDataStat(30, 40), new EventDataStat(40, 30));
+        }
+
+        /**
+         * {@code prt_hp}/{@code prt_sp} colour full green when current has reached its pair and
+         * {@code prt_level} switches "Level"/"LEVEL" the same way ({@code lev >= max_lev},
+         * {@code ui-display.c:213}) — the record stores the equal pair verbatim; the colour choice
+         * itself is the front end's, not this payload's.
+         */
+        @Test
+        void anEqualPairIsStoredAsGiven() {
+            EventDataStat full = new EventDataStat(40, 40);
+
+            assertEquals(40, full.current());
+            assertEquals(40, full.other());
+        }
+
+        /**
+         * {@code current} can be driven below {@code other} — an injured HP/mana pool, or a level
+         * drained below its {@code max_lev} — and the record does not clamp or reorder it; that
+         * comparison is left to whoever reads the pair.
+         */
+        @Test
+        void currentBelowOtherIsStoredAsGiven() {
+            EventDataStat drained = new EventDataStat(12, 40);
+
+            assertEquals(12, drained.current());
+            assertEquals(40, drained.other());
+        }
+
+        /**
+         * {@code current} at zero is a reachable value — a player at 0 HP is dead, not clamped to
+         * a minimum by this payload — so it must round-trip like any other value.
+         */
+        @Test
+        void currentAtZeroIsStoredUnchanged() {
+            assertEquals(0, new EventDataStat(0, 40).current());
+        }
+
+        @Test
+        void statPairsAreComparedByValue() {
+            assertEquals(new EventDataStat(30, 40), new EventDataStat(30, 40));
         }
     }
 

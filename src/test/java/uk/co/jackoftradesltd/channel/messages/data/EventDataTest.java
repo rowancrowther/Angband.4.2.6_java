@@ -21,11 +21,16 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
+import uk.co.jackoftradesltd.middle.enums.Stats;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -63,6 +68,7 @@ class EventDataTest {
         assertInstanceOf(GameEventData.class, new EventDataTunnel(1, 2, 3, 4, 5, false));
         assertInstanceOf(GameEventData.class, new EventDataBolt(ProjectionEnum.PROJ_FIRE, true, true, true,
                 new EventDataGrid(1, 2), new EventDataGrid(3, 4)));
+        assertInstanceOf(GameEventData.class, new EventDataBirthPoints(Map.of(), Map.of(), 20));
     }
 
     /**
@@ -296,6 +302,98 @@ class EventDataTest {
             assertNotEquals(0, gaveUp.dEnd());
             assertTrue(gaveUp.early());
             assertNotEquals(arrived, gaveUp);
+        }
+    }
+
+    /**
+     * Tests for {@link EventDataBirthPoints}, the port of C's {@code birthpoints} struct
+     * ({@code game-event.h:133-138}).
+     *
+     * <p>{@code points} and {@code incPoints} are both {@code Map<Stats, Integer>}, the same
+     * argument-order risk the class doc above calls out for two same-typed components in a row,
+     * so {@link #swappingPointsAndIncPointsIsADifferentPayload} pins the order against
+     * {@code event_signal_birthpoints}'s parameter list ({@code game-event.c:194}), which takes
+     * {@code points} before {@code inc_points}.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class BirthPoints {
+
+        /**
+         * Every component read back by name, with the two maps holding disjoint values so a swap
+         * of either would be visible.
+         */
+        @Test
+        void birthPointsCarriesItsMapsAndRemainingInOrder() {
+            Map<Stats, Integer> spent = Map.of(Stats.STAT_STR, 0, Stats.STAT_INT, 3,
+                    Stats.STAT_WIS, 6, Stats.STAT_DEX, 0, Stats.STAT_CON, 12);
+            Map<Stats, Integer> cost = Map.of(Stats.STAT_STR, 1, Stats.STAT_INT, 2,
+                    Stats.STAT_WIS, 3, Stats.STAT_DEX, 1, Stats.STAT_CON, 4);
+
+            EventDataBirthPoints birthPoints = new EventDataBirthPoints(spent, cost, 8);
+
+            assertEquals(spent, birthPoints.getPoints(), "first map is points already spent");
+            assertEquals(cost, birthPoints.getIncPoints(), "second map is the increment cost, not points spent again");
+            assertEquals(8, birthPoints.getRemaining());
+        }
+
+        /**
+         * The transposition guard proper: the same two maps the other way round must not read
+         * back the same values from {@code getPoints()}.
+         */
+        @Test
+        void swappingPointsAndIncPointsIsADifferentPayload() {
+            Map<Stats, Integer> spent = Map.of(Stats.STAT_STR, 5);
+            Map<Stats, Integer> cost = Map.of(Stats.STAT_STR, 9);
+
+            EventDataBirthPoints birthPoints = new EventDataBirthPoints(spent, cost, 15);
+
+            assertNotEquals(cost, birthPoints.getPoints());
+            assertEquals(spent, birthPoints.getPoints());
+            assertEquals(cost, birthPoints.getIncPoints());
+        }
+
+        /**
+         * C's struct fields are bare {@code const int *} pointers into the caller's own arrays —
+         * {@code event_signal_birthpoints} never copies. The port's getters must be just as
+         * transparent: the very map instance handed to the constructor, not a defensive copy of
+         * it.
+         */
+        @Test
+        void gettersReturnTheSameMapInstancesGivenToTheConstructor() {
+            Map<Stats, Integer> spent = new HashMap<>();
+            Map<Stats, Integer> cost = new HashMap<>();
+
+            EventDataBirthPoints birthPoints = new EventDataBirthPoints(spent, cost, 20);
+
+            assertSame(spent, birthPoints.getPoints());
+            assertSame(cost, birthPoints.getIncPoints());
+        }
+
+        /**
+         * {@code reset_stats} ({@code player-birth.c:713-737}) seeds {@code points_left_local}
+         * with {@code MAX_BIRTH_POINTS} (20, {@code player-birth.c:687}) before anything has been
+         * spent — the top of the boundary.
+         */
+        @Test
+        void remainingAtTheFullBirthPointBudgetIsStoredUnchanged() {
+            EventDataBirthPoints birthPoints = new EventDataBirthPoints(Map.of(), Map.of(), 20);
+
+            assertEquals(20, birthPoints.getRemaining());
+        }
+
+        /**
+         * {@code buy_stat} ({@code player-birth.c:741-770}) only deducts a cost that is
+         * {@code <= *points_left_local}, so it can drive {@code remaining} down to exactly zero
+         * but never below it — the bottom of the boundary, and a real reachable value rather than
+         * a clamp the payload itself would need to enforce.
+         */
+        @Test
+        void remainingAtZeroIsStoredUnchanged() {
+            EventDataBirthPoints birthPoints = new EventDataBirthPoints(Map.of(), Map.of(), 0);
+
+            assertEquals(0, birthPoints.getRemaining());
         }
     }
 }

@@ -28,6 +28,8 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Typed to {@link UIMessage} rather than {@code ChannelMessage} because only the UI side writes
  * here, so nothing else can arrive. Keeping it that narrow is what lets the core's {@code switch}
  * over the result be exhaustive without arms for messages that could never turn up.
+ * <p>
+ * Class CoreReceiver commented in full before 260915, provenance stamp added on 260915.
  *
  * @see uk.co.jackoftradesltd.channel.uichannel.UISender the other end of this queue
  */
@@ -35,10 +37,14 @@ public class CoreReceiver implements Receiver<UIMessage> {
 
     /**
      * The core's inbox. Shared with the {@code UISender} that writes to it.
+     * <p>
+     * Field queue commented in full before 260915, provenance stamp added on 260915.
      */
     private final LinkedBlockingQueue<UIMessage> queue;
 
     /**
+     * Constructor CoreReceiver commented in full before 260915, provenance stamp added on 260915.
+     *
      * @param queue the core's inbox, obtained from {@link uk.co.jackoftradesltd.channel.Channels}
      */
     public CoreReceiver(LinkedBlockingQueue<UIMessage> queue) {
@@ -50,6 +56,8 @@ public class CoreReceiver implements Receiver<UIMessage> {
      * <p>
      * {@code take} blocks until a message arrives, which is how the core waits on the player
      * without a polling loop.
+     * <p>
+     * Function receive commented in full before 260915, provenance stamp added on 260915.
      */
     @Override
     public UIMessage receive() throws InterruptedException {

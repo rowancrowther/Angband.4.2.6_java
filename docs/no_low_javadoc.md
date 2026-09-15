@@ -502,11 +502,15 @@ the existing doc comment for context.
 
 - L91: method `getValue` - LOW
 
+**COMPLETED 2026-09-15**
+
 ### `channel/corechannel/CoreReceiver.java`
 
 0 missing, 1 low
 
 - L44: constructor `CoreReceiver` - LOW
+
+**COMPLETED 2026-09-15**
 
 ### `channel/corechannel/CoreSender.java`
 

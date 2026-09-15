@@ -29,16 +29,23 @@ import java.util.List;
 public class GameConstantsParseResult {
     /**
      * The data record from the Game Constants parse
+     *
+     * <p>Field data commented in full before 260915, provenance stamp added on 260915.
      */
     private final GameConstantsData data;
 
     /**
      * A list of error strings of any errors that have occurred during the Game Constants parse
+     *
+     * <p>Field errors commented in full before 260915, provenance stamp added on 260915.
      */
     private final List<String> errors;
 
     /**
      * Constructor
+     *
+     * <p>Constructor GameConstantsParseResult commented in full before 260915, provenance stamp
+     * added on 260915.
      *
      * @param data   The data result from the parse
      * @param errors The list of errors from the parse
@@ -51,6 +58,8 @@ public class GameConstantsParseResult {
     /**
      * returns whether any errors have occurred during the parsing of this file
      *
+     * <p>Function hasErrors commented in full before 260915, provenance stamp added on 260915.
+     *
      * @return true if any error has been triggered, false otherwise
      */
     public boolean hasErrors() {
@@ -60,6 +69,8 @@ public class GameConstantsParseResult {
     /**
      * Accessor
      *
+     * <p>Function getData commented in full before 260915, provenance stamp added on 260915.
+     *
      * @return the data from the parse, either a full GameConstantsData object, or null
      */
     public GameConstantsData getData() {
@@ -68,6 +79,8 @@ public class GameConstantsParseResult {
 
     /**
      * The list of errors
+     *
+     * <p>Function getErrors commented in full before 260915, provenance stamp added on 260915.
      *
      * @return the list of errors that have occurred during parsing
      */

@@ -145,6 +145,8 @@ the existing doc comment for context.
 
 - L52: field `logger` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/CurseReader.java`
 
 2 missing, 0 low
@@ -152,11 +154,15 @@ the existing doc comment for context.
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/DungeonProfileReader.java`
 
 1 missing, 0 low
 
 - L48: field `logger` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/EgoItemReader.java`
 
@@ -165,11 +171,15 @@ the existing doc comment for context.
 - L62: method `parseWithResults` - MISSING
 - L70: method `extract` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `backend/parser/FlavourReader.java`
 
 1 missing, 0 low
 
 - L47: field `logger` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/GameConstantsParseResult.java`
 
@@ -178,6 +188,8 @@ the existing doc comment for context.
 - L46: constructor `GameConstantsParseResult` - LOW - "Constructor"
 - L65: method `getData` - LOW - "Accessor"
 - L74: method `getErrors` - LOW - "The list of errors"
+
+**COMPLETED 2026-09-15**
 
 ### `backend/parser/GameConstantsReader.java`
 

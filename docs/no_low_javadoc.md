@@ -962,11 +962,15 @@ the existing doc comment for context.
 - L239: enum-const `IN_TAG_TEXT` - MISSING
 - L243: record `SectionDetails` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/Window.java`
 
 1 missing, 0 low
 
 - L105: method `show` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/screen/enums/CombinerName.java`
 

@@ -23,25 +23,23 @@ import uk.co.jackoftradesltd.frontend.screen.grid.Frame;
 import javax.swing.*;
 import java.awt.*;
 
-/**
- * One game window: a frame wrapped around a single character grid. This is the Java counterpart
- * of the native window handle a C front end's {@code term_data} holds beside its {@code term} -
- * {@code HWND w} for the Windows front end ({@code [C] src/win/win-term.h}), or
- * {@code WINDOW *win} for curses ({@code [C] src/main-gcu.c}). {@link TermData} is where a
- * {@code Window} and a {@link Term} meet, each in its own field; this class is not a stand-in
- * for {@link Term} and holds no reference back to one.
- *
- * <p>The frame holds exactly one {@code JPanelArea}, captured by {@link #add} as it goes in so the
- * rest of the front end can reach the grid without walking the component tree. C's
- * {@code term_data} array is a fixed eight ({@code ANGBAND_TERM_MAX}) - a main window plus
- * subwindows - so more of these are expected; nothing here assumes it is the only one.
- *
- * <p>Everything on this class is Swing, so every method belongs on the event dispatch thread.
- * {@link #clear()} in particular is currently reached from the game thread through
- * {@code SplashScreen}, which is a bug in the caller rather than here.
- *
- * @author Rowan Crowther
- */
+/// One game window: a frame wrapped around a single character grid. This is the Java counterpart
+/// of the native window handle a C front end's `term_data` holds beside its `term` -
+/// `HWND w` for the Windows front end (`[C] src/win/win-term.h`), or
+/// `WINDOW *win` for curses (`[C] src/main-gcu.c`). [TermData] is where a
+/// `Window` and a [Term] meet, each in its own field; this class is not a stand-in
+/// for [Term] and holds no reference back to one.
+///
+/// The frame holds exactly one `JPanelArea`, captured by [#add] as it goes in so the
+/// rest of the front end can reach the grid without walking the component tree. C's
+/// `term_data` array is a fixed eight (`ANGBAND_TERM_MAX`) - a main window plus
+/// subwindows - so more of these are expected; nothing here assumes it is the only one.
+///
+/// Everything on this class is Swing, so every method belongs on the event dispatch thread.
+/// {@code clear()} in particular is currently reached from the game thread through
+/// `SplashScreen`, which is a bug in the caller rather than here.
+///
+/// @author Rowan Crowther
 public class Window extends JFrame {
     /**
      * The character grid this window displays, captured by {@link #add}. Null until a
@@ -102,6 +100,24 @@ public class Window extends JFrame {
         return area;
     }
 
+    /**
+     * Push a frame onto this window's grid and repaint it. {@link Frame} is new architecture with
+     * no C original ({@code Frame.java}); this method plays the role C's {@code Term_fresh()}
+     * flush plays at the end of {@code splashscreen_note()} ({@code [C] src/ui-display.c}) -
+     * painting onto a {@code Screen}'s grid is invisible until the active window is told to show
+     * it again, which is what this does.
+     *
+     * <p>{@code frame.grid().getCells()} hands back rows shared with the {@code CellGrid} the
+     * frame was built from, not copies of them - safe only because a {@link Frame}'s grid is never
+     * written to again once published ({@code CellGrid.getCells()}'s own Javadoc names this method
+     * as the one caller that discipline covers). Deferred onto the event dispatch thread with
+     * {@link SwingUtilities#invokeLater}, since every caller today runs on a channel-processing
+     * thread, not the EDT - the hop {@link #clear()}'s caller skips.
+     *
+     * <p>Function show coded before 260916, commented in full on 260916.
+     *
+     * @param frame the screen snapshot to paint; its grid replaces the window's current one
+     */
     public void show(Frame frame) {
         SwingUtilities.invokeLater(new Runnable() {
             @Override

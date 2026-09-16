@@ -729,11 +729,15 @@ the existing doc comment for context.
 
 - L50: field `state` - MISSING
 
+**COMPLETED 2026-09-15**
+
 ### `channel/utils/combiners/BitwiseOrCombiner.java`
 
 1 missing, 0 low
 
 - L48: field `state` - MISSING
+
+**COMPLETED 2026-09-15**
 
 ### `channel/utils/combiners/FirstCombiner.java`
 

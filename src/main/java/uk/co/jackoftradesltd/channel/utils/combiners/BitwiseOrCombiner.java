@@ -42,14 +42,32 @@ import java.util.List;
  * {@link Combiner#UI_ENTRY_UNKNOWN_VALUE} (unknown to the player - which infects
  * an otherwise-absent accumulator).
  *
+ * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+ *
  * @author Rowan Crowther
  */
 public class BitwiseOrCombiner implements Cloneable, Combiner {
+    /**
+     * The fold currently in progress: seeded by {@link #init(int, int) init} and read or
+     * mutated by {@link #accum(int, int) accum}, {@link #finish() finish}, and {@link #clone()
+     * clone}. {@code null} until the first call to {@code init}. Holds the two channels
+     * BITWISE_OR actually reads and writes - {@link UIEntryCombinerState#getAccum() accum} and
+     * {@link UIEntryCombinerState#getAccumAux() accumAux} - in place of the C original's
+     * caller-owned {@code struct ui_entry_combiner_state} that every {@code ui-entry-combiner.c}
+     * function takes as an explicit argument instead of holding internally.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     */
     UIEntryCombinerState state;
 
     /**
      * Begins a fresh streaming fold, seeding both accumulator channels with the
-     * first contribution.
+     * first contribution. The negative-accumulator fields are left at their
+     * default zero; BITWISE_OR never reads them (they belong to {@code RESIST_0},
+     * which uses them for the {@code work} array the C original allocates
+     * alongside the state).
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param v the value channel of the first contribution
      * @param a the auxiliary channel of the first contribution
@@ -65,6 +83,8 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * Folds one further contribution into the running state, OR-ing both channels
      * via {@link #bitwiseOrCombineAccumHelp}. Sentinel inputs are handled by that
      * helper rather than being OR-ed.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param v the value channel of this contribution
      * @param a the auxiliary channel of this contribution
@@ -89,6 +109,8 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * disturb a fold that may still be running. Repeated calls are therefore
      * independent snapshots, and writing to one is invisible to both the combiner
      * and any other snapshot.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @return a snapshot of the OR-ed value and auxiliary channels
      */
@@ -122,6 +144,8 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * no counterpart in the C, whose pointers carry no length to check; it is a
      * port-level defence, and returns {@code null} to stay consistent with the rest
      * of the combiner family.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param n      the number of contributions to combine
      * @param values the value channel of each contribution (at least {@code n} long)
@@ -178,6 +202,8 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * {@code CombinerName} actually exercises, since it clones an un-initialised
      * prototype per fold.
      *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     *
      * @return an independent copy of this combiner
      */
     @Override
@@ -209,6 +235,8 @@ public class BitwiseOrCombiner implements Cloneable, Combiner {
      * leaves it alone; a real contribution onto an absent-or-unknown accumulator
      * simply becomes the accumulator; otherwise the two are combined with a
      * bitwise OR.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param x     the incoming contribution (possibly a sentinel)
      * @param accum the current accumulator (possibly a sentinel)

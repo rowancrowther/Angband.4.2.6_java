@@ -62,6 +62,15 @@ public class Screen {
      */
     private final List<Hotspot> hotspots;
 
+    /**
+     * A snapshot built once, in the constructor, from the same {@link #live} and
+     * {@link #hotspots} this screen goes on to mutate through {@link #root()} — and never
+     * rebuilt or read again after that. {@link #frame()} builds its own fresh copy on every
+     * call rather than returning this one, so this field is stale from the moment the first
+     * mutation happens.
+     *
+     * <p>Field frame coded on 260910, commented in full on 260916.
+     */
     private Frame frame;
 
     /**
@@ -114,6 +123,22 @@ public class Screen {
         return new Frame(live.copy(), List.copyOf(hotspots));
     }
 
+    /**
+     * The port of the non-birth branch of {@code splashscreen_note} ({@code [C] src/ui-display.c}):
+     * clears row 23, brackets {@code eventMessage} as {@code [message]}, and writes it centred on
+     * that row in white while game data loads. C's other branch, taken when the message carries
+     * {@code MSG_BIRTH}, prints incrementally down lines 2 to 23 with a pause after each line
+     * instead of overwriting row 23; this method has no equivalent for it, matching the caller —
+     * {@code InitHandlers.splashScreenNote} — which has no birth-note path yet either.
+     *
+     * <p>Row 23 and the 80-column centring width are hardcoded rather than read from the
+     * terminal's actual size, matching C's own assumption of an 80x24 terminal at this call site:
+     * {@code (Term->hgt - 23) / 5 + 23} resolves to exactly 23 when {@code Term->hgt == 24}.
+     *
+     * <p>Method splashScreenNote coded on 260910, commented in full on 260916.
+     *
+     * @param eventMessage the note to display, already unwrapped from its event payload
+     */
     public void splashScreenNote(String eventMessage) {
         int row = 23;
 

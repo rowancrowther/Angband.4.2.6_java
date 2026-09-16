@@ -21,7 +21,6 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.events.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
 
 import java.util.List;

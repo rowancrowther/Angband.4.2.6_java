@@ -20,7 +20,7 @@ package uk.co.jackoftradesltd.frontend.ui;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryIterator;
 import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.events.UIEntryCategory;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.util.List;

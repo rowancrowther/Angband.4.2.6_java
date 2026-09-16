@@ -29,6 +29,16 @@ import java.io.File;
  * The constant names are the standard Win32 flag names and are self-describing,
  * so they are documented here as a group rather than individually.
  *
+ * <p>Only {@link #MB_ICONASTERISK} is ever actually raised by this boundary — the
+ * C original's {@code Term_xtra_win_noise} ({@code [C] src/main-win.c}) always
+ * calls {@code MessageBeep(MB_ICONASTERISK)}, never any other {@code MB_ICON*}
+ * flag, so {@code MB_ICONASTERISK} is the only constant carrying a real path
+ * ({@code lib/sounds/message.wav}); every other constant carries an empty path
+ * purely to keep the Win32 flag name available for reference.
+ *
+ * <p>Class MessageBoxFlags commented in full before 260916, provenance stamp
+ * added on 260916.
+ *
  * @author Rowan Crowther
  */
 public enum MessageBoxFlags {
@@ -42,7 +52,7 @@ public enum MessageBoxFlags {
     MB_ICONHAND(""),
     MB_ICONQUESTION(""),
     MB_ICONEXCLAMATION(""),
-    MB_ICONASTERISK(AngbandDirs.ANGBAND_DIRS.SOUNDS.getPath() + "Windows Background.wav"),
+    MB_ICONASTERISK(AngbandDirs.ANGBAND_DIRS.SOUNDS.getPath() + "message.wav"),
     MB_USERICON(""),
     MB_ICONWARNING(""),
     MB_ICONERROR(""),
@@ -65,11 +75,17 @@ public enum MessageBoxFlags {
     /**
      * The sound file associated with this message-box style, or a {@link File}
      * wrapping an empty path when no sound is configured.
+     *
+     * <p>Field file commented in full before 260916, provenance stamp added on
+     * 260916.
      */
     private File file;
 
     /**
      * Build the constant, wrapping the given path as its associated sound file.
+     *
+     * <p>Constructor MessageBoxFlags commented in full before 260916, provenance
+     * stamp added on 260916.
      *
      * @param path the sound file path, or empty for no sound
      */
@@ -78,6 +94,13 @@ public enum MessageBoxFlags {
     }
 
     /**
+     * Returns the sound file associated with this message-box style, so the
+     * caller can open and play it. For every constant except
+     * {@link #MB_ICONASTERISK} this is a {@link File} wrapping an empty path,
+     * since no sound is configured.
+     *
+     * <p>Function getFileName coded before 260916, commented in full on 260916.
+     *
      * @return the {@link File} associated with this message-box style
      */
     public File getFileName() {

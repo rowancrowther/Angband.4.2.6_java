@@ -24,6 +24,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.frontend.screen.enums.TermXtraEventEnum;
 import uk.co.jackoftradesltd.frontend.sounds.MessageBoxFlags;
 
+import javax.sound.sampled.*;
 import java.io.File;
 
 /**
@@ -34,11 +35,18 @@ import java.io.File;
  * that the C code needed (flush, event pumping) are no-ops here because JavaFX's
  * event loop handles them.
  *
+ * <p>Class TermXtraWin commented in full before 260916, provenance stamp added
+ * on 260916.
+ *
  * @author Rowan Crowther
  */
 public class TermXtraWin implements TermEventHook {
     /**
-     * Logger used to report sound/playback failures.
+     * Logger used to report sound/playback failures, most notably a missing or
+     * unreadable file behind {@link #termXtraWinNoise(MessageBoxFlags)}.
+     *
+     * <p>Field logger commented in full before 260916, provenance stamp added on
+     * 260916.
      */
     private static Logger logger = LogManager.getLogger();
 
@@ -122,8 +130,18 @@ public class TermXtraWin implements TermEventHook {
     }
 
     /**
-     * Failures are logged and swallowed so a missing/invalid
-     * sound file never interrupts gameplay.
+     * Plays the sound bound to a {@link MessageBoxFlags} style — the boundary's
+     * stand-in for the C original's {@code Term_xtra_win_noise}
+     * ({@code [C] src/main-win.c}), which unconditionally calls
+     * {@code MessageBeep(MB_ICONASTERISK)}. Opens {@link MessageBoxFlags#getFileName()}
+     * as a {@link javax.sound.sampled.Clip} and starts it asynchronously, matching
+     * {@code MessageBeep}'s fire-and-forget behaviour of returning immediately
+     * without waiting for playback to finish. Failures (a missing or unreadable
+     * file, no available audio line, …) are logged and swallowed so they never
+     * interrupt gameplay, mirroring the C original's disregard for
+     * {@code MessageBeep}'s own return value.
+     *
+     * <p>Function termXtraWinNoise coded on 260916, commented in full on 260916.
      *
      * @param flag the message-box style whose sound to play
      */
@@ -131,8 +149,16 @@ public class TermXtraWin implements TermEventHook {
     private void termXtraWinNoise(MessageBoxFlags flag) {
         try {
             File file = flag.getFileName();
+            AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(file);
+            AudioFormat audioFormat = audioInputStream.getFormat();
+            DataLine.Info dataLineInfo = new DataLine.Info(Clip.class, audioFormat);
+            Clip clip = (Clip) AudioSystem.getLine(dataLineInfo);
+            clip.open(audioInputStream);
+            clip.start();
         } catch (Exception e) {
             logger.error("Error caught", e);
         }
+
+
     }
 }

@@ -1065,6 +1065,8 @@ the existing doc comment for context.
 - L63: enum-const `MB_RTLREADING` - MISSING
 - L83: method `getFileName` - LOW
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/splash/SplashScreen.java`
 
 4 missing, 0 low

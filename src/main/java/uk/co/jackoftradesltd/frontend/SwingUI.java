@@ -33,7 +33,6 @@ import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
 import uk.co.jackoftradesltd.frontend.screen.Window;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
-import uk.co.jackoftradesltd.frontend.screen.grid.Frame;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.*;
@@ -75,6 +74,12 @@ import java.util.List;
  * @author Rowan Crowther
  */
 public class SwingUI {
+    /**
+     * Logger for this class, though only {@link JPanelArea#setChars} and
+     * {@link JPanelArea#paintComponent} currently write to it - a wrongly-shaped grid handed in and
+     * a cell that would have been drawn past the panel's edge, the two failure cases that would
+     * otherwise be silent.
+     */
     private static final Logger logger = LogManager.getLogger(SwingUI.class);
 
     /**
@@ -140,6 +145,14 @@ public class SwingUI {
      */
     private StartupOptions startupOptions;
 
+    /**
+     * The one live {@link CellGrid}-backed {@link Screen}, built here and handed to the two objects
+     * that actually read and write it: {@link #uiLoop}, which owns the flush point and calls
+     * {@code screen.frame()} to publish what the EDT paints, and the {@link TermData} built alongside
+     * it, which forwards the same instance into {@code Term.termInit}. Kept as a field of this class
+     * too, even though nothing here reads it again after the constructor, so the object this class
+     * assembled is on record rather than discarded the moment it is handed off.
+     */
     private Screen screen;
 
     /**
@@ -522,8 +535,6 @@ public class SwingUI {
         /** Baseline offset within a cell, for placing glyphs once there are any. */
         public static int charAscent;
 
-        private Frame frame;
-
         /**
          * The screen contents, one cell per character position. Every repaint is rendered from
          * this and nothing else, so it is the single source of truth for what is on screen.
@@ -574,9 +585,6 @@ public class SwingUI {
                     display[i][j] = new AngbandDisplayCharacter(' ', ColourEnum.COLOUR_WHITE);
                 }
             }
-
-            // Set the font
-            font = new Font(Font.MONOSPACED, Font.PLAIN, 18);
         }
 
         /**
@@ -668,10 +676,14 @@ public class SwingUI {
          * <p>Changes the buffer only - the caller repaints when it has finished writing, so a run
          * of writes costs one repaint rather than one each.
          *
-         * <p>Unbounded: an off-screen row or column throws a raw
-         * {@link ArrayIndexOutOfBoundsException} out of the display layer rather than being
-         * rejected. C's {@code Term_putch} returns an error code for a write outside the terminal,
-         * on the grounds that a caller computing a position off the edge is common and not fatal.
+         * <p>An off-screen row or column is declined silently: the bounds check returns before
+         * touching {@link #display}, and nothing is written. This is the port's equivalent of C's
+         * {@code Term_putch} returning an error code for a write outside the terminal, on the
+         * grounds that a caller computing a position off the edge is common and not fatal - the
+         * Java side has no error code to return, so declining quietly is the closest match.
+         *
+         * <p>Function put(int, int, char, ColourEnum) coded on 260830, commented in full on
+         * 260916.
          *
          * @param row    the row to write to, from the top
          * @param col    the column to write to, from the left
@@ -692,12 +704,21 @@ public class SwingUI {
          * grid demands: a terminal has no row below the last one to continue onto, and wrapping
          * would silently corrupt whatever was on the next row. Only the part that fits is written.
          *
+         * <p>A negative {@code col} declines the whole call rather than drawing whatever trailing
+         * part of the string would have landed on-screen. This matches C: {@code Term_putstr} calls
+         * {@code Term_gotoxy} first, which rejects a negative {@code x} outright, so
+         * {@code Term_addstr} never runs and nothing is drawn.
+         *
+         * <p>Function put(int, int, String, ColourEnum) coded on 260830, commented in full on
+         * 260916.
+         *
          * @param row    the row to write along, from the top
          * @param col    the column to start at, from the left
          * @param s      the string to write
          * @param colour the colour to draw it in
          */
         public void put(int row, int col, String s, ColourEnum colour) {
+            if (col < 0) return;
             int end = col + s.length();
             if (end > 80) end = 80;
             for (int i = col; i < end; i++) {

@@ -761,17 +761,23 @@ the existing doc comment for context.
 
 - L41: field `state` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `channel/utils/combiners/LogicalOrCombiner.java`
 
 1 missing, 0 low
 
 - L57: field `state` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `channel/utils/combiners/LogicalOrWithCancelCombiner.java`
 
 1 missing, 0 low
 
 - L69: field `state` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/SwingUI.java`
 
@@ -780,6 +786,8 @@ the existing doc comment for context.
 - L78: field `logger` - MISSING
 - L143: field `screen` - MISSING
 - L525: field `frame` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/colour/Colour.java`
 

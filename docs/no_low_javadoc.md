@@ -785,7 +785,6 @@ the existing doc comment for context.
 
 - L78: field `logger` - MISSING
 - L143: field `screen` - MISSING
-- L525: field `frame` - MISSING
 
 **COMPLETED 2026-09-16**
 
@@ -794,6 +793,8 @@ the existing doc comment for context.
 1 missing, 0 low
 
 - L105: method `getColour` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/colour/MonsterRaceCycler.java`
 

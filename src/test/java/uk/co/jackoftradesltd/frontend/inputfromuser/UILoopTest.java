@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
 import uk.co.jackoftradesltd.channel.Channels;
+import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.CoreLifecycleEvent;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
@@ -34,6 +35,11 @@ import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
 import javax.swing.SwingUtilities;
 import java.awt.GraphicsEnvironment;
+import java.io.File;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +77,8 @@ import static org.junit.jupiter.api.Assumptions.assumeFalse;
  * tests are skipped on a headless machine; the translation tests are not, and pass a {@code null}
  * front end deliberately, since an arm that touched it would then fail loudly rather than quietly
  * passing.
+ *
+ * <p>Class UILoopTest coded before 260916, commented in full on 260916.
  *
  * @author Rowan Crowther
  */
@@ -404,6 +412,101 @@ class UILoopTest {
             assertFalse(ui.isAlive(), "an interrupted loop should end");
             assertFalse(swingUI.closed.await(NOT_COMING_MILLIS, TimeUnit.MILLISECONDS),
                     "an interrupt is a failure, not a clean shutdown: nothing should be disposed");
+        }
+    }
+
+    /**
+     * The exact wording of the "lib is broken" report, pinned because it drifted from C twice over
+     * successive fixes before landing right: first a missing pair of quotes and the wrong closing
+     * punctuation, then a blank line in the wrong place, then in the wrong place again.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class ReportingABrokenLibDirectory {
+
+        /**
+         * The path {@link AngbandDirs.ANGBAND_DIRS#SCREENS} pointed at before a test moved it -
+         * the constant is process-wide, so it has to go back.
+         */
+        private String savedScreensPath;
+
+        @BeforeEach
+        void saveScreensPath() {
+            savedScreensPath = AngbandDirs.ANGBAND_DIRS.SCREENS.getPath();
+        }
+
+        @AfterEach
+        void restoreScreensPath() {
+            AngbandDirs.ANGBAND_DIRS.SCREENS.setPath(savedScreensPath);
+        }
+
+        /**
+         * Calls the private method directly. C's {@code init_angband_aux()} has exactly one
+         * caller too, so reflection is the honest way in rather than a reason to widen the port.
+         */
+        private RuntimeException reportBrokenLib(String why) throws Exception {
+            Method method = UILoop.class.getDeclaredMethod("initAngbandAux", String.class);
+            method.setAccessible(true);
+            UILoop loop = new UILoop(channels.uiChannel(), null, null);
+            try {
+                method.invoke(loop, why);
+            } catch (InvocationTargetException e) {
+                if (e.getCause() instanceof RuntimeException cause) return cause;
+                throw e;
+            }
+            throw new AssertionError("initAngbandAux returned instead of throwing");
+        }
+
+        /**
+         * C's {@code init_angband_aux()} ({@code [C] src/ui-display.c}) builds
+         * {@code quit_fmt("%s\n\n%s", why, "...")} - a blank line straight after {@code why}, then
+         * the three fixed lines run together with single newlines between them. Two earlier
+         * attempts at this port put the blank line after the first or the second fixed line
+         * instead; this pins it in the one place it belongs.
+         */
+        @Test
+        void theBlankLineFollowsWhyNotOneOfTheFixedLines() throws Exception {
+            RuntimeException thrown =
+                    reportBrokenLib("Cannot access the 'lib/screens/news.txt' file!");
+
+            assertEquals("Cannot access the 'lib/screens/news.txt' file!\n\n"
+                            + "The 'lib' directory is probably missing or broken.\n"
+                            + "Perhaps the archive was not extracted correctly.\n"
+                            + "See the 'readme.txt' file for more information.",
+                    thrown.getMessage());
+        }
+
+        /**
+         * The missing-file path in {@code loop()}'s {@code EVENT_ENTER_INIT} arm has to build the
+         * same quoted, exclamation-marked wording as C's {@code show_splashscreen()}
+         * ({@code strnfmt(why, sizeof(why), "Cannot access the '%s' file!", buf)},
+         * {@code [C] src/ui-display.c}) - not the unquoted, full-stopped wording an earlier
+         * version of the port used.
+         */
+        @Test
+        void aMissingNewsFileIsReportedInCsWording() throws Exception {
+            Path emptyDir = Files.createTempDirectory("angband-screens-missing");
+            String screensPath = emptyDir + File.separator;
+            AngbandDirs.ANGBAND_DIRS.SCREENS.setPath(screensPath);
+
+            startLoop(null);
+            channels.coreChannel().coreSender()
+                    .send(new CoreMessage.SimpleCoreMessage(GameEventType.EVENT_ENTER_INIT));
+            uiThread.join(SHOULD_FINISH_MILLIS);
+
+            assertFalse(uiThread.isAlive(), "a broken lib directory should end the loop");
+            assertInstanceOf(RuntimeException.class, uiFailure.get());
+            assertEquals("Cannot access the '" + screensPath + "news.txt' file!",
+                    firstLineOf(uiFailure.get().getMessage()));
+        }
+
+        /**
+         * @return the text before the first newline, since the rest is the fixed four-line block
+         * checked separately above
+         */
+        private String firstLineOf(String message) {
+            return message.split("\n", 2)[0];
         }
     }
 }

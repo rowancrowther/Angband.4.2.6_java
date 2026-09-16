@@ -75,12 +75,16 @@ import java.util.ArrayList;
  * chosen for that half of the job before it existed; the close handler below is its first member,
  * and keypresses join it in Chapter 5.
  *
+ * <p>Class UILoop coded before 260916, commented in full on 260916.
+ *
  * @author Rowan Crowther
  */
 public class UILoop {
     /**
      * Logger for messages that arrive out of order or on the wrong queue - the failures that are
      * otherwise invisible, because an unhandled message is simply dropped.
+     *
+     * <p>Field logger coded before 260916, commented in full on 260916.
      */
     private static final Logger logger = LogManager.getLogger();
 
@@ -92,6 +96,8 @@ public class UILoop {
      * {@code uiChannel.uiReceiver()} are the ones the <em>core</em> sent. Handed in rather than
      * created here, because a channel built at the point of use is a channel with no other end;
      * {@code Channels} is the one place a matched pair comes from.
+     *
+     * <p>Field uiChannel coded before 260916, commented in full on 260916.
      */
     private UIChannel uiChannel;
 
@@ -101,9 +107,19 @@ public class UILoop {
      * <p>A concrete class rather than a boundary, which is the one thing here stage 5 is expected to
      * change: with a painting interface in its place, this loop could be tested without a live Swing
      * window, which is why the message-to-paint hop is the one part of stage 2 that has no test.
+     *
+     * <p>Field swingUI coded before 260916, commented in full on 260916.
      */
     private SwingUI swingUI;
 
+    /**
+     * The character grid the title screen and its progress notes are painted onto, shared with
+     * {@link SplashScreen} for the duration of the data load - the same instance is threaded
+     * through {@link #writeInitString(String)} so a note lands on the screen the title was parsed
+     * into rather than a blank one.
+     *
+     * <p>Field screen coded before 260916, commented in full on 260916.
+     */
     private Screen screen;
 
     /**
@@ -113,8 +129,11 @@ public class UILoop {
      * thread. The channel arrives from outside rather than being built here, which is what keeps
      * this loop's queue the same object the core is sending on.
      *
+     * <p>Constructor UILoop coded before 260916, commented in full on 260916.
+     *
      * @param uiChannel this half's pair of channel ends
      * @param swingUI   the front end whose active window the messages are painted into
+     * @param screen    the character grid the title screen and progress notes are painted onto
      */
     public UILoop(UIChannel uiChannel, SwingUI swingUI, Screen screen) {
         this.uiChannel = uiChannel;
@@ -131,11 +150,13 @@ public class UILoop {
      * {@code GameConstants.init()}'s handler and is re-reported as a data-load failure - so the
      * message the player would most want is the one they are least likely to see.
      *
+     * <p>Function initAngbandAux coded before 260916, commented in full on 260916.
+     *
      * @param why what could not be read, used as the first line of the message
      * @throws RuntimeException always; this method does not return
      */
     private void initAngbandAux(String why) {
-        String message = why + "\n" +
+        String message = why + "\n\n" +
                 "The 'lib' directory is probably missing or broken.\n" +
                 "Perhaps the archive was not extracted correctly.\n" +
                 "See the 'readme.txt' file for more information.";
@@ -180,6 +201,8 @@ public class UILoop {
      * is not being used as a signal - and nothing interrupts this thread, so reaching it at all is
      * a bug worth the log line. Note that the windows are not disposed on that path: an interrupt
      * is a failure, not a shutdown, and the two should not be made to look alike.
+     *
+     * <p>Function loop coded before 260916, commented in full on 260916.
      */
     public void loop() {
         SplashScreen splashScreen = null;
@@ -251,7 +274,7 @@ public class UILoop {
                                 String filename = AngbandDirs.ANGBAND_DIRS.SCREENS.getPath() + "news.txt";
                                 Path path = Paths.get(filename);
                                 if (!Files.exists(path)) {
-                                    initAngbandAux("Cannot access the " + filename + " file.");
+                                    initAngbandAux("Cannot access the '" + filename + "' file!");
                                 }
 
                                 splashScreen = new SplashScreen(swingUI);
@@ -324,12 +347,35 @@ public class UILoop {
         }
     }
 
+    /**
+     * Paint one line of progress text and flush it to the window - the port's counterpart to the
+     * {@code Term_fresh()} call at the end of C's {@code splashscreen_note()} ({@code [C]
+     * src/ui-display.c}). The line-drawing itself - erasing the old note and centring the new one -
+     * is {@link Screen#splashScreenNote(String)}'s job, not this method's; painting onto
+     * {@code screen}'s grid is invisible until the active window is told to show it again, which is
+     * the one thing this method adds.
+     *
+     * <p>Function writeInitString coded before 260916, commented in full on 260916.
+     *
+     * @param string the progress line to paint, one per data file
+     */
     private void writeInitString(String string) {
         screen.splashScreenNote(string);
 
         swingUI.getActiveWindow().show(screen.frame());
     }
 
+    /**
+     * Currently does nothing: the body is empty and {@code runnable} is never invoked, and nothing
+     * in this class calls this method either. Despite the name, it is not where the EDT hops
+     * happen - those are made by {@code Window.display} and {@code SplashScreen}'s own painting
+     * methods (see the class Javadoc above) - so this is dead code rather than a working hop onto
+     * the event dispatch thread.
+     *
+     * <p>Function onEventDispatchThread coded before 260916, commented in full on 260916.
+     *
+     * @param runnable a task that is accepted but never run
+     */
     private void onEventDispatchThread(Runnable runnable) {
     }
 }

@@ -916,6 +916,8 @@ the existing doc comment for context.
 - L327: method `writeInitString` - MISSING
 - L333: method `onEventDispatchThread` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/Term.java`
 
 2 missing, 1 low

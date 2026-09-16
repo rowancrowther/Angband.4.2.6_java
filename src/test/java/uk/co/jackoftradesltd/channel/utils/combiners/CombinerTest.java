@@ -373,6 +373,33 @@ class CombinerTest {
             assertBothPathsGive(new SmallestCombiner(), List.of(5, NOT_PRESENT), List.of(0, 0),
                     5, 0);
         }
+
+        @Test
+        void anUnknownContributionFillsAnAbsentAccumulator() {
+            // Order matters: NOT_PRESENT first leaves the accumulator absent, so the
+            // following UNKNOWN can occupy it - the mirror image of an absent contribution
+            // being skipped.
+            assertBothPathsGive(new LargestCombiner(), List.of(NOT_PRESENT, UNKNOWN),
+                    List.of(0, 0), UNKNOWN, 0);
+            assertBothPathsGive(new SmallestCombiner(), List.of(NOT_PRESENT, UNKNOWN),
+                    List.of(0, 0), UNKNOWN, 0);
+        }
+
+        @Test
+        void aRealValueReplacesAnUnknownAccumulator() {
+            assertBothPathsGive(new LargestCombiner(), List.of(UNKNOWN, 5), List.of(0, 0),
+                    5, 0);
+            assertBothPathsGive(new SmallestCombiner(), List.of(UNKNOWN, 5), List.of(0, 0),
+                    5, 0);
+        }
+
+        @Test
+        void aRealValueReplacesAnAbsentAccumulator() {
+            assertBothPathsGive(new LargestCombiner(), List.of(NOT_PRESENT, 5), List.of(0, 0),
+                    5, 0);
+            assertBothPathsGive(new SmallestCombiner(), List.of(NOT_PRESENT, 5), List.of(0, 0),
+                    5, 0);
+        }
     }
 
     /**

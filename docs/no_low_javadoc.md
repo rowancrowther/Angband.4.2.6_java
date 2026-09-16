@@ -753,6 +753,8 @@ the existing doc comment for context.
 
 - L85: field `state` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `channel/utils/combiners/LastCombiner.java`
 
 1 missing, 0 low

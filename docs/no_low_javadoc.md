@@ -949,6 +949,8 @@ the existing doc comment for context.
 
 - L52: field `cy` - LOW - "Cursor row."
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/TextOut.java`
 
 5 missing, 1 low

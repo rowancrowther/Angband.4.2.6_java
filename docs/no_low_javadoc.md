@@ -850,6 +850,8 @@ the existing doc comment for context.
 - L120: method `getFlags` - MISSING
 - L124: method `getDesc` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/entries/UIEntryIterator.java`
 
 11 missing, 0 low
@@ -865,6 +867,8 @@ the existing doc comment for context.
 - L50: method `getIndex` - MISSING
 - L54: method `addEntry` - MISSING
 - L58: method `advance` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/entries/UIEntryRenderer.java`
 

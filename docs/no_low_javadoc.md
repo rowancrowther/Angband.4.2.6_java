@@ -810,6 +810,8 @@ the existing doc comment for context.
 
 ### `frontend/colour/ColourCycle.java` ###
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/entries/UIEntry.java`
 
 18 missing, 2 low

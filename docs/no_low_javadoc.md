@@ -980,6 +980,8 @@ the existing doc comment for context.
 - L58: constructor `CombinerName` - MISSING
 - L62: method `init` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/grid/Region.java`
 
 3 missing, 0 low

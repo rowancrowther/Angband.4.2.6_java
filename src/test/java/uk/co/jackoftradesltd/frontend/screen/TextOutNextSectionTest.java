@@ -185,6 +185,24 @@ class TextOutNextSectionTest {
         assertEquals("{ok}there{/}rest", s.next);
     }
 
+    /**
+     * An invalid tag whose body consumes letters before running into another {@code {}
+     * (rather than an immediate non-letter): C resumes its {@code {} search from just past
+     * the discarded tag's own opening brace, not from wherever the letter scan stopped, so
+     * the second {@code {} is still found and re-parsed as a fresh candidate - regression
+     * coverage for the fix at {@code TextOut.java:227}, where resuming from the scan-stop
+     * position instead skipped straight past the second {@code {} and lost the tag.
+     */
+    @Test
+    void anInvalidTagWithLettersBeforeAnotherBraceStillFindsThatBrace() {
+        Section s = section("{ab{ok}text{/}");
+
+        assertTrue(s.found);
+        assertEquals("{ab", s.text);
+        assertEquals("", s.tag);
+        assertEquals("{ok}text{/}", s.next);
+    }
+
     private boolean found(String source) {
         return invoke(source).found;
     }

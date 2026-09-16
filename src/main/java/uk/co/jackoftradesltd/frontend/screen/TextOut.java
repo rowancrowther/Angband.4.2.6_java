@@ -224,7 +224,7 @@ public class TextOut {
                 }
             } else {
                 // Skip the invalid tag and move to the start of the next tag
-                next = next + 1;
+                next = lastOpenBrace + 1;
             }
 
             next = text.indexOf('{', next);
@@ -235,11 +235,59 @@ public class TextOut {
         return new SectionDetails(true, text, tag, "");
     }
 
+    /**
+     * States for a character-by-character walk over {@code {tag}...{/}} markup: whether the scan
+     * is currently inside an opening {@code {tag}}, inside a closing {@code {/}}, inside the
+     * tagged text between them, or in plain text outside any tag. Declared alongside
+     * {@link #nextSection} but not read or assigned anywhere in this class - {@link #nextSection}
+     * scans with plain string-index arithmetic (tracking {@code next} and {@code lastOpenBrace}
+     * directly) instead of stepping through named states, so this enum is currently unused dead
+     * code with no C cross-reference of its own; {@code next_section} ({@code [C]
+     * src/z-textblock.c}) has no equivalent state enumeration either, since it too works by
+     * pointer arithmetic rather than an explicit state machine.
+     *
+     * <p>Enum TagState coded on 260910, commented in full on 260916.
+     */
     private enum TagState {
-        START_TAG, END_TAG, IN_TAG_TEXT,
+        /**
+         * Scanning the body of an opening {@code {tag}}, between the {@code {} and the {@code }}.
+         */
+        START_TAG,
+        /**
+         * Scanning a closing {@code {/}} marker.
+         */
+        END_TAG,
+        /**
+         * Scanning the tagged text between a well-formed {@code {tag}} and its {@code {/}}.
+         */
+        IN_TAG_TEXT,
+        /**
+         * Scanning plain text that falls outside any tag.
+         */
         IN_NORMAL_TEXT
     }
 
+    /**
+     * One section of scanned text returned by {@link #nextSection}, the Java replacement for the
+     * cluster of {@code char **}/{@code size_t *} out-parameters C's {@code next_section}
+     * ({@code [C] src/z-textblock.c}) writes its result through ({@code text}/{@code len}/
+     * {@code tag}/{@code taglen}/{@code end}), bundled here as a single return value instead of
+     * five separate out-parameters.
+     *
+     * <p>Record SectionDetails coded on 260910, commented in full on 260916.
+     *
+     * @param found whether a section was found at all; {@code false} only when the source scanned
+     *              was empty, matching C's {@code if (*text[0] == '\0') return false;}
+     * @param text  the printable text of this section, with any surrounding {@code {tag}...{/}}
+     *              markup already stripped off - C's {@code text}/{@code len} pair
+     * @param tag   the tag name found between the braces when this section opened with a
+     *              well-formed {@code {tag}}, or the empty string when the section is untagged -
+     *              C's {@code tag}/{@code taglen} pair, with C's {@code NULL} represented here as
+     *              {@code ""}
+     * @param next  the remaining unscanned text to resume scanning from on the following call -
+     *              C's {@code end} pointer, represented here as the substring it would point into
+     *              rather than as a pointer
+     */
     private record SectionDetails(boolean found, String text, String tag, String next) {
     }
 }

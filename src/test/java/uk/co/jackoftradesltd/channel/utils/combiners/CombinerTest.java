@@ -429,6 +429,34 @@ class CombinerTest {
         void theValueAndAuxiliaryChannelsAreIndependent() {
             assertBothPathsGive(new LogicalOrCombiner(), List.of(0, 0), List.of(0, 3), 0, 1);
         }
+
+        @Test
+        void anUnknownContributionAloneStaysUnknownRatherThanBeingTreatedAsTrue() {
+            // UNKNOWN is Integer.MAX_VALUE; letting it reach the final OR would read as
+            // non-zero and falsely report the property as true.
+            assertBothPathsGive(new LogicalOrCombiner(), List.of(UNKNOWN), List.of(0),
+                    UNKNOWN, 0);
+        }
+
+        @Test
+        void anUnknownContributionFillsAnAbsentAccumulator() {
+            assertBothPathsGive(new LogicalOrCombiner(), List.of(NOT_PRESENT, UNKNOWN),
+                    List.of(0, 0), UNKNOWN, 0);
+        }
+
+        @Test
+        void aRealValueReplacesAnUnknownAccumulator() {
+            assertBothPathsGive(new LogicalOrCombiner(), List.of(UNKNOWN, 5), List.of(0, 0),
+                    1, 0);
+        }
+
+        @Test
+        void anUnknownContributionDoesNotDisturbAnAlreadySetAccumulator() {
+            // Once the accumulator holds a real 0/1, a later UNKNOWN must leave it alone -
+            // the sentinel only gets to fill an accumulator that is still absent.
+            assertBothPathsGive(new LogicalOrCombiner(), List.of(5, UNKNOWN), List.of(0, 0),
+                    1, 0);
+        }
     }
 
     /**

@@ -51,9 +51,27 @@ import java.util.List;
  * numeric value is {@link Integer#MAX_VALUE}, letting it reach the flattening step
  * would read as true and claim a property the player has not learned.
  *
+ * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+ *
  * @author Rowan Crowther
  */
 public class LogicalOrCombiner implements Cloneable, Combiner {
+    /**
+     * The fold currently in progress: seeded by {@link #init(int, int) init} and read or
+     * mutated by {@link #accum(int, int) accum}, {@link #finish() finish}, and {@link #clone()
+     * clone}. {@code null} until the first call to {@code init}. Holds all four channels of
+     * {@link UIEntryCombinerState} - {@link UIEntryCombinerState#getAccum() accum} and
+     * {@link UIEntryCombinerState#getAccumAux() accumAux} carry the OR-ed result, while
+     * {@link UIEntryCombinerState#getNegAccum() negAccum} and
+     * {@link UIEntryCombinerState#getNegAccumAux() negAccumAux} are explicitly zeroed by
+     * {@link #init(int, int) init} but otherwise unread - LOGICAL_OR never allocates the
+     * {@code work} scratch the C original's {@code RESIST_0} row uses those fields to model.
+     * This field replaces the C original's caller-owned {@code struct ui_entry_combiner_state}
+     * that every {@code ui-entry-combiner.c} function takes as an explicit argument instead of
+     * holding internally.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     */
     private UIEntryCombinerState state;
 
     /**
@@ -67,6 +85,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      * is a {@code void *} scratch pointer that only {@code RESIST_0} allocates (as
      * a two-{@code int} array of most-negative accumulators, which is what
      * {@code negAccum}/{@code negAccumAux} model here); LOGICAL_OR merely nulls it.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param v the value channel of the first contribution
      * @param a the auxiliary channel of the first contribution
@@ -98,6 +118,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      * via {@link #logicalOrCombineAccumHelp}. Sentinel inputs are handled by that
      * helper rather than being flattened.
      *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     *
      * @param v the value channel of this contribution
      * @param a the auxiliary channel of this contribution
      */
@@ -121,6 +143,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      * disturb a fold that may still be running. Repeated calls are therefore
      * independent snapshots, and writing to one is invisible to both the combiner
      * and any other snapshot.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @return a snapshot of the OR-ed value and auxiliary channels
      */
@@ -157,6 +181,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      *
      * <p>Unlike the streaming path this does not touch or depend on the instance
      * {@code state}; it returns a fresh result.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param n      the number of contributions to combine
      * @param values the value channel of each contribution (at least {@code n} long)
@@ -204,6 +230,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      * the sentinel reached the final OR it would test as nonzero and turn a known-
      * false accumulator true - reporting a property the player has never learned.
      *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     *
      * @param x     the incoming contribution (possibly a sentinel)
      * @param accum the current accumulator (possibly a sentinel)
      * @return the updated accumulator: {@code 0}, {@code 1}, or a sentinel
@@ -247,6 +275,8 @@ public class LogicalOrCombiner implements Cloneable, Combiner {
      * state to copy, so the clone is a fresh instance - which is the case
      * {@code CombinerName} actually exercises, since it clones an un-initialised
      * prototype per fold.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @return an independent copy of this combiner
      */

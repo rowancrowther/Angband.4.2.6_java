@@ -1020,11 +1020,15 @@ the existing doc comment for context.
 - L25: method `cPrt` - MISSING
 - L27: method `erase` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/hooks/TermXtraWinDelay.java`
 
 0 missing, 1 low
 
 - L35: method `doSomething` - LOW
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/sounds/MessageBoxFlags.java`
 

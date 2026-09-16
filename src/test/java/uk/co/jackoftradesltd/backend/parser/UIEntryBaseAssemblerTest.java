@@ -23,6 +23,7 @@ import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssemble
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
+import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
@@ -80,12 +81,12 @@ class UIEntryBaseAssemblerTest {
         assertEquals(1, out.size());
         UIEntryBase u = out.get(0);
         assertEquals("t", u.getName());
-        // UIEntryBase exposes only getName(); the remaining fields are asserted through toString().
+        assertTrue(u.getFlags().has(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        // UIEntryBase does not expose desc (C's parse_entry_desc never stores it either);
+        // the remaining fields are asserted through toString().
         String s = u.toString();
         assertTrue(s.contains("combine=LOGICAL_OR"), s);
         assertTrue(s.contains("categories=[CHAR_SCREEN1, abilities]"), s);
-        assertTrue(s.contains("flags='TIMED_AS_AUX'"), s);
-        assertTrue(s.contains("desc='some desc'"), s);
         assertTrue(s.contains(KNOWN_RENDERER), s);
     }
 
@@ -114,7 +115,7 @@ class UIEntryBaseAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
                 List.of(rec("bad", "no_such_renderer", "LOGICAL_OR", "F", "d", List.of("C")),
-                        rec("good", KNOWN_RENDERER, "LOGICAL_OR", "F", "d", List.of("C"))),
+                        rec("good", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d", List.of("C"))),
                 errors);
 
         assertEquals(1, out.size());

@@ -837,6 +837,8 @@ the existing doc comment for context.
 - L251: method `getCategories` - MISSING
 - L255: method `getTemplate` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/entries/UIEntryBase.java`
 
 5 missing, 1 low

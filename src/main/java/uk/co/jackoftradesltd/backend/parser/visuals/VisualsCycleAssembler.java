@@ -93,7 +93,7 @@ public class VisualsCycleAssembler implements Assembler<VisualsCycleParseRecord,
             }
             if (illegalColour) continue;
             byGroup.computeIfAbsent(group, g -> new HashMap<>())
-                    .put(name, new ColourCycle(name, colours));
+                    .put(name, ColourCycle.colourCycle(name, colours));
         }
 
         return List.of(new VisualsCycler(byGroup));

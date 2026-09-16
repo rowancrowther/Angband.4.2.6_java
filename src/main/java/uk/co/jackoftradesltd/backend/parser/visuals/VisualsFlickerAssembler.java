@@ -86,7 +86,7 @@ public class VisualsFlickerAssembler implements Assembler<VisualsFlickerParseRec
                         "an illegal colour: " + record.colourChar());
                 continue;
             }
-            ColourCycle value = new ColourCycle(record.colourChar(), steps);
+            ColourCycle value = ColourCycle.colourCycle(record.colourChar(), steps);
             byAttr.put(key, value);
         }
 

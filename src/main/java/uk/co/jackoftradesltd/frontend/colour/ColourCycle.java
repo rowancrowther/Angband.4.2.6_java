@@ -57,8 +57,23 @@ public final class ColourCycle {
      * @param name  the cycle name (or, for a flicker entry, its base-attribute label)
      * @param steps the ordered frames; defensively copied, so the caller may keep mutating its list
      */
-    public ColourCycle(String name, List<ColourEnum> steps) {
+    private ColourCycle(String name, List<ColourEnum> steps) {
         this.name = name;
         this.steps = List.copyOf(steps);
+    }
+
+    public static ColourCycle colourCycle(String name, List<ColourEnum> steps) {
+        if (steps.isEmpty())
+            return null;
+
+        return new ColourCycle(name, steps);
+    }
+
+    public ColourEnum getColour(int index) {
+        return steps.get(index);
+    }
+
+    public int getSize() {
+        return steps.size();
     }
 }

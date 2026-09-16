@@ -806,6 +806,10 @@ the existing doc comment for context.
 - L29: method `addCycler` - MISSING
 - L33: method `getCycler` - MISSING
 
+**COMPLETED 2026-09-16**
+
+### `frontend/colour/ColourCycle.java` ###
+
 ### `frontend/entries/UIEntry.java`
 
 18 missing, 2 low

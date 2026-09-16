@@ -999,6 +999,8 @@ the existing doc comment for context.
 - L65: field `frame` - MISSING
 - L117: method `splashScreenNote` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/hooks/TermScreenHook.java`
 
 3 missing, 0 low
@@ -1006,6 +1008,8 @@ the existing doc comment for context.
 - L23: class `TermScreenHook` - MISSING
 - L24: field `screen` - MISSING
 - L26: constructor `TermScreenHook` - MISSING
+
+**COMPLETED 2026-09-16**
 
 ### `frontend/screen/hooks/TermTextHook.java`
 

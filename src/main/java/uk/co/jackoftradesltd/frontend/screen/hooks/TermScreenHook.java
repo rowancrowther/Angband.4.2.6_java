@@ -20,9 +20,41 @@ package uk.co.jackoftradesltd.frontend.screen.hooks;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 
+/**
+ * The live {@link TermTextHook} implementation, painting directly onto a {@link Screen}'s
+ * root {@link uk.co.jackoftradesltd.frontend.screen.grid.Region}. This is the Java
+ * counterpart to a concrete C {@code struct term} hook table
+ * ({@code [C] src/ui-term.h}) - specifically the {@code text_hook} and {@code wipe_hook}
+ * function pointers, the only two low-level driver primitives the real hook table exposes.
+ * {@link uk.co.jackoftradesltd.frontend.screen.Term} never paints the screen itself; every
+ * write reaches it by calling through its own {@code outputHook} field, which
+ * {@link uk.co.jackoftradesltd.frontend.screen.Term#termInit} constructs as an instance of
+ * this class.
+ *
+ * <p>Class TermScreenHook coded on 260910, commented in full on 260916.
+ *
+ * @author Rowan Crowther
+ */
 public class TermScreenHook implements TermTextHook {
+    /**
+     * The screen this hook paints and blanks through, via its
+     * {@link Screen#root()} region. Supplied once at construction and never reassigned.
+     *
+     * <p>Field screen coded on 260910, commented in full on 260916.
+     */
     private Screen screen;
 
+    /**
+     * Wraps a {@link Screen} as the destination for every {@link #putStr} and
+     * {@link #erase} call this hook receives. The screen is not copied - this hook trusts
+     * whoever constructs it (in practice, {@link uk.co.jackoftradesltd.frontend.screen.Term#termInit})
+     * to hand over the one {@link Screen} this {@link uk.co.jackoftradesltd.frontend.screen.Term}
+     * instance owns.
+     *
+     * <p>Constructor TermScreenHook coded on 260910, commented in full on 260916.
+     *
+     * @param screen the screen this hook paints and blanks
+     */
     public TermScreenHook(Screen screen) {
         this.screen = screen;
     }
@@ -53,29 +85,6 @@ public class TermScreenHook implements TermTextHook {
         if (n >= 0)
             string = string.substring(0, n);
         screen.root().put(y, x, string, colour);
-    }
-
-    /**
-     * Clear the rest of a row and draw a coloured string over it, the boundary this hook
-     * implements for {@link uk.co.jackoftradesltd.frontend.screen.Term#cPrt}, standing in
-     * for C's {@code c_prt} doing {@code Term_erase(col, row, 255)} then
-     * {@code Term_addstr(-1, attr, str)} ({@code [C] src/ui-output.c}). The {@code 255}
-     * passed to {@link uk.co.jackoftradesltd.frontend.screen.grid.Region#erase} is, as in
-     * C, deliberately larger than any real row width - {@code Region.erase} clips it to
-     * the row's remaining columns rather than needing the exact count.
-     *
-     * <p>Function cPrt coded on 260910, commented in full on 260910.
-     *
-     * @param colour the colour to draw the string in
-     * @param str    the string to write
-     * @param row    the row to write it on
-     * @param col    the column to start at
-     */
-    @Override
-    public void cPrt(ColourEnum colour, String str, int row, int col) {
-        screen.root().erase(row, col, 255);
-
-        screen.root().put(row, col, str, colour);
     }
 
     /**

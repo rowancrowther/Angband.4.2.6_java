@@ -44,9 +44,22 @@ import java.util.List;
  * {@link #addCombineAccumHelp} exists so a genuine sum can never grow up into
  * that sentinel band.
  *
+ * <p>coded on 2026-08-30 / commented in full on 2026-09-15
+ *
  * @author Rowan Crowther
  */
 public class AddCombiner implements Combiner, Cloneable {
+    /**
+     * The fold currently in progress: seeded by {@link #init(int, int) init} and read or
+     * mutated by {@link #accum(int, int) accum}, {@link #finish() finish}, and {@link #clone()
+     * clone}. {@code null} until the first call to {@code init}. Holds the two channels ADD
+     * actually reads and writes - {@link UIEntryCombinerState#getAccum() accum} and
+     * {@link UIEntryCombinerState#getAccumAux() accumAux} - in place of the C original's
+     * caller-owned {@code struct ui_entry_combiner_state} that every {@code ui-entry-combiner.c}
+     * function takes as an explicit argument instead of holding internally.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
+     */
     private UIEntryCombinerState state;
 
     /**
@@ -55,6 +68,8 @@ public class AddCombiner implements Combiner, Cloneable {
      * default zero; ADD never reads them (they belong to {@code RESIST_0}, which
      * uses them for the {@code work} array the C original allocates alongside the
      * state).
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @param v the value channel of the first contribution
      * @param a the auxiliary channel of the first contribution
@@ -70,6 +85,8 @@ public class AddCombiner implements Combiner, Cloneable {
      * Folds one further contribution into the running state, updating both
      * channels via {@link #addCombineAccumHelp}. Sentinel inputs are handled by
      * that helper rather than being summed.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @param v the value channel of this contribution
      * @param a the auxiliary channel of this contribution
@@ -94,6 +111,8 @@ public class AddCombiner implements Combiner, Cloneable {
      * disturb a fold that may still be running. Repeated calls are therefore
      * independent snapshots, and writing to one is invisible to both the combiner
      * and any other snapshot.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @return a snapshot of the summed value and auxiliary channels
      */
@@ -126,6 +145,8 @@ public class AddCombiner implements Combiner, Cloneable {
      *
      * <p>Unlike the streaming path this does not touch or depend on the instance
      * {@code state}; it returns a fresh result.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @param n      the number of contributions to combine
      * @param values the value channel of each contribution (at least {@code n} long)
@@ -181,6 +202,8 @@ public class AddCombiner implements Combiner, Cloneable {
      * simply becomes the accumulator; otherwise the two are summed, clamped away
      * from the sentinel band ({@code INT_MAX - 2}) at the top and {@code INT_MIN}
      * at the bottom so a genuine total can never masquerade as a sentinel.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @param x          the incoming contribution (possibly a sentinel)
      * @param accumValue the current accumulator (possibly a sentinel)
@@ -243,6 +266,8 @@ public class AddCombiner implements Combiner, Cloneable {
      * state to copy, so the clone is a fresh instance - which is the case
      * {@code CombinerName} actually exercises, since it clones an un-initialised
      * prototype per fold.
+     *
+     * <p>coded on 2026-08-30 / commented in full on 2026-09-15
      *
      * @return an independent copy of this combiner
      */

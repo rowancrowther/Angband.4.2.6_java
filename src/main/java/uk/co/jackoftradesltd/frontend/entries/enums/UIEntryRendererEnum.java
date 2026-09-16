@@ -22,13 +22,24 @@ import org.jetbrains.annotations.Contract;
 import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
 
 /**
- * The built-in renderers used to draw UI status entries, ported from the
- * default renderer table of the C original's UI-entry system. Each constant
- * bundles a value {@link CombinerName combiner} with the default colour strings,
- * label-colour string, symbol string, digit count and sign mode that renderer
- * uses. The packed string parameters are colour/symbol lookup tables (one
- * character per state), so the individual constants are documented collectively
- * here rather than spelling out every table.
+ * The built-in renderers used to draw UI status entries, one constant per row
+ * of the C original's {@code list-ui-entry-renderers.h} table (compiled into
+ * the {@code backends[]} array of {@code struct backend_info} in {@code
+ * ui-entry-renderers.c}), plus a Java-only {@link #UI_ENTRY_RENDERER_NONE}
+ * sentinel with no C row of its own. It stands in for C's invalid/unset
+ * renderer index: valid indices there run from {@code
+ * ui_entry_renderer_get_min_index()} (1) up to but excluding {@code
+ * ui_entry_renderer_get_index_limit()}, leaving 0 free to mean "none". Each
+ * constant bundles a value {@link CombinerName combiner} with the default
+ * colour strings, label-colour string, symbol string, digit count and sign
+ * mode a data-file renderer falls back on for any field its own {@code
+ * ui_entry_renderers.txt} block leaves unset ({@code
+ * finish_parse_ui_entry_renderer}, {@code ui-entry-renderers.c}). The packed
+ * string parameters are colour/symbol lookup tables (one character per
+ * state), so the individual constants are documented collectively here
+ * rather than spelling out every table.
+ *
+ * <p>Class UIEntryRendererEnum coded before 260916, commented in full on 260916.
  *
  * @author Rowan Crowther
  */
@@ -45,32 +56,62 @@ public enum UIEntryRendererEnum {
 
     /**
      * How multiple contributing values are merged before rendering.
+     * Corresponds to C's {@code default_combiner_name} ({@code struct
+     * backend_info}, {@code ui-entry-renderers.c}), resolved from its string
+     * name to a {@link CombinerName} constant.
+     *
+     * <p>Field combiner coded before 260916, commented in full on 260916.
      */
     private final CombinerName combiner;
     /**
-     * Per-state value colours, one colour code per character.
+     * Per-state value colours, one colour code per character. Corresponds to
+     * C's {@code default_colors} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Field defaultColours coded before 260916, commented in full on 260916.
      */
     private final String defaultColours;
     /**
-     * Per-state label colours, one colour code per character.
+     * Per-state label colours, one colour code per character. Corresponds to
+     * C's {@code default_labelcolors} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Field defaultLabelColours coded before 260916, commented in full on 260916.
      */
     private final String defaultLabelColours;
     /**
-     * Per-state display symbols, one symbol per character.
+     * Per-state display symbols, one symbol per character. Corresponds to
+     * C's {@code default_symbols} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Field defaultSymbols coded before 260916, commented in full on 260916.
      */
     private final String defaultSymbols;
     /**
-     * Number of digits to use when rendering a numeric value.
+     * Number of digits to use when rendering a numeric value. Corresponds to
+     * C's {@code default_ndigit} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Field defaultDigits coded before 260916, commented in full on 260916.
      */
     private final int defaultDigits;
     /**
-     * The sign-display mode applied to this renderer's values.
+     * The sign-display mode applied to this renderer's values. Corresponds
+     * to C's {@code default_sign} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Field entry coded before 260916, commented in full on 260916.
      */
     private final UIEntryEnum entry;
 
     /**
      * Build a renderer descriptor from its combiner, colour/symbol tables, digit
-     * count and sign mode.
+     * count and sign mode — the Java equivalent of one row's worth of fields
+     * from C's {@code backends[]} table ({@code UI_ENTRY_RENDERER} macro
+     * expansion over {@code list-ui-entry-renderers.h}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Function UIEntryRendererEnum coded before 260916, commented in full on 260916.
      *
      * @param combiner            value-combining strategy
      * @param defaultColours      per-state value colour table
@@ -89,7 +130,11 @@ public enum UIEntryRendererEnum {
     }
 
     /**
-     * Get the default digits to display for UI Entry Renderers
+     * Returns the default digit count used when rendering a numeric value.
+     * Corresponds to C's {@code default_ndigit} ({@code struct
+     * backend_info}, {@code ui-entry-renderers.c}).
+     *
+     * <p>Function getDefaultDigits coded before 260916, commented in full on 260916.
      *
      * @return the default number of digits for this UI Entry Renderer enum
      */
@@ -100,7 +145,11 @@ public enum UIEntryRendererEnum {
     }
 
     /**
-     * Get the default sign for UI Entry Renderers
+     * Returns the default sign-display mode applied by this renderer.
+     * Corresponds to C's {@code default_sign} ({@code struct backend_info},
+     * {@code ui-entry-renderers.c}).
+     *
+     * <p>Function getEntry coded before 260916, commented in full on 260916.
      *
      * @return the default sign for this UI Entry Renderer enum
      */
@@ -111,7 +160,11 @@ public enum UIEntryRendererEnum {
     }
 
     /**
-     * Get the default colours for UI Entry Renderers
+     * Returns the default per-state value colour table. Corresponds to C's
+     * {@code default_colors} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Function getDefaultColours coded before 260916, commented in full on 260916.
      *
      * @return the default colours for UI Entry Renderers
      */
@@ -122,7 +175,11 @@ public enum UIEntryRendererEnum {
     }
 
     /**
-     * Get the default label colours for UI Entry Renderers
+     * Returns the default per-state label colour table. Corresponds to C's
+     * {@code default_labelcolors} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Function getDefaultLabelColours coded before 260916, commented in full on 260916.
      *
      * @return the default label colours for UI Entry Renderers
      */
@@ -133,7 +190,11 @@ public enum UIEntryRendererEnum {
     }
 
     /**
-     * Get the default symbols for UI Entry Renderers
+     * Returns the default per-state display symbol table. Corresponds to
+     * C's {@code default_symbols} ({@code struct backend_info}, {@code
+     * ui-entry-renderers.c}).
+     *
+     * <p>Function getDefaultSymbols coded before 260916, commented in full on 260916.
      *
      * @return the default symbols for UI Entry Renderers
      */

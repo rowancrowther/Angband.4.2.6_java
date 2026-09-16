@@ -926,6 +926,8 @@ the existing doc comment for context.
 - L248: field `owner` - MISSING
 - L430: method `getTermData` - LOW
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/TermData.java`
 
 1 missing, 7 low

@@ -243,6 +243,13 @@ public class Term {
      */
     private TermEventHook dblhHook;
 
+    /**
+     * Hook for text output onto the underlying display, installed once by
+     * {@link #termInit} as a {@link uk.co.jackoftradesltd.frontend.screen.hooks.TermScreenHook}
+     * wrapping this terminal's {@link Screen}. Backs {@link #cPutStr}, {@link #cPrt}
+     * (via {@link #termErase}), and {@link #addstr} - the boundary through which every
+     * write this class makes actually reaches the screen.
+     */
     private TermTextHook outputHook;
 
     private TermData owner;
@@ -492,7 +499,8 @@ public class Term {
         int result = gotoXY(col, row);
         if (result == -1) return -1;
 
-        outputHook.putStr(col, row, -1, colour, str);
+        putstr(col, row, -1, colour, str);
+//        outputHook.putStr(col, row, -1, colour, str);
         return 0;
     }
 
@@ -530,18 +538,20 @@ public class Term {
     /**
      * Write a coloured string at a cell, first clearing the rest of that row, the Java
      * port of the C original's {@code c_prt} ({@code [C] src/ui-output.c}). C does this in
-     * two steps - {@code Term_erase(col, row, 255)} (which itself repositions the cursor
-     * via {@code Term_gotoxy}) then {@code Term_addstr(-1, attr, str)} - and the Java port
-     * keeps that as one call into {@link #outputHook}'s {@code cPrt}, since the
-     * erase-then-draw boundary sits inside the hook rather than being composed here from
-     * {@link #gotoXY} and {@link #addstr} the way {@link #cPutStr} composes {@link #gotoXY}
-     * with the text-hook write.
+     * two steps - {@code Term_erase(col, row, 255)} then {@code Term_addstr(-1, attr, str)}
+     * - and the Java port keeps exactly that shape, composing {@link #termErase} (the port
+     * of {@code Term_erase}) with {@link #addstr} directly, the same way {@link #cPutStr}
+     * composes {@link #gotoXY} with the text-hook write. Neither step's outcome is
+     * checked before the other runs, matching {@code c_prt} calling both unconditionally.
      *
      * <p>Unlike {@link #cPutStr}, this has no out-of-range coordinate to report: C's
      * {@code c_prt} is {@code void}, and nothing along this path returns a failure code
-     * to surface.
+     * to surface. An out-of-range {@code row}/{@code col} is not rejected up front either -
+     * {@link #termErase} silently does nothing for one (mirroring {@code Term_erase}'s own
+     * {@code Term_gotoxy} guard), after which {@link #addstr} still runs and writes at
+     * whatever cursor position was already current.
      *
-     * <p>Function cPrt coded on 260910, commented in full on 260910.
+     * <p>Function cPrt coded on 260910, commented in full on 260916.
      *
      * @param colour the colour to draw the string in
      * @param str    the string to write
@@ -549,7 +559,40 @@ public class Term {
      * @param col    the column to start at
      */
     public void cPrt(ColourEnum colour, String str, int row, int col) {
-        outputHook.cPrt(colour, str, row, col);
+        termErase(col, row, 255);
+        addstr(-1, colour, str);
+    }
+
+    /**
+     * Place the cursor at a cell and blank {@code n} characters from it, the Java port of
+     * the C original's {@code Term_erase} ({@code [C] src/ui-term.c}). Delegates the move
+     * to {@link #gotoXY}; an out-of-range {@code col}/{@code row} leaves the cursor
+     * untouched and this method returns immediately without writing anything, matching
+     * C's {@code if (Term_gotoxy(x, y)) return (-1);} guard. That guard was missing on
+     * first port - an out-of-range column fell through to {@link #outputHook}, which
+     * clipped it rather than rejecting it, so a row could still end up written to for a
+     * call meant to touch nothing; {@link uk.co.jackoftradesltd.frontend.screen.TermPrtTest}
+     * caught it and the guard was added on 260916.
+     *
+     * <p>On success, writes {@code n} spaces in {@link ColourEnum#COLOUR_WHITE} through
+     * {@link #outputHook}, the port of C filling {@code Term->scr->a}/{@code c} with the
+     * blank attr/char pair for that run. The right-edge clipping C does itself with
+     * {@code if (x + n > w) n = w - x;} happens inside the hook here instead, not in this
+     * method.
+     *
+     * <p>{@code void} rather than returning C's {@code errr}: nothing along
+     * {@link #cPrt}, this method's only caller, checks the outcome.
+     *
+     * <p>Function termErase coded on 260910, commented in full on 260916.
+     *
+     * @param col the column to start blanking at
+     * @param row the row to blank
+     * @param n   how many characters to blank
+     */
+    private void termErase(int col, int row, int n) {
+        String spaces = " ".repeat(n);
+        if (gotoXY(col, row) == -1) return;
+        outputHook.putStr(col, row, n, ColourEnum.COLOUR_WHITE, spaces);
     }
 
     /**

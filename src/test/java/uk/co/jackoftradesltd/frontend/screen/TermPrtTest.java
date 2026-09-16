@@ -158,16 +158,26 @@ class TermPrtTest {
     }
 
     /**
-     * A negative column drops its overhanging characters rather than discarding the whole
-     * string - {@code Region.put(int, int, String, ColourEnum)}'s documented clip contract.
-     * Starting "Hi" one column before the edge of the grid drops the "H" and draws only the
-     * "i", at column 0.
+     * A negative column does not get clipped into range - it is C's {@code c_prt}
+     * ({@code [C] src/ui-output.c}) that sets the actual contract here. {@code Term_erase}
+     * ({@code [C] src/ui-term.c}) opens with {@code if (Term_gotoxy(x, y)) return (-1);}, and
+     * {@code Term_gotoxy} itself never moves the cursor on an illegal request - so an
+     * out-of-range column makes {@code Term_erase} fail immediately, before it blanks anything
+     * or repositions the cursor. {@code c_prt} is {@code void} and never checks that failure,
+     * so it calls {@code Term_addstr} unconditionally next - which writes at whatever cursor
+     * position was already current, ignoring the requested {@code row}/{@code col} entirely.
+     * On a freshly initialised term that stale position is {@code (0, 0)}, so the string lands
+     * there instead of anywhere near row 5.
      */
     @Test
-    void aNegativeColumnDropsItsOverhangingCharacters() {
+    void aNegativeColumnWritesAtTheStaleCursorPositionInstead() {
         term.cPrt(ColourEnum.COLOUR_RED, "Hi", 5, -1);
 
-        assertEquals('i', cell(5, 0).getCharacter());
-        assertEquals(ColourEnum.COLOUR_RED, cell(5, 0).getAttributeColour());
+        assertEquals('H', cell(0, 0).getCharacter());
+        assertEquals(ColourEnum.COLOUR_RED, cell(0, 0).getAttributeColour());
+        assertEquals('i', cell(0, 1).getCharacter());
+        assertEquals(ColourEnum.COLOUR_RED, cell(0, 1).getAttributeColour());
+
+        assertNull(cell(5, 0));
     }
 }

@@ -35,14 +35,31 @@ import java.util.List;
  * sentinel-handling helper: whatever the first contribution is - real value or
  * reserved sentinel - is passed through verbatim.
  *
+ * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+ *
  * @author Rowan Crowther
  */
 public class FirstCombiner implements Combiner, Cloneable {
+    /**
+     * The fold currently in progress: seeded by {@link #init(int, int) init} and read by
+     * {@link #finish() finish} and {@link #clone() clone}. {@code null} until the first
+     * call to {@code init}. {@link #accum(int, int) accum} never touches it, since FIRST
+     * ignores every contribution after the seed. Holds the two channels FIRST actually
+     * reads and writes - {@link UIEntryCombinerState#getAccum() accum} and
+     * {@link UIEntryCombinerState#getAccumAux() accumAux} - in place of the C original's
+     * caller-owned {@code struct ui_entry_combiner_state} that every
+     * {@code ui-entry-combiner.c} function takes as an explicit argument instead of
+     * holding internally.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
+     */
     private UIEntryCombinerState state;
 
     /**
      * Seeds both channels with the first contribution. Since {@link #accum} is a
      * no-op, this seed is also the final result of a streaming fold.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param v the value channel of the first contribution
      * @param a the auxiliary channel of the first contribution
@@ -57,6 +74,8 @@ public class FirstCombiner implements Combiner, Cloneable {
     /**
      * Ignores this contribution: FIRST keeps only what {@link #init} seeded. This
      * mirrors the C original's {@code dummy_combine_accum}.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param v the value channel of this contribution (ignored)
      * @param a the auxiliary channel of this contribution (ignored)
@@ -76,6 +95,8 @@ public class FirstCombiner implements Combiner, Cloneable {
      * disturb a fold that may still be running. Repeated calls are therefore
      * independent snapshots, and writing to one is invisible to both the combiner
      * and any other snapshot.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @return a snapshot of the first contribution
      */
@@ -98,6 +119,8 @@ public class FirstCombiner implements Combiner, Cloneable {
      *
      * <p>Unlike the streaming path this does not touch or depend on the instance
      * {@code state}; it returns a fresh result.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @param n      the number of contributions (only the first is used)
      * @param values the value channel of each contribution (at least {@code n} long)
@@ -141,6 +164,8 @@ public class FirstCombiner implements Combiner, Cloneable {
      * state to copy, so the clone is a fresh instance - which is the case
      * {@code CombinerName} actually exercises, since it clones an un-initialised
      * prototype per fold.
+     *
+     * <p>coded on 2026-09-02 / commented in full on 2026-09-16
      *
      * @return an independent copy of this combiner
      */

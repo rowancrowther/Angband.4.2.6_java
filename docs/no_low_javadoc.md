@@ -745,6 +745,8 @@ the existing doc comment for context.
 
 - L41: field `state` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `channel/utils/combiners/LargestCombiner.java`
 
 1 missing, 0 low

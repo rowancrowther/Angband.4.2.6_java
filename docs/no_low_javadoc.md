@@ -941,6 +941,8 @@ the existing doc comment for context.
 - L204: method `getSizeOH1` - LOW
 - L211: method `getSizeOW1` - LOW
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/screen/TermWin.java`
 
 0 missing, 1 low

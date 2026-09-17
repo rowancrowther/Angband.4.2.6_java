@@ -1076,6 +1076,8 @@ the existing doc comment for context.
 - L347: enum-const `IN_COLOUR_TEXT` - MISSING
 - L348: enum-const `IN_NORMAL_TEXT` - MISSING
 
+**COMPLETED 2026-09-16**
+
 ### `frontend/ui/UIEntryCode.java`
 
 4 missing, 0 low

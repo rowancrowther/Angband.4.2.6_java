@@ -20,8 +20,11 @@ package uk.co.jackoftradesltd.frontend.globals;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * Tests {@link UIGlobals}' {@code textOutIndent} holder against the C original's {@code int
@@ -106,5 +109,46 @@ class UIGlobalsTest {
         UIGlobals.setTextOutIndent(-1);
 
         assertEquals(-1, UIGlobals.getTextOutIndent());
+    }
+
+    /**
+     * Tests {@link UIGlobals#getStatName(int)} against the C original's {@code get_stat_name}
+     * ({@code [C] src/ui-entry.c:1617-1622}), whose {@code stat_names} table is generated from
+     * {@code STAT(x)} over {@code list-stats.h} ({@code [C] src/list-stats.h:14-18}), giving the
+     * fixed order STR, INT, WIS, DEX, CON.
+     */
+    @ParameterizedTest(name = "index {0} returns {1}, matching C''s stat_names[{0}]")
+    @CsvSource({
+            "0, STR",
+            "1, INT",
+            "2, WIS",
+            "3, DEX",
+            "4, CON"
+    })
+    @DisplayName("returns the C stat_names abbreviation for each valid index")
+    void getStatNameMatchesCOrder(int index, String expected) {
+        assertEquals(expected, UIGlobals.getStatName(index));
+    }
+
+    /**
+     * C guards {@code get_stat_name} with {@code assert(i >= 0 && i < get_stat_count())}; Java has
+     * no counterpart to that guard, so an index one past the last valid entry (5, since C's array
+     * holds exactly {@code STAT_MAX} = 5 elements) falls through to the array's own bounds check
+     * instead.
+     */
+    @Test
+    @DisplayName("an index past the last stat throws, since there is no ported assert to catch it first")
+    void getStatNameAboveRangeThrows() {
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> UIGlobals.getStatName(5));
+    }
+
+    /**
+     * The same applies below the valid range: C's assert would reject a negative index too, and
+     * Java's array bounds check rejects it the same way.
+     */
+    @Test
+    @DisplayName("a negative index throws, since there is no ported assert to catch it first")
+    void getStatNameBelowRangeThrows() {
+        assertThrows(ArrayIndexOutOfBoundsException.class, () -> UIGlobals.getStatName(-1));
     }
 }

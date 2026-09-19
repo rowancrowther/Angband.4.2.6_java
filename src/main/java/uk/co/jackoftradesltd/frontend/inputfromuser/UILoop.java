@@ -28,7 +28,9 @@ import uk.co.jackoftradesltd.channel.messages.ChannelMessage;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.frontend.SwingUI;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.events.BirthEvents;
 import uk.co.jackoftradesltd.frontend.events.MainEvents;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
@@ -36,12 +38,14 @@ import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.splash.SplashScreen;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import javax.swing.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.List;
 
 /**
  * The UI half's body: the loop that drains this half's inbox and turns each message the core sent
@@ -290,7 +294,14 @@ public class UILoop {
                                     writeInitString("Initialising UI Entries...");
                                     UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 
-                                    UIMessage.SimpleUIMessage loadingFinishedMessage = new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT);
+                                    List<UIEntrySpec> result = new ArrayList<>();
+
+                                    for (UIEntry entry : UIRegistry.getUIEntries()) {
+                                        result.add(new UIEntrySpec(entry.getName(), entry.getCombineType(),
+                                                entry.getEntryFlag()));
+                                    }
+
+                                    UIMessage.UIEntriesLoaded loadingFinishedMessage = new UIMessage.UIEntriesLoaded(result);
                                     uiChannel.uiSender().send(loadingFinishedMessage);
                                 } catch (Exception e) {
                                     throw new RuntimeException(e);

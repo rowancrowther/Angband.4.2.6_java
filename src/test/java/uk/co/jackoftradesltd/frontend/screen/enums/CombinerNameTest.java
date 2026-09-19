@@ -22,15 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 import uk.co.jackoftradesltd.channel.utils.Combiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.AddCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.BitwiseOrCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.FirstCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.LargestCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.LastCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.LogicalOrCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.LogicalOrWithCancelCombiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.Resist0Combiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.SmallestCombiner;
+import uk.co.jackoftradesltd.channel.utils.combiners.*;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

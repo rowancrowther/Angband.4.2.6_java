@@ -114,7 +114,7 @@ public class ObjectProperty {
      * @param type         property category
      * @param subtype      sub-type identifier
      * @param idType       identification method
-     * @param payload        typed payload
+     * @param payload      typed payload
      * @param power        base power
      * @param mult         value multiplier
      * @param typeMults    per-type value multipliers
@@ -226,5 +226,9 @@ public class ObjectProperty {
             return typeMults.get(tValue);
 
         return 1;
+    }
+
+    public List<UIBinding> getBoundEntries() {
+        return boundEntries;
     }
 }

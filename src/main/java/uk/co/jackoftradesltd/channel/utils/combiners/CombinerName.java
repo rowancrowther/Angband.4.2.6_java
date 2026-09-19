@@ -15,10 +15,9 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.frontend.screen.enums;
+package uk.co.jackoftradesltd.channel.utils.combiners;
 
 import uk.co.jackoftradesltd.channel.utils.Combiner;
-import uk.co.jackoftradesltd.channel.utils.combiners.*;
 
 /**
  * The name-indexed table of value-combining algorithms a UI entry can bind to, one
@@ -194,5 +193,9 @@ public enum CombinerName {
         Combiner result = this.combiner.clone();
         result.init(v, a);
         return result;
+    }
+
+    public Combiner getCombiner() {
+        return combiner;
     }
 }

@@ -19,6 +19,9 @@ package uk.co.jackoftradesltd.channel.messages;
 
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
+
+import java.util.List;
 
 /**
  * Everything the UI side can say, to the core and to itself.
@@ -50,7 +53,7 @@ import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
  * @see CoreMessage the traffic going the other way
  */
 public sealed interface UIMessage extends ChannelMessage permits UIMessage.LifecycleUIMessage,
-        UIMessage.WindowCloseRequested, UIMessage.SimpleUIMessage {
+        UIMessage.WindowCloseRequested, UIMessage.SimpleUIMessage, UIMessage.UIEntriesLoaded {
 
     /**
      * Protocol rather than gameplay: the front end telling the core to begin, or to save and shut
@@ -110,5 +113,8 @@ public sealed interface UIMessage extends ChannelMessage permits UIMessage.Lifec
      * @param type which event occurred
      */
     record SimpleUIMessage(GameEventType type) implements UIMessage {
+    }
+
+    record UIEntriesLoaded(List<UIEntrySpec> entrySpecs) implements UIMessage {
     }
 }

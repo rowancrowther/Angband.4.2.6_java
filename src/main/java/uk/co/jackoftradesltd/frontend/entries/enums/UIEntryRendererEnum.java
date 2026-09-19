@@ -19,7 +19,7 @@ package uk.co.jackoftradesltd.frontend.entries.enums;
 
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.Contract;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
 /**
  * The built-in renderers used to draw UI status entries, one constant per row

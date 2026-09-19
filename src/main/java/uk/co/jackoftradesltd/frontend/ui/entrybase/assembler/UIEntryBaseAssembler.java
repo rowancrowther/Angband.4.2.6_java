@@ -21,7 +21,7 @@ import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.util.ArrayList;

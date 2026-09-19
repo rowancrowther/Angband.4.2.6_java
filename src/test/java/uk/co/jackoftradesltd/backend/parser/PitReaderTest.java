@@ -24,11 +24,13 @@ import org.junit.jupiter.api.io.TempDir;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.channel.utils.Flag;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.cave.PitProfile;
 import uk.co.jackoftradesltd.middle.cave.enums.PitRoomType;
 import uk.co.jackoftradesltd.middle.game.gameengine.Core;
@@ -104,8 +106,13 @@ class PitReaderTest {
         UIDataLoader.loadUIEntryBases();
         UIDataLoader.loadUIEntries();
 
+        List<UIEntrySpec> uiEntrySpecs = new ArrayList<>();
+        for (UIEntry entry : UIRegistry.getUIEntries()) {
+            uiEntrySpecs.add(new UIEntrySpec(entry.getName(), entry.getCombineType(), entry.getEntryFlag()));
+        }
+
         Channels channels = Channels.create();
-        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        channels.uiChannel().uiSender().send(new UIMessage.UIEntriesLoaded(uiEntrySpecs));
         Core core = new Core(channels.coreChannel(),
                 new StartupOptions(false, false, false, false, "", "", List.of()));
         GameConstants.init(core);

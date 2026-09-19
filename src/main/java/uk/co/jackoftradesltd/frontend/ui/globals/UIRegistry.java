@@ -43,6 +43,10 @@ import java.util.List;
 public class UIRegistry {
     private static final Logger logger = LogManager.getLogger();
 
+    // Globals
+    public static final int MAX_ENTRY_LABEL = 80;
+    public static final int MAX_SHORTENED = 10;
+    
     /**
      * The loaded UI-entry renderers, resolved by name via {@link #getUIEntryRenderer}.
      */

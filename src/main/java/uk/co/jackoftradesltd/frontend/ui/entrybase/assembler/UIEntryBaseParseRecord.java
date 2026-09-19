@@ -17,6 +17,7 @@
 
 package uk.co.jackoftradesltd.frontend.ui.entrybase.assembler;
 
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.antlr4.uientrybase.UIEntryBaseGrammar;
 
 import java.util.List;
@@ -36,7 +37,7 @@ import java.util.List;
  * @param renderer   the {@code renderer:} value; must name a renderer defined
  *                   in {@code ui_entry_renderer.txt}
  * @param combine    the {@code combine:} value; the raw name of a
- *                   {@link uk.co.jackoftradesltd.frontend.screen.enums.CombinerName}
+ *                   {@link CombinerName}
  *                   describing how values from multiple sources are merged
  * @param flags      the {@code flags:} value affecting this template's behaviour
  * @param desc       the concatenation of every {@code desc:} line for this

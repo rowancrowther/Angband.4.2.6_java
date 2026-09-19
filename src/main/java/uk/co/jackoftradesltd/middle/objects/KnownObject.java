@@ -23,6 +23,7 @@ import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectNotice;
+import uk.co.jackoftradesltd.middle.player.Player;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -683,5 +684,20 @@ public class KnownObject {
      */
     public void setToA(int toA) {
         this.toA = toA;
+    }
+
+    public boolean objectElementIsKnown(Player player, ItemObject item, ElementEnum element) {
+        if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
+            return false;
+
+        // Object fully known is yes
+        if (item.isFullyKnown()) return true;
+
+        // Known element means yes
+        if (elementResistInfo.getOrDefault(element, false))
+            return true;
+
+        // Object has been exposed to the element
+        return item.getKnown().getElInfo().getOrDefault(element, new ElementInfo()).getResLevel() != 0;
     }
 }

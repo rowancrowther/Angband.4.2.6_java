@@ -19,9 +19,9 @@ package uk.co.jackoftradesltd.frontend.entries;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
 import java.util.List;
 
@@ -58,7 +58,7 @@ import java.util.List;
 public class UIEntryBase {
     /**
      * Logger for this class, used by {@link #parseFlags(String)} to warn
-     * when a {@code flags:} token does not match a known {@link EntryFlag}.
+     * when a {@code flags:} token does not match a known {@link ChannelEntryFlag}.
      *
      * <p>Field logger coded before 260916, commented in full on 260916.
      */
@@ -110,12 +110,12 @@ public class UIEntryBase {
      * ({@code [C] ui-entry.c:2187-2221}) against the {@code entry_flags[]}
      * table ({@code [C] ui-entry.c:86-88}).
      *
-     * <p>Field flags retyped from String to {@code Flag<EntryFlag>} on
+     * <p>Field flags retyped from String to {@code Flag<ChannelEntryFlag>} on
      * 260916 so an unrecognised flag name is rejected the way C's
      * {@code PARSE_ERROR_INVALID_FLAG} rejects it, rather than carried
      * through unchecked; commented in full on 260916.
      */
-    private final Flag<EntryFlag> flags;
+    private final Flag<ChannelEntryFlag> flags;
 
     /**
      * Build a UI-entry template from its parsed fields. {@code desc} is
@@ -133,12 +133,12 @@ public class UIEntryBase {
      * @param combine    default value combiner
      * @param categories categories the template belongs to
      * @param flags      raw {@code flags:} text, one or more
-     *                   {@link EntryFlag} names separated by {@code |}
+     *                   {@link ChannelEntryFlag} names separated by {@code |}
      * @param desc       description; must not be {@code null}, but is
      *                   otherwise discarded
      * @throws IllegalArgumentException if {@code desc} is {@code null} or
      *                                   {@code flags} contains a token that
-     *                                   is not a known {@link EntryFlag}
+     *                                   is not a known {@link ChannelEntryFlag}
      *
      * <p>Function UIEntryBase(String, UIEntryRenderer, CombinerName, List,
      * String, String) coded before 260916, updated on 260916 to validate
@@ -159,9 +159,9 @@ public class UIEntryBase {
 
     /**
      * Resolve a raw {@code flags:} value into a {@link Flag} of
-     * {@link EntryFlag}. Splits {@code flag} on the literal {@code |}
+     * {@link ChannelEntryFlag}. Splits {@code flag} on the literal {@code |}
      * character, trims and upper-cases each piece, and looks it up as
-     * {@code EntryFlag.ENTRY_FLAG_<piece>}, turning each match on in the
+     * {@code ChannelEntryFlag.ENTRY_FLAG_<piece>}, turning each match on in the
      * result. This is the Java form of C's {@code parse_entry_flags}
      * ({@code [C] ui-entry.c:2187-2221}), which tokenizes on {@code strtok(flags,
      * " |")} (space <em>or</em> pipe) against the {@code entry_flags[]} table
@@ -176,13 +176,13 @@ public class UIEntryBase {
      *
      * @param flag the raw {@code flags:} text
      * @return the resolved flags, or {@code null} if any {@code |}-separated
-     * piece does not match a known {@link EntryFlag}
+     * piece does not match a known {@link ChannelEntryFlag}
      *
      * <p>Function parseFlags(String) coded on 260916, commented in full on
      * 260916.
      */
-    private Flag<EntryFlag> parseFlags(String flag) {
-        Flag<EntryFlag> results = new Flag<>(EntryFlag.class);
+    private Flag<ChannelEntryFlag> parseFlags(String flag) {
+        Flag<ChannelEntryFlag> results = new Flag<>(ChannelEntryFlag.class);
 
         String[] flagParts = flag.split("\\|");
 
@@ -190,7 +190,7 @@ public class UIEntryBase {
             for (String flagPart : flagParts) {
                 flagPart = flagPart.trim();
 
-                EntryFlag entryFlag = EntryFlag.valueOf("ENTRY_FLAG_" + flagPart.toUpperCase());
+                ChannelEntryFlag entryFlag = ChannelEntryFlag.valueOf("ENTRY_FLAG_" + flagPart.toUpperCase());
                 results.on(entryFlag);
             }
         } catch (IllegalArgumentException e) {
@@ -275,11 +275,11 @@ public class UIEntryBase {
      *
      * @return the resolved flags
      *
-     * <p>Function getFlags() retyped from String to {@code Flag<EntryFlag>}
+     * <p>Function getFlags() retyped from String to {@code Flag<ChannelEntryFlag>}
      * on 260916 so callers see validated flags rather than the raw string,
      * commented in full on 260916.
      */
-    public Flag<EntryFlag> getFlags() {
+    public Flag<ChannelEntryFlag> getFlags() {
         return flags;
     }
 }

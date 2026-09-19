@@ -23,7 +23,7 @@ import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssemble
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
@@ -81,7 +81,7 @@ class UIEntryBaseAssemblerTest {
         assertEquals(1, out.size());
         UIEntryBase u = out.get(0);
         assertEquals("t", u.getName());
-        assertTrue(u.getFlags().has(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertTrue(u.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
         // UIEntryBase does not expose desc (C's parse_entry_desc never stores it either);
         // the remaining fields are asserted through toString().
         String s = u.toString();

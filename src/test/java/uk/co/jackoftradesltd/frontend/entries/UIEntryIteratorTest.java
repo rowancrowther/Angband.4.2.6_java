@@ -19,9 +19,10 @@ package uk.co.jackoftradesltd.frontend.entries;
 
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,9 +45,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class UIEntryIteratorTest {
 
     private static UIEntry entry(String name) {
-        return new UIEntry(name, ElementEnum.ELEM_ACID, UIEntry.StatElemType.ELEMENT,
-                null, CombinerName.ADD, List.of(), 5, new Flag<>(EntryFlag.class),
-                "some description", "Label", "Lbl5", "L2", null);
+        return new UIEntry(name, ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
+                null, CombinerName.ADD, List.of(), 5, new Flag<>(ChannelEntryFlag.class),
+                "some description", "Label", "Lbl5", "L2");
     }
 
     private static List<UIEntry> entries(String... names) {

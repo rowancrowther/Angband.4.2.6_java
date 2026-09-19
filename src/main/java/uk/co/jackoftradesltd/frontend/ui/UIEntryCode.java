@@ -17,9 +17,9 @@
 
 package uk.co.jackoftradesltd.frontend.ui;
 
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryIterator;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
@@ -36,7 +36,7 @@ public class UIEntryCode {
         UIEntryIterator it = new UIEntryIterator();
 
         for (UIEntry entry : entries) {
-            if (!entry.entryFlagHas(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY) && categoryCheck.test(closure, entry))
+            if (!entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY) && categoryCheck.test(closure, entry))
                 it.addEntry(entry);
         }
 

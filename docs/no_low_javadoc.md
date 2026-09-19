@@ -1087,6 +1087,22 @@ the existing doc comment for context.
 - L32: method `initialiseUIEntryIterator` - MISSING
 - L52: method `sortFunction` - MISSING
 
+### `channel/uichannel/UIEntryValue.java` ###
+
+New entry
+
+### `channel/uichannel/UIEntryValueShapshot` ###
+
+New entry
+
+### `channel/enums/ChannelEntryFlag` ###
+
+New entry
+
+### `ObjectValueCache` ###
+
+New entry
+
 ### `frontend/ui/UIEntryPredicate.java`
 
 1 missing, 0 low

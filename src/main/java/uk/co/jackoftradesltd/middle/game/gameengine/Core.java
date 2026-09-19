@@ -256,6 +256,10 @@ public class Core {
                     // of the UI Entry classes.
                 }
             }
+
+            // The arm exists to make the switch exhaustive
+            case UIMessage.UIEntriesLoaded ignored -> {
+            }
         }
 
         return false;

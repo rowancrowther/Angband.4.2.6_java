@@ -18,10 +18,11 @@
 package uk.co.jackoftradesltd.frontend.entries;
 
 import org.junit.jupiter.api.Test;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,19 +36,19 @@ import static org.junit.jupiter.api.Assertions.*;
  * <p>Covers the constructor's {@code description} validation, the category
  * search ({@link UIEntry#uiEntryHasCategory(String)}, which ports
  * {@code ui_entry_has_category} / {@code ui_entry_search_categories}), the
- * flag test ({@link UIEntry#entryFlagHas(EntryFlag)}, which ports the
+ * flag test ({@link UIEntry#entryFlagHas(ChannelEntryFlag)}, which ports the
  * {@code entry->flags & ENTRY_FLAG_*} bit test), and
- * {@link UIEntry.StatElemType#fromValue(String)} (which ports the linear scan
+ * {@link StatElemType#fromValue(String)} (which ports the linear scan
  * over C's {@code name_parameters[]} table in {@code parse_entry_parameter}).
  *
  * @author Rowan Crowther
  */
 class UIEntryTest {
 
-    private static UIEntry entry(List<UIEntryCategory> categories, Flag<EntryFlag> flags) {
-        return new UIEntry("test_entry", ElementEnum.ELEM_ACID, UIEntry.StatElemType.ELEMENT,
+    private static UIEntry entry(List<UIEntryCategory> categories, Flag<ChannelEntryFlag> flags) {
+        return new UIEntry("test_entry", ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
                 null, CombinerName.ADD, categories, 5, flags, "some description",
-                "Label", "Lbl5", "L2", null);
+                "Label", "Lbl5", "L2");
     }
 
     // ---- constructor: description is validated but not stored --------------------------------
@@ -55,13 +56,13 @@ class UIEntryTest {
     @Test
     void constructorRejectsANullDescription() {
         assertThrows(IllegalArgumentException.class, () ->
-                new UIEntry("x", null, UIEntry.StatElemType.NONE, null, CombinerName.NONE,
-                        List.of(), 0, new Flag<>(EntryFlag.class), null, "L", "L5", "L2", null));
+                new UIEntry("x", null, StatElemType.NONE, null, CombinerName.NONE,
+                        List.of(), 0, new Flag<>(ChannelEntryFlag.class), null, "L", "L5", "L2"));
     }
 
     @Test
     void constructorAcceptsANonNullDescriptionAndDoesNotExposeIt() {
-        UIEntry e = entry(List.of(), new Flag<>(EntryFlag.class));
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
 
         assertEquals("test_entry", e.getName());
         // No getDescription() exists: C's struct ui_entry never carries the desc: field either
@@ -76,7 +77,7 @@ class UIEntryTest {
         UIEntry e = entry(List.of(
                         new UIEntryCategory("CHAR_SCREEN1", 0, false),
                         new UIEntryCategory("EQUIPCMP_SCREEN", 0, false)),
-                new Flag<>(EntryFlag.class));
+                new Flag<>(ChannelEntryFlag.class));
 
         Optional<Integer> found = e.uiEntryHasCategory("CHAR_SCREEN1");
         assertTrue(found.isPresent());
@@ -91,14 +92,14 @@ class UIEntryTest {
     void reportsAbsentForAnUnknownCategory() {
         // Mirrors ui_entry_has_category returning false (ui-entry.c) when the name isn't present.
         UIEntry e = entry(List.of(new UIEntryCategory("CHAR_SCREEN1", 0, false)),
-                new Flag<>(EntryFlag.class));
+                new Flag<>(ChannelEntryFlag.class));
 
         assertTrue(e.uiEntryHasCategory("NO_SUCH_CATEGORY").isEmpty());
     }
 
     @Test
     void reportsAbsentWhenThereAreNoCategoriesAtAll() {
-        UIEntry e = entry(List.of(), new Flag<>(EntryFlag.class));
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
 
         assertTrue(e.uiEntryHasCategory("ANYTHING").isEmpty());
     }
@@ -107,18 +108,18 @@ class UIEntryTest {
 
     @Test
     void entryFlagHasReportsASetFlag() {
-        UIEntry e = entry(List.of(), new Flag<>(EntryFlag.class, EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class, ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
 
-        assertTrue(e.entryFlagHas(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        assertFalse(e.entryFlagHas(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertTrue(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
     }
 
     @Test
     void entryFlagHasReportsFalseWhenNoFlagsAreSet() {
-        UIEntry e = entry(List.of(), new Flag<>(EntryFlag.class));
+        UIEntry e = entry(List.of(), new Flag<>(ChannelEntryFlag.class));
 
-        assertFalse(e.entryFlagHas(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        assertFalse(e.entryFlagHas(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertFalse(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(e.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
     }
 
     // ---- StatElemType.fromValue -----------------------------------------------------------------
@@ -126,19 +127,19 @@ class UIEntryTest {
     @Test
     void fromValueResolvesTheStatAndElementParameterNames() {
         // Matches the "stat"/"element" entries of C's name_parameters[] (ui-entry.c).
-        assertEquals(UIEntry.StatElemType.STAT, UIEntry.StatElemType.fromValue("stat"));
-        assertEquals(UIEntry.StatElemType.ELEMENT, UIEntry.StatElemType.fromValue("element"));
+        assertEquals(StatElemType.STAT, StatElemType.fromValue("stat"));
+        assertEquals(StatElemType.ELEMENT, StatElemType.fromValue("element"));
     }
 
     @Test
     void fromValueResolvesTheEmptyStringToNone() {
         // Matches C's dummy "" entry in name_parameters[], used when parameter: is unset.
-        assertEquals(UIEntry.StatElemType.NONE, UIEntry.StatElemType.fromValue(""));
+        assertEquals(StatElemType.NONE, StatElemType.fromValue(""));
     }
 
     @Test
     void fromValueReturnsNullForAnUnrecognisedName() {
         // Matches parse_entry_parameter (ui-entry.c) falling through to PARSE_ERROR_INVALID_VALUE.
-        assertNull(UIEntry.StatElemType.fromValue("bogus"));
+        assertNull(StatElemType.fromValue("bogus"));
     }
 }

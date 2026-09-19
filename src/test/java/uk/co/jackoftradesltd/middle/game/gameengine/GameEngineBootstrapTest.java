@@ -26,9 +26,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import uk.co.jackoftradesltd.channel.Channels;
 import uk.co.jackoftradesltd.channel.StartupOptions;
-import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
 import uk.co.jackoftradesltd.middle.game.globals.registry.MonsterRegistry;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
@@ -36,6 +38,8 @@ import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -192,8 +196,13 @@ class GameEngineBootstrapTest {
         UIDataLoader.loadUIEntryBases();
         UIDataLoader.loadUIEntries();
 
+        List<UIEntrySpec> uiEntrySpecs = new ArrayList<>();
+        for (UIEntry entry : UIRegistry.getUIEntries()) {
+            uiEntrySpecs.add(new UIEntrySpec(entry.getName(), entry.getCombineType(), entry.getEntryFlag()));
+        }
+
         Channels channels = Channels.create();
-        channels.uiChannel().uiSender().send(new UIMessage.SimpleUIMessage(GameEventType.EVENT_ENTER_INIT));
+        channels.uiChannel().uiSender().send(new UIMessage.UIEntriesLoaded(uiEntrySpecs));
         Core core = new Core(channels.coreChannel(),
                 new StartupOptions(false, false, false, false, "", "", java.util.List.of()));
         GameEngine.getGame().loadGameConstants(core);

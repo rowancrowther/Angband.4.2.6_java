@@ -120,4 +120,16 @@ public class UIEntryCategory {
     public boolean isPrioritySet() {
         return prioritySet;
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+
+    public void setPrioritySet(boolean set) {
+        this.prioritySet = set;
+    }
 }

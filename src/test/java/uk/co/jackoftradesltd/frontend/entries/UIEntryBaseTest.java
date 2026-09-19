@@ -18,8 +18,8 @@
 package uk.co.jackoftradesltd.frontend.entries;
 
 import org.junit.jupiter.api.Test;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
 import java.util.List;
 
@@ -72,8 +72,8 @@ class UIEntryBaseTest {
     void aSingleKnownFlagIsSet() {
         UIEntryBase b = base("TIMED_AS_AUX", "d");
 
-        assertTrue(b.getFlags().has(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        assertFalse(b.getFlags().has(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertTrue(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertFalse(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
     }
 
     // ---- getFlags(): pipe-separated multiple flags (the split("|") regression) -------------------
@@ -82,16 +82,16 @@ class UIEntryBaseTest {
     void pipeSeparatedFlagsSetBothBits() {
         UIEntryBase b = base("TIMED_AS_AUX|TEMPLATE_ONLY", "d");
 
-        assertTrue(b.getFlags().has(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        assertTrue(b.getFlags().has(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertTrue(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertTrue(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
     }
 
     @Test
     void pipeSeparatedFlagsWithSurroundingSpacesAreTrimmed() {
         UIEntryBase b = base(" TIMED_AS_AUX | TEMPLATE_ONLY ", "d");
 
-        assertTrue(b.getFlags().has(EntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
-        assertTrue(b.getFlags().has(EntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+        assertTrue(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+        assertTrue(b.getFlags().has(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
     }
 
     // ---- getFlags(): rejection mirrors C's PARSE_ERROR_INVALID_FLAG -------------------------------

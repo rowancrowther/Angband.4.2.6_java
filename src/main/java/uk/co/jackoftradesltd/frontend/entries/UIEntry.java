@@ -17,14 +17,14 @@
 
 package uk.co.jackoftradesltd.frontend.entries;
 
+import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.utils.Flag;
-import uk.co.jackoftradesltd.frontend.entries.enums.EntryFlag;
-import uk.co.jackoftradesltd.frontend.screen.enums.CombinerName;
+import uk.co.jackoftradesltd.channel.utils.FlagView;
+import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * A single entry in the player status display (one stat or resistance line),
@@ -53,13 +53,15 @@ public class UIEntry {
      *
      * <p>Field parameter coded before 260916, commented in full on 260916.
      */
-    private ElementEnum parameter;
+    private ElementEnum elementParameter;
     /**
      * True if the parameter is an element; false if it is a stat.
      *
      * <p>Field statOrElement coded before 260916, commented in full on 260916.
      */
-    private StatElemType statOrElement;
+    private StatElemType statOrElementParameter;
+    // Stats.getValue() pointer into the Stats enum
+    private int statParameter;
     /**
      * The renderer used to draw this entry's value.
      *
@@ -83,37 +85,22 @@ public class UIEntry {
      *
      * <p>Field entryFlag coded before 260916, commented in full on 260916.
      */
-    private Flag<EntryFlag> entryFlag;
+    private Flag<ChannelEntryFlag> entryFlag;
+
     /**
      * Default-width label text.
      *
      * <p>Field label coded before 260916, commented in full on 260916.
      */
     private String label;
-    /**
-     * Two-character label variant.
-     *
-     * <p>Field label2 coded before 260916, commented in full on 260916.
-     */
-    private String label2;
-    /**
-     * Five-character label variant.
-     *
-     * <p>Field label5 coded before 260916, commented in full on 260916.
-     */
-    private String label5;
+
+    private Map<Integer, String> shortenedLabels;
     /**
      * Categories this entry belongs to (used for grouping on screen).
      *
      * <p>Field categories coded before 260916, commented in full on 260916.
      */
     private List<UIEntryCategory> categories;
-    /**
-     * The template this entry inherits defaults from, if any.
-     *
-     * <p>Field template coded before 260916, commented in full on 260916.
-     */
-    private UIEntryBase template;
 
     /**
      * Build a UI status entry from its parsed data-file fields. Note the
@@ -141,7 +128,6 @@ public class UIEntry {
      * @param label       default-width label
      * @param label5      five-character label variant
      * @param label2      two-character label variant
-     * @param template    optional template supplying defaults
      */
     public UIEntry(String name,
                    ElementEnum parameter,
@@ -150,28 +136,27 @@ public class UIEntry {
                    CombinerName combineType,
                    List<UIEntryCategory> categories,
                    int priorityNum,
-                   Flag<EntryFlag> entryFlag,
+                   Flag<ChannelEntryFlag> entryFlag,
                    String description,
                    String label,
                    String label5,
-                   String label2,
-                   UIEntryBase template) {
+                   String label2) {
         if (description == null) {
             throw new IllegalArgumentException("Description cannot be null for UIEntry " + name);
         }
         
         this.name = name;
-        this.parameter = parameter;
-        this.statOrElement = parmType;
+        this.elementParameter = parameter;
+        this.statOrElementParameter = parmType;
         this.renderer = renderer;
         this.combineType = combineType;
         this.priorityNum = priorityNum;
         this.entryFlag = entryFlag;
         this.label = label;
-        this.label2 = label2;
-        this.label5 = label5;
+        this.shortenedLabels = new HashMap<>();
+        this.shortenedLabels.put(1, label2);
+        this.shortenedLabels.put(4, label5);
         this.categories = categories;
-        this.template = template;
     }
 
     /**
@@ -188,6 +173,10 @@ public class UIEntry {
         return name;
     }
 
+    public FlagView<ChannelEntryFlag> getEntryFlag() {
+        return entryFlag;
+    }
+    
     /**
      * Reports whether this entry belongs to the named category, and if so, at
      * what index. Ports {@code ui_entry_has_category} ({@code ui-entry.c}),
@@ -241,18 +230,21 @@ public class UIEntry {
     public String toString() {
         return "UIEntry{" +
                 "name='" + name + '\'' +
-                ", parameter=" + parameter +
-                ", statOrElement=" + statOrElement +
                 ", renderer=" + renderer +
                 ", combineType=" + combineType +
                 ", priorityNum=" + priorityNum +
                 ", entryFlag=" + entryFlag +
                 ", label='" + label + '\'' +
-                ", label2='" + label2 + '\'' +
-                ", label5='" + label5 + '\'' +
                 ", categories=" + categories +
-                ", template='" + template + '\'' +
                 '}';
+    }
+
+    public int getDefaultPriority() {
+        return priorityNum;
+    }
+
+    public void setDefaultPriority(int priority) {
+        this.priorityNum = priority;
     }
 
     /**
@@ -266,21 +258,7 @@ public class UIEntry {
      * @return the element parameter, or {@code null} when this entry's parameter is not an element
      */
     public ElementEnum getParameter() {
-        return parameter;
-    }
-
-    /**
-     * Returns whether this entry's parameter is a stat or an element.
-     * Corresponds to which of C's {@code name_parameters[]} entries
-     * ({@code ui-entry.c}) the entry's {@code param_index} was resolved
-     * against.
-     *
-     * <p>Function getStatOrElement coded before 260916, commented in full on 260916.
-     *
-     * @return the parameter kind
-     */
-    public StatElemType getStatOrElement() {
-        return statOrElement;
+        return elementParameter;
     }
 
     /**
@@ -326,18 +304,17 @@ public class UIEntry {
     }
 
     /**
-     * Reports whether the given behavioural flag is set on this entry. Ports
-     * the bit test C performs directly on {@code entry->flags}
-     * ({@code ui-entry.c}), e.g. {@code entry->flags & ENTRY_FLAG_TIMED_AUX},
-     * as an {@link java.util.EnumSet} membership test via {@link Flag#has}.
+     * Returns whether this entry's parameter is a stat or an element.
+     * Corresponds to which of C's {@code name_parameters[]} entries
+     * ({@code ui-entry.c}) the entry's {@code param_index} was resolved
+     * against.
      *
-     * <p>Function entryFlagHas coded before 260916, commented in full on 260916.
+     * <p>Function getStatOrElement coded before 260916, commented in full on 260916.
      *
-     * @param flag the flag to test
-     * @return true if the flag is set, false otherwise
+     * @return the parameter kind
      */
-    public boolean entryFlagHas(EntryFlag flag) {
-        return entryFlag.has(flag);
+    public StatElemType getStatOrElement() {
+        return statOrElementParameter;
     }
 
     /**
@@ -354,6 +331,21 @@ public class UIEntry {
     }
 
     /**
+     * Reports whether the given behavioural flag is set on this entry. Ports
+     * the bit test C performs directly on {@code entry->flags}
+     * ({@code ui-entry.c}), e.g. {@code entry->flags & ENTRY_FLAG_TIMED_AUX},
+     * as an {@link java.util.EnumSet} membership test via {@link Flag#has}.
+     *
+     * <p>Function entryFlagHas coded before 260916, commented in full on 260916.
+     *
+     * @param flag the flag to test
+     * @return true if the flag is set, false otherwise
+     */
+    public boolean entryFlagHas(ChannelEntryFlag flag) {
+        return entryFlag.has(flag);
+    }
+
+    /**
      * Returns the two-character label variant, used by the equipment
      * comparison screen. Corresponds to one of C's
      * {@code shortened_labels[]} entries ({@code ui-entry.c}), set from the
@@ -364,20 +356,7 @@ public class UIEntry {
      * @return this entry's two-character label, or {@code null} if none was set
      */
     public String getLabel2() {
-        return label2;
-    }
-
-    /**
-     * Returns the five-character label variant, used by the second character
-     * screen. Corresponds to one of C's {@code shortened_labels[]} entries
-     * ({@code ui-entry.c}), set from the data file's {@code label5:} field.
-     *
-     * <p>Function getLabel5 coded before 260916, commented in full on 260916.
-     *
-     * @return this entry's five-character label, or {@code null} if none was set
-     */
-    public String getLabel5() {
-        return label5;
+        return shortenedLabels.get(1);
     }
 
     /**
@@ -395,78 +374,61 @@ public class UIEntry {
     }
 
     /**
-     * Returns the template this entry inherits defaults from, if any, as set
-     * from the data file's {@code template:} field.
+     * Returns the five-character label variant, used by the second character
+     * screen. Corresponds to one of C's {@code shortened_labels[]} entries
+     * ({@code ui-entry.c}), set from the data file's {@code label5:} field.
      *
-     * <p>Function getTemplate coded before 260916, commented in full on 260916.
+     * <p>Function getLabel5 coded before 260916, commented in full on 260916.
      *
-     * @return this entry's template, or {@code null} if it has none
+     * @return this entry's five-character label, or {@code null} if none was set
      */
-    public UIEntryBase getTemplate() {
-        return template;
+    public String getLabel5() {
+        return shortenedLabels.get(4);
     }
 
-    /**
-     * Whether a UI entry's parameter refers to a player stat or a damage
-     * element. Mirrors the {@code "stat"} / {@code "element"} strings the data
-     * file's {@code parameter:} field accepts, matched against C's
-     * {@code name_parameters} table ({@code ui-entry.c}).
-     *
-     * <p>Class StatElemType coded before 260916, commented in full on 260916.
-     *
-     * @author Rowan Crowther
-     */
-    public enum StatElemType {
-        /**
-         * No parameter is set; the entry's value does not vary by stat or
-         * element. Has no direct C counterpart of its own — C's dummy
-         * {@code ""} entry in {@code name_parameters} exists to make an unset
-         * {@code parameter:} field resolve to a valid index rather than to
-         * carry a distinct meaning.
-         *
-         * <p>Constant NONE coded before 260916, commented in full on 260916.
-         *
-         * @author Rowan Crowther
-         */
-        NONE(""),
-        /**
-         * The parameter is a player stat (STR, INT, …).
-         *
-         * <p>Constant STAT coded before 260916, commented in full on 260916.
-         *
-         * @author Rowan Crowther
-         */
-        STAT("stat"),
-        /**
-         * The parameter is a damage element (fire, cold, …).
-         *
-         * <p>Constant ELEMENT coded before 260916, commented in full on 260916.
-         *
-         * @author Rowan Crowther
-         */
-        ELEMENT("element");
+    public void setName(String name) {
+        this.name = name;
+    }
 
-        private final String value;
+    public void setPriorityNum(int priority) {
+        this.priorityNum = priority;
+    }
 
-        StatElemType(String value) {
-            this.value = value;
+    public void setLabel(String label) {
+        this.label = label;
+    }
+
+    public void setShortenedLabel(int index, String label) {
+        this.shortenedLabels.put(index, label);
+    }
+
+    public String getShortenedLabel(int index) {
+        return shortenedLabels.get(index);
+    }
+
+    public void setRenderer(UIEntryRenderer renderer) {
+        this.renderer = renderer;
+    }
+
+    public void setCombinerType(CombinerName combineType) {
+        this.combineType = combineType;
+    }
+
+    public void setParamIndex(int index) {
+        if (statOrElementParameter == StatElemType.STAT) {
+            this.statParameter = index;
+        } else if (statOrElementParameter == StatElemType.ELEMENT) {
+            this.elementParameter = Arrays.asList(ElementEnum.values()).get(index);
         }
+    }
 
-        /**
-         * Resolves the data file's {@code parameter:} field text to a
-         * {@link StatElemType} constant. Ports the linear scan in C's
-         * {@code parse_entry_parameter} ({@code ui-entry.c}), which walks
-         * {@code name_parameters[]} until the name matches; this returns
-         * {@code null} where C reports {@code PARSE_ERROR_INVALID_VALUE}.
-         *
-         * <p>Function fromValue coded before 260916, commented in full on 260916.
-         *
-         * @param value the data-file parameter name ({@code "stat"}, {@code "element"}, or {@code ""})
-         * @return the matching constant, or {@code null} if none matches
-         */
-        public static StatElemType fromValue(String value) {
-            return Arrays.stream(StatElemType.values()).filter(s -> s.value.equals(value))
-                    .findFirst().orElse(null);
-        }
+    public void setEntryFlags(FlagView<ChannelEntryFlag> entryFlag) {
+        Flag<ChannelEntryFlag> newFlags = new Flag<>(ChannelEntryFlag.class);
+        newFlags.copyFrom(entryFlag);
+        this.entryFlag = newFlags;
+    }
+
+    public int getNCategory() {
+        return categories.size();
     }
 }

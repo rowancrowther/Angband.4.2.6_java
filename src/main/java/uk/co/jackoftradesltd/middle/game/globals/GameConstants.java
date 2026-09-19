@@ -29,24 +29,24 @@ import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.Core;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 import uk.co.jackoftradesltd.middle.game.globals.data.GameConstantsData;
 import uk.co.jackoftradesltd.middle.game.globals.loaders.*;
 import uk.co.jackoftradesltd.middle.game.globals.registry.ObjectRegistry;
-import uk.co.jackoftradesltd.middle.objects.Archery;
-import uk.co.jackoftradesltd.middle.objects.ElementPowers;
-import uk.co.jackoftradesltd.middle.objects.ElementSet;
-import uk.co.jackoftradesltd.middle.objects.FlagSet;
+import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
+import uk.co.jackoftradesltd.middle.game.globals.registry.UIEntryValueRegistry;
+import uk.co.jackoftradesltd.middle.objects.*;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlagType;
 import uk.co.jackoftradesltd.middle.objects.enums.ResType;
 import uk.co.jackoftradesltd.middle.objects.enums.TValue;
+import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
 /**
  * The global holder for the game's tunable constants and the startup entry point that loads all
@@ -224,9 +224,10 @@ public class GameConstants {
             file = "ui_entry files";
             // Wait for UIEntry loaders to finish and message to be sent from UI frontend            
             UIMessage message = core.getCoreChannel().coreReceiver().receive();
+            List<UIEntrySpec> entries = new ArrayList<>();
             while (true) {
-                if (message instanceof UIMessage.SimpleUIMessage simpleUIMessage
-                        && simpleUIMessage.type().equals(GameEventType.EVENT_ENTER_INIT)) {
+                if (message instanceof UIMessage.UIEntriesLoaded uiEntriesLoadedMessage) {
+                    entries = uiEntriesLoadedMessage.entrySpecs();
                     break;
                 } else {
                     // Pass the message through to the GameLoop for it to handle
@@ -295,6 +296,57 @@ public class GameConstants {
             file = "object_property.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising object properties...");
             ObjectDataLoader.loadObjectProperties();     // Dependent on UIEntry
+
+            // Deal with UIEntry bindings here
+            // Store the specs and create the list of player properties
+            Map<UIEntrySpec, List<PlayerProperty>> specsToPlayerProps = new HashMap<>();
+            for (PlayerProperty playerProperty : PlayerRegistry.getPlayerProperties()) {
+                for (PlayerProperty.BindUI bindUI : playerProperty.getEntries()) {
+                    String entryName = bindUI.uiEntry();
+                    UIEntrySpec spec = entries.stream().filter(s -> s.entryName().equals(entryName))
+                            .findFirst().orElse(null);
+                    if (spec != null) {
+                        if (specsToPlayerProps.containsKey(spec)) {
+                            specsToPlayerProps.get(spec).add(playerProperty);
+                        } else {
+                            List<PlayerProperty> properties = new ArrayList<>();
+                            properties.add(playerProperty);
+                            specsToPlayerProps.put(spec, properties);
+                        }
+                    }
+                }
+            }
+
+            // Now do the same for the object properties
+            Map<UIEntrySpec, List<ObjectProperty>> propsToObjectProps = new HashMap<>();
+            for (ObjectProperty objectProperty : ObjectRegistry.getObjectProperties()) {
+                for (ObjectProperty.UIBinding binding : objectProperty.getBoundEntries()) {
+                    String entryName = binding.entry();
+                    UIEntrySpec spec = entries.stream().filter(s -> s.entryName().equals(entryName))
+                            .findFirst().orElse(null);
+                    if (spec != null) {
+                        if (propsToObjectProps.containsKey(spec)) {
+                            propsToObjectProps.get(spec).add(objectProperty);
+                        } else {
+                            List<ObjectProperty> properties = new ArrayList<>();
+                            properties.add(objectProperty);
+                            propsToObjectProps.put(spec, properties);
+                        }
+                    }
+                }
+            }
+
+            // Read them out and store in UIEntryValueRegistry
+            for (UIEntrySpec spec : specsToPlayerProps.keySet()) {
+                UIEntryValueRegistry.addEntryBinding(spec.entryName(), null, specsToPlayerProps.get(spec),
+                        spec.combinerName(), spec.entryFlags());
+            }
+
+            for (UIEntrySpec spec : propsToObjectProps.keySet()) {
+                UIEntryValueRegistry.addEntryBinding(spec.entryName(), propsToObjectProps.get(spec), null,
+                        spec.combinerName(), spec.entryFlags());
+            }
+
             file = "player_timed.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising player times properties...");
             PlayerDataLoader.loadPlayerTimedProperties();
@@ -334,12 +386,14 @@ public class GameConstants {
             file = "flavor.txt";
             bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising flavours...");
             MiscDataLoader.loadFlavours();
-            // TODO: Add chest traps
+            file = "chest_trap.txt";
+            bus.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initialising chest traps...");
+            ObjectDataLoader.loadChestTraps();
 
             // Load global tables
             PlayerDataLoader.initialiseExpLevel();
         } catch (Exception e) {
-            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + "/" + file
+            String message = "Unable to load data from " + AngbandDirs.ANGBAND_DIRS.GAMEDATA.getPath() + file
                     + " error message: " + e.getMessage();
             logger.error(message, e);
             throw new RuntimeException(message, e);

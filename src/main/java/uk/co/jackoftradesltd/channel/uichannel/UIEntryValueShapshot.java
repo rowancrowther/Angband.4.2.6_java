@@ -15,21 +15,11 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.frontend.entries.enums;
+package uk.co.jackoftradesltd.channel.uichannel;
 
-/**
- * Behavioural flags for a UI entry definition, mirroring the {@code ENTRY_FLAG_*}
- * constants of the C original's UI-entry system.
- *
- * @author Rowan Crowther
- */
-public enum EntryFlag {
-    /**
-     * Treat the entry's timed value as auxiliary (secondary) data. @author Rowan Crowther
-     */
-    ENTRY_FLAG_TIMED_AS_AUX,
-    /**
-     * Entry is a template only and is not itself displayed. @author Rowan Crowther
-     */
-    ENTRY_FLAG_TEMPLATE_ONLY
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
+
+import java.util.Map;
+
+public record UIEntryValueShapshot(Map<String, UIEntryValue> byEntryName) implements GameEventData {
 }

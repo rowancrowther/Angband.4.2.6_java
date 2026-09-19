@@ -147,14 +147,16 @@ public class UILoop {
 
     /**
      * Report that the {@code lib} directory is unusable and give up. The port of
-     * {@code init_angband_aux()} ({@code [C] src/ui-init.c}), which prints the same four lines.
+     * {@code init_angband_aux()} ({@code [C] src/ui-display.c:2414-2419}), which passes the same
+     * four lines to {@code quit_fmt} - a fatal, non-returning quit, since C's {@code quit_fmt}
+     * ultimately calls {@code exit()}.
      *
      * <p>C can put this on the terminal it started from; the port has no terminal, so it logs and
      * throws. Nothing catches the exception meaningfully - it surfaces inside
      * {@code GameConstants.init()}'s handler and is re-reported as a data-load failure - so the
      * message the player would most want is the one they are least likely to see.
      *
-     * <p>Function initAngbandAux coded before 260916, commented in full on 260916.
+     * <p>Function initAngbandAux coded before 260916, commented in full on 260919.
      *
      * @param why what could not be read, used as the first line of the message
      * @throws RuntimeException always; this method does not return
@@ -270,10 +272,11 @@ public class UILoop {
                         GameEventType eventType = simpleCoreMessage.gameEventType();
                         logger.info("Received {}", eventType);
                         switch (eventType) {
-                            // The data load has started. C's show_splashscreen() ([C] src/ui-init.c),
-                            // reached the same way: the core signals, the front end decides that
-                            // means news.txt on the screen. The path is read at call time so a -d
-                            // override on the command line is honoured.
+                            // The data load has started. C's show_splashscreen()
+                            // ([C] src/ui-display.c:2449-2489), reached the same way: the core
+                            // signals, the front end decides that means news.txt on the screen. The
+                            // path is read at call time so a -d override on the command line is
+                            // honoured.
                             case EVENT_ENTER_INIT -> {
                                 String filename = AngbandDirs.ANGBAND_DIRS.SCREENS.getPath() + "news.txt";
                                 Path path = Paths.get(filename);
@@ -291,6 +294,7 @@ public class UILoop {
                                     UIDataLoader.loadUIEntryRenderers();
                                     writeInitString("Initialising UI Entry Bases...");
                                     UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
+                                    UIDataLoader.portUIEntryBasesToUIEntries();
                                     writeInitString("Initialising UI Entries...");
                                     UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 

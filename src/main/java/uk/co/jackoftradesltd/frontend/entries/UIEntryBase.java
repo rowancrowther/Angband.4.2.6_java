@@ -282,4 +282,5 @@ public class UIEntryBase {
     public Flag<ChannelEntryFlag> getFlags() {
         return flags;
     }
+
 }

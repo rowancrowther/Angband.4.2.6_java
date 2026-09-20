@@ -21,7 +21,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.assembler.UIEntryBaseParseRecord;
+import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
@@ -121,5 +123,67 @@ class UIEntryBaseAssemblerTest {
         assertEquals(1, out.size());
         assertEquals("good", out.get(0).getName());
         assertFalse(errors.isEmpty());
+    }
+
+    // ---- the shared UIEntry registry parseEachEntry builds alongside the returned UIEntryBase ------
+    // ---- list, mirroring hatch_embryo's no-parameterisation branch (ui-entry.c:1826-1859) and -------
+    // ---- run_parse_ui_entry's post-base-file TEMPLATE_ONLY pass (ui-entry.c:2273-2278) --------------
+
+    @Test
+    void createPathInsertsATemplateOnlyEntryWithUnsetCategoryPriorities() {
+        List<String> errors = new ArrayList<>();
+        new UIEntryBaseAssembler().assemble(
+                List.of(rec("good_flag_ui_compact_0", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX",
+                        "desc", List.of("CHAR_SCREEN1", "abilities"))),
+                errors);
+
+        UIEntry entry = UIRegistry.getUIEntry("good_flag_ui_compact_0");
+        assertNotNull(entry, "the base record should have produced a shared UIEntry");
+        assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY),
+                "every base-file entry is template-only, matching C's post-base-file OR pass");
+        assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+
+        List<UIEntryCategory> categories = entry.getCategories();
+        assertEquals(2, categories.size());
+        for (UIEntryCategory category : categories) {
+            // No priority: directive in ui_entry_base.txt, so every category is inserted
+            // with priority_set=false, matching insert_embryo_category's call from
+            // parse_entry_category (ui-entry.c:2114-2130) with a fresh embryo's
+            // psource_index=0 and default_priority=0.
+            assertFalse(category.isPrioritySet(), category.getName() + " should be unset");
+            assertEquals(0, category.getPriority());
+        }
+    }
+
+    @Test
+    void aRepeatedNameMergesNewCategoriesIntoTheExistingEntryRatherThanDuplicatingIt() {
+        List<String> errors = new ArrayList<>();
+        List<UIEntryBase> out = new UIEntryBaseAssembler().assemble(
+                List.of(rec("shared_name", KNOWN_RENDERER, "LOGICAL_OR", "TIMED_AS_AUX", "d1",
+                                List.of("CHAR_SCREEN1", "abilities")),
+                        rec("shared_name", KNOWN_RENDERER, "ADD", "TIMED_AS_AUX", "d2",
+                                List.of("abilities", "EQUIPCMP_SCREEN"))),
+                errors);
+
+        assertTrue(errors.isEmpty(), errors::toString);
+        assertEquals(2, out.size(), "both raw UIEntryBase records still come back from assemble()");
+
+        // The override path (hatch_embryo's embryo->exists branch, ui-entry.c:1758-1759) means
+        // only one shared UIEntry should exist for the repeated name, not two.
+        long matches = UIRegistry.getUIEntries().stream()
+                .filter(e -> e.getName().equals("shared_name")).count();
+        assertEquals(1, matches, "a repeated name should edit the existing entry, not duplicate it");
+
+        UIEntry entry = UIRegistry.getUIEntry("shared_name");
+        // Renderer/combiner/flags are overwritten outright by the second record, mirroring
+        // parse_entry_renderer/parse_entry_combine's unconditional assignment regardless of
+        // embryo->exists (ui-entry.c:2015-2042).
+        assertEquals(uk.co.jackoftradesltd.channel.utils.combiners.CombinerName.ADD, entry.getCombineType());
+
+        // Categories not already present are added; ones already there are not duplicated -
+        // matching insert_embryo_category's exists-branch (ui-entry.c:1493-1513).
+        List<String> categoryNames = entry.getCategories().stream().map(UIEntryCategory::getName).toList();
+        assertEquals(3, categoryNames.size(), categoryNames::toString);
+        assertTrue(categoryNames.containsAll(List.of("CHAR_SCREEN1", "abilities", "EQUIPCMP_SCREEN")));
     }
 }

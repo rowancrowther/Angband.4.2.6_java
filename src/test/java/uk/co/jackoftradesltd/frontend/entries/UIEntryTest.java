@@ -46,8 +46,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class UIEntryTest {
 
     private static UIEntry entry(List<UIEntryCategory> categories, Flag<ChannelEntryFlag> flags) {
-        return new UIEntry("test_entry", ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
-                null, CombinerName.ADD, categories, 5, flags, "some description",
+        return new UIEntry("test_entry", null, ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
+                null, CombinerName.ADD, categories, 5, null, flags, "some description",
                 "Label", "Lbl5", "L2");
     }
 
@@ -56,8 +56,8 @@ class UIEntryTest {
     @Test
     void constructorRejectsANullDescription() {
         assertThrows(IllegalArgumentException.class, () ->
-                new UIEntry("x", null, StatElemType.NONE, null, CombinerName.NONE,
-                        List.of(), 0, new Flag<>(ChannelEntryFlag.class), null, "L", "L5", "L2"));
+                new UIEntry("x", null, null, StatElemType.NONE, null, CombinerName.NONE,
+                        List.of(), 0, null, new Flag<>(ChannelEntryFlag.class), null, "L", "L5", "L2"));
     }
 
     @Test

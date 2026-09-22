@@ -144,7 +144,8 @@ public class UIEntryBase {
      * String, String) coded before 260916, updated on 260916 to validate
      * flags and drop the stored description, commented in full on 260916.
      */
-    public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine, List<String> categories, String flags, String desc) {
+    public UIEntryBase(String name, UIEntryRenderer renderer, CombinerName combine,
+                       List<String> categories, Flag<ChannelEntryFlag> flags, String desc) {
         if (desc == null)
             throw new IllegalArgumentException("Description cannot be null in UIEntryBase " + name);
 
@@ -152,53 +153,7 @@ public class UIEntryBase {
         this.renderer = renderer;
         this.combine = combine;
         this.categories = categories;
-        this.flags = parseFlags(flags);
-        if (this.flags == null)
-            throw new IllegalArgumentException("Error parsing flags in UIEntryBase " + name);
-    }
-
-    /**
-     * Resolve a raw {@code flags:} value into a {@link Flag} of
-     * {@link ChannelEntryFlag}. Splits {@code flag} on the literal {@code |}
-     * character, trims and upper-cases each piece, and looks it up as
-     * {@code ChannelEntryFlag.ENTRY_FLAG_<piece>}, turning each match on in the
-     * result. This is the Java form of C's {@code parse_entry_flags}
-     * ({@code [C] ui-entry.c:2187-2221}), which tokenizes on {@code strtok(flags,
-     * " |")} (space <em>or</em> pipe) against the {@code entry_flags[]} table
-     * ({@code [C] ui-entry.c:86-88}) and rejects the whole file load with
-     * {@code PARSE_ERROR_INVALID_FLAG} on the first unmatched token; the
-     * shipped {@code ui_entry_base.txt} only ever supplies a single flag
-     * ({@code TIMED_AS_AUX}) per record, so the multi-flag and
-     * space-delimiter paths are unexercised here. Unlike C, a failure here
-     * does not stop the file load itself - it is reported to the caller as
-     * {@code null} and turned into an {@link IllegalArgumentException} by the
-     * constructor.
-     *
-     * @param flag the raw {@code flags:} text
-     * @return the resolved flags, or {@code null} if any {@code |}-separated
-     * piece does not match a known {@link ChannelEntryFlag}
-     *
-     * <p>Function parseFlags(String) coded on 260916, commented in full on
-     * 260916.
-     */
-    private Flag<ChannelEntryFlag> parseFlags(String flag) {
-        Flag<ChannelEntryFlag> results = new Flag<>(ChannelEntryFlag.class);
-
-        String[] flagParts = flag.split("\\|");
-
-        try {
-            for (String flagPart : flagParts) {
-                flagPart = flagPart.trim();
-
-                ChannelEntryFlag entryFlag = ChannelEntryFlag.valueOf("ENTRY_FLAG_" + flagPart.toUpperCase());
-                results.on(entryFlag);
-            }
-        } catch (IllegalArgumentException e) {
-            logger.warn("Invalid entry flag: " + flag);
-            return null;
-        }
-
-        return results;
+        this.flags = flags;
     }
 
     /**
@@ -282,5 +237,4 @@ public class UIEntryBase {
     public Flag<ChannelEntryFlag> getFlags() {
         return flags;
     }
-
 }

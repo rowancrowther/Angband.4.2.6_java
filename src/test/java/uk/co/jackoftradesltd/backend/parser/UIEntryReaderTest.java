@@ -29,6 +29,7 @@ import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
@@ -76,6 +77,14 @@ class UIEntryReaderTest {
         List<UIEntryBase> bases = new UIEntryBaseReader()
                 .parseWithResults("lib/gamedata/ui_entry_base.txt").items();
         setStatic("uiEntryBases", bases);
+
+        // UIEntryBaseReader runs the real UIEntryBaseAssembler as part of parsing, and that
+        // assembler's own job is to also populate UIRegistry's shared UIEntry list with one
+        // TEMPLATE_ONLY placeholder per base (UIEntryBaseAssembler.java:144) - a side effect this
+        // class does not want, since every test below assumes UIEntryAssembler.assemble() starts
+        // from an empty registry (UIEntryAssembler.java:108). Reset it so that seeding the bases
+        // does not leak placeholder entries into every test's result count.
+        UIRegistry.setUIEntries(List.of());
     }
 
     private static void setStatic(String field, Object value) throws Exception {

@@ -44,8 +44,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class UIEntryEmbryoTest {
 
     private static UIEntry freshEntry(String name) {
-        return new UIEntry(name, ElementEnum.ELEM_NONE, StatElemType.NONE, null, CombinerName.NONE,
-                new ArrayList<>(), 0, new Flag<>(ChannelEntryFlag.class), "desc", "", "", "");
+        return new UIEntry(name, null, ElementEnum.ELEM_NONE, StatElemType.NONE, null, CombinerName.NONE,
+                new ArrayList<>(), 0, null, new Flag<>(ChannelEntryFlag.class), "desc", "", "", "");
     }
 
     // ---- constructor: direct field storage, mirroring parse_entry_name's assignments ---------------

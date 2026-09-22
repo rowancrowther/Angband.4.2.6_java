@@ -295,7 +295,6 @@ public class UILoop {
                                     UIDataLoader.loadUIEntryRenderers();
                                     writeInitString("Initialising UI Entry Bases...");
                                     UIDataLoader.loadUIEntryBases();         // Dependent on UIEntryRenderers
-                                    UIDataLoader.portUIEntryBasesToUIEntries();
                                     writeInitString("Initialising UI Entries...");
                                     UIDataLoader.loadUIEntries();            // Dependent on UIEntryBase & UIEntryRenderers
 

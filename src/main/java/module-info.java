@@ -7,7 +7,6 @@ module uk.co.jackoftradesltd {
     requires com.sun.jna;
     requires java.sql;
     requires org.apache.logging.log4j.core;
-    requires org.jspecify;
 
     exports uk.co.jackoftradesltd;
     exports uk.co.jackoftradesltd.channel;

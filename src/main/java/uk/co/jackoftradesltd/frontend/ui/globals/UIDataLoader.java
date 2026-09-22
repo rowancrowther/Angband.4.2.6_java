@@ -20,10 +20,12 @@ package uk.co.jackoftradesltd.frontend.ui.globals;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
+import uk.co.jackoftradesltd.frontend.globals.UIGlobals;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entry.reader.UIEntryReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
@@ -87,7 +89,7 @@ public class UIDataLoader {
 
             ErrorParsing.reportAndCheck(filename, result, logger);
 
-            UIRegistry.setUIEntries(result.items());
+            UIRegistry.setUIEntries(finalPass(result.items()));
         } catch (Exception e) {
             logger.error("Error while loading file {}", filename, e);
             throw e;
@@ -152,54 +154,74 @@ public class UIDataLoader {
     }
 
     /**
-     * Converts the loaded {@link UIEntryBase} templates into placeholder {@link UIEntry} records
-     * and registers them in {@link UIRegistry}, ahead of {@link #loadUIEntries()} overwriting the
-     * list with the real, file-parsed entries.
-     * <p>
-     * This is the Java form of C's {@code run_parse_ui_entry} ({@code [C] ui-entry.c:2263-2276}),
-     * which parses {@code ui_entry_base} directly into the same {@code entries[]} array used for
-     * {@code ui_entry.txt}, then OR's {@code ENTRY_FLAG_TEMPLATE_ONLY} onto every entry parsed so
-     * far - marking them as templates that {@code initialize_ui_entry_iterator}'s flag check
-     * ({@code [C] ui-entry.c:471}) will never surface directly - before going on to parse
-     * {@code ui_entry.txt} into the rest of the array. This port keeps the two files behind
-     * separate readers instead of one shared array, so each {@link UIEntryBase} is rebuilt here as
-     * a standalone {@link UIEntry}: its own resolved flags are unioned with
-     * {@link ChannelEntryFlag#ENTRY_FLAG_TEMPLATE_ONLY} (matching C's {@code |=} rather than
-     * replacing the set outright), and its categories are rebuilt with an explicitly-unset
-     * priority ({@code prioritySet = false}), matching {@code ui_entry_base.txt} never giving a
-     * template category one either.
-     * <p>
-     * The parameter, label and shortened-label fields C's templates never populate are passed
-     * through as {@code null}/{@code ""} placeholders. C's {@code parse_entry_template} only ever
-     * reads a template's renderer, combiner, default priority, flags and categories when a
-     * concrete {@code ui_entry.txt} record pulls it in with {@code template:}
-     * ({@code [C] ui-entry.c:1946-1978}), so these placeholder fields are never observed once the
-     * template-only entries built here are replaced by {@link #loadUIEntries()}.
-     * <p>
-     * Must run after {@link #loadUIEntryBases()} and before {@link #loadUIEntries()}.
+     * Finishing pass applied once, after both {@code ui_entry_base.txt} and {@code ui_entry.txt} have
+     * been parsed and folded into one list: fills any entry's still-empty label from its name, fills
+     * out its shortened labels (see {@link #fillOutShortened(UIEntry)}), and resolves any still-unset
+     * category priority to the entry's own default priority. The Java form of the per-entry loop in
+     * {@code finish_parse_ui_entry} ({@code [C] ui-entry.c:2289-2336}), run over the same combined set
+     * C's single {@code n_entry} covers there - both the {@code ui_entry_base.txt} placeholders and
+     * the real {@code ui_entry.txt} entries - since {@code entries} here is seeded from
+     * {@link UIRegistry#getUIEntries()} by {@code UIEntryAssembler} before this is called.
      *
-     * <p>Function portUIEntryBasesToUIEntries coded on 260919, commented in full on 260919.
+     * @param entries the merged entry list to finish, in file order
+     * @return the same entries, finished in place, as a new list
+     *
+     * <p>Function finalPass coded before 260919, commented in full on 260922.
      */
-    public static void portUIEntryBasesToUIEntries() {
-        List<UIEntryBase> baseEntries = UIRegistry.getUIEntryBases();
-        List<UIEntry> entries = new ArrayList<UIEntry>();
+    private static List<UIEntry> finalPass(List<UIEntry> entries) {
+        List<UIEntry> results = new ArrayList<>();
 
-        for (UIEntryBase base : baseEntries) {
-            List<UIEntryCategory> categories = new ArrayList<>();
-            for (String category : base.getCategories()) {
-                categories.add(new UIEntryCategory(category, 1, false));
+        for (UIEntry entry : entries) {
+            if (entry.getLabel().isEmpty())
+                entry.setLabel(entry.getName());
+
+            fillOutShortened(entry);
+
+            for (UIEntryCategory category : entry.getCategories()) {
+                if (!category.isPrioritySet()) {
+                    category.setPriority(entry.getDefaultPriority());
+                    category.setPrioritySet(true);
+                }
             }
 
-            Flag<ChannelEntryFlag> flags = new Flag<>(ChannelEntryFlag.class);
-            flags.copyFrom(base.getFlags());
-            flags.on(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY);
-
-            UIEntry entry = new UIEntry(base.getName(), null, null, base.getRenderer(),
-                    base.getCombine(), categories, 0, flags,
-                    "", "", "", "");
-            entries.add(entry);
+            results.add(entry);
         }
 
-        UIRegistry.setUIEntries(entries);
+        return results;
+    }
+
+    /**
+     * Fills in an entry's shortened labels at any index left unset, working from the nearest longer
+     * shortened label already set (or the full label, if none is) - the Java form of
+     * {@code fill_out_shortened} ({@code [C] ui-entry.c:1724-1759}). An index counts as "set" when its
+     * label string is non-null and non-empty, corresponding to C's {@code nshortened[i] != 0}.
+     *
+     * @param entry the entry whose shortened labels are filled in place
+     *
+     *              <p>Function fillOutShortened coded before 260919, commented in full on 260922.
+     */
+    private static void fillOutShortened(UIEntry entry) {
+        for (int index = 0; index < UIRegistry.MAX_SHORTENED; index++) {
+            String source;
+
+            String current = entry.getShortenedLabel(index);
+            if (current != null && !current.isEmpty())
+                continue;
+
+            int j = index + 1;
+            while (true) {
+                if (j >= UIRegistry.MAX_SHORTENED) {
+                    source = entry.getLabel();
+                    break;
+                }
+                if (entry.getShortenedLabel(j) != null && !entry.getShortenedLabel(j).isEmpty()) {
+                    source = entry.getShortenedLabel(j);
+                    break;
+                }
+                j++;
+            }
+            int strLength = Math.min(source.length(), index + 1);
+            entry.setShortenedLabel(index, source.substring(0, strLength));
+        }
     }
 }

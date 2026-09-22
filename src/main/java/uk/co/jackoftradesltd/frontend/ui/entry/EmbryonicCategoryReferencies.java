@@ -17,7 +17,7 @@
 
 package uk.co.jackoftradesltd.frontend.ui.entry;
 
-import org.jspecify.annotations.NonNull;
+import org.jetbrains.annotations.NotNull;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme;
 
@@ -118,7 +118,7 @@ public class EmbryonicCategoryReferencies implements Comparable<EmbryonicCategor
      * @return the result of comparing the two categories' names, as {@link String#compareTo(String)}
      */
     @Override
-    public int compareTo(@NonNull EmbryonicCategoryReferencies o) {
+    public int compareTo(@NotNull EmbryonicCategoryReferencies o) {
         return this.getCategory().getName().compareTo(o.getCategory().getName());
     }
 
@@ -166,5 +166,50 @@ public class EmbryonicCategoryReferencies implements Comparable<EmbryonicCategor
      */
     public boolean isPrioritySet() {
         return prioritySet;
+    }
+
+    /**
+     * Setter - marks whether this category's priority has been explicitly set.
+     *
+     * <p>Function setPrioritySet coded before 260920, commented in full on 260922.
+     *
+     * @param prioritySet whether the priority has been explicitly set
+     */
+    public void setPrioritySet(boolean prioritySet) {
+        this.prioritySet = prioritySet;
+    }
+
+    /**
+     * Setter - the category this priority is being assembled for.
+     *
+     * <p>Function setCategory coded before 260920, commented in full on 260922.
+     *
+     * @param category the category this priority is being assembled for
+     */
+    public void setCategory(UIEntryCategory category) {
+        this.category = category;
+    }
+
+    /**
+     * Setter - the priority scheme this category's priority is drawn from.
+     *
+     * <p>Function setpSourceIndex coded before 260920, commented in full on 260922.
+     *
+     * @param pSourceIndex the priority scheme, or {@link UIEntryPriorityScheme#PRIORITY_SCHEME_NONE}
+     *                     for a literal priority
+     */
+    public void setpSourceIndex(UIEntryPriorityScheme pSourceIndex) {
+        this.pSourceIndex = pSourceIndex;
+    }
+
+    /**
+     * Setter - this category's literal priority.
+     *
+     * <p>Function setPriority coded before 260920, commented in full on 260922.
+     *
+     * @param priority the literal priority
+     */
+    public void setPriority(int priority) {
+        this.priority = priority;
     }
 }

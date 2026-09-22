@@ -17,136 +17,155 @@
 
 package uk.co.jackoftradesltd.frontend.ui.globals;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
-import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
+import uk.co.jackoftradesltd.channel.enums.StatElemType;
+import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
-import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Unit tests for {@link UIDataLoader#portUIEntryBasesToUIEntries()}, checked against the C
- * original's {@code run_parse_ui_entry} ({@code [C] src/ui-entry.c:2263-2276}).
+ * Unit tests for the private finishing steps {@link UIDataLoader} still owns -
+ * {@code finalPass} and {@code fillOutShortened} - checked against the C
+ * original's whole-file finishing loop ({@code [C] ui-entry.c:2283-2332}).
  *
- * <p>The case this pins is the {@code entries[i]->flags |= ENTRY_FLAG_TEMPLATE_ONLY} union
- * ({@code [C] ui-entry.c:2274}): an earlier version of the port replaced a base's own resolved
- * flags outright with a fresh {@code Flag} containing only {@code ENTRY_FLAG_TEMPLATE_ONLY},
- * silently dropping {@code ENTRY_FLAG_TIMED_AS_AUX} - the flag all three of the bases the shipped
- * {@code ui_entry_base.txt} carries actually set. Every test resets {@link UIRegistry}'s bases and
- * entries afterwards so this static state does not leak between tests.
+ * <p>The base-to-placeholder-entry conversion this class used to pin (C's
+ * {@code run_parse_ui_entry} post-base-file {@code ENTRY_FLAG_TEMPLATE_ONLY}
+ * pass, {@code [C] ui-entry.c:2263-2278}) has since moved onto
+ * {@code UIEntryBaseAssembler.parseEachEntry}, which is what
+ * {@code UIEntryBaseAssemblerTest} exercises now; there is no
+ * {@code UIDataLoader.portUIEntryBasesToUIEntries()} left to test here.
+ *
+ * <p>{@code finalPass} and {@code fillOutShortened} are private and static, so
+ * each test reaches them through reflection rather than the public
+ * {@code loadUIEntries()}, which would otherwise require a real gamedata file
+ * and a fully populated {@link UIRegistry} just to reach this logic.
  *
  * @author Rowan Crowther
  */
 class UIDataLoaderTest {
 
-    private static UIEntryBase base(String name, String flags, List<String> categories) {
-        return new UIEntryBase(name, null, CombinerName.LOGICAL_OR, categories, flags, "d");
+    private static Method finalPassMethod() throws NoSuchMethodException {
+        Method method = UIDataLoader.class.getDeclaredMethod("finalPass", List.class);
+        method.setAccessible(true);
+        return method;
     }
 
-    @AfterEach
-    void resetRegistry() {
-        UIRegistry.setUIEntryBases(List.of());
-        UIRegistry.setUIEntries(List.of());
+    private static Method fillOutShortenedMethod() throws NoSuchMethodException {
+        Method method = UIDataLoader.class.getDeclaredMethod("fillOutShortened", UIEntry.class);
+        method.setAccessible(true);
+        return method;
     }
 
-    @Test
-    void aBaseWithNoOwnFlagBeyondTemplateOnlyKeepsExactlyTemplateOnly() {
-        UIRegistry.setUIEntryBases(List.of(base("t", "TEMPLATE_ONLY", List.of("CHAR_SCREEN1"))));
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        UIEntry entry = UIRegistry.getUIEntry("t");
-        assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
-        assertFalse(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX));
+    @SuppressWarnings("unchecked")
+    private static List<UIEntry> finalPass(List<UIEntry> entries) throws Exception {
+        return (List<UIEntry>) finalPassMethod().invoke(null, entries);
     }
 
-    /**
-     * The regression case: matches C's {@code entries[i]->flags |= ENTRY_FLAG_TEMPLATE_ONLY}
-     * ({@code [C] ui-entry.c:2274}), which ORs the new bit onto whatever the base's own
-     * {@code flags:} line already set, rather than replacing the set outright.
-     */
-    @Test
-    void aBasesOwnFlagSurvivesAlongsideTemplateOnly() {
-        UIRegistry.setUIEntryBases(List.of(base("t", "TIMED_AS_AUX", List.of("CHAR_SCREEN1"))));
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        UIEntry entry = UIRegistry.getUIEntry("t");
-        assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX),
-                "the base's own flag must survive the TEMPLATE_ONLY union, matching C's |=");
-        assertTrue(entry.entryFlagHas(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY));
+    private static void fillOutShortened(UIEntry entry) throws Exception {
+        fillOutShortenedMethod().invoke(null, entry);
     }
 
-    @Test
-    void categoriesCarryOverByNameWithAnUnsetPriority() {
-        UIRegistry.setUIEntryBases(List.of(
-                base("t", "TIMED_AS_AUX", List.of("CHAR_SCREEN1", "abilities"))));
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        List<UIEntryCategory> categories = UIRegistry.getUIEntry("t").getCategories();
-        assertEquals(2, categories.size());
-        assertEquals("CHAR_SCREEN1", categories.get(0).getName());
-        assertFalse(categories.get(0).isPrioritySet(),
-                "ui_entry_base.txt never sets a category priority, matching C's default");
-        assertEquals("abilities", categories.get(1).getName());
-        assertFalse(categories.get(1).isPrioritySet());
-    }
-
-    @Test
-    void defaultPriorityIsZeroMatchingCsUnsetDefaultPriority() {
-        UIRegistry.setUIEntryBases(List.of(base("t", "TIMED_AS_AUX", List.of("CHAR_SCREEN1"))));
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        assertEquals(0, UIRegistry.getUIEntry("t").getPriorityNum());
-    }
-
-    @Test
-    void multipleBasesEachConvertIndependently() {
-        UIRegistry.setUIEntryBases(List.of(
-                base("first", "TIMED_AS_AUX", List.of("CHAR_SCREEN1")),
-                base("second", "TIMED_AS_AUX", List.of("hindrances"))));
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        assertEquals(2, UIRegistry.getUIEntries().size());
-        assertNotNull(UIRegistry.getUIEntry("first"));
-        assertNotNull(UIRegistry.getUIEntry("second"));
-    }
-
-    @Test
-    void anEmptyBaseListProducesAnEmptyEntryList() {
-        UIRegistry.setUIEntryBases(List.of());
-
-        UIDataLoader.portUIEntryBasesToUIEntries();
-
-        assertTrue(UIRegistry.getUIEntries().isEmpty());
+    private static UIEntry entry(String name, String label, String label5, String label2,
+                                 int priorityNum, List<UIEntryCategory> categories) {
+        return new UIEntry(name, null, null, StatElemType.NONE, null, null, categories,
+                priorityNum, null, new Flag<>(ChannelEntryFlag.class), "d", label, label5, label2);
     }
 
     /**
-     * {@link UIRegistry#setUIEntries} replaces the list wholesale, matching every other loader in
-     * {@link UIDataLoader}; this method has no append path, so entries already registered (e.g. by
-     * a prior {@link UIDataLoader#loadUIEntries()} call) are lost if this runs after it - ordering
-     * that is {@link UIDataLoader}'s own job to get right, not something this method guards
-     * against.
+     * The regression case for the bug {@code UIEntryAssembler}'s create path had: a category left
+     * with {@code priority_set=false} (as every template-derived category now is - see
+     * {@code UIEntryAssembler.java:358-364}) must still pick up the entry's real default priority
+     * here, matching C's {@code if (! entries[i]->categories[j].priority_set)} backfill
+     * ({@code [C] ui-entry.c:2324-2330}).
      */
     @Test
-    void reRunningReplacesThePreviousEntryListRatherThanAppending() {
-        UIRegistry.setUIEntryBases(List.of(base("first", "TIMED_AS_AUX", List.of("CHAR_SCREEN1"))));
-        UIDataLoader.portUIEntryBasesToUIEntries();
-        assertEquals(1, UIRegistry.getUIEntries().size());
+    void finalPassBackfillsAnUnsetCategoryPriorityFromTheEntrysDefault() throws Exception {
+        UIEntryCategory unset = new UIEntryCategory("CHAR_SCREEN1", 0, false);
+        UIEntry pblind = entry("pblind_ui_compact_0", "Blindess resistance", "pBlnd", null,
+                -1, List.of(unset));
 
-        UIRegistry.setUIEntryBases(List.of(base("second", "TIMED_AS_AUX", List.of("hindrances"))));
-        UIDataLoader.portUIEntryBasesToUIEntries();
+        finalPass(List.of(pblind));
 
-        assertEquals(1, UIRegistry.getUIEntries().size());
-        assertNull(UIRegistry.getUIEntry("first"));
-        assertNotNull(UIRegistry.getUIEntry("second"));
+        assertTrue(unset.isPrioritySet());
+        assertEquals(-1, unset.getPriority(),
+                "an unset category must take the entry's own default_priority, not be left at 0");
+    }
+
+    /**
+     * The other half of the same C condition: a category whose priority was already explicitly set
+     * (by its own {@code category:}/{@code priority:} pair) must survive {@code finalPass} untouched,
+     * even when the entry's default priority differs.
+     */
+    @Test
+    void finalPassLeavesAnAlreadySetCategoryPriorityUntouched() throws Exception {
+        UIEntryCategory alreadySet = new UIEntryCategory("resistances", 7, true);
+        UIEntry withOwnPriority = entry("t", "label", null, null, -1, List.of(alreadySet));
+
+        finalPass(List.of(withOwnPriority));
+
+        assertEquals(7, alreadySet.getPriority());
+        assertTrue(alreadySet.isPrioritySet());
+    }
+
+    @Test
+    void finalPassOnlyBackfillsTheCategoriesThatAreUnset() throws Exception {
+        UIEntryCategory unset = new UIEntryCategory("CHAR_SCREEN1", 0, false);
+        UIEntryCategory alreadySet = new UIEntryCategory("abilities", 3, true);
+        UIEntry mixed = entry("t", "label", null, null, -5, List.of(unset, alreadySet));
+
+        finalPass(List.of(mixed));
+
+        assertEquals(-5, unset.getPriority());
+        assertEquals(3, alreadySet.getPriority(), "an already-set category must not be overwritten");
+    }
+
+    /**
+     * Matches C's {@code if (entries[i]->nlabel == 0)} ({@code [C] ui-entry.c:2301}): an entry whose
+     * data-file record never set {@code label:} falls back to its own name.
+     */
+    @Test
+    void finalPassDefaultsAnEmptyLabelToTheEntrysName() throws Exception {
+        UIEntry noLabel = entry("regen_ui_compact_0", "", null, null, 0, List.of());
+
+        finalPass(List.of(noLabel));
+
+        assertEquals("regen_ui_compact_0", noLabel.getLabel());
+    }
+
+    /**
+     * {@code resist_ui_compact_0<POIS>} ({@code [C] lib/gamedata/ui_entry.txt}) sets {@code label5}
+     * but no other shortened width, so every other width must cascade from whichever set width is
+     * nearest, or the full label past the last one - matching {@code fill_out_shortened}'s search
+     * ({@code [C] ui-entry.c:1740-1753}).
+     */
+    @Test
+    void fillOutShortenedCascadesFromTheNearestLongerAbbreviationOrTheFullLabel() throws Exception {
+        UIEntry poison = entry("resist_ui_compact_0<POIS>", "Poison", "Pois", null, 0, List.of());
+
+        fillOutShortened(poison);
+
+        assertEquals("P", poison.getShortenedLabel(0), "index 0 truncates the nearest source to 1 char");
+        assertEquals("Po", poison.getShortenedLabel(1), "label2 (index 1) truncates \"Pois\" to 2 chars");
+        assertEquals("Poi", poison.getShortenedLabel(2));
+        assertEquals("Pois", poison.getShortenedLabel(3), "index 3 takes \"Pois\" whole, at its own width");
+        assertEquals("Pois", poison.getShortenedLabel(4), "the explicitly-set label5 is left untouched");
+        assertEquals("Poison", poison.getShortenedLabel(5),
+                "past the last set width, the cascade falls back to the full label");
+        assertEquals("Poison", poison.getShortenedLabel(9));
+    }
+
+    @Test
+    void fillOutShortenedLeavesAnAlreadySetWidthUntouched() throws Exception {
+        UIEntry entry = entry("t", "Label", null, "Lb", 0, List.of());
+
+        fillOutShortened(entry);
+
+        assertEquals("Lb", entry.getShortenedLabel(1), "an explicitly-set label2 must not be recomputed");
     }
 }

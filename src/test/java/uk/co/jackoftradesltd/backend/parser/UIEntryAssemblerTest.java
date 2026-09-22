@@ -18,7 +18,6 @@
 package uk.co.jackoftradesltd.backend.parser;
 
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
@@ -28,6 +27,7 @@ import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 
 import java.lang.reflect.Field;
@@ -75,6 +75,14 @@ class UIEntryAssemblerTest {
         List<UIEntryBase> bases = new UIEntryBaseReader()
                 .parseWithResults("lib/gamedata/ui_entry_base.txt").items();
         setStatic("uiEntryBases", bases);
+
+        // UIEntryBaseReader runs the real UIEntryBaseAssembler as part of parsing, and that
+        // assembler's own job is to also populate UIRegistry's shared UIEntry list with one
+        // TEMPLATE_ONLY placeholder per base (UIEntryBaseAssembler.java:136) - a side effect this
+        // class does not want, since every test below assumes UIEntryAssembler.assemble() starts
+        // from an empty registry (UIEntryAssembler.java:108). Reset it so that seeding the bases
+        // does not leak placeholder entries into every test's result count.
+        UIRegistry.setUIEntries(List.of());
     }
 
     private static void setStatic(String field, Object value) throws Exception {
@@ -95,9 +103,6 @@ class UIEntryAssemblerTest {
     // ---- the parameter/nameTag split ---------------------------------------------------------
 
     @Test
-    @Disabled("assemble() doesn't insert into results yet - embryo dispatch is stubbed out and the "
-            + "stat/element expansion loops only keep their last iteration (260919); re-enable once "
-            + "UIEntryAssembler actually populates its return value")
     void statOrElementResolvesFromTheParameterKind() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
@@ -127,8 +132,6 @@ class UIEntryAssemblerTest {
     }
 
     @Test
-    @Disabled("assemble() doesn't insert into results yet - embryo dispatch is stubbed out (260919); "
-            + "re-enable once UIEntryAssembler actually populates its return value")
     void nameTagResolvesToTheConcreteElementParameter() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
@@ -147,8 +150,6 @@ class UIEntryAssemblerTest {
     // ---- registry / enum resolution ----------------------------------------------------------
 
     @Test
-    @Disabled("assemble() doesn't insert into results yet - embryo dispatch is stubbed out (260919); "
-            + "re-enable once UIEntryAssembler actually populates its return value")
     void resolvesAKnownRendererFromTheRegistry() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
@@ -204,9 +205,6 @@ class UIEntryAssemblerTest {
     // ---- skip-and-continue -------------------------------------------------------------------
 
     @Test
-    @Disabled("assemble() doesn't insert into results yet - embryo dispatch is stubbed out and the "
-            + "stat/element expansion loops only keep their last iteration (260919); re-enable once "
-            + "UIEntryAssembler actually populates its return value")
     void partialResultsSurviveABadRecord() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(

@@ -55,6 +55,8 @@ import java.util.List;
  * appended to {@code errors} (quoting its source line), and processing
  * continues with the next record, so one bad block does not hide the rest.
  *
+ * <p>Class UIEntryBaseAssembler coded before 260920, commented in full on 260922.
+ *
  * @author Rowan Crowther
  */
 public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, List<UIEntryBase>> {
@@ -108,8 +110,6 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             String flags = record.flags();
             String desc = record.desc();
 
-            UIEntryBase base = new UIEntryBase(name, renderer, combinerName, categories, flags, desc);
-
             List<UIEntryCategory> cats = new ArrayList<>();
 
             for (String category : categories) {
@@ -117,10 +117,26 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
             }
 
             Flag<ChannelEntryFlag> flag = new Flag<>(ChannelEntryFlag.class);
-            flag.on(ChannelEntryFlag.valueOf("ENTRY_FLAG_" + flags.toUpperCase()));
+            String[] flagStrings = flags.split("\\|");
+            boolean badFlag = false;
+            for (String flagString : flagStrings) {
+                flagString = flagString.trim();
+                try {
+                    ChannelEntryFlag channelEntryFlag = ChannelEntryFlag.valueOf("ENTRY_FLAG_"
+                            + flagString.toUpperCase());
+                    flag.on(channelEntryFlag);
+                } catch (IllegalArgumentException e) {
+                    errors.add("Line: " + line + ": Illegal channel flag name " + flagString);
+                    badFlag = true;
+                }
+            }
+            if (badFlag) continue;
 
-            UIEntry entry = new UIEntry(name, null, null, renderer, combinerName, cats, 0,
-                    flag, desc, "", "", "");
+            UIEntryBase base = new UIEntryBase(name, renderer, combinerName, categories, flag, desc);
+
+            UIEntry entry = new UIEntry(name, null,
+                    null, null, renderer, combinerName, cats,
+                    0, "", flag, desc, "", "", "");
 
             parseEachEntry(entries, entry);
 
@@ -175,6 +191,10 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
         UIEntry existing = entries.stream().filter(e -> e.getName().equals(entry.getName()))
                 .findFirst().orElse(null);
         if (existing != null) {
+            Flag<ChannelEntryFlag> existingFlags = new Flag<>(ChannelEntryFlag.class);
+            existingFlags.copyFrom(existing.getEntryFlag());
+            for (ChannelEntryFlag flg : existingFlags)
+                fullFlags.on(flg);
             UIEntryCategory lastCategory;
             // Override path
             if (entry.getParameter() != null) {
@@ -203,9 +223,9 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
         } else {
             EmbryonicCategoryReferencies lastCategory;
             // Create path
-            UIEntry nullEntry = new UIEntry(entry.getName(), ElementEnum.ELEM_NONE, StatElemType.NONE,
-                    null, null, new ArrayList<>(), 0, new Flag<>(ChannelEntryFlag.class),
-                    "", "", "", "");
+            UIEntry nullEntry = new UIEntry(entry.getName(), null, ElementEnum.ELEM_NONE, StatElemType.NONE,
+                    null, null, new ArrayList<>(), 0, "",
+                    new Flag<>(ChannelEntryFlag.class), "", "", "", "");
 
             List<EmbryonicCategoryReferencies> embCats = new ArrayList<>();
             ElementEnum paramTable = ElementEnum.ELEM_NONE;
@@ -220,10 +240,8 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
 
             if (entry.getStatOrElement() == StatElemType.ELEMENT) {
                 paramTable = entry.getParameter();
-                statIndex = -1;
                 statType = StatElemType.ELEMENT;
             } else if (entry.getStatOrElement() == StatElemType.STAT) {
-                paramTable = ElementEnum.ELEM_NONE;
                 statIndex = entry.getStatParameter();
                 statType = StatElemType.STAT;
             }
@@ -257,10 +275,9 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
                 throw new RuntimeException(message);
             }
 
-            int numOfParams = 1;
             if (entry.getStatOrElement() == StatElemType.ELEMENT) {
                 for (ElementEnum paramEnum : ElementEnum.values()) {
-                    if (!paramEnum.isHasResistRune()) continue;
+                    if (paramEnum == ElementEnum.ELEM_NONE || paramEnum == ElementEnum.ELEM_MAX) continue;
 
                     String pName = paramEnum.name().substring(5);
                     UIEntry out = nullEntry.copy();
@@ -339,8 +356,8 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
                     if (shortStr == null) shortStr = "";
                     out.setShortenedLabel(index, shortStr);
                 }
-                int defPriority = entry.getDefaultPriority();
-
+                out.setDefaultPriority(entry.getDefaultPriority());
+                
                 for (EmbryonicCategoryReferencies embCat : embCats) {
                     String catName = embCat.getCategory().getName();
                     int catPriority = embCat.isPrioritySet()

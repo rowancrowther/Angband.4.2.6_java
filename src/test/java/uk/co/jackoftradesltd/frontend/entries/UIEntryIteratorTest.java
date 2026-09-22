@@ -45,8 +45,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class UIEntryIteratorTest {
 
     private static UIEntry entry(String name) {
-        return new UIEntry(name, ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
-                null, CombinerName.ADD, List.of(), 5, new Flag<>(ChannelEntryFlag.class),
+        return new UIEntry(name, null, ElementEnum.ELEM_ACID, StatElemType.ELEMENT,
+                null, CombinerName.ADD, List.of(), 5, null, new Flag<>(ChannelEntryFlag.class),
                 "some description", "Label", "Lbl5", "L2");
     }
 

@@ -24,6 +24,7 @@ import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryAssembler;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.UIEntryParseRecord;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
+import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.frontend.ui.entrybase.reader.UIEntryBaseReader;
 import uk.co.jackoftradesltd.frontend.ui.entryrenderer.reader.UIEntryRendererReader;
@@ -118,6 +119,10 @@ class UIEntryAssemblerTest {
         assertEquals(31, out.size());
         for (int i = 0; i < 5; i++) {
             assertEquals(StatElemType.STAT, out.get(i).getStatOrElement());
+            // Regression (260922): the UIEntry constructor has no stat-index slot, so each entry
+            // must have its index stamped on afterward - without that, every entry here would
+            // silently read back 0 (STR's index) regardless of which stat it actually is.
+            assertEquals(i, out.get(i).getStatParameter());
         }
         assertEquals("s<STR>", out.get(0).getName());
         assertEquals("s<CON>", out.get(4).getName());
@@ -217,5 +222,81 @@ class UIEntryAssemblerTest {
         assertEquals("good<ACID>", out.get(0).getName());
         assertTrue(out.stream().allMatch(e -> e.getName().startsWith("good<")));
         assertFalse(errors.isEmpty());
+    }
+
+    // ---- override-path priority-scheme dispatch (regression, 260922 finding #3) --------------
+    //
+    // parseEachEntry's override branch must resolve an "index"/"negative_index" priority: line
+    // against the EXISTING (already-parameterized) entry's own element/stat index - C reads
+    // embryo->entry->param_index, and embryo->entry IS the existing entry in the exists branch
+    // ([C] ui-entry.c:1924, 2180-2182). A record that overrides an already-registered entry never
+    // carries its own parameter: line, so dispatching on the incoming record's own type (rather
+    // than the existing entry's) silently leaves the index at 0 instead of resolving it.
+
+    @Test
+    void overridePriorityIndexReadsTheExistingEntrysElementIndex() {
+        List<String> errors = new ArrayList<>();
+        List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
+                rec("e2", "element", "", "", "", ""),
+                new UIEntryParseRecord("e2<ELEC>", "", "", "", "", List.of(), "", "", "",
+                        "index", List.of(), List.of(), "", "", 1)), errors);
+
+        assertTrue(errors.isEmpty(), errors::toString);
+        UIEntry elec = out.stream().filter(e -> e.getName().equals("e2<ELEC>"))
+                .findFirst().orElseThrow();
+        // ELEC is C's element_names[] index 1 (ACID=0, ELEC=1); get_priority_from_index(1) == 1.
+        assertEquals(1, elec.getDefaultPriority());
+    }
+
+    @Test
+    void overridePriorityNegativeIndexReadsTheExistingEntrysElementIndex() {
+        List<String> errors = new ArrayList<>();
+        List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
+                rec("e3", "element", "", "", "", ""),
+                new UIEntryParseRecord("e3<FIRE>", "", "", "", "", List.of(), "", "", "",
+                        "negative_index", List.of(), List.of(), "", "", 1)), errors);
+
+        assertTrue(errors.isEmpty(), errors::toString);
+        UIEntry fire = out.stream().filter(e -> e.getName().equals("e3<FIRE>"))
+                .findFirst().orElseThrow();
+        // FIRE is C's element_names[] index 2; get_priority_from_negative_index(2) == -2.
+        assertEquals(-2, fire.getDefaultPriority());
+    }
+
+    @Test
+    void overridePriorityIndexWithACategoryAttachesToTheCategoryNotTheEntry() {
+        List<String> errors = new ArrayList<>();
+        List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
+                rec("e4", "element", "", "", "", ""),
+                new UIEntryParseRecord("e4<FIRE>", "", "", "", "", List.of("mycat"), "", "", "",
+                        "index", List.of(), List.of(), "", "", 1)), errors);
+
+        assertTrue(errors.isEmpty(), errors::toString);
+        UIEntry fire = out.stream().filter(e -> e.getName().equals("e4<FIRE>"))
+                .findFirst().orElseThrow();
+        // The priority: line attaches to the category just declared before it, not the entry's own
+        // default priority, matching parse_entry_priority's last_category_index branch
+        // ([C] ui-entry.c:2190-2202).
+        assertEquals(0, fire.getDefaultPriority());
+        UIEntryCategory myCat = fire.getCategories().stream()
+                .filter(c -> c.getName().equals("mycat")).findFirst().orElseThrow();
+        assertTrue(myCat.isPrioritySet());
+        assertEquals(2, myCat.getPriority());
+    }
+
+    @Test
+    void overridePriorityIndexReadsTheExistingEntrysStatIndex() {
+        List<String> errors = new ArrayList<>();
+        List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
+                rec("s2", "stat", "", "", "", ""),
+                new UIEntryParseRecord("s2<DEX>", "", "", "", "", List.of(), "", "", "",
+                        "index", List.of(), List.of(), "", "", 1)), errors);
+
+        assertTrue(errors.isEmpty(), errors::toString);
+        UIEntry dex = out.stream().filter(e -> e.getName().equals("s2<DEX>"))
+                .findFirst().orElseThrow();
+        // Stats (STR,INT,WIS,DEX,CON) carry no NONE-style placeholder to offset for, so DEX's
+        // index is its plain position, 3; get_priority_from_index(3) == 3.
+        assertEquals(3, dex.getDefaultPriority());
     }
 }

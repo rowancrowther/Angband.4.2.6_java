@@ -79,6 +79,8 @@ public class UIEntryBaseAssembler implements Assembler<UIEntryBaseParseRecord, L
      *                appended; passed on to the builder
      * @return the successfully assembled {@link UIEntryBase} templates, in
      * source order, excluding any records that failed to resolve
+     *
+     * <p>Function assemble coded before 260920, commented in full on 260922.
      */
     @Override
     public List<UIEntryBase> assemble(@NotNull List<UIEntryBaseParseRecord> records,

@@ -151,6 +151,16 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * objects, skipping (never throwing on) any record whose present fields fail
      * to resolve. Most records yield a single entry; a {@code parameter:stat}
      * record yields one per player stat (see the class comment on expansion).
+     * Unlike the {@code parameter:element} loop, which threads its resolved
+     * {@link ElementEnum} straight through the {@link UIEntry} constructor's
+     * {@code parameter} argument, the {@code UIEntry} constructor has no slot for a
+     * stat index, so the {@code parameter:stat} loop stamps it on afterward with
+     * {@link UIEntry#setStatParameter(int)} - the Java form of C's
+     * {@code entry->param_index = i} assignment in {@code hatch_embryo}'s
+     * parameterised-name loop ({@code [C] ui-entry.c:1825}). Without it, every
+     * per-stat entry silently carries Java's default {@code int} value ({@code 0},
+     * STR's index) regardless of which of the five stats it actually is - found and
+     * fixed 260922, once a regression test for the override-path fix below caught it.
      *
      * @param records the raw parse records, in file order, from the grammar.
      * @param errors  the soft-error sink; one message is appended, quoting the
@@ -166,6 +176,16 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * before its {@code priority:} line) - see {@link #buildCategories(List, List, int, int)}'s
      * Javadoc for the full account. Latent, not live: no shipped {@code ui_entry.txt} record has a
      * {@code category:} line before a {@code priority:} line.
+     *
+     * <p><b>Outstanding (found 260922):</b> the {@code parameter:stat} expansion loop only creates
+     * an entry for stat index {@code i} when
+     * {@code PlayerEventStatusUpdate.getPlayerStatusView().statString()[i]} is non-empty - a guard
+     * C's {@code hatch_embryo} has no counterpart for, since it parameterises unconditionally over
+     * all of {@code get_stat_count()}'s entries ({@code [C] ui-entry.c:1782-1832}) and
+     * {@code stat_names[]} is a fixed five-element array that is never empty. Currently inert:
+     * {@code statString} is seeded from the same hardcoded {@code {"STR","INT","WIS","DEX","CON"}}
+     * order ({@code PlayerEventStatusUpdate.java:69}) and is never actually empty at any index, so
+     * the guard never filters anything out in practice.
      *
      * <p>Function assemble coded before 260922, commented in full on 260922.
      */
@@ -297,9 +317,14 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                         String newLabel = record.label();
                         if (record.label() == null || record.label().isEmpty())
                             newLabel = statStr;
-                        parseEachEntry(results, new UIEntry(name + "<" + statStr + ">", template, parameter, statElemType,
+                        UIEntry entry = new UIEntry(name + "<" + statStr + ">", template, parameter, statElemType,
                                 renderer, combinerName, categories, newPriorityNum, priorityStr,
-                                flag, desc, newLabel, label5, label2));
+                                flag, desc, newLabel, label5, label2);
+                        // The constructor has no stat-index slot (unlike elementParameter above);
+                        // stamp it directly so an override merge (parseEachEntry) can later resolve
+                        // an index/negative_index priority scheme against it.
+                        entry.setStatParameter(i);
+                        parseEachEntry(results, entry);
                     }
                 }
             } else if (statElemType == StatElemType.ELEMENT) {
@@ -371,7 +396,13 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      * record. The categories were already given their resolved priority by
      * {@link #buildCategories(List, List, int, int)} before this method ever sees them; see that
      * method's Javadoc for a known divergence in how a category-attached (rather than record-default)
-     * priority is threaded through here.
+     * priority is threaded through here. The blank entry's constructor carries across {@code entry}'s
+     * resolved element parameter directly, but has no slot for a stat index, so
+     * {@link UIEntry#getStatParameter()} is copied across separately with
+     * {@link UIEntry#setStatParameter(int)} - without it, an override targeting a stat-parameterised
+     * entry (see the {@code existing.getStatParameter()} read above) would resolve against the
+     * wrong (default {@code 0}) index; found and fixed 260922 via {@code assemble}'s
+     * {@code parameter:stat} loop.
      *
      * @param results the shared entry list being built up across all of {@code ui_entry.txt} (seeded
      *                from the registry's existing entries, including the {@code ui_entry_base.txt}
@@ -453,9 +484,9 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             int value;
             if (scheme != null) {
                 int parmIndex = 0;
-                if (entry.getStatOrElement() == StatElemType.ELEMENT) {
+                if (existing.getStatOrElement() == StatElemType.ELEMENT) {
                     parmIndex = existing.getParameter().ordinal() - 1;
-                } else if (entry.getStatOrElement() == StatElemType.STAT) {
+                } else if (existing.getStatOrElement() == StatElemType.STAT) {
                     parmIndex = existing.getStatParameter();
                 }
                 if (scheme.equals("negative_index")) {
@@ -478,6 +509,9 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
             UIEntry blank = new UIEntry(entry.getName(), null, entry.getParameter(), entry.getStatOrElement(),
                     null, null, new ArrayList<>(), entry.getPriorityNum(), entry.getPriorityString(),
                     new Flag<>(ChannelEntryFlag.class), "To keep alive", null, null, null);
+            // The constructor above carries entry's element parameter across but has no slot for a
+            // stat index; copy it separately so a later override merge resolves against it correctly.
+            blank.setStatParameter(entry.getStatParameter());
 
             UIEntryPriorityScheme pSourceIndex;
             String priorityString = entry.getPriorityString();

@@ -43,12 +43,14 @@ import java.util.List;
  * {@code last_category_index} position within the category array - a plain index has nothing to
  * point at here since {@link #categories} is a {@link List} rather than a hand-managed C array.
  *
- * <p>Currently unreached: nothing outside {@link UIEntryAssembler}'s dead
- * {@code newEmbryo}/{@code hatchEmbryo} pair constructs or reads one of these, since the live parts
- * of {@code UIEntryAssembler} resolve each record directly rather than accumulating it through an
- * embryo the way C's directive-at-a-time parser does.
+ * <p>Live, but not in the shape the paragraph above describes: {@link UIEntryAssembler}'s create
+ * path ({@code parseEachEntry}) does build one of these per record, but in a single call from an
+ * already-fully-parsed {@code UIEntryParseRecord} rather than by accumulating it field-by-field
+ * across successive parser calls the way C's {@code parser_priv}-carried struct does - the object
+ * is constructed, filled and read back to {@link #getUiEntry()} within that one method call, and
+ * nothing outside it ever holds onto one across separate invocations.
  *
- * <p>Class UIEntryEmbryo coded before 260920, commented in full on 260920.
+ * <p>Class UIEntryEmbryo coded before 260920, commented in full on 260922.
  *
  * @author Rowan Crowther
  */

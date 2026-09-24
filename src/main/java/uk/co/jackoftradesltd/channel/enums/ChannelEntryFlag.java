@@ -38,9 +38,9 @@ public enum ChannelEntryFlag {
      * be displayed or computed on its own — the Java form of C's {@code ENTRY_FLAG_TEMPLATE_ONLY}
      * ({@code ui-entry.c:80}). No {@code flags:} directive can set it: C's own comment calls it
      * "used internally; not set from within the configuration files". Instead, {@code run_parse_ui_entry}
-     * ({@code ui-entry.c:1988-2006}) stamps every entry loaded from {@code ui_entry_base.txt} with it
+     * ({@code ui-entry.c:2292-2310}) stamps every entry loaded from {@code ui_entry_base.txt} with it
      * before {@code ui_entry.txt} is parsed, and {@code parse_entry_template}
-     * ({@code ui-entry.c:1965-2006}) clears it again on the real entry a {@code template:} directive
+     * ({@code ui-entry.c:1969-2003}) clears it again on the real entry a {@code template:} directive
      * builds from one of those bases — {@code tentry->flags & ~ENTRY_FLAG_TEMPLATE_ONLY}. The port
      * keeps the same pairing: {@code UIEntryBaseAssembler} sets it on every base it assembles, and
      * {@code UIEntryAssembler} clears it on a real entry that copies a base's flags, which is what

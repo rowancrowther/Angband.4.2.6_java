@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -222,6 +223,58 @@ class ChannelEnumsTest {
                     Arrays.stream(UILifecycleEvent.values()).map(Enum::name).collect(Collectors.toList()));
             assertEquals(List.of("STOPPED"),
                     Arrays.stream(CoreLifecycleEvent.values()).map(Enum::name).collect(Collectors.toList()));
+        }
+    }
+
+    /**
+     * Tests for {@link ChannelEntryFlag}, the port of C's anonymous {@code entry_flag} enum and its
+     * {@code entry_flags[]} table ({@code src/ui-entry.c:77-88}).
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class EntryFlags {
+
+        /**
+         * C's enum has two members, {@code ENTRY_FLAG_TIMED_AUX} and {@code ENTRY_FLAG_TEMPLATE_ONLY}
+         * ({@code ui-entry.c:77-81}).
+         */
+        @Test
+        void thereAreAsManyEntryFlagsAsInTheCOriginal() {
+            assertEquals(2, ChannelEntryFlag.values().length,
+                    "C's entry_flag enum has 2 members (ui-entry.c:77-81)");
+        }
+
+        @Test
+        void noEntryFlagIsListedTwice() {
+            assertNoDuplicates(ChannelEntryFlag.values());
+        }
+
+        /**
+         * {@code UIEntryAssembler} and {@code UIEntryBaseAssembler} resolve a data file's
+         * {@code flags:} string via {@code ChannelEntryFlag.valueOf("ENTRY_FLAG_" + flagName)} — the
+         * Java form of looking a name up in C's {@code entry_flags[]} table ({@code ui-entry.c:86-88}).
+         * That table has exactly one row, {@code {"TIMED_AS_AUX", ENTRY_FLAG_TIMED_AUX}}, so that is
+         * the only string a {@code flags:} directive can ever name.
+         */
+        @Test
+        void theOnlySettableFlagResolvesByItsCDataFileName() {
+            assertSame(ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX,
+                    ChannelEntryFlag.valueOf("ENTRY_FLAG_" + "TIMED_AS_AUX"),
+                    "C's entry_flags[] table binds the string \"TIMED_AS_AUX\" to ENTRY_FLAG_TIMED_AUX "
+                            + "(ui-entry.c:87)");
+        }
+
+        /**
+         * {@code ENTRY_FLAG_TEMPLATE_ONLY} is C's internal-only flag ({@code ui-entry.c:79}: "used
+         * internally; not set from within the configuration files") — it exists as a distinct
+         * constant but {@code entry_flags[]} never names it, so no {@code flags:} directive can ever
+         * resolve to it the way {@code ENTRY_FLAG_TIMED_AS_AUX} can.
+         */
+        @Test
+        void theInternalOnlyFlagIsDistinctFromTheSettableOne() {
+            assertNotEquals(ChannelEntryFlag.ENTRY_FLAG_TEMPLATE_ONLY,
+                    ChannelEntryFlag.ENTRY_FLAG_TIMED_AS_AUX);
         }
     }
 }

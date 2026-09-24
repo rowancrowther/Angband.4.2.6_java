@@ -31,11 +31,15 @@ import uk.co.jackoftradesltd.middle.player.Player;
  * ({@code ui-entry.c:679-687}). This class is the plain cache; the loop that walks an object's bound
  * properties using it lives in {@code UIEntryValueRegistry.computeForObject}.
  *
+ * <p>Class ObjectValueCache coded before 260924, commented in full on 260924.
+ *
  * @author Rowan Crowther
  */
 public class ObjectValueCache {
     /**
      * The resolved object flags for this pass (C: {@code cached_object_data.f}).
+     *
+     * <p>Field resolvedFlags coded before 260924, commented in full on 260924.
      */
     private Flag<ObjectFlag> resolvedFlags;
 
@@ -45,6 +49,8 @@ public class ObjectValueCache {
      * ({@code ui-entry.c:679-687}). With a {@code player} given, the object's <em>known</em> flags
      * are cached ({@code object_flags_known}); with none, its real flags are ({@code object_flags}),
      * matching C's choice between the two based on whether {@code p} is null.
+     *
+     * <p>Function populateFlags coded before 260924, commented in full on 260924.
      *
      * @param item   the object whose flags are being cached
      * @param player the player assessing the object's knowledge, or {@code null} to assume every
@@ -61,6 +67,8 @@ public class ObjectValueCache {
     }
 
     /**
+     * <p>Function getResolvedFlags coded before 260924, commented in full on 260924.
+     *
      * @return the flags {@link #populateFlags(ItemObject, Player)} resolved, or {@code null} if it
      * has not yet been called
      */
@@ -71,6 +79,8 @@ public class ObjectValueCache {
     /**
      * Overwrites the cached flags directly, bypassing {@link #populateFlags(ItemObject, Player)}'s
      * once-only guard.
+     *
+     * <p>Function setResolvedFlags coded before 260924, commented in full on 260924.
      *
      * @param objectFlags the flags to store
      */

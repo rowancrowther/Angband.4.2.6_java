@@ -49,13 +49,14 @@ class HelperFunctionsTest {
     }
 
     // ---- the "element" scheme: get_element_count/get_element_name (ui-entry.c:1587-1599). C's ------
-    // ---- element_names[] runs ACID..ARROW, 25 entries, 0-indexed; ElementEnum carries a leading -----
-    // ---- ELEM_NONE placeholder C has no counterpart for, so the port's valid range and count are ----
-    // ---- both shifted up by one to land on the same 25 elements. -----------------------------------
+    // ---- element_names[] runs ACID..ARROW, 25 entries, 0-indexed; ElementEnum carries two -----------
+    // ---- placeholders C has no counterpart for, ELEM_NONE and ELEM_MAX, so the count stays the ------
+    // ---- same 25 (values().length - 2) while only the valid index range is shifted up by one to -----
+    // ---- skip ELEM_NONE. --------------------------------------------------------------------------
 
     @Test
-    void elementCountIsTheCCountPlusOneForTheNonePlaceholder() {
-        assertEquals(26, HelperFunctions.getElementCount());
+    void elementCountMatchesTheCCountUnshifted() {
+        assertEquals(25, HelperFunctions.getElementCount());
     }
 
     @Test

@@ -17,16 +17,23 @@
 
 package uk.co.jackoftradesltd.backend.parser;
 
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
+import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
+import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
 import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,10 +46,16 @@ import static org.junit.jupiter.api.Assertions.*;
  * → resolved {@link PlayerProperty} domain objects, wrapped in a {@link ParseResult}.
  *
  * <p>The happy-path test runs against the real shipped
- * {@code lib/gamedata/player_property.txt}; a clean load of all 44 records is
+ * {@code lib/gamedata/player_property.txt}; a clean load with no soft errors is
  * itself the assertion that every {@code type}, {@code code} flag and
- * {@code bindui} reference resolved. It also spot-checks the three record
- * shapes the format supports (a bare {@code player} flag, an {@code object}
+ * {@code bindui} reference resolved. A {@code type:element} record is a template, not a
+ * finished property - {@code PlayerPropertyAssembler.spreadPlayerPropertyOut} expands it into
+ * one {@link PlayerProperty} per real {@link ElementEnum} (C: {@code finish_parse_player_prop},
+ * {@code init.c:1332-1352}), so the file's 44 declared records yield more than 44 assembled
+ * properties; see {@link #ELEMENT_COUNT} and the exact-count assertion below. That expansion
+ * resolves each element's display text through {@link WorldRegistry#lookupProjectionByCode}, so
+ * {@link #seed()} loads the real {@code projection.txt} before any test runs. It also spot-checks
+ * the three record shapes the format supports (a bare {@code player} flag, an {@code object}
  * flag carrying a resolved {@code bindui}, and an {@code element} record with a
  * {@code value}), and pins a <em>digit-bearing</em> code ({@code BRAVERY_30}) so
  * the {@code FLAG} lexer rule is exercised on a flag name containing digits.
@@ -65,9 +78,52 @@ import static org.junit.jupiter.api.Assertions.*;
 class PlayerPropertyReaderTest {
 
     private static final String REAL_FILE = "lib/gamedata/player_property.txt";
+    private static final String PROJECTION_FILE = "lib/gamedata/projection.txt";
+
+    /**
+     * The number of real elements a {@code type:element} record expands into - every
+     * {@link ElementEnum} constant except the {@code NONE} placeholder and the {@code MAX}
+     * sentinel, neither of which {@code PlayerPropertyAssembler} expands (it skips them the same
+     * way C's loop bound excludes the list's trailing NULL).
+     */
+    private static final int ELEMENT_COUNT = (int) Arrays.stream(ElementEnum.values())
+            .filter(e -> e != ElementEnum.ELEM_NONE && e != ElementEnum.ELEM_MAX)
+            .count();
+
+    private static Object savedProjections;
 
     @TempDir
     Path tempDir;
+
+    /**
+     * {@code type:element} expansion resolves each element's display text through
+     * {@link WorldRegistry#lookupProjectionByCode}, so the projection table has to be populated
+     * before any element property can be assembled - mirrors the seeding
+     * {@link BlowEffectReaderTest} does for the same registry.
+     */
+    @BeforeAll
+    static void seed() throws Exception {
+        List<Projection> projections = new ProjectionReader().parseWithResults(PROJECTION_FILE).items();
+        savedProjections = setStatic("projections", projections);
+    }
+
+    @AfterAll
+    static void restore() throws Exception {
+        setStatic("projections", savedProjections);
+    }
+
+    /**
+     * Overwrite a private static on the owning registry (resolved via {@link RegistrySeeding}),
+     * returning the previous value so {@link #restore()} can put the real table back and leave
+     * the suite's shared statics as they were found.
+     */
+    private static Object setStatic(String field, Object value) throws Exception {
+        Field f = RegistrySeeding.resolve(field);
+        f.setAccessible(true);
+        Object old = f.get(null);
+        f.set(null, value);
+        return old;
+    }
 
     private String tempFile(String name, String content) throws IOException {
         Path file = tempDir.resolve(name);
@@ -89,6 +145,9 @@ class PlayerPropertyReaderTest {
         // an object flag with a bindui to a generic (untagged) UI entry that exists; and
         // an element record with a value and a generic bindui. Every bindui target here
         // is one this pipeline can actually resolve, so this is a genuinely clean load.
+        // The element record expands into one PlayerProperty per real ElementEnum
+        // (PlayerPropertyAssembler.spreadPlayerPropertyOut), so the three records yield
+        // 2 + ELEMENT_COUNT results, not 3.
         String path = tempFile("clean.txt", """
                 record-count:3
                 type:player
@@ -102,13 +161,14 @@ class PlayerPropertyReaderTest {
                 type:element
                 bindui:resist_ui_compact_0:0:1
                 name:Resistance
+                desc:You resist
                 value:1
                 """);
 
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
 
         assertFalse(result.hasErrors(), () -> result.errors().toString());
-        assertEquals(3, result.items().size());
+        assertEquals(2 + ELEMENT_COUNT, result.items().size());
 
         // Player flag with a digit-bearing code: exercises the FLAG lexer rule on a name
         // containing digits, and confirms it resolves through to the enum constant.
@@ -130,30 +190,96 @@ class PlayerPropertyReaderTest {
         assertFalse(bind.special());
         assertEquals(1, bind.value());
 
-        // Element record: value:1 -> RESISTANCE, no code, generic bindui name captured verbatim.
-        PlayerProperty resistance = byName(result.items(), "Resistance");
-        assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, resistance.getPlayerPropertyType());
-        assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, resistance.getValue());
-        assertEquals("resist_ui_compact_0", resistance.getEntries().get(0).uiEntry());
+        // Element record: value:1 -> RESISTANCE, expanded per element (C:
+        // finish_parse_player_prop, init.c:1332-1352). Spot-check the COLD expansion: name/desc
+        // built from the projection's own name ("cold"), capitalised only on its first letter,
+        // plus this record's own name/desc text - "Cold Resistance" / "You resist cold.",
+        // matching C's format("%s %s", capitalised, ability.name) /
+        // format("%s %s.", ability.desc, name). The bindui is re-suffixed with the element's own
+        // code, <COLD>, not the projection's display name.
+        PlayerProperty coldResistance = byName(result.items(), "Cold Resistance");
+        assertEquals(PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT, coldResistance.getPlayerPropertyType());
+        assertEquals(ElementEnum.ELEM_COLD, coldResistance.geteCode());
+        assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, coldResistance.getValue());
+        assertEquals("You resist cold.", coldResistance.getDescription());
+        assertEquals(1, coldResistance.getEntries().size());
+        assertEquals("resist_ui_compact_0<COLD>", coldResistance.getEntries().get(0).uiEntry());
     }
 
     /**
-     * The real {@code player_property.txt} loads cleanly: all 44 records resolve with no soft
-     * errors. In particular the five {@code type:object} stat-sustain records bind to
-     * {@code stat_mod_ui_compact_0<STR..CON>}: since the assembler no longer looks the name up
-     * against a registry, the {@code <TAG>}-decorated name is captured verbatim regardless of
-     * whether a matching UI entry exists.
+     * The real {@code player_property.txt} declares 44 records and loads with no soft errors.
+     * Its three {@code type:element} records (Resistance/Immunity/Vulnerability) each expand into
+     * one {@link PlayerProperty} per real {@link ElementEnum}, so the assembled count is
+     * {@code 44 - 3 + 3 * ELEMENT_COUNT}, not 44. In particular the five {@code type:object}
+     * stat-sustain records bind to {@code stat_mod_ui_compact_0<STR..CON>}: since the assembler
+     * no longer looks the name up against a registry, the {@code <TAG>}-decorated name is
+     * captured verbatim regardless of whether a matching UI entry exists.
      */
     @Test
-    void realFileLoadsAll44RecordsWithNoErrors() throws IOException {
+    void realFileLoadsCleanlyAndExpandsElementRecords() throws IOException {
         ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(REAL_FILE);
 
-        assertEquals(44, result.items().size());
+        assertEquals(44 - 3 + 3 * ELEMENT_COUNT, result.items().size());
         assertEquals(List.of(), result.errors(), () -> "expected a clean load but got: " + result.errors());
 
         // The stat-sustain bindui's name+tag is captured verbatim.
         PlayerProperty sustStr = byName(result.items(), "Sustain Strength");
         assertEquals("stat_mod_ui_compact_0<STR>", sustStr.getEntries().get(0).uiEntry());
+
+        // Each of the three element-type records expands correctly and independently -
+        // spot-checked against values derived from C's finish_parse_player_prop and
+        // player_property.txt's own name:/desc: text, not from the Java implementation.
+        PlayerProperty coldResistance = byName(result.items(), "Cold Resistance");
+        assertEquals(PlayerProperty.PlayerPropertyValue.RESISTANCE, coldResistance.getValue());
+        assertEquals("You resist cold.", coldResistance.getDescription());
+
+        PlayerProperty fireImmunity = byName(result.items(), "Fire Immunity");
+        assertEquals(PlayerProperty.PlayerPropertyValue.IMMUNITY, fireImmunity.getValue());
+        assertEquals("You are immune to fire.", fireImmunity.getDescription());
+
+        PlayerProperty poisonVulnerability = byName(result.items(), "Poison Vulnerability");
+        assertEquals(PlayerProperty.PlayerPropertyValue.VULNERABILITY, poisonVulnerability.getValue());
+        assertEquals("You are vulnerable to poison.", poisonVulnerability.getDescription());
+    }
+
+    /**
+     * {@code spreadPlayerPropertyOut} contributes nothing for an element whose
+     * {@link ElementEnum#getProjectionEnum()} cannot be resolved against the loaded projection
+     * table - the branch C cannot take, since its parser refuses to load {@code projection.txt}
+     * unless the two lists align position for position. Simulated here by seeding a projection
+     * table with the {@code COLD} entry removed: the element-type record must still expand into a
+     * property for every other real element, but silently skip {@code ELEM_COLD} rather than
+     * failing the whole load.
+     */
+    @Test
+    void elementWithNoMatchingProjectionIsSkippedNotFailed() throws Exception {
+        Field field = RegistrySeeding.resolve("projections");
+        field.setAccessible(true);
+        @SuppressWarnings("unchecked")
+        List<Projection> withCold = (List<Projection>) field.get(null);
+        List<Projection> withoutCold = withCold.stream()
+                .filter(p -> p.getProjection() != ElementEnum.ELEM_COLD.getProjectionEnum())
+                .toList();
+        Object saved = setStatic("projections", withoutCold);
+        try {
+            String path = tempFile("element-only.txt", """
+                    record-count:1
+                    type:element
+                    bindui:resist_ui_compact_0:0:1
+                    name:Resistance
+                    desc:You resist
+                    value:1
+                    """);
+
+            ParseResult<PlayerProperty> result = new PlayerPropertyReader().parseWithResults(path);
+
+            assertFalse(result.hasErrors(), () -> result.errors().toString());
+            assertEquals(ELEMENT_COUNT - 1, result.items().size());
+            assertTrue(result.items().stream().noneMatch(p -> "Cold Resistance".equals(p.getName())));
+            assertTrue(result.items().stream().anyMatch(p -> "Fire Resistance".equals(p.getName())));
+        } finally {
+            setStatic("projections", saved);
+        }
     }
 
     // ---- hard error (fail-closed: empty list) -----------------------------------------------

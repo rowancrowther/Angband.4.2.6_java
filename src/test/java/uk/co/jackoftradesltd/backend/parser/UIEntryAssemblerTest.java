@@ -106,10 +106,13 @@ class UIEntryAssemblerTest {
     @Test
     void statOrElementResolvesFromTheParameterKind() {
         List<String> errors = new ArrayList<>();
+        // A created entry with neither combine: nor template: is dropped by the create path's
+        // combiner_index==0 guard (UIEntryAssembler.java:583-586, mirroring hatch_embryo -
+        // [C] ui-entry.c:1773-1779), so every record here needs a real combiner to survive.
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("s", "stat", "", "", "", ""),
-                rec("e", "element", "", "", "", ""),
-                rec("n", "", "", "", "", "")), errors);
+                rec("s", "stat", "", "", "ADD", ""),
+                rec("e", "element", "", "", "ADD", ""),
+                rec("n", "", "", "", "ADD", "")), errors);
 
         assertTrue(errors.isEmpty(), errors::toString);
         // The parameter:stat record expands into one tagged entry per stat (STR..CON) and the
@@ -140,7 +143,7 @@ class UIEntryAssemblerTest {
     void nameTagResolvesToTheConcreteElementParameter() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("resist_ui_compact_0<DARK>", "", "DARK", "", "", "")), errors);
+                rec("resist_ui_compact_0<DARK>", "", "DARK", "", "ADD", "")), errors);
 
         assertTrue(errors.isEmpty(), errors::toString);
         assertEquals(1, out.size());
@@ -214,7 +217,7 @@ class UIEntryAssemblerTest {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
                 rec("bad", "bogus", "", "", "", ""),
-                rec("good", "element", "", "", "", "")), errors);
+                rec("good", "element", "", "", "ADD", "")), errors);
 
         // "good" is a parameter:element record, so it survives as its full 25-element expansion,
         // not a single entry - the bad record is what gets dropped.
@@ -237,7 +240,7 @@ class UIEntryAssemblerTest {
     void overridePriorityIndexReadsTheExistingEntrysElementIndex() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("e2", "element", "", "", "", ""),
+                rec("e2", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e2<ELEC>", "", "", "", "", List.of(), "", "", "",
                         "index", List.of(), List.of(), "", "", 1)), errors);
 
@@ -252,7 +255,7 @@ class UIEntryAssemblerTest {
     void overridePriorityNegativeIndexReadsTheExistingEntrysElementIndex() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("e3", "element", "", "", "", ""),
+                rec("e3", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e3<FIRE>", "", "", "", "", List.of(), "", "", "",
                         "negative_index", List.of(), List.of(), "", "", 1)), errors);
 
@@ -267,7 +270,7 @@ class UIEntryAssemblerTest {
     void overridePriorityIndexWithACategoryAttachesToTheCategoryNotTheEntry() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("e4", "element", "", "", "", ""),
+                rec("e4", "element", "", "", "ADD", ""),
                 new UIEntryParseRecord("e4<FIRE>", "", "", "", "", List.of("mycat"), "", "", "",
                         "index", List.of(), List.of(), "", "", 1)), errors);
 
@@ -288,7 +291,7 @@ class UIEntryAssemblerTest {
     void overridePriorityIndexReadsTheExistingEntrysStatIndex() {
         List<String> errors = new ArrayList<>();
         List<UIEntry> out = new UIEntryAssembler().assemble(List.of(
-                rec("s2", "stat", "", "", "", ""),
+                rec("s2", "stat", "", "", "ADD", ""),
                 new UIEntryParseRecord("s2<DEX>", "", "", "", "", List.of(), "", "", "",
                         "index", List.of(), List.of(), "", "", 1)), errors);
 

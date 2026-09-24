@@ -176,7 +176,7 @@ public class WorldRegistry {
      * @throws IllegalStateException if projections have not been loaded
      */
     @Nullable
-    public static Projection lookupProjectionByCode(ProjectionType type) {
+    public static Projection lookupProjectionByType(ProjectionType type) {
         if (projections == null) {
             String message = "Invalid attempt to access projections when it hasn't been initialized";
             IllegalStateException e = new IllegalStateException(message);
@@ -185,6 +185,19 @@ public class WorldRegistry {
         }
 
         return projections.stream().filter(p -> p.getType() == type)
+                .findFirst()
+                .orElse(null);
+    }
+
+    public static Projection lookupProjectionByCode(ProjectionEnum pCode) {
+        if (projections == null) {
+            String message = "Invalid attempt to access projections when it hasn't been initialized";
+            IllegalStateException e = new IllegalStateException(message);
+            logger.fatal(message, e);
+            throw e;
+        }
+
+        return projections.stream().filter(p -> p.getProjection() == pCode)
                 .findFirst()
                 .orElse(null);
     }

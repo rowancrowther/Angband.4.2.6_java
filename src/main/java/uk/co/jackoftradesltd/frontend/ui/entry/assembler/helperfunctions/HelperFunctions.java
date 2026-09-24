@@ -118,17 +118,19 @@ public class HelperFunctions {
     /**
      * Returns the number of valid indices {@link #getElementName(int)} accepts, the Java form of
      * C's {@code get_element_count} ({@code [C] ui-entry.c:1588-1591}), used as the {@code count_func}
-     * for {@code UIEntryNameParameter.ENTRY_NAME_PARAMETER_ELEMENT}. One higher than
-     * {@link ElementEnum#values()}{@code .length}'s true resistable-element count, offsetting for the
-     * {@link ElementEnum#ELEM_NONE} placeholder (see the class Javadoc) the same way
-     * {@link #getElementName(int)}'s bounds do.
+     * for {@code UIEntryNameParameter.ENTRY_NAME_PARAMETER_ELEMENT}. {@link ElementEnum} carries two
+     * placeholders C's {@code element_names[]} does not — {@code ELEM_NONE} and {@code ELEM_MAX} —
+     * so {@link ElementEnum#values()}{@code .length} is two higher than C's own count; subtracting
+     * both back off (rather than the one {@link #getElementName(int)}'s shifted bounds subtract) is
+     * what lands this on the same figure {@code get_element_count} returns.
      *
-     * <p>Function getElementCount coded before 260920, commented in full on 260920.
+     * <p>Function getElementCount coded before 260920, commented in full on 260924.
      *
-     * @return one more than the number of real elements {@link ElementEnum} carries
+     * @return the number of real elements {@link ElementEnum} carries, the same figure C's
+     * {@code get_element_count} returns
      */
     static int getElementCount() {
-        return ElementEnum.values().length - 1;
+        return ElementEnum.values().length - 2;
     }
 
     /**

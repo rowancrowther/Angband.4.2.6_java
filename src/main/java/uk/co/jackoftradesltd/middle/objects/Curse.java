@@ -724,4 +724,20 @@ public class Curse {
             return effect.getTime();
         return new Random(0, 0, 0, 1, false);
     }
+
+    /**
+     * @return the object flags the player is currently entitled to read off this curse
+     * (see {@link #setKnownObjectFlags(Flag)})
+     */
+    public Flag<ObjectFlag> getKnownObjectFlags() {
+        return knownObjectFlags;
+    }
+
+    /**
+     * @return the per-element information the player is currently entitled to read off this curse
+     * (see {@link #setKnownElInfo(Map)} and {@link #putKnownElementInfo(ElementEnum, ElementInfo)})
+     */
+    public Map<ElementEnum, ElementInfo> getKnownElInfo() {
+        return knownElInfo;
+    }
 }

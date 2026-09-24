@@ -686,6 +686,41 @@ public class KnownObject {
         this.toA = toA;
     }
 
+    /**
+     * Checks whether the player is entitled to be told that {@code item} carries a resistance (or
+     * vulnerability) to {@code element} — the item-shaped port of C's {@code object_element_is_known}
+     * ({@code obj-knowledge.c}). The curse-shaped counterpart is
+     * {@link ObjectUtils#objectElementIsKnown(Player, Curse, ElementEnum)}, which mirrors this
+     * method's structure exactly.
+     *
+     * <p>The two {@code ELEM_NONE}/{@code ELEM_MAX} sentinels answer false outright, matching C's
+     * {@code element < 0 || element >= ELEM_MAX} test. Past that, three independent routes to "yes",
+     * tried in the same order C tries them:
+     * <ol>
+     *   <li>The item is {@link ItemObject#isFullyKnown() fully known}, so every resistance on it is
+     *   readable regardless of how it got that way.</li>
+     *   <li>{@link #elementResistInfo}, this very instance's own field, already covers the element —
+     *   C's {@code p->obj_k->el_info[element].res_level}. Because this method is called on the
+     *   player's own {@link KnownObject} (as {@code player.getItemKnowledge().objectElementIsKnown(...)}),
+     *   {@code this} already <em>is</em> {@code p->obj_k}, so no further use is made of the
+     *   {@code player} parameter — it is carried only so the signature matches the curse-shaped
+     *   sibling above, which has no such instance to call through.</li>
+     *   <li>The item's own known-shadow, {@code item}'s {@link ItemObject#getKnown()} (C's
+     *   {@code obj->known}), already carries a non-zero {@link ElementInfo#getResLevel()} for this
+     *   element — C's {@code obj->known->el_info[element].res_level}. A missing map entry defaults to
+     *   a fresh {@link ElementInfo}, whose resistance level is zero, so it answers the same as C's
+     *   zero-initialised array read.</li>
+     * </ol>
+     * Failing all three, the element is not known and the method answers false.
+     *
+     * @param player  the player asking (unused; see the second route above)
+     * @param item    the object being asked about
+     * @param element the element whose knowledge is in question
+     * @return true if the player is currently entitled to see resistance to {@code element} on
+     * {@code item}
+     *
+     * <p>Function objectElementIsKnown coded before 260924, commented in full on 260924.
+     */
     public boolean objectElementIsKnown(Player player, ItemObject item, ElementEnum element) {
         if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
             return false;

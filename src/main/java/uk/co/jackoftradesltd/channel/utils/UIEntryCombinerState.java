@@ -63,6 +63,20 @@ public class UIEntryCombinerState {
      */
     private int accumAux;
 
+    public UIEntryCombinerState() {
+        this.negAccum = 0;
+        this.negAccumAux = 0;
+        this.accum = 0;
+        this.accumAux = 0;
+    }
+
+    public UIEntryCombinerState(int negAccum, int negAccumAux, int accum, int accumAux) {
+        this.negAccum = negAccum;
+        this.negAccumAux = negAccumAux;
+        this.accum = accum;
+        this.accumAux = accumAux;
+    }
+
     /**
      * Returns the value channel's most-negative accumulator.
      *

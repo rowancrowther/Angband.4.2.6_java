@@ -64,6 +64,13 @@ import java.util.*;
  *       order to populate the per-domain registries.</li>
  * </ul>
  *
+ * <p><b>Load order has drifted from C, as of 2026-09-24.</b> C's {@code pl[]} table
+ * ({@code init.c:4354-4366}) fixes the parse order of {@code slay.txt}, {@code brand.txt},
+ * {@code pain.txt}, {@code monster_base.txt} and {@code summon.txt} as slays → brands → pain →
+ * monster bases → summons. {@link #init(Core)}'s current order for that group is pain → monster
+ * bases → slays → brands → summons — monster bases moved ahead of slays and brands. See the note
+ * on {@link #init(Core)} for why, and treat the ordering as provisional rather than settled.
+ *
  * <p>The per-type master lists (monsters, objects, features, projections, classes, …) and their
  * {@code lookup*} accessors <em>no longer live here</em>: they were split out into the
  * {@code registry} package (read side) and {@code loaders} package (write side), one slice per
@@ -198,6 +205,50 @@ public class GameConstants {
      * and its per-base sval counters are rebuilt from scratch, so a re-init (e.g. between tests) does
      * not double-register kinds. Any failure is logged and rethrown wrapped in a
      * {@link RuntimeException}, since the game cannot run with partially-loaded data.
+     *
+     * <p><b>The {@code bindui:} wiring, batched rather than interleaved.</b> Before
+     * {@code player_property.txt} is loaded, this method blocks on the core's inbox for the front
+     * end's {@code UIEntriesLoaded} message ({@code "ui_entry files"} below) — the same handshake
+     * {@link uk.co.jackoftradesltd.middle.game.gameengine.Core#gameLoop()} otherwise loops over, so
+     * any other message that arrives first is handed to {@link Core#handleChannelOutput} rather than
+     * dropped. C has no such wait: {@code object_property.txt}'s {@code bindui:} lines bind
+     * immediately, one call per directive, as {@code parse_object_property_bindui}
+     * ({@code obj-init.c:3388-3404}) calls {@code bind_object_property_to_ui_entry_by_name}
+     * ({@code ui-entry.c:213-249}); {@code player_property.txt}'s bind slightly later but still far
+     * sooner than the port's — {@code parse_player_prop_bindui} ({@code init.c:1263-1279}) only
+     * records each binding on an in-progress "embryo" ability, and it is {@code finish_parse_player_prop}
+     * ({@code init.c:1322}<i>ff</i>), running once {@code player_property.txt} itself is fully parsed
+     * and well before {@code object_property.txt} is even opened, that walks those embryos and calls
+     * {@code bind_player_ability_to_ui_entry_by_name} ({@code ui-entry.c:271-311}). Either way, C's
+     * {@code struct ui_entry} to bind onto already exists, because {@code ui_entry.txt} is parsed
+     * before either property file in C's own {@code init_arrays}. The port cannot do the same, because its
+     * {@code UIEntry} registry lives on the front end and only crosses the channel as one message
+     * once every entry is built — so instead of binding as each property parses, this method waits
+     * for that message, loads {@code player_property.txt} and {@code object_property.txt} in full,
+     * and only then — in the block below reading {@code "Deal with UIEntry bindings here"} — walks
+     * every loaded {@link PlayerProperty} and {@link ObjectProperty}, groups them by the
+     * {@link UIEntrySpec} their {@code bindui:} lines name, and hands each group to
+     * {@link uk.co.jackoftradesltd.middle.game.globals.registry.UIEntryValueRegistry#addEntryBinding}
+     * in one call per entry. The end state — every {@code ui_entry} knowing every property bound to
+     * it — is the same either way; only the order the wiring happens in differs.
+     *
+     * <p><b>Load order drift from C's {@code pl[]}, dated 2026-09-24.</b> C's own array
+     * ({@code init.c:4354-4366}) parses {@code slay.txt} and {@code brand.txt} before
+     * {@code monster_base.txt} exists, even though {@code parse_slay_base}
+     * ({@code obj-init.c:714-730}) looks a monster base up by name and hard-fails with
+     * {@code PARSE_ERROR_INVALID_MONSTER_BASE} if it isn't registered yet. As it stands today, this
+     * method's order for that group of five files is:
+     * <ol>
+     *   <li>{@code pain.txt}</li>
+     *   <li>{@code monster_base.txt} — moved ahead of slays and brands so {@code base:} lookups in
+     *       {@code slay.txt} can resolve</li>
+     *   <li>{@code slay.txt}</li>
+     *   <li>{@code brand.txt}</li>
+     *   <li>{@code summon.txt}</li>
+     * </ol>
+     * This has not been confirmed against a real {@code slay.txt} entry that uses a {@code base:}
+     * directive, so treat the reordering as an untested fix for an apparent C hazard rather than a
+     * settled one.
      */
     public static boolean init(Core core) {
         String file = "";
@@ -475,7 +526,7 @@ public class GameConstants {
     }
 
 
-    //    private static void loadMonsterLore() {
+//    private static void loadMonsterLore() {
 //        LoreReader loreReader = new LoreReader();
 //        String filename = AngbandDirs.ANGBAND_DIRS.USER.getPath() + "lore.txt";
 //

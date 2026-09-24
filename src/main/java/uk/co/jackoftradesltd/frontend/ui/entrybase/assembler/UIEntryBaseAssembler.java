@@ -32,10 +32,7 @@ import uk.co.jackoftradesltd.frontend.entries.UIEntryBase;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryCategory;
 import uk.co.jackoftradesltd.frontend.entries.UIEntryRenderer;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
-import uk.co.jackoftradesltd.frontend.globals.UIGlobals;
 import uk.co.jackoftradesltd.frontend.ui.entry.EmbryonicCategoryReferencies;
-import uk.co.jackoftradesltd.frontend.ui.entry.UIEntryEmbryo;
-import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.HelperFunctions;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.UIEntryPriorityScheme;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 

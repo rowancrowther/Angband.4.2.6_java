@@ -21,6 +21,22 @@ import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.utils.FlagView;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 
+/**
+ * The slice of a {@link uk.co.jackoftradesltd.frontend.entries.UIEntry} the core needs once loading
+ * finishes, carried across the channel inside {@code UIMessage.UIEntriesLoaded}. No C counterpart:
+ * C's {@code struct ui_entry} lives in one process and is read directly by whichever code needs it,
+ * where this port's core and UI halves run on separate threads with no shared entry list, so the UI
+ * side - the one that loads {@code ui_entry.txt} - sends the core just the fields it binds properties
+ * against ({@link #combinerName}, {@link #entryFlags}) and the name it binds them by, rather than the
+ * whole entry.
+ *
+ * <p>Record UIEntrySpec coded before 260924, commented in full on 260924.
+ *
+ * @param entryName    the entry's internal name, matching {@link uk.co.jackoftradesltd.frontend.entries.UIEntry#getName()}
+ * @param combinerName the entry's value-combining strategy, matching {@link uk.co.jackoftradesltd.frontend.entries.UIEntry#getCombineType()}
+ * @param entryFlags   the entry's behavioural flags, matching {@link uk.co.jackoftradesltd.frontend.entries.UIEntry#getEntryFlag()}
+ * @author Rowan Crowther
+ */
 public record UIEntrySpec(String entryName,
                           CombinerName combinerName,
                           FlagView<ChannelEntryFlag> entryFlags) {

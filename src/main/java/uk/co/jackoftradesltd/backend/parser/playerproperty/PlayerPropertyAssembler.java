@@ -18,9 +18,14 @@
 package uk.co.jackoftradesltd.backend.parser.playerproperty;
 
 import org.jetbrains.annotations.NotNull;
+import uk.co.jackoftradesltd.channel.enums.ElementEnum;
+import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.parser.Assembler;
+import uk.co.jackoftradesltd.middle.game.event.projection.Projection;
 import uk.co.jackoftradesltd.middle.game.globals.GameConstants;
+import uk.co.jackoftradesltd.middle.game.globals.registry.WorldRegistry;
 import uk.co.jackoftradesltd.middle.objects.enums.ObjectFlag;
+import uk.co.jackoftradesltd.middle.objects.enums.ObjectModifier;
 import uk.co.jackoftradesltd.middle.player.PlayerProperty;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerFlag;
 
@@ -49,6 +54,24 @@ import java.util.List;
  *       vulnerability), defaulting to {@link PlayerProperty.PlayerPropertyValue#NONE}.</li>
  * </ul>
  * <p>
+ * An {@code element}-typed record is a template, not a finished property: C's
+ * {@code finish_parse_player_prop} ({@code init.c:1326-1393}) expands one such record into
+ * one {@code player_ability} per real element, and {@link #spreadPlayerPropertyOut} is that
+ * expansion. For each {@link ElementEnum} it looks up the {@link Projection} the element
+ * resolves to (by {@link ElementEnum#getProjectionEnum()}, since the port has no positional
+ * array to index the way C indexes {@code projections[i]}) and builds the display name and
+ * description from {@link Projection#getName()} exactly as C builds them from
+ * {@code projections[i].name} - capitalising only the string's first character, the way
+ * {@code my_strcap} ({@code z-util.c:529}) does, not every word. The record's own
+ * {@code name:}/{@code desc:} text (e.g. {@code "Resistance"}/{@code "You resist"}) supplies
+ * the fixed half of each of the two built strings, so the same template correctly yields
+ * {@code "Cold Resistance"}, {@code "Fire Immunity"} and {@code "Poison Vulnerability"}
+ * depending on which of {@code player_property.txt}'s three element-type records it came
+ * from. Each expanded property's {@code bindui} entries are also re-suffixed with
+ * {@code <ELEMENT_CODE>}, mirroring C's {@code list_element_names[i]} tag on the bound UI
+ * entry name - note this is the element's own code, not the {@link Projection} name, so
+ * {@code ELEM_ELEC} tags as {@code <ELEC>} even though it displays as "Lightning".
+ * <p>
  * Assembly is best-effort and error-collecting rather than fail-fast, with two
  * tiers of skip depending on how load-bearing the unresolvable field is:
  * <ul>
@@ -72,9 +95,12 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
      * Resolve each {@link PlayerPropertyParseRecord} into a {@link PlayerProperty},
      * skipping (never throwing on) a record whose {@code type}/{@code code} cannot be
      * resolved and dropping individual bindings whose value or target cannot be
-     * resolved. See the class comment for the two-tier skip contract.
+     * resolved. See the class comment for the two-tier skip contract. An
+     * {@code element}-typed record is additionally expanded into one {@link PlayerProperty}
+     * per real element via {@link #spreadPlayerPropertyOut}; a record whose element cannot be
+     * matched to a {@link Projection} contributes nothing (see that method).
      *
-     * <p>Function assemble coded before 260915, commented in full on 260915.
+     * <p>Function assemble coded before 260915, commented in full on 260924.
      *
      * @param records the raw parse records, in file order, from the grammar.
      * @param errors  the soft-error sink; one message is appended, quoting the
@@ -94,47 +120,63 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 case "element" -> PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT;
                 case "object" -> PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT;
                 case "player" -> PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER;
-                default -> null;
+                default -> PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT_MODIFIER;
             };
-            if (ppt == null) {
-                errors.add("Record starting at line: " + line + " has illegal type");
-                continue;
-            }
             ObjectFlag oFlag = ObjectFlag.OF_NONE;
             PlayerFlag pFlag = PlayerFlag.PF_NONE;
-            if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT) {
-                try {
-                    oFlag = ObjectFlag.valueOf("OF_" + record.code());
-                } catch (IllegalArgumentException e) {
-                    errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                    continue;
-                }
-            } else if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER) {
-                try {
-                    pFlag = PlayerFlag.valueOf("PF_" + record.code());
-                } catch (IllegalArgumentException e) {
-                    errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
-                    continue;
+            ElementEnum eCode = ElementEnum.ELEM_NONE;
+            ObjectModifier omCode = ObjectModifier.OM_NONE;
+            boolean extendToAllElements = ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT;
+
+            if (!record.code().isEmpty()) {
+                if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_OBJECT) {
+                    try {
+                        oFlag = ObjectFlag.valueOf("OF_" + record.code());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
+                        continue;
+                    }
+                } else if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_PLAYER) {
+                    try {
+                        pFlag = PlayerFlag.valueOf("PF_" + record.code());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
+                        continue;
+                    }
+                } else if (ppt == PlayerProperty.PlayerPropertyType.PROP_TYPE_ELEMENT) {
+                    try {
+                        eCode = ElementEnum.valueOf("ELEM_" + record.code());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
+                        continue;
+                    }
+                } else {
+                    try {
+                        omCode = ObjectModifier.valueOf("OM_" + record.code());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Record starting at line: " + line + " has illegal code: " + record.code());
+                        continue;
+                    }
                 }
             }
+            
             List<PlayerProperty.BindUI> bindings = new ArrayList<>();
             for (List<String> b : record.bindui()) {
                 boolean aux = !b.get(2).equals("0");
                 boolean special = b.get(3).equals("special");
-                int value = 0;
+                int value;
                 try {
                     value = special ? 0 : Integer.parseInt(b.get(3));
+                    if (value <= Integer.MIN_VALUE || value >= Integer.MAX_VALUE) {
+                        errors.add("Record starting at line: " + line + " has illegal integer value " +
+                                "as part of bindui: " + record.bindui());
+                        continue;
+                    }
                 } catch (NumberFormatException e) {
                     errors.add("Record starting at line: " + line + " has illegal integer value " +
                             "as part of bindui: " + record.bindui());
                     continue;
                 }
-//                // UIEntry entry = UIRegistry.getUIEntry(b.get(0) + b.get(1));
-//                if (entry == null) {
-//                    errors.add("Record starting at line: " + line + " has illegal UIEntry: "
-//                            + record.bindui());
-//                    continue;
-//                }
 
                 bindings.add(new PlayerProperty.BindUI(b.get(0) + b.get(1), value, special, aux));
             }
@@ -147,11 +189,84 @@ public class PlayerPropertyAssembler implements Assembler<PlayerPropertyParseRec
                 default -> PlayerProperty.PlayerPropertyValue.NONE;
             };
 
-            results.add(new PlayerProperty(
-                    ppt, pFlag, oFlag, bindings, name, desc, ppv)
-            );
+            if (extendToAllElements) {
+                for (ElementEnum e : ElementEnum.values()) {
+                    if (e == ElementEnum.ELEM_MAX || e == ElementEnum.ELEM_NONE)
+                        continue;
+
+                    PlayerProperty pp = new PlayerProperty(ppt, pFlag, oFlag, e, omCode, bindings, name, desc, ppv);
+
+                    pp = spreadPlayerPropertyOut(pp, e);
+
+                    if (pp != null)
+                        results.add(pp);
+                }
+            } else {
+                results.add(new PlayerProperty(
+                        ppt, pFlag, oFlag, eCode, omCode, bindings, name, desc, ppv)
+                );
+            }
         }
 
         return results;
+    }
+
+    /**
+     * Expands one {@code element}-typed template property into the concrete property for a
+     * single element - the per-element body of C's expansion loop in
+     * {@code finish_parse_player_prop} ({@code init.c:1332-1352}).
+     *
+     * <p>Re-suffixes every bound {@code bindui} entry's UI-entry name with {@code <ELEMENT>}
+     * (C: {@code list_element_names[i]}, {@code init.c:1348}) and looks up the {@link Projection}
+     * {@code e} resolves to via {@link ElementEnum#getProjectionEnum()} - the port's substitute
+     * for C's positional {@code projections[i]}, since the two enums carry no shared array
+     * index. If no such projection exists (the two enums have drifted apart; see
+     * {@link ElementEnum#getProjectionEnum()}) this contributes nothing rather than building a
+     * name from a missing lookup, which C cannot do because its indexing is guaranteed valid by
+     * {@code parse_projection_code}'s element/order check.
+     *
+     * <p>Builds the finished display name and description the way C does at
+     * {@code init.c:1338-1343}: the name is the projection's {@link Projection#getName()} with
+     * only its first character capitalised (C: {@code my_strcap}, {@code z-util.c:529}) followed
+     * by {@code pp}'s own name (e.g. {@code "Cold" + " " + "Resistance"}); the description is
+     * {@code pp}'s own description followed by the projection name and a trailing period (C:
+     * {@code format("%s %s.", ...)}), matching C's asymmetry of putting the period only on the
+     * description, never the name.
+     *
+     * <p>Function spreadPlayerPropertyOut coded on 260924, commented in full on 260924.
+     *
+     * @param pp the template property for one {@code type:element} record, carrying that
+     *           record's own name/description/bindings/value ahead of expansion
+     * @param e  the element to expand {@code pp} for
+     * @return the property built for {@code e}, or {@code null} if {@code e} has no matching
+     * {@link Projection}
+     */
+    private PlayerProperty spreadPlayerPropertyOut(PlayerProperty pp, ElementEnum e) {
+        List<PlayerProperty.BindUI> newBindings = new ArrayList<>();
+
+        String tag = e.name().substring(5);
+        for (PlayerProperty.BindUI bindUI : pp.getEntries()) {
+            PlayerProperty.BindUI newBindUI =
+                    new PlayerProperty.BindUI(bindUI.uiEntry() + "<" + tag + ">",   // BINDUI<ACID>
+                            bindUI.value(), bindUI.special(), bindUI.aux());
+            newBindings.add(newBindUI);
+        }
+
+        ProjectionEnum projCode = e.getProjectionEnum();
+
+        Projection projection = WorldRegistry.lookupProjectionByCode(projCode);
+
+        if (projection == null)
+            return null;
+
+        String projName = projection.getName();
+
+        String resistName = projName.substring(0, 1).toUpperCase() + projName.substring(1) + " "
+                + pp.getName();
+
+        String nameStr = pp.getDescription() + " " + projName + ".";
+
+        return new PlayerProperty(pp.getPlayerPropertyType(), pp.getpCode(), pp.getoCode(),
+                e, pp.getomCode(), newBindings, resistName, nameStr, pp.getValue());
     }
 }

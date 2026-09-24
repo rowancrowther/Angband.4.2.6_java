@@ -1492,6 +1492,133 @@ public class ObjectUtils {
     }
 
     /**
+     * Checks whether the player is entitled to be told that {@code item} carries {@code flag} —
+     * the port of C's {@code object_flag_is_known} ({@code obj-knowledge.c}).
+     *
+     * <p>Three independent routes to "yes", tried in the same order C tries them, any one of which
+     * is sufficient:
+     * <ol>
+     *   <li>The item is {@link ItemObject#isFullyKnown() fully known}, so every flag on it is
+     *   readable regardless of how it got that way.</li>
+     *   <li>The flag is on the player's own rune knowledge, {@code player}'s
+     *   {@link Player#getItemKnowledge()} — the port of C's {@code p->obj_k}, checked with
+     *   {@link KnownObject#flagIsKnown(ObjectFlag)} (C's {@code of_has(p->obj_k->flags, flag)}).
+     *   Once any item has taught the player a rune, every item shows that flag from then on.</li>
+     *   <li>The item's own known-shadow, {@code item}'s {@link ItemObject#getKnown()} (the port of
+     *   C's {@code obj->known}), already has the flag recorded on it — {@code of_has(obj->known
+     *   ->flags, flag)} — meaning this particular item has had its own chance to display the flag
+     *   even though the player-wide rune is not yet learned.</li>
+     * </ol>
+     * Failing all three, the flag is not known and the method answers false.
+     *
+     * @param player the player asking
+     * @param item   the object being asked about
+     * @param flag   the flag whose knowledge is in question
+     * @return true if the player is currently entitled to see {@code flag} on {@code item}
+     *
+     * <p>Function objectFlagIsKnown coded before 260924, commented in full on 260924.
+     */
+    public static boolean objectFlagIsKnown(Player player, ItemObject item, ObjectFlag flag) {
+        if (item.isFullyKnown()) return true;
+
+        if (player.getItemKnowledge().flagIsKnown(flag)) return true;
+
+        return item.getKnown().getObjectFlags().has(flag);
+    }
+
+    /**
+     * Checks whether the player is entitled to be told that {@code curse} carries {@code flag} —
+     * the curse-shaped counterpart to {@link #objectFlagIsKnown}, itself the port of C's
+     * {@code object_flag_is_known} ({@code obj-knowledge.c}). C never asks this question of a
+     * curse — see {@link Curse#isFullyKnown()} for why — so this is the port's own extension of
+     * that function to a {@link Curse}, mirroring its structure with {@code curse} standing in
+     * for the object:
+     *
+     * <ol>
+     *   <li>The curse is {@link Curse#isFullyKnown() fully known}, so every flag it grants is
+     *   readable regardless of how it got that way.</li>
+     *   <li>The flag is on the player's own rune knowledge, {@code player}'s
+     *   {@link Player#getItemKnowledge()} — the port of C's {@code p->obj_k}, checked with
+     *   {@link KnownObject#flagIsKnown(ObjectFlag)} (C's {@code of_has(p->obj_k->flags, flag)}).
+     *   Once any item has taught the player a rune, every curse shows that flag from then on.</li>
+     *   <li>The curse's own known-shadow, {@link Curse#getKnownObjectFlags()} (the curse-shaped
+     *   equivalent of C's {@code obj->known}), already has the flag recorded on it — meaning this
+     *   particular curse has had its own chance to display the flag even though the player-wide
+     *   rune is not yet learned.</li>
+     * </ol>
+     * Failing all three, the flag is not known and the method answers false.
+     *
+     * <p>Function curseObjectFlagIsKnown coded before 260924, commented in full on 260924.
+     *
+     * @param player the player asking
+     * @param curse  the curse being asked about
+     * @param flag   the flag whose knowledge is in question
+     * @return true if the player is currently entitled to see {@code flag} on {@code curse}
+     */
+    public static boolean curseObjectFlagIsKnown(Player player, Curse curse, ObjectFlag flag) {
+        if (curse.isFullyKnown()) return true;
+
+        if (player.getItemKnowledge().flagIsKnown(flag)) return true;
+
+        return curse.getKnownObjectFlags().has(flag);
+    }
+
+    /**
+     * Checks whether the player is entitled to be told that {@code curse} carries a resistance
+     * (or vulnerability) to {@code element} — the curse-shaped counterpart to C's
+     * {@code object_element_is_known} ({@code obj-knowledge.c}), which asks the same question of
+     * an {@code obj} but is never called with a curse; see {@link Curse#isFullyKnown()} for why.
+     * The item-shaped sibling is
+     * {@link KnownObject#objectElementIsKnown(Player, ItemObject, ElementEnum)}.
+     *
+     * <p>The two {@code ELEM_NONE}/{@code ELEM_MAX} sentinels answer false outright, matching C's
+     * {@code element < 0 || element >= ELEM_MAX} test. Past that, three independent routes to
+     * "yes", tried in the same order C tries them:
+     * <ol>
+     *   <li>The curse is {@link Curse#isFullyKnown() fully known}.</li>
+     *   <li>The player's own rune knowledge already covers this element — {@code player}'s
+     *   {@link Player#getItemKnowledge()} (C's {@code p->obj_k}), read through
+     *   {@link KnownObject#getElementResistInfo()} (C's
+     *   {@code obj_k->el_info[element].res_level}). Once any item has taught the player the rune,
+     *   every curse shows the resistance from then on.</li>
+     *   <li>The curse's own known-shadow, {@link Curse#getKnownElInfo()} (the curse-shaped
+     *   equivalent of C's {@code obj->known->el_info}), already carries a non-zero
+     *   {@link ElementInfo#getResLevel()} for this element — meaning this particular curse has had
+     *   its own chance to display the resistance even though the player-wide rune is not yet
+     *   learned. A missing map entry and an entry whose level is exactly zero answer the same as
+     *   each other, matching C's zero-initialised array read.</li>
+     * </ol>
+     * Failing all three, the element is not known and the method answers false.
+     *
+     * <p>Function objectElementIsKnown coded before 260924, fixed on 260924 to take the
+     * {@code player} parameter and read {@link KnownObject#getElementResistInfo()} — the earlier
+     * version answered only from the curse's own known-shadow and so never reflected the player's
+     * rune knowledge, and its last two branches duplicated one lookup rather than reading the
+     * curse's known-shadow once — commented in full on 260924.
+     *
+     * @param player  the player asking
+     * @param curse   the curse being asked about
+     * @param element the element whose knowledge is in question
+     * @return true if the player is currently entitled to see resistance to {@code element} on
+     * {@code curse}
+     */
+    public static boolean objectElementIsKnown(Player player, Curse curse, ElementEnum element) {
+        if (element == ElementEnum.ELEM_NONE || element == ElementEnum.ELEM_MAX)
+            return false;
+
+        // Object fully known is yes
+        if (curse.isFullyKnown()) return true;
+
+        // Known element means yes
+        if (player.getItemKnowledge().getElementResistInfo().getOrDefault(element, false))
+            return true;
+
+        // Object has been exposed to the element
+        ElementInfo elementInfo = curse.getKnownElInfo().getOrDefault(element, null);
+        return elementInfo != null && elementInfo.getResLevel() != 0;
+    }
+
+    /**
      * The pair of counts {@link ObjectUtils#quiverAbsorbNum} takes in and hands back - how many of an object
      * can go to the quiver, and how many of the offered pack slots are left unspent.
      *

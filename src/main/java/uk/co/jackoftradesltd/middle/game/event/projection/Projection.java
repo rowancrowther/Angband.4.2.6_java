@@ -235,6 +235,10 @@ public class Projection {
         return projection;
     }
 
+    public String getPlayerDescription() {
+        return playerDescription;
+    }
+
     /**
      * @return a debug string listing this projection's fields
      */

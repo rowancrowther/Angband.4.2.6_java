@@ -324,7 +324,10 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                         // stamp it directly so an override merge (parseEachEntry) can later resolve
                         // an index/negative_index priority scheme against it.
                         entry.setStatParameter(i);
-                        parseEachEntry(results, entry);
+                        if (!parseEachEntry(results, entry)) {
+                            errors.add("Bad entry: " + name + " no combiner found.");
+                            continue;
+                        }
                     }
                 }
             } else if (statElemType == StatElemType.ELEMENT) {
@@ -347,18 +350,24 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                     String newLabel = label;
                     if (record.label() == null || record.label().isEmpty())
                         newLabel = elementEnum.name().substring(5);
-                    parseEachEntry(results, new UIEntry(name + "<" + elementEnum.name().substring(5) + ">",
+                    if (!parseEachEntry(results, new UIEntry(name + "<" + elementEnum.name().substring(5) + ">",
                             template, elementEnum, statElemType, renderer, combinerName,
-                            categories, newPriorityNum, priorityStr, flag, desc, newLabel, label5, label2));
+                            categories, newPriorityNum, priorityStr, flag, desc, newLabel, label5, label2))) {
+                        errors.add("Bad entry: " + name + " no combiner found.");
+                        continue;
+                    }
                 }
             } else {
                 List<UIEntryCategory> categories
                         = buildCategories(categoriesNames1, categoriesNames2, priorityNum, 0);
 
-                parseEachEntry(results, new UIEntry(name, template, parameter, statElemType,
+                if (!parseEachEntry(results, new UIEntry(name, template, parameter, statElemType,
                         renderer, combinerName, categories,
                         priorityNum, priorityStr, flag,
-                        desc, label, label5, label2));
+                        desc, label, label5, label2))) {
+                    errors.add("Bad entry: " + name + " no combiner found.");
+                    continue;
+                }
             }
         }
 
@@ -412,7 +421,7 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
      *
      *                <p>Function parseEachEntry coded before 260922, commented in full on 260922.
      */
-    private void parseEachEntry(List<UIEntry> results, UIEntry entry) {
+    private boolean parseEachEntry(List<UIEntry> results, UIEntry entry) {
         UIEntry existing = results.stream()
                 .filter(e -> e.getName().equals(entry.getName())).findFirst().orElse(null);
         if (existing != null) {
@@ -571,7 +580,14 @@ public class UIEntryAssembler implements Assembler<UIEntryParseRecord, List<UIEn
                 }
             }
 
+            if (embryo.getUiEntry().getCombineType() == null
+                    || embryo.getUiEntry().getCombineType() == CombinerName.NONE) {
+                return false;
+            }
+            
             results.add(embryo.getUiEntry());
         }
+
+        return true;
     }
 }

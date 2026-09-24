@@ -18,12 +18,12 @@
 package uk.co.jackoftradesltd.channel.utils;
 
 import uk.co.jackoftradesltd.channel.uichannel.UIEntryValue;
-import uk.co.jackoftradesltd.channel.uichannel.UIEntryValueShapshot;
+import uk.co.jackoftradesltd.channel.uichannel.UIEntryValueSnapshot;
 
 import java.util.HashMap;
 
 public class UIEntryValuesHolder {
-    private static final UIEntryValueShapshot snapshot = new UIEntryValueShapshot(new HashMap<>());
+    private static final UIEntryValueSnapshot snapshot = new UIEntryValueSnapshot(new HashMap<>());
 
     public static void addEntry(String name, UIEntryValue value) {
         snapshot.byEntryName().put(name, value);

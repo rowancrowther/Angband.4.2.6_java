@@ -30,11 +30,11 @@ import java.util.Map;
  * state that way, so the core computes every bound entry's value up front and sends the whole map
  * over in one message instead.
  *
- * <p>Record UIEntryValueShapshot coded before 260924, commented in full on 260924.
+ * <p>Record UIEntryValueSnapshot coded before 260924, commented in full on 260924.
  *
  * @param byEntryName each named UI entry's computed value, keyed by
  *                    {@link uk.co.jackoftradesltd.frontend.entries.UIEntry#getName()}
  * @author Rowan Crowther
  */
-public record UIEntryValueShapshot(Map<String, UIEntryValue> byEntryName) implements GameEventData {
+public record UIEntryValueSnapshot(Map<String, UIEntryValue> byEntryName) implements GameEventData {
 }

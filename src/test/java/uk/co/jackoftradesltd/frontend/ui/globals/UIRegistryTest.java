@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.enums.ChannelEntryFlag;
 import uk.co.jackoftradesltd.channel.enums.ElementEnum;
 import uk.co.jackoftradesltd.channel.enums.StatElemType;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.channel.utils.combiners.CombinerName;
 import uk.co.jackoftradesltd.frontend.entries.UIEntry;
@@ -34,6 +35,7 @@ import uk.co.jackoftradesltd.frontend.entries.enums.UIEntryRendererEnum;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -123,6 +125,62 @@ class UIRegistryTest {
         @DisplayName("returns null for an unknown name")
         void returnsNullForAnUnknownName() {
             assertNull(UIRegistry.getUIEntry("no_such_entry"));
+        }
+    }
+
+    /**
+     * Tests {@link UIRegistry#statNames} and {@link UIRegistry#statReducedNames} against the literal
+     * values of C's {@code stat_names}/{@code stat_names_reduced} ({@code [C] ui-display.c:99-110}),
+     * not against whatever the Java literals currently read.
+     *
+     * <p>Class StatNames coded on 260925, commented in full on 260925.
+     */
+    @Nested
+    @DisplayName("statNames / statReducedNames")
+    class StatNames {
+
+        /**
+         * {@code stat_names[STAT_MAX]}, {@code [C] ui-display.c:99-102}.
+         */
+        private static final String[] C_STAT_NAMES =
+                {"STR: ", "INT: ", "WIS: ", "DEX: ", "CON: "};
+
+        /**
+         * {@code stat_names_reduced[STAT_MAX]}, {@code [C] ui-display.c:104-110}.
+         */
+        private static final String[] C_STAT_NAMES_REDUCED =
+                {"Str: ", "Int: ", "Wis: ", "Dex: ", "Con: "};
+
+        @Test
+        @DisplayName("matches C's stat_names, including the trailing space")
+        void statNamesMatchesC() {
+            assertArrayEquals(C_STAT_NAMES, UIRegistry.statNames);
+        }
+
+        @Test
+        @DisplayName("matches C's stat_names_reduced, including the trailing space")
+        void statReducedNamesMatchesC() {
+            assertArrayEquals(C_STAT_NAMES_REDUCED, UIRegistry.statReducedNames);
+        }
+
+        @Test
+        @DisplayName("is sized to STAT_MAX, as the C arrays are")
+        void bothArraysAreSizedToStatMax() {
+            assertEquals(ChannelRegistry.STAT_MAX, UIRegistry.statNames.length);
+            assertEquals(ChannelRegistry.STAT_MAX, UIRegistry.statReducedNames.length);
+        }
+
+        @Test
+        @DisplayName("every label is 5 characters, so col+3 lands on the colon C's natural-max indicator overwrites")
+        void everyLabelIsFiveCharactersWide() {
+            for (String name : UIRegistry.statNames) {
+                assertEquals(5, name.length());
+                assertEquals(':', name.charAt(3));
+            }
+            for (String name : UIRegistry.statReducedNames) {
+                assertEquals(5, name.length());
+                assertEquals(':', name.charAt(3));
+            }
         }
     }
 }

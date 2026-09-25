@@ -95,6 +95,11 @@ class PlayerEventStatusUpdateDefaultTest {
      * arrays, and the fixed stat-name labels for {@code statString} — that field is schema data
      * (mirroring {@link uk.co.jackoftradesltd.middle.enums.Stats#getStatString()}), the same for
      * every player, not a per-character value, so it is seeded with real names rather than blanks.
+     * {@code playerIsPlaying} is the one field the static initializer does not seed at its
+     * zero-equivalent: it starts {@code true}, since nothing has ended the session at class load.
+     * The four stat-bonus arrays and {@code playerCurrModStat} are each seeded as a five-element
+     * all-zero array, the same shape as {@code currentStats}/{@code maxStats}, rather than
+     * {@code null}.
      */
     @Test
     @DisplayName("the static initializer seeds an all-default snapshot before any player exists")
@@ -105,7 +110,8 @@ class PlayerEventStatusUpdateDefaultTest {
         for (RecordComponent component : freshView.getClass().getRecordComponents()) {
             Object value = component.getAccessor().invoke(freshView);
             switch (component.getName()) {
-                case "currentStats", "maxStats" ->
+                case "currentStats", "maxStats", "playerRaceStatBonuses", "playerClassStatBonuses",
+                     "playerEquipStatBonuses", "playerTotalStatBonuses", "playerCurrModStat" ->
                         assertArrayEquals(new int[]{0, 0, 0, 0, 0}, (int[]) value, component.getName());
                 case "statString" ->
                         assertArrayEquals(new String[]{"STR", "INT", "WIS", "DEX", "CON"}, (String[]) value,
@@ -117,6 +123,7 @@ class PlayerEventStatusUpdateDefaultTest {
                 case "monsterVisible", "playerHallucinating", "monsterTracked", "monsterTmdFear",
                      "monsterTmdDisen", "monsterTmdCommand", "monsterTmdConf", "monsterTmdStun",
                      "monsterTmdSleep", "monsterTmdHold" -> assertEquals(false, value, component.getName());
+                case "playerIsPlaying" -> assertEquals(true, value, component.getName());
                 default -> assertNull(value, component.getName());
             }
         }

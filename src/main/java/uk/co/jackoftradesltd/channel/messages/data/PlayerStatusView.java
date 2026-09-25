@@ -42,7 +42,7 @@ package uk.co.jackoftradesltd.channel.messages.data;
  * time only by building a whole new {@code PlayerStatusView} from the current one, unlike C's
  * direct mutation of the live {@code player} struct.
  *
- * <p>Record PlayerStatusView coded before 260912, commented in full on 260915.
+ * <p>Record PlayerStatusView coded before 260912, commented in full on 260925.
  *
  * @param name                  the player's name; C's {@code player->full_name} has no dedicated
  *                              sidebar line — it is shown on the character screen, not the
@@ -184,6 +184,27 @@ package uk.co.jackoftradesltd.channel.messages.data;
  *                              ({@code ui-display.c:275}), which loops
  *                              {@code player->body.count} times to draw one equippy character
  *                              per slot
+ * @param playerIsPlaying       whether the player is actively in a live game, the port of C's
+ *                              {@code player->upkeep->playing} check in {@code display_player}
+ *                              ({@code ui-player.c:901}), which skips repainting the character
+ *                              screen in a background sub-window once play has ended
+ * @param playerRaceStatBonuses the five racial stat-bonus values, the "RB" column in
+ *                              {@code display_player_stat_info} ({@code ui-player.c:489}), which
+ *                              reads {@code player->race->r_adj[stat]}
+ * @param playerClassStatBonuses the five class stat-bonus values, the "CB" column in
+ *                              {@code display_player_stat_info} ({@code ui-player.c:493}), which
+ *                              reads {@code player->class->c_adj[stat]}
+ * @param playerEquipStatBonuses the five equipment stat-bonus values, the "EB" column in
+ *                              {@code display_player_stat_info} ({@code ui-player.c:497}), which
+ *                              reads {@code player->state.stat_add[stat]}
+ * @param playerTotalStatBonuses the five resulting-maximum stat values, the "Best" column in
+ *                              {@code display_player_stat_info} ({@code ui-player.c:501}), which
+ *                              reads {@code player->state.stat_top[stat]} — the natural maximum
+ *                              after racial, class and equipment bonuses are applied
+ * @param playerCurrModStat     the five current (drained) stat values, the port of C's
+ *                              {@code player->state.stat_use[stat]} read in
+ *                              {@code display_player_stat_info} ({@code ui-player.c:504-508}),
+ *                              shown only for a stat currently below its maximum
  * @author Rowan Crowther
  */
 public record PlayerStatusView(// Player details
@@ -228,5 +249,13 @@ public record PlayerStatusView(// Player details
                                String restingRepeatingState,
                                String levelFeeling,
                                String lightLevel,
-                               int equipmentSlotCount) {
+
+                               // Current state of player/game
+                               int equipmentSlotCount,
+                               boolean playerIsPlaying,
+                               int[] playerRaceStatBonuses,
+                               int[] playerClassStatBonuses,
+                               int[] playerEquipStatBonuses,
+                               int[] playerTotalStatBonuses,
+                               int[] playerCurrModStat) {
 }

@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  * method must rebuild the whole thing from the current one, and the risk that matters is a
  * transcription slip: a field landing in the wrong constructor slot, silently overwriting a
  * neighbour instead of the field the method is named for. {@link #updatingOneFieldLeavesEveryOtherFieldUntouched}
- * sweeps every one of the 38 setters against every one of the 38 record components to rule that
+ * sweeps every one of the 44 setters against every one of the 44 record components to rule that
  * out.
  *
  * <p>{@code cachedPlayerStatusView} is a static field shared across the JVM, so each test saves it
@@ -68,7 +68,7 @@ class PlayerEventStatusUpdateTest {
     private PlayerStatusView savedPlayerStatusView;
 
     /**
-     * A {@link PlayerStatusView} with a distinct, recognisable value in every one of its 38
+     * A {@link PlayerStatusView} with a distinct, recognisable value in every one of its 44
      * fields, so a field landing in the wrong slot after a rebuild shows up immediately.
      *
      * @return the baseline view
@@ -112,7 +112,13 @@ class PlayerEventStatusUpdateTest {
                 "Baseline Resting",
                 "Baseline Feeling",
                 "Baseline Light",
-                12);
+                12,
+                false,
+                new int[]{101, 102, 103, 104, 105},
+                new int[]{111, 112, 113, 114, 115},
+                new int[]{121, 122, 123, 124, 125},
+                new int[]{131, 132, 133, 134, 135},
+                new int[]{141, 142, 143, 144, 145});
     }
 
     /**
@@ -209,7 +215,18 @@ class PlayerEventStatusUpdateTest {
                         "restingRepeatingState"),
                 Arguments.of("updatePlayerStatusLevelFeeling", String.class, "LF:5-3", "levelFeeling"),
                 Arguments.of("updatePlayerStatusLightLevel", String.class, "Light 3", "lightLevel"),
-                Arguments.of("updatePlayerStatusEquipSlotCount", int.class, 14, "equipmentSlotCount")
+                Arguments.of("updatePlayerStatusEquipSlotCount", int.class, 14, "equipmentSlotCount"),
+                Arguments.of("updatePlayerStatusIsPlaying", boolean.class, true, "playerIsPlaying"),
+                Arguments.of("updatePlayerStatusRaceStatBonuses", int[].class,
+                        new int[]{-1, 0, 1, 2, 3}, "playerRaceStatBonuses"),
+                Arguments.of("updatePlayerStatusClassStatBonuses", int[].class,
+                        new int[]{-2, -1, 0, 1, 2}, "playerClassStatBonuses"),
+                Arguments.of("updatePlayerStatusEquipStatBonuses", int[].class,
+                        new int[]{5, -5, 10, -10, 0}, "playerEquipStatBonuses"),
+                Arguments.of("updatePlayerStatusTotalStatBonuses", int[].class,
+                        new int[]{18, 19, 20, 21, 22}, "playerTotalStatBonuses"),
+                Arguments.of("updatePlayerStatusCurrentStatBonuses", int[].class,
+                        new int[]{17, 18, 19, 20, 21}, "playerCurrModStat")
         );
     }
 
@@ -230,8 +247,8 @@ class PlayerEventStatusUpdateTest {
     }
 
     /**
-     * The ordinary path for every field setter, all 38 in one sweep: calling it changes exactly
-     * the {@link PlayerStatusView} component it is named for, and leaves the other 37 exactly as
+     * The ordinary path for every field setter, all 39 in one sweep: calling it changes exactly
+     * the {@link PlayerStatusView} component it is named for, and leaves the other 38 exactly as
      * {@link #baseline()} held them.
      */
     @ParameterizedTest(name = "{0} changes only {3}")
@@ -282,7 +299,7 @@ class PlayerEventStatusUpdateTest {
 
     /**
      * A second wholesale replacement discards the first outright, with no attempt to merge the
-     * two — unlike the field setters, which each preserve the other 37 fields.
+     * two — unlike the field setters, which each preserve the other 38 fields.
      */
     @Test
     @DisplayName("a second whole-view set replaces the first outright")
@@ -294,7 +311,9 @@ class PlayerEventStatusUpdateTest {
                 new int[]{1, 1, 1, 1, 1}, new int[]{1, 1, 1, 1, 1},
                 new String[]{"", "", "", "", ""}, 0,
                 0, 0, false, false, false, false, false, false, false, false, false, false,
-                0, "", "", "", "", "", "", 0);
+                0, "", "", "", "", "", "", 0, false,
+                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
+                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0});
 
         PlayerEventStatusUpdate.updatePlayerStatusView(first);
         PlayerEventStatusUpdate.updatePlayerStatusView(second);

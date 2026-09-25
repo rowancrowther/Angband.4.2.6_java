@@ -1111,11 +1111,15 @@ New entry
 
 New entry
 
+**COMPLETED 2026-09-24**
+
 ### `frontend/ui/UIEntryPredicate.java`
 
 1 missing, 0 low
 
 - L20: interface `UIEntryPredicate` - MISSING
+
+**COMPLETED 2026-09-24**
 
 ### `frontend/ui/UIPlayer.java`
 
@@ -1128,6 +1132,10 @@ New entry
 - L60: method `CheckForTwoCategories` - MISSING
 - L100: enum `PlayerDisplayMode` - MISSING
 - L101: enum-const `DISPLAY_FULL` - MISSING
+
+### `Region.java`
+
+### `CharSheetConfig.java` ###
 
 ### `frontend/ui/entry/assembler/UIEntryAssembler.java`
 

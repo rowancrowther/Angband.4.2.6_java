@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.frontend.ui;
+package uk.co.jackoftradesltd.unused;
 
 public interface UIEntryPredicate {
 

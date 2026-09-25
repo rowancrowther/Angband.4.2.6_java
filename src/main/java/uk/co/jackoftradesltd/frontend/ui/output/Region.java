@@ -126,4 +126,20 @@ public class Region {
     public int getPageRows() {
         return pageRows;
     }
+
+    public void setCol(int col) {
+        this.col = col;
+    }
+
+    public void setRow(int row) {
+        this.row = row;
+    }
+
+    public void setWidth(int width) {
+        this.width = width;
+    }
+
+    public void setPageRows(int pageRows) {
+        this.pageRows = pageRows;
+    }
 }

@@ -34,12 +34,13 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * Tests the static initializer that seeds {@link PlayerEventStatusUpdate}'s
- * {@code cachedPlayerStatusView} field at class load. Moved here from
- * {@code middle.game.GameWorldPlayerStatusViewDefaultTest} once the snapshot and its static
- * initializer relocated from {@code GameWorld} to this class.
- * {@code cachedPlayerStatusView} is a JVM-wide static shared by every other test in the suite (see
- * {@link PlayerEventStatusUpdateTest}'s save/restore fixture), so by the time any of them run it
- * has usually already been overwritten. The only way to see what the static initializer itself
+ * {@code cachedPlayerStatusView} and {@code cachedPlayerCharSheetView} fields at class load.
+ * Moved here from {@code middle.game.GameWorldPlayerStatusViewDefaultTest} once the snapshot and
+ * its static initializer relocated from {@code GameWorld} to this class; the char-sheet snapshot
+ * followed once it split out into its own {@link uk.co.jackoftradesltd.channel.messages.data.PlayerCharSheetView}
+ * record. Both fields are JVM-wide statics shared by every other test in the suite (see
+ * {@link PlayerEventStatusUpdateTest}'s save/restore fixture), so by the time any of them run they
+ * have usually already been overwritten. The only way to see what the static initializer itself
  * produced is to load {@link PlayerEventStatusUpdate} into a fresh, disposable
  * {@link URLClassLoader} whose parent is the platform loader rather than the shared
  * system/application one: that defines an independent {@code Class} object with its own
@@ -51,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
  * the static initializer's Javadoc in {@code PlayerEventStatusUpdate.java}) that this block
  * reproduces that all-zero starting state one field at a time.
  *
- * <p>Class PlayerEventStatusUpdateDefaultTest coded on 260912, commented in full on 260912.
+ * <p>Class PlayerEventStatusUpdateDefaultTest coded on 260912, commented in full on 260925.
  *
  * @author Rowan Crowther
  */
@@ -89,6 +90,38 @@ class PlayerEventStatusUpdateDefaultTest {
     }
 
     /**
+     * Loads a fresh copy of {@link PlayerEventStatusUpdate} in an isolated classloader and reads
+     * its {@code cachedPlayerCharSheetView} field, triggering that copy's own static
+     * initialization rather than reading the (possibly already-mutated) copy the rest of the
+     * suite shares — the {@link uk.co.jackoftradesltd.channel.messages.data.PlayerCharSheetView}
+     * counterpart to {@link #freshlySeededPlayerStatusView()}.
+     *
+     * @return the freshly-seeded {@code PlayerCharSheetView} instance, typed as {@code Object}
+     * because it was loaded by a different classloader than this test class was
+     * @throws Exception if the field cannot be found or read
+     */
+    private static Object freshlySeededPlayerCharSheetView() throws Exception {
+        String classpath = System.getProperty("java.class.path");
+        URL[] urls = Arrays.stream(classpath.split(File.pathSeparator))
+                .map(path -> {
+                    try {
+                        return new File(path).toURI().toURL();
+                    } catch (java.net.MalformedURLException e) {
+                        throw new IllegalStateException(e);
+                    }
+                })
+                .toArray(URL[]::new);
+
+        try (URLClassLoader isolated = new URLClassLoader(urls, ClassLoader.getPlatformClassLoader())) {
+            Class<?> freshClass = isolated.loadClass(
+                    "uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate");
+            Field field = freshClass.getDeclaredField("cachedPlayerCharSheetView");
+            field.setAccessible(true);
+            return field.get(null);
+        }
+    }
+
+    /**
      * Every field the static initializer seeds is at its zero-equivalent default: {@code null}
      * for every {@code String} field, {@code 0}/{@code 0L}/{@code false} for every numeric or
      * boolean one, a five-element all-zero array (matching C's {@code STAT_MAX}) for both stat
@@ -110,21 +143,48 @@ class PlayerEventStatusUpdateDefaultTest {
         for (RecordComponent component : freshView.getClass().getRecordComponents()) {
             Object value = component.getAccessor().invoke(freshView);
             switch (component.getName()) {
-                case "currentStats", "maxStats", "playerRaceStatBonuses", "playerClassStatBonuses",
-                     "playerEquipStatBonuses", "playerTotalStatBonuses", "playerCurrModStat" ->
+                case "currentStats", "maxStats" ->
                         assertArrayEquals(new int[]{0, 0, 0, 0, 0}, (int[]) value, component.getName());
                 case "statString" ->
                         assertArrayEquals(new String[]{"STR", "INT", "WIS", "DEX", "CON"}, (String[]) value,
                                 component.getName());
                 case "level", "chp", "mhp", "csp", "msp", "armourClass", "speed", "monsterHealth",
-                     "maxMonsterHealth", "depth", "equipmentSlotCount", "bodyCount" ->
+                     "maxMonsterHealth", "depth", "equipmentSlotCount" ->
                         assertEquals(0, value, component.getName());
                 case "experience", "maxExperience", "gold" -> assertEquals(0L, value, component.getName());
                 case "monsterVisible", "playerHallucinating", "monsterTracked", "monsterTmdFear",
                      "monsterTmdDisen", "monsterTmdCommand", "monsterTmdConf", "monsterTmdStun",
                      "monsterTmdSleep", "monsterTmdHold" -> assertEquals(false, value, component.getName());
-                case "playerIsPlaying" -> assertEquals(true, value, component.getName());
                 default -> assertNull(value, component.getName());
+            }
+        }
+    }
+
+    /**
+     * Every field the static initializer seeds on {@code cachedPlayerCharSheetView} is at its
+     * zero-equivalent default: a five-element all-zero array (matching C's {@code STAT_MAX}) for
+     * each of the four stat-bonus arrays and {@code playerCurrModStat}, {@code 0} for
+     * {@code bodyCount} and {@code totalWeight}, and {@code true} for {@code playerIsPlaying} —
+     * the one field here that does not start at its zero-equivalent, since nothing has ended the
+     * session at class load, mirroring the same choice {@link PlayerStatusView}'s own
+     * {@code playerIsPlaying} field made before the character-sheet fields moved out to this
+     * record.
+     */
+    @Test
+    @DisplayName("the static initializer seeds an all-default char-sheet snapshot before any player exists")
+    void staticInitializerSeedsAllDefaultCharSheetSnapshot() throws Exception {
+        Object freshView = freshlySeededPlayerCharSheetView();
+        assertNotNull(freshView);
+
+        for (RecordComponent component : freshView.getClass().getRecordComponents()) {
+            Object value = component.getAccessor().invoke(freshView);
+            switch (component.getName()) {
+                case "playerRaceStatBonuses", "playerClassStatBonuses", "playerEquipStatBonuses",
+                     "playerTotalStatBonuses", "playerCurrModStat" ->
+                        assertArrayEquals(new int[]{0, 0, 0, 0, 0}, (int[]) value, component.getName());
+                case "bodyCount", "totalWeight" -> assertEquals(0, value, component.getName());
+                case "playerIsPlaying" -> assertEquals(true, value, component.getName());
+                default -> throw new AssertionError("Unexpected component: " + component.getName());
             }
         }
     }

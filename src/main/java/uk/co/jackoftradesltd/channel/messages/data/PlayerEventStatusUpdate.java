@@ -18,50 +18,71 @@
 package uk.co.jackoftradesltd.channel.messages.data;
 
 /**
- * The UI thread's cached snapshot of the player-status sidebar — the two-channel migration's
- * stand-in for C's live reads of the {@code player}/{@code cave} globals inside the
- * {@code prt_*} family in {@code ui-display.c}. C has no cached copy at all: every sidebar line
- * is repainted by reading the current global state directly at redraw time, so there is nothing
- * there resembling {@link #cachedPlayerStatusView} to keep in sync. This class exists because
- * the UI thread on this side of the boundary cannot reach across and read those globals itself;
- * the core instead pushes each value across as it changes, through the
- * {@code updatePlayerStatus*} field setters below, and the UI thread reads back the accumulated
- * snapshot through {@link #getPlayerStatusView()}.
+ * The UI thread's cached snapshot of the player-status sidebar and the character sheet — the
+ * two-channel migration's stand-in for C's live reads of the {@code player}/{@code cave} globals
+ * inside the {@code prt_*} family in {@code ui-display.c} and the {@code display_panel} family in
+ * {@code ui-player.c}. C has no cached copy at all: every line is repainted by reading the
+ * current global state directly at redraw time, so there is nothing there resembling
+ * {@link #cachedPlayerStatusView}/{@link #cachedPlayerCharSheetView} to keep in sync. This class
+ * exists because the UI thread on this side of the boundary cannot reach across and read those
+ * globals itself; the core instead pushes each value across as it changes, through the
+ * {@code updatePlayerStatus*}/{@code updatePlayerCharSheet*} field setters below, and the UI
+ * thread reads back the accumulated snapshots through {@link #getPlayerStatusView()}/
+ * {@link #getPlayerCharSheetView()}.
  *
- * <p>Two ways to update the cache: {@link #updatePlayerStatusView} replaces the whole
- * {@link PlayerStatusView} wholesale, while every {@code updatePlayerStatus*} field setter below
- * it rebuilds the snapshot from the current one with exactly one field changed —
- * {@link PlayerStatusView} is an immutable record, so there is no in-place field write available,
- * unlike C's direct mutation of the live {@code player} struct. The static initializer seeds an
- * all-default snapshot at class load, before any {@code Player} exists to read values from; C
- * needs no equivalent step, since its {@code player} global is zero-initialised static storage
- * from program start.
+ * <p>Two caches, split because the fields they hold answer to different C call sites: the sidebar
+ * ({@code prt_*}, {@code ui-display.c}) versus the still-unported character-sheet panels
+ * ({@code display_panel}, {@code ui-player.c}). Each cache offers the same two ways to update
+ * it — {@link #updatePlayerStatusView}/{@link #updatePlayerCharSheetView} replace the whole
+ * record wholesale, while every {@code updatePlayerStatus*}/{@code updatePlayerCharSheet*} field
+ * setter below rebuilds the snapshot from the current one with exactly one field changed, since
+ * both {@link PlayerStatusView} and {@link PlayerCharSheetView} are immutable records with no
+ * in-place field write available, unlike C's direct mutation of the live {@code player} struct.
+ * The static initializer seeds an all-default snapshot of both caches at class load, before any
+ * {@code Player} exists to read values from; C needs no equivalent step, since its {@code player}
+ * global is zero-initialised static storage from program start.
  *
- * <p>Class PlayerEventStatusUpdate coded before 260912, commented in full on 260915.
+ * <p>Class PlayerEventStatusUpdate coded before 260912, commented in full on 260925.
  */
 public class PlayerEventStatusUpdate {
     /**
-     * The current player-status snapshot — replaced wholesale by {@link #updatePlayerStatusView}
-     * or rebuilt field-by-field by the {@code updatePlayerStatus*} setters below; see the class
-     * Javadoc above for why this cache exists in Java where C keeps none. Never observably
-     * {@code null}: the static initializer below seeds it before any other code can run, so
-     * every read through {@link #getPlayerStatusView()} sees at least the all-default snapshot.
+     * The current player-status-sidebar snapshot — replaced wholesale by
+     * {@link #updatePlayerStatusView} or rebuilt field-by-field by the
+     * {@code updatePlayerStatus*} setters below; see the class Javadoc above for why this cache
+     * exists in Java where C keeps none. Never observably {@code null}: the static initializer
+     * below seeds it before any other code can run, so every read through
+     * {@link #getPlayerStatusView()} sees at least the all-default snapshot.
      *
      * <p>Field cachedPlayerStatusView coded before 260912, commented in full on 260915.
      */
     private static PlayerStatusView cachedPlayerStatusView;
 
-    /*
-     * Seeds {@link #playerStatusView} with an all-default snapshot at class load, before any
-     * {@code Player} exists to read values from. C needs no equivalent step: its {@code player}
-     * global is zero-initialised static storage from program start, so a stray {@code prt_*} call
-     * before birth simply reads zeros and null strings; this block reproduces that "nothing has
-     * happened yet" state explicitly, one {@code 0}/{@code null}/{@code false} per
-     * {@link PlayerStatusView} field in declaration order, so {@link #getPlayerStatusView()}
-     * always has a value to hand back. The two stat arrays are sized {@code 5}, matching C's
-     * {@code STAT_MAX} ({@code player.h:37}).
+    /**
+     * The current character-sheet snapshot — replaced wholesale by
+     * {@link #updatePlayerCharSheetView} or rebuilt field-by-field by the
+     * {@code updatePlayerCharSheet*} setters below; the {@link PlayerCharSheetView} counterpart to
+     * {@link #cachedPlayerStatusView}, split out because its fields answer to C's
+     * {@code display_panel} family in {@code ui-player.c} rather than the {@code prt_*} sidebar
+     * family. Never observably {@code null}: the static initializer below seeds it before any
+     * other code can run, so every read through {@link #getPlayerCharSheetView()} sees at least
+     * the all-default snapshot.
      *
-     * <p>Static initializer coded before 260912, commented in full on 260912.
+     * <p>Field cachedPlayerCharSheetView coded on 260925, commented in full on 260925.
+     */
+    private static PlayerCharSheetView cachedPlayerCharSheetView;
+
+    /*
+     * Seeds {@link #cachedPlayerStatusView} and {@link #cachedPlayerCharSheetView} with an
+     * all-default snapshot at class load, before any {@code Player} exists to read values from. C
+     * needs no equivalent step: its {@code player} global is zero-initialised static storage from
+     * program start, so a stray {@code prt_*}/{@code display_panel} call before birth simply reads
+     * zeros and null strings; this block reproduces that "nothing has happened yet" state
+     * explicitly, one {@code 0}/{@code null}/{@code false} per field in declaration order, so
+     * {@link #getPlayerStatusView()}/{@link #getPlayerCharSheetView()} always have a value to hand
+     * back. The stat arrays are sized {@code 5}, matching C's {@code STAT_MAX}
+     * ({@code player.h:37}).
+     *
+     * <p>Static initializer coded before 260912, commented in full on 260925.
      */
     static {
         int[] currentStats = {0, 0, 0, 0, 0};
@@ -70,15 +91,16 @@ public class PlayerEventStatusUpdate {
         cachedPlayerStatusView = new PlayerStatusView(null, null, null,
                 null, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, currentStats,
-                maxStats, statString, 0, 0, 0, false,
+                maxStats, statString, 0, 0, false,
                 false, false, false,
                 false, false, false,
                 false, false, false,
                 0, null, null, null,
                 null, null, null,
-                0, true, new int[]{0, 0, 0, 0, 0},
+                0);
+        cachedPlayerCharSheetView = new PlayerCharSheetView(0, true,
                 new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
-                new int[]{0, 0, 0, 0, 0});
+                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, 0);
     }
 
     /**
@@ -106,6 +128,35 @@ public class PlayerEventStatusUpdate {
      */
     public static PlayerStatusView getPlayerStatusView() {
         return cachedPlayerStatusView;
+    }
+
+    /**
+     * Replaces the whole {@link #cachedPlayerCharSheetView} snapshot wholesale, rather than
+     * rebuilding it field-by-field like the {@code updatePlayerCharSheet*} family below — the
+     * {@link PlayerCharSheetView} counterpart to {@link #updatePlayerStatusView}. C has no
+     * equivalent: the character sheet is always painted live from the {@code player} globals via
+     * the {@code display_panel} family in {@code ui-player.c}, so there is nothing there
+     * resembling a cached, wholesale-replaceable snapshot.
+     *
+     * <p>Method updatePlayerCharSheetView coded on 260925, commented in full on 260925.
+     *
+     * @param cachedPlayerCharSheetView the new snapshot to publish on the UI channel
+     */
+    public static void updatePlayerCharSheetView(PlayerCharSheetView cachedPlayerCharSheetView) {
+        PlayerEventStatusUpdate.cachedPlayerCharSheetView = cachedPlayerCharSheetView;
+    }
+
+    /**
+     * The current character-sheet snapshot most recently published to the UI channel — see
+     * {@link #updatePlayerCharSheetView} and the {@code updatePlayerCharSheet*} field setters
+     * below.
+     *
+     * <p>Method getPlayerCharSheetView coded on 260925, commented in full on 260925.
+     *
+     * @return the current {@link #cachedPlayerCharSheetView} snapshot
+     */
+    public static PlayerCharSheetView getPlayerCharSheetView() {
+        return cachedPlayerCharSheetView;
     }
 
     /**
@@ -141,7 +192,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -161,13 +211,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -198,7 +242,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -218,13 +261,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -253,7 +290,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -273,13 +309,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -308,7 +338,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -328,13 +357,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -364,7 +387,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -384,13 +406,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -420,7 +436,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -440,13 +455,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -479,7 +488,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -499,13 +507,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -535,7 +537,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -555,13 +556,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -591,7 +586,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -611,13 +605,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -647,7 +635,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -667,13 +654,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -703,7 +684,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -723,13 +703,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -759,7 +733,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -779,13 +752,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -815,7 +782,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -835,13 +801,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -871,7 +831,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -891,13 +850,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -929,7 +882,6 @@ public class PlayerEventStatusUpdate {
                 value,
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -949,13 +901,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -986,7 +932,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 value,
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1006,13 +951,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1053,7 +992,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 value,
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1073,79 +1011,36 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with a new body-part count, leaving every other
+     * Rebuilds {@link #cachedPlayerCharSheetView} with a new body-part count, leaving every other
      * field untouched — the port of C's {@code player->body.count}, as read by
-     * {@code configure_char_sheet}/{@code have_valid_char_sheet_config}
-     * ({@code ui-player.c:223-225, 152-153}) to size the character screen's resistance-panel
-     * column count ({@code res_nlabel + 1 + body.count}).
+     * {@code configure_char_sheet}/{@code have_valid_char_sheet_config} ({@code src/ui-player.c})
+     * to size the character screen's resistance-panel column count
+     * ({@code res_nlabel + 1 + body.count}).
      *
-     * <p>This is a separate cached field from
-     * {@link cachedPlayerStatusView} even though both
-     * ultimately trace back to the same C value: that field mirrors {@code player->body.count}
-     * as read by {@code prt_equippy} ({@code ui-display.c:269}) for the sidebar's equippy-char
-     * loop, a different call site the C original reads live from the same global. This
-     * snapshot design has no single live global to read from, so each call site's reading is
-     * cached and updated independently.
+     * <p>This is a separate cached field from {@link PlayerStatusView#equipmentSlotCount()} even
+     * though both ultimately trace back to the same C value: that field mirrors
+     * {@code player->body.count} as read by {@code prt_equippy} ({@code ui-display.c:269}) for
+     * the sidebar's equippy-char loop, a different call site the C original reads live from the
+     * same global. This snapshot design has no single live global to read from, so each call
+     * site's reading is cached and updated independently.
      *
-     * <p>Method updatePlayerStatusBodyCount coded before 260912, commented in full on 260915.
+     * <p>Method updatePlayerCharSheetBodyCount coded on 260925, commented in full on 260925.
      *
      * @param value the body-part count to store in the rebuilt view
      */
-    public static void updatePlayerStatusBodyCount(int value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                value,
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+    public static void updatePlayerCharSheetBodyCount(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(value,
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
@@ -1177,7 +1072,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 value,
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1197,13 +1091,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1235,7 +1123,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 value,
                 cachedPlayerStatusView.monsterVisible(),
@@ -1255,13 +1142,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1293,7 +1174,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 value,
@@ -1313,13 +1193,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1351,7 +1225,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1371,13 +1244,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1409,7 +1276,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1429,13 +1295,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1466,7 +1326,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1486,13 +1345,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1523,7 +1376,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1543,13 +1395,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1582,7 +1428,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1602,13 +1447,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1639,7 +1478,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1659,13 +1497,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1696,7 +1528,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1716,13 +1547,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1753,7 +1578,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1773,13 +1597,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1810,7 +1628,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1830,13 +1647,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1866,7 +1677,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1886,13 +1696,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1923,7 +1727,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -1943,13 +1746,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -1981,7 +1778,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2001,13 +1797,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -2039,7 +1829,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2059,13 +1848,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -2097,7 +1880,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2117,13 +1899,7 @@ public class PlayerEventStatusUpdate {
                 value,
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -2155,7 +1931,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2175,13 +1950,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 value,
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -2211,7 +1980,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2231,13 +1999,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 value,
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerStatusView.equipmentSlotCount());
     }
 
     /**
@@ -2268,7 +2030,6 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.currentStats(),
                 cachedPlayerStatusView.maxStats(),
                 cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
                 cachedPlayerStatusView.monsterHealth(),
                 cachedPlayerStatusView.maxMonsterHealth(),
                 cachedPlayerStatusView.monsterVisible(),
@@ -2288,369 +2049,170 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                value,
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                value);
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with whether the player is actively in a live game,
-     * leaving every other field untouched — the port of C's {@code player->upkeep->playing} check
-     * in {@code display_player} ({@code ui-player.c:901}), which skips repainting the character
-     * screen in a background sub-window once play has ended, while the foreground window (C's
-     * {@code angband_term[0]}) keeps repainting regardless.
+     * Rebuilds {@link #cachedPlayerCharSheetView} with whether the player is actively in a live
+     * game, leaving every other field untouched — the port of C's
+     * {@code player->upkeep->playing} check in {@code display_player} ({@code src/ui-player.c}),
+     * which skips repainting the character screen in a background sub-window once play has
+     * ended, while the foreground window (C's {@code angband_term[0]}) keeps repainting
+     * regardless.
      *
-     * <p>Method updatePlayerStatusIsPlaying coded before 260925, commented in full on 260925.
+     * <p>Method updatePlayerCharSheetIsPlaying coded on 260925, commented in full on 260925.
      *
      * @param value {@code true} if the player is actively in a live game, {@code false} otherwise
      */
-    public static void updatePlayerStatusIsPlaying(boolean value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
+    public static void updatePlayerCharSheetIsPlaying(boolean value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
                 value,
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new racial stat-bonus values, leaving every
-     * other field untouched — the port of the "Race Bonus" (RB) column in C's
-     * {@code display_player_stat_info} ({@code ui-player.c:489}), which reads
+     * Rebuilds {@link #cachedPlayerCharSheetView} with new racial stat-bonus values, leaving
+     * every other field untouched — the port of the "Race Bonus" (RB) column in C's
+     * {@code display_player_stat_info} ({@code src/ui-player.c}), which reads
      * {@code player->race->r_adj[stat]} for each of the five stats.
      *
-     * <p>Method updatePlayerStatusRaceStatBonuses coded before 260925, commented in full on
+     * <p>Method updatePlayerCharSheetRaceStatBonuses coded on 260925, commented in full on
      * 260925.
      *
      * @param value the five racial stat-bonus values to store in the rebuilt view
      */
-    public static void updatePlayerStatusRaceStatBonuses(int[] value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
+    public static void updatePlayerCharSheetRaceStatBonuses(int[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
                 value,
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new class stat-bonus values, leaving every
+     * Rebuilds {@link #cachedPlayerCharSheetView} with new class stat-bonus values, leaving every
      * other field untouched — the port of the "Class Bonus" (CB) column in C's
-     * {@code display_player_stat_info} ({@code ui-player.c:493}), which reads
+     * {@code display_player_stat_info} ({@code src/ui-player.c}), which reads
      * {@code player->class->c_adj[stat]} for each of the five stats.
      *
-     * <p>Method updatePlayerStatusClassStatBonuses coded before 260925, commented in full on
+     * <p>Method updatePlayerCharSheetClassStatBonuses coded on 260925, commented in full on
      * 260925.
      *
      * @param value the five class stat-bonus values to store in the rebuilt view
      */
-    public static void updatePlayerStatusClassStatBonuses(int[] value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
+    public static void updatePlayerCharSheetClassStatBonuses(int[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
                 value,
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new equipment stat-bonus values, leaving every
-     * other field untouched — the port of the "Equipment Bonus" (EB) column in C's
-     * {@code display_player_stat_info} ({@code ui-player.c:497}), which reads
+     * Rebuilds {@link #cachedPlayerCharSheetView} with new equipment stat-bonus values, leaving
+     * every other field untouched — the port of the "Equipment Bonus" (EB) column in C's
+     * {@code display_player_stat_info} ({@code src/ui-player.c}), which reads
      * {@code player->state.stat_add[stat]} for each of the five stats.
      *
-     * <p>Method updatePlayerStatusEquipStatBonuses coded before 260925, commented in full on
+     * <p>Method updatePlayerCharSheetEquipStatBonuses coded on 260925, commented in full on
      * 260925.
      *
      * @param value the five equipment stat-bonus values to store in the rebuilt view
      */
-    public static void updatePlayerStatusEquipStatBonuses(int[] value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
+    public static void updatePlayerCharSheetEquipStatBonuses(int[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
                 value,
-                cachedPlayerStatusView.playerTotalStatBonuses(),
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new resulting-maximum stat values, leaving
+     * Rebuilds {@link #cachedPlayerCharSheetView} with new resulting-maximum stat values, leaving
      * every other field untouched — the port of the "Best" column in C's
-     * {@code display_player_stat_info} ({@code ui-player.c:501}), which reads
+     * {@code display_player_stat_info} ({@code src/ui-player.c}), which reads
      * {@code player->state.stat_top[stat]}, the natural maximum after racial, class and
      * equipment bonuses are applied, for each of the five stats.
      *
-     * <p>Method updatePlayerStatusTotalStatBonuses coded before 260925, commented in full on
+     * <p>Method updatePlayerCharSheetTotalStatBonuses coded on 260925, commented in full on
      * 260925.
      *
      * @param value the five resulting-maximum stat values to store in the rebuilt view
      */
-    public static void updatePlayerStatusTotalStatBonuses(int[] value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
+    public static void updatePlayerCharSheetTotalStatBonuses(int[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 value,
-                cachedPlayerStatusView.playerCurrModStat());
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight());
     }
 
     /**
-     * Rebuilds {@link #cachedPlayerStatusView} with new current (drained) stat values, leaving
+     * Rebuilds {@link #cachedPlayerCharSheetView} with new current (drained) stat values, leaving
      * every other field untouched — the port of C's {@code player->state.stat_use[stat]} read in
-     * {@code display_player_stat_info} ({@code ui-player.c:504-508}), which prints this value only
+     * {@code display_player_stat_info} ({@code src/ui-player.c}), which prints this value only
      * for a stat currently below its maximum
      * ({@code player->stat_cur[stat] < player->stat_max[stat]}).
      *
-     * <p>Despite the method name, this sets {@link cachedPlayerStatusView}'s
+     * <p>Despite the method name, this sets {@link #cachedPlayerCharSheetView}'s
      * {@code playerCurrModStat} component, not a bonus value — C's own value here is the drained
      * stat reading itself, not a bonus, unlike this method's four siblings above
-     * ({@link #updatePlayerStatusRaceStatBonuses}, {@link #updatePlayerStatusClassStatBonuses},
-     * {@link #updatePlayerStatusEquipStatBonuses}, {@link #updatePlayerStatusTotalStatBonuses}),
+     * ({@link #updatePlayerCharSheetRaceStatBonuses}, {@link #updatePlayerCharSheetClassStatBonuses},
+     * {@link #updatePlayerCharSheetEquipStatBonuses}, {@link #updatePlayerCharSheetTotalStatBonuses}),
      * each of which is named after the field it sets.
      *
-     * <p>Method updatePlayerStatusCurrentStatBonuses coded before 260925, commented in full on
+     * <p>Method updatePlayerCharSheetCurrentStatBonuses coded on 260925, commented in full on
      * 260925.
      *
      * @param value the five current (drained) stat values to store in the rebuilt view
      */
-    public static void updatePlayerStatusCurrentStatBonuses(int[] value) {
-        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
-                cachedPlayerStatusView.title(),
-                cachedPlayerStatusView.raceName(),
-                cachedPlayerStatusView.className(),
-                cachedPlayerStatusView.level(),
-                cachedPlayerStatusView.experience(),
-                cachedPlayerStatusView.maxExperience(),
-                cachedPlayerStatusView.gold(),
-                cachedPlayerStatusView.chp(),
-                cachedPlayerStatusView.mhp(),
-                cachedPlayerStatusView.csp(),
-                cachedPlayerStatusView.msp(),
-                cachedPlayerStatusView.armourClass(),
-                cachedPlayerStatusView.speed(),
-                cachedPlayerStatusView.currentStats(),
-                cachedPlayerStatusView.maxStats(),
-                cachedPlayerStatusView.statString(),
-                cachedPlayerStatusView.bodyCount(),
-                cachedPlayerStatusView.monsterHealth(),
-                cachedPlayerStatusView.maxMonsterHealth(),
-                cachedPlayerStatusView.monsterVisible(),
-                cachedPlayerStatusView.playerHallucinating(),
-                cachedPlayerStatusView.monsterTracked(),
-                cachedPlayerStatusView.monsterTmdFear(),
-                cachedPlayerStatusView.monsterTmdDisen(),
-                cachedPlayerStatusView.monsterTmdCommand(),
-                cachedPlayerStatusView.monsterTmdConf(),
-                cachedPlayerStatusView.monsterTmdStun(),
-                cachedPlayerStatusView.monsterTmdSleep(),
-                cachedPlayerStatusView.monsterTmdHold(),
-                cachedPlayerStatusView.depth(),
-                cachedPlayerStatusView.studyStatus(),
-                cachedPlayerStatusView.studyConditions(),
-                cachedPlayerStatusView.detectionStatus(),
-                cachedPlayerStatusView.restingRepeatingState(),
-                cachedPlayerStatusView.levelFeeling(),
-                cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount(),
-                cachedPlayerStatusView.playerIsPlaying(),
-                cachedPlayerStatusView.playerRaceStatBonuses(),
-                cachedPlayerStatusView.playerClassStatBonuses(),
-                cachedPlayerStatusView.playerEquipStatBonuses(),
-                cachedPlayerStatusView.playerTotalStatBonuses(),
+    public static void updatePlayerCharSheetCurrentStatBonuses(int[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                value,
+                cachedPlayerCharSheetView.totalWeight());
+    }
+
+    /**
+     * Rebuilds {@link #cachedPlayerCharSheetView} with a new total carried weight, leaving every
+     * other field untouched — the port of C's {@code player->upkeep->total_weight}
+     * ({@code player.h:487}), read by the "Burden" line in {@code get_panel_midleft}
+     * ({@code src/ui-player.c}). The Java side reads the same value via
+     * {@code Player.getPlayerUpkeep().getTotalWeight()}.
+     *
+     * <p>Method updatePlayerCharSheetTotalWeight coded on 260925, commented in full on 260925.
+     *
+     * @param value the total carried weight, in tenth-pounds, to store in the rebuilt view
+     */
+    public static void updatePlayerCharSheetTotalWeight(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
                 value);
     }
 }

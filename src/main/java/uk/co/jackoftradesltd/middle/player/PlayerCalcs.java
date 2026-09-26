@@ -859,11 +859,16 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, then the map
-     * separately, because it is the one event carrying data: {@code EVENT_MAP} with the point
-     * {@code (-1, -1)}, C's sentinel for "the whole map, not one grid". A last
-     * {@code EVENT_END} tells the display the batch is complete and it may now do any plotting it
-     * deferred — and, like the narrowing, it is skipped when only subwindows were refreshed.
+     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, with one
+     * exception: {@code PR_HP} calls
+     * {@link uk.co.jackoftradesltd.middle.game.event.EventsHandler#eventSignalStat} with the
+     * player's current and maximum hit points instead, because {@code RedrawHandlers} forwards
+     * that payload across the core-to-front-end boundary and there is no shared {@code player}
+     * there for a handler to read the way C's {@code prt_hp} does. The map is handled separately
+     * again, because it also carries data: {@code EVENT_MAP} with the point {@code (-1, -1)}, C's
+     * sentinel for "the whole map, not one grid". A last {@code EVENT_END} tells the display the
+     * batch is complete and it may now do any plotting it deferred — and, like the narrowing, it is
+     * skipped when only subwindows were refreshed.
      *
      * <p><b>Deliberate divergence:</b> C drives the signalling from a fixed table
      * ({@code redraw_events}, {@code player-calcs.c:2634}) and so emits the events in that table's
@@ -872,7 +877,7 @@ public class PlayerCalcs {
      * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
      * all.
      *
-     * <p>Function redrawStuff coded on 260828, commented in full on 260828.
+     * <p>Function redrawStuff coded on 260828, commented in full on 260926.
      *
      * @param player the character whose flagged display elements are re-sent to the front end
      * @see #updateStuff(Player)
@@ -902,6 +907,11 @@ public class PlayerCalcs {
         // For each listed flag (apart from PR_MAP) - send the appropriate signal to the UI
         for (PlayerRedraw playerRedraw : redraw) {
             if (playerRedraw == PlayerRedraw.PR_MAP) continue;
+            if (playerRedraw == PlayerRedraw.PR_HP) {
+                GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_HP, player.getCurrentHP(),
+                        player.getMaxHP());
+                continue;
+            }
             GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
         }
 

@@ -27,7 +27,6 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.middle.objects.ItemObject;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -176,6 +175,30 @@ public interface EventsHandler {
      */
     default void eventSignal(GameEventType eventType) {
         gameEventDispatch(eventType, null);
+    }
+
+    /**
+     * Send a signal to dispatch all events of a given type with a pair of numbers - the value the
+     * redraw is about, and whatever second value it is paired with for display.
+     *
+     * <p>There is no {@code event_signal_*} counterpart for this shape in C: C's UI handlers for
+     * these events ({@code prt_hp}, {@code prt_sp}, {@code prt_level} -
+     * {@code src/ui-display.c:207,314,332}) read the pair straight off the shared {@code player}
+     * global at signal time rather than receiving it as an argument. This method exists because a
+     * handler on the far side of the core-to-front-end boundary has no such global to read, so the
+     * values have to travel with the signal instead. See {@link EventDataStat}'s Javadoc for the
+     * full rationale and the naming of {@code current}/{@code other} over {@code current}/{@code
+     * max}.
+     *
+     * <p>Function eventSignalStat coded before 260926, commented in full on 260926.
+     *
+     * @param eventType The event type we are signalling
+     * @param main      the value the redraw is about; becomes {@link EventDataStat#current()}
+     * @param other     whatever {@code main} is paired with for display; becomes
+     *                  {@link EventDataStat#other()}
+     */
+    default void eventSignalStat(GameEventType eventType, int main, int other) {
+        gameEventDispatch(eventType, new EventDataStat(main, other));
     }
 
     /**

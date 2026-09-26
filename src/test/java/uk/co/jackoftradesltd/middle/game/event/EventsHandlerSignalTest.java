@@ -26,6 +26,7 @@ import uk.co.jackoftradesltd.channel.messages.data.EventDataBolt;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataTunnel;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
@@ -128,6 +129,20 @@ class EventsHandlerSignalTest {
 
         assertEquals(fromLoc, fromCoordinates,
                 "signalling the same square as (x, y) and as a Loc must build the same payload");
+    }
+
+    /**
+     * The stat signal wraps its two numbers straight through, {@code main} into
+     * {@link EventDataStat#current()} and {@code other} into {@link EventDataStat#other()} - there
+     * is no C {@code event_signal_*} counterpart to cross against, since C's handlers for these
+     * events read the pair off the shared {@code player} global instead of receiving it. Driven
+     * with distinct values so a swap of the two parameters cannot pass unnoticed.
+     */
+    @Test
+    void aStatSignalWrapsCurrentAndOtherInOrder() {
+        handler.eventSignalStat(GameEventType.EVENT_HP, 17, 30);
+
+        assertEquals(new EventDataStat(17, 30), handler.lastData);
     }
 
     /**

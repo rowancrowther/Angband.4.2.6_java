@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.middle.game.event.eventhandlers.InitHandlers;
+import uk.co.jackoftradesltd.middle.game.event.eventhandlers.RedrawHandlers;
 
 /**
  * The middle end's body: what the game thread runs, kept clear of Swing's event
@@ -89,9 +90,10 @@ public class Core {
      *
      * <p>The receiving end is this class's whole knowledge of the front end - the
      * loop waits on it and never calls the UI at all. The sending end goes out
-     * twice over: directly, for the shutdown reply, and handed to
-     * {@code InitHandlers}, so the start-up narration the event handlers produce
-     * leaves by the same queue. Both routes are this one sender. Stage 4 made that
+     * three times over: directly, for the shutdown reply, and handed to both
+     * {@code InitHandlers} and {@code RedrawHandlers}, so the start-up narration
+     * the one produces and the redraw events the other forwards both leave by the
+     * same queue. All three routes are this one sender. Stage 4 made that
      * true - the front end used to hold a copy of the sender it had no business
      * holding - and stage 5 removed the last indirection on the second route, so the
      * handlers now send on it themselves rather than through a registered display.
@@ -156,15 +158,18 @@ public class Core {
      * into the display module. The alternation itself is Chapter 5's.
      *
      * <p><b>The statements before the loop are the core's whole set-up, in the only order that
-     * works.</b> The engine is built first, because building it replaces the event bus. The
-     * handlers are then constructed around the core's sender and subscribed to that bus - both
-     * before the load, because {@code EVENT_ENTER_INIT} is raised from inside it and a handler
-     * registered afterwards would miss it: the title screen would stay blank and the notes would go
-     * nowhere. Only then does {@code loadGameConstants()} produce the events they carry across.
+     * works.</b> The engine is built first, because building it replaces the event bus. Both
+     * {@code InitHandlers} and {@code RedrawHandlers} are then constructed around the core's
+     * sender and subscribed to that bus, before the load: {@code InitHandlers} has to be, because
+     * {@code EVENT_ENTER_INIT} is raised from inside the load and a handler registered afterwards
+     * would miss it, leaving the title screen blank and the notes going nowhere; {@code
+     * RedrawHandlers} has no such deadline of its own - {@code EVENT_HP} is not signalled until
+     * play begins - but is wired alongside it for the same reason and at no cost. Only then does
+     * {@code loadGameConstants()} produce the events {@code InitHandlers} carries across.
      *
-     * <p>Nothing keeps the {@code InitHandlers} instance after this method drops its local, and
-     * nothing needs to: subscribing hands the bus a bound method reference per handler, and each of
-     * those holds the object.
+     * <p>Nothing keeps either the {@code InitHandlers} or the {@code RedrawHandlers} instance
+     * after this method drops its local, and nothing needs to: subscribing hands the bus a bound
+     * method reference per handler, and each of those holds the object.
      *
      * <p>The engine is built here rather than by the caller, replacing a two-call sequence the
      * caller had to know about, where calling this method alone dereferenced a null field. The null
@@ -194,6 +199,8 @@ public class Core {
      * on. Note that it gives up <em>without</em> sending {@code STOPPED} - the UI
      * would then wait forever, which is a real gap and the reason interrupting this
      * thread is not part of any shutdown path.
+     *
+     * <p>Method gameLoop coded before 260813, commented in full on 260926.
      */
     public void gameLoop() {
         if (gameEngine == null)
@@ -203,6 +210,9 @@ public class Core {
 
         InitHandlers initHandlers = new InitHandlers(coreSender);
         initHandlers.initHandlers();
+
+        RedrawHandlers redrawHandlers = new RedrawHandlers(coreSender);
+        redrawHandlers.initHandlers();
 
         if (gameEngine.loadGameConstants(this)) return;
 

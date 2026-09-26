@@ -25,6 +25,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.utils.Flag;
 import uk.co.jackoftradesltd.middle.game.event.EventHandlerInterface;
@@ -57,8 +58,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * flags are cleared, and which of C's four ways out was taken. All of it is read off the C function
  * and its {@code redraw_events} table ({@code player-calcs.c:2634}) rather than off the port: the
  * flag-to-event pairing below is a transcription of that table, with {@code PR_MAP} - which the
- * table deliberately omits - handled separately, as C does, because it is the one event carrying
- * data.
+ * table deliberately omits - handled separately, as C does, because it carries data. {@code PR_HP}
+ * carries data too, but for a port-only reason: C's table treats it like any other flag because its
+ * handler, {@code prt_hp}, reads the pair off the shared {@code player} global; the port has no such
+ * global on the far side of the core-to-front-end boundary, so {@code redrawStuff} attaches the pair
+ * to the signal itself instead.
  *
  * <p>Ordering is only partly checked, and deliberately so. C emits its events in table order; the
  * port iterates the flag set instead, and Rowan has chosen not to reproduce the table's order. What
@@ -352,6 +356,25 @@ class PlayerRedrawStuffTest {
 
             int map = bus.events.indexOf(GameEventType.EVENT_MAP);
             assertEquals(new EventDataGrid(-1, -1), bus.data.get(map));
+        }
+
+        /**
+         * {@code PR_HP} is special-cased to carry the player's current and maximum hit points -
+         * the port's substitute for C's {@code prt_hp} reading {@code p->chp}/{@code p->mhp} off
+         * the shared player global, which the far side of the boundary has no access to. Chosen to
+         * be distinct and non-symmetric, so a swap of the two arguments cannot pass by accident.
+         */
+        @Test
+        @DisplayName("the HP event carries the player's current and maximum hit points")
+        void hpCarriesCurrentAndMaxHitPoints() {
+            player.setPlayerMaxHP(30);
+            player.setCurrentHP(17);
+            raise(PlayerRedraw.PR_HP);
+
+            PlayerCalcs.redrawStuff(player);
+
+            int hp = bus.events.indexOf(GameEventType.EVENT_HP);
+            assertEquals(new EventDataStat(17, 30), bus.data.get(hp));
         }
 
         /**

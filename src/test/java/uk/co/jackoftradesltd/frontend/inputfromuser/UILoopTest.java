@@ -29,9 +29,12 @@ import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
+import uk.co.jackoftradesltd.frontend.ui.RedrawRouter;
+import uk.co.jackoftradesltd.frontend.ui.SidebarModel;
 
 import javax.swing.SwingUtilities;
 import java.awt.GraphicsEnvironment;
@@ -412,6 +415,56 @@ class UILoopTest {
             assertFalse(ui.isAlive(), "an interrupted loop should end");
             assertFalse(swingUI.closed.await(NOT_COMING_MILLIS, TimeUnit.MILLISECONDS),
                     "an interrupt is a failure, not a clean shutdown: nothing should be disposed");
+        }
+    }
+
+    /**
+     * The one arm of the switch that writes into shared UI state rather than acting through
+     * {@code swingUI} or {@code screen} - a {@code GameEventCoreMessage} carrying redraw data has
+     * to reach the model it belongs in, not just be received and discarded.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class RoutingGameEvents {
+
+        /**
+         * {@link SidebarModel}'s HP pair before this test ran, restored afterwards through
+         * {@link RedrawRouter#setHP}: the model's own setters are package-private to
+         * {@code uk.co.jackoftradesltd.frontend.ui}, and this test class is not in that package,
+         * so the public routing method is the honest way back in.
+         */
+        private int savedCurrentHp;
+        private int savedMaxHp;
+
+        @BeforeEach
+        void saveSidebarModel() {
+            savedCurrentHp = SidebarModel.getCurrentHP();
+            savedMaxHp = SidebarModel.getMaxHP();
+        }
+
+        @AfterEach
+        void restoreSidebarModel() {
+            RedrawRouter.setHP(new EventDataStat(savedCurrentHp, savedMaxHp));
+        }
+
+        /**
+         * An {@code EVENT_HP} message's current/maximum pair lands in {@link SidebarModel} in the
+         * same order C's {@code get_panel_topleft} ({@code [C] ui-player.c}) reads
+         * {@code player->chp} then {@code player->mhp} - distinct values on each side, so a router
+         * that swapped them would be caught rather than passing by coincidence.
+         */
+        @Test
+        void anEventHpMessageWritesIntoTheSidebarModel() throws Exception {
+            startLoop(null);
+
+            channels.coreChannel().coreSender().send(new CoreMessage.GameEventCoreMessage(
+                    GameEventType.EVENT_HP, new EventDataStat(7, 99)));
+            Thread.sleep(NOT_COMING_MILLIS);
+
+            assertEquals(7, SidebarModel.getCurrentHP(), "current HP");
+            assertEquals(99, SidebarModel.getMaxHP(), "max HP");
+            assertTrue(uiThread.isAlive(), "an EVENT_HP message must not end the loop");
         }
     }
 

@@ -2227,30 +2227,45 @@ class UIPlayerTest {
     class GetPanelTopLeft {
 
         private PlayerStatusView savedStatusView;
+        private int savedCurrentHp;
+        private int savedMaxHp;
 
         /**
-         * Saves the status-view cache so this test's fixture cannot leak into another test, then
-         * installs one carrying known values for the six fields this method reads.
+         * Saves the status-view cache and {@link SidebarModel}'s HP pair so this test's fixture
+         * cannot leak into another test, then installs values for the six fields this method reads.
+         *
+         * <p>The installed view's own {@code chp}/{@code mhp} (999/888) are deliberately not the
+         * values {@link #buildsSixRowsInOrder()} expects: HP no longer comes from this view (see
+         * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}), so
+         * a mismatched pair here would catch a regression back to reading it from
+         * {@link PlayerStatusView} instead of {@link SidebarModel}.
          */
         @BeforeEach
         void installFixture() {
             savedStatusView = PlayerEventStatusUpdate.getPlayerStatusView();
+            savedCurrentHp = SidebarModel.getCurrentHP();
+            savedMaxHp = SidebarModel.getMaxHP();
+
             PlayerEventStatusUpdate.updatePlayerStatusView(new PlayerStatusView(
                     "Legolas", "Rogue", "Elf", "Ranger", 0, 0, 0L, 0L, 0L,
-                    42, 50, 8, 12, 0, 0,
+                    999, 888, 8, 12, 0, 0,
                     new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
                     new String[]{"STR", "INT", "WIS", "DEX", "CON"},
                     0, 0, false, false, false, false, false, false, false, false, false, false,
                     0, 0, null, null, null, null, null, null,
                     0, 0, 0, 0));
+            SidebarModel.setCurrentHP(42);
+            SidebarModel.setMaxHP(50);
         }
 
         /**
-         * Restores the status view saved by {@link #installFixture()}.
+         * Restores the status view and {@link SidebarModel} saved by {@link #installFixture()}.
          */
         @AfterEach
         void restoreFixture() {
             PlayerEventStatusUpdate.updatePlayerStatusView(savedStatusView);
+            SidebarModel.setCurrentHP(savedCurrentHp);
+            SidebarModel.setMaxHP(savedMaxHp);
         }
 
         /**

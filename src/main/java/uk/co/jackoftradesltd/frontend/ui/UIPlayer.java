@@ -234,9 +234,14 @@ public class UIPlayer {
      * Race, Class and Title each a plain {@code "%s"} of
      * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code name()}/{@code raceName()}/
      * {@code className()}/{@code title()}, standing in for C's {@code player->full_name}/
-     * {@code player->race->name}/{@code player->class->name}/{@code show_title()}; HP and SP each
-     * a {@code "%d/%d"} of the same view's current/maximum hit-point and spell-point pair,
-     * standing in for C's {@code player->chp}/{@code mhp} and {@code csp}/{@code msp}.
+     * {@code player->race->name}/{@code player->class->name}/{@code show_title()}; SP a
+     * {@code "%d/%d"} of the same view's current/maximum spell-point pair, standing in for C's
+     * {@code csp}/{@code msp}. HP is the one row that does not read this view: it is a
+     * {@code "%d/%d"} of {@link SidebarModel#getCurrentHP()}/{@link SidebarModel#getMaxHP()},
+     * standing in for C's {@code player->chp}/{@code mhp} — the first field of this panel moved
+     * onto the core-to-front-end message boundary rather than the shared-cache view the rest of
+     * this method still reads, per
+     * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}.
      *
      * <p>The {@code topLeft.initLines()} call partway down this method re-runs the same
      * initialisation {@link #panelAllocate(int)} already performed just above; it replaces one
@@ -251,7 +256,7 @@ public class UIPlayer {
      * ({@code [C] ui-player.c}, function {@code display_panel}) that would read it is not ported
      * yet.
      *
-     * <p>Method getPanelTopLeft coded on 260925, commented in full on 260925.
+     * <p>Method getPanelTopLeft coded on 260925, commented in full on 260926.
      *
      * @return a freshly built, fully populated six-row {@link Panel} for the top-left name/
      * race/class/title/HP/SP block
@@ -269,8 +274,8 @@ public class UIPlayer {
         topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "Title", "%s",
                 PlayerEventStatusUpdate.getPlayerStatusView().title());
         topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "HP", "%d/%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().chp(),
-                PlayerEventStatusUpdate.getPlayerStatusView().mhp());
+                SidebarModel.getCurrentHP(),
+                SidebarModel.getMaxHP());
         topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "SP", "%d/%d",
                 PlayerEventStatusUpdate.getPlayerStatusView().csp(),
                 PlayerEventStatusUpdate.getPlayerStatusView().msp());

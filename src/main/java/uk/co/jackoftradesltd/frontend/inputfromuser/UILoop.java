@@ -37,6 +37,7 @@ import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import uk.co.jackoftradesltd.frontend.splash.SplashScreen;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.frontend.ui.RedrawRouter;
 import uk.co.jackoftradesltd.frontend.ui.entry.assembler.helperfunctions.HelperFunctions;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIDataLoader;
 import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
@@ -226,6 +227,7 @@ public class UILoop {
 
                         switch (gameEventCoreMessage.type()) {
                             case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth(gameEventCoreMessage.data());
+                            case EVENT_HP -> RedrawRouter.setHP(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

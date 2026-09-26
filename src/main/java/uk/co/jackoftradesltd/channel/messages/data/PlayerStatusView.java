@@ -188,6 +188,7 @@ public record PlayerStatusView(// Player details
                                String raceName,
                                String className,
                                int level,
+                               int maxLevel,
                                long experience,
                                long maxExperience,
                                long gold,
@@ -217,6 +218,7 @@ public record PlayerStatusView(// Player details
 
                                // Dungeon details
                                int depth,
+                               int maxDepth,
                                String studyStatus,
                                String studyConditions,
                                String detectionStatus,
@@ -225,5 +227,8 @@ public record PlayerStatusView(// Player details
                                String lightLevel,
 
                                // Current state of player/game
-                               int equipmentSlotCount) {
+                               int equipmentSlotCount,
+                               int turn,
+                               int totalEnergy,
+                               int restingTurn) {
 }

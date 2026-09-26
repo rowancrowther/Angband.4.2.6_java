@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.channel.globals.Angband;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.colour.Colour;
+import uk.co.jackoftradesltd.frontend.globals.UIGlobals;
 import uk.co.jackoftradesltd.frontend.inputfromuser.UILoop;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
@@ -189,6 +190,7 @@ public class SwingUI {
         terms.add(mainTermData);
         mainTermData.setWindow(new Window());
         activeTermData = mainTermData;
+        UIGlobals.setActiveTermData(activeTermData);
     }
 
     /**

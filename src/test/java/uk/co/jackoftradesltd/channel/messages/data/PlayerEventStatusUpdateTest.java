@@ -27,6 +27,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -75,7 +76,25 @@ class PlayerEventStatusUpdateTest {
     private PlayerCharSheetView savedPlayerCharSheetView;
 
     /**
-     * A {@link PlayerStatusView} with a distinct, recognisable value in every one of its 37
+     * The nine skills-panel fields ({@code saveSkill} through {@code optionEffectiveSpeed}) that
+     * every {@code updatePlayerCharSheet*} setter currently resets to its type's zero value —
+     * {@code 0} or {@code false} — instead of carrying forward from
+     * {@link PlayerEventStatusUpdate#cachedPlayerCharSheetView}, unlike the other 24 fields. Added
+     * with the fields themselves ahead of the record shape {@code getPanelSkills()} is really meant
+     * to arrive through, a placeholder Rowan chose deliberately over building throw-away plumbing
+     * for a shape about to change again. {@link #assertOnlyFieldChanged} treats every name in this
+     * set as "resets to default" rather than "must equal the baseline", so
+     * {@link #updatingOneCharSheetFieldLeavesEveryOtherFieldUntouched} documents today's real
+     * behaviour instead of asserting the untouched-field invariant the other 24 fields keep. When
+     * the setters start carrying these nine forward, this set — and the branch in
+     * {@link #assertOnlyFieldChanged} that reads it — should be deleted, not extended.
+     */
+    private static final Set<String> CHAR_SHEET_PLACEHOLDER_RESET_FIELDS = Set.of(
+            "saveSkill", "stealthSkill", "disarmPhysSkill", "disarmMagicSkill", "deviceSkill",
+            "searchSkill", "infra", "calcSpeed", "optionEffectiveSpeed");
+
+    /**
+     * A {@link PlayerStatusView} with a distinct, recognisable value in every one of its 42
      * fields, so a field landing in the wrong slot after a rebuild shows up immediately.
      *
      * @return the baseline view
@@ -87,6 +106,7 @@ class PlayerEventStatusUpdateTest {
                 "Baseline Race",
                 "Baseline Class",
                 5,
+                15,
                 1000L,
                 2000L,
                 3000L,
@@ -112,18 +132,23 @@ class PlayerEventStatusUpdateTest {
                 false,
                 false,
                 1,
+                2,
                 "Baseline Study",
                 "Baseline Conditions",
                 "Baseline Detection",
                 "Baseline Resting",
                 "Baseline Feeling",
                 "Baseline Light",
-                12);
+                12,
+                13,
+                14,
+                15);
     }
 
     /**
-     * A {@link PlayerCharSheetView} with a distinct, recognisable value in every one of its eight
-     * fields, so a field landing in the wrong slot after a rebuild shows up immediately.
+     * A {@link PlayerCharSheetView} with a distinct, recognisable value in every one of its
+     * thirty-three fields, so a field landing in the wrong slot after a rebuild shows up
+     * immediately.
      *
      * @return the baseline view
      */
@@ -136,7 +161,32 @@ class PlayerEventStatusUpdateTest {
                 new int[]{121, 122, 123, 124, 125},
                 new int[]{131, 132, 133, 134, 135},
                 new int[]{141, 142, 143, 144, 145},
-                999);
+                999,
+                888,
+                new long[]{151L, 152L, 153L},
+                777,
+                778,
+                779,
+                780,
+                781,
+                782,
+                783,
+                784,
+                785,
+                786,
+                787,
+                788,
+                789,
+                790,
+                791,
+                792,
+                793,
+                794,
+                795,
+                796,
+                797,
+                798,
+                true);
     }
 
     /**
@@ -154,11 +204,9 @@ class PlayerEventStatusUpdateTest {
 
     /**
      * Asserts that {@code actual} matches {@code baseline} in every record component except
-     * {@code changedComponent}, which must instead equal {@code expectedValue}. Works against
-     * either {@link PlayerStatusView} or {@link PlayerCharSheetView}, reading the components from
-     * {@code baseline}'s own runtime class rather than a hardcoded one, since both sweeps
-     * ({@link #updatingOneFieldLeavesEveryOtherFieldUntouched} and
-     * {@link #updatingOneCharSheetFieldLeavesEveryOtherFieldUntouched}) share this same check.
+     * {@code changedComponent}, which must instead equal {@code expectedValue} — the
+     * {@link PlayerStatusView} sweep's entry point, where every other field really is expected to
+     * survive untouched.
      *
      * @param baseline         the view before the setter under test ran
      * @param actual           the view after it ran
@@ -168,16 +216,50 @@ class PlayerEventStatusUpdateTest {
     private static void assertOnlyFieldChanged(Record baseline, Record actual,
                                                String changedComponent, Object expectedValue)
             throws ReflectiveOperationException {
+        assertOnlyFieldChanged(baseline, actual, changedComponent, expectedValue, Set.of());
+    }
+
+    /**
+     * Asserts that {@code actual} matches {@code baseline} in every record component except
+     * {@code changedComponent} (which must instead equal {@code expectedValue}) and every name in
+     * {@code resetToDefaultFields} (which must instead equal its type's zero value — {@code 0} for
+     * an {@code int}, {@code false} for a {@code boolean}). Works against either
+     * {@link PlayerStatusView} or {@link PlayerCharSheetView}, reading the components from
+     * {@code baseline}'s own runtime class rather than a hardcoded one, since both sweeps
+     * ({@link #updatingOneFieldLeavesEveryOtherFieldUntouched} and
+     * {@link #updatingOneCharSheetFieldLeavesEveryOtherFieldUntouched}) share this same check;
+     * {@code resetToDefaultFields} is only ever non-empty for the latter, via
+     * {@link #CHAR_SHEET_PLACEHOLDER_RESET_FIELDS}.
+     *
+     * @param baseline              the view before the setter under test ran
+     * @param actual                the view after it ran
+     * @param changedComponent      the record component the setter under test is named for
+     * @param expectedValue         the value that component should now hold
+     * @param resetToDefaultFields  component names known to come back at their zero value
+     *                              regardless of what {@code baseline} held, rather than surviving
+     *                              untouched
+     */
+    private static void assertOnlyFieldChanged(Record baseline, Record actual,
+                                               String changedComponent, Object expectedValue,
+                                               Set<String> resetToDefaultFields)
+            throws ReflectiveOperationException {
         for (RecordComponent component : baseline.getClass().getRecordComponents()) {
             Object actualValue = component.getAccessor().invoke(actual);
-            Object expected = component.getName().equals(changedComponent)
-                    ? expectedValue
-                    : component.getAccessor().invoke(baseline);
+            Object expected;
+            if (component.getName().equals(changedComponent)) {
+                expected = expectedValue;
+            } else if (resetToDefaultFields.contains(component.getName())) {
+                expected = component.getType() == boolean.class ? false : 0;
+            } else {
+                expected = component.getAccessor().invoke(baseline);
+            }
 
             if (expected instanceof int[] expectedArray) {
                 assertArrayEquals(expectedArray, (int[]) actualValue, component.getName());
             } else if (expected instanceof String[] expectedArray) {
                 assertArrayEquals(expectedArray, (String[]) actualValue, component.getName());
+            } else if (expected instanceof long[] expectedArray) {
+                assertArrayEquals(expectedArray, (long[]) actualValue, component.getName());
             } else {
                 assertEquals(expected, actualValue, component.getName());
             }
@@ -227,6 +309,7 @@ class PlayerEventStatusUpdateTest {
                 Arguments.of("updatePlayerStatusMonTmdSleep", boolean.class, true, "monsterTmdSleep"),
                 Arguments.of("updatePlayerStatusMonTmdHold", boolean.class, true, "monsterTmdHold"),
                 Arguments.of("updatePlayerStatusDepth", int.class, 250, "depth"),
+                Arguments.of("updatePlayerStatusMaxDepth", int.class, 350, "maxDepth"),
                 Arguments.of("updatePlayerStatusStudyStatus", String.class, "Study (3)", "studyStatus"),
                 Arguments.of("updatePlayerStatusStudyConditions", String.class, "New Conditions",
                         "studyConditions"),
@@ -236,7 +319,10 @@ class PlayerEventStatusUpdateTest {
                         "restingRepeatingState"),
                 Arguments.of("updatePlayerStatusLevelFeeling", String.class, "LF:5-3", "levelFeeling"),
                 Arguments.of("updatePlayerStatusLightLevel", String.class, "Light 3", "lightLevel"),
-                Arguments.of("updatePlayerStatusEquipSlotCount", int.class, 14, "equipmentSlotCount")
+                Arguments.of("updatePlayerStatusEquipSlotCount", int.class, 14, "equipmentSlotCount"),
+                Arguments.of("updatePlayerStatusTurn", int.class, 9999, "turn"),
+                Arguments.of("updatePlayerStatusTotalEnergy", int.class, 8888, "totalEnergy"),
+                Arguments.of("updatePlayerStatusRestingEnergy", int.class, 7777, "restingTurn")
         );
     }
 
@@ -261,7 +347,23 @@ class PlayerEventStatusUpdateTest {
                         new int[]{18, 19, 20, 21, 22}, "playerTotalStatBonuses"),
                 Arguments.of("updatePlayerCharSheetCurrentStatBonuses", int[].class,
                         new int[]{17, 18, 19, 20, 21}, "playerCurrModStat"),
-                Arguments.of("updatePlayerCharSheetTotalWeight", int.class, 315, "totalWeight")
+                Arguments.of("updatePlayerCharSheetTotalWeight", int.class, 315, "totalWeight"),
+                Arguments.of("updatePlayerCharSheetExpToLevel", long[].class,
+                        new long[]{10L, 25L, 45L}, "expToLevel"),
+                Arguments.of("updatePlayerCharSheetExpFactor", int.class, 275, "expFactor"),
+                Arguments.of("updatePlayerCharSheetHeight", int.class, 68, "height"),
+                Arguments.of("updatePlayerCharSheetWeight", int.class, 165, "weight"),
+                Arguments.of("updatePlayerCharSheetAge", int.class, 45, "age"),
+                Arguments.of("updatePlayerCharSheetToA", int.class, 91, "toA"),
+                Arguments.of("updatePlayerCharSheetToD", int.class, 92, "toD"),
+                Arguments.of("updatePlayerCharSheetToH", int.class, 93, "toH"),
+                Arguments.of("updatePlayerCharSheetMeleeSkill", int.class, 94, "meleeSkill"),
+                Arguments.of("updatePlayerCharSheetShootSkill", int.class, 95, "shootSkill"),
+                Arguments.of("updatePlayerCharSheetBthPlusAdj", int.class, 96, "bthPlusAdj"),
+                Arguments.of("updatePlayerCharSheetMeleeDice", int.class, 97, "meleeDice"),
+                Arguments.of("updatePlayerCharSheetMeleeSides", int.class, 98, "meleeSides"),
+                Arguments.of("updatePlayerCharSheetnumBlows", int.class, 99, "numBlows"),
+                Arguments.of("updatePlayerCharSheetNumShots", int.class, 100, "numShots")
         );
     }
 
@@ -284,8 +386,8 @@ class PlayerEventStatusUpdateTest {
     }
 
     /**
-     * The ordinary path for every sidebar field setter, all 37 in one sweep: calling it changes
-     * exactly the {@link PlayerStatusView} component it is named for, and leaves the other 36
+     * The ordinary path for every sidebar field setter, all 41 in one sweep: calling it changes
+     * exactly the {@link PlayerStatusView} component it is named for, and leaves the other 41
      * exactly as {@link #baseline()} held them.
      */
     @ParameterizedTest(name = "{0} changes only {3}")
@@ -303,15 +405,17 @@ class PlayerEventStatusUpdateTest {
     }
 
     /**
-     * The ordinary path for every character-sheet field setter, all eight in one sweep: calling
-     * it changes exactly the {@link PlayerCharSheetView} component it is named for, and leaves
-     * the other seven exactly as {@link #charSheetBaseline()} held them — the
-     * {@link PlayerCharSheetView} counterpart to
-     * {@link #updatingOneFieldLeavesEveryOtherFieldUntouched}.
+     * The ordinary path for every character-sheet field setter, all twenty-three in one sweep:
+     * calling it changes exactly the {@link PlayerCharSheetView} component it is named for, leaves
+     * the other twenty-three exactly as {@link #charSheetBaseline()} held them, and resets the nine
+     * {@link #CHAR_SHEET_PLACEHOLDER_RESET_FIELDS} to their zero value regardless of what the
+     * baseline held — the {@link PlayerCharSheetView} counterpart to
+     * {@link #updatingOneFieldLeavesEveryOtherFieldUntouched}, except for that last part, which
+     * documents today's placeholder behaviour rather than an invariant worth keeping.
      */
     @ParameterizedTest(name = "{0} changes only {3}")
     @MethodSource("charSheetFieldUpdaters")
-    @DisplayName("a char-sheet field setter changes its own field and nothing else")
+    @DisplayName("a char-sheet field setter changes its own field and resets the placeholder fields")
     void updatingOneCharSheetFieldLeavesEveryOtherFieldUntouched(String methodName, Class<?> paramType,
                                                                  Object newValue, String changedComponent)
             throws ReflectiveOperationException {
@@ -320,7 +424,8 @@ class PlayerEventStatusUpdateTest {
 
         invokeSetter(methodName, paramType, newValue);
 
-        assertOnlyFieldChanged(baseline, PlayerEventStatusUpdate.getPlayerCharSheetView(), changedComponent, newValue);
+        assertOnlyFieldChanged(baseline, PlayerEventStatusUpdate.getPlayerCharSheetView(), changedComponent,
+                newValue, CHAR_SHEET_PLACEHOLDER_RESET_FIELDS);
     }
 
     /**
@@ -372,7 +477,7 @@ class PlayerEventStatusUpdateTest {
 
     /**
      * A second wholesale replacement discards the first outright, with no attempt to merge the
-     * two — unlike the field setters, which each preserve the other 36 fields.
+     * two — unlike the field setters, which each preserve the other 38 fields.
      */
     @Test
     @DisplayName("a second whole-view set replaces the first outright")
@@ -380,11 +485,11 @@ class PlayerEventStatusUpdateTest {
         PlayerStatusView first = baseline();
         PlayerStatusView second = new PlayerStatusView(
                 "Second Name", "Second Title", "Second Race", "Second Class",
-                1, 0L, 0L, 0L, 1, 1, 0, 0, 0, 110,
+                1, 1, 0L, 0L, 0L, 1, 1, 0, 0, 0, 110,
                 new int[]{1, 1, 1, 1, 1}, new int[]{1, 1, 1, 1, 1},
                 new String[]{"", "", "", "", ""},
                 0, 0, false, false, false, false, false, false, false, false, false, false,
-                0, "", "", "", "", "", "", 0);
+                0, 0, "", "", "", "", "", "", 0, 0, 0, 0);
 
         PlayerEventStatusUpdate.updatePlayerStatusView(first);
         PlayerEventStatusUpdate.updatePlayerStatusView(second);
@@ -403,7 +508,9 @@ class PlayerEventStatusUpdateTest {
         PlayerCharSheetView second = new PlayerCharSheetView(
                 0, false,
                 new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
-                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, 0);
+                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, 0, 0, new long[]{}, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0, 0, 0, false);
 
         PlayerEventStatusUpdate.updatePlayerCharSheetView(first);
         PlayerEventStatusUpdate.updatePlayerCharSheetView(second);

@@ -69,6 +69,20 @@ package uk.co.jackoftradesltd.channel.messages.data;
  *                               by the "Burden" line in {@code get_panel_midleft}
  *                               ({@code src/ui-player.c}); the Java side reads the same value via
  *                               {@code Player.getPlayerUpkeep().getTotalWeight()}
+ * @param weightLimit            the player's carry capacity before burden, in tenth-pounds —
+ *                               C's raw {@code adj_str_wgt[player->state.stat_ind[STAT_STR]]}
+ *                               table entry ({@code src/player-calcs.c}), deliberately
+ *                               unscaled: C's own {@code weight_limit} helper (also
+ *                               {@code src/player-calcs.c}) returns that same table entry ×100
+ *                               for a different calculation, but C's {@code weight_remaining}
+ *                               reads the table directly rather than through that helper, and
+ *                               this field matches that raw reading for
+ *                               {@code uk.co.jackoftradesltd.frontend.ui.UIPlayer#weightRemaining()}
+ *                               to use — not the same quantity as
+ *                               {@link uk.co.jackoftradesltd.middle.player.PlayerState#weightLimit()}
+ *                               despite the shared name; computed on the middle side and pushed
+ *                               across so the UI thread does not have to reach back over the
+ *                               frontend/middle boundary to derive it itself
  * @author Rowan Crowther
  */
 public record PlayerCharSheetView(int bodyCount,
@@ -78,5 +92,30 @@ public record PlayerCharSheetView(int bodyCount,
                                   int[] playerEquipStatBonuses,
                                   int[] playerTotalStatBonuses,
                                   int[] playerCurrModStat,
-                                  int totalWeight) {
+                                  int totalWeight,
+                                  int weightLimit,
+                                  long[] expToLevel,
+                                  int expFactor,
+                                  int height,
+                                  int weight,
+                                  int age,
+                                  int toA,
+                                  int toD,
+                                  int toH,
+                                  int meleeSkill,
+                                  int shootSkill,
+                                  int bthPlusAdj,
+                                  int meleeDice,
+                                  int meleeSides,
+                                  int numBlows,
+                                  int numShots,
+                                  int saveSkill,
+                                  int stealthSkill,
+                                  int disarmPhysSkill,
+                                  int disarmMagicSkill,
+                                  int deviceSkill,
+                                  int searchSkill,
+                                  int infra,
+                                  int calcSpeed,
+                                  boolean optionEffectiveSpeed) {
 }

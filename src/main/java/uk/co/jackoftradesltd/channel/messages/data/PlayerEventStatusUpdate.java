@@ -89,18 +89,22 @@ public class PlayerEventStatusUpdate {
         int[] maxStats = {0, 0, 0, 0, 0};
         String[] statString = {"STR", "INT", "WIS", "DEX", "CON"};
         cachedPlayerStatusView = new PlayerStatusView(null, null, null,
-                null, 0, 0, 0, 0, 0,
+                null, 0, 0, 0, 0, 0, 0,
                 0, 0, 0, 0, 0, currentStats,
                 maxStats, statString, 0, 0, false,
                 false, false, false,
                 false, false, false,
                 false, false, false,
-                0, null, null, null,
+                0, 0, null, null, null,
                 null, null, null,
-                0);
+                0, 0, 0, 0);
         cachedPlayerCharSheetView = new PlayerCharSheetView(0, true,
                 new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
-                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, 0);
+                new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0}, 0, 0,
+                new long[]{}, 0, 0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0, 0,
+                0, 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -180,6 +184,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -205,13 +210,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -230,6 +239,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -255,13 +265,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -278,6 +292,7 @@ public class PlayerEventStatusUpdate {
                 value,
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -303,13 +318,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -326,6 +345,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 value,
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -351,13 +371,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -375,6 +399,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 value,
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -400,13 +425,62 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
+    }
+
+    public static void updatePlayerStatusMaxLevel(int value) {
+        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
+                cachedPlayerStatusView.title(),
+                cachedPlayerStatusView.raceName(),
+                cachedPlayerStatusView.className(),
+                cachedPlayerStatusView.level(),
+                value,
+                cachedPlayerStatusView.experience(),
+                cachedPlayerStatusView.maxExperience(),
+                cachedPlayerStatusView.gold(),
+                cachedPlayerStatusView.chp(),
+                cachedPlayerStatusView.mhp(),
+                cachedPlayerStatusView.csp(),
+                cachedPlayerStatusView.msp(),
+                cachedPlayerStatusView.armourClass(),
+                cachedPlayerStatusView.speed(),
+                cachedPlayerStatusView.currentStats(),
+                cachedPlayerStatusView.maxStats(),
+                cachedPlayerStatusView.statString(),
+                cachedPlayerStatusView.monsterHealth(),
+                cachedPlayerStatusView.maxMonsterHealth(),
+                cachedPlayerStatusView.monsterVisible(),
+                cachedPlayerStatusView.playerHallucinating(),
+                cachedPlayerStatusView.monsterTracked(),
+                cachedPlayerStatusView.monsterTmdFear(),
+                cachedPlayerStatusView.monsterTmdDisen(),
+                cachedPlayerStatusView.monsterTmdCommand(),
+                cachedPlayerStatusView.monsterTmdConf(),
+                cachedPlayerStatusView.monsterTmdStun(),
+                cachedPlayerStatusView.monsterTmdSleep(),
+                cachedPlayerStatusView.monsterTmdHold(),
+                cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
+                cachedPlayerStatusView.studyStatus(),
+                cachedPlayerStatusView.studyConditions(),
+                cachedPlayerStatusView.detectionStatus(),
+                cachedPlayerStatusView.restingRepeatingState(),
+                cachedPlayerStatusView.levelFeeling(),
+                cachedPlayerStatusView.lightLevel(),
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -424,6 +498,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 value,
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -449,13 +524,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -476,6 +555,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 value,
                 cachedPlayerStatusView.gold(),
@@ -501,13 +581,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -525,6 +609,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 value,
@@ -550,13 +635,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -574,6 +663,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -599,13 +689,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -623,6 +717,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -648,13 +743,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -672,6 +771,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -697,13 +797,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -721,6 +825,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -746,13 +851,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -770,6 +879,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -795,13 +905,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -819,6 +933,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -844,13 +959,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -870,6 +989,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -895,13 +1015,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -920,6 +1044,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -945,13 +1070,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -980,6 +1109,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1005,13 +1135,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1040,7 +1174,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -1060,6 +1211,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1085,13 +1237,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1111,6 +1267,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1136,13 +1293,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1162,6 +1323,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1187,13 +1349,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1213,6 +1379,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1238,13 +1405,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1264,6 +1435,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1289,13 +1461,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1314,6 +1490,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1339,13 +1516,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1364,6 +1545,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1389,13 +1571,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1416,6 +1602,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1441,13 +1628,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1466,6 +1657,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1491,13 +1683,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1516,6 +1712,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1541,13 +1738,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1566,6 +1767,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1591,13 +1793,17 @@ public class PlayerEventStatusUpdate {
                 value,
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1616,6 +1822,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1641,13 +1848,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 value,
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1665,6 +1876,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1690,13 +1902,71 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 value,
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
+    }
+
+    /**
+     * Rebuilds {@link #cachedPlayerStatusView} with a new dungeon depth, leaving every other field
+     * untouched — the port of C's {@code prt_depth} ({@code ui-display.c:532}), which formats
+     * {@code player->depth} via {@code fmt_depth}.
+     *
+     * <p>Method updatePlayerStatusDepth coded before 260912, commented in full on 260912.
+     *
+     * @param value the dungeon depth to store in the rebuilt view
+     */
+    public static void updatePlayerStatusMaxDepth(int value) {
+        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
+                cachedPlayerStatusView.title(),
+                cachedPlayerStatusView.raceName(),
+                cachedPlayerStatusView.className(),
+                cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
+                cachedPlayerStatusView.experience(),
+                cachedPlayerStatusView.maxExperience(),
+                cachedPlayerStatusView.gold(),
+                cachedPlayerStatusView.chp(),
+                cachedPlayerStatusView.mhp(),
+                cachedPlayerStatusView.csp(),
+                cachedPlayerStatusView.msp(),
+                cachedPlayerStatusView.armourClass(),
+                cachedPlayerStatusView.speed(),
+                cachedPlayerStatusView.currentStats(),
+                cachedPlayerStatusView.maxStats(),
+                cachedPlayerStatusView.statString(),
+                cachedPlayerStatusView.monsterHealth(),
+                cachedPlayerStatusView.maxMonsterHealth(),
+                cachedPlayerStatusView.monsterVisible(),
+                cachedPlayerStatusView.playerHallucinating(),
+                cachedPlayerStatusView.monsterTracked(),
+                cachedPlayerStatusView.monsterTmdFear(),
+                cachedPlayerStatusView.monsterTmdDisen(),
+                cachedPlayerStatusView.monsterTmdCommand(),
+                cachedPlayerStatusView.monsterTmdConf(),
+                cachedPlayerStatusView.monsterTmdStun(),
+                cachedPlayerStatusView.monsterTmdSleep(),
+                cachedPlayerStatusView.monsterTmdHold(),
+                cachedPlayerStatusView.depth(),
+                value,
+                cachedPlayerStatusView.studyStatus(),
+                cachedPlayerStatusView.studyConditions(),
+                cachedPlayerStatusView.detectionStatus(),
+                cachedPlayerStatusView.restingRepeatingState(),
+                cachedPlayerStatusView.levelFeeling(),
+                cachedPlayerStatusView.lightLevel(),
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1715,6 +1985,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1740,13 +2011,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 value,
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1766,6 +2041,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1791,13 +2067,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 value,
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1817,6 +2097,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1842,13 +2123,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 value,
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1868,6 +2153,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1893,13 +2179,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 value,
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1919,6 +2209,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1944,13 +2235,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 value,
                 cachedPlayerStatusView.lightLevel(),
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -1968,6 +2263,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -1993,13 +2289,17 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 value,
-                cachedPlayerStatusView.equipmentSlotCount());
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
     }
 
     /**
@@ -2018,6 +2318,7 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.raceName(),
                 cachedPlayerStatusView.className(),
                 cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
                 cachedPlayerStatusView.experience(),
                 cachedPlayerStatusView.maxExperience(),
                 cachedPlayerStatusView.gold(),
@@ -2043,12 +2344,151 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerStatusView.monsterTmdSleep(),
                 cachedPlayerStatusView.monsterTmdHold(),
                 cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
                 cachedPlayerStatusView.studyStatus(),
                 cachedPlayerStatusView.studyConditions(),
                 cachedPlayerStatusView.detectionStatus(),
                 cachedPlayerStatusView.restingRepeatingState(),
                 cachedPlayerStatusView.levelFeeling(),
                 cachedPlayerStatusView.lightLevel(),
+                value,
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
+    }
+
+    public static void updatePlayerStatusTurn(int value) {
+        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
+                cachedPlayerStatusView.title(),
+                cachedPlayerStatusView.raceName(),
+                cachedPlayerStatusView.className(),
+                cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
+                cachedPlayerStatusView.experience(),
+                cachedPlayerStatusView.maxExperience(),
+                cachedPlayerStatusView.gold(),
+                cachedPlayerStatusView.chp(),
+                cachedPlayerStatusView.mhp(),
+                cachedPlayerStatusView.csp(),
+                cachedPlayerStatusView.msp(),
+                cachedPlayerStatusView.armourClass(),
+                cachedPlayerStatusView.speed(),
+                cachedPlayerStatusView.currentStats(),
+                cachedPlayerStatusView.maxStats(),
+                cachedPlayerStatusView.statString(),
+                cachedPlayerStatusView.monsterHealth(),
+                cachedPlayerStatusView.maxMonsterHealth(),
+                cachedPlayerStatusView.monsterVisible(),
+                cachedPlayerStatusView.playerHallucinating(),
+                cachedPlayerStatusView.monsterTracked(),
+                cachedPlayerStatusView.monsterTmdFear(),
+                cachedPlayerStatusView.monsterTmdDisen(),
+                cachedPlayerStatusView.monsterTmdCommand(),
+                cachedPlayerStatusView.monsterTmdConf(),
+                cachedPlayerStatusView.monsterTmdStun(),
+                cachedPlayerStatusView.monsterTmdSleep(),
+                cachedPlayerStatusView.monsterTmdHold(),
+                cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
+                cachedPlayerStatusView.studyStatus(),
+                cachedPlayerStatusView.studyConditions(),
+                cachedPlayerStatusView.detectionStatus(),
+                cachedPlayerStatusView.restingRepeatingState(),
+                cachedPlayerStatusView.levelFeeling(),
+                cachedPlayerStatusView.lightLevel(),
+                cachedPlayerStatusView.equipmentSlotCount(),
+                value,
+                cachedPlayerStatusView.totalEnergy(),
+                cachedPlayerStatusView.restingTurn());
+    }
+
+    public static void updatePlayerStatusTotalEnergy(int value) {
+        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
+                cachedPlayerStatusView.title(),
+                cachedPlayerStatusView.raceName(),
+                cachedPlayerStatusView.className(),
+                cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
+                cachedPlayerStatusView.experience(),
+                cachedPlayerStatusView.maxExperience(),
+                cachedPlayerStatusView.gold(),
+                cachedPlayerStatusView.chp(),
+                cachedPlayerStatusView.mhp(),
+                cachedPlayerStatusView.csp(),
+                cachedPlayerStatusView.msp(),
+                cachedPlayerStatusView.armourClass(),
+                cachedPlayerStatusView.speed(),
+                cachedPlayerStatusView.currentStats(),
+                cachedPlayerStatusView.maxStats(),
+                cachedPlayerStatusView.statString(),
+                cachedPlayerStatusView.monsterHealth(),
+                cachedPlayerStatusView.maxMonsterHealth(),
+                cachedPlayerStatusView.monsterVisible(),
+                cachedPlayerStatusView.playerHallucinating(),
+                cachedPlayerStatusView.monsterTracked(),
+                cachedPlayerStatusView.monsterTmdFear(),
+                cachedPlayerStatusView.monsterTmdDisen(),
+                cachedPlayerStatusView.monsterTmdCommand(),
+                cachedPlayerStatusView.monsterTmdConf(),
+                cachedPlayerStatusView.monsterTmdStun(),
+                cachedPlayerStatusView.monsterTmdSleep(),
+                cachedPlayerStatusView.monsterTmdHold(),
+                cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
+                cachedPlayerStatusView.studyStatus(),
+                cachedPlayerStatusView.studyConditions(),
+                cachedPlayerStatusView.detectionStatus(),
+                cachedPlayerStatusView.restingRepeatingState(),
+                cachedPlayerStatusView.levelFeeling(),
+                cachedPlayerStatusView.lightLevel(),
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                value,
+                cachedPlayerStatusView.restingTurn());
+    }
+
+    public static void updatePlayerStatusRestingEnergy(int value) {
+        cachedPlayerStatusView = new PlayerStatusView(cachedPlayerStatusView.name(),
+                cachedPlayerStatusView.title(),
+                cachedPlayerStatusView.raceName(),
+                cachedPlayerStatusView.className(),
+                cachedPlayerStatusView.level(),
+                cachedPlayerStatusView.maxLevel(),
+                cachedPlayerStatusView.experience(),
+                cachedPlayerStatusView.maxExperience(),
+                cachedPlayerStatusView.gold(),
+                cachedPlayerStatusView.chp(),
+                cachedPlayerStatusView.mhp(),
+                cachedPlayerStatusView.csp(),
+                cachedPlayerStatusView.msp(),
+                cachedPlayerStatusView.armourClass(),
+                cachedPlayerStatusView.speed(),
+                cachedPlayerStatusView.currentStats(),
+                cachedPlayerStatusView.maxStats(),
+                cachedPlayerStatusView.statString(),
+                cachedPlayerStatusView.monsterHealth(),
+                cachedPlayerStatusView.maxMonsterHealth(),
+                cachedPlayerStatusView.monsterVisible(),
+                cachedPlayerStatusView.playerHallucinating(),
+                cachedPlayerStatusView.monsterTracked(),
+                cachedPlayerStatusView.monsterTmdFear(),
+                cachedPlayerStatusView.monsterTmdDisen(),
+                cachedPlayerStatusView.monsterTmdCommand(),
+                cachedPlayerStatusView.monsterTmdConf(),
+                cachedPlayerStatusView.monsterTmdStun(),
+                cachedPlayerStatusView.monsterTmdSleep(),
+                cachedPlayerStatusView.monsterTmdHold(),
+                cachedPlayerStatusView.depth(),
+                cachedPlayerStatusView.maxDepth(),
+                cachedPlayerStatusView.studyStatus(),
+                cachedPlayerStatusView.studyConditions(),
+                cachedPlayerStatusView.detectionStatus(),
+                cachedPlayerStatusView.restingRepeatingState(),
+                cachedPlayerStatusView.levelFeeling(),
+                cachedPlayerStatusView.lightLevel(),
+                cachedPlayerStatusView.equipmentSlotCount(),
+                cachedPlayerStatusView.turn(),
+                cachedPlayerStatusView.totalEnergy(),
                 value);
     }
 
@@ -2072,7 +2512,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2094,7 +2551,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2116,7 +2590,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2138,7 +2629,24 @@ public class PlayerEventStatusUpdate {
                 value,
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2161,7 +2669,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 value,
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2191,7 +2716,24 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 value,
-                cachedPlayerCharSheetView.totalWeight());
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 
     /**
@@ -2213,6 +2755,472 @@ public class PlayerEventStatusUpdate {
                 cachedPlayerCharSheetView.playerEquipStatBonuses(),
                 cachedPlayerCharSheetView.playerTotalStatBonuses(),
                 cachedPlayerCharSheetView.playerCurrModStat(),
-                value);
+                value,
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetWeightLimit(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                value,
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetExpToLevel(long[] value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                value,
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetExpFactor(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                value,
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetHeight(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                value,
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetWeight(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                value,
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetAge(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                value,
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetToA(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                value,
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetToD(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                value,
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetToH(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                value,
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetMeleeSkill(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                value,
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetShootSkill(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                value,
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetBthPlusAdj(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                value,
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetMeleeDice(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                value,
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetMeleeSides(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                value,
+                cachedPlayerCharSheetView.numBlows(),
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+
+    public static void updatePlayerCharSheetnumBlows(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                value,
+                cachedPlayerCharSheetView.numShots(), 0, 0, 0, 0,
+                0, 0, 0, 0, false);
+    }
+
+    public static void updatePlayerCharSheetNumShots(int value) {
+        cachedPlayerCharSheetView = new PlayerCharSheetView(cachedPlayerCharSheetView.bodyCount(),
+                cachedPlayerCharSheetView.playerIsPlaying(),
+                cachedPlayerCharSheetView.playerRaceStatBonuses(),
+                cachedPlayerCharSheetView.playerClassStatBonuses(),
+                cachedPlayerCharSheetView.playerEquipStatBonuses(),
+                cachedPlayerCharSheetView.playerTotalStatBonuses(),
+                cachedPlayerCharSheetView.playerCurrModStat(),
+                cachedPlayerCharSheetView.totalWeight(),
+                cachedPlayerCharSheetView.weightLimit(),
+                cachedPlayerCharSheetView.expToLevel(),
+                cachedPlayerCharSheetView.expFactor(),
+                cachedPlayerCharSheetView.height(),
+                cachedPlayerCharSheetView.weight(),
+                cachedPlayerCharSheetView.age(),
+                cachedPlayerCharSheetView.toA(),
+                cachedPlayerCharSheetView.toD(),
+                cachedPlayerCharSheetView.toH(),
+                cachedPlayerCharSheetView.meleeSkill(),
+                cachedPlayerCharSheetView.shootSkill(),
+                cachedPlayerCharSheetView.bthPlusAdj(),
+                cachedPlayerCharSheetView.meleeDice(),
+                cachedPlayerCharSheetView.meleeSides(),
+                cachedPlayerCharSheetView.numBlows(),
+                value, 0, 0, 0, 0,
+                0, 0, 0, 0, false);
     }
 }

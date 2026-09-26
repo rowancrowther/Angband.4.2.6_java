@@ -17,6 +17,9 @@
 
 package uk.co.jackoftradesltd.frontend.globals;
 
+import uk.co.jackoftradesltd.frontend.screen.Term;
+import uk.co.jackoftradesltd.frontend.screen.TermData;
+
 /**
  * Static holder for the front end's globally-shared UI state, the Java port of the C original's
  * module-scope {@code text_out_indent} global in {@code z-textblock.c}
@@ -49,8 +52,18 @@ public class UIGlobals {
      */
     private static int textOutIndent;
 
+    private static TermData activeTermData;
+
     static {
         textOutIndent = 0;
+    }
+
+    public static TermData getActiveTermData() {
+        return activeTermData;
+    }
+
+    public static void setActiveTermData(TermData activeTermData) {
+        UIGlobals.activeTermData = activeTermData;
     }
 
     /**

@@ -75,7 +75,7 @@ public class PlayerBody {
             throw new IllegalArgumentException("Invalid slot list. Slot list is null or empty.");
         } else {
             this.slots.addAll(slots);
-            PlayerEventStatusUpdate.updatePlayerStatusBodyCount(slots.size());
+            PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(slots.size());
         }
     }
 

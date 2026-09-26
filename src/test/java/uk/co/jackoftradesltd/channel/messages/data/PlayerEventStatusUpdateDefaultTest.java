@@ -148,8 +148,9 @@ class PlayerEventStatusUpdateDefaultTest {
                 case "statString" ->
                         assertArrayEquals(new String[]{"STR", "INT", "WIS", "DEX", "CON"}, (String[]) value,
                                 component.getName());
-                case "level", "chp", "mhp", "csp", "msp", "armourClass", "speed", "monsterHealth",
-                     "maxMonsterHealth", "depth", "equipmentSlotCount" ->
+                case "level", "maxLevel", "chp", "mhp", "csp", "msp", "armourClass", "speed",
+                     "monsterHealth", "maxMonsterHealth", "depth", "maxDepth", "equipmentSlotCount",
+                     "turn", "totalEnergy", "restingTurn" ->
                         assertEquals(0, value, component.getName());
                 case "experience", "maxExperience", "gold" -> assertEquals(0L, value, component.getName());
                 case "monsterVisible", "playerHallucinating", "monsterTracked", "monsterTmdFear",
@@ -164,11 +165,20 @@ class PlayerEventStatusUpdateDefaultTest {
      * Every field the static initializer seeds on {@code cachedPlayerCharSheetView} is at its
      * zero-equivalent default: a five-element all-zero array (matching C's {@code STAT_MAX}) for
      * each of the four stat-bonus arrays and {@code playerCurrModStat}, {@code 0} for
-     * {@code bodyCount} and {@code totalWeight}, and {@code true} for {@code playerIsPlaying} —
-     * the one field here that does not start at its zero-equivalent, since nothing has ended the
-     * session at class load, mirroring the same choice {@link PlayerStatusView}'s own
-     * {@code playerIsPlaying} field made before the character-sheet fields moved out to this
-     * record.
+     * {@code bodyCount}, {@code totalWeight}, {@code weightLimit}, {@code expFactor}, the ten
+     * combat fields ({@code toA}, {@code toD}, {@code toH}, {@code meleeSkill},
+     * {@code shootSkill}, {@code bthPlusAdj}, {@code meleeDice}, {@code meleeSides},
+     * {@code numBlows} and {@code numShots}) {@link uk.co.jackoftradesltd.frontend.ui.UIPlayer
+     * #getPanelCombat()} reads, and the eight further skill/derived fields ({@code saveSkill},
+     * {@code stealthSkill}, {@code disarmPhysSkill}, {@code disarmMagicSkill}, {@code deviceSkill},
+     * {@code searchSkill}, {@code infra} and {@code calcSpeed}), an empty array for
+     * {@code expToLevel} (not yet filled by
+     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initialiseExpLevel}
+     * at class load), and {@code true} for {@code playerIsPlaying} — the one numeric/boolean field
+     * here that does not start at its zero-equivalent, since nothing has ended the session at class
+     * load, mirroring the same choice {@link PlayerStatusView}'s own {@code playerIsPlaying} field
+     * made before the character-sheet fields moved out to this record. {@code optionEffectiveSpeed}
+     * seeds {@code false}, its own zero-equivalent, so it needs no such exception.
      */
     @Test
     @DisplayName("the static initializer seeds an all-default char-sheet snapshot before any player exists")
@@ -182,8 +192,14 @@ class PlayerEventStatusUpdateDefaultTest {
                 case "playerRaceStatBonuses", "playerClassStatBonuses", "playerEquipStatBonuses",
                      "playerTotalStatBonuses", "playerCurrModStat" ->
                         assertArrayEquals(new int[]{0, 0, 0, 0, 0}, (int[]) value, component.getName());
-                case "bodyCount", "totalWeight" -> assertEquals(0, value, component.getName());
+                case "bodyCount", "totalWeight", "weightLimit", "expFactor", "height", "weight", "age",
+                     "toA", "toD", "toH", "meleeSkill", "shootSkill", "bthPlusAdj", "meleeDice",
+                     "meleeSides", "numBlows", "numShots", "saveSkill", "stealthSkill",
+                     "disarmPhysSkill", "disarmMagicSkill", "deviceSkill", "searchSkill", "infra",
+                     "calcSpeed" -> assertEquals(0, value, component.getName());
                 case "playerIsPlaying" -> assertEquals(true, value, component.getName());
+                case "optionEffectiveSpeed" -> assertEquals(false, value, component.getName());
+                case "expToLevel" -> assertArrayEquals(new long[]{}, (long[]) value, component.getName());
                 default -> throw new AssertionError("Unexpected component: " + component.getName());
             }
         }

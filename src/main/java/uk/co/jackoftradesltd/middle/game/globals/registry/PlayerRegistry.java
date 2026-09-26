@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import org.jetbrains.annotations.CheckReturnValue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.middle.magic.MagicRealm;
 import uk.co.jackoftradesltd.middle.player.*;
 import uk.co.jackoftradesltd.middle.player.enums.TimedEffect;
@@ -156,6 +157,18 @@ public class PlayerRegistry {
         return PY_FOOD_MAX;
     }
 
+    /**
+     * The experience-to-level table, keyed by level index (level 1 at key {@code 0}) with the
+     * total experience needed to reach it. The port of C's {@code player_exp[PY_MAX_LEVEL]}
+     * constant array ({@code player.c}), which carries the same fifty values in the same order.
+     *
+     * <p>Unlike the C array this is mutable and starts empty; it is filled once at startup by
+     * {@link uk.co.jackoftradesltd.middle.game.globals.loaders.PlayerDataLoader#initialiseExpLevel}
+     * rather than being a compile-time constant, but nothing in the running game writes to it
+     * afterwards.
+     *
+     * <p>Field playerExperience coded on 260925, commented in full on 260925.
+     */
     public static Map<Integer, Long> playerExperience = new HashMap<>();
     
     /**

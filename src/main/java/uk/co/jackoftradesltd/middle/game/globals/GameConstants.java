@@ -28,6 +28,7 @@ import uk.co.jackoftradesltd.backend.parser.GameConstantsParseResult;
 import uk.co.jackoftradesltd.backend.parser.GameConstantsReader;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
+import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
@@ -253,6 +254,8 @@ public class GameConstants {
     public static boolean init(Core core) {
         String file = "";
         try {
+            ChannelRegistry.setPYMaxLevel(PlayerRegistry.PY_MAX_LEVEL);
+            
             // Signal EVENT_ENTER_INIT
             EventsHandler bus = GameEngine.getEventsBusHandler();
             bus.eventSignalString(GameEventType.EVENT_ENTER_INIT, "Entering Init");

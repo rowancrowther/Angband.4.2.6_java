@@ -21,6 +21,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.backend.parser.*;
 import uk.co.jackoftradesltd.channel.directories.AngbandDirs;
+import uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate;
 import uk.co.jackoftradesltd.channel.parser.ErrorParsing;
 import uk.co.jackoftradesltd.channel.parser.ParseResult;
 import uk.co.jackoftradesltd.middle.game.globals.registry.PlayerRegistry;
@@ -46,7 +47,21 @@ import java.io.IOException;
 public class PlayerDataLoader {
     private static final Logger logger = LogManager.getLogger(PlayerDataLoader.class);
 
+    /**
+     * Populate {@link PlayerRegistry#playerExperience} with the fifty-entry experience-to-level
+     * table, then push a copy of it as a primitive array to the character-sheet UI cache. The
+     * port of C's {@code player_exp[PY_MAX_LEVEL]} constant array ({@code player.c}); this method
+     * is the point at which the port loads the values C declares statically at compile time.
+     *
+     * <p>The table is rebuilt from scratch on every call: the map is cleared and refilled before
+     * being copied into the local {@code long[]}, which is then handed to
+     * {@link PlayerEventStatusUpdate#updatePlayerCharSheetExpToLevel} to keep the cached
+     * character-sheet view in step.
+     *
+     * <p>Method initialiseExpLevel coded on 260925, commented in full on 260925.
+     */
     public static void initialiseExpLevel() {
+        long[] playerExp = new long[50];
         PlayerRegistry.playerExperience.clear();
         PlayerRegistry.playerExperience.put(0, 10L);
         PlayerRegistry.playerExperience.put(1, 25L);
@@ -98,6 +113,11 @@ public class PlayerDataLoader {
         PlayerRegistry.playerExperience.put(47, 4000000L);
         PlayerRegistry.playerExperience.put(48, 4500000L);
         PlayerRegistry.playerExperience.put(49, 5000000L);
+
+        for (int index = 0; index < 50; index++) {
+            playerExp[index] = PlayerRegistry.playerExperience.get(index);
+        }
+        PlayerEventStatusUpdate.updatePlayerCharSheetExpToLevel(playerExp);
     }
     
     /**

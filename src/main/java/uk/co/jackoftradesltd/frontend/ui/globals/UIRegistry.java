@@ -261,4 +261,36 @@ public class UIRegistry {
                 .findFirst()
                 .orElse(null);
     }
+
+    /**
+     * The healthy-stat display labels, index-aligned with
+     * {@link uk.co.jackoftradesltd.channel.globals.ChannelRegistry#STAT_MAX}-sized stat arrays such
+     * as those read by {@code UIPlayer.displayPlayerStatInfo}. The Java form of C's
+     * {@code stat_names[STAT_MAX]} ({@code [C] ui-display.c:99-102}), shown for a stat that is at or
+     * above its natural maximum ({@code player->stat_cur[stat] >= player->stat_max[stat]}) - see
+     * {@link #statReducedNames} for the injured-stat counterpart shown otherwise.
+     *
+     * <p>Each label carries the trailing space C bakes into the literal (for example
+     * {@code "STR: "}, not {@code "STR:"}); that space is not cosmetic - C's natural-maximum
+     * indicator overwrites the label's fourth character in place at a fixed column offset
+     * ({@code put_str("!", row, col+3)}, {@code [C] ui-player.c:481-482}), turning {@code "STR: "}
+     * into {@code "STR!"}, so the label's exact width and character positions matter to any later
+     * port of that indicator.
+     *
+     * <p>Field statNames coded before 260925, commented in full on 260925.
+     */
+    public static final String[] statNames = {"STR: ", "INT: ", "WIS: ", "DEX: ", "CON: "};
+
+    /**
+     * The injured-stat display labels, the lowercase counterpart to {@link #statNames} shown when a
+     * stat's current value has been drained below its natural maximum
+     * ({@code player->stat_cur[stat] < player->stat_max[stat]}). The Java form of C's
+     * {@code stat_names_reduced[STAT_MAX]} ({@code [C] ui-display.c:104-110}), read alongside
+     * {@link #statNames} by {@code UIPlayer.displayPlayerStatInfo}
+     * ({@code [C] ui-player.c:471-478}). Carries the same trailing space as {@link #statNames}, and
+     * for the same reason.
+     *
+     * <p>Field statReducedNames coded before 260925, commented in full on 260925.
+     */
+    public static final String[] statReducedNames = {"Str: ", "Int: ", "Wis: ", "Dex: ", "Con: "};
 }

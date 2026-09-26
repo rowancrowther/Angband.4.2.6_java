@@ -2326,7 +2326,7 @@ public class Player {
 
         // Cache the player race name and body count
         PlayerEventStatusUpdate.updatePlayerStatusRaceName(this.race.getName());
-        PlayerEventStatusUpdate.updatePlayerStatusBodyCount(this.race.getBody().getCount());
+        PlayerEventStatusUpdate.updatePlayerCharSheetBodyCount(this.race.getBody().getCount());
     }
 
     /**

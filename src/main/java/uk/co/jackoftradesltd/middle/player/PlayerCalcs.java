@@ -914,6 +914,14 @@ public class PlayerCalcs {
                         player.getCurrentHP(), player.getMaxHP());
                 case PR_MANA -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
                         player.getCurSp(), player.getMaxSP());
+                case PR_TITLE -> GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_PLAYERTITLE,
+                        player.getPlayerClass().getTitle(player.getLevel()));
+                case PR_MISC -> {
+                    GameEngine.getEventsBusHandler().eventSignalStrings(GameEventType.EVENT_RACE_CLASS,
+                            player.getRace().getName(), player.getPlayerClass().getName());
+                    GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_PLAYER_NAME,
+                            player.getFullName());
+                }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }
         }

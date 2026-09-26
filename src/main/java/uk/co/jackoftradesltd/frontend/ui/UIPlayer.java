@@ -74,6 +74,13 @@ public class UIPlayer {
      */
     private static char[] spc = new char[2];
 
+    /**
+     * The eleven display colours a percentage-style skill rating is banded into, indexed by that
+     * rating divided by ten (or, for Magic Devices, by thirteen) — the port of C's file-scope
+     * {@code colour_table} array ({@code [C] ui-player.c}), read only by {@link #getPanelSkills()}.
+     *
+     * <p>Field colourTable coded before 260926, commented in full on 260926.
+     */
     private static ColourEnum[] colourTable = new ColourEnum[]{ColourEnum.COLOUR_RED,
             ColourEnum.COLOUR_RED, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_LIGHT_RED,
             ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_YELLOW, ColourEnum.COLOUR_YELLOW,
@@ -200,11 +207,8 @@ public class UIPlayer {
      * pre-sized, zero-filled C array — a difference that doesn't yet matter, since neither C's
      * {@code panel_line}/{@code panel_space} row-fillers nor a Java equivalent are ported.
      *
-     * <p>Called once per panel by each of the five {@code getPanelX} builders that reach this
-     * far — {@link #getPanelTopLeft()} and {@link #getPanelMidLeft()} both call it, and both now
-     * go on to completely fill and return the {@link Panel} they get back; {@link #getPanelMisc()},
-     * {@link #getPanelCombat()} and {@link #getPanelSkills()} are still {@code TODO} stubs that
-     * return {@code null} without calling this method at all. C's
+     * <p>Called once per panel by each of the five {@code getPanelX} builders — all five now call
+     * it and go on to completely fill and return the {@link Panel} they get back. C's
      * five {@code get_panel_topleft}/{@code get_panel_midleft}/{@code get_panel_combat}/
      * {@code get_panel_skills}/{@code get_panel_misc} functions all open with their own
      * {@code panel_allocate} call.
@@ -268,13 +272,13 @@ public class UIPlayer {
 
         topLeft.initLines();
         topLeft.panelLine(attr, "Name", "%s",
-                PlayerEventStatusUpdate.getPlayerStatusView().name());
+                SidebarModel.getName());
         topLeft.panelLine(attr, "Race", "%s",
-                PlayerEventStatusUpdate.getPlayerStatusView().raceName());
+                SidebarModel.getRaceName());
         topLeft.panelLine(attr, "Class", "%s",
-                PlayerEventStatusUpdate.getPlayerStatusView().className());
+                SidebarModel.getClassName());
         topLeft.panelLine(attr, "Title", "%s",
-                PlayerEventStatusUpdate.getPlayerStatusView().title());
+                SidebarModel.getTitle());
         topLeft.panelLine(attr, "HP", "%d/%d",
                 SidebarModel.getCurrentHP(),
                 SidebarModel.getMaxHP());
@@ -499,10 +503,10 @@ public class UIPlayer {
      * matching C's own identical lowercase spelling in both its own melee and ranged
      * {@code panel_line} calls.
      *
-     * <p>Of the five {@code getPanelX} builders, this is now the fourth, alongside
+     * <p>Of the five {@code getPanelX} builders, this is the fourth, alongside
      * {@link #getPanelTopLeft()}, {@link #getPanelMidLeft()} and {@link #getPanelMisc()}, that both
      * allocates and completely fills its {@link Panel} before returning it — {@link #getPanelSkills()}
-     * remains the last {@code TODO} stub. Called from the constructor as {@code pr4}'s builder; the
+     * is the fifth and last. Called from the constructor as {@code pr4}'s builder; the
      * returned {@link Panel} is not yet drawn, since the {@code display_panel} renderer
      * ({@code [C] ui-player.c}, function {@code display_panel}) that would read it is not ported yet.
      *
@@ -551,6 +555,46 @@ public class UIPlayer {
         return combat;
     }
 
+    /**
+     * Builds the skills character-sheet panel — saving throw, stealth, the two disarm skills,
+     * device use, searching, infravision and speed — the port of C's {@code get_panel_skills}
+     * ({@code [C] ui-player.c}, function {@code get_panel_skills}).
+     *
+     * <p>Allocates an eight-row {@link Panel} via {@link #panelAllocate(int)} and fills it, in the
+     * same order as C: Saving Throw a {@code "%d%%"} of {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s
+     * {@code saveSkill()} clamped to 0–100, coloured via {@link #colourTable}, standing in for C's
+     * {@code player->state.skills[SKILL_SAVE]}; Stealth a {@code "%s"} via {@link #likert(int, int)}
+     * of {@code stealthSkill()}; Disarm - phys. and Disarm - magic each a {@code "%d%%"} of their
+     * skill minus {@code depth / 5} (read from
+     * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code depth()}, standing in for C's
+     * {@code cave ? cave->depth : 0}), clamped to 2–100; Magic Devices a plain {@code "%d"} of
+     * {@code deviceSkill()}, coloured via {@link #colourTable} at a thirteenth rather than a tenth
+     * of the skill, matching C's own {@code colour_table[skill / 13]}; Searching a {@code "%d%%"} of
+     * {@code searchSkill()} clamped to 0–100; Infravision a {@code "%d ft"} of {@code infra()}
+     * multiplied by ten, standing in for C's {@code player->state.see_infra * 10} — {@code infra()}
+     * itself is stored in the same ten-foot units as C's {@code see_infra}; and Speed a {@code "%s"}
+     * via {@link #showSpeed()}, coloured {@link ColourEnum#COLOUR_LIGHT_UMBER} below 110 and
+     * {@link ColourEnum#COLOUR_LIGHT_GREEN} at or above it, matching C's own {@code skill < 110}
+     * test on {@code calcSpeed()} — see {@link #showSpeed()} for why neither this test nor that
+     * method itself re-applies a fast/slow adjustment the way C's own {@code get_panel_skills} and
+     * {@code show_speed} each do locally.
+     *
+     * <p>Of the five {@code getPanelX} builders, this is the fifth and last to both allocate and
+     * completely fill its {@link Panel} before returning it. Called from the constructor as
+     * {@code pr5}'s builder; the returned {@link Panel} is not yet drawn, since the
+     * {@code display_panel} renderer ({@code [C] ui-player.c}, function {@code display_panel}) that
+     * would read it is not ported yet.
+     *
+     * <p><b>Outstanding:</b> {@code saveSkill}, {@code stealthSkill}, {@code disarmPhysSkill},
+     * {@code disarmMagicSkill}, {@code deviceSkill}, {@code searchSkill}, {@code infra} and
+     * {@code calcSpeed} have no {@code updatePlayerCharSheet*} setter yet, so every row this method
+     * builds currently reads {@link PlayerEventStatusUpdate}'s all-zero construction default rather
+     * than a real value.
+     *
+     * <p>Method getPanelSkills coded before 260926, commented in full on 260926.
+     *
+     * @return a freshly built, fully populated eight-row {@link Panel} for the skills block
+     */
     private Panel getPanelSkills() {
         Panel skills = panelAllocate(8);
 
@@ -585,7 +629,7 @@ public class UIPlayer {
 
         // Infravision
         skills.panelLine(ColourEnum.COLOUR_LIGHT_GREEN, "Infravision", "%d ft",
-                PlayerEventStatusUpdate.getPlayerCharSheetView().infra());
+                PlayerEventStatusUpdate.getPlayerCharSheetView().infra() * 10);
 
         // Speed
         skill = PlayerEventStatusUpdate.getPlayerCharSheetView().calcSpeed();
@@ -596,6 +640,35 @@ public class UIPlayer {
         return skills;
     }
 
+    /**
+     * Builds the "Speed" skills-panel value — the port of C's {@code show_speed}
+     * ({@code [C] ui-player.c}, function {@code show_speed}).
+     *
+     * <p>A speed of exactly 110 (normal) returns the literal {@code "Normal"}, matching C's own
+     * {@code tmp == 110} early return. Otherwise the multiplier C's {@code extract_energy} table
+     * gives for {@code tmp} against the multiplier it gives for 110 is scaled by ten and split into
+     * whole and tenths ({@code multiplier / 10} and {@code multiplier % 10}), and the result is
+     * formatted one of two ways depending on
+     * {@link PlayerEventStatusUpdate#getPlayerCharSheetView()}'s {@code optionEffectiveSpeed()}
+     * (C's {@code OPT(player, effective_speed)}): {@code "%d.%dx (%d)"} of the multiplier followed
+     * by the raw speed offset from 110 when the option is on, or {@code "%d (%d.%dx)"} with the two
+     * swapped when it is off — both matching C's two {@code strnfmt} branches exactly.
+     *
+     * <p>Reads {@code calcSpeed()} as {@code tmp} with no further adjustment. C's own
+     * {@code show_speed} (and {@code get_panel_skills}'s separate local {@code skill}) each read
+     * {@code player->state.speed} and then undo that state's own {@code TMD_FAST}/{@code TMD_SLOW}
+     * adjustment locally ({@code tmp -= 10}/{@code tmp += 10}) before using it, recovering the
+     * player's un-hastened, un-slowed speed for display. {@code calcSpeed()} is populated with that
+     * same already-adjusted figure on the middle side before the value is pushed across the
+     * boundary, rather than being adjusted here — the same "computed upstream, formatted here"
+     * split {@link #getPanelCombat()}'s Javadoc describes for its own fields.
+     *
+     * <p>Called from {@link #getPanelSkills()} to build the panel's "Speed" row.
+     *
+     * <p>Method showSpeed coded before 260926, commented in full on 260926.
+     *
+     * @return the formatted speed figure, or {@code "Normal"} at exactly 110
+     */
     private String showSpeed() {
         int tmp = PlayerEventStatusUpdate.getPlayerCharSheetView().calcSpeed();
         if (tmp == 110)
@@ -606,9 +679,9 @@ public class UIPlayer {
         int intMul = multiplier / 10;
         int decMul = multiplier % 10;
         if (PlayerEventStatusUpdate.getPlayerCharSheetView().optionEffectiveSpeed())
-            return String.format("$d.$dx (%dx)", intMul, decMul, tmp - 110);
+            return String.format("%d.%dx (%d)", intMul, decMul, tmp - 110);
         else
-            return String.format("$d (%d.%d)", tmp - 110, intMul, decMul);
+            return String.format("%d (%d.%dx)", tmp - 110, intMul, decMul);
     }
 
     /**
@@ -1145,14 +1218,12 @@ public class UIPlayer {
      * {@code panel_space} merely walks past, so that {@link #lines}{@code .size()} keeps equalling
      * {@link #len} even after a spacer row.
      *
-     * <p>Built by {@link UIPlayer#panelAllocate(int)}. {@link UIPlayer#getPanelTopLeft()} and
-     * {@link UIPlayer#getPanelMidLeft()} each fill one completely before returning it — the
-     * latter's fill includes one {@link Panel#space()} spacer row; {@link UIPlayer#getPanelMisc()},
-     * {@link UIPlayer#getPanelCombat()} and
-     * {@link UIPlayer#getPanelSkills()} never reach this class at all, since each is still a
-     * {@code TODO} stub returning {@code null}. Whatever {@link Panel} does get built, nothing
-     * reads it back yet — the {@code display_panel} renderer ({@code [C] ui-player.c}, function
-     * {@code display_panel}) that would fill the screen from one is not ported yet.
+     * <p>Built by {@link UIPlayer#panelAllocate(int)}. All five {@code getPanelX} builders now fill
+     * one completely before returning it — {@link UIPlayer#getPanelMidLeft()}'s fill includes one
+     * {@link Panel#space()} spacer row, and {@link UIPlayer#getPanelCombat()}'s includes two.
+     * Whatever {@link Panel} does get built, nothing reads it back yet — the {@code display_panel}
+     * renderer ({@code [C] ui-player.c}, function {@code display_panel}) that would fill the screen
+     * from one is not ported yet.
      *
      * <p>Class Panel coded before 260925, commented in full on 260926.
      */
@@ -1263,12 +1334,13 @@ public class UIPlayer {
          * {@link #len} last — a difference in ordering only, since both happen sequentially
          * within one call with no observer in between.
          *
-         * <p>Called with real player data by {@link UIPlayer#getPanelTopLeft()}, which fills all
-         * six of its rows this way, and by {@link UIPlayer#getPanelMidLeft()}, which fills eight
-         * of its nine rows this way (the ninth is a blank spacer via {@link Panel#space()}).
-         * {@link UIPlayer#getPanelMisc()}, {@link UIPlayer#getPanelCombat()} and
-         * {@link UIPlayer#getPanelSkills()} are still {@code TODO} stubs that never reach this
-         * method.
+         * <p>Called with real player data by all five {@code getPanelX} builders:
+         * {@link UIPlayer#getPanelTopLeft()} fills all six of its rows this way;
+         * {@link UIPlayer#getPanelMidLeft()} fills eight of its nine rows this way (the ninth is a
+         * blank spacer via {@link Panel#space()}); {@link UIPlayer#getPanelMisc()} fills all seven
+         * of its rows this way; {@link UIPlayer#getPanelCombat()} fills seven of its nine rows this
+         * way (the other two are blank spacers via {@link Panel#space()}); and
+         * {@link UIPlayer#getPanelSkills()} fills all eight of its rows this way.
          *
          * <p>Method panelLine coded on 260925, commented in full on 260925.
          *

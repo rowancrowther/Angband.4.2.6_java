@@ -35,6 +35,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameState;
 import uk.co.jackoftradesltd.middle.gameinput.DefaultGameInput;
 import uk.co.jackoftradesltd.middle.gameinput.GameInputHolder;
 import uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw;
+import uk.co.jackoftradesltd.testsupport.CalcBonusesFixture;
 import uk.co.jackoftradesltd.testsupport.SeededPlayerRegistry;
 
 import java.lang.reflect.Field;
@@ -161,10 +162,17 @@ class PlayerRedrawStuffTest {
     /**
      * A generated character, a visible map and a capturing bus - the ordinary mid-game conditions
      * under which every clause is reachable.
+     *
+     * <p>A race and class are installed too, real ones in C's own model - a player always has both
+     * from the moment of birth ({@code player-birth.c}) - and load-bearing here since the
+     * {@code PR_MISC}/{@code PR_TITLE} arms read {@code player.getRace()}/{@code getPlayerClass()}
+     * directly; a bare {@code new Player()} would NPE the moment either flag is raised.
      */
     @BeforeEach
     void newPlayer() throws ReflectiveOperationException {
         player = new Player();
+        player.setRace(SeededPlayerRegistry.plainRace(SeededPlayerRegistry.humanoidBody()));
+        player.setClass(CalcBonusesFixture.plainClass());
 
         bus = new CapturingBus();
         realBus = GameEngine.getEventsBusHandler();
@@ -307,7 +315,10 @@ class PlayerRedrawStuffTest {
 
         /**
          * Every flag at once, checked against the transcribed C table so that a flag wired to the
-         * wrong event is caught. {@code PR_MAP} is the extra one the table omits.
+         * wrong event is caught. {@code PR_MAP} is the extra one the table omits, and
+         * {@code EVENT_PLAYER_NAME} is a second, port-only signal {@code PR_MISC} sends alongside
+         * {@code EVENT_RACE_CLASS} - see that constant's own Javadoc for why C's table has no
+         * equivalent entry for it.
          */
         @Test
         @DisplayName("every flag maps to the event C's table gives it")
@@ -320,10 +331,13 @@ class PlayerRedrawStuffTest {
 
             Set<GameEventType> expected = new LinkedHashSet<>(C_TABLE.values());
             expected.add(GameEventType.EVENT_MAP);
+            expected.add(GameEventType.EVENT_PLAYER_NAME);
             expected.add(GameEventType.EVENT_END);
 
             assertEquals(expected, new LinkedHashSet<>(bus.events));
-            assertEquals(expected.size(), bus.events.size(), "no event was signalled twice");
+            assertEquals(expected.size(), bus.events.size(),
+                    "no event was signalled twice - PR_MISC fires two distinct events, "
+                            + "EVENT_RACE_CLASS and EVENT_PLAYER_NAME, but neither repeats");
         }
 
         /**

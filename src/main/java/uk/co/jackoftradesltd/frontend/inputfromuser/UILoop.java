@@ -27,6 +27,8 @@ import uk.co.jackoftradesltd.channel.enums.UILifecycleEvent;
 import uk.co.jackoftradesltd.channel.messages.ChannelMessage;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.UIMessage;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
+import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.channel.uichannel.UIEntrySpec;
 import uk.co.jackoftradesltd.frontend.SwingUI;
@@ -229,6 +231,9 @@ public class UILoop {
                             case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth(gameEventCoreMessage.data());
                             case EVENT_HP -> RedrawRouter.setHP(gameEventCoreMessage.data());
                             case EVENT_MANA -> RedrawRouter.setSP(gameEventCoreMessage.data());
+                            case EVENT_RACE_CLASS -> RedrawRouter.setRaceClass(gameEventCoreMessage.data());
+                            case EVENT_PLAYERTITLE -> RedrawRouter.setTitle(gameEventCoreMessage.data());
+                            case EVENT_PLAYER_NAME -> RedrawRouter.setName(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

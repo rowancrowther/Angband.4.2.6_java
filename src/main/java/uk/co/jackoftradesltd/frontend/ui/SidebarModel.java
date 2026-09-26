@@ -33,9 +33,9 @@ package uk.co.jackoftradesltd.frontend.ui;
  *
  * <p>Named for what it, and its siblings still to be written, replace field by field:
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
- * being architected out in their favour. Today this class holds the HP and SP pairs; the rest of
- * C's {@code prt_*} family in {@code [C] ui-display.c} join it as their own {@code EVENT_*}
- * payloads are ported.
+ * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
+ * title, race name, class name and full name; the rest of C's {@code prt_*} family in
+ * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
@@ -76,6 +76,41 @@ public class SidebarModel {
      * <p>Field maxSP coded on 260926, commented in full on 260926.
      */
     private static int maxSP;
+
+    /**
+     * The player's title, C's {@code show_title()}, written each time an {@code EVENT_PLAYERTITLE}
+     * message is routed and read whenever the character sheet's Title row is drawn.
+     *
+     * <p>Field title coded before 260926, commented in full on 260926.
+     */
+    private static String title;
+
+    /**
+     * The player's class name, C's {@code player->class->name}, written each time an
+     * {@code EVENT_RACE_CLASS} message is routed and read whenever the character sheet's Class row
+     * is drawn.
+     *
+     * <p>Field className coded before 260926, commented in full on 260926.
+     */
+    private static String className;
+
+    /**
+     * The player's race name, C's {@code player->race->name}, written each time an
+     * {@code EVENT_RACE_CLASS} message is routed and read whenever the character sheet's Race row
+     * is drawn.
+     *
+     * <p>Field raceName coded before 260926, commented in full on 260926.
+     */
+    private static String raceName;
+
+    /**
+     * The player's full name, C's {@code player->full_name}, written each time an
+     * {@code EVENT_PLAYER_NAME} message is routed and read whenever the character sheet's Name row
+     * is drawn.
+     *
+     * <p>Field name coded before 260926, commented in full on 260926.
+     */
+    private static String name;
 
     /**
      * Read the current hit-point value last written by {@link #setCurrentHP(int)}, for the
@@ -175,5 +210,105 @@ public class SidebarModel {
      */
     static void setMaxSP(int maxSP) {
         SidebarModel.maxSP = maxSP;
+    }
+
+    /**
+     * Read the class name last written by {@link #setClassName(String)}, for the character sheet's
+     * Class row - {@link UIPlayer#getPanelTopLeft()}'s port of C's {@code get_panel_topleft}
+     * ({@code [C] ui-player.c}) is today's only reader.
+     *
+     * <p>Method getClassName coded before 260926, commented in full on 260926.
+     *
+     * @return the player's class name, C's {@code player->class->name}
+     */
+    public static String getClassName() {
+        return className;
+    }
+
+    /**
+     * Write the class name. Package-private, so only {@link RedrawRouter#setRaceClass} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setClassName coded before 260926, commented in full on 260926.
+     *
+     * @param className the player's class name, C's {@code player->class->name}
+     */
+    static void setClassName(String className) {
+        SidebarModel.className = className;
+    }
+
+    /**
+     * Read the full name last written by {@link #setName(String)}, for the character sheet's Name
+     * row - {@link UIPlayer#getPanelTopLeft()}'s port of C's {@code get_panel_topleft}
+     * ({@code [C] ui-player.c}) is today's only reader.
+     *
+     * <p>Method getName coded before 260926, commented in full on 260926.
+     *
+     * @return the player's full name, C's {@code player->full_name}
+     */
+    public static String getName() {
+        return name;
+    }
+
+    /**
+     * Write the full name. Package-private, so only {@link RedrawRouter#setName} - the only class
+     * in this package today - can write the model directly.
+     *
+     * <p>Method setName coded before 260926, commented in full on 260926.
+     *
+     * @param name the player's full name, C's {@code player->full_name}
+     */
+    static void setName(String name) {
+        SidebarModel.name = name;
+    }
+
+    /**
+     * Read the race name last written by {@link #setRaceName(String)}, for the character sheet's
+     * Race row - {@link UIPlayer#getPanelTopLeft()}'s port of C's {@code get_panel_topleft}
+     * ({@code [C] ui-player.c}) is today's only reader.
+     *
+     * <p>Method getRaceName coded before 260926, commented in full on 260926.
+     *
+     * @return the player's race name, C's {@code player->race->name}
+     */
+    public static String getRaceName() {
+        return raceName;
+    }
+
+    /**
+     * Write the race name. Package-private, so only {@link RedrawRouter#setRaceClass} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setRaceName coded before 260926, commented in full on 260926.
+     *
+     * @param raceName the player's race name, C's {@code player->race->name}
+     */
+    static void setRaceName(String raceName) {
+        SidebarModel.raceName = raceName;
+    }
+
+    /**
+     * Read the title last written by {@link #setTitle(String)}, for the character sheet's Title
+     * row - {@link UIPlayer#getPanelTopLeft()}'s port of C's {@code get_panel_topleft}
+     * ({@code [C] ui-player.c}) is today's only reader.
+     *
+     * <p>Method getTitle coded before 260926, commented in full on 260926.
+     *
+     * @return the player's title, C's {@code show_title()}
+     */
+    public static String getTitle() {
+        return title;
+    }
+
+    /**
+     * Write the title. Package-private, so only {@link RedrawRouter#setTitle} - the only class in
+     * this package today - can write the model directly.
+     *
+     * <p>Method setTitle coded before 260926, commented in full on 260926.
+     *
+     * @param title the player's title, C's {@code show_title()}
+     */
+    static void setTitle(String title) {
+        SidebarModel.title = title;
     }
 }

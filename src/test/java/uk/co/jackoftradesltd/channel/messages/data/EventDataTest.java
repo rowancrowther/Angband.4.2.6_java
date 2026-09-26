@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -75,6 +76,7 @@ class EventDataTest {
         assertInstanceOf(GameEventData.class, new EventDataExplosion(1, 0, new ArrayList<>(), false,
                 new ArrayList<>(), new ArrayList<>(), Loc.zero));
         assertInstanceOf(GameEventData.class, new EventDataStat(1, 2));
+        assertInstanceOf(GameEventData.class, new EventDataStrings("a", "b"));
     }
 
     /**
@@ -254,6 +256,49 @@ class EventDataTest {
         @Test
         void statPairsAreComparedByValue() {
             assertEquals(new EventDataStat(30, 40), new EventDataStat(30, 40));
+        }
+    }
+
+    /**
+     * Tests for {@link EventDataStrings}, reused for {@code EVENT_RACE_CLASS} ({@code race->name}/
+     * {@code class->name}) — a C global pair read directly by {@code prt_race}/{@code prt_class}
+     * ({@code src/ui-display.c:571,595}), no struct behind either of them.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    class Strings {
+
+        /**
+         * The pieces of text come back in the order given, unmodified.
+         */
+        @Test
+        void stringsCarryTheirTextInOrder() {
+            EventDataStrings strings = new EventDataStrings("Elf", "Ranger");
+
+            assertArrayEquals(new String[]{"Elf", "Ranger"}, strings.strings());
+        }
+
+        /**
+         * A caution this record's own Javadoc calls out: {@code String...} desugars to a
+         * {@code String[]} component, and arrays do not override {@code equals()}, so two instances
+         * built from equal-content arrays are unequal by identity rather than by value. A test or
+         * comparison against this payload has to read {@link EventDataStrings#strings()} back and
+         * compare with {@link org.junit.jupiter.api.Assertions#assertArrayEquals}, never with this
+         * record's own {@code equals}.
+         */
+        @Test
+        void equalContentArraysAreNotEqualInstances() {
+            assertNotEquals(new EventDataStrings("Elf", "Ranger"), new EventDataStrings("Elf", "Ranger"),
+                    "String... desugars to an array component, and arrays compare by identity");
+        }
+
+        /**
+         * A single string is a valid payload — there is no minimum arity the constructor enforces.
+         */
+        @Test
+        void aSingleStringIsAValidPayload() {
+            assertArrayEquals(new String[]{"solo"}, new EventDataStrings("solo").strings());
         }
     }
 

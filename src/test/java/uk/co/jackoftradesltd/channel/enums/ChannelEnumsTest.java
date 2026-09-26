@@ -68,13 +68,16 @@ class ChannelEnumsTest {
     class GameEvents {
 
         /**
-         * C's enum runs from {@code EVENT_MAP} to {@code EVENT_END} and has 65 members. A port
-         * that has drifted by one has almost certainly lost a constant in the middle.
+         * C's enum runs from {@code EVENT_MAP} to {@code EVENT_END} and has 65 members, plus one
+         * port-only addition, {@code EVENT_PLAYER_NAME} — see that constant's own Javadoc for why
+         * it has no C counterpart. A port that has drifted by more than that one has almost
+         * certainly lost or gained a constant elsewhere in the middle.
          */
         @Test
-        void thereAreAsManyEventTypesAsInTheCOriginal() {
-            assertEquals(65, GameEventType.values().length,
-                    "C's game_event_type has 65 members (src/game-event.h)");
+        void thereAreAsManyEventTypesAsInTheCOriginalPlusOnePortOnlyAddition() {
+            assertEquals(66, GameEventType.values().length,
+                    "C's game_event_type has 65 members (src/game-event.h), plus this port's own "
+                            + "EVENT_PLAYER_NAME");
         }
 
         /**

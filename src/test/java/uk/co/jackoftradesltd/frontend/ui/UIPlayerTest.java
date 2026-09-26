@@ -2212,14 +2212,15 @@ class UIPlayerTest {
      * ({@code [C] ui-player.c}, function {@code get_panel_topleft}).
      *
      * <p>C's version allocates a six-row panel and fills it, in order, with Name, Race, Class,
-     * Title, HP and SP, each row in {@code COLOUR_L_BLUE}. This installs a
-     * {@link PlayerStatusView} fixture carrying known values for Name/Race/Class/Title and a
-     * {@link SidebarModel} fixture carrying known values for HP/SP, then checks that the returned
-     * {@code Panel}'s rows match in order, colour, label and formatted value. {@code Panel} and
-     * {@code PanelLine} are both private non-static nested classes, so every test reaches them,
-     * and the fields of the rows they produce, by reflection.
+     * Title, HP and SP, each row in {@code COLOUR_L_BLUE}. This installs a {@link SidebarModel}
+     * fixture carrying known values for all six, then checks that the returned {@code Panel}'s rows
+     * match in order, colour, label and formatted value. {@code Panel} and {@code PanelLine} are
+     * both private non-static nested classes, so every test reaches them, and the fields of the
+     * rows they produce, by reflection.
      *
-     * <p>Class GetPanelTopLeft coded on 260925, commented in full on 260926.
+     * <p>Class GetPanelTopLeft coded on 260925, commented in full on 260926, fixture updated on
+     * 260926 to install Name/Race/Class/Title through {@link SidebarModel} rather than
+     * {@link PlayerStatusView} once {@code getPanelTopLeft()} migrated its reads the same way.
      *
      * @author Rowan Crowther
      */
@@ -2227,40 +2228,39 @@ class UIPlayerTest {
     @DisplayName("getPanelTopLeft")
     class GetPanelTopLeft {
 
-        private PlayerStatusView savedStatusView;
         private int savedCurrentHp;
         private int savedMaxHp;
         private int savedCurrentSp;
         private int savedMaxSp;
+        private String savedTitle;
+        private String savedClassName;
+        private String savedRaceName;
+        private String savedName;
 
         /**
-         * Saves the status-view cache and {@link SidebarModel}'s HP and SP pairs so this test's
-         * fixture cannot leak into another test, then installs values for the six fields this
-         * method reads.
+         * Saves every {@link SidebarModel} field this method reads so this test's fixture cannot
+         * leak into another test, then installs values for all six.
          *
-         * <p>The installed view's own {@code chp}/{@code mhp}/{@code csp}/{@code msp} (999/888/
-         * 111/222) are deliberately not the values {@link #buildsSixRowsInOrder()} expects: neither
-         * HP nor SP comes from this view any more (see
-         * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}), so
-         * a mismatched pair here would catch a regression back to reading either from
-         * {@link PlayerStatusView} instead of {@link SidebarModel}.
+         * <p>All six rows come from {@link SidebarModel} rather than {@link PlayerStatusView} — see
+         * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md} —
+         * which is why this fixture has nothing left to install on {@link PlayerStatusView} at all,
+         * unlike the sibling {@code getPanelX} fixtures that still read fields off it.
          */
         @BeforeEach
         void installFixture() {
-            savedStatusView = PlayerEventStatusUpdate.getPlayerStatusView();
             savedCurrentHp = SidebarModel.getCurrentHP();
             savedMaxHp = SidebarModel.getMaxHP();
             savedCurrentSp = SidebarModel.getCurrentSP();
             savedMaxSp = SidebarModel.getMaxSP();
+            savedTitle = SidebarModel.getTitle();
+            savedClassName = SidebarModel.getClassName();
+            savedRaceName = SidebarModel.getRaceName();
+            savedName = SidebarModel.getName();
 
-            PlayerEventStatusUpdate.updatePlayerStatusView(new PlayerStatusView(
-                    "Legolas", "Rogue", "Elf", "Ranger", 0, 0, 0L, 0L, 0L,
-                    999, 888, 111, 222, 0, 0,
-                    new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
-                    new String[]{"STR", "INT", "WIS", "DEX", "CON"},
-                    0, 0, false, false, false, false, false, false, false, false, false, false,
-                    0, 0, null, null, null, null, null, null,
-                    0, 0, 0, 0));
+            SidebarModel.setName("Legolas");
+            SidebarModel.setRaceName("Elf");
+            SidebarModel.setClassName("Ranger");
+            SidebarModel.setTitle("Rogue");
             SidebarModel.setCurrentHP(42);
             SidebarModel.setMaxHP(50);
             SidebarModel.setCurrentSP(8);
@@ -2268,15 +2268,18 @@ class UIPlayerTest {
         }
 
         /**
-         * Restores the status view and {@link SidebarModel} saved by {@link #installFixture()}.
+         * Restores every {@link SidebarModel} field saved by {@link #installFixture()}.
          */
         @AfterEach
         void restoreFixture() {
-            PlayerEventStatusUpdate.updatePlayerStatusView(savedStatusView);
             SidebarModel.setCurrentHP(savedCurrentHp);
             SidebarModel.setMaxHP(savedMaxHp);
             SidebarModel.setCurrentSP(savedCurrentSp);
             SidebarModel.setMaxSP(savedMaxSp);
+            SidebarModel.setTitle(savedTitle);
+            SidebarModel.setClassName(savedClassName);
+            SidebarModel.setRaceName(savedRaceName);
+            SidebarModel.setName(savedName);
         }
 
         /**
@@ -2345,7 +2348,7 @@ class UIPlayerTest {
 
         /**
          * Six rows, in C's order, each carrying {@code COLOUR_L_BLUE} and the matching field from
-         * the installed {@link PlayerStatusView}.
+         * the installed {@link SidebarModel} fixture.
          *
          * @throws Exception if the method cannot be reached or throws
          */
@@ -3088,6 +3091,406 @@ class UIPlayerTest {
             Field field = panel.getClass().getDeclaredField("max");
             field.setAccessible(true);
             assertEquals(9, (int) field.get(panel));
+        }
+    }
+
+    /**
+     * Tests the private {@code getPanelSkills()} against C's {@code get_panel_skills}
+     * ({@code [C] src/ui-player.c}, function {@code get_panel_skills}).
+     *
+     * <p>C's version allocates an eight-row panel and fills it, in order, with Saving Throw,
+     * Stealth, Disarm - phys., Disarm - magic, Magic Devices, Searching, Infravision and Speed.
+     * This installs a {@link PlayerCharSheetView}/{@link PlayerStatusView} fixture carrying known
+     * values for every field the method reads and checks that the returned {@code Panel}'s rows
+     * match in order, colour, label and formatted value — including the {@code * 10} scaling on
+     * Infravision this method's stage-1 fix restored. {@code Panel} and {@code PanelLine} are both
+     * private non-static nested classes, so every test reaches them, and the fields of the rows
+     * they produce, by reflection.
+     *
+     * <p>Class GetPanelSkills coded on 260926, commented in full on 260926.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("getPanelSkills")
+    class GetPanelSkills {
+
+        private PlayerStatusView savedStatusView;
+        private PlayerCharSheetView savedCharSheetView;
+
+        /**
+         * Saves both view caches so this test's fixture cannot leak into another test.
+         */
+        @BeforeEach
+        void saveViews() {
+            savedStatusView = PlayerEventStatusUpdate.getPlayerStatusView();
+            savedCharSheetView = PlayerEventStatusUpdate.getPlayerCharSheetView();
+        }
+
+        /**
+         * Restores the views saved by {@link #saveViews()}.
+         */
+        @AfterEach
+        void restoreViews() {
+            PlayerEventStatusUpdate.updatePlayerStatusView(savedStatusView);
+            PlayerEventStatusUpdate.updatePlayerCharSheetView(savedCharSheetView);
+        }
+
+        /**
+         * Installs a fixture carrying only the fields this method reads: {@code depth} on the
+         * status view, and the seven skill fields plus {@code infra}/{@code calcSpeed}/
+         * {@code optionEffectiveSpeed} on the char-sheet view.
+         *
+         * @param saveSkill            C's {@code skills[SKILL_SAVE]}
+         * @param stealthSkill         C's {@code skills[SKILL_STEALTH]}
+         * @param disarmPhysSkill      C's {@code skills[SKILL_DISARM_PHYS]}
+         * @param disarmMagicSkill     C's {@code skills[SKILL_DISARM_MAGIC]}
+         * @param deviceSkill          C's {@code skills[SKILL_DEVICE]}
+         * @param searchSkill          C's {@code skills[SKILL_SEARCH]}
+         * @param infra                the infravision range, ten-foot units
+         * @param calcSpeed            the already fast/slow-adjusted speed value
+         * @param optionEffectiveSpeed C's {@code OPT(player, effective_speed)}
+         * @param depth                C's {@code cave ? cave->depth : 0}
+         */
+        private void installFixture(int saveSkill, int stealthSkill, int disarmPhysSkill,
+                                    int disarmMagicSkill, int deviceSkill, int searchSkill,
+                                    int infra, int calcSpeed, boolean optionEffectiveSpeed,
+                                    int depth) {
+            PlayerEventStatusUpdate.updatePlayerStatusView(new PlayerStatusView(
+                    "Test", "Test", "Test", "Test", 0, 0, 0L, 0L, 0L,
+                    0, 0, 0, 0, 0, 0,
+                    new int[0], new int[0], new String[0],
+                    0, 0, false, false, false, false, false, false, false, false, false, false,
+                    depth, 0, null, null, null, null, null, null,
+                    0, 0, 0, 0));
+            PlayerEventStatusUpdate.updatePlayerCharSheetView(new PlayerCharSheetView(0, true,
+                    new int[0], new int[0], new int[0], new int[0], new int[0], 0, 0,
+                    new long[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    saveSkill, stealthSkill, disarmPhysSkill, disarmMagicSkill, deviceSkill,
+                    searchSkill, infra, calcSpeed, optionEffectiveSpeed));
+        }
+
+        /**
+         * Invokes the private method under test.
+         *
+         * @return the built {@code Panel}, typed as {@link Object} since the class is private
+         * @throws Exception if the method cannot be reached or throws
+         */
+        private Object invoke() throws Exception {
+            Method method = UIPlayer.class.getDeclaredMethod("getPanelSkills");
+            method.setAccessible(true);
+            return method.invoke(uiPlayer);
+        }
+
+        /**
+         * Reads the {@code lines} field off a returned {@code Panel} by reflection.
+         *
+         * @param panel the {@code Panel} instance to read from
+         * @return its rows, each a private {@code PanelLine} typed as {@link Object}
+         * @throws Exception if the field cannot be reached
+         */
+        private List<?> readLines(Object panel) throws Exception {
+            Field field = panel.getClass().getDeclaredField("lines");
+            field.setAccessible(true);
+            return (List<?>) field.get(panel);
+        }
+
+        /**
+         * Reads a {@code PanelLine} row's colour via its public getter.
+         *
+         * @param line the row, typed as {@link Object} since the class is private
+         * @return its {@code attribute}
+         * @throws Exception if the method cannot be reached
+         */
+        private ColourEnum readAttribute(Object line) throws Exception {
+            Method method = line.getClass().getDeclaredMethod("getAttribute");
+            method.setAccessible(true);
+            return (ColourEnum) method.invoke(line);
+        }
+
+        /**
+         * Reads a {@code PanelLine} row's label via its public getter.
+         *
+         * @param line the row, typed as {@link Object} since the class is private
+         * @return its {@code label}
+         * @throws Exception if the method cannot be reached
+         */
+        private String readLabel(Object line) throws Exception {
+            Method method = line.getClass().getDeclaredMethod("getLabel");
+            method.setAccessible(true);
+            return (String) method.invoke(line);
+        }
+
+        /**
+         * Reads a {@code PanelLine} row's value via its public getter.
+         *
+         * @param line the row, typed as {@link Object} since the class is private
+         * @return its {@code value}
+         * @throws Exception if the method cannot be reached
+         */
+        private String readValue(Object line) throws Exception {
+            Method method = line.getClass().getDeclaredMethod("getValue");
+            method.setAccessible(true);
+            return (String) method.invoke(line);
+        }
+
+        /**
+         * Eight rows in C's exact order, each carrying the label, colour and formatted value C's
+         * own {@code panel_line} calls would produce from the installed fixture: Saving Throw
+         * {@code clamp(55, 0, 100) == 55}, {@code colour_table[5]}; Stealth via {@code likert(7, 1)}
+         * — 7 falls in the "Excellent" band; Disarm - phys. {@code clamp(50 - 20/5, 2, 100) == 46},
+         * {@code colour_table[4]}; Disarm - magic {@code clamp(30 - 20/5, 2, 100) == 26},
+         * {@code colour_table[2]}; Magic Devices the raw, unclamped {@code 39}, banded at a
+         * thirteenth rather than a tenth ({@code colour_table[3]}); Searching
+         * {@code clamp(5, 0, 100) == 5}, {@code colour_table[0]}; Infravision {@code 3 * 10 == 30}
+         * feet; and Speed via {@link UIPlayer#showSpeed()} at {@code calcSpeed == 120}, which is
+         * not below 110 so the colour is light green.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("builds all eight rows in C's order with matching colours and values")
+        void buildsEightRowsInOrder() throws Exception {
+            installFixture(55, 7, 50, 30, 39, 5, 3, 120, true, 20);
+
+            Object panel = invoke();
+            List<?> lines = readLines(panel);
+
+            assertEquals(8, lines.size());
+
+            ColourEnum[] expectedColours = {ColourEnum.COLOUR_YELLOW, ColourEnum.COLOUR_LIGHT_GREEN,
+                    ColourEnum.COLOUR_ORANGE, ColourEnum.COLOUR_RED, ColourEnum.COLOUR_LIGHT_RED,
+                    ColourEnum.COLOUR_RED, ColourEnum.COLOUR_LIGHT_GREEN, ColourEnum.COLOUR_LIGHT_GREEN};
+            String[] expectedLabels = {"Saving Throw", "Stealth", "Disarm - phys.", "Disarm - magic",
+                    "Magic Devices", "Searching", "Infravision", "Speed"};
+            String[] expectedValues = {"55%", "Excellent", "46%", "26%", "39", "5%", "30 ft",
+                    "2.0x (10)"};
+
+            for (int i = 0; i < 8; i++) {
+                Object line = lines.get(i);
+                assertEquals(expectedColours[i], readAttribute(line), "index " + i + " colour");
+                assertEquals(expectedLabels[i], readLabel(line), "index " + i + " label");
+                assertEquals(expectedValues[i], readValue(line), "index " + i + " value");
+            }
+        }
+
+        /**
+         * The panel is allocated with room for exactly eight rows, matching C's
+         * {@code panel_allocate(8)} call.
+         *
+         * @throws Exception if the method or its field cannot be reached
+         */
+        @Test
+        @DisplayName("allocates an eight-row panel")
+        void allocatesEightRowCapacity() throws Exception {
+            installFixture(0, 0, 0, 0, 0, 0, 0, 110, false, 0);
+
+            Object panel = invoke();
+            Field field = panel.getClass().getDeclaredField("max");
+            field.setAccessible(true);
+            assertEquals(8, (int) field.get(panel));
+        }
+
+        /**
+         * Saving Throw, Disarm - phys., Disarm - magic and Searching are all clamped via
+         * {@code BOUND}/{@link Math#clamp}; a value above the upper bound is capped rather than
+         * displayed raw, matching C's {@code MIN(max, MAX(min, x))} for each.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("clamps skills to their upper bound")
+        void clampsSkillsToUpperBound() throws Exception {
+            installFixture(500, 0, 500, 500, 0, 500, 0, 110, false, 0);
+
+            List<?> lines = readLines(invoke());
+
+            assertEquals("100%", readValue(lines.get(0)), "Saving Throw clamps to 100");
+            assertEquals("100%", readValue(lines.get(2)), "Disarm - phys. clamps to 100");
+            assertEquals("100%", readValue(lines.get(3)), "Disarm - magic clamps to 100");
+            assertEquals("100%", readValue(lines.get(5)), "Searching clamps to 100");
+        }
+
+        /**
+         * Disarm - phys. and Disarm - magic clamp to a floor of 2, not 0, once
+         * {@code skill - depth / 5} goes negative — C's {@code BOUND(..., 2, 100)}, unlike Saving
+         * Throw and Searching's {@code BOUND(..., 0, 100)}.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("floors the disarm skills at two rather than zero")
+        void floorsDisarmSkillsAtTwo() throws Exception {
+            installFixture(0, 0, 0, 0, 0, 0, 0, 110, false, 500);
+
+            List<?> lines = readLines(invoke());
+
+            assertEquals("2%", readValue(lines.get(2)), "Disarm - phys. floors at two");
+            assertEquals("2%", readValue(lines.get(3)), "Disarm - magic floors at two");
+        }
+
+        /**
+         * Saving Throw and Searching floor at zero rather than two, since C's own {@code BOUND} call
+         * for each uses a {@code min} of zero.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("floors Saving Throw and Searching at zero")
+        void floorsSaveAndSearchAtZero() throws Exception {
+            installFixture(-10, 0, 0, 0, 0, -10, 0, 110, false, 0);
+
+            List<?> lines = readLines(invoke());
+
+            assertEquals("0%", readValue(lines.get(0)), "Saving Throw floors at zero");
+            assertEquals("0%", readValue(lines.get(5)), "Searching floors at zero");
+        }
+
+        /**
+         * Magic Devices has no {@code BOUND} call in C at all — the raw skill is displayed and
+         * banded, even past 100.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("does not clamp Magic Devices")
+        void doesNotClampMagicDevices() throws Exception {
+            installFixture(0, 0, 0, 0, 130, 0, 0, 110, false, 0);
+
+            List<?> lines = readLines(invoke());
+
+            assertEquals("130", readValue(lines.get(4)));
+            assertEquals(ColourEnum.COLOUR_LIGHT_BLUE, readAttribute(lines.get(4)),
+                    "130 / 13 == 10, the last colour_table index");
+        }
+
+        /**
+         * The Speed row's colour comes from {@code calcSpeed} directly, matching C's own
+         * {@code skill < 110} test: light umber below 110, light green at or above it.
+         *
+         * @throws Exception if the method cannot be reached or throws
+         */
+        @Test
+        @DisplayName("colours the Speed row by whether calcSpeed is below 110")
+        void coloursSpeedRowByThreshold() throws Exception {
+            installFixture(0, 0, 0, 0, 0, 0, 0, 100, false, 0);
+            assertEquals(ColourEnum.COLOUR_LIGHT_UMBER, readAttribute(readLines(invoke()).get(7)));
+
+            installFixture(0, 0, 0, 0, 0, 0, 0, 110, false, 0);
+            assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, readAttribute(readLines(invoke()).get(7)));
+        }
+    }
+
+    /**
+     * Tests the private {@code showSpeed()} against C's {@code show_speed}
+     * ({@code [C] src/ui-player.c:669-684}).
+     *
+     * <p>Expected values are derived from the C source and {@link ChannelRegistry#extractEnergy}
+     * directly: the {@code tmp == 110} early return, the {@code 10 * extract_energy[tmp] /
+     * extract_energy[110]} multiplier split into whole and tenths, and the two {@code strnfmt}
+     * branches gated on {@code optionEffectiveSpeed} — the two literal {@code $d} placeholders this
+     * method's stage-1 fix replaced with real {@code %d} conversions. Unlike C, which recomputes
+     * {@code tmp} from {@code player->state.speed} and reverses that state's own fast/slow
+     * adjustment locally, this method reads {@code calcSpeed} as already carrying that reversed,
+     * un-hastened figure — see the method's own Javadoc for why. The method is private, so every
+     * test reaches it by reflection.
+     *
+     * <p>Class ShowSpeed coded on 260926, commented in full on 260926.
+     *
+     * @author Rowan Crowther
+     */
+    @Nested
+    @DisplayName("showSpeed")
+    class ShowSpeed {
+
+        private PlayerCharSheetView savedCharSheetView;
+
+        /**
+         * Saves the char-sheet cache so this test's fixture cannot leak into another test.
+         */
+        @BeforeEach
+        void saveCharSheetView() {
+            savedCharSheetView = PlayerEventStatusUpdate.getPlayerCharSheetView();
+        }
+
+        /**
+         * Restores the char-sheet cache saved by {@link #saveCharSheetView()}.
+         */
+        @AfterEach
+        void restoreCharSheetView() {
+            PlayerEventStatusUpdate.updatePlayerCharSheetView(savedCharSheetView);
+        }
+
+        /**
+         * Installs a {@link PlayerCharSheetView} carrying only the two fields this method reads.
+         *
+         * @param calcSpeed            the already fast/slow-adjusted speed value
+         * @param optionEffectiveSpeed C's {@code OPT(player, effective_speed)}
+         */
+        private void installView(int calcSpeed, boolean optionEffectiveSpeed) {
+            PlayerEventStatusUpdate.updatePlayerCharSheetView(new PlayerCharSheetView(0, true,
+                    new int[0], new int[0], new int[0], new int[0], new int[0], 0, 0,
+                    new long[0], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0, 0, 0, calcSpeed, optionEffectiveSpeed));
+        }
+
+        /**
+         * Invokes the private method under test.
+         *
+         * @return its result
+         * @throws Exception if the method cannot be reached or throws
+         */
+        private String invoke() throws Exception {
+            Method method = UIPlayer.class.getDeclaredMethod("showSpeed");
+            method.setAccessible(true);
+            return (String) method.invoke(uiPlayer);
+        }
+
+        /**
+         * The boundary C tests explicitly: {@code tmp == 110} returns the literal placeholder
+         * without ever reaching {@code strnfmt}, regardless of {@code optionEffectiveSpeed}.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("returns the literal \"Normal\" at exactly 110")
+        void returnsNormalAtOneHundredTen() throws Exception {
+            installView(110, true);
+            assertEquals("Normal", invoke());
+
+            installView(110, false);
+            assertEquals("Normal", invoke());
+        }
+
+        /**
+         * Above 110 with {@code effective_speed} on: {@code extract_energy[120] == 20},
+         * {@code extract_energy[110] == 10}, multiplier {@code 10 * 20 / 10 == 20}, split into
+         * {@code 2} and {@code 0}; the parenthetical carries the raw offset, {@code 120 - 110 == 10}.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("formats the effective-speed-on branch as a multiplier with the raw offset in parens")
+        void formatsEffectiveSpeedOnBranch() throws Exception {
+            installView(120, true);
+
+            assertEquals("2.0x (10)", invoke());
+        }
+
+        /**
+         * Below 110 with {@code effective_speed} off: {@code extract_energy[100] == 5},
+         * {@code extract_energy[110] == 10}, multiplier {@code 10 * 5 / 10 == 5}, split into
+         * {@code 0} and {@code 5}; the leading figure carries the raw, negative offset,
+         * {@code 100 - 110 == -10}.
+         *
+         * @throws Exception if the method cannot be reached
+         */
+        @Test
+        @DisplayName("formats the effective-speed-off branch as the raw offset with the multiplier in parens")
+        void formatsEffectiveSpeedOffBranch() throws Exception {
+            installView(100, false);
+
+            assertEquals("-10 (0.5x)", invoke());
         }
     }
 

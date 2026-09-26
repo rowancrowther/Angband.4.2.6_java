@@ -84,6 +84,23 @@ public enum GameEventType {
      * Race or Class.
      */
     EVENT_RACE_CLASS,
+
+    /**
+     * Player's full name. Carries an
+     * {@link uk.co.jackoftradesltd.channel.messages.data.EventDataString}.
+     *
+     * <p>Has no C counterpart: C's {@code redraw_events} table
+     * ({@code player-calcs.c}) fires {@code EVENT_RACE_CLASS} alone for {@code PR_MISC}, and
+     * {@code prt_race}/{@code prt_class} ({@code ui-display.c}) read {@code player->race->name}/
+     * {@code class->name} directly rather than through the event's payload; the character screen's
+     * own Name row ({@code get_panel_topleft}, {@code ui-player.c}) reads {@code player->full_name}
+     * the same way, off no redraw flag at all. The front end here has no such shared {@code player}
+     * global to read from, so {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm signals this
+     * alongside {@code EVENT_RACE_CLASS} to carry the name across the boundary too.
+     *
+     * <p>Enum constant EVENT_PLAYER_NAME coded before 260926, commented in full on 260926.
+     */
+    EVENT_PLAYER_NAME,
     /**
      * "Study" availability — whether there are spells the player could learn now.
      */

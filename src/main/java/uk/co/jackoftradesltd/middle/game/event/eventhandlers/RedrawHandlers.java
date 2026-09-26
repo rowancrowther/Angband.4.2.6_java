@@ -21,6 +21,8 @@ import uk.co.jackoftradesltd.channel.Sender;
 import uk.co.jackoftradesltd.channel.enums.GameEventType;
 import uk.co.jackoftradesltd.channel.messages.CoreMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.middle.game.event.EventsHandler;
 import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
@@ -39,10 +41,10 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
  * {@link InitHandlers} already uses: a {@link Sender} handed in at construction,
  * {@link #initHandlers()} subscribing bound method references against the live bus at call time,
  * and a private handler per event that is guarded on the payload it expects. Today it wires
- * {@code EVENT_HP} and {@code EVENT_MANA} - the first two vertical slices of the redraw-to-message
- * migration recorded in
- * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md} - and more
- * handlers are expected to join it as the rest of
+ * {@code EVENT_HP}, {@code EVENT_MANA}, {@code EVENT_RACE_CLASS}, {@code EVENT_PLAYERTITLE} and
+ * {@code EVENT_PLAYER_NAME} - the vertical slices of the redraw-to-message migration recorded in
+ * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md} ported so far
+ * - and more handlers are expected to join it as the rest of
  * {@link uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw}'s {@code PR_*} flags gain their
  * own payload records.
  *
@@ -56,7 +58,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 public class RedrawHandlers {
     /**
      * The core's writing end of the UI thread's inbox, exactly as {@link InitHandlers#coreSender}
-     * is: the one thing {@link #eventHP} and {@link #eventSP} each need in order to put a
+     * is: the one thing every handler in this class needs in order to put a
      * {@link CoreMessage.GameEventCoreMessage} on the queue.
      *
      * <p>{@code final}, so it is safely published without needing {@code volatile}: the object is
@@ -83,19 +85,24 @@ public class RedrawHandlers {
      *
      * <p>Reads the bus through {@code GameEngine.getEventsBusHandler()} at call time, as
      * {@link InitHandlers#initHandlers()} does, so it always wires the bus that is actually live.
-     * Today that is two registrations, {@link #eventHP} against {@code EVENT_HP} and
-     * {@link #eventSP} against {@code EVENT_MANA}; the rest of
+     * Today that is five registrations: {@link #eventHP} against {@code EVENT_HP},
+     * {@link #eventSP} against {@code EVENT_MANA}, {@link #eventRaceClass} against
+     * {@code EVENT_RACE_CLASS}, {@link #eventTitle} against {@code EVENT_PLAYERTITLE} and
+     * {@link #eventName} against {@code EVENT_PLAYER_NAME}; the rest of
      * {@link uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw}'s flags join here as their
      * payload records are ported.
      *
      * <p>Not idempotent, for the same reason {@link InitHandlers#initHandlers()} is not: dispatch
-     * is non-consuming, so calling this twice on one bus would register {@link #eventHP} and
-     * {@link #eventSP} twice each and they would run twice per signal.
+     * is non-consuming, so calling this twice on one bus would register every handler above twice
+     * each and they would run twice per signal.
      */
     public void initHandlers() {
         EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
         eventsHandler.eventAddHandler(GameEventType.EVENT_HP, this::eventHP);
         eventsHandler.eventAddHandler(GameEventType.EVENT_MANA, this::eventSP);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_RACE_CLASS, this::eventRaceClass);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_PLAYERTITLE, this::eventTitle);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_PLAYER_NAME, this::eventName);
     }
 
     /**
@@ -139,6 +146,66 @@ public class RedrawHandlers {
     private void eventSP(GameEventType eventType, GameEventData data) {
         if (data instanceof EventDataStat sp) {
             coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, sp));
+        }
+    }
+
+    /**
+     * A redraw has raised {@code PR_MISC}, and {@code PlayerCalcs.redrawStuff} has signalled
+     * {@code EVENT_PLAYER_NAME} with the player's full name already attached as an
+     * {@link EventDataString}. This forwards that record unchanged onto the core channel, exactly
+     * as {@link #eventHP} does for {@code EVENT_HP}.
+     *
+     * <p>Guarded on the payload the same way {@link #eventHP} is: a signal for
+     * {@code EVENT_PLAYER_NAME} carrying anything other than an {@link EventDataString} is dropped
+     * rather than forwarded.
+     *
+     * @param eventType the event being handled, always {@code EVENT_PLAYER_NAME}; forwarded as the
+     *                  message's type
+     * @param data      the payload; must be an {@link EventDataString} or nothing is forwarded
+     */
+    private void eventName(GameEventType eventType, GameEventData data) {
+        if (data instanceof EventDataString name) {
+            coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, name));
+        }
+    }
+
+    /**
+     * A redraw has raised {@code PR_MISC}, and {@code PlayerCalcs.redrawStuff} has signalled
+     * {@code EVENT_RACE_CLASS} with the player's race and class names already attached as an
+     * {@link EventDataStrings}. This forwards that record unchanged onto the core channel, exactly
+     * as {@link #eventHP} does for {@code EVENT_HP}.
+     *
+     * <p>Guarded on the payload the same way {@link #eventHP} is: a signal for
+     * {@code EVENT_RACE_CLASS} carrying anything other than an {@link EventDataStrings} is dropped
+     * rather than forwarded.
+     *
+     * @param eventType the event being handled, always {@code EVENT_RACE_CLASS}; forwarded as the
+     *                  message's type
+     * @param data      the payload; must be an {@link EventDataStrings} or nothing is forwarded
+     */
+    private void eventRaceClass(GameEventType eventType, GameEventData data) {
+        if (data instanceof EventDataStrings raceClass) {
+            coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, raceClass));
+        }
+    }
+
+    /**
+     * A redraw has raised {@code PR_TITLE}, and {@code PlayerCalcs.redrawStuff} has signalled
+     * {@code EVENT_PLAYERTITLE} with the player's title already attached as an
+     * {@link EventDataString}. This forwards that record unchanged onto the core channel, exactly
+     * as {@link #eventHP} does for {@code EVENT_HP}.
+     *
+     * <p>Guarded on the payload the same way {@link #eventHP} is: a signal for
+     * {@code EVENT_PLAYERTITLE} carrying anything other than an {@link EventDataString} is dropped
+     * rather than forwarded.
+     *
+     * @param eventType the event being handled, always {@code EVENT_PLAYERTITLE}; forwarded as the
+     *                  message's type
+     * @param data      the payload; must be an {@link EventDataString} or nothing is forwarded
+     */
+    private void eventTitle(GameEventType eventType, GameEventData data) {
+        if (data instanceof EventDataString title) {
+            coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, title));
         }
     }
 }

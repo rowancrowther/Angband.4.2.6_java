@@ -28,11 +28,13 @@ import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataTunnel;
 import uk.co.jackoftradesltd.channel.messages.data.GameEventData;
 import uk.co.jackoftradesltd.middle.cave.Loc;
 import uk.co.jackoftradesltd.middle.enums.MessageType;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -87,6 +89,24 @@ class EventsHandlerSignalTest {
         handler.eventSignalString(GameEventType.EVENT_INITSTATUS, "Initializing arrays...");
 
         assertEquals(new EventDataString("Initializing arrays..."), handler.lastData);
+    }
+
+    /**
+     * The strings signal wraps its varargs straight through, in the order given.
+     *
+     * <p>{@link EventDataStrings}'s generated {@code equals()} compares its {@code String[]}
+     * component by identity, not content (see that record's own Javadoc), so this reads
+     * {@link EventDataStrings#strings()} back and checks it with
+     * {@link org.junit.jupiter.api.Assertions#assertArrayEquals} rather than comparing the payload
+     * as a whole with {@code assertEquals}.
+     */
+    @Test
+    void aStringsSignalWrapsItsTextInOrder() {
+        handler.eventSignalStrings(GameEventType.EVENT_RACE_CLASS, "Elf", "Ranger");
+
+        assertEquals(GameEventType.EVENT_RACE_CLASS, handler.lastType);
+        EventDataStrings strings = assertInstanceOf(EventDataStrings.class, handler.lastData);
+        assertArrayEquals(new String[]{"Elf", "Ranger"}, strings.strings());
     }
 
     @Test

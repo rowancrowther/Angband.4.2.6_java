@@ -32,7 +32,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * read back from it, and no two fields alias each other.
  *
  * <p>In the same package as {@link SidebarModel} so the package-private setters can be exercised
- * directly, without going through {@link RedrawRouter}, which has its own test.
+ * directly, without going through {@link RedrawRouter}, which has its own test. Covers the HP/SP
+ * pair and the title/race/class/name quartet the same way: a value written to one field is the
+ * value read back from it, and no field disturbs another.
  *
  * <p>Class SidebarModelTest coded on 260926, commented in full on 260926.
  *
@@ -48,6 +50,10 @@ class SidebarModelTest {
     private int savedMaxHp;
     private int savedCurrentSp;
     private int savedMaxSp;
+    private String savedTitle;
+    private String savedClassName;
+    private String savedRaceName;
+    private String savedName;
 
     @BeforeEach
     void saveModel() {
@@ -55,6 +61,10 @@ class SidebarModelTest {
         savedMaxHp = SidebarModel.getMaxHP();
         savedCurrentSp = SidebarModel.getCurrentSP();
         savedMaxSp = SidebarModel.getMaxSP();
+        savedTitle = SidebarModel.getTitle();
+        savedClassName = SidebarModel.getClassName();
+        savedRaceName = SidebarModel.getRaceName();
+        savedName = SidebarModel.getName();
     }
 
     @AfterEach
@@ -63,6 +73,10 @@ class SidebarModelTest {
         SidebarModel.setMaxHP(savedMaxHp);
         SidebarModel.setCurrentSP(savedCurrentSp);
         SidebarModel.setMaxSP(savedMaxSp);
+        SidebarModel.setTitle(savedTitle);
+        SidebarModel.setClassName(savedClassName);
+        SidebarModel.setRaceName(savedRaceName);
+        SidebarModel.setName(savedName);
     }
 
     /**
@@ -158,5 +172,70 @@ class SidebarModelTest {
         assertEquals(50, SidebarModel.getMaxHP());
         assertEquals(8, SidebarModel.getCurrentSP());
         assertEquals(12, SidebarModel.getMaxSP());
+    }
+
+    /**
+     * A written title is the title read back, unrelated to whatever race, class or name is already
+     * held.
+     */
+    @Test
+    void titleRoundTrips() {
+        SidebarModel.setRaceName("Elf");
+        SidebarModel.setClassName("Ranger");
+        SidebarModel.setName("Legolas");
+        SidebarModel.setTitle("Rogue");
+
+        assertEquals("Rogue", SidebarModel.getTitle());
+        assertEquals("Elf", SidebarModel.getRaceName(), "writing title must not disturb race");
+        assertEquals("Ranger", SidebarModel.getClassName(), "writing title must not disturb class");
+        assertEquals("Legolas", SidebarModel.getName(), "writing title must not disturb name");
+    }
+
+    /**
+     * A written class name is the class name read back, unrelated to the other three fields.
+     */
+    @Test
+    void classNameRoundTrips() {
+        SidebarModel.setTitle("Rogue");
+        SidebarModel.setRaceName("Elf");
+        SidebarModel.setName("Legolas");
+        SidebarModel.setClassName("Ranger");
+
+        assertEquals("Ranger", SidebarModel.getClassName());
+        assertEquals("Rogue", SidebarModel.getTitle(), "writing class must not disturb title");
+        assertEquals("Elf", SidebarModel.getRaceName(), "writing class must not disturb race");
+        assertEquals("Legolas", SidebarModel.getName(), "writing class must not disturb name");
+    }
+
+    /**
+     * A written race name is the race name read back, unrelated to the other three fields.
+     */
+    @Test
+    void raceNameRoundTrips() {
+        SidebarModel.setTitle("Rogue");
+        SidebarModel.setClassName("Ranger");
+        SidebarModel.setName("Legolas");
+        SidebarModel.setRaceName("Elf");
+
+        assertEquals("Elf", SidebarModel.getRaceName());
+        assertEquals("Rogue", SidebarModel.getTitle(), "writing race must not disturb title");
+        assertEquals("Ranger", SidebarModel.getClassName(), "writing race must not disturb class");
+        assertEquals("Legolas", SidebarModel.getName(), "writing race must not disturb name");
+    }
+
+    /**
+     * A written full name is the name read back, unrelated to the other three fields.
+     */
+    @Test
+    void nameRoundTrips() {
+        SidebarModel.setTitle("Rogue");
+        SidebarModel.setClassName("Ranger");
+        SidebarModel.setRaceName("Elf");
+        SidebarModel.setName("Legolas");
+
+        assertEquals("Legolas", SidebarModel.getName());
+        assertEquals("Rogue", SidebarModel.getTitle(), "writing name must not disturb title");
+        assertEquals("Ranger", SidebarModel.getClassName(), "writing name must not disturb class");
+        assertEquals("Elf", SidebarModel.getRaceName(), "writing name must not disturb race");
     }
 }

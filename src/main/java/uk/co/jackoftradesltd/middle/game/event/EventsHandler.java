@@ -244,6 +244,30 @@ public interface EventsHandler {
     }
 
     /**
+     * Send a signal to dispatch all events of a given type with several pieces of text at once - the
+     * multi-value sibling of {@link #eventSignalString}, used where a redraw needs more than one
+     * label in the same signal.
+     *
+     * <p>There is no {@code event_signal_*} counterpart for this shape in C, for the same reason
+     * {@link #eventSignalStat} has none: C's {@code redraw_events} table ({@code player-calcs.c})
+     * fires {@code EVENT_RACE_CLASS} as a bare signal, and its handlers ({@code prt_race},
+     * {@code prt_class} - {@code src/ui-display.c}) read {@code player->race->name}/
+     * {@code class->name} straight off the shared global rather than from a payload. A handler on
+     * the far side of the core-to-front-end boundary has no such global to read, so the values have
+     * to travel with the signal instead. See {@link EventDataStrings}'s Javadoc for the full
+     * rationale.
+     *
+     * <p>Function eventSignalStrings coded before 260926, commented in full on 260926.
+     *
+     * @param eventType The event type we are signalling
+     * @param strings   the pieces of text to carry, in a fixed, caller-defined order; becomes
+     *                  {@link EventDataStrings#strings()}
+     */
+    default void eventSignalStrings(GameEventType eventType, String... strings) {
+        gameEventDispatch(eventType, new EventDataStrings(strings));
+    }
+
+    /**
      * Send a signal to dispatch all events of a given type with a Message data type
      *
      * @param eventType The event type we are signalling

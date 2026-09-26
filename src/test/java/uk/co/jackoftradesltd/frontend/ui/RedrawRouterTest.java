@@ -22,18 +22,22 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * {@link RedrawRouter#setHP} and {@link RedrawRouter#setSP} against the two things C's
- * {@code prt_hp}/{@code prt_sp} and {@code get_panel_topleft} ({@code [C] ui-display.c} and
- * {@code [C] ui-player.c}) rely on when they read {@code player->chp}/{@code mhp} or
- * {@code player->csp}/{@code msp} directly: which value is current and which is the maximum, and
- * that there is always a pair to read. There is no C function to diverge from here - this is the
- * port's own translation step - so the expected values are derived from what
- * {@link EventDataStat#current()}/{@link EventDataStat#other()} are documented to carry, not from
- * re-reading {@link RedrawRouter}'s own body.
+ * Every {@code RedrawRouter} setter against what its own payload record is documented to carry,
+ * not against re-reading {@link RedrawRouter}'s own body. {@link RedrawRouter#setHP} and
+ * {@link RedrawRouter#setSP} are pinned against the two things C's {@code prt_hp}/{@code prt_sp}
+ * and {@code get_panel_topleft} ({@code [C] ui-display.c} and {@code [C] ui-player.c}) rely on when
+ * they read {@code player->chp}/{@code mhp} or {@code player->csp}/{@code msp} directly: which
+ * value is current and which is the maximum, and that there is always a pair to read.
+ * {@link RedrawRouter#setRaceClass} gets the same "which value lands where" treatment for
+ * {@link EventDataStrings#strings()}'s two elements; {@link RedrawRouter#setTitle} and
+ * {@link RedrawRouter#setName} each carry only one value, so there is nothing to transpose. There
+ * is no C function to diverge from for any of them - this is the port's own translation step.
  *
  * <p>Class RedrawRouterTest coded on 260926, commented in full on 260926.
  *
@@ -49,6 +53,10 @@ class RedrawRouterTest {
     private int savedMaxHp;
     private int savedCurrentSp;
     private int savedMaxSp;
+    private String savedTitle;
+    private String savedClassName;
+    private String savedRaceName;
+    private String savedName;
 
     @BeforeEach
     void saveModel() {
@@ -56,6 +64,10 @@ class RedrawRouterTest {
         savedMaxHp = SidebarModel.getMaxHP();
         savedCurrentSp = SidebarModel.getCurrentSP();
         savedMaxSp = SidebarModel.getMaxSP();
+        savedTitle = SidebarModel.getTitle();
+        savedClassName = SidebarModel.getClassName();
+        savedRaceName = SidebarModel.getRaceName();
+        savedName = SidebarModel.getName();
     }
 
     @AfterEach
@@ -64,6 +76,10 @@ class RedrawRouterTest {
         SidebarModel.setMaxHP(savedMaxHp);
         SidebarModel.setCurrentSP(savedCurrentSp);
         SidebarModel.setMaxSP(savedMaxSp);
+        SidebarModel.setTitle(savedTitle);
+        SidebarModel.setClassName(savedClassName);
+        SidebarModel.setRaceName(savedRaceName);
+        SidebarModel.setName(savedName);
     }
 
     /**
@@ -147,5 +163,76 @@ class RedrawRouterTest {
 
         assertEquals(5, SidebarModel.getCurrentSP(), "a mismatched payload must not overwrite current");
         assertEquals(40, SidebarModel.getMaxSP(), "a mismatched payload must not overwrite max");
+    }
+
+    /**
+     * {@link EventDataString#string()} becomes {@link SidebarModel#getTitle()}.
+     */
+    @Test
+    void titleIsWrittenFromTheStringPayload() {
+        RedrawRouter.setTitle(new EventDataString("Rogue"));
+
+        assertEquals("Rogue", SidebarModel.getTitle());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonStringTitlePayloadLeavesTheModelUntouched() {
+        RedrawRouter.setTitle(new EventDataString("Rogue"));
+
+        RedrawRouter.setTitle(new EventDataBoolean(true));
+
+        assertEquals("Rogue", SidebarModel.getTitle(), "a mismatched payload must not overwrite title");
+    }
+
+    /**
+     * {@link EventDataString#string()} becomes {@link SidebarModel#getName()}.
+     */
+    @Test
+    void nameIsWrittenFromTheStringPayload() {
+        RedrawRouter.setName(new EventDataString("Legolas"));
+
+        assertEquals("Legolas", SidebarModel.getName());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed.
+     */
+    @Test
+    void aNonStringNamePayloadLeavesTheModelUntouched() {
+        RedrawRouter.setName(new EventDataString("Legolas"));
+
+        RedrawRouter.setName(new EventDataBoolean(true));
+
+        assertEquals("Legolas", SidebarModel.getName(), "a mismatched payload must not overwrite name");
+    }
+
+    /**
+     * {@link EventDataStrings#strings()}'s first element becomes {@link SidebarModel#getRaceName()}
+     * and its second becomes {@link SidebarModel#getClassName()} - deliberately distinct values, so
+     * a router that swapped the pair would be caught rather than passing by coincidence.
+     */
+    @Test
+    void raceAndClassAreNotSwapped() {
+        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger"));
+
+        assertEquals("Elf", SidebarModel.getRaceName(), "strings()[0] must land in raceName");
+        assertEquals("Ranger", SidebarModel.getClassName(), "strings()[1] must land in className");
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed.
+     */
+    @Test
+    void aNonStringsRaceClassPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setRaceClass(new EventDataStrings("Elf", "Ranger"));
+
+        RedrawRouter.setRaceClass(new EventDataBoolean(true));
+
+        assertEquals("Elf", SidebarModel.getRaceName(), "a mismatched payload must not overwrite race");
+        assertEquals("Ranger", SidebarModel.getClassName(), "a mismatched payload must not overwrite class");
     }
 }

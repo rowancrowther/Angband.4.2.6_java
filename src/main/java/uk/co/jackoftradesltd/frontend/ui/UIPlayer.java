@@ -234,13 +234,14 @@ public class UIPlayer {
      * Race, Class and Title each a plain {@code "%s"} of
      * {@link PlayerEventStatusUpdate#getPlayerStatusView()}'s {@code name()}/{@code raceName()}/
      * {@code className()}/{@code title()}, standing in for C's {@code player->full_name}/
-     * {@code player->race->name}/{@code player->class->name}/{@code show_title()}; SP a
-     * {@code "%d/%d"} of the same view's current/maximum spell-point pair, standing in for C's
-     * {@code csp}/{@code msp}. HP is the one row that does not read this view: it is a
-     * {@code "%d/%d"} of {@link SidebarModel#getCurrentHP()}/{@link SidebarModel#getMaxHP()},
-     * standing in for C's {@code player->chp}/{@code mhp} — the first field of this panel moved
-     * onto the core-to-front-end message boundary rather than the shared-cache view the rest of
-     * this method still reads, per
+     * {@code player->race->name}/{@code player->class->name}/{@code show_title()}. HP and SP are
+     * the two rows that do not read this view: HP is a {@code "%d/%d"} of
+     * {@link SidebarModel#getCurrentHP()}/{@link SidebarModel#getMaxHP()}, standing in for C's
+     * {@code player->chp}/{@code mhp}, and SP is a {@code "%d/%d"} of
+     * {@link SidebarModel#getCurrentSP()}/{@link SidebarModel#getMaxSP()}, standing in for C's
+     * {@code player->csp}/{@code msp} — the two fields of this panel moved onto the
+     * core-to-front-end message boundary rather than the shared-cache view the rest of this method
+     * still reads, per
      * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}.
      *
      * <p>The {@code topLeft.initLines()} call partway down this method re-runs the same
@@ -263,22 +264,23 @@ public class UIPlayer {
      */
     private Panel getPanelTopLeft() {
         Panel topLeft = panelAllocate(6);
+        ColourEnum attr = ColourEnum.COLOUR_LIGHT_BLUE;
 
         topLeft.initLines();
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "Name", "%s",
+        topLeft.panelLine(attr, "Name", "%s",
                 PlayerEventStatusUpdate.getPlayerStatusView().name());
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "Race", "%s",
+        topLeft.panelLine(attr, "Race", "%s",
                 PlayerEventStatusUpdate.getPlayerStatusView().raceName());
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "Class", "%s",
+        topLeft.panelLine(attr, "Class", "%s",
                 PlayerEventStatusUpdate.getPlayerStatusView().className());
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "Title", "%s",
+        topLeft.panelLine(attr, "Title", "%s",
                 PlayerEventStatusUpdate.getPlayerStatusView().title());
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "HP", "%d/%d",
+        topLeft.panelLine(attr, "HP", "%d/%d",
                 SidebarModel.getCurrentHP(),
                 SidebarModel.getMaxHP());
-        topLeft.panelLine(ColourEnum.COLOUR_LIGHT_BLUE, "SP", "%d/%d",
-                PlayerEventStatusUpdate.getPlayerStatusView().csp(),
-                PlayerEventStatusUpdate.getPlayerStatusView().msp());
+        topLeft.panelLine(attr, "SP", "%d/%d",
+                SidebarModel.getCurrentSP(),
+                SidebarModel.getMaxSP());
 
         return topLeft;
     }

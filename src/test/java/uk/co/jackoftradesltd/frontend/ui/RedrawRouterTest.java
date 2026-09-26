@@ -26,9 +26,10 @@ import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * {@link RedrawRouter#setHP} against the two things C's {@code prt_hp} and {@code get_panel_topleft}
- * ({@code [C] ui-display.c} and {@code [C] ui-player.c}) rely on when they read
- * {@code player->chp}/{@code mhp} directly: which value is current and which is the maximum, and
+ * {@link RedrawRouter#setHP} and {@link RedrawRouter#setSP} against the two things C's
+ * {@code prt_hp}/{@code prt_sp} and {@code get_panel_topleft} ({@code [C] ui-display.c} and
+ * {@code [C] ui-player.c}) rely on when they read {@code player->chp}/{@code mhp} or
+ * {@code player->csp}/{@code msp} directly: which value is current and which is the maximum, and
  * that there is always a pair to read. There is no C function to diverge from here - this is the
  * port's own translation step - so the expected values are derived from what
  * {@link EventDataStat#current()}/{@link EventDataStat#other()} are documented to carry, not from
@@ -46,17 +47,23 @@ class RedrawRouterTest {
      */
     private int savedCurrentHp;
     private int savedMaxHp;
+    private int savedCurrentSp;
+    private int savedMaxSp;
 
     @BeforeEach
     void saveModel() {
         savedCurrentHp = SidebarModel.getCurrentHP();
         savedMaxHp = SidebarModel.getMaxHP();
+        savedCurrentSp = SidebarModel.getCurrentSP();
+        savedMaxSp = SidebarModel.getMaxSP();
     }
 
     @AfterEach
     void restoreModel() {
         SidebarModel.setCurrentHP(savedCurrentHp);
         SidebarModel.setMaxHP(savedMaxHp);
+        SidebarModel.setCurrentSP(savedCurrentSp);
+        SidebarModel.setMaxSP(savedMaxSp);
     }
 
     /**
@@ -100,5 +107,45 @@ class RedrawRouterTest {
 
         assertEquals(7, SidebarModel.getCurrentHP(), "a mismatched payload must not overwrite current");
         assertEquals(99, SidebarModel.getMaxHP(), "a mismatched payload must not overwrite max");
+    }
+
+    /**
+     * {@link EventDataStat#current()} becomes {@link SidebarModel#getCurrentSP()} and
+     * {@link EventDataStat#other()} becomes {@link SidebarModel#getMaxSP()} - the same shape as
+     * {@link #currentAndMaxAreNotSwapped()}, for {@code EVENT_MANA} rather than {@code EVENT_HP}.
+     */
+    @Test
+    void spCurrentAndMaxAreNotSwapped() {
+        RedrawRouter.setSP(new EventDataStat(5, 40));
+
+        assertEquals(5, SidebarModel.getCurrentSP(), "current() must land in currentSP");
+        assertEquals(40, SidebarModel.getMaxSP(), "other() must land in maxSP");
+    }
+
+    /**
+     * A later {@code EVENT_MANA} overwrites the model rather than merging with it, matching a
+     * redraw always sending the player's whole current state.
+     */
+    @Test
+    void aSecondSpMessageOverwritesTheFirst() {
+        RedrawRouter.setSP(new EventDataStat(5, 40));
+        RedrawRouter.setSP(new EventDataStat(2, 15));
+
+        assertEquals(2, SidebarModel.getCurrentSP());
+        assertEquals(15, SidebarModel.getMaxSP());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed - the same guard
+     * {@code RedrawHandlers.eventSP} applies on the sending side.
+     */
+    @Test
+    void aNonStatSpPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setSP(new EventDataStat(5, 40));
+
+        RedrawRouter.setSP(new EventDataBoolean(true));
+
+        assertEquals(5, SidebarModel.getCurrentSP(), "a mismatched payload must not overwrite current");
+        assertEquals(40, SidebarModel.getMaxSP(), "a mismatched payload must not overwrite max");
     }
 }

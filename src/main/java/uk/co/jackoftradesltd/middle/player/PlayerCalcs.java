@@ -826,7 +826,7 @@ public class PlayerCalcs {
     /**
      * Repaints whichever screen regions have been flagged stale, by signalling one UI event per
      * raised flag and then clearing the flags it dealt with — the port of C's {@code redraw_stuff}
-     * ({@code player-calcs.c:2678}).
+     * ({@code player-calcs.c}, function {@code redraw_stuff}).
      *
      * <p>This is the redraw half of the pair {@link #updateStuff(Player)} begins: code that changes the
      * model raises a {@link PlayerRedraw} ({@code PR_*}) flag on {@link PlayerUpkeep} and moves on,
@@ -859,19 +859,20 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, with one
-     * exception: {@code PR_HP} calls
-     * {@link uk.co.jackoftradesltd.middle.game.event.EventsHandler#eventSignalStat} with the
-     * player's current and maximum hit points instead, because {@code RedrawHandlers} forwards
-     * that payload across the core-to-front-end boundary and there is no shared {@code player}
-     * there for a handler to read the way C's {@code prt_hp} does. The map is handled separately
-     * again, because it also carries data: {@code EVENT_MAP} with the point {@code (-1, -1)}, C's
+     * <p>Every remaining flag is signalled through {@link PlayerRedraw#getEventType()}, with two
+     * exceptions: {@code PR_HP} and {@code PR_MANA} each call
+     * {@link uk.co.jackoftradesltd.middle.game.event.EventsHandler#eventSignalStat} with a
+     * current/maximum pair instead — hit points for {@code PR_HP}, spell points for
+     * {@code PR_MANA} — because {@code RedrawHandlers} forwards that payload across the
+     * core-to-front-end boundary and there is no shared {@code player} there for a handler to read
+     * the way C's {@code prt_hp} and {@code prt_sp} do. The map is handled separately again,
+     * because it also carries data: {@code EVENT_MAP} with the point {@code (-1, -1)}, C's
      * sentinel for "the whole map, not one grid". A last {@code EVENT_END} tells the display the
      * batch is complete and it may now do any plotting it deferred — and, like the narrowing, it is
      * skipped when only subwindows were refreshed.
      *
      * <p><b>Deliberate divergence:</b> C drives the signalling from a fixed table
-     * ({@code redraw_events}, {@code player-calcs.c:2634}) and so emits the events in that table's
+     * ({@code redraw_events}, {@code player-calcs.c}) and so emits the events in that table's
      * order; this iterates the flag set, which is {@link PlayerRedraw} declaration order. The
      * ordering is not honoured, and does not need to be — the handlers are independent. What is
      * honoured is the map coming after the rest of the events, and {@code EVENT_END} coming last of
@@ -906,13 +907,15 @@ public class PlayerCalcs {
 
         // For each listed flag (apart from PR_MAP) - send the appropriate signal to the UI
         for (PlayerRedraw playerRedraw : redraw) {
-            if (playerRedraw == PlayerRedraw.PR_MAP) continue;
-            if (playerRedraw == PlayerRedraw.PR_HP) {
-                GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_HP, player.getCurrentHP(),
-                        player.getMaxHP());
-                continue;
+            switch (playerRedraw) {
+                case PR_MAP -> {
+                }
+                case PR_HP -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_HP,
+                        player.getCurrentHP(), player.getMaxHP());
+                case PR_MANA -> GameEngine.getEventsBusHandler().eventSignalStat(GameEventType.EVENT_MANA,
+                        player.getCurSp(), player.getMaxSP());
+                default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }
-            GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
         }
 
         // Now for the ones that require parameters to be supplied

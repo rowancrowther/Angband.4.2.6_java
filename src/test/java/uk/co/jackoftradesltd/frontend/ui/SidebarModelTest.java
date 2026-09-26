@@ -25,10 +25,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * {@link SidebarModel} holding exactly what is written to it - the port has no C counterpart to
- * diverge from here, since C's {@code prt_hp} ({@code [C] ui-display.c}, function {@code prt_hp})
- * reads {@code player->chp}/{@code mhp} straight off the shared global rather than through a model
- * at all. What is under test is the model's own contract: a value written to one field is the value
- * read back from it, and the two fields do not alias each other.
+ * diverge from here, since C's {@code prt_hp}/{@code prt_sp} ({@code [C] ui-display.c}, functions
+ * {@code prt_hp} and {@code prt_sp}) read {@code player->chp}/{@code mhp} and
+ * {@code player->csp}/{@code msp} straight off the shared global rather than through a model at
+ * all. What is under test is the model's own contract: a value written to one field is the value
+ * read back from it, and no two fields alias each other.
  *
  * <p>In the same package as {@link SidebarModel} so the package-private setters can be exercised
  * directly, without going through {@link RedrawRouter}, which has its own test.
@@ -40,22 +41,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class SidebarModelTest {
 
     /**
-     * The model's state before this test ran, since both fields are static and shared across the
-     * whole suite.
+     * The model's state before this test ran, since all four fields are static and shared across
+     * the whole suite.
      */
     private int savedCurrentHp;
     private int savedMaxHp;
+    private int savedCurrentSp;
+    private int savedMaxSp;
 
     @BeforeEach
     void saveModel() {
         savedCurrentHp = SidebarModel.getCurrentHP();
         savedMaxHp = SidebarModel.getMaxHP();
+        savedCurrentSp = SidebarModel.getCurrentSP();
+        savedMaxSp = SidebarModel.getMaxSP();
     }
 
     @AfterEach
     void restoreModel() {
         SidebarModel.setCurrentHP(savedCurrentHp);
         SidebarModel.setMaxHP(savedMaxHp);
+        SidebarModel.setCurrentSP(savedCurrentSp);
+        SidebarModel.setMaxSP(savedMaxSp);
     }
 
     /**
@@ -95,5 +102,61 @@ class SidebarModelTest {
 
         assertEquals(0, SidebarModel.getCurrentHP());
         assertEquals(0, SidebarModel.getMaxHP());
+    }
+
+    /**
+     * A written current-SP value is the value read back, unrelated to whatever maximum, or the HP
+     * pair, is already held.
+     */
+    @Test
+    void currentSpRoundTrips() {
+        SidebarModel.setMaxSP(30);
+        SidebarModel.setCurrentSP(11);
+
+        assertEquals(11, SidebarModel.getCurrentSP());
+        assertEquals(30, SidebarModel.getMaxSP(), "writing current must not disturb max");
+    }
+
+    /**
+     * A written maximum-SP value is the value read back, unrelated to whatever current, or the HP
+     * pair, is already held.
+     */
+    @Test
+    void maxSpRoundTrips() {
+        SidebarModel.setCurrentSP(11);
+        SidebarModel.setMaxSP(30);
+
+        assertEquals(30, SidebarModel.getMaxSP());
+        assertEquals(11, SidebarModel.getCurrentSP(), "writing max must not disturb current");
+    }
+
+    /**
+     * Zero is a value a player can genuinely be at (0 SP), so the SP pair must round-trip zero
+     * like any other value too.
+     */
+    @Test
+    void zeroRoundTripsForBothSpFields() {
+        SidebarModel.setCurrentSP(0);
+        SidebarModel.setMaxSP(0);
+
+        assertEquals(0, SidebarModel.getCurrentSP());
+        assertEquals(0, SidebarModel.getMaxSP());
+    }
+
+    /**
+     * The HP and SP pairs are independent fields, not aliases of one another: writing one must not
+     * disturb the other.
+     */
+    @Test
+    void hpAndSpDoNotAliasEachOther() {
+        SidebarModel.setCurrentHP(42);
+        SidebarModel.setMaxHP(50);
+        SidebarModel.setCurrentSP(8);
+        SidebarModel.setMaxSP(12);
+
+        assertEquals(42, SidebarModel.getCurrentHP());
+        assertEquals(50, SidebarModel.getMaxHP());
+        assertEquals(8, SidebarModel.getCurrentSP());
+        assertEquals(12, SidebarModel.getMaxSP());
     }
 }

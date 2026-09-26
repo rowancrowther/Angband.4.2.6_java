@@ -2209,16 +2209,17 @@ class UIPlayerTest {
 
     /**
      * Tests the private {@code getPanelTopLeft()} against C's {@code get_panel_topleft}
-     * ({@code [C] src/ui-player.c:698-709}).
+     * ({@code [C] ui-player.c}, function {@code get_panel_topleft}).
      *
      * <p>C's version allocates a six-row panel and fills it, in order, with Name, Race, Class,
      * Title, HP and SP, each row in {@code COLOUR_L_BLUE}. This installs a
-     * {@link PlayerStatusView} fixture carrying known values for all six and checks that the
-     * returned {@code Panel}'s rows match in order, colour, label and formatted value.
-     * {@code Panel} and {@code PanelLine} are both private non-static nested classes, so every
-     * test reaches them, and the fields of the rows they produce, by reflection.
+     * {@link PlayerStatusView} fixture carrying known values for Name/Race/Class/Title and a
+     * {@link SidebarModel} fixture carrying known values for HP/SP, then checks that the returned
+     * {@code Panel}'s rows match in order, colour, label and formatted value. {@code Panel} and
+     * {@code PanelLine} are both private non-static nested classes, so every test reaches them,
+     * and the fields of the rows they produce, by reflection.
      *
-     * <p>Class GetPanelTopLeft coded on 260925, commented in full on 260925.
+     * <p>Class GetPanelTopLeft coded on 260925, commented in full on 260926.
      *
      * @author Rowan Crowther
      */
@@ -2229,15 +2230,19 @@ class UIPlayerTest {
         private PlayerStatusView savedStatusView;
         private int savedCurrentHp;
         private int savedMaxHp;
+        private int savedCurrentSp;
+        private int savedMaxSp;
 
         /**
-         * Saves the status-view cache and {@link SidebarModel}'s HP pair so this test's fixture
-         * cannot leak into another test, then installs values for the six fields this method reads.
+         * Saves the status-view cache and {@link SidebarModel}'s HP and SP pairs so this test's
+         * fixture cannot leak into another test, then installs values for the six fields this
+         * method reads.
          *
-         * <p>The installed view's own {@code chp}/{@code mhp} (999/888) are deliberately not the
-         * values {@link #buildsSixRowsInOrder()} expects: HP no longer comes from this view (see
+         * <p>The installed view's own {@code chp}/{@code mhp}/{@code csp}/{@code msp} (999/888/
+         * 111/222) are deliberately not the values {@link #buildsSixRowsInOrder()} expects: neither
+         * HP nor SP comes from this view any more (see
          * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}), so
-         * a mismatched pair here would catch a regression back to reading it from
+         * a mismatched pair here would catch a regression back to reading either from
          * {@link PlayerStatusView} instead of {@link SidebarModel}.
          */
         @BeforeEach
@@ -2245,10 +2250,12 @@ class UIPlayerTest {
             savedStatusView = PlayerEventStatusUpdate.getPlayerStatusView();
             savedCurrentHp = SidebarModel.getCurrentHP();
             savedMaxHp = SidebarModel.getMaxHP();
+            savedCurrentSp = SidebarModel.getCurrentSP();
+            savedMaxSp = SidebarModel.getMaxSP();
 
             PlayerEventStatusUpdate.updatePlayerStatusView(new PlayerStatusView(
                     "Legolas", "Rogue", "Elf", "Ranger", 0, 0, 0L, 0L, 0L,
-                    999, 888, 8, 12, 0, 0,
+                    999, 888, 111, 222, 0, 0,
                     new int[]{0, 0, 0, 0, 0}, new int[]{0, 0, 0, 0, 0},
                     new String[]{"STR", "INT", "WIS", "DEX", "CON"},
                     0, 0, false, false, false, false, false, false, false, false, false, false,
@@ -2256,6 +2263,8 @@ class UIPlayerTest {
                     0, 0, 0, 0));
             SidebarModel.setCurrentHP(42);
             SidebarModel.setMaxHP(50);
+            SidebarModel.setCurrentSP(8);
+            SidebarModel.setMaxSP(12);
         }
 
         /**
@@ -2266,6 +2275,8 @@ class UIPlayerTest {
             PlayerEventStatusUpdate.updatePlayerStatusView(savedStatusView);
             SidebarModel.setCurrentHP(savedCurrentHp);
             SidebarModel.setMaxHP(savedMaxHp);
+            SidebarModel.setCurrentSP(savedCurrentSp);
+            SidebarModel.setMaxSP(savedMaxSp);
         }
 
         /**

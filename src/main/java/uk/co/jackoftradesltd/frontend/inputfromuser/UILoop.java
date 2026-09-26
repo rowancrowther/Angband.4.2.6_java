@@ -228,6 +228,7 @@ public class UILoop {
                         switch (gameEventCoreMessage.type()) {
                             case EVENT_ENTER_BIRTH -> new BirthEvents().enterBirth(gameEventCoreMessage.data());
                             case EVENT_HP -> RedrawRouter.setHP(gameEventCoreMessage.data());
+                            case EVENT_MANA -> RedrawRouter.setSP(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

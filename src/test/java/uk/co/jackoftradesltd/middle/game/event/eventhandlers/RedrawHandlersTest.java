@@ -35,9 +35,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Tests the redraw chain {@link RedrawHandlers} owns: bus signal, to handler, to the sending end of
  * the core channel. There is no C function to test against directly - C's UI handlers for these
- * events (for example {@code prt_hp}, {@code src/ui-display.c:207}) read the values they need off
- * the shared {@code player} global at signal time, so {@link RedrawHandlers} exists only because the
- * port's front end has no such global to read on its side of the core-to-front-end boundary.
+ * events (for example {@code prt_hp} and {@code prt_sp}, {@code [C] ui-display.c}) read the values
+ * they need off the shared {@code player} global at signal time, so {@link RedrawHandlers} exists
+ * only because the port's front end has no such global to read on its side of the core-to-front-end
+ * boundary.
  *
  * <p>What is worth pinning is therefore the translation itself: that a redraw event carrying the
  * expected payload is forwarded as a {@link CoreMessage.GameEventCoreMessage} with that payload
@@ -87,6 +88,33 @@ class RedrawHandlersTest {
         bus.eventSignal(GameEventType.EVENT_HP);
 
         assertTrue(sender.sent.isEmpty(), "eventHP requires an EventDataStat payload");
+    }
+
+    /**
+     * An {@code EVENT_MANA} signal carrying an {@link EventDataStat} is forwarded whole, as the
+     * message's payload, with the event type it was signalled under - the same shape as
+     * {@link #hpSignalReachesTheSenderAsAGameEventCoreMessage()}, for {@link RedrawHandlers#eventSP}
+     * rather than {@link RedrawHandlers#eventHP}.
+     */
+    @Test
+    void manaSignalReachesTheSenderAsAGameEventCoreMessage() {
+        bus.eventSignalStat(GameEventType.EVENT_MANA, 4, 20);
+
+        assertEquals(List.of(new CoreMessage.GameEventCoreMessage(GameEventType.EVENT_MANA,
+                        new EventDataStat(4, 20))),
+                sender.sent);
+    }
+
+    /**
+     * A bare {@code eventSignal} carries no payload, so the guard on
+     * {@link RedrawHandlers#eventSP} rejects it, the same way {@link #bareHpSignalSendsNothing()}
+     * pins the guard on {@link RedrawHandlers#eventHP}.
+     */
+    @Test
+    void bareManaSignalSendsNothing() {
+        bus.eventSignal(GameEventType.EVENT_MANA);
+
+        assertTrue(sender.sent.isEmpty(), "eventSP requires an EventDataStat payload");
     }
 
     /**

@@ -38,8 +38,9 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
  * <p>This class exists to hold that translation in one place, following the same shape
  * {@link InitHandlers} already uses: a {@link Sender} handed in at construction,
  * {@link #initHandlers()} subscribing bound method references against the live bus at call time,
- * and a private handler per event that is guarded on the payload it expects. Today it wires only
- * {@code EVENT_HP} - the first vertical slice of the redraw-to-message migration recorded in
+ * and a private handler per event that is guarded on the payload it expects. Today it wires
+ * {@code EVENT_HP} and {@code EVENT_MANA} - the first two vertical slices of the redraw-to-message
+ * migration recorded in
  * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md} - and more
  * handlers are expected to join it as the rest of
  * {@link uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw}'s {@code PR_*} flags gain their
@@ -55,7 +56,7 @@ import uk.co.jackoftradesltd.middle.game.gameengine.GameEngine;
 public class RedrawHandlers {
     /**
      * The core's writing end of the UI thread's inbox, exactly as {@link InitHandlers#coreSender}
-     * is: the one thing {@link #eventHP} needs in order to put a
+     * is: the one thing {@link #eventHP} and {@link #eventSP} each need in order to put a
      * {@link CoreMessage.GameEventCoreMessage} on the queue.
      *
      * <p>{@code final}, so it is safely published without needing {@code volatile}: the object is
@@ -82,17 +83,19 @@ public class RedrawHandlers {
      *
      * <p>Reads the bus through {@code GameEngine.getEventsBusHandler()} at call time, as
      * {@link InitHandlers#initHandlers()} does, so it always wires the bus that is actually live.
-     * Today that is one registration, {@link #eventHP} against {@code EVENT_HP}; the rest of
+     * Today that is two registrations, {@link #eventHP} against {@code EVENT_HP} and
+     * {@link #eventSP} against {@code EVENT_MANA}; the rest of
      * {@link uk.co.jackoftradesltd.middle.player.enums.PlayerRedraw}'s flags join here as their
      * payload records are ported.
      *
      * <p>Not idempotent, for the same reason {@link InitHandlers#initHandlers()} is not: dispatch
-     * is non-consuming, so calling this twice on one bus would register {@link #eventHP} twice and
-     * it would run twice per signal.
+     * is non-consuming, so calling this twice on one bus would register {@link #eventHP} and
+     * {@link #eventSP} twice each and they would run twice per signal.
      */
     public void initHandlers() {
         EventsHandler eventsHandler = GameEngine.getEventsBusHandler();
         eventsHandler.eventAddHandler(GameEventType.EVENT_HP, this::eventHP);
+        eventsHandler.eventAddHandler(GameEventType.EVENT_MANA, this::eventSP);
     }
 
     /**
@@ -117,6 +120,25 @@ public class RedrawHandlers {
     private void eventHP(GameEventType eventType, GameEventData data) {
         if (data instanceof EventDataStat hp) {
             coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, hp));
+        }
+    }
+
+    /**
+     * A redraw has raised {@code PR_MANA}, and {@code PlayerCalcs.redrawStuff} has signalled
+     * {@code EVENT_MANA} with the player's current and maximum spell points already attached as an
+     * {@link EventDataStat}. This forwards that record unchanged onto the core channel, exactly as
+     * {@link #eventHP} does for {@code EVENT_HP}.
+     *
+     * <p>Guarded on the payload the same way {@link #eventHP} is: a signal for {@code EVENT_MANA}
+     * carrying anything other than an {@link EventDataStat} is dropped rather than forwarded.
+     *
+     * @param eventType the event being handled, always {@code EVENT_MANA}; forwarded as the
+     *                  message's type
+     * @param data      the payload; must be an {@link EventDataStat} or nothing is forwarded
+     */
+    private void eventSP(GameEventType eventType, GameEventData data) {
+        if (data instanceof EventDataStat sp) {
+            coreSender.send(new CoreMessage.GameEventCoreMessage(eventType, sp));
         }
     }
 }

@@ -429,23 +429,28 @@ class UILoopTest {
     class RoutingGameEvents {
 
         /**
-         * {@link SidebarModel}'s HP pair before this test ran, restored afterwards through
-         * {@link RedrawRouter#setHP}: the model's own setters are package-private to
-         * {@code uk.co.jackoftradesltd.frontend.ui}, and this test class is not in that package,
-         * so the public routing method is the honest way back in.
+         * {@link SidebarModel}'s HP and SP pairs before this test ran, restored afterwards through
+         * {@link RedrawRouter#setHP}/{@link RedrawRouter#setSP}: the model's own setters are
+         * package-private to {@code uk.co.jackoftradesltd.frontend.ui}, and this test class is not
+         * in that package, so the public routing methods are the honest way back in.
          */
         private int savedCurrentHp;
         private int savedMaxHp;
+        private int savedCurrentSp;
+        private int savedMaxSp;
 
         @BeforeEach
         void saveSidebarModel() {
             savedCurrentHp = SidebarModel.getCurrentHP();
             savedMaxHp = SidebarModel.getMaxHP();
+            savedCurrentSp = SidebarModel.getCurrentSP();
+            savedMaxSp = SidebarModel.getMaxSP();
         }
 
         @AfterEach
         void restoreSidebarModel() {
             RedrawRouter.setHP(new EventDataStat(savedCurrentHp, savedMaxHp));
+            RedrawRouter.setSP(new EventDataStat(savedCurrentSp, savedMaxSp));
         }
 
         /**
@@ -465,6 +470,25 @@ class UILoopTest {
             assertEquals(7, SidebarModel.getCurrentHP(), "current HP");
             assertEquals(99, SidebarModel.getMaxHP(), "max HP");
             assertTrue(uiThread.isAlive(), "an EVENT_HP message must not end the loop");
+        }
+
+        /**
+         * An {@code EVENT_MANA} message's current/maximum pair lands in {@link SidebarModel} in
+         * the same order C's {@code get_panel_topleft} ({@code [C] ui-player.c}) reads
+         * {@code player->csp} then {@code player->msp} - the same shape as
+         * {@link #anEventHpMessageWritesIntoTheSidebarModel()}, for mana rather than hit points.
+         */
+        @Test
+        void anEventManaMessageWritesIntoTheSidebarModel() throws Exception {
+            startLoop(null);
+
+            channels.coreChannel().coreSender().send(new CoreMessage.GameEventCoreMessage(
+                    GameEventType.EVENT_MANA, new EventDataStat(4, 20)));
+            Thread.sleep(NOT_COMING_MILLIS);
+
+            assertEquals(4, SidebarModel.getCurrentSP(), "current SP");
+            assertEquals(20, SidebarModel.getMaxSP(), "max SP");
+            assertTrue(uiThread.isAlive(), "an EVENT_MANA message must not end the loop");
         }
     }
 

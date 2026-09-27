@@ -15,7 +15,7 @@
  *    Java code and ANTLR4 grammars copyright (c) Rowan Crowther 2026
  */
 
-package uk.co.jackoftradesltd.frontend.splash;
+package uk.co.jackoftradesltd.frontend.screen.splash;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,7 +32,6 @@ import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
 import javax.swing.*;
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Scanner;
 
 /**

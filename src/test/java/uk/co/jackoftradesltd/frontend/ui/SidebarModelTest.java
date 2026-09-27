@@ -54,6 +54,7 @@ class SidebarModelTest {
     private String savedClassName;
     private String savedRaceName;
     private String savedName;
+    private boolean savedShapechanged;
 
     @BeforeEach
     void saveModel() {
@@ -65,6 +66,7 @@ class SidebarModelTest {
         savedClassName = SidebarModel.getClassName();
         savedRaceName = SidebarModel.getRaceName();
         savedName = SidebarModel.getName();
+        savedShapechanged = SidebarModel.isPlayerIsShapechanged();
     }
 
     @AfterEach
@@ -77,6 +79,7 @@ class SidebarModelTest {
         SidebarModel.setClassName(savedClassName);
         SidebarModel.setRaceName(savedRaceName);
         SidebarModel.setName(savedName);
+        SidebarModel.setPlayerIsShapechanged(savedShapechanged);
     }
 
     /**
@@ -237,5 +240,24 @@ class SidebarModelTest {
         assertEquals("Rogue", SidebarModel.getTitle(), "writing name must not disturb title");
         assertEquals("Ranger", SidebarModel.getClassName(), "writing name must not disturb class");
         assertEquals("Elf", SidebarModel.getRaceName(), "writing name must not disturb race");
+    }
+
+    /**
+     * A written shapechanged flag is the flag read back, unrelated to the race/class/title/name
+     * quartet - and {@code false} round-trips as faithfully as {@code true} does, since a player
+     * who has resumed their normal shape is a real, not an "unset", state.
+     */
+    @Test
+    void playerIsShapechangedRoundTrips() {
+        SidebarModel.setRaceName("Elf");
+        SidebarModel.setClassName("Ranger");
+
+        SidebarModel.setPlayerIsShapechanged(true);
+        assertEquals(true, SidebarModel.isPlayerIsShapechanged());
+        assertEquals("Elf", SidebarModel.getRaceName(), "writing shapechanged must not disturb race");
+
+        SidebarModel.setPlayerIsShapechanged(false);
+        assertEquals(false, SidebarModel.isPlayerIsShapechanged());
+        assertEquals("Ranger", SidebarModel.getClassName(), "writing shapechanged must not disturb class");
     }
 }

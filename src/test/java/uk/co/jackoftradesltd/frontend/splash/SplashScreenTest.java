@@ -27,6 +27,7 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.SwingUI;
 import uk.co.jackoftradesltd.frontend.screen.grid.CellGrid;
 import uk.co.jackoftradesltd.frontend.screen.grid.Screen;
+import uk.co.jackoftradesltd.frontend.screen.splash.SplashScreen;
 
 import java.awt.GraphicsEnvironment;
 import java.io.IOException;

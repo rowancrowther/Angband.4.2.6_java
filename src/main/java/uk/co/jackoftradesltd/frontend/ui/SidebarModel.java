@@ -34,13 +34,18 @@ package uk.co.jackoftradesltd.frontend.ui;
  * <p>Named for what it, and its siblings still to be written, replace field by field:
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
  * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
- * title, race name, class name and full name; the rest of C's {@code prt_*} family in
- * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
+ * title, race name, class name, full name and shapechanged status; the rest of C's {@code prt_*}
+ * family in {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
  *
- * <p>Class SidebarModel coded on 260926, commented in full on 260926.
+ * <p><b>Outstanding:</b> {@link #playerIsShapechanged} has no writer yet. Nothing in
+ * {@link RedrawRouter} or the {@code EVENT_RACE_CLASS} payload it reads carries a shapechanged
+ * flag across the boundary, so the field keeps its Java default of {@code false} forever — see
+ * {@link #playerIsShapechanged}'s own Javadoc. Deliberately not yet implemented.
+ *
+ * <p>Class SidebarModel coded on 260926, commented in full on 260927.
  *
  * @author Rowan Crowther
  */
@@ -111,6 +116,25 @@ public class SidebarModel {
      * <p>Field name coded before 260926, commented in full on 260926.
      */
     private static String name;
+
+    /**
+     * Whether the player is currently in a non-normal shape, C's {@code player_is_shapechanged}
+     * ({@code [C] player-util.c}) — the port of what {@code prt_race} and {@code prt_class}
+     * ({@code [C] ui-display.c}) each re-check against the live global at draw time, so that a
+     * shapechanged player's race and class fields are blanked rather than shown.
+     *
+     * <p><b>Outstanding:</b> nothing writes this field yet. {@link RedrawRouter#setRaceClass} only
+     * carries the race and class names in from the {@code EVENT_RACE_CLASS} payload, and that
+     * payload — built in {@code PlayerCalcs.redrawStuff}'s {@code PR_MISC} arm — never packs a
+     * shapechanged flag in the first place. So this field keeps Java's default of {@code false}
+     * forever today, and {@link HandlersHolder#prtRace}'s blanking branch is unreachable until a
+     * writer is wired up — see
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)}.
+     * Deliberately not yet implemented, not a discrepancy in this field itself.
+     *
+     * <p>Field playerIsShapechanged coded on 260927, commented in full on 260927.
+     */
+    private static boolean playerIsShapechanged;
 
     /**
      * Read the current hit-point value last written by {@link #setCurrentHP(int)}, for the
@@ -310,5 +334,37 @@ public class SidebarModel {
      */
     static void setTitle(String title) {
         SidebarModel.title = title;
+    }
+
+    /**
+     * Reads the shapechanged flag last written by {@link #setPlayerIsShapechanged(boolean)}, for
+     * the sidebar's race and class rows —
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtRace(int, int)}'s
+     * port of C's {@code prt_race} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p><b>Outstanding:</b> see {@link #playerIsShapechanged}'s own Javadoc — nothing writes this
+     * field yet, so this always returns {@code false} today.
+     *
+     * <p>Method isPlayerIsShapechanged coded on 260927, commented in full on 260927.
+     *
+     * @return {@code true} when the player is currently shapechanged, C's
+     * {@code player_is_shapechanged(player)}
+     */
+    public static boolean isPlayerIsShapechanged() {
+        return playerIsShapechanged;
+    }
+
+    /**
+     * Writes the shapechanged flag. Package-private, so only a class in this package could write
+     * the model directly — see {@link #playerIsShapechanged}'s own Javadoc for why nothing in this
+     * package calls it yet.
+     *
+     * <p>Method setPlayerIsShapechanged coded on 260927, commented in full on 260927.
+     *
+     * @param playerIsShapechanged whether the player is currently shapechanged, C's
+     *                             {@code player_is_shapechanged(player)}
+     */
+    static void setPlayerIsShapechanged(boolean playerIsShapechanged) {
+        SidebarModel.playerIsShapechanged = playerIsShapechanged;
     }
 }

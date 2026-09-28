@@ -25,6 +25,7 @@ import uk.co.jackoftradesltd.channel.enums.ProjectionEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBolt;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataFullStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataGrid;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataMessage;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataSize;
@@ -166,6 +167,23 @@ class EventsHandlerSignalTest {
         handler.eventSignalStat(GameEventType.EVENT_HP, 17, 30);
 
         assertEquals(new EventDataStat(17, 30), handler.lastData);
+    }
+
+    /**
+     * The full-stat signal wraps its four numbers straight through, {@code index} into
+     * {@link EventDataFullStat#statIndex()}, {@code main} into {@link EventDataFullStat#current()},
+     * {@code other} into {@link EventDataFullStat#max()} and {@code use} into
+     * {@link EventDataFullStat#use()} - there is no C {@code event_signal_*} counterpart to cross
+     * against, for the same reason {@link #aStatSignalWrapsCurrentAndOtherInOrder()} has none: C's
+     * {@code prt_stat} ({@code [C] ui-display.c}) reads the four values off the shared
+     * {@code player} global instead of receiving them. Driven with four distinct values so no
+     * permutation of the four parameters could pass unnoticed.
+     */
+    @Test
+    void aFullStatSignalWrapsIndexCurrentMaxAndUseInOrder() {
+        handler.eventSignalFullStat(GameEventType.EVENT_STATS, 3, 11, 18, 14);
+
+        assertEquals(new EventDataFullStat(3, 11, 18, 14), handler.lastData);
     }
 
     /**

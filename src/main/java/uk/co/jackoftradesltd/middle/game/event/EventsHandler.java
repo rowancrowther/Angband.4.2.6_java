@@ -201,6 +201,34 @@ public interface EventsHandler {
     }
 
     /**
+     * Send a signal to dispatch all events of a given type with one stat row's full redraw state -
+     * the sibling of {@link #eventSignalStat} for a redraw that needs a per-item index and a
+     * third, displayed value alongside the current/maximum pair. Used today only for
+     * {@code EVENT_STATS}, sent once per stat by {@code PlayerCalcs.redrawStuff}'s
+     * {@code PR_STATS} arm.
+     *
+     * <p>There is no {@code event_signal_*} counterpart for this shape in C: C's {@code prt_stat}
+     * ({@code [C] ui-display.c}, function {@code prt_stat}) reads {@code player->stat_cur[stat]},
+     * {@code player->stat_max[stat]} and {@code player->state.stat_use[stat]} straight off the
+     * shared {@code player} global, indexed by whichever stat its {@code prt_str}/{@code prt_int}/
+     * {@code prt_wis}/{@code prt_dex}/{@code prt_con} wrapper was called for. A handler on the far
+     * side of the core-to-front-end boundary has no such global or index to read, so all four
+     * values travel with the signal instead - see {@link EventDataFullStat}'s Javadoc for the full
+     * rationale.
+     *
+     * <p>Function eventSignalFullStat coded on 260927, commented in full on 260928.
+     *
+     * @param eventType The event type we are signalling
+     * @param index     which stat this row reports; becomes {@link EventDataFullStat#statIndex()}
+     * @param main      the stat's current value; becomes {@link EventDataFullStat#current()}
+     * @param other     the stat's recorded maximum; becomes {@link EventDataFullStat#max()}
+     * @param use       the value actually displayed; becomes {@link EventDataFullStat#use()}
+     */
+    default void eventSignalFullStat(GameEventType eventType, int index, int main, int other, int use) {
+        gameEventDispatch(eventType, new EventDataFullStat(index, main, other, use));
+    }
+
+    /**
      * Send a signal to dispatch all events of a given type with a pair of numbers - the value the
      * redraw is about, and whatever second value it is paired with for display.
      *
@@ -213,7 +241,7 @@ public interface EventsHandler {
      * full rationale and the naming of {@code current}/{@code other} over {@code current}/{@code
      * max}.
      *
-     * <p>Function eventSignalStat coded before 260926, commented in full on 260926.
+     * <p>Function eventSignalStat coded before 260926, commented in full on 260928.
      *
      * @param eventType The event type we are signalling
      * @param main      the value the redraw is about; becomes {@link EventDataStat#current()}

@@ -38,10 +38,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * {@link HandlersHolder}'s {@code prt_field}/{@code prt_race}/{@code prt_class}/{@code prt_level}/
- * {@code prt_title}/{@code fmt_title}/{@code prt_gold} port and its {@code side_handlers[]} table,
- * checked against C's originals ({@code [C] ui-display.c}, functions {@code prt_field},
- * {@code prt_race}, {@code prt_class}, {@code prt_level}, {@code prt_title}, {@code fmt_title} and
- * {@code prt_gold}, and the {@code side_handlers[]} initializer). All of these are private static
+ * {@code prt_title}/{@code fmt_title}/{@code prt_gold}/{@code prt_stat} port and its
+ * {@code side_handlers[]} table, checked against C's originals ({@code [C] ui-display.c},
+ * functions {@code prt_field}, {@code prt_race}, {@code prt_class}, {@code prt_level},
+ * {@code prt_title}, {@code fmt_title}, {@code prt_gold}, {@code prt_stat} and its
+ * {@code prt_str}/{@code prt_int}/{@code prt_wis}/{@code prt_dex}/{@code prt_con} wrappers, and the
+ * {@code side_handlers[]} initializer). All of these are private static
  * methods with no public
  * entry point yet - {@link SideHandler#getResult} is never invoked from anywhere in the port today
  * - so this test reaches them the same way {@code PlayerIsImmuneTest} reaches
@@ -75,6 +77,9 @@ class HandlersHolderTest {
     private long savedGold;
     private int savedPyMaxLevel;
     private AngbandDisplayCharacter[] savedEquipString;
+    private int[] savedCurrentStats;
+    private int[] savedMaxStats;
+    private int[] savedUseStats;
 
     private static Field termField() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("term");
@@ -126,6 +131,60 @@ class HandlersHolderTest {
 
     private static Method prtEquippyMethod() throws Exception {
         Method method = HandlersHolder.class.getDeclaredMethod("prtEquippy", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtStrMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtStr", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtIntMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtInt", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtWisMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtWis", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtDexMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtDex", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtConMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtCon", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtStatMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtStat", int.class, int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setCurrentStatMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setCurrentStat", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setMaxStatMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setMaxStat", int.class, int.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method setUseStatMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setUseStat", int.class, int.class);
         method.setAccessible(true);
         return method;
     }
@@ -222,6 +281,14 @@ class HandlersHolderTest {
         savedGold = SidebarModel.getGold();
         savedPyMaxLevel = ChannelRegistry.getPYMaxLevel();
         savedEquipString = SidebarModel.getEquippyString();
+        savedCurrentStats = new int[5];
+        savedMaxStats = new int[5];
+        savedUseStats = new int[5];
+        for (int index = 0; index < 5; index++) {
+            savedCurrentStats[index] = SidebarModel.getCurrentStat(index);
+            savedMaxStats[index] = SidebarModel.getMaxStat(index);
+            savedUseStats[index] = SidebarModel.getUseStat(index);
+        }
     }
 
     @AfterEach
@@ -239,6 +306,11 @@ class HandlersHolderTest {
         setGoldMethod().invoke(null, savedGold);
         ChannelRegistry.setPYMaxLevel(savedPyMaxLevel);
         setEquippyStringMethod().invoke(null, (Object) savedEquipString);
+        for (int index = 0; index < 5; index++) {
+            setCurrentStatMethod().invoke(null, index, savedCurrentStats[index]);
+            setMaxStatMethod().invoke(null, index, savedMaxStats[index]);
+            setUseStatMethod().invoke(null, index, savedUseStats[index]);
+        }
     }
 
     /**
@@ -315,29 +387,33 @@ class HandlersHolderTest {
 
     /**
      * {@link HandlersHolder#initHandlers()} - the port of C's {@code side_handlers[]}
-     * initializer - registers all seven rows ported so far, in C's table order: {@code prt_race}
+     * initializer - registers all twelve rows ported so far, in C's table order: {@code prt_race}
      * at priority {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18}
      * against {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against
      * {@code EVENT_RACE_CLASS}, {@code prt_level} at {@code 10} against
      * {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at {@code 16} against
-     * {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against {@code EVENT_GOLD}, and
-     * {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT} - matching C's
-     * {@code { prt_race, 19, EVENT_RACE_CLASS }, { prt_title, 18, EVENT_PLAYERTITLE },
-     * { prt_class, 22, EVENT_RACE_CLASS }, { prt_level, 10, EVENT_PLAYERLEVEL },
-     * { prt_exp, 16, EVENT_EXPERIENCE }, { prt_gold, 11, EVENT_GOLD },
-     * { prt_equippy, 17, EVENT_EQUIPMENT }} entries exactly. Every row built by
+     * {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against {@code EVENT_GOLD},
+     * {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, and the five stat rows
+     * {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and {@code prt_con} at
+     * {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively, all against
+     * {@code EVENT_STATS} - matching C's {@code { prt_race, 19, EVENT_RACE_CLASS },
+     * { prt_title, 18, EVENT_PLAYERTITLE }, { prt_class, 22, EVENT_RACE_CLASS },
+     * { prt_level, 10, EVENT_PLAYERLEVEL }, { prt_exp, 16, EVENT_EXPERIENCE },
+     * { prt_gold, 11, EVENT_GOLD }, { prt_equippy, 17, EVENT_EQUIPMENT },
+     * { prt_str, 6, EVENT_STATS }, { prt_int, 5, EVENT_STATS }, { prt_wis, 4, EVENT_STATS },
+     * { prt_dex, 3, EVENT_STATS }, { prt_con, 2, EVENT_STATS }} entries exactly. Every row built by
      * {@link HandlersHolder#initHandlers()} must reach {@link #sideHandlers} - a handler built but
      * never added, as {@code prt_gold}'s once was, is registered in name only and is never invoked
      * by anything that walks the table.
      */
     @Test
     @SuppressWarnings("unchecked")
-    void initHandlersRegistersAllSevenRowsInTableOrder() throws Exception {
+    void initHandlersRegistersAllTwelveRowsInTableOrder() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("sideHandlers");
         field.setAccessible(true);
         List<SideHandler> handlers = (List<SideHandler>) field.get(null);
 
-        assertEquals(7, handlers.size());
+        assertEquals(12, handlers.size());
 
         assertEquals(19, handlers.get(0).getPriority());
         assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(0).getType());
@@ -360,6 +436,21 @@ class HandlersHolderTest {
         assertEquals(17, handlers.get(6).getPriority());
         assertEquals(GameEventType.EVENT_EQUIPMENT, handlers.get(6).getType());
 
+        assertEquals(6, handlers.get(7).getPriority());
+        assertEquals(GameEventType.EVENT_STATS, handlers.get(7).getType());
+
+        assertEquals(5, handlers.get(8).getPriority());
+        assertEquals(GameEventType.EVENT_STATS, handlers.get(8).getType());
+
+        assertEquals(4, handlers.get(9).getPriority());
+        assertEquals(GameEventType.EVENT_STATS, handlers.get(9).getType());
+
+        assertEquals(3, handlers.get(10).getPriority());
+        assertEquals(GameEventType.EVENT_STATS, handlers.get(10).getType());
+
+        assertEquals(2, handlers.get(11).getPriority());
+        assertEquals(GameEventType.EVENT_STATS, handlers.get(11).getType());
+
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");
         handlers.get(0).getResult(6, 0);
@@ -374,6 +465,12 @@ class HandlersHolderTest {
         });
         handlers.get(6).getResult(10, 0);
         assertEquals('/', cell(10, 0).getCharacter());
+
+        setCurrentStatMethod().invoke(null, 0, 18);
+        setMaxStatMethod().invoke(null, 0, 18);
+        setUseStatMethod().invoke(null, 0, 18);
+        handlers.get(7).getResult(12, 0);
+        assertEquals('S', cell(12, 0).getCharacter());
     }
 
     /**
@@ -645,5 +742,101 @@ class HandlersHolderTest {
             assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
         }
         assertEquals('0', cell(9, 11).getCharacter());
+    }
+
+    /**
+     * {@code prt_stat} ({@code [C] ui-display.c:158-176}): the drained path (current below max)
+     * writes the reduced/lowercase name in yellow and displays the stat's <em>use</em> value, not
+     * its current value - matching C's {@code cnv_stat(player->state.stat_use[stat], ...)} call,
+     * which reads {@code state.stat_use}, not {@code stat_cur}, in both branches.
+     */
+    @Test
+    void prtStatWritesReducedNameAndUseValueWhenDrained() throws Exception {
+        setCurrentStatMethod().invoke(null, 0, 10);
+        setMaxStatMethod().invoke(null, 0, 18);
+        setUseStatMethod().invoke(null, 0, 14);
+
+        prtStatMethod().invoke(null, 0, 6, 0);
+
+        assertEquals('S', cell(6, 0).getCharacter());
+        assertEquals('t', cell(6, 1).getCharacter());
+        assertEquals(ColourEnum.COLOUR_YELLOW, cell(6, 6).getAttributeColour());
+        // cnvStat(14, 32) is "    14" - four spaces then the two digits, at col + 6.
+        assertEquals('1', cell(6, 10).getCharacter());
+        assertEquals('4', cell(6, 11).getCharacter());
+    }
+
+    /**
+     * {@code prt_stat}: the full path (current at or above max) writes the normal/uppercase name
+     * in light green instead, still displaying the <em>use</em> value.
+     */
+    @Test
+    void prtStatWritesNormalNameAndUseValueWhenFull() throws Exception {
+        setCurrentStatMethod().invoke(null, 0, 18);
+        setMaxStatMethod().invoke(null, 0, 18);
+        setUseStatMethod().invoke(null, 0, 18);
+
+        prtStatMethod().invoke(null, 0, 6, 0);
+
+        assertEquals('S', cell(6, 0).getCharacter());
+        assertEquals('T', cell(6, 1).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(6, 6).getAttributeColour());
+    }
+
+    /**
+     * {@code prt_stat}: a recorded maximum of {@code 18 + 100} draws the natural-maximum "!"
+     * marker three columns after the label, matching C's
+     * {@code player->stat_max[stat] == 18+100} check.
+     */
+    @Test
+    void prtStatDrawsNaturalMaximumMarker() throws Exception {
+        setCurrentStatMethod().invoke(null, 4, 18 + 100);
+        setMaxStatMethod().invoke(null, 4, 18 + 100);
+        setUseStatMethod().invoke(null, 4, 18 + 100);
+
+        prtStatMethod().invoke(null, 4, 6, 0);
+
+        assertEquals('!', cell(6, 3).getCharacter());
+    }
+
+    /**
+     * {@code prt_stat}: below the natural-maximum sentinel, no "!" marker overwrites the label -
+     * {@code col + 3} is left as whichever character {@code "CON: "}/{@code "Con: "} already put
+     * there (the colon), rather than being blanked.
+     */
+    @Test
+    void prtStatDrawsNoMarkerBelowNaturalMaximum() throws Exception {
+        setCurrentStatMethod().invoke(null, 4, 18);
+        setMaxStatMethod().invoke(null, 4, 18);
+        setUseStatMethod().invoke(null, 4, 18);
+
+        prtStatMethod().invoke(null, 4, 6, 0);
+
+        assertEquals(':', cell(6, 3).getCharacter(), "no '!' marker should overwrite the label's own colon");
+    }
+
+    /**
+     * {@code prt_str}/{@code prt_int}/{@code prt_wis}/{@code prt_dex}/{@code prt_con}
+     * ({@code [C] ui-display.c}): each is a thin wrapper calling {@code prt_stat} with its own
+     * fixed stat index - checked here by giving each stat index a distinct use value and
+     * confirming each wrapper reads its own slot, not another's.
+     */
+    @Test
+    void statWrappersEachReadTheirOwnIndex() throws Exception {
+        Method[] wrappers = {prtStrMethod(), prtIntMethod(), prtWisMethod(), prtDexMethod(), prtConMethod()};
+        for (int index = 0; index < 5; index++) {
+            setCurrentStatMethod().invoke(null, index, 18);
+            setMaxStatMethod().invoke(null, index, 18);
+            setUseStatMethod().invoke(null, index, 10 + index);
+        }
+
+        for (int index = 0; index < 5; index++) {
+            wrappers[index].invoke(null, 6 + index, 0);
+            // cnvStat(10 + index, 32) is "    1" followed by a digit, at col + 6; the last digit
+            // identifies which index the wrapper actually read.
+            char expectedDigit = Character.forDigit((10 + index) % 10, 10);
+            assertEquals(expectedDigit, cell(6 + index, 11).getCharacter(),
+                    "wrapper at index " + index + " must read SidebarModel's stat " + index);
+        }
     }
 }

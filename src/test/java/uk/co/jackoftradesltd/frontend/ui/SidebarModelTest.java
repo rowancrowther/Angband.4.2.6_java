@@ -65,6 +65,9 @@ class SidebarModelTest {
     private int savedMaxLevel;
     private long savedGold;
     private AngbandDisplayCharacter[] savedEquipString;
+    private int[] savedCurrentStats;
+    private int[] savedMaxStats;
+    private int[] savedUseStats;
 
     @BeforeEach
     void saveModel() {
@@ -84,6 +87,14 @@ class SidebarModelTest {
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
         savedEquipString = SidebarModel.getEquippyString();
+        savedCurrentStats = new int[5];
+        savedMaxStats = new int[5];
+        savedUseStats = new int[5];
+        for (int index = 0; index < 5; index++) {
+            savedCurrentStats[index] = SidebarModel.getCurrentStat(index);
+            savedMaxStats[index] = SidebarModel.getMaxStat(index);
+            savedUseStats[index] = SidebarModel.getUseStat(index);
+        }
     }
 
     @AfterEach
@@ -104,6 +115,11 @@ class SidebarModelTest {
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
         SidebarModel.setEquippyString(savedEquipString);
+        for (int index = 0; index < 5; index++) {
+            SidebarModel.setCurrentStat(index, savedCurrentStats[index]);
+            SidebarModel.setMaxStat(index, savedMaxStats[index]);
+            SidebarModel.setUseStat(index, savedUseStats[index]);
+        }
     }
 
     /**
@@ -397,5 +413,85 @@ class SidebarModelTest {
 
         assertArrayEquals(glyphs, SidebarModel.getEquippyString());
         assertEquals(1234L, SidebarModel.getGold(), "writing the equippy row must not disturb gold");
+    }
+
+    /**
+     * A written current-stat value at a given index is the value read back at that index,
+     * unrelated to whatever maximum or displayed-use value is already held there.
+     */
+    @Test
+    void currentStatRoundTrips() {
+        SidebarModel.setMaxStat(1, 18);
+        SidebarModel.setCurrentStat(1, 11);
+
+        assertEquals(11, SidebarModel.getCurrentStat(1));
+        assertEquals(18, SidebarModel.getMaxStat(1), "writing current must not disturb max at the same index");
+    }
+
+    /**
+     * A written maximum-stat value at a given index is the value read back at that index,
+     * unrelated to whatever current value is already held there.
+     */
+    @Test
+    void maxStatRoundTrips() {
+        SidebarModel.setCurrentStat(1, 11);
+        SidebarModel.setMaxStat(1, 18);
+
+        assertEquals(18, SidebarModel.getMaxStat(1));
+        assertEquals(11, SidebarModel.getCurrentStat(1), "writing max must not disturb current at the same index");
+    }
+
+    /**
+     * A written displayed-use value at a given index is the value read back at that index,
+     * unrelated to whatever current value is already held there - deliberately distinct from
+     * current, since equipment or a temporary effect can move it away from the stat's bare
+     * current value.
+     */
+    @Test
+    void useStatRoundTrips() {
+        SidebarModel.setCurrentStat(1, 11);
+        SidebarModel.setUseStat(1, 14);
+
+        assertEquals(14, SidebarModel.getUseStat(1));
+        assertEquals(11, SidebarModel.getCurrentStat(1), "writing use must not disturb current at the same index");
+    }
+
+    /**
+     * Each of the five stat indices is an independent slot: writing one must not disturb another.
+     */
+    @Test
+    void distinctStatIndicesDoNotAliasEachOther() {
+        SidebarModel.setCurrentStat(0, 10);
+        SidebarModel.setCurrentStat(4, 17);
+
+        assertEquals(10, SidebarModel.getCurrentStat(0));
+        assertEquals(17, SidebarModel.getCurrentStat(4));
+    }
+
+    /**
+     * An out-of-range index is reported as {@code 0} by every getter rather than throwing,
+     * matching the port's own defensive check on an array that C would instead index
+     * unconditionally.
+     */
+    @Test
+    void outOfRangeStatIndexReturnsZeroRatherThanThrowing() {
+        assertEquals(0, SidebarModel.getCurrentStat(-1));
+        assertEquals(0, SidebarModel.getCurrentStat(5));
+        assertEquals(0, SidebarModel.getMaxStat(5));
+        assertEquals(0, SidebarModel.getUseStat(5));
+    }
+
+    /**
+     * An out-of-range index is silently ignored by every setter rather than throwing or growing
+     * the array, leaving every real stat untouched.
+     */
+    @Test
+    void outOfRangeStatIndexIsIgnoredBySetters() {
+        SidebarModel.setCurrentStat(0, 10);
+
+        SidebarModel.setCurrentStat(5, 99);
+        SidebarModel.setMaxStat(-1, 99);
+
+        assertEquals(10, SidebarModel.getCurrentStat(0), "an out-of-range write must not disturb a real stat");
     }
 }

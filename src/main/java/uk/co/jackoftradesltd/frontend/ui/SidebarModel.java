@@ -17,6 +17,8 @@
 
 package uk.co.jackoftradesltd.frontend.ui;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 
 /**
@@ -37,9 +39,9 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
  * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
  * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
- * shape name and shapechanged status, current and displayed experience, and gold; the rest of C's
- * {@code prt_*} family in {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads
- * are ported.
+ * shape name and shapechanged status, current and displayed experience, gold, and the five stats'
+ * current/maximum/displayed-use values; the rest of C's {@code prt_*} family in
+ * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
@@ -49,6 +51,8 @@ import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
  * @author Rowan Crowther
  */
 public class SidebarModel {
+    private static final Logger logger = LogManager.getLogger(SidebarModel.class);
+    
     /**
      * The player's current hit points, C's {@code player->chp}, written each time an
      * {@code EVENT_HP} message is routed and read whenever the sidebar's HP row is drawn.
@@ -229,6 +233,159 @@ public class SidebarModel {
      * <p>Field equipString coded on 260927, commented in full on 260928.
      */
     private static AngbandDisplayCharacter[] equipString;
+
+    /**
+     * The five stats' current values, C's {@code player->stat_cur[]}, indexed by
+     * {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()} — written a row at a time each
+     * time an {@code EVENT_STATS} message is routed and read whenever the sidebar's stat rows are
+     * drawn, to decide whether a row is shown drained or full.
+     *
+     * <p>Field currentStats coded on 260927, commented in full on 260928.
+     */
+    private static int[] currentStats = new int[5];
+
+    /**
+     * The five stats' recorded maximum values, C's {@code player->stat_max[]}, indexed by
+     * {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()} — written a row at a time each
+     * time an {@code EVENT_STATS} message is routed and read whenever the sidebar's stat rows are
+     * drawn, to decide whether a row is shown drained or full and whether the natural-maximum
+     * marker is shown.
+     *
+     * <p>Field maxStats coded on 260927, commented in full on 260928.
+     */
+    private static int[] maxStats = new int[5];
+
+    /**
+     * The five stats' displayed values, C's {@code player->state.stat_use[]}, indexed by
+     * {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()} — written a row at a time each
+     * time an {@code EVENT_STATS} message is routed and read whenever the sidebar's stat rows are
+     * drawn; this, not {@link #currentStats}, is the figure actually printed, since equipment or a
+     * temporary effect can move it away from a stat's bare current value.
+     *
+     * <p>Field useStats coded on 260927, commented in full on 260928.
+     */
+    private static int[] useStats = new int[5];
+
+    /**
+     * Read a stat's recorded maximum last written by {@link #setMaxStat(int, int)}, for the
+     * sidebar's stat rows -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
+     * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
+     * throwing.
+     *
+     * <p>Method getMaxStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat to read, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @return the stat's recorded maximum, C's {@code player->stat_max[index]}, or {@code 0} for
+     * an out-of-range index
+     */
+    public static int getMaxStat(int index) {
+        if (index < 0 || index >= maxStats.length) {
+            logger.error("Invalid stat index: " + index);
+            return 0;
+        }
+        return maxStats[index];
+    }
+
+    /**
+     * Read a stat's current value last written by {@link #setCurrentStat(int, int)}, for the
+     * sidebar's stat rows -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
+     * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
+     * throwing.
+     *
+     * <p>Method getCurrentStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat to read, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @return the stat's current value, C's {@code player->stat_cur[index]}, or {@code 0} for an
+     * out-of-range index
+     */
+    public static int getCurrentStat(int index) {
+        if (index < 0 || index >= currentStats.length) {
+            logger.error("Invalid stat index: " + index);
+            return 0;
+        }
+        return currentStats[index];
+    }
+
+    /**
+     * Read a stat's displayed value last written by {@link #setUseStat(int, int)}, for the
+     * sidebar's stat rows -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder#prtStat(int, int, int)}'s
+     * port of C's {@code prt_stat} ({@code [C] ui-display.c}) is today's only reader. Returns
+     * {@code 0} and logs an error for an {@code index} outside the five stats, rather than
+     * throwing.
+     *
+     * <p>Method getUseStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat to read, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @return the stat's displayed value, C's {@code player->state.stat_use[index]}, or {@code 0}
+     * for an out-of-range index
+     */
+    public static int getUseStat(int index) {
+        if (index < 0 || index >= useStats.length) {
+            logger.error("Invalid stat index: " + index);
+            return 0;
+        }
+        return useStats[index];
+    }
+
+    /**
+     * Write a stat's displayed value. Package-private, so only {@link RedrawRouter#setStats} - the
+     * only class in this package today - can write the model directly. Logs an error and leaves
+     * the array untouched for an {@code index} outside the five stats, rather than throwing.
+     *
+     * <p>Method setUseStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat being written, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @param value the stat's displayed value, C's {@code player->state.stat_use[index]}
+     */
+    static void setUseStat(int index, int value) {
+        if (index < 0 || index >= useStats.length) {
+            logger.error("Invalid stat index: " + index);
+        } else {
+            useStats[index] = value;
+        }
+    }
+
+    /**
+     * Write a stat's current value. Package-private, so only {@link RedrawRouter#setStats} - the
+     * only class in this package today - can write the model directly. Logs an error and leaves
+     * the array untouched for an {@code index} outside the five stats, rather than throwing.
+     *
+     * <p>Method setCurrentStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat being written, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @param value the stat's current value, C's {@code player->stat_cur[index]}
+     */
+    static void setCurrentStat(int index, int value) {
+        if (index < 0 || index >= currentStats.length) {
+            logger.error("Invalid stat index: " + index);
+        } else {
+            currentStats[index] = value;
+        }
+    }
+
+    /**
+     * Write a stat's recorded maximum. Package-private, so only {@link RedrawRouter#setStats} -
+     * the only class in this package today - can write the model directly. Logs an error and
+     * leaves the array untouched for an {@code index} outside the five stats, rather than
+     * throwing.
+     *
+     * <p>Method setMaxStat coded on 260927, commented in full on 260928.
+     *
+     * @param index the stat being written, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @param value the stat's recorded maximum, C's {@code player->stat_max[index]}
+     */
+    static void setMaxStat(int index, int value) {
+        if (index < 0 || index >= maxStats.length) {
+            logger.error("Invalid stat index: " + index);
+        } else {
+            maxStats[index] = value;
+        }
+    }
 
     /**
      * Read the equippy row last written by {@link #setEquippyString(AngbandDisplayCharacter[])} -

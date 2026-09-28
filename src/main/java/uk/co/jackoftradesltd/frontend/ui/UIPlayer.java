@@ -807,6 +807,77 @@ public class UIPlayer {
         return val < max ? ColourEnum.COLOUR_YELLOW : ColourEnum.COLOUR_LIGHT_GREEN;
     }
 
+    /**
+     * Converts a raw stat value into its six-character, right-justified display form — the port of
+     * C's {@code cnv_stat} ({@code [C] ui-display.c:117-132}).
+     *
+     * <p>Stats at or below 18 render as a plain right-justified number ({@code "    %2d"}). Above
+     * 18, {@code stat} carries a bonus ({@code stat - 18}) rendered after a {@code "18/"} prefix:
+     * a bonus of 220 or more collapses to the literal {@code "18/***"} (C's cap on displaying
+     * a stat past its practical maximum); a bonus of 100 or more prints as three digits
+     * ({@code "18/%03d"}); anything below that prints as two digits with a leading space
+     * ({@code " 18/%02d"}) so every branch's output stays six characters wide. The 100 threshold is
+     * inclusive on both sides ({@code bonus >= 100}), matching C's {@code else if (bonus >= 100)} —
+     * a bonus of exactly 100 (a stat of 118) takes the three-digit branch, not the padded one.
+     *
+     * <p>Method cnvStat coded before 260925, commented in full on 260925.
+     *
+     * @param stat the raw stat value to format
+     * @return the six-character display string for {@code stat}
+     */
+    public static String cnvStat(int stat, int len) {
+        String result = "";
+        // Stats above 18 need special treatment
+        if (stat > 18) {
+            int bonus = (stat - 18);
+
+            if (bonus >= 220) {
+                result = "18/***";
+            } else if (bonus >= 100) {
+                result = String.format("18/%03d", bonus);
+            } else {
+                result = String.format(" 18/%02d", bonus);
+            }
+        } else {
+            result = String.format("    %2d", stat);
+        }
+
+        int min = Math.min(len, result.length());
+
+        return result.substring(0, min);
+    }
+
+    /**
+     * Displays the character sheet in one of two modes - the port of C's {@code display_player}
+     * ({@code [C] ui-player.c:906-935}).
+     *
+     * <p>Rebuilds the cached resistance-panel layout first if {@link #haveValidCharSheetConfig()}
+     * reports it stale, matching C's own {@code have_valid_char_sheet_config}/
+     * {@code configure_char_sheet} guard, then clears the screen. The guard that follows mirrors
+     * C's {@code Term != angband_term[0] && !player->upkeep->playing}: when this instance is not
+     * drawing onto the active terminal and the player is not currently playing, the method returns
+     * without drawing anything, standing in for C's read of the global {@code Term} and
+     * {@code player}. Past that guard, {@link #displayPlayerStatInfo()} draws the stat block common
+     * to both modes.
+     *
+     * <p>{@link PlayerDisplayMode#DISPLAY_FULL} only goes as far as building the top-left panel via
+     * {@link PanelRegions#getPanel()} - the {@code display_panel} call that would draw it, the
+     * sustain-flags panel ({@code display_player_sust_info}) and the other-flags panel
+     * ({@code display_player_flag_info}) that C's own {@code mode} branch goes on to call are none
+     * of them ported yet, so the built {@link Panel} is discarded rather than drawn.
+     * {@link PlayerDisplayMode#DISPLAY_EXTRA} does even less: C's {@code display_player_xtra_info}
+     * call is commented out rather than called, so this branch draws nothing beyond the shared stat
+     * block.
+     *
+     * <p><b>Outstanding:</b> neither mode draws a finished character sheet yet - both are stubs
+     * beyond {@link #displayPlayerStatInfo()}, awaiting {@code display_panel},
+     * {@code display_player_sust_info}, {@code display_player_flag_info} and
+     * {@code display_player_xtra_info}.
+     *
+     * <p>Method displayPlayer coded before 260925, commented in full on 260928.
+     *
+     * @param mode which of the two character-sheet layouts to draw
+     */
     public void displayPlayer(PlayerDisplayMode mode) {
         if (!haveValidCharSheetConfig()) {
             configureCharSheet();
@@ -843,7 +914,7 @@ public class UIPlayer {
      * {@code stat_cur[i] < stat_max[i]} choice between {@code stat_names} and
      * {@code stat_names_reduced}), a {@code "!"} marker when {@code maxStats[index]} equals
      * {@code 18 + 100} (C's natural-maximum indicator), the natural maximum and modified maximum
-     * via {@link #cnvStat(int)}, and the race/class/equipment bonuses each formatted as a signed
+     * via {@link #cnvStat(int, int)}, and the race/class/equipment bonuses each formatted as a signed
      * three-digit number ({@code "%+3d"}, matching C's {@code strnfmt} calls). The drained-use
      * column is gated on the same {@code currentStats[index] < maxStats[index]} test as the
      * name-column choice, exactly as C tests {@code stat_cur[i] < stat_max[i]} twice rather than
@@ -896,7 +967,7 @@ public class UIPlayer {
                 term.putStr("!", row + index, col + 3);
 
             // Internal "natural" maximum
-            String max = cnvStat(maxStats[index]);
+            String max = cnvStat(maxStats[index], 32);
             term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, max, row + index, col + 5);
 
             // Race bonuses
@@ -912,51 +983,16 @@ public class UIPlayer {
             term.cPutStr(ColourEnum.COLOUR_LIGHT_BLUE, equip, row + index, col + 20);
 
             // Resulting modified max value
-            String total = cnvStat(modifiedMaxStatBonuses[index]);
+            String total = cnvStat(modifiedMaxStatBonuses[index], 32);
             term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, total, row + index, col + 24);
 
             // Only display statUse if there has been draining.
             if (currentStats[index] < maxStats[index]) {
-                String use = cnvStat(statUse[index]);
+                String use = cnvStat(statUse[index], 32);
                 term.cPutStr(ColourEnum.COLOUR_YELLOW, use, row + index, col + 31);
             }
         }
 
-    }
-
-    /**
-     * Converts a raw stat value into its six-character, right-justified display form — the port of
-     * C's {@code cnv_stat} ({@code [C] ui-display.c:117-132}).
-     *
-     * <p>Stats at or below 18 render as a plain right-justified number ({@code "    %2d"}). Above
-     * 18, {@code stat} carries a bonus ({@code stat - 18}) rendered after a {@code "18/"} prefix:
-     * a bonus of 220 or more collapses to the literal {@code "18/***"} (C's cap on displaying
-     * a stat past its practical maximum); a bonus of 100 or more prints as three digits
-     * ({@code "18/%03d"}); anything below that prints as two digits with a leading space
-     * ({@code " 18/%02d"}) so every branch's output stays six characters wide. The 100 threshold is
-     * inclusive on both sides ({@code bonus >= 100}), matching C's {@code else if (bonus >= 100)} —
-     * a bonus of exactly 100 (a stat of 118) takes the three-digit branch, not the padded one.
-     *
-     * <p>Method cnvStat coded before 260925, commented in full on 260925.
-     *
-     * @param stat the raw stat value to format
-     * @return the six-character display string for {@code stat}
-     */
-    private String cnvStat(int stat) {
-        // Stats above 18 need special treatment
-        if (stat > 18) {
-            int bonus = (stat - 18);
-
-            if (bonus >= 220) {
-                return "18/***";
-            }
-            if (bonus >= 100) {
-                return String.format("18/%03d", bonus);
-            }
-            return String.format(" 18/%02d", bonus);
-        } else {
-            return String.format("    %2d", stat);
-        }
     }
 
     /**
@@ -1466,14 +1502,40 @@ public class UIPlayer {
             this.value = value;
         }
 
+        /**
+         * Returns this row's display colour, the Java form of reading C's {@code uint8_t attr}
+         * field directly off a {@code struct panel_line} ({@code [C] ui-player.c:54}).
+         *
+         * <p>Method getAttribute coded before 260925, commented in full on 260928.
+         *
+         * @return this row's display colour
+         */
         public ColourEnum getAttribute() {
             return attribute;
         }
 
+        /**
+         * Returns this row's fixed label text, the Java form of reading C's
+         * {@code const char *label} field directly off a {@code struct panel_line}
+         * ({@code [C] ui-player.c:55}).
+         *
+         * <p>Method getLabel coded before 260925, commented in full on 260928.
+         *
+         * @return this row's fixed label text
+         */
         public String getLabel() {
             return label;
         }
 
+        /**
+         * Returns this row's formatted value text, the Java form of reading C's
+         * {@code char value[20]} field directly off a {@code struct panel_line}
+         * ({@code [C] ui-player.c}).
+         *
+         * <p>Method getValue coded before 260925, commented in full on 260928.
+         *
+         * @return this row's already-formatted, already-truncated value text
+         */
         public String getValue() {
             return value;
         }

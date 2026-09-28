@@ -860,7 +860,7 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but eight carry a
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but nine carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
@@ -886,6 +886,11 @@ public class PlayerCalcs {
      * slot whose graphics tile is wider or taller than one character cell, a check this arm does
      * not reproduce: tile width/height are UI-side state with no core-side counterpart to read
      * from here, so that fallback is deferred until tiles, as opposed to characters, are ported.
+     * {@code PR_STATS} calls {@code eventSignalFullStat} once per stat, in
+     * {@link uk.co.jackoftradesltd.middle.enums.Stats} order, each carrying that stat's index
+     * alongside its current value, recorded maximum and displayed use figure - C's {@code prt_stat}
+     * ({@code [C] ui-display.c}) reads {@code player->stat_cur}/{@code stat_max}/
+     * {@code state.stat_use}, indexed by stat, directly instead of receiving them as an argument.
      * The map is handled separately again, because it also carries data:
      * {@code EVENT_MAP} with the point {@code (-1, -1)}, C's sentinel for "the whole map, not one
      * grid". A last {@code EVENT_END} tells the display the batch is complete and it may now do
@@ -987,6 +992,16 @@ public class PlayerCalcs {
                     }
 
                     GameEngine.getEventsBusHandler().eventSignalColourString(GameEventType.EVENT_EQUIPMENT, equipString);
+                }
+                case PR_STATS -> {
+                    for (Stats stat : Stats.values()) {
+                        if (stat == Stats.STAT_NONE || stat == Stats.STAT_MAX) continue;
+
+                        int index = stat.getValue();
+                        GameEngine.getEventsBusHandler().eventSignalFullStat(GameEventType.EVENT_STATS,
+                                index, player.getCurStatValue(stat), player.getMaxStatValue(stat),
+                                player.getPlayerState().getStatUse(stat));
+                    }
                 }
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }

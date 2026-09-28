@@ -233,6 +233,7 @@ public class UILoop {
                             case EVENT_EXPERIENCE -> RedrawRouter.setExperience(gameEventCoreMessage.data());
                             case EVENT_GOLD -> RedrawRouter.setGold(gameEventCoreMessage.data());
                             case EVENT_EQUIPMENT -> RedrawRouter.setEquippy(gameEventCoreMessage.data());
+                            case EVENT_STATS -> RedrawRouter.setStats(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

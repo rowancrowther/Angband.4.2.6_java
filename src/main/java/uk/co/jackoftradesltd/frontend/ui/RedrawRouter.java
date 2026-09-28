@@ -241,4 +241,29 @@ public class RedrawRouter {
             SidebarModel.setEquippyString(string);
         }
     }
+
+    /**
+     * Unpacks an {@code EVENT_STATS} payload and writes one stat row into {@link SidebarModel},
+     * C's {@code prt_stat} ({@code [C] ui-display.c}, function {@code prt_stat}) reading
+     * {@code player->stat_cur}/{@code stat_max}/{@code state.stat_use}, indexed by stat, directly
+     * by comparison. Guarded on the payload shape, the same way {@link #setGold} is guarded.
+     *
+     * <p>Unlike this class's other routing methods, a single call here only ever updates one of
+     * the five stats: C's {@code PR_STATS} flag is serviced by five independent {@code prt_stat}
+     * calls, and {@code PlayerCalcs.redrawStuff}'s {@code PR_STATS} arm dispatches one
+     * {@code EVENT_STATS} signal per stat to match, so this method is routed five times per
+     * redraw rather than once.
+     *
+     * <p>Method setStats coded on 260927, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataFullStat} of (stat
+     *                      index, current, maximum, displayed value) or nothing is written
+     */
+    public static void setStats(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataFullStat(int index, int curr, int max, int use)) {
+            SidebarModel.setCurrentStat(index, curr);
+            SidebarModel.setMaxStat(index, max);
+            SidebarModel.setUseStat(index, use);
+        }
+    }
 }

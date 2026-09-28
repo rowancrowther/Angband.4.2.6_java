@@ -726,9 +726,9 @@ class UIPlayerTest {
          * @throws Exception if the method cannot be reached or throws
          */
         private String invoke(int stat) throws Exception {
-            Method method = UIPlayer.class.getDeclaredMethod("cnvStat", int.class);
+            Method method = UIPlayer.class.getDeclaredMethod("cnvStat", int.class, int.class);
             method.setAccessible(true);
-            return (String) method.invoke(uiPlayer, stat);
+            return (String) method.invoke(null, stat, 32);
         }
 
         /**

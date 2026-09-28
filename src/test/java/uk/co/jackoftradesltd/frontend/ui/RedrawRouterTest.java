@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.colour.ColourEnum;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataColourString;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataFullStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataLong;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
@@ -72,6 +73,9 @@ class RedrawRouterTest {
     private int savedMaxLevel;
     private long savedGold;
     private AngbandDisplayCharacter[] savedEquipString;
+    private int[] savedCurrentStats;
+    private int[] savedMaxStats;
+    private int[] savedUseStats;
 
     @BeforeEach
     void saveModel() {
@@ -91,6 +95,14 @@ class RedrawRouterTest {
         savedMaxLevel = SidebarModel.getMaxLevel();
         savedGold = SidebarModel.getGold();
         savedEquipString = SidebarModel.getEquippyString();
+        savedCurrentStats = new int[5];
+        savedMaxStats = new int[5];
+        savedUseStats = new int[5];
+        for (int index = 0; index < 5; index++) {
+            savedCurrentStats[index] = SidebarModel.getCurrentStat(index);
+            savedMaxStats[index] = SidebarModel.getMaxStat(index);
+            savedUseStats[index] = SidebarModel.getUseStat(index);
+        }
     }
 
     @AfterEach
@@ -111,6 +123,11 @@ class RedrawRouterTest {
         SidebarModel.setMaxLevel(savedMaxLevel);
         SidebarModel.setGold(savedGold);
         SidebarModel.setEquippyString(savedEquipString);
+        for (int index = 0; index < 5; index++) {
+            SidebarModel.setCurrentStat(index, savedCurrentStats[index]);
+            SidebarModel.setMaxStat(index, savedMaxStats[index]);
+            SidebarModel.setUseStat(index, savedUseStats[index]);
+        }
     }
 
     /**
@@ -403,5 +420,67 @@ class RedrawRouterTest {
 
         assertArrayEquals(glyphs, SidebarModel.getEquippyString(),
                 "a mismatched payload must not overwrite the equippy row");
+    }
+
+    /**
+     * {@link EventDataFullStat#statIndex()}, {@link EventDataFullStat#current()},
+     * {@link EventDataFullStat#max()} and {@link EventDataFullStat#use()} land in
+     * {@link SidebarModel#getCurrentStat(int)}, {@link SidebarModel#getMaxStat(int)} and
+     * {@link SidebarModel#getUseStat(int)} at the given index - deliberately distinct values, so a
+     * router that mis-ordered them would be caught rather than passing by coincidence.
+     */
+    @Test
+    void statIndexCurrentMaxAndUseAreNotSwapped() {
+        RedrawRouter.setStats(new EventDataFullStat(2, 11, 18, 14));
+
+        assertEquals(11, SidebarModel.getCurrentStat(2), "current() must land in currentStats[index]");
+        assertEquals(18, SidebarModel.getMaxStat(2), "max() must land in maxStats[index]");
+        assertEquals(14, SidebarModel.getUseStat(2), "use() must land in useStats[index]");
+    }
+
+    /**
+     * Only the stat named by the payload's index is written - the other stats are untouched,
+     * matching {@code PlayerCalcs.redrawStuff}'s {@code PR_STATS} arm dispatching one
+     * {@code EVENT_STATS} signal per stat rather than one for all five at once.
+     */
+    @Test
+    void onlyTheNamedStatIndexIsWritten() {
+        SidebarModel.setCurrentStat(0, 99);
+        SidebarModel.setMaxStat(0, 99);
+        SidebarModel.setUseStat(0, 99);
+
+        RedrawRouter.setStats(new EventDataFullStat(2, 11, 18, 14));
+
+        assertEquals(99, SidebarModel.getCurrentStat(0), "an unrelated stat index must not be touched");
+        assertEquals(11, SidebarModel.getCurrentStat(2));
+    }
+
+    /**
+     * A later {@code EVENT_STATS} for the same index overwrites the model rather than merging with
+     * it, matching a redraw always sending the stat's whole current state.
+     */
+    @Test
+    void aSecondStatsMessageOverwritesTheFirstForTheSameIndex() {
+        RedrawRouter.setStats(new EventDataFullStat(1, 11, 18, 14));
+        RedrawRouter.setStats(new EventDataFullStat(1, 5, 18, 5));
+
+        assertEquals(5, SidebarModel.getCurrentStat(1));
+        assertEquals(18, SidebarModel.getMaxStat(1));
+        assertEquals(5, SidebarModel.getUseStat(1));
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonFullStatPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setStats(new EventDataFullStat(3, 11, 18, 14));
+
+        RedrawRouter.setStats(new EventDataBoolean(true));
+
+        assertEquals(11, SidebarModel.getCurrentStat(3), "a mismatched payload must not overwrite currentStats");
+        assertEquals(18, SidebarModel.getMaxStat(3), "a mismatched payload must not overwrite maxStats");
+        assertEquals(14, SidebarModel.getUseStat(3), "a mismatched payload must not overwrite useStats");
     }
 }

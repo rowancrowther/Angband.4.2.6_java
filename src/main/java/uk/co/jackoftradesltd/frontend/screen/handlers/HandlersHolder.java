@@ -23,7 +23,10 @@ import uk.co.jackoftradesltd.channel.globals.ChannelRegistry;
 import uk.co.jackoftradesltd.channel.strings.AngbandDisplayCharacter;
 import uk.co.jackoftradesltd.frontend.screen.Term;
 import uk.co.jackoftradesltd.frontend.screen.TermData;
+import uk.co.jackoftradesltd.frontend.screen.enums.Sidebar;
 import uk.co.jackoftradesltd.frontend.ui.SidebarModel;
+import uk.co.jackoftradesltd.frontend.ui.UIPlayer;
+import uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,10 +35,12 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; seven are ported and registered so far - {@code prt_race},
- * {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp}, {@code prt_gold} and
- * {@code prt_equippy} - so {@link #sideHandlers} today holds seven {@link SideHandler}s, in the
- * same order C's table lists them, with the rest joining one at a time as each hook is ported.
+ * C's table lists roughly twenty rows; twelve are ported and registered so far -
+ * {@code prt_race}, {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp},
+ * {@code prt_gold}, {@code prt_equippy}, and the five stat rows {@code prt_str}, {@code prt_int},
+ * {@code prt_wis}, {@code prt_dex} and {@code prt_con} - so {@link #sideHandlers} today holds
+ * twelve {@link SideHandler}s, in the same order C's table lists them, with the rest joining one
+ * at a time as each hook is ported.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
@@ -66,15 +71,17 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Seven rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Twelve rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
      * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at
      * {@code 16} against {@code EVENT_EXPERIENCE}, {@code prt_gold} at {@code 11} against
-     * {@code EVENT_GOLD}, and {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT} -
-     * matching C's table order and figures exactly. The remaining rows join this method as their
-     * own hooks are ported.
+     * {@code EVENT_GOLD}, {@code prt_equippy} at {@code 17} against {@code EVENT_EQUIPMENT}, and
+     * the five stat rows {@code prt_str}, {@code prt_int}, {@code prt_wis}, {@code prt_dex} and
+     * {@code prt_con} at {@code 6}, {@code 5}, {@code 4}, {@code 3} and {@code 2} respectively,
+     * all against {@code EVENT_STATS} - matching C's table order and figures exactly. The
+     * remaining rows join this method as their own hooks are ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
@@ -93,6 +100,133 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtEquippy, 17, GameEventType.EVENT_EQUIPMENT);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtStr, 6, GameEventType.EVENT_STATS);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtInt, 5, GameEventType.EVENT_STATS);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtWis, 4, GameEventType.EVENT_STATS);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtDex, 3, GameEventType.EVENT_STATS);
+        sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtCon, 2, GameEventType.EVENT_STATS);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's Strength row - the port of C's {@code prt_str} ({@code [C]
+     * ui-display.c}), a thin wrapper calling {@link #prtStat} with {@code STAT_STR}'s index.
+     *
+     * <p>Method prtStr coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtStr(int row, int col) {
+        prtStat(0, row, col);
+    }
+
+    /**
+     * Draws the sidebar's Intelligence row - the port of C's {@code prt_int} ({@code [C]
+     * ui-display.c}), a thin wrapper calling {@link #prtStat} with {@code STAT_INT}'s index.
+     *
+     * <p>Method prtInt coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtInt(int row, int col) {
+        prtStat(1, row, col);
+    }
+
+    /**
+     * Draws the sidebar's Wisdom row - the port of C's {@code prt_wis} ({@code [C]
+     * ui-display.c}), a thin wrapper calling {@link #prtStat} with {@code STAT_WIS}'s index.
+     *
+     * <p>Method prtWis coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtWis(int row, int col) {
+        prtStat(2, row, col);
+    }
+
+    /**
+     * Draws the sidebar's Dexterity row - the port of C's {@code prt_dex} ({@code [C]
+     * ui-display.c}), a thin wrapper calling {@link #prtStat} with {@code STAT_DEX}'s index.
+     *
+     * <p>Method prtDex coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtDex(int row, int col) {
+        prtStat(3, row, col);
+    }
+
+    /**
+     * Draws the sidebar's Constitution row - the port of C's {@code prt_con} ({@code [C]
+     * ui-display.c}), a thin wrapper calling {@link #prtStat} with {@code STAT_CON}'s index.
+     *
+     * <p>Method prtCon coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtCon(int row, int col) {
+        prtStat(4, row, col);
+    }
+
+    /**
+     * Draws one sidebar stat row - the port of C's {@code prt_stat} ({@code [C]
+     * ui-display.c:158-176}), called once per stat by {@link #prtStr}, {@link #prtInt},
+     * {@link #prtWis}, {@link #prtDex} and {@link #prtCon}.
+     *
+     * <p>Reads the stat's current and maximum values from {@link SidebarModel#getCurrentStat(int)}
+     * and {@link SidebarModel#getMaxStat(int)} to choose between the drained and full
+     * presentation, matching C's own {@code player->stat_cur[stat] < player->stat_max[stat]} test:
+     * drained draws {@link uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry#statReducedNames}'s
+     * entry in yellow, full draws
+     * {@link uk.co.jackoftradesltd.frontend.ui.globals.UIRegistry#statNames}'s entry in light
+     * green - both label choices six columns left of the displayed value, matching C's
+     * {@code col}/{@code col + 6} split. The displayed value itself is always
+     * {@link SidebarModel#getUseStat(int)}, formatted through {@link UIPlayer#cnvStat(int, int)},
+     * matching C's own {@code cnv_stat(player->state.stat_use[stat], ...)} call in both branches -
+     * the drained test only picks the label and colour, not which value is shown.
+     *
+     * <p>A recorded maximum of {@code 18 + 100} (C's natural-maximum sentinel) draws an extra
+     * {@code "!"} marker three columns after the label, matching C's
+     * {@code player->stat_max[stat] == 18+100} check exactly.
+     *
+     * <p>Method prtStat coded on 260927, commented in full on 260928.
+     *
+     * @param statIndex the stat to draw, {@link uk.co.jackoftradesltd.middle.enums.Stats#getValue()}
+     * @param row       the row to draw at
+     * @param col       the column to draw at
+     */
+    private static void prtStat(int statIndex, int row, int col) {
+        int currentStat = SidebarModel.getCurrentStat(statIndex);
+        int maxStat = SidebarModel.getMaxStat(statIndex);
+
+        String normal = UIRegistry.statNames[statIndex];
+        String reduced = UIRegistry.statReducedNames[statIndex];
+
+        int stat = SidebarModel.getUseStat(statIndex);
+
+        String str = UIPlayer.cnvStat(stat, 32);
+
+        if (currentStat < maxStat) {
+            term.putStr(reduced, row, col);
+            term.cPutStr(ColourEnum.COLOUR_YELLOW, str, row, col + 6);
+        } else {
+            term.putStr(normal, row, col);
+            term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, str, row, col + 6);
+        }
+
+        // Natural maximum
+        if (SidebarModel.getMaxStat(statIndex) == 18 + 100) {
+            term.putStr("!", row, col + 3);
+        }
     }
 
     /**

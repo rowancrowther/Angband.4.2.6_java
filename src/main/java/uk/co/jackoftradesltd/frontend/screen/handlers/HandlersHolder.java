@@ -31,10 +31,10 @@ import java.util.List;
  * The Java port of C's {@code side_handlers[]} table ({@code [C] ui-display.c}) - the sidebar rows
  * that redraw themselves in response to a {@code game_event_type} flag, as opposed to the "short"
  * topbar path ({@code update_topbar}, {@code [C] ui-display.c}), which this class does not cover.
- * C's table lists roughly twenty rows; five are ported and registered so far - {@code prt_race},
- * {@code prt_title}, {@code prt_class}, {@code prt_level} and {@code prt_exp} - so
- * {@link #sideHandlers} today holds five {@link SideHandler}s, in the same order C's table lists
- * them, with the rest joining one at a time as each hook is ported.
+ * C's table lists roughly twenty rows; six are ported and registered so far - {@code prt_race},
+ * {@code prt_title}, {@code prt_class}, {@code prt_level}, {@code prt_exp} and {@code prt_gold} -
+ * so {@link #sideHandlers} today holds six {@link SideHandler}s, in the same order C's table
+ * lists them, with the rest joining one at a time as each hook is ported.
  *
  * <p>Class HandlersHolder coded on 260927, commented in full on 260928.
  *
@@ -65,13 +65,14 @@ public class HandlersHolder {
 
     /**
      * Builds {@link #sideHandlers} - the port of C's {@code side_handlers[]} initializer
-     * ({@code [C] ui-display.c}). Five rows are registered today, each at the same priority and
+     * ({@code [C] ui-display.c}). Six rows are registered today, each at the same priority and
      * against the same {@code game_event_type} flag C's table gives it: {@code prt_race} at
      * {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
-     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, and {@code prt_exp} at
-     * {@code 16} against {@code EVENT_EXPERIENCE} - matching C's table order and figures exactly.
-     * The remaining rows join this method as their own hooks are ported.
+     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at
+     * {@code 16} against {@code EVENT_EXPERIENCE}, and {@code prt_gold} at {@code 11} against
+     * {@code EVENT_GOLD} - matching C's table order and figures exactly. The remaining rows join
+     * this method as their own hooks are ported.
      *
      * <p>Method initHandlers coded on 260927, commented in full on 260928.
      */
@@ -86,6 +87,33 @@ public class HandlersHolder {
         sideHandlers.add(handler);
         handler = new SideHandler(HandlersHolder::prtExp, 16, GameEventType.EVENT_EXPERIENCE);
         sideHandlers.add(handler);
+        handler = new SideHandler(HandlersHolder::prtGold, 11, GameEventType.EVENT_GOLD);
+        sideHandlers.add(handler);
+    }
+
+    /**
+     * Draws the sidebar's gold row - the port of C's {@code prt_gold} ({@code [C]
+     * ui-display.c}), which writes a fixed "AU " label followed by the player's current gold in a
+     * nine-wide field.
+     *
+     * <p>Matches C exactly: {@code "AU "} at {@code col}, then {@code "%9d"} against
+     * {@link SidebarModel#getGold()} written at {@code col + 3} - the port of C's
+     * {@code strnfmt(tmp, sizeof(tmp), "%9ld", (long) player->au)} written after the same
+     * three-character label. Unlike {@link #prtLevel} and {@link #prtExp}, the figure carries no
+     * threshold test - it is always light green, matching C's single unconditional
+     * {@code c_put_str(COLOUR_L_GREEN, tmp, row, col + 3)} call.
+     *
+     * <p>Method prtGold coded on 260927, commented in full on 260928.
+     *
+     * @param row the row to draw at
+     * @param col the column to draw at
+     */
+    private static void prtGold(int row, int col) {
+        long gold = SidebarModel.getGold();
+
+        term.putStr("AU ", row, col);
+        String goldString = String.format("%9d", gold);
+        term.cPutStr(ColourEnum.COLOUR_LIGHT_GREEN, goldString, row, col + 3);
     }
 
     /**

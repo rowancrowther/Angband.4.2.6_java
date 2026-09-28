@@ -38,10 +38,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * {@link HandlersHolder}'s {@code prt_field}/{@code prt_race}/{@code prt_class}/{@code prt_level}/
- * {@code prt_title}/{@code fmt_title} port and its {@code side_handlers[]} table, checked against
- * C's originals ({@code [C] ui-display.c}, functions {@code prt_field}, {@code prt_race},
- * {@code prt_class}, {@code prt_level}, {@code prt_title} and {@code fmt_title}, and the
- * {@code side_handlers[]} initializer). All of these are private static methods with no public
+ * {@code prt_title}/{@code fmt_title}/{@code prt_gold} port and its {@code side_handlers[]} table,
+ * checked against C's originals ({@code [C] ui-display.c}, functions {@code prt_field},
+ * {@code prt_race}, {@code prt_class}, {@code prt_level}, {@code prt_title}, {@code fmt_title} and
+ * {@code prt_gold}, and the {@code side_handlers[]} initializer). All of these are private static
+ * methods with no public
  * entry point yet - {@link SideHandler#getResult} is never invoked from anywhere in the port today
  * - so this test reaches them the same way {@code PlayerIsImmuneTest} reaches
  * {@link uk.co.jackoftradesltd.middle.player.Player}'s private fields: reflectively, with
@@ -51,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * rather than moving this test into {@code frontend.ui} - since the class under test here is
  * {@link HandlersHolder}, not {@link SidebarModel} (which has its own test).
  *
- * <p>Class HandlersHolderTest coded on 260927, commented in full on 260927.
+ * <p>Class HandlersHolderTest coded on 260927, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -71,6 +72,7 @@ class HandlersHolderTest {
     private boolean savedTotalWinner;
     private int savedLevel;
     private int savedMaxLevel;
+    private long savedGold;
     private int savedPyMaxLevel;
 
     private static Field termField() throws Exception {
@@ -111,6 +113,12 @@ class HandlersHolderTest {
 
     private static Method fmtTitleMethod() throws Exception {
         Method method = HandlersHolder.class.getDeclaredMethod("fmtTitle", int.class, boolean.class);
+        method.setAccessible(true);
+        return method;
+    }
+
+    private static Method prtGoldMethod() throws Exception {
+        Method method = HandlersHolder.class.getDeclaredMethod("prtGold", int.class, int.class);
         method.setAccessible(true);
         return method;
     }
@@ -169,6 +177,12 @@ class HandlersHolderTest {
         return method;
     }
 
+    private static Method setGoldMethod() throws Exception {
+        Method method = SidebarModel.class.getDeclaredMethod("setGold", long.class);
+        method.setAccessible(true);
+        return method;
+    }
+
     private AngbandDisplayCharacter cell(int row, int col) {
         return grid.get(row, col);
     }
@@ -192,6 +206,7 @@ class HandlersHolderTest {
         savedTotalWinner = SidebarModel.isTotalWinner();
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
+        savedGold = SidebarModel.getGold();
         savedPyMaxLevel = ChannelRegistry.getPYMaxLevel();
     }
 
@@ -207,6 +222,7 @@ class HandlersHolderTest {
         setTotalWinnerMethod().invoke(null, savedTotalWinner);
         setLevelMethod().invoke(null, savedLevel);
         setMaxLevelMethod().invoke(null, savedMaxLevel);
+        setGoldMethod().invoke(null, savedGold);
         ChannelRegistry.setPYMaxLevel(savedPyMaxLevel);
     }
 
@@ -284,23 +300,27 @@ class HandlersHolderTest {
 
     /**
      * {@link HandlersHolder#initHandlers()} - the port of C's {@code side_handlers[]}
-     * initializer - registers all five rows ported so far, in C's table order: {@code prt_race} at
+     * initializer - registers all six rows ported so far, in C's table order: {@code prt_race} at
      * priority {@code 19} against {@code EVENT_RACE_CLASS}, {@code prt_title} at {@code 18} against
      * {@code EVENT_PLAYERTITLE}, {@code prt_class} at {@code 22} against {@code EVENT_RACE_CLASS},
-     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, and {@code prt_exp} at
-     * {@code 16} against {@code EVENT_EXPERIENCE} - matching C's
+     * {@code prt_level} at {@code 10} against {@code EVENT_PLAYERLEVEL}, {@code prt_exp} at
+     * {@code 16} against {@code EVENT_EXPERIENCE}, and {@code prt_gold} at {@code 11} against
+     * {@code EVENT_GOLD} - matching C's
      * {@code { prt_race, 19, EVENT_RACE_CLASS }, { prt_title, 18, EVENT_PLAYERTITLE },
      * { prt_class, 22, EVENT_RACE_CLASS }, { prt_level, 10, EVENT_PLAYERLEVEL },
-     * { prt_exp, 16, EVENT_EXPERIENCE }} entries exactly.
+     * { prt_exp, 16, EVENT_EXPERIENCE }, { prt_gold, 11, EVENT_GOLD }} entries exactly. Every row
+     * built by {@link HandlersHolder#initHandlers()} must reach {@link #sideHandlers} - a handler
+     * built but never added, as {@code prt_gold}'s once was, is registered in name only and is
+     * never invoked by anything that walks the table.
      */
     @Test
     @SuppressWarnings("unchecked")
-    void initHandlersRegistersAllFiveRowsInTableOrder() throws Exception {
+    void initHandlersRegistersAllSixRowsInTableOrder() throws Exception {
         Field field = HandlersHolder.class.getDeclaredField("sideHandlers");
         field.setAccessible(true);
         List<SideHandler> handlers = (List<SideHandler>) field.get(null);
 
-        assertEquals(5, handlers.size());
+        assertEquals(6, handlers.size());
 
         assertEquals(19, handlers.get(0).getPriority());
         assertEquals(GameEventType.EVENT_RACE_CLASS, handlers.get(0).getType());
@@ -317,10 +337,17 @@ class HandlersHolderTest {
         assertEquals(16, handlers.get(4).getPriority());
         assertEquals(GameEventType.EVENT_EXPERIENCE, handlers.get(4).getType());
 
+        assertEquals(11, handlers.get(5).getPriority());
+        assertEquals(GameEventType.EVENT_GOLD, handlers.get(5).getType());
+
         setShapechangedMethod().invoke(null, false);
         setRaceNameMethod().invoke(null, "Dwarf");
         handlers.get(0).getResult(6, 0);
         assertEquals('D', cell(6, 0).getCharacter());
+
+        setGoldMethod().invoke(null, 42L);
+        handlers.get(5).getResult(9, 0);
+        assertEquals('A', cell(9, 0).getCharacter());
     }
 
     /**
@@ -528,5 +555,46 @@ class HandlersHolderTest {
         String result = (String) fmtTitleMethod().invoke(null, 32, true);
 
         assertEquals("", result);
+    }
+
+    /**
+     * {@code prt_gold} ({@code [C] ui-display.c}): writes the "AU " label followed by the gold
+     * total right-justified in a nine-wide field, matching C's {@code "%9ld"} - here with
+     * {@code "%9d"} of {@code 1234}, five leading spaces then the four digits.
+     */
+    @Test
+    void prtGoldWritesLabelAndFormattedFigure() throws Exception {
+        setGoldMethod().invoke(null, 1234L);
+
+        prtGoldMethod().invoke(null, 9, 0);
+
+        assertEquals('A', cell(9, 0).getCharacter());
+        assertEquals('U', cell(9, 1).getCharacter());
+        assertEquals(' ', cell(9, 2).getCharacter());
+
+        // "%9d" of 1234 is five leading spaces then "1234".
+        assertEquals(' ', cell(9, 3).getCharacter());
+        assertEquals(' ', cell(9, 7).getCharacter());
+        assertEquals('1', cell(9, 8).getCharacter());
+        assertEquals('2', cell(9, 9).getCharacter());
+        assertEquals('3', cell(9, 10).getCharacter());
+        assertEquals('4', cell(9, 11).getCharacter());
+        assertEquals(ColourEnum.COLOUR_LIGHT_GREEN, cell(9, 8).getAttributeColour());
+    }
+
+    /**
+     * {@code prt_gold}: zero gold is a real total, not an "unset" sentinel, so it must format
+     * through the same nine-wide field as any other value - eight leading spaces then "0".
+     */
+    @Test
+    void prtGoldFormatsZeroAsNineWideField() throws Exception {
+        setGoldMethod().invoke(null, 0L);
+
+        prtGoldMethod().invoke(null, 9, 0);
+
+        for (int col = 3; col < 11; col++) {
+            assertEquals(' ', cell(9, col).getCharacter(), "cell at col " + col + " should be a leading space");
+        }
+        assertEquals('0', cell(9, 11).getCharacter());
     }
 }

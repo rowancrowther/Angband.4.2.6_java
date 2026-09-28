@@ -35,14 +35,15 @@ import uk.co.jackoftradesltd.channel.messages.data.*;
  * core-side.
  *
  * <p>Today it wires {@code EVENT_HP}, {@code EVENT_MANA}, {@code EVENT_RACE_CLASS},
- * {@code EVENT_PLAYERTITLE}, {@code EVENT_PLAYER_NAME} and {@code EVENT_PLAYERLEVEL}; a routing
- * method joins here as each further {@code PR_*} flag gets its own payload record and model, per
+ * {@code EVENT_PLAYERTITLE}, {@code EVENT_PLAYER_NAME}, {@code EVENT_PLAYERLEVEL},
+ * {@code EVENT_EXPERIENCE} and {@code EVENT_GOLD}; a routing method joins here as each further
+ * {@code PR_*} flag gets its own payload record and model, per
  * {@code docs/implementation/260926_change_in_architecture_from_cache_to_messages.md}. That design
  * doc is also why {@link SidebarModel} exists at all —
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerStatusView} and its sibling caches are
  * being architected out field by field in favour of models this class writes.
  *
- * <p>Class RedrawRouter coded on 260926, commented in full on 260926.
+ * <p>Class RedrawRouter coded on 260926, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -201,6 +202,23 @@ public class RedrawRouter {
         if (gameEventData instanceof EventDataLongStat(long current, long other)) {
             SidebarModel.setExperience(current);
             SidebarModel.setMaxXp(other);
+        }
+    }
+
+    /**
+     * Unpacks an {@code EVENT_GOLD} payload and writes it into {@link SidebarModel}, C's
+     * {@code prt_gold} ({@code [C] ui-display.c}, function {@code prt_gold}) reading
+     * {@code player->au} directly by comparison. Guarded on the payload shape, the same way
+     * {@link #setName} is guarded.
+     *
+     * <p>Method setGold coded on 260927, commented in full on 260928.
+     *
+     * @param gameEventData the routed payload; must be an {@link EventDataLong} of the player's
+     *                      current gold total or nothing is written
+     */
+    public static void setGold(GameEventData gameEventData) {
+        if (gameEventData instanceof EventDataLong(long value)) {
+            SidebarModel.setGold(value);
         }
     }
 }

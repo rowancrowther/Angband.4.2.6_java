@@ -21,6 +21,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataBoolean;
+import uk.co.jackoftradesltd.channel.messages.data.EventDataLong;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStat;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataString;
 import uk.co.jackoftradesltd.channel.messages.data.EventDataStrings;
@@ -41,7 +42,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * so there is nothing to transpose. There is no C function to diverge from for any of them - this
  * is the port's own translation step.
  *
- * <p>Class RedrawRouterTest coded on 260926, commented in full on 260927.
+ * <p>Class RedrawRouterTest coded on 260926, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -65,6 +66,7 @@ class RedrawRouterTest {
     private boolean savedShapechanged;
     private int savedLevel;
     private int savedMaxLevel;
+    private long savedGold;
 
     @BeforeEach
     void saveModel() {
@@ -82,6 +84,7 @@ class RedrawRouterTest {
         savedShapechanged = SidebarModel.isPlayerIsShapechanged();
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
+        savedGold = SidebarModel.getGold();
     }
 
     @AfterEach
@@ -100,6 +103,7 @@ class RedrawRouterTest {
         SidebarModel.setPlayerIsShapechanged(savedShapechanged);
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
+        SidebarModel.setGold(savedGold);
     }
 
     /**
@@ -305,5 +309,40 @@ class RedrawRouterTest {
 
         assertEquals(9, SidebarModel.getLevel(), "a mismatched payload must not overwrite level");
         assertEquals(12, SidebarModel.getMaxLevel(), "a mismatched payload must not overwrite maxLevel");
+    }
+
+    /**
+     * {@link EventDataLong#value()} becomes {@link SidebarModel#getGold()}.
+     */
+    @Test
+    void goldIsWrittenFromTheLongPayload() {
+        RedrawRouter.setGold(new EventDataLong(1234L));
+
+        assertEquals(1234L, SidebarModel.getGold());
+    }
+
+    /**
+     * A later {@code EVENT_GOLD} overwrites the model rather than merging with it, matching a
+     * redraw always sending the player's whole current state.
+     */
+    @Test
+    void aSecondGoldMessageOverwritesTheFirst() {
+        RedrawRouter.setGold(new EventDataLong(1234L));
+        RedrawRouter.setGold(new EventDataLong(50L));
+
+        assertEquals(50L, SidebarModel.getGold());
+    }
+
+    /**
+     * A payload of the wrong shape is dropped rather than routed, the same guard {@link #setHP}'s
+     * own test pins for {@link RedrawRouter#setHP}.
+     */
+    @Test
+    void aNonLongGoldPayloadLeavesTheModelUntouched() {
+        RedrawRouter.setGold(new EventDataLong(1234L));
+
+        RedrawRouter.setGold(new EventDataBoolean(true));
+
+        assertEquals(1234L, SidebarModel.getGold(), "a mismatched payload must not overwrite gold");
     }
 }

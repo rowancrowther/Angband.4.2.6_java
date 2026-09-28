@@ -35,13 +35,14 @@ package uk.co.jackoftradesltd.frontend.ui;
  * {@link uk.co.jackoftradesltd.channel.messages.data.PlayerEventStatusUpdate}'s static cache is
  * being architected out in their favour. Today this class holds the HP and SP pairs, the player's
  * level and maximum level, title, race name, class name, full name, wizard and total-winner flags,
- * shape name and shapechanged status; the rest of C's {@code prt_*} family in
- * {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads are ported.
+ * shape name and shapechanged status, current and displayed experience, and gold; the rest of C's
+ * {@code prt_*} family in {@code [C] ui-display.c} join it as their own {@code EVENT_*} payloads
+ * are ported.
  *
  * <p>The setters are package-private and the getters public, so only a class in this package —
  * today, only {@link RedrawRouter} — can write, while any caller may read.
  *
- * <p>Class SidebarModel coded on 260926, commented in full on 260927.
+ * <p>Class SidebarModel coded on 260926, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -207,6 +208,39 @@ public class SidebarModel {
      * <p>Field playerIsShapechanged coded on 260927, commented in full on 260927.
      */
     private static boolean playerIsShapechanged;
+
+    /**
+     * The player's current gold total, C's {@code player->au}, written each time an
+     * {@code EVENT_GOLD} message is routed and read whenever the sidebar's gold row is drawn.
+     *
+     * <p>Field gold coded on 260927, commented in full on 260928.
+     */
+    private static long gold;
+
+    /**
+     * Read the gold total last written by {@link #setGold(long)}, for the sidebar's gold row -
+     * {@link uk.co.jackoftradesltd.frontend.screen.handlers.HandlersHolder}'s port of C's
+     * {@code prt_gold} ({@code [C] ui-display.c}) is today's only reader.
+     *
+     * <p>Method getGold coded on 260927, commented in full on 260928.
+     *
+     * @return the player's current gold total, C's {@code player->au}
+     */
+    public static long getGold() {
+        return gold;
+    }
+
+    /**
+     * Write the gold total. Package-private, so only {@link RedrawRouter#setGold} - the only
+     * class in this package today - can write the model directly.
+     *
+     * <p>Method setGold coded on 260927, commented in full on 260928.
+     *
+     * @param gold the player's current gold total, C's {@code player->au}
+     */
+    static void setGold(long gold) {
+        SidebarModel.gold = gold;
+    }
 
     /**
      * Read the maximum experience last written by {@link #setMaxXp(long)}, for the sidebar's

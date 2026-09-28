@@ -231,6 +231,7 @@ public class UILoop {
                             case EVENT_PLAYER_NAME -> RedrawRouter.setName(gameEventCoreMessage.data());
                             case EVENT_PLAYERLEVEL -> RedrawRouter.setPlayerLevel(gameEventCoreMessage.data());
                             case EVENT_EXPERIENCE -> RedrawRouter.setExperience(gameEventCoreMessage.data());
+                            case EVENT_GOLD -> RedrawRouter.setGold(gameEventCoreMessage.data());
                             default -> {
                             }
                         }

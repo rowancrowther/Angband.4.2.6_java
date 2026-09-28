@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  * pair and the title/race/class/name quartet the same way: a value written to one field is the
  * value read back from it, and no field disturbs another.
  *
- * <p>Class SidebarModelTest coded on 260926, commented in full on 260926.
+ * <p>Class SidebarModelTest coded on 260926, commented in full on 260928.
  *
  * @author Rowan Crowther
  */
@@ -60,6 +60,7 @@ class SidebarModelTest {
     private String savedShapeName;
     private int savedLevel;
     private int savedMaxLevel;
+    private long savedGold;
 
     @BeforeEach
     void saveModel() {
@@ -77,6 +78,7 @@ class SidebarModelTest {
         savedShapeName = SidebarModel.getShapeName();
         savedLevel = SidebarModel.getLevel();
         savedMaxLevel = SidebarModel.getMaxLevel();
+        savedGold = SidebarModel.getGold();
     }
 
     @AfterEach
@@ -95,6 +97,7 @@ class SidebarModelTest {
         SidebarModel.setShapeName(savedShapeName);
         SidebarModel.setLevel(savedLevel);
         SidebarModel.setMaxLevel(savedMaxLevel);
+        SidebarModel.setGold(savedGold);
     }
 
     /**
@@ -346,5 +349,29 @@ class SidebarModelTest {
 
         assertEquals(20, SidebarModel.getMaxLevel());
         assertEquals(15, SidebarModel.getLevel(), "writing maxLevel must not disturb level");
+    }
+
+    /**
+     * A written gold total is the total read back, unrelated to whatever level pair is already
+     * held.
+     */
+    @Test
+    void goldRoundTrips() {
+        SidebarModel.setLevel(15);
+        SidebarModel.setGold(1234L);
+
+        assertEquals(1234L, SidebarModel.getGold());
+        assertEquals(15, SidebarModel.getLevel(), "writing gold must not disturb level");
+    }
+
+    /**
+     * Zero gold is a value a player can genuinely be at (broke at birth or after spending it all),
+     * so it must round-trip like any other value rather than being mistaken for "unset".
+     */
+    @Test
+    void zeroGoldRoundTrips() {
+        SidebarModel.setGold(0L);
+
+        assertEquals(0L, SidebarModel.getGold());
     }
 }

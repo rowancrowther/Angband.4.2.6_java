@@ -860,13 +860,14 @@ public class PlayerCalcs {
      * narrowing above happens first, so with the map hidden neither override can be present and the
      * hack always returns.
      *
-     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but six carry a
+     * <p>Most flags are signalled bare through {@link PlayerRedraw#getEventType()}, but seven carry a
      * payload instead, because there is no shared {@code player} on the front-end side for a handler
      * to read the way C's {@code prt_*} functions do, so each has to hand across whatever that
      * handler would otherwise have read from the global: {@code PR_HP} and {@code PR_MANA} each call
      * {@code eventSignalStat} with a current/maximum pair — hit points and spell points
      * respectively; {@code PR_LEV} does the same for the current and maximum character level;
-     * {@code PR_TITLE} calls {@code eventSignalStrings} with the class title, the wizard flag, the
+     * {@code PR_GOLD} calls {@code eventSignalLong} with the player's current gold total, C's
+     * {@code player->au}; {@code PR_TITLE} calls {@code eventSignalStrings} with the class title, the wizard flag, the
      * total-winner flag and the shape name, guarding {@link Player#getShape} against {@code null}
      * first, since nothing has ported the shapechange effect yet and a null shape has no name to
      * read; and {@code PR_MISC} calls it twice, once with the race name, class name and shapechanged
@@ -963,6 +964,8 @@ public class PlayerCalcs {
                     GameEngine.getEventsBusHandler().eventSignalString(GameEventType.EVENT_PLAYER_NAME,
                             player.getFullName());
                 }
+                case PR_GOLD -> GameEngine.getEventsBusHandler().eventSignalLong(GameEventType.EVENT_GOLD,
+                        player.getAU());
                 default -> GameEngine.getEventsBusHandler().eventSignal(playerRedraw.getEventType());
             }
         }
